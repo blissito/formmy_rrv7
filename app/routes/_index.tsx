@@ -68,7 +68,7 @@ export default function Index() {
         <Hero />
         <CompaniesScroll />
         <FormmysTypes />
-        {/* <Banner /> */}
+        <Banner />
         <StickySection />
         <Pricing />
         <WitoutFormmy />

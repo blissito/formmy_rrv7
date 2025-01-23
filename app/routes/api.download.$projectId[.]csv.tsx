@@ -1,11 +1,14 @@
 import { data as json } from "react-router";
-import { getUserOrRedirect } from ".server/getUserUtils";
-import { getPermission, getProjectIOwner } from "./dash_.$projectId";
+import {
+  getPermission,
+  getProjectOwner,
+  getUserOrRedirect,
+} from ".server/getUserUtils";
 import type { Answer } from "@prisma/client";
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const user = await getUserOrRedirect(request);
-  const project = await getProjectIOwner({
+  const project = await getProjectOwner({
     userId: user.id,
     projectId: params.projectId as string,
   });

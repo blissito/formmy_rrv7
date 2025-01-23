@@ -1,16 +1,18 @@
+import {
+  createBillingSessionOrCheckoutURL,
+  searchStripeSubscriptions,
+} from "~/utils/stripe.server";
 import Nav from "~/components/NavBar";
-import { Form, useFetcher, useLoaderData, useNavigation } from "react-router";
 import { redirect } from "react-router";
 import { twMerge } from "tailwind-merge";
-import { createBillingSessionOrCheckoutURL } from "./api.stripe";
-
 import Spinner from "~/components/Spinner";
+import type { Route } from "./+types/profile";
 import SuccessModal from "~/components/SuccessModal";
-import { searchStripeSubscriptions } from "~/utils/stripe.server";
-import useLocalStorage from "~/lib/hooks/useLocalStorage";
 import { getUserOrRedirect } from ".server/getUserUtils";
+import useLocalStorage from "~/lib/hooks/useLocalStorage";
+import { Form, useFetcher, useLoaderData, useNavigation } from "react-router";
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   const url = new URL(request.url);
   const success = url.searchParams.get("success") === "1";
@@ -25,7 +27,7 @@ export const loader = async ({ request }: LoaderArgs) => {
   };
 };
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.has("intent")
     ? String(formData.get("intent"))

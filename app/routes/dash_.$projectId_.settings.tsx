@@ -1,5 +1,5 @@
 import Nav from "~/components/NavBar";
-import { BackGround, getUserOrRedirect } from ".server/getUserUtils";
+import { getUserOrRedirect } from ".server/getUserUtils";
 import { twMerge } from "tailwind-merge";
 import {
   Link,
@@ -13,8 +13,10 @@ import { ProTag } from "~/components/ProTag";
 import { type ReactNode } from "react";
 import { useState } from "react";
 import { IoReturnUpBackOutline } from "react-icons/io5";
+import { BackGround } from "./dash";
+import type { Route } from "./+types/dash_.$projectId_.settings.access";
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   return { user };
 };

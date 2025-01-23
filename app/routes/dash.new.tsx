@@ -1,6 +1,5 @@
 import { redirect, type ActionFunction, data as json } from "react-router";
 import Modal from "~/components/Modal";
-import { getUserOrRedirect } from "./dash";
 import { projectSchema } from "~/utils/zod";
 import { db } from "~/utils/db.server";
 import { Form, useActionData, useNavigation } from "react-router";
@@ -9,6 +8,7 @@ import { slugify } from "~/utils/slugify";
 import { v4 as uuidv4 } from "uuid";
 import { IconCube } from "~/components/IconCube";
 import { useState } from "react";
+import { getUserOrRedirect } from ".server/getUserUtils";
 
 export const action: ActionFunction = async ({ request }) => {
   const user = await getUserOrRedirect(request);
