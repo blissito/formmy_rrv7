@@ -155,9 +155,19 @@ export const createCheckoutSessionURL = async ({
   return session.url;
 };
 
-export const getStripeURL = async (request: Request) => {
+export const getStripeURL = async (
+  request: Request,
+  type: "month" | "year" = "year"
+) => {
+  let price;
+  if (type === "month") {
+    price = isDevelopment
+      ? "price_1OinFxDtYmGT70YtW9UbUdpM"
+      : "price_1OgF7RDtYmGT70YtJB3kRl9T";
+  }
+
   const user = await getUserOrTriggerLogin(request);
-  const url = await createCheckoutSessionURL({ user });
+  const url = await createCheckoutSessionURL({ user, price });
   return url;
 };
 

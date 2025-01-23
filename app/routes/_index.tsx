@@ -17,6 +17,9 @@ import { StickySection } from "~/components/home/StickySection";
 import { CompaniesScroll } from "~/components/home/CompaniesScroll";
 import { createSession, redirectToGoogle } from "~/lib/google.server";
 import { redirectIfUser } from ".server/getUserUtils";
+import { WitoutFormmy } from "~/components/home/WithoutFormmy";
+import { Faq } from "~/components/home/Faq";
+import { Join } from "~/components/home/Join";
 
 export const meta = () =>
   getBasicMetaTags({
@@ -68,10 +71,10 @@ export default function Index() {
         {/* <Banner /> */}
         <StickySection />
         <Pricing />
-        {/* <WitoutFormmy />
+        <WitoutFormmy />
         <Faq />
         <Join />
-        <Footer /> */}
+        <Footer />
       </div>
     </article>
   );
