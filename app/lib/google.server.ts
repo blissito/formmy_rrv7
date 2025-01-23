@@ -65,17 +65,17 @@ export function redirectToGoogle<Redirect extends (arg0: string) => Response>(
   host: string
   // props: { params: Record<string, string> }
 ): Response {
-  console.log("host:", host);
+  const redirect_uri =
+    host && process.env.NODE_ENV === "production"
+      ? "https://" + host
+      : "https://www.formmy.app";
 
   if (!GOOGLE_SECRET || !GOOGLE_CLIENT_ID) {
     throw new Error("Missing env variables");
   }
   const obj = {
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri:
-      process.env.NODE_ENV === "production"
-        ? "https://" + host
-        : "http://" + host,
+    redirect_uri,
     response_type: "code",
     scope: "https://www.googleapis.com/auth/userinfo.email",
   };

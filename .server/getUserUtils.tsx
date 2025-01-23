@@ -21,7 +21,8 @@ export const getUserOrRedirect = async (request: Request): Promise<User> => {
 export const getUserOrTriggerLogin = async (request: Request) => {
   const user = await getUserOrNull(request);
   if (!user) {
-    throw redirectToGoogle(redirect);
+    const url = new URL(request.url);
+    throw redirectToGoogle(redirect, url.host);
   }
   return user;
 };
