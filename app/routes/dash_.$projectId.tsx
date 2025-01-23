@@ -4,11 +4,7 @@ import Nav from "~/components/NavBar";
 import type { AnswerType } from "~/utils/zod";
 import { db } from "~/utils/db.server";
 import { iconBtnClass } from "~/components/Code";
-import {
-  BackGround,
-  ModificameBRENDIPurpleCorner,
-  getUserOrRedirect,
-} from "./dash";
+import { BackGround, ModificameBRENDIPurpleCorner } from "./dash";
 import { AiFillStar } from "react-icons/ai";
 import { FiTrash2, FiEdit3, FiSettings } from "react-icons/fi";
 import { IoReturnUpBackOutline } from "react-icons/io5";
@@ -26,8 +22,14 @@ import Empty from "~/SVGs/Empty";
 import Ghosts from "~/SVGs/Ghosts";
 import GhostsDark from "~/SVGs/GhostsDark";
 import type { Answer } from "@prisma/client";
+import {
+  getPermission,
+  getProjectOwner,
+  getUserOrRedirect,
+} from ".server/getUserUtils";
+import type { Route } from "./+types/dash_.$projectId";
 
-export const action = async ({ request, params }: ActionArgs) => {
+export const action = async ({ request, params }: Route.ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
   // validation @TODO check fro permissions
@@ -66,10 +68,10 @@ export const action = async ({ request, params }: ActionArgs) => {
   return null;
 };
 
-export const loader = async ({ request, params }: LoaderArgs) => {
+export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   const projectId = params.projectId as string;
-  const project = await getProjectIOwner({
+  const project = await getProjectOwner({
     userId: user.id,
     projectId,
   });
@@ -90,60 +92,6 @@ export const loader = async ({ request, params }: LoaderArgs) => {
     project,
     user: { ...user, isOwner: true },
   };
-};
-
-export const getProjectIOwner = async ({
-  userId,
-  projectId,
-}: {
-  userId: string;
-  projectId: string;
-}) => {
-  return await db.project.findUnique({
-    where: {
-      id: projectId,
-      userId: userId,
-    },
-    include: {
-      answers: {
-        where: {
-          deleted: false, // Is this ok in here?
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      }, // consider appart to filter?
-    },
-  });
-};
-
-export const getPermission = ({
-  userId,
-  projectId,
-}: {
-  userId: string;
-  projectId: string;
-}) => {
-  return db.permission.findFirst({
-    where: {
-      userId,
-      projectId,
-    },
-    include: {
-      project: {
-        include: {
-          answers: {
-            where: {
-              deleted: false, // Is this ok in here?
-            },
-            orderBy: {
-              createdAt: "desc",
-            },
-          },
-        },
-      },
-    },
-  });
 };
 
 export default function Detail() {

@@ -1,7 +1,7 @@
 import { Form } from "react-router";
 import { Button } from "../Button";
 import { Meteors } from "./Meteors";
-import { BigCTA } from "~/routes/_index";
+import { BigCTA } from "../BigCTA";
 
 // @ Meteors require Banner to be wrapped in a Suspense!
 export const Banner = () => {

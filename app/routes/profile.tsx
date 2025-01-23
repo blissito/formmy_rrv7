@@ -3,11 +3,12 @@ import { Form, useFetcher, useLoaderData, useNavigation } from "react-router";
 import { redirect } from "react-router";
 import { twMerge } from "tailwind-merge";
 import { createBillingSessionOrCheckoutURL } from "./api.stripe";
-import { getUserOrRedirect } from "./dash";
+
 import Spinner from "~/components/Spinner";
 import SuccessModal from "~/components/SuccessModal";
 import { searchStripeSubscriptions } from "~/utils/stripe.server";
 import useLocalStorage from "~/lib/hooks/useLocalStorage";
+import { getUserOrRedirect } from ".server/getUserUtils";
 
 export const loader = async ({ request }: LoaderArgs) => {
   const user = await getUserOrRedirect(request);

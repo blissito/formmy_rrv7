@@ -15,7 +15,7 @@ export const getUserOrRedirect = async (request: Request): Promise<User> => {
   if (!user) {
     throw redirect("/");
   }
-  return user;
+  return user as User;
 };
 
 export const getUserOrTriggerLogin = async (request: Request) => {
@@ -61,4 +61,66 @@ export const getAdminUserOrRedirect = async (
     throw redirect("/");
   }
   return user;
+};
+
+export const getProjectOwner = async ({
+  userId,
+  projectId,
+}: {
+  userId: string;
+  projectId: string;
+}) => {
+  return await db.project.findUnique({
+    where: {
+      id: projectId,
+      userId: userId,
+    },
+    include: {
+      answers: {
+        where: {
+          deleted: false, // Is this ok in here?
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      }, // consider appart to filter?
+    },
+  });
+};
+
+export const getPermission = ({
+  userId,
+  projectId,
+}: {
+  userId: string;
+  projectId: string;
+}) => {
+  return db.permission.findFirst({
+    where: {
+      userId,
+      projectId,
+    },
+    include: {
+      project: {
+        include: {
+          answers: {
+            where: {
+              deleted: false, // Is this ok in here?
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+        },
+      },
+    },
+  });
+};
+
+export const redirectIfUser = async (request: Request) => {
+  const cookie = request.headers.get("Cookie");
+  const session = await getSession(cookie);
+  if (session.has("userId")) {
+    throw redirect("/dash");
+  }
 };

@@ -2,9 +2,9 @@ import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useEffect, useState } from "react";
 import { Tab } from "@headlessui/react";
 import { Form, useFetcher } from "react-router";
-import { BigCTA } from "~/routes/_index";
 import { Button } from "./Button";
-import { PricingCard } from "./home/Pricing";
+import { PricingCard } from "./PricingCard";
+import { BigCTA } from "./BigCTA";
 
 // @TODO migrate to twMerge
 function classNames(...classes) {

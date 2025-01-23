@@ -1,5 +1,5 @@
 import { data as json } from "react-router";
-import { getUserOrRedirect } from "./dash";
+import { getUserOrRedirect } from ".server/getUserUtils";
 import { getPermission, getProjectIOwner } from "./dash_.$projectId";
 import type { Answer } from "@prisma/client";
 

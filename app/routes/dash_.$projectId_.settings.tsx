@@ -1,5 +1,5 @@
 import Nav from "~/components/NavBar";
-import { BackGround, getUserOrRedirect } from "./dash";
+import { BackGround, getUserOrRedirect } from ".server/getUserUtils";
 import { twMerge } from "tailwind-merge";
 import {
   Link,

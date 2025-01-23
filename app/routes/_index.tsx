@@ -1,87 +1,33 @@
-import { redirect } from "react-router";
-import { type ReactNode, useRef } from "react";
-import Nav from "~/components/NavBar";
-import { createSession, redirectToGoogle } from "~/lib/google.server";
-import { destroySession, getSession } from "~/sessions";
-import { twMerge } from "tailwind-merge";
-import getBasicMetaTags from "~/utils/getBasicMetaTags";
-import { GradientButton } from "~/components/ui/GradientButton";
-import { Hero } from "~/components/home/hero";
-import { CompaniesScroll } from "~/components/home/CompaniesScroll";
-import { Pricing } from "~/components/home/Pricing";
-import { WitoutFormmy } from "~/components/home/WithoutFormmy";
-import { Join } from "~/components/home/Join";
-import { FormmysTypes } from "~/components/home/FormmysTypes";
-import { Faq } from "~/components/home/Faq";
-import { BsTwitter } from "react-icons/bs";
-import { FaFacebook, FaYoutube } from "react-icons/fa";
-import { motion, useInView } from "framer-motion";
-import { AiFillInstagram } from "react-icons/ai";
-import { StickySection } from "~/components/home/StickySection";
 import { Link } from "react-router";
+import Nav from "~/components/NavBar";
+import { redirect } from "react-router";
+import { BsTwitter } from "react-icons/bs";
+import type { Route } from "./+types/_index";
+import { Hero } from "~/components/home/hero";
+import { type ReactNode, useRef } from "react";
+import { AiFillInstagram } from "react-icons/ai";
 import { Banner } from "~/components/home/Banner";
+import { motion, useInView } from "framer-motion";
+import { Pricing } from "~/components/home/Pricing";
+import { FaFacebook, FaYoutube } from "react-icons/fa";
+import getBasicMetaTags from "~/utils/getBasicMetaTags";
+import { destroySession, getSession } from "~/sessions";
+import { FormmysTypes } from "~/components/home/FormmysTypes";
+import { StickySection } from "~/components/home/StickySection";
+import { CompaniesScroll } from "~/components/home/CompaniesScroll";
+import { createSession, redirectToGoogle } from "~/lib/google.server";
+import { redirectIfUser } from ".server/getUserUtils";
 
-export const meta: V2_MetaFunction = () =>
+export const meta = () =>
   getBasicMetaTags({
     title: "Formularios de contacto para tu sitio web",
     description:
       "Formularios en tu sitio web fácilmente y sin necesidad de un backend ",
   });
 
-const content = [
-  {
-    title: "1. Crea un Formmy",
-    description: "Selecciona que tipo de formmy quieres y ponle nombre. ",
-    content: (
-      <div className="h-full w-full bg-[linear-gradient(to_bottom_right,var(--cyan-500),var(--emerald-500))] flex items-center justify-center text-white">
-        Collaborative Editing
-      </div>
-    ),
-  },
-  {
-    title: "2. Personaliza tu Formmy",
-    description:
-      "Selecciona los campos que quieres agregar a tu formmy, el estilo, el color del botón y agrega el mensaje final que quieres mostrar a tus clientes cuando completen el formulario.",
-    content: (
-      <div className="h-full w-full  flex items-center justify-center text-white">
-        <img
-          src="/linear.webp"
-          className="h-full w-full object-cover"
-          alt="linear board demo"
-        />
-      </div>
-    ),
-  },
-  {
-    title: "3. Copia y pega en tu HTML o JSX.",
-    description:
-      "Agregar formmy a tus proyectos es tan fácil, solo copia una línea de código y peegala en tu proyecto. ",
-    content: (
-      <div className="h-full w-full bg-[linear-gradient(to_bottom_right,var(--orange-500),var(--yellow-500))] flex items-center justify-center text-white">
-        Version control
-      </div>
-    ),
-  },
-  {
-    title: "4. Empiza a recibir mensajes de tus clientes",
-    description: "Administra los mensajes de tus clientes desde tu dashboard.",
-    content: (
-      <div className="h-full w-full bg-[linear-gradient(to_bottom_right,var(--cyan-500),var(--emerald-500))] flex items-center justify-center text-white">
-        Running out of content
-      </div>
-    ),
-  },
-];
 const ghost = "https://i.imgur.com/dvGDfHO.png";
-export const redirectIfUser = async (request: Request) => {
-  const cookie = request.headers.get("Cookie");
-  const session = await getSession(cookie);
-  if (session.has("userId")) {
-    throw redirect("/dash");
-  }
-};
 
-export const loader = async ({ request, params }: LoaderArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   await redirectIfUser(request);
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
@@ -92,12 +38,14 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   return { success };
 };
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
+
   if (intent === "google-login") {
     return redirectToGoogle<typeof redirect>(redirect);
   }
+
   if (intent === "logout") {
     const session = await getSession(request.headers.get("Cookie"));
     throw redirect("/", {
@@ -110,7 +58,6 @@ export const action = async ({ request }: ActionArgs) => {
 };
 
 export default function Index() {
-  // const { success } = useLoaderData<typeof loader>();
   return (
     <article id="theme-trick" className=" ">
       <div className="dark:bg-dark ">
@@ -118,13 +65,13 @@ export default function Index() {
         <Hero />
         <CompaniesScroll />
         <FormmysTypes />
-        <Banner />
+        {/* <Banner /> */}
         <StickySection />
         <Pricing />
-        <WitoutFormmy />
+        {/* <WitoutFormmy />
         <Faq />
         <Join />
-        <Footer />
+        <Footer /> */}
       </div>
     </article>
   );
@@ -286,36 +233,5 @@ const Footer = () => {
         <p>Todos los derechos reservados Formmy® 2024</p>
       </div>
     </section>
-  );
-};
-
-export const BigCTA = ({
-  onClick,
-  className,
-  containerClassName,
-  children,
-  ...props
-}: {
-  onClick?: () => void;
-  className?: string;
-  children?: ReactNode;
-  containerClassName: string;
-}) => {
-  return (
-    <GradientButton
-      className={twMerge(
-        (className =
-          "group bg-brand-500 dark:bg-dark dark:hover:bg-[#1D1E27] transition-all text-clear  dark:text-white border-neutral-200 dark:border-white/10"),
-        containerClassName
-      )}
-      {...props}
-      onClick={onClick}
-    >
-      {children ?? (
-        <p className="text-base">
-          Comenzar gratis <span className="group-hover:rotate-45"> &rarr;</span>
-        </p>
-      )}
-    </GradientButton>
   );
 };

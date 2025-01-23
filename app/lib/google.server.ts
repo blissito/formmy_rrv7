@@ -1,4 +1,4 @@
-import { redirect } from "react-router";
+import { createSearchParams, redirect } from "react-router";
 import { commitSession, getSession } from "~/sessions";
 import { db } from "~/utils/db.server";
 import { extraDataSchema, type ExtraData } from "~/utils/zod";
@@ -68,18 +68,16 @@ export function redirectToGoogle<Redirect extends (arg0: string) => Response>(
   }
   const obj = {
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri:
-      ENV === "development"
-        ? // @TODO: better way to automatically get permalink from netlify
-          // : "https://65bff06eda4e9c0008e359a9--darling-bonbon-616966.netlify.app",
-          localhost
-        : prodURL,
+    redirect_uri: ENV === "development" ? localhost : prodURL,
     response_type: "code",
     scope: "https://www.googleapis.com/auth/userinfo.email",
   };
-  const url =
-    "https://accounts.google.com/o/oauth2/auth?" + new URLSearchParams(obj);
-  return redirect(url);
+
+  const searchParams = createSearchParams(obj);
+  const url = new URL(
+    "https://accounts.google.com/o/oauth2/auth?" + searchParams
+  );
+  return redirect(url.toString());
 }
 
 export const createSession = async (code: string, request: Request) => {

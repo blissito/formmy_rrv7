@@ -1,6 +1,6 @@
+import { BigCTA } from "../BigCTA";
 import { StickyScroll } from "../ui/sticky-scroll-reveal";
 import { Form } from "react-router";
-import { BigCTA } from "~/routes/_index";
 
 export const StickySection = () => {
   return (
@@ -66,7 +66,7 @@ export const StickySection = () => {
               <img
                 className="object-cover h-full w-full rounded-3xl border border-white/10"
                 src="/assets/formmy-3.gif"
-                alt="perro"
+                alt="formmy-gif"
               />
             ),
             text: (

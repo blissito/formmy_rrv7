@@ -1,6 +1,5 @@
 import { Form } from "react-router";
 import { FlipWords } from "../ui/Flipwords";
-import { BigCTA } from "~/routes/_index";
 import {
   easeInOut,
   motion,
@@ -11,6 +10,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { twMerge } from "tailwind-merge";
+import { BigCTA } from "../BigCTA";
 
 export const Hero = () => {
   const words = ["contacto", "registro", "suscripción"];

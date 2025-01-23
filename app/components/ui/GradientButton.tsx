@@ -19,6 +19,7 @@ export function GradientButton({
   borderClassName,
   duration,
   className,
+  as,
   ...otherProps
 }: {
   borderRadius?: string;

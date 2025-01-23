@@ -1,6 +1,7 @@
 import { Form } from "react-router";
-import { BigCTA, ScrollReveal } from "~/routes/_index";
+import { ScrollReveal } from "~/routes/_index";
 import { AnimatedTooltip } from "../ui/animated-tooltip";
+import { BigCTA } from "../BigCTA";
 
 const people = [
   {
