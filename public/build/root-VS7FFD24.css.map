@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["css-side-effects-plugin-ns:app/styles/app.css"],
+  "sourcesContent": ["@import url(\"https://fonts.googleapis.com/css2?family=Licorice&display=swap\");\n\n.noscroll::-webkit-scrollbar {\n  display: none;\n}\n\n.licorice-regular {\n  font-family: \"Licorice\", cursive !important;\n  font-weight: 400;\n  font-style: normal;\n}\n"],
+  "mappings": ";;;AAEA;AACE;AAAA;AAGF;AACE;AACA;AACA;AAAA;",
+  "names": []
+}

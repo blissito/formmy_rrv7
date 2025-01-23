@@ -1,0 +1,143 @@
+generator client {
+  provider      = "prisma-client-js"
+  // output   = "node_modules/@prisma/client/.prisma/client"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+// TODO: Update ENV variables correctly everywhere pls.
+datasource db {
+  provider = "mongodb"
+  // url       = env("PRISMA_PROXY")
+  // url       = "prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiY2ZmM2UwOWUtZjQ5NC00N2M4LTkyYzEtNjI3MWJhN2Q2MTQ3IiwidGVuYW50X2lkIjoiMzVkYmFmMzZhODc2YmExOGJhYTg4ZmRhNTEzY2I2NTAxMDc0MWM2NmJlMGI0ODdjMWZjOWQ0N2RhZjhkMjliZCIsImludGVybmFsX3NlY3JldCI6IjlmZTk4NjZmLTQ3NjUtNGM5My04ZmEwLWQ1ODk4YWFkZDVmNyJ9.PpCul1PaDKaid5z647-R94GDN7dMNzgCFYZyRsD2OlE"
+  url      = env("MONGO_ATLAS")
+  // url      = env("MONGO_ATLAS")
+}
+
+enum CustomFieldTypes {
+  text
+  select
+}
+
+// V1
+type CustomInput {
+  type        CustomFieldTypes
+  title       String
+  name        String           @default("no_name")
+  placeholder String?
+  isRequired  Boolean          @default(false)
+  options     String[]         @default([])
+}
+
+model Answer {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  data      Json?
+  projectId String   @db.ObjectId
+  project   Project  @relation(fields: [projectId], references: [id])
+  favorite  Boolean  @default(false)
+  deleted   Boolean  @default(false)
+  opened    Boolean? @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+type Notifications {
+  new     Boolean @default(true)
+  members Boolean @default(false)
+  warning Boolean @default(false)
+}
+
+type ProjectSettings {
+  notifications Notifications
+}
+
+type ProjectConfig {
+  theme        String?
+  ctaColor     String?
+  inputs       String[]
+  border       String?
+  confetti     String?
+  message      String?
+  icon         String?
+  customInputs CustomInput[]
+  watermark    Boolean?      @default(false)
+}
+
+type Rights {
+  read   Boolean @default(true)
+  write  Boolean @default(false)
+  update Boolean @default(false)
+  delete Boolean @default(false)
+}
+
+enum Statuses {
+  pending
+  active
+  rejected
+}
+
+model Permission {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String
+  status        Statuses  @default(pending) // pending | active | rejected  
+  can           Rights?
+  notifications Boolean?  @default(true)
+  // relations
+  user          User?     @relation(fields: [userId], references: [id])
+  userId        String?   @db.ObjectId // when invitation is created, we have email only, not necessarily an existing user email
+  project       Project?  @relation(fields: [projectId], references: [id])
+  projectId     String    @db.ObjectId
+  // pending state, no user but email
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime? @updatedAt
+}
+
+enum FormmyTypes {
+  contact
+  subscription
+}
+
+model Project {
+  isActive    Boolean          @default(true)
+  slug        String           @unique
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String           @db.ObjectId
+  name        String
+  User        User             @relation(fields: [userId], references: [id])
+  // optionals
+  email       String?
+  // project permissions
+  permissions Permission[]
+  // Formmy 2025: support for horizontal suscription layout
+  type        FormmyTypes?     @default(contact)
+  answers     Answer[]
+  config      ProjectConfig
+  settings    ProjectSettings?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+enum Plans {
+  FREE
+  PRO
+}
+
+model User {
+  name            String?
+  email           String       @unique
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  access_token    String?
+  picture         String?
+  provider        String?
+  refresh_token   String?
+  plan            Plans        @default(FREE)
+  customerId      String?      @unique
+  subscriptionIds String[]
+  // relations
+  projects        Project[]
+  permissions     Permission[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}

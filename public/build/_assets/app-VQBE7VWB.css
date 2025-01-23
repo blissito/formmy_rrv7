@@ -1,0 +1,11 @@
+@import "https://fonts.googleapis.com/css2?family=Licorice&display=swap";
+
+/* app/styles/app.css */
+.noscroll::-webkit-scrollbar {
+  display: none;
+}
+.licorice-regular {
+  font-family: Licorice, cursive !important;
+  font-weight: 400;
+  font-style: normal;
+}
