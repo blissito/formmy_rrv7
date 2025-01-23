@@ -22,32 +22,38 @@ export const loader = async ({ params, request }: LoaderArgs) => {
   if (!project) {
     throw json(null, { status: 404 });
   }
+
+  const url = new URL(request.url);
+  const isDev = process.env.NODE_ENV === "development";
+  const height = project.config.inputs.length * 108 + 280; // avoiding scroll
+  const urls = {
+    iframe: isDev
+      ? `<iframe frameborder="0" id="formmy-iframe" title="formmy" width="560" height="${height}" src="http://${url.host}/embed/${project.id}" style="margin: 0 auto; display: block"
+    ></iframe>`
+      : `<iframe frameborder="0" id="formmy-iframe" title="formmy" width="560" height="760" src="https://${url.host}/embed/${project.id}" style="margin: 0 auto; display: block"
+    ></iframe>`,
+    preview: isDev
+      ? `http://localhost:3000/preview/${project.id}`
+      : `https://formmy.app/preview/${project.id}`,
+  };
+
   return {
+    urls,
     isPro: user?.plan === "PRO" ? true : false,
     projectId: project.id,
     config: project.config as ConfigSchema,
-    NODE_ENV: process.env.NODE_ENV,
-    height: project.config.inputs.length * 108 + 280, // In order to not scroll
     type: project.type,
   };
 };
 
 export default function ShareConfig() {
-  const { height, config, NODE_ENV, projectId, isPro, type } =
+  const { config, urls, projectId, isPro, type } =
     useLoaderData<typeof loader>();
   const [ok, setOk] = useState(false);
   const [showCheck, setShowCheck] = useState<string | null>(null);
-  const preview =
-    NODE_ENV === "development"
-      ? `http://localhost:3000/preview/${projectId}`
-      : `https://formmy.app/preview/${projectId}`;
+  const preview = urls.preview;
 
-  const iframe =
-    NODE_ENV === "development"
-      ? `<iframe frameborder="0" id="formmy-iframe" title="formmy" width="560" height="${height}" src="http://localhost:3000/embed/${projectId}" style="margin: 0 auto; display: block"
-    ></iframe>`
-      : `<iframe frameborder="0" id="formmy-iframe" title="formmy" width="560" height="760" src="https://formmy.app/embed/${projectId}" style="margin: 0 auto; display: block"
-      ></iframe>`;
+  const iframe = urls.iframe;
 
   const handleCopy = (link: string) => () => {
     navigator.clipboard.writeText(link);
