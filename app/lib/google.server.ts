@@ -3,12 +3,8 @@ import { commitSession, getSession } from "~/sessions";
 import { db } from "~/utils/db.server";
 import { extraDataSchema, type ExtraData } from "~/utils/zod";
 
-const prodURL = "https://www.formmy.app";
-const localhost = "http://localhost:3000";
-
 const GOOGLE_SECRET = process.env.GOOGLE_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const ENV = process.env.NODE_ENV;
 
 export const getExtraData = (access_token: string): ExtraData => {
   // @TODO: get displayName
@@ -29,19 +25,24 @@ export const getExtraData = (access_token: string): ExtraData => {
 };
 
 export const getAccessToken = async <Code extends string>(
-  code: Code
-): Promise<
-  | { error?: string; ok?: boolean; access_token?: string }
-  | ReturnType<typeof Error>
-> => {
+  code: Code,
+  request: Request
+): Promise<{ error?: string; ok?: boolean; access_token?: string }> => {
   if (!GOOGLE_SECRET || !GOOGLE_CLIENT_ID)
-    return new Error("missing env object");
+    return { error: "missing env object", ok: false };
+
+  const localURL = new URL(request.url);
+  const redirect_uri =
+    process.env.NODE_ENV === "production"
+      ? `https://${localURL.host}`
+      : `http://${localURL.host}`;
+
   const search = new URLSearchParams({
     code,
-    // client_secret: GOOGLE_SECRET,
+    client_secret: GOOGLE_SECRET,
     grant_type: "authorization_code",
-    // client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: ENV === "development" ? localhost : prodURL,
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri,
     scope: "https://www.googleapis.com/auth/userinfo.email",
   });
   const url = "https://oauth2.googleapis.com/token?" + search;
@@ -61,17 +62,20 @@ export const getAccessToken = async <Code extends string>(
 
 export function redirectToGoogle<Redirect extends (arg0: string) => Response>(
   redirect: Redirect,
-  origin: string
+  host: string
   // props: { params: Record<string, string> }
 ): Response {
-  console.log("origin:", origin);
+  console.log("host:", host);
 
   if (!GOOGLE_SECRET || !GOOGLE_CLIENT_ID) {
     throw new Error("Missing env variables");
   }
   const obj = {
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: origin,
+    redirect_uri:
+      process.env.NODE_ENV === "production"
+        ? "https://" + host
+        : "http://" + host,
     response_type: "code",
     scope: "https://www.googleapis.com/auth/userinfo.email",
   };
@@ -84,10 +88,19 @@ export function redirectToGoogle<Redirect extends (arg0: string) => Response>(
 }
 
 export const createSession = async (code: string, request: Request) => {
-  const data = await getAccessToken(code);
+  const data: {
+    error?: string;
+    ok?: boolean;
+    access_token?: string;
+  } = await getAccessToken(code, request);
   if (data.error) throw new Error("token denined by Google");
   if (!data.access_token) throw new Error("No access_token found");
-  const extra = await getExtraData(data.access_token);
+  const extra: {
+    name?: string;
+    displayName?: string;
+    email: string;
+    picture: string;
+  } = await getExtraData(data.access_token);
   if (!extra.email) {
     throw new Error("permission denined by Google");
   }

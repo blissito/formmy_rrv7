@@ -131,15 +131,17 @@ export const createCheckoutSessionURL = async ({
 
   const isDevelopment = process.env.NODE_ENV === "development";
   const DOMAIN = origin;
+  const stripe = getClient();
 
-  const stripe = new Stripe(
-    (isDevelopment
-      ? process.env.TEST_STRIPE_PV
-      : process.env.STRIPE_PRIVATE_KEY) ?? ""
-  );
   const ANUAL_PRICE = isDevelopment
     ? "price_1OinGRDtYmGT70YtS3fKsenE"
-    : "price_1MowQULkdIwHu7ixraBm864M"; // prod
+    : "price_1OgF7RDtYmGT70YtcGL3AxDQ"; // prod
+
+  const MONTHLY_PLAN = isDevelopment
+    ? "price_1OinFxDtYmGT70YtW9UbUdpM"
+    : "price_1OgF7RDtYmGT70YtJB3kRl9T"; // prod
+
+  // price_1MowQULkdIwHu7ixraBm864M
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
@@ -163,9 +165,7 @@ export const getStripeURL = async (
 ) => {
   let price;
   if (type === "month") {
-    price = isDevelopment
-      ? "price_1OinFxDtYmGT70YtW9UbUdpM"
-      : "price_1OgF7RDtYmGT70YtJB3kRl9T";
+    price = MONTHLY_PLAN;
   }
 
   const user = await getUserOrTriggerLogin(request);

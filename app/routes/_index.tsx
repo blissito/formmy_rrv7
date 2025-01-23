@@ -60,7 +60,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   if (intent === "google-login") {
     const url = new URL(request.url);
-    return redirectToGoogle<typeof redirect>(redirect, url.origin);
+    return redirectToGoogle<typeof redirect>(redirect, url.host);
   }
 
   if (intent === "logout") {
