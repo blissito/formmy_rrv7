@@ -60,15 +60,18 @@ export const getAccessToken = async <Code extends string>(
 };
 
 export function redirectToGoogle<Redirect extends (arg0: string) => Response>(
-  redirect: Redirect
+  redirect: Redirect,
+  origin: string
   // props: { params: Record<string, string> }
 ): Response {
+  console.log("origin:", origin);
+
   if (!GOOGLE_SECRET || !GOOGLE_CLIENT_ID) {
     throw new Error("Missing env variables");
   }
   const obj = {
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: ENV === "development" ? localhost : prodURL,
+    redirect_uri: origin,
     response_type: "code",
     scope: "https://www.googleapis.com/auth/userinfo.email",
   };

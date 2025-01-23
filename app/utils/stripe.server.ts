@@ -118,9 +118,11 @@ export const getStripeEvent = async (
 
 export const createCheckoutSessionURL = async ({
   user,
+  origin,
   coupon,
   price, // anual by default
 }: {
+  origin: string;
   coupon?: string;
   user: User;
   price?: string;
@@ -128,7 +130,7 @@ export const createCheckoutSessionURL = async ({
   if (!user) throw new Error("Need a user to create a customer");
 
   const isDevelopment = process.env.NODE_ENV === "development";
-  const DOMAIN = isDevelopment ? "http://localhost:3000" : "https://formmy.app";
+  const DOMAIN = origin;
 
   const stripe = new Stripe(
     (isDevelopment
@@ -167,7 +169,11 @@ export const getStripeURL = async (
   }
 
   const user = await getUserOrTriggerLogin(request);
-  const url = await createCheckoutSessionURL({ user, price });
+  const url = await createCheckoutSessionURL({
+    user,
+    price,
+    origin: new URL(request.url).origin,
+  });
   return url;
 };
 

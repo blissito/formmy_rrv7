@@ -21,6 +21,19 @@ import { WitoutFormmy } from "~/components/home/WithoutFormmy";
 import { Faq } from "~/components/home/Faq";
 import { Join } from "~/components/home/Join";
 
+// href: 'http://localhost:3000/',
+// origin: 'http://localhost:3000',
+// protocol: 'http:',
+// username: '',
+// password: '',
+// host: 'localhost:3000',
+// hostname: 'localhost',
+// port: '3000',
+// pathname: '/',
+// search: '',
+// searchParams: URLSearchParams {},
+// hash: ''
+
 export const meta = () =>
   getBasicMetaTags({
     title: "Formularios de contacto para tu sitio web",
@@ -46,7 +59,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const intent = formData.get("intent");
 
   if (intent === "google-login") {
-    return redirectToGoogle<typeof redirect>(redirect);
+    const url = new URL(request.url);
+    return redirectToGoogle<typeof redirect>(redirect, url.origin);
   }
 
   if (intent === "logout") {
