@@ -12,7 +12,7 @@ export const Pricing = () => {
         <strong>PRO</strong> cuando lo necesites.
       </p>
       <ScrollReveal>
-        <PriceCards plan="FREE" />
+        <PriceCards />
       </ScrollReveal>
     </section>
   );

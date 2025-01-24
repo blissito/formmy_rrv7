@@ -32,7 +32,6 @@ const sendAllNotifications = async (projectId: string) => {
 export const action = async ({ request, params }: ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
-  const url = new URL(request.url);
 
   if (intent === "toggle_notifications_for_permission") {
     const permissionId = formData.get("permissionId") as string;
@@ -53,9 +52,6 @@ export const action = async ({ request, params }: ActionArgs) => {
     }; // @todo better schema, check subjects types from openAuth project
     const { errors, isValid } = validateBasic(form); // @TODO: will need more advanced schema (maybe) validation
     if (!isValid || !form.projectId) {
-      console.log("ERRORS:", errors);
-      console.log("isValid:", isValid);
-      console.log("Form:", form);
       return json(
         {
           ok: false,

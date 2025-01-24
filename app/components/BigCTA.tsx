@@ -5,6 +5,7 @@ import { Link } from "react-router";
 
 export const BigCTA = ({
   onClick,
+  isLoading,
   className,
   containerClassName,
   children,
@@ -12,6 +13,7 @@ export const BigCTA = ({
   type,
   ...props
 }: {
+  isLoading?: boolean;
   type?: "button" | "submit";
   onClick?: () => void;
   className?: string;
@@ -21,6 +23,7 @@ export const BigCTA = ({
 }) => {
   return (
     <GradientButton
+      isLoading={isLoading}
       className={cn(
         (className =
           "group bg-brand-500 dark:bg-dark dark:hover:bg-[#1D1E27] transition-all text-clear  dark:text-white border-neutral-200 dark:border-white/10"),
