@@ -1,14 +1,22 @@
 import { useState } from "react";
 import { Tab } from "@headlessui/react";
-import { Form, useFetcher } from "react-router";
+import { useFetcher } from "react-router";
 import { Button } from "./Button";
 import { PricingCard } from "./PricingCard";
 import { BigCTA } from "./BigCTA";
 import { cn } from "~/lib/utils";
 
-export const PriceCards = ({ plan }: { plan: string }) => {
+export const PriceCards = ({ plan }: { plan?: string }) => {
   const [activeTab, set] = useState(1);
   const fetcher = useFetcher();
+  const isLoading = fetcher.state !== "idle";
+
+  const handleLogin = () => {
+    if (plan) return;
+
+    fetcher.submit({ intent: "google-login" }, { method: "post" });
+  };
+
   return (
     <div className="w-full grow-2 ">
       <div className="flex-col flex-wrap flex justify-between relative">
@@ -53,17 +61,13 @@ export const PriceCards = ({ plan }: { plan: string }) => {
               <PricingCard
                 plan={plan}
                 button={
-                  <Form method="post" className="min-w-full">
-                    <BigCTA
-                      disabled
-                      type="submit"
-                      name="intent"
-                      value="google-login"
-                      className="min-w-full"
-                    >
-                      Este es tu plan
-                    </BigCTA>
-                  </Form>
+                  <BigCTA
+                    isLoading={isLoading}
+                    onClick={handleLogin}
+                    className="min-w-full"
+                  >
+                    {plan ? "Este es tu plan" : "Comenzar gratis"}
+                  </BigCTA>
                 }
                 // isLoading={googleLogin.isRunning}
                 name="Free"
@@ -145,8 +149,12 @@ export const PriceCards = ({ plan }: { plan: string }) => {
             <Tab.Panel className="flex justify-center gap-10">
               <PricingCard
                 button={
-                  <BigCTA disabled className="min-w-full">
-                    Este es tu plan
+                  <BigCTA
+                    isLoading={isLoading}
+                    className="min-w-full"
+                    onClick={handleLogin}
+                  >
+                    {plan ? "Este es tu plan" : "Comenzar gratis"}
                   </BigCTA>
                 }
                 name="Free"

@@ -10,6 +10,7 @@ import {
 import { useRef } from "react";
 import { cn } from "~/lib/utils";
 import { twMerge } from "tailwind-merge";
+import { SVGSpinner } from "../Spinner";
 
 export function GradientButton({
   borderRadius = "1.75rem",
@@ -19,9 +20,11 @@ export function GradientButton({
   borderClassName,
   duration,
   className,
+  isLoading,
   as,
   ...otherProps
 }: {
+  isLoading?: boolean;
   borderRadius?: string;
   children: React.ReactNode;
   as?: any;
@@ -66,7 +69,7 @@ export function GradientButton({
           borderRadius: `calc(${borderRadius} * 0.96)`,
         }}
       >
-        {children}
+        {isLoading ? <SVGSpinner /> : children}
       </div>
     </Component>
   );

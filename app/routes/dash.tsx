@@ -134,9 +134,7 @@ export default function Dash() {
       )
     );
   };
-
   const isLimited = user.plan === "PRO" ? false : projects.length > 2;
-
   // if from landing, show modal with tiers
   useEffect(() => {
     const value = get("from_landing");
@@ -146,7 +144,6 @@ export default function Dash() {
     }
     /* eslint-disable */
   }, []);
-
   // invite modal close
   useEffect(() => {
     if (actionData?.close) {
@@ -155,7 +152,6 @@ export default function Dash() {
     }
   }, [actionData]);
   const [showInviteModal, setShowInviteModal] = useState(!!permission);
-
   return (
     <>
       <ConfirmModal
