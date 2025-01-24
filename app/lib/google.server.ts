@@ -68,7 +68,7 @@ export function redirectToGoogle<Redirect extends (arg0: string) => Response>(
   const redirect_uri =
     host && process.env.NODE_ENV === "production"
       ? "https://" + host
-      : "https://www.formmy.app";
+      : "http://" + host;
 
   if (!GOOGLE_SECRET || !GOOGLE_CLIENT_ID) {
     throw new Error("Missing env variables");

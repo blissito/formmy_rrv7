@@ -149,7 +149,6 @@ export const PriceCards = ({ plan }: { plan: string }) => {
                     Este es tu plan
                   </BigCTA>
                 }
-                // isLoading={googleLogin.isRunning}
                 name="Free"
                 description="Perfecto para ti y tu sitio web"
                 price="0"
