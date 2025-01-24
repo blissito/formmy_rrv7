@@ -32,6 +32,7 @@ const sendAllNotifications = async (projectId: string) => {
 export const action = async ({ request, params }: ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
+  const url = new URL(request.url);
 
   if (intent === "toggle_notifications_for_permission") {
     const permissionId = formData.get("permissionId") as string;
@@ -60,7 +61,6 @@ export const action = async ({ request, params }: ActionArgs) => {
           ok: false,
           errors: {
             ...errors,
-
             projectId: !form.projectId && "No projectId present",
           },
           data: form,
@@ -69,11 +69,13 @@ export const action = async ({ request, params }: ActionArgs) => {
       );
     }
     // saving V1
-    form = { ...form, intent: undefined };
-    await saveForm({ form, projectId: form.projectId });
+    const projectId = form.projectId;
+    delete form.intent;
+    delete form.projectId;
+    await saveForm({ form, projectId });
     // notify
-    await sendAllNotifications(form.projectId);
-    return json({ ok: true });
+    await sendAllNotifications(projectId);
+    return new Response(JSON.stringify({ ok: true }));
   }
 
   return null;

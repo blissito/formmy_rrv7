@@ -59,7 +59,7 @@ export const AllFormmy = ({
   config: ConfigSchema;
 }) => {
   const fetcher = useFetcher();
-  const ok = fetcher.data?.ok;
+  const ok = fetcher.data ? JSON.parse(fetcher.data).ok : false;
 
   return (
     <main
@@ -105,7 +105,7 @@ export const NakedFormmy = ({
   config: ConfigSchema;
 }) => {
   const fetcher = useFetcher();
-  const ok = fetcher.data?.ok;
+  const ok = fetcher.data ? JSON.parse(fetcher.data).ok : false;
   return (
     <>
       <Message
