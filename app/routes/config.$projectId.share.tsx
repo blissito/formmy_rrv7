@@ -10,8 +10,9 @@ import toast, { Toaster } from "react-hot-toast";
 import { getUserOrNull } from ".server/getUserUtils";
 import { useState } from "react";
 import { CopyOrCheckButton } from "~/components/CopyOrCheckButton";
+import type { Route } from "./+types/config.$projectId.share";
 
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: Route.LoaderArgs) => {
   const user = await getUserOrNull(request);
   const project = await db.project.findUnique({
     where: {
