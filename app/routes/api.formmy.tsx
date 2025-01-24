@@ -48,19 +48,16 @@ export const action = async ({ request, params }: ActionArgs) => {
   if (intent === "submit_formmy") {
     let form = Object.fromEntries(formData) as {
       projectId: string;
-      name: string;
+      email: string;
     }; // @todo better schema, check subjects types from openAuth project
     const { errors, isValid } = validateBasic(form); // @TODO: will need more advanced schema (maybe) validation
     if (!isValid || !form.projectId) {
-      return json(
-        {
+      return new Response(
+        JSON.stringify({
           ok: false,
-          errors: {
-            ...errors,
-            projectId: !form.projectId && "No projectId present",
-          },
           data: form,
-        },
+          errors,
+        }),
         { status: 400 }
       );
     }
