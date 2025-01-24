@@ -5,6 +5,7 @@ import Spinner from "../Spinner";
 import type { CustomInputType, ConfigSchema } from "~/utils/zod";
 import type { ReactNode } from "react";
 import { cn } from "~/lib/utils";
+import type { ZodError } from "zod";
 export { type ConfigSchema, configSchema } from "~/utils/zod"; // This is for importing v1 all together on other pages
 
 export const BASIC_INPUTS = ["name", "email", "message", "phone", "company"];
@@ -82,14 +83,17 @@ export default function Formmy({
       return config.customInputs.find((inp) => inp.title === name);
     }
   });
-  const errors = fetcher.data?.errors;
   const isDisabled = fetcher.state !== "idle";
   const handleSubmit =
     isDemo && !onSubmit
       ? () => false
       : isDemo && onSubmit
       ? onSubmit
-      : undefined;
+      : undefined; // used only for demos
+
+  const errors: ZodError[] = fetcher.data
+    ? JSON.parse(fetcher.data).errors
+    : [];
 
   return (
     <article

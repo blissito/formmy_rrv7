@@ -34,7 +34,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
     ></iframe>`,
     preview: isDev
       ? `http://localhost:3000/preview/${project.id}`
-      : `https://formmy.app/preview/${project.id}`,
+      : `https://${url.host}/preview/${project.id}`,
   };
 
   return {
