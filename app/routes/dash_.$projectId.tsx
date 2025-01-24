@@ -192,7 +192,7 @@ export default function Detail() {
           <nav className="flex items-center gap-2 flex-wrap ">
             <div className="flex flex-col items-start gap-2 mr-auto mb-0">
               <div className="flex gap-1 items-center">
-                <Link to="/" className={iconBtnClass}>
+                <Link to="/dash" className={iconBtnClass}>
                   <IoReturnUpBackOutline />
                 </Link>
               </div>

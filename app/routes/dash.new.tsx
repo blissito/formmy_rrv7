@@ -34,6 +34,11 @@ export const action: ActionFunction = async ({ request }) => {
         confetti: "emoji",
         customInputs: [],
       },
+      settings: {
+        notifications: {
+          new: true,
+        },
+      },
     };
     const validated = projectSchema.safeParse(body);
     if (!validated.success) {
@@ -44,7 +49,7 @@ export const action: ActionFunction = async ({ request }) => {
             issues: [
               {
                 path: "Nombre",
-                message: "Ya tienes un proyecto con ese nombre",
+                message: "No podemos crear tu proyecto ahora mismo",
               },
             ],
           },

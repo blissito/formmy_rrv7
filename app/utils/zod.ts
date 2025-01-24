@@ -101,9 +101,9 @@ const booleanString = z
   .transform((value) => value === "true");
 
 export const notificationsSchema = z.object({
-  new: booleanString,
-  members: booleanString,
-  warning: booleanString,
+  new: z.coerce.boolean(),
+  members: z.coerce.boolean().optional(),
+  warning: z.coerce.boolean().optional(),
 });
 
 export type Notifications = z.infer<typeof notificationsSchema>;

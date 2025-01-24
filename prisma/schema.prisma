@@ -42,9 +42,9 @@ model Answer {
 }
 
 type Notifications {
-  new     Boolean @default(true)
-  members Boolean @default(false)
-  warning Boolean @default(false)
+  new     Boolean  @default(true)
+  members Boolean? @default(false)
+  warning Boolean? @default(false)
 }
 
 type ProjectSettings {

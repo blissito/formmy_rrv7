@@ -6,8 +6,9 @@ import { Toggle } from "~/components/Switch";
 import { db } from "~/utils/db.server";
 import { getUserOrNull } from ".server/getUserUtils";
 import { type Notifications, notificationsSchema } from "~/utils/zod";
+import type { Route } from "./+types/dash_.$projectId_.settings.notifications";
 
-export const action = async ({ request, params }: ActionArgs) => {
+export const action = async ({ request, params }: Route.ActionArgs) => {
   const formData = await request.formData();
   const notifications = Object.fromEntries(formData);
   const validData = notificationsSchema.parse(notifications) as Notifications;
@@ -21,7 +22,7 @@ export const action = async ({ request, params }: ActionArgs) => {
 };
 
 // @TODO we need to know if user is prom in this route
-export const loader = async ({ params, request }: LoaderArgs) => {
+export const loader = async ({ params, request }: Route.LoaderArgs) => {
   const user = await getUserOrNull(request); // why? well, not sure... just don't want to redirect.
   const project = await db.project.findUnique({
     where: { id: params.projectId },
@@ -29,7 +30,6 @@ export const loader = async ({ params, request }: LoaderArgs) => {
   if (!project) throw json(null, { status: 404 });
   const isPro = user?.plan === "PRO" ? true : false;
   return {
-    // isPro: true,
     isPro,
     notifications: project.settings?.notifications,
   };
@@ -37,7 +37,7 @@ export const loader = async ({ params, request }: LoaderArgs) => {
 
 export default function Route() {
   const {
-    notifications = { new: true, members: false, warning: false }, // true defaults ;)
+    notifications = { new: false, members: false, warning: false }, // true defaults ;)
     isPro,
   } = useLoaderData<typeof loader>();
   // let settings = {};

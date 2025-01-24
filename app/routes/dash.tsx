@@ -136,7 +136,6 @@ export default function Dash() {
   };
 
   const isLimited = user.plan === "PRO" ? false : projects.length > 2;
-  const isPro = user.plan === "PRO";
 
   // if from landing, show modal with tiers
   useEffect(() => {
@@ -156,13 +155,6 @@ export default function Dash() {
     }
   }, [actionData]);
   const [showInviteModal, setShowInviteModal] = useState(!!permission);
-
-  useEffect(() => {
-    if (!isPro) {
-      console.log("LIMITED_ACCOUNT");
-      setIsProOpen(true);
-    }
-  }, [isPro]);
 
   return (
     <>
@@ -239,7 +231,7 @@ export default function Dash() {
                 />
               </div>
 
-              {isPro && (
+              {!isLimited && (
                 <Link to="new">
                   <button className="h-10 w-[auto] md:min-w-[120px] flex gap-1 items-center bg-brand-500 py-3 px-6 rounded-md text-clear hover:ring transition-all">
                     + <span className="">Formmy</span>
@@ -247,7 +239,7 @@ export default function Dash() {
                 </Link>
               )}
 
-              {!isPro && (
+              {isLimited && (
                 <button
                   className="relative bg-gray-300 h-10 w-[auto] md:min-w-[120px] flex gap-1 items-center py-3 px-6 rounded-md text-gray-400 dark:text-gray-500 hover:ring transition-all"
                   onClick={() => setIsProOpen(true)}

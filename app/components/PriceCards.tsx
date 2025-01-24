@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tab } from "@headlessui/react";
-import { Form, Link, useFetcher } from "react-router";
+import { Form, useFetcher } from "react-router";
 import { Button } from "./Button";
 import { PricingCard } from "./PricingCard";
 import { BigCTA } from "./BigCTA";
