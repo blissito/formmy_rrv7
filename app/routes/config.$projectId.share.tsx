@@ -57,8 +57,7 @@ export default function ShareConfig() {
 
   const handleCopy = (link: string) => () => {
     navigator.clipboard.writeText(link);
-    toast("Link copiado", { position: "bottom-right", icon: "👻" });
-    toast.success("Link copiado", { position: "top-right" });
+    toast.success("Link copiado al portapapeles", { position: "top-right" });
     // check icon
     setShowCheck(link);
     setTimeout(() => setShowCheck(false), 1000);
