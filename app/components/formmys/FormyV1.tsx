@@ -256,7 +256,7 @@ const SelectField = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className={twMerge("flex flex-col gap-2 mb-8", className ?? "")}
+      className={twMerge("flex flex-col gap-2 mb-8 w-full", className ?? "")}
     >
       <label
         className="block text-sm font-semibold dark:text-white"
