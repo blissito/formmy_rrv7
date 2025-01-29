@@ -112,14 +112,14 @@ export const Hero = () => {
           />
         </div>
         <div className="flex flex-col items-center pt-[40vh] md:pt-0 px-4 md:px-0 ">
-          <h1 className="text-4xl lg:text-7xl !z-[80] text-dark dark:text-white font-bold text-center  mt-16 ">
+          <h1 className="text-4xl lg:text-7xl !z-[80] text-dark dark:text-white font-bold text-center mt-8  md:mt-16 ">
             Agrega formularios de <FlipWords className="" words={words} />{" "}
             <br />
           </h1>
           <h1 className="text-4xl lg:text-7xl !z-[80] text-dark dark:text-white font-bold text-center -mt-1 md:mt-6 ">
             a tu sitio web fácilmente
           </h1>
-          <span className="text-xl lg:text-2xl  text-gray-600 dark:text-irongray font-sans font-extralight mt-4 mb-16">
+          <span className="text-xl lg:text-2xl  text-gray-600 dark:text-irongray font-sans font-extralight mt-4 mb-10 md:mb-16">
             Sin código. Copia, pega y listo.
           </span>
           <Form method="post">
