@@ -45,7 +45,7 @@ export const ProTag = ({
       <Transition appear show={localOpen} as={Fragment}>
         <Dialog
           as="div"
-          className="relative z-10"
+          className="relative z-[99]"
           onClose={closeModal}
           open={localOpen}
         >
@@ -61,7 +61,7 @@ export const ProTag = ({
             <div className="fixed inset-0 bg-black bg-opacity-25 dark:bg-opacity-50" />
           </Transition.Child>
 
-          <div className="fixed inset-0 overflow-y-auto">
+          <div className="fixed inset-0 overflow-y-auto ">
             <div className="flex min-h-full items-center justify-center  text-center">
               <Transition.Child
                 as={Fragment}
@@ -72,7 +72,7 @@ export const ProTag = ({
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel className="w-full relative max-w-7xl transform overflow-hidden rounded-2xl bg-clear dark:bg-space-900 pt-6 pb-10 px-10 text-left align-middle shadow-xl transition-all">
+                <Dialog.Panel className="w-full relative max-w-7xl transform overflow-hidden  rounded-2xl bg-clear dark:bg-space-900 pt-6 pb-10 px-10 text-left align-middle shadow-xl transition-all">
                   <button onClick={closeModal}>
                     <img
                       className="absolute top-6 right-6 dark:opacity-40 z-20"

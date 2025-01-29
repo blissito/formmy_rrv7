@@ -57,17 +57,18 @@ export const PriceCards = ({ plan }: { plan?: string }) => {
           </div>
 
           <Tab.Panels>
-            <Tab.Panel className="flex justify-center gap-10">
+            <Tab.Panel className="flex flex-wrap justify-center gap-10">
               <PricingCard
                 plan={plan}
                 button={
-                  <BigCTA
+                  <Button
                     isLoading={isLoading}
+                    type="button"
+                    className="w-full text-clear mt-0"
                     onClick={handleLogin}
-                    className="min-w-full"
                   >
                     {plan ? "Este es tu plan" : "Comenzar gratis"}
-                  </BigCTA>
+                  </Button>
                 }
                 // isLoading={googleLogin.isRunning}
                 name="Free"
@@ -146,16 +147,17 @@ export const PriceCards = ({ plan }: { plan?: string }) => {
                 ]}
               />
             </Tab.Panel>
-            <Tab.Panel className="flex justify-center gap-10">
+            <Tab.Panel className="flex flex-wrap justify-center gap-10">
               <PricingCard
                 button={
-                  <BigCTA
+                  <Button
                     isLoading={isLoading}
-                    className="min-w-full"
+                    type="button"
+                    className="w-full text-clear mt-0"
                     onClick={handleLogin}
                   >
                     {plan ? "Este es tu plan" : "Comenzar gratis"}
-                  </BigCTA>
+                  </Button>
                 }
                 name="Free"
                 description="Perfecto para ti y tu sitio web"
