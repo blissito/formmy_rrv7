@@ -1,16 +1,11 @@
 generator client {
   provider      = "prisma-client-js"
-  // output   = "node_modules/@prisma/client/.prisma/client"
   binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
-// TODO: Update ENV variables correctly everywhere pls.
 datasource db {
   provider = "mongodb"
-  // url       = env("PRISMA_PROXY")
-  // url       = "prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiY2ZmM2UwOWUtZjQ5NC00N2M4LTkyYzEtNjI3MWJhN2Q2MTQ3IiwidGVuYW50X2lkIjoiMzVkYmFmMzZhODc2YmExOGJhYTg4ZmRhNTEzY2I2NTAxMDc0MWM2NmJlMGI0ODdjMWZjOWQ0N2RhZjhkMjliZCIsImludGVybmFsX3NlY3JldCI6IjlmZTk4NjZmLTQ3NjUtNGM5My04ZmEwLWQ1ODk4YWFkZDVmNyJ9.PpCul1PaDKaid5z647-R94GDN7dMNzgCFYZyRsD2OlE"
   url      = env("MONGO_ATLAS")
-  // url      = env("MONGO_ATLAS")
 }
 
 enum CustomFieldTypes {

@@ -221,7 +221,7 @@ export default function Dash() {
                   placeholder="Busca un Formmy"
                   className={twMerge(
                     "disabled:cursor-not-allowed",
-                    " cursor-pointer text-gray-600 dark:text-white pl-8 border-none input dark:bg-[#1D2027] bg-[#F7F7F9] placeholder:text-space-300 placeholder-gray-400 focus:ring-1 focus:ring-brand-500 placeholder:font-light rounded-lg w-full"
+                    " cursor-pointer text-gray-600 dark:text-white pl-8 border-none input dark:bg-[#141419] bg-[#F7F7F9] placeholder:text-space-300 placeholder-gray-400 focus:ring-1 focus:ring-brand-500 placeholder:font-light rounded-lg w-full"
                   )}
                   name="search"
                 />
@@ -356,9 +356,9 @@ export const ModificameBRENDIPurpleCorner = () => {
 
 export const ModificameBRENDIYellowCorner = () => {
   return (
-    <div className="group relative border-[1px] text-gray-400 border-gray-400 border-dashed w-7 h-7 flex items-center justify-center rounded-full">
+    <div className="group relative border-[1px] text-gray-400 dark:text-gray-400/50 dark:border-gray-400/50 border-gray-400 border-dashed w-7 h-7 flex items-center justify-center rounded-full">
       <IoMailUnreadOutline />
-      <div className="scale-0 group-hover:scale-100 absolute top-8 transition-all -right-4 bg-dark text-white h-4 w-fit px-2 text-xs rounded-md">
+      <div className="scale-0 group-hover:scale-100 absolute top-8 transition-all  flex items-center h-5 dark:border-gray-400/10 dark:border-[1px] -right-4 bg-dark text-white  w-fit px-2 text-xs rounded-md">
         Suscripción
       </div>
     </div>

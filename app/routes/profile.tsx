@@ -112,7 +112,7 @@ export const CardFree = () => {
   };
 
   return (
-    <section className="border-gray-100 dark:bg-[#23252D]  dark:border-none border-[1px] rounded-2xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap">
+    <section className="border-gray-100 dark:bg-[#141419]  dark:border-none border-[1px] rounded-2xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap">
       <Form method="post" className="min-w-[320px] relative pb-20 md:pb-0">
         <h3 className="text-space-800 dark:text-white text-2xl font-semibold">
           FREE
@@ -168,7 +168,7 @@ export const CardPro = ({
         backgroundPosition: "bottom right",
         backgroundRepeat: "no-repeat",
       }}
-      className="border-gray-100 border-[1px] dark:bg-[#23252D] dark:border-none rounded-2xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
+      className="border-gray-100 border-[1px] dark:bg-[#141419] dark:border-none rounded-2xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
     >
       <Form method="post" className="min-w-[320px] relative pb-20 md:pb-0">
         <h3 className="text-space-800 dark:text-white text-2xl font-semibold">
