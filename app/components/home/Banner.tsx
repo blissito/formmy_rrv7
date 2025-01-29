@@ -6,7 +6,7 @@ import { BigCTA } from "../BigCTA";
 // @ Meteors require Banner to be wrapped in a Suspense!
 export const Banner = () => {
   return (
-    <section className="max-w-[90%] border-white/10 border-[1px]  xl:max-w-7xl w-full mx-auto rounded-[40px] bg-dark my-0 p-8 md:py-16 md:px-[10%] xl:px-[5%] relative overflow-hidden text-center">
+    <section className="max-w-[90%] border-white/10 border-[1px]  xl:max-w-7xl w-full mx-auto rounded-[40px] bg-dark my-0 p-8 md:py-16 md:px-[10%] mb-20 xl:px-[5%] relative overflow-hidden text-center">
       <h2 className="text-2xl lg:text-4xl text-clear font-bold">
         ¡Prueba Formmy! No te vas a arrepentir.
       </h2>
