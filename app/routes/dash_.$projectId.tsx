@@ -316,7 +316,7 @@ export const SearchBar = ({
           onChange={(event) => onSearch(event.currentTarget.value)}
           type="search"
           placeholder="Busca un mensaje"
-          className="border-none dark:bg-[#141419] bg-[#F7F7F9] pl-8 placeholder:text-space-300 placeholder-gray-400 placeholder:font-light  w-full rounded-lg  outline-none focus:ring-brand-500 focus:ring-1 border-brand-500"
+          className="border-none dark:bg-[#141419] bg-[#F7F7F9] pl-8 placeholder:text-space-300 dark:placeholder-gray-400 placeholder:font-light  w-full rounded-lg  outline-none focus:ring-brand-500 focus:ring-1 border-brand-500"
           name="search"
         />
       </div>
@@ -415,7 +415,7 @@ const MessagesViewer = ({
   }, [active, answers]);
 
   return (
-    <article className="flex mt-8 md:mt-12 gap-8 md:gap-4 flex-col md:flex-row">
+    <article className="flex mt-8 md:mt-12 gap-8 md:gap-4 flex-col-reverse md:flex-row">
       <section className="flex flex-col md:w-[280px] w-full">
         <nav className="flex justify-center w-full mb-2 border-b-[1px] border-[#EFEFEF] dark:border-[#2E2E2E] ">
           <button

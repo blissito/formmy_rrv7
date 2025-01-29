@@ -5,7 +5,7 @@ import { ScrollRevealLeft, ScrollRevealRight } from "~/routes/_index";
 
 export const FormmysTypes = () => {
   return (
-    <section className="min-h-screen w-[90%] xl:w-full  max-w-7xl mx-auto mt-[120px] pb-[120px] overflow-hidden">
+    <section className="min-h-screen w-[90%] xl:w-full  max-w-7xl mx-auto mt-20 md:mt-[120px] pb-[120px] overflow-hidden">
       <h2 className=" text-dark dark:text-white text-3xl lg:text-5xl font-bold text-center">
         Personaliza tu formmy
       </h2>

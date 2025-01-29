@@ -30,7 +30,7 @@ export const StickyScroll = ({
     <article className={cn(currentBgColor, "transition-all")}>
       <ScrollReveal>
         <section
-          className="flex gap-20 justify-center flex-wrap-reverse lg:flex-nowrap items-start relative py-20 w-full lg:w-[90%] h-max max-w-7xl mx-auto"
+          className="flex gap-20 justify-center flex-wrap-reverse lg:flex-nowrap items-start relative py-6 md:py-20 w-full lg:w-[90%] h-max max-w-7xl mx-auto"
           // className="flex px-[5%] gap-20 justify-center xl:flex-nowrap flex-wrap-reverse items-start relative py-10 lg:py-20 h-max max-w-7xl mx-auto "
           ref={targetRef}
         >

@@ -55,7 +55,7 @@ const Nav = ({ user, showcta }: { showcta?: boolean; user?: User }) => {
   };
 
   return (
-    <nav className=" fixed flex items-center  top-0 z-[90]  bg-clear/60 dark:bg-dark/60 backdrop-blur w-full text-black/80 dark:text-slate-300 shadow-sm dark:shadow h-20">
+    <nav className=" fixed flex items-center  top-0 z-[90]  bg-clear/60 dark:bg-dark/60 backdrop-blur w-full text-black/80 dark:text-slate-300 shadow-sm dark:shadow h-16 md:h-20">
       <section className="w-full flex items-center justify-between py-4 px-4 max-w-3xl mx-auto lg:max-w-6xl ">
         <Link to="/">
           <img

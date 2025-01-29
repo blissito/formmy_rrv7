@@ -15,7 +15,7 @@ import { BigCTA } from "../BigCTA";
 export const Hero = () => {
   const words = ["contacto", "registro", "suscripción"];
   return (
-    <section className="min-h-screen w-full flex md:items-center justify-center  relative overflow-hidden">
+    <section className="min-h-[88vh] md:min-h-screen w-full flex md:items-center justify-center  relative overflow-hidden">
       <div className="w-full pt-0 lg:pt-32">
         <div
           style={{

@@ -221,7 +221,7 @@ export default function Dash() {
                   placeholder="Busca un Formmy"
                   className={twMerge(
                     "disabled:cursor-not-allowed",
-                    " cursor-pointer text-gray-600 dark:text-white pl-8 border-none input dark:bg-[#141419] bg-[#F7F7F9] placeholder:text-space-300 placeholder-gray-400 focus:ring-1 focus:ring-brand-500 placeholder:font-light rounded-lg w-full"
+                    " cursor-pointer text-gray-600 dark:text-white pl-8 border-none input dark:bg-[#141419] bg-[#F7F7F9] placeholder:text-space-400  focus:ring-1 focus:ring-brand-500 placeholder:font-light rounded-lg w-full"
                   )}
                   name="search"
                 />
