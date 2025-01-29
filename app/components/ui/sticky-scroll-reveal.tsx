@@ -55,7 +55,7 @@ export const StickyScroll = ({
                 </h3>
                 <div
                   className={cn(
-                    "text-xl lg:text-xl xl:text-2xl font-extralight  text-gray-600/50 dark:text-irongray transition-all",
+                    "text-lg lg:text-xl xl:text-2xl font-extralight  text-gray-600/50 dark:text-irongray transition-all",
                     {
                       "text-gray-600 dark:text-irongray": currentImage === img,
                     }

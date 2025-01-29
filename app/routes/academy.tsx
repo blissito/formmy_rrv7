@@ -17,11 +17,11 @@ export default function academy() {
     <>
       <Nav user={user} />
       <section className="dark:bg-space-900">
-        <section className="pt-40 pb-20 px-4 md:px-0 lg:max-w-6xl max-w-3xl mx-auto text-space-500 dark:text-space-300">
-          <h2 className="text-4xl md:text-5xl text-space-800 dark:text-white font-semibold">
+        <section className="pt-32 md:pt-40 pb-20 px-4 md:px-0 lg:max-w-6xl max-w-3xl mx-auto text-space-500 dark:text-space-300">
+          <h2 className="text-3xl md:text-5xl text-space-800 dark:text-white font-semibold">
             Formmy Academy
           </h2>
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-space-400 font-light w-full md:w-[700px] mt-4">
+          <p className="text-lg md:text-2xl text-gray-600 dark:text-space-400 font-light w-full md:w-[700px] mt-4">
             Empieza a utilizar Formmy en tu sitio web. Agregalo fácilmente a tu
             HTML o a tu proyecto de React, Wordpress, Angular, o más.{" "}
           </p>
@@ -102,10 +102,10 @@ const Card = ({
           src={image}
         />
         <div>
-          <h3 className="text-2xl  text-space-800 dark:text-white font-medium mb-1">
+          <h3 className="text-xl font-semibold md:text-2xl  text-space-800 dark:text-white  mb-1">
             {title}
           </h3>
-          <p className="text-lg text-gray-600 dark:text-space-400 font-light">
+          <p className="text-base md:text-lg text-gray-600 dark:text-space-400 font-light">
             {description}
           </p>
           <span className="flex items-center gap-1 text-gray-500 font-light text-sm">

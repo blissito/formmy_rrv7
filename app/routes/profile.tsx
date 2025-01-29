@@ -48,8 +48,8 @@ export default function Profile() {
       {success && <SuccessModal />}
       <Nav user={user} />
       <section className="dark:bg-space-900 min-h-screen">
-        <section className="pt-40 pb-20 px-4 md:px-0 lg:max-w-6xl max-w-3xl mx-auto text-space-500 dark:text-space-300">
-          <h2 className="text-4xl md:text-5xl text-space-800 dark:text-white font-semibold">
+        <section className="pt-32 md:pt-40 pb-20 px-4 md:px-0 lg:max-w-6xl max-w-3xl mx-auto text-space-500 dark:text-space-300">
+          <h2 className="text-3xl md:text-5xl text-space-800 dark:text-white font-semibold">
             Mi perfil
           </h2>
           <div className="mt-12 flex gap-4 items-center">
@@ -67,7 +67,7 @@ export default function Profile() {
               </p>
             </div>
           </div>
-          <hr className="my-10 dark:border-t-white/10" />
+          <hr className="my-6 md:my-10 dark:border-t-white/10" />
           <h2 className="text-xl md:text-2xl text-space-800 dark:text-white font-semibold">
             Plan
           </h2>

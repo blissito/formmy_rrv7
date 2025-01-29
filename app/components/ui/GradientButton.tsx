@@ -37,7 +37,7 @@ export function GradientButton({
   return (
     <Component
       className={twMerge(
-        "bg-transparent relative text-xl  h-14 w-full p-[1px] overflow-hidden ",
+        "bg-transparent relative text-xl  h-14 w-fit p-[1px] overflow-hidden ",
         containerClassName
       )}
       style={{
@@ -53,7 +53,7 @@ export function GradientButton({
         <MovingBorder duration={duration} rx="30%" ry="30%">
           <div
             className={cn(
-              "h-20 w-20 opacity-[0.8] bg-[radial-gradient(var(--brand-500)_40%,transparent_60%)]",
+              "h-20 w-16 opacity-[0.8] bg-[radial-gradient(var(--brand-500)_40%,transparent_60%)]",
               borderClassName
             )}
           />
@@ -62,7 +62,7 @@ export function GradientButton({
 
       <div
         className={cn(
-          "relative px-5  bg-slate-900/[0.8] border border-slate-800 backdrop-blur-xl text-white flex items-center justify-center w-full h-full  antialiased",
+          "relative px-4  bg-slate-900/[0.8] border border-slate-800 backdrop-blur-xl text-white flex items-center justify-center w-fit  h-full  antialiased",
           className
         )}
         style={{

@@ -29,11 +29,11 @@ export default function Academy() {
       <Nav user={user} />
       <section className="dark:bg-space-900 min-h-screen ">
         <Nav user={user} />
-        <section className="pt-40 pb-20 px-4 md:px-0 lg:max-w-6xl max-w-3xl mx-auto text-space-500 dark:text-space-300 ">
-          <h2 className="text-4xl md:text-5xl text-space-800 dark:text-white font-semibold">
+        <section className="pt-32 md:pt-40 pb-20 px-4 md:px-0 lg:max-w-6xl max-w-3xl mx-auto text-space-500 dark:text-space-300 ">
+          <h2 className="text-3xl md:text-5xl text-space-800 dark:text-white font-semibold">
             Danos tu opinión
           </h2>
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-space-400 font-light w-full md:w-[700px] mt-4 mb-10">
+          <p className="text-lg md:text-2xl text-gray-600 dark:text-space-400 font-light w-full md:w-[700px] mt-4 mb-4 md:mb-10">
             Cuéntanos ¿cómo te va usando Formmy? ¿Alguna duda con la
             configuración? ¿Hay algún feature que te gustaría ver?
           </p>
