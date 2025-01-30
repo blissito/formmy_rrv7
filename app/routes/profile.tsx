@@ -34,9 +34,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
     : undefined;
   if (intent === "manage-stripe") {
     const user = await getUserOrRedirect(request);
-    const url = await createBillingSessionOrCheckoutURL(user);
-    // if (!url) throw json(null, { status: 404 });
-    return redirect(url);
+    const url = new URL(request.url);
+    const link = await createBillingSessionOrCheckoutURL(user, url.origin);
+    return redirect(link);
   }
 };
 

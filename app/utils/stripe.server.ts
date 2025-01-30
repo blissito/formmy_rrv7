@@ -76,14 +76,20 @@ export const createBillingSessionURL = async (user: User) => {
   return session.url;
 };
 
-export const createBillingSessionOrCheckoutURL = (
-  user: User
-): Promise<string | null> => {
-  // @tODO: this can improve
-  if (user.customerId && user.plan === "PRO") {
-    return createBillingSessionURL(user);
-  } else {
-    return createCheckoutSessionURL({ user });
+export const createBillingSessionOrCheckoutURL = async (
+  user: User,
+  origin: string
+): Promise<string | undefined> => {
+  try {
+    if (user.customerId && user.plan === "PRO") {
+      return createBillingSessionURL(user);
+    } else {
+      return createCheckoutSessionURL({ user, origin });
+    }
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      console.error(e);
+    }
   }
 };
 
