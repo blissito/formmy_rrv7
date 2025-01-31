@@ -10,6 +10,8 @@ import {
 import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
 import type { ReactNode } from "react";
+import useHotjar from "./utils/useHotjar";
+import useGoogleTM from "./utils/useGoogleTM";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -26,6 +28,8 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
+  useHotjar();
+  useGoogleTM();
   return (
     <html
       lang="en"
