@@ -52,15 +52,15 @@ export default function Page() {
         </div>
         <hr className="mt-2 mb-6 dark:border-t-white/10" />
         <div
-          className="flex flex-col gap-14 p-4 border-2 border-[#FB5252] rounded-xl dark:bg-red-100
+          className="flex flex-col gap-14 p-4 border-2 border-[#D5173C] rounded-xl dark:bg-red-100
          bg-red-100/50"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-bold text-md text-red-500">
+              <p className="font-bold text-md text-[#D5173C]">
                 Esto eliminará tu Formmy y todos sus mensajes
               </p>
-              <p className="font-light text-sm text-red-700">
+              <p className="font-light text-sm text-[#D5173C]">
                 Si tienes alguna duda, recuerda que siempre podemos platicar:{" "}
                 <a href="mailto:hola@formmy.app">hola@formmy.app</a>
               </p>
@@ -68,7 +68,7 @@ export default function Page() {
             <Button
               isLoading={fetcher.state !== "idle"}
               onClick={() => setShowConfirm(true)}
-              className="bg-[#FB5252] hover:scale-95 transition-all text-xs m-0"
+              className="bg-[#D5173C] hover:scale-95 transition-all text-xs m-0"
               type="submit"
             >
               Eliminar Formmy

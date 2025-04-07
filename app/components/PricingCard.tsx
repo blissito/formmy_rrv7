@@ -83,7 +83,7 @@ export const PricingCard = ({
             <GradientButton
               disabled={isLoading || isDisable}
               onClick={onClickButton}
-              className="bg-brand-500 text-base dark:bg-dark dark:hover:bg-[#1D1E27] transition-all dark:text-white border-neutral-200 dark:border-white/10"
+              className="bg-brand-500  text-base dark:bg-dark dark:hover:bg-[#1D1E27] transition-all dark:text-white border-neutral-200 dark:border-white/10"
             >
               {cta}
             </GradientButton>

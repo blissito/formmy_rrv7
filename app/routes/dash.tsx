@@ -202,7 +202,7 @@ export default function Dash() {
       <section className=" bg-clear dark:bg-space-900">
         <Nav user={user} />
         <BackGround />
-        <main className="py-32 px-4 max-w-6xl mx-auto min-h-screen h-full text-space-800 dark:text-space-900 ">
+        <main className="pt-32 pb-0  px-4 max-w-6xl mx-auto min-h-screen h-full text-space-800 dark:text-space-900 ">
           <nav className="flex gap-2 flex-wrap justify-between items-center">
             <div>
               <h2 className="text-3xl font-bold dark:text-white text-space-800">
@@ -326,7 +326,7 @@ export const ProjectCard = ({
     <Link
       to={id ?? ""}
       className=" shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.50)]
-        dark:shadow-none border border-[#E0E0EE] dark:border-clear/10 bg-[#fff] dark:bg-dark rounded-md p-4   w-[268px] cursor-pointer  transition-all"
+        dark:shadow-none border border-[#E0E0EE] dark:border-clear/10 bg-[#fff] dark:bg-dark rounded-md p-4  w-full md:w-[268px] cursor-pointer  transition-all"
     >
       <section className="flex justify-between items-center">
         <h2 className="text-xl font-medium dark:text-white text-space-800 truncate">

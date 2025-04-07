@@ -127,10 +127,10 @@ export default function Route() {
         <div className="flex items-center gap-4">
           <Button
             onClick={() => setShowModal(true)}
-            className="flex items-center py-1 px-2 rounded-md gap-2 max-w-[120px] m-0 hover:scale-105 transition-all hover:bg-brand-300 bg-brand-500 justify-center"
+            className="flex items-center py-1 px-2 text-sm h-8 rounded-md gap-2 max-w-[120px] m-0 hover:scale-105 transition-all hover:bg-brand-300 bg-brand-500 justify-center"
           >
             <span>
-              <FaUsers />
+              <FaUsers className="text-lg" />
             </span>
             <span>Agregar</span>
           </Button>

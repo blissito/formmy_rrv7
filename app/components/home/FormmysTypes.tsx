@@ -74,7 +74,7 @@ const Registration = () => {
       <section className="group w-full lg:w-fullpy-8 px-0 lg:py-8 lg:pl-8 grid grid-cols-1 md:grid-cols-5 gap-6 relative">
         <span
           style={{ fontFamily: "Licorice" }}
-          className="absolute text-brand-500 scale-75 licorice-regular flex right-16 lg:right-0 xl:right-10 -top-3 md:top-10 opacity-100 md:opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all"
+          className="absolute text-brand-500  licorice-regular flex right-16 lg:right-0 xl:right-10 -top-3 md:top-10 opacity-100 group-hover:opacity-100 group-hover:scale-100 transition-all"
         >
           {" "}
           <img
@@ -100,7 +100,7 @@ const Registration = () => {
                 animate={{ opacity: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, filter: "blur(4px)" }}
                 placeholder="Email"
-                className="text-gray-600 dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman dark:border-white/10 rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
+                className="text-gray-600  dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman dark:border-white/10 rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
               />
               {switcher.name && (
                 <motion.input
@@ -212,14 +212,14 @@ const Check = ({
   return (
     <label
       htmlFor={label}
-      className="text-dark dark:text-irongray font-extralight flex justify-between cursor-pointer"
+      className="text-dark dark:text-irongray font-light flex justify-between cursor-pointer"
     >
-      <span> {label}</span>
+      <span> {label} </span>
       <input
         defaultChecked={defaultValue}
         disabled={isDisabled}
         onChange={onChange}
-        className="bg-transparent border-gray-300 dark:border-white/20 w-6 h-6 md:w-5 md:h-5 rounded checked:bg-[#EFC168] !focus:bg-[#EFC168] checked:focus:bg-[#EFC168] focus:ring-0 checked:hover:bg-[#EFC168]"
+        className="bg-transparent  border-gray-300 dark:border-white/20 w-6 h-6 md:w-5 md:h-5 rounded checked:bg-[#EFC168] !focus:bg-[#EFC168] checked:focus:bg-[#EFC168] focus:ring-0 checked:hover:bg-[#EFC168]"
         type="checkbox"
         id={label}
         value="first_checkbox"
@@ -235,7 +235,7 @@ const Suscription = () => {
       <section className="group w-full py-8 px-0 lg:py-8 lg:pr-8 flex flex-col md:flex-row lg:flex-col gap-6 relative">
         <span
           style={{ fontFamily: "Licorice" }}
-          className="absolute text-brand-500 scale-75 licorice-regular flex flex-col right-16 lg:right-0 xl:right-10 -bottom-10 opacity-100 md:opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all"
+          className="absolute text-brand-500 licorice-regular flex flex-col right-16 lg:right-0 xl:right-10 -bottom-10 opacity-100  group-hover:opacity-100 group-hover:scale-100 transition-all"
         >
           {" "}
           <img
@@ -258,7 +258,7 @@ const Suscription = () => {
               Sé de los primeros en enterarte del lanzamiento del curso, y
               recibe un descuento especial.
             </p>
-            <label className="text-gray-600 font-normal dark:text-[#D5D5D5]  ">
+            <label className="text-gray-600  dark:text-[#D5D5D5]  ">
               Email
             </label>
             <input

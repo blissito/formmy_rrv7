@@ -24,7 +24,7 @@ export const Banner = () => {
           />
         </Form>
         <a href="https://wa.me/527757609276?text=¡Hola!%20Quiero%agendar%20un%demo.">
-          <Button className="w-full md:w-[180px] bg-clear text-dark mt-0">
+          <Button className="w-full md:w-[180px] bg-clear text-dark mt-0 hover:scale-95 transition-all">
             Agendar demo
           </Button>
         </a>

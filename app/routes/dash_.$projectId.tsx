@@ -188,16 +188,16 @@ export default function Detail() {
           )}
         </AnimatePresence>
 
-        <main className="pt-24 px-4 max-w-6xl mx-auto text-space-800 dark:text-white pb-0">
+        <main className="pt-20 md:pt-24 px-4 max-w-6xl mx-auto text-space-800 dark:text-white pb-0">
           <nav className="flex items-center gap-2 flex-wrap ">
-            <div className="flex flex-col items-start gap-2 mr-auto mb-0">
-              <div className="flex gap-1 items-center">
+            <div className="flex flex-col items-start gap-2 mr-auto mb-0 relative">
+              <div className="flex gap-1 items-center absolute -left-0 xl:-left-12 ">
                 <Link to="/dash" className={iconBtnClass}>
                   <IoReturnUpBackOutline />
                 </Link>
               </div>
 
-              <h2 className="m-0 text-3xl font-bold mb-[-8px] text-space-800 dark:text-white ">
+              <h2 className="m-0 text-3xl font-bold mb-[-8px] text-space-800 dark:text-white mt-12 xl:mt-0 ">
                 {project.name}{" "}
               </h2>
               <div className="flex gap-4">
@@ -416,7 +416,7 @@ const MessagesViewer = ({
 
   return (
     <article className="flex mt-8 md:mt-12 gap-8 md:gap-4 flex-col-reverse md:flex-row">
-      <section className="flex flex-col md:w-[280px] w-full">
+      <section className="flex flex-col md:w-[280px]  w-full">
         <nav className="flex justify-center w-full mb-2 border-b-[1px] border-[#EFEFEF] dark:border-[#2E2E2E] ">
           <button
             onClick={() => setActive(0)}
@@ -438,7 +438,7 @@ const MessagesViewer = ({
           </button>
         </nav>
         {/* List */}
-        <div className="h-96 overflow-hidden overflow-y-scroll">
+        <div className="h-64 md:h-96 overflow-hidden overflow-y-scroll">
           <AnimatePresence mode="popLayout">
             {filtered.map((answer) => (
               <Card

@@ -64,7 +64,7 @@ export const PriceCards = ({ plan }: { plan?: string }) => {
                   <Button
                     isLoading={isLoading}
                     type="button"
-                    className="w-full text-clear mt-0"
+                    className="w-full text-clear mt-0 hover:scale-95 transition-all"
                     onClick={handleLogin}
                   >
                     {plan ? "Este es tu plan" : "Comenzar gratis"}
@@ -110,7 +110,7 @@ export const PriceCards = ({ plan }: { plan?: string }) => {
                         { method: "post", action: "/api/stripe" }
                       );
                     }}
-                    className="w-full  text-clear mt-0"
+                    className="w-full  text-clear mt-0 hover:scale-95 transition-all"
                   >
                     ¡Quiero ser pro!
                   </Button>
@@ -153,7 +153,7 @@ export const PriceCards = ({ plan }: { plan?: string }) => {
                   <Button
                     isLoading={isLoading}
                     type="button"
-                    className="w-full text-clear mt-0"
+                    className="w-full text-clear mt-0 hover:scale-95 transition-all"
                     onClick={handleLogin}
                   >
                     {plan ? "Este es tu plan" : "Comenzar gratis"}
@@ -199,7 +199,7 @@ export const PriceCards = ({ plan }: { plan?: string }) => {
                         }
                       );
                     }}
-                    className="w-full text-clear mt-0"
+                    className="w-full text-clear mt-0  hover:scale-95 transition-all"
                   >
                     ¡Quiero ser pro!
                   </Button>

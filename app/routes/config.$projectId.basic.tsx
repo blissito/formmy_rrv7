@@ -230,7 +230,7 @@ export default function BasicConfig() {
                 <span>Tu Formmy de suscripción solo soporta email</span>
               ) : (
                 <span>
-                  ¿Qué campos quieres agregar a tu formmy? Arrasta los campos
+                  ¿Qué campos quieres agregar a tu formmy? Arrastra los campos
                   para acomodarlos o eliminarlos.
                 </span>
               )}
@@ -394,7 +394,7 @@ export default function BasicConfig() {
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     handleColorChange(e.currentTarget.value);
                   }}
-                  className=" focus:border-brand-500 bg-transparent  focus:ring-brand-500 focus:outline-none ring-transparent  active:ring-transparent pl-8 w-28 py-2 pr-2 rounded border-gray-100 dark:border-clear/20"
+                  className=" focus:border-brand-500 bg-transparent text-gray-600 focus:ring-brand-500 focus:outline-none ring-transparent  active:ring-transparent pl-8 w-28 py-2 pr-2 rounded border-gray-100 dark:border-clear/20"
                   id="color"
                   type="text"
                   value={config.ctaColor}

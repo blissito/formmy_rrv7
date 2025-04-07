@@ -4,7 +4,7 @@ import { ScrollReveal } from "~/routes/_index";
 
 export const WitoutFormmy = () => {
   return (
-    <div className="bg-[#F8F8F7] dark:bg-dark py-10">
+    <div className="bg-brand-500/10 dark:bg-dark py-10">
       <section className="h-auto w-[90%] xl:w-full  max-w-7xl mx-auto my-20 lg:mt-[80px] lg:mb-[80px] ">
         <ScrollReveal>
           <h2 className=" text-dark dark:text-white text-3xl lg:text-5xl font-bold text-center">

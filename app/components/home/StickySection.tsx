@@ -9,7 +9,7 @@ export const StickySection = () => {
       <StickyScroll
         items={[
           {
-            twColor: "dark:bg-[#0A0A0C] bg-[#ffffff]",
+            twColor: "dark:bg-transparent bg-[#ffffff]",
             img: (
               <img
                 className="object-cover h-full w-full rounded-3xl border border-white/10"
@@ -60,7 +60,7 @@ export const StickySection = () => {
             title: "Personaliza tu Formmy",
           },
           {
-            twColor: "dark:bg-[#0A0A0C] bg-[#ffffff]",
+            twColor: "dark:bg-transparent bg-[#ffffff]",
 
             img: (
               <img

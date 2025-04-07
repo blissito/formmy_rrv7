@@ -26,12 +26,15 @@ export const loader = async ({ params, request }: Route.LoaderArgs) => {
 
   const url = new URL(request.url);
   const isDev = process.env.NODE_ENV === "development";
-  const height = project.config.inputs.length * 108 + 280; // avoiding scroll
+  const height =
+    project.type === "subscription"
+      ? 158 //higth input size + 60 as water mark size
+      : project.config.inputs.length * 108 + 220;
   const urls = {
     iframe: isDev
       ? `<iframe frameborder="0" id="formmy-iframe" title="formmy" width="560" height="${height}" src="http://${url.host}/embed/${project.id}" style="margin: 0 auto; display: block"
     ></iframe>`
-      : `<iframe frameborder="0" id="formmy-iframe" title="formmy" width="560" height="760" src="https://${url.host}/embed/${project.id}" style="margin: 0 auto; display: block"
+      : `<iframe frameborder="0" id="formmy-iframe" title="formmy" width="560" height="${height}" src="https://${url.host}/embed/${project.id}" style="margin: 0 auto; display: block"
     ></iframe>`,
     preview: isDev
       ? `http://localhost:3000/preview/${project.id}`

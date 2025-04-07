@@ -189,7 +189,7 @@ export const CardPro = ({
           value="manage-stripe"
           type="submit"
           className={twMerge(
-            "absolute bottom-0 left-0 mt-8 bg-brand-500 text-lg font-normal h-[48px] rounded-full text-[#fff]  px-8 hover:scale-105 transition-all mb-1 block  disabled:bg-gray-600"
+            "absolute bottom-0 left-0 mt-8 bg-brand-500 text-base font-normal h-[48px] rounded-full text-[#fff]  px-8 hover:scale-105 transition-all mb-1 block  disabled:bg-gray-600"
           )}
         >
           {isLoading ? <Spinner /> : <span>Administrar mi plan &rarr; </span>}

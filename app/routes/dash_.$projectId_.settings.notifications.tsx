@@ -86,7 +86,8 @@ export default function Route() {
           <div>
             <p className="font-bold text-md">Cambio en los miembros</p>
             <p className="font-light text-sm text-gray-500">
-              Recibe un correo cuando un nuevo usuario acepte tu invitación
+              Recibe un correo cuando un nuevo usuario acepte tu invitación como
+              administrador
             </p>
           </div>
           <div className="relative">
@@ -104,7 +105,7 @@ export default function Route() {
             <p className="font-bold text-md">Actividad en tu formmy</p>
             <p className="font-light text-sm text-gray-500">
               Recibe un correo cuando se apliquen cambios importantes en tu
-              Formmy (como al eliminar mensajes)
+              Formmy (como al eliminar el Formmy)
             </p>
           </div>
           <div className="relative">
