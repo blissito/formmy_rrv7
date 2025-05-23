@@ -9,7 +9,9 @@ import { PriceCards } from "./PriceCards";
 export const ProTag = ({
   isOpen = false,
   onChange,
+  onClose,
 }: {
+  onClose?: () => void;
   isOpen?: boolean;
   onChange?: (arg0: boolean) => void;
 }) => {
@@ -19,6 +21,7 @@ export const ProTag = ({
   function closeModal() {
     onChange?.(false);
     setLocalOpen(false);
+    onClose?.();
   }
 
   useEffect(() => {

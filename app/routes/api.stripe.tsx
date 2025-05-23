@@ -11,8 +11,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   if (intent === "anual_suscription") {
+    console.log("GERE");
     const url = await getStripeURL(request);
-    if (url) return Response.redirect(url);
+    // if (url) return Response.redirect(url);
   }
   return new Response(null);
 };

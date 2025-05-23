@@ -6,6 +6,15 @@ import { extraDataSchema, type ExtraData } from "~/utils/zod";
 const GOOGLE_SECRET = process.env.GOOGLE_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
+let redirect_uri;
+const getredirectUri = (host: string) => {
+  redirect_uri ??=
+    host && process.env.NODE_ENV === "production"
+      ? "https://" + host
+      : "http://" + host;
+  return redirect_uri;
+};
+
 export const getExtraData = (access_token: string): ExtraData => {
   // @TODO: get displayName
   const url = "https://www.googleapis.com/oauth2/v2/userinfo";
@@ -32,10 +41,7 @@ export const getAccessToken = async <Code extends string>(
     return { error: "missing env object", ok: false };
 
   const localURL = new URL(request.url);
-  const redirect_uri =
-    process.env.NODE_ENV === "production"
-      ? `https://${localURL.host}`
-      : `http://${localURL.host}`;
+  const redirect_uri = getredirectUri(localURL.host);
 
   const search = new URLSearchParams({
     code,
@@ -65,10 +71,8 @@ export function redirectToGoogle<Redirect extends (arg0: string) => Response>(
   host: string
   // props: { params: Record<string, string> }
 ): Response {
-  const redirect_uri =
-    host && process.env.NODE_ENV === "production"
-      ? "https://" + host
-      : "http://" + host;
+  const redirect_uri = getredirectUri(host);
+  console.log("?? =>>", redirect_uri);
 
   if (!GOOGLE_SECRET || !GOOGLE_CLIENT_ID) {
     throw new Error("Missing env variables");

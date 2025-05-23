@@ -174,7 +174,7 @@ export const getStripeURL = async (
     price = MONTHLY_PLAN;
   }
 
-  const user = await getUserOrTriggerLogin(request);
+  const user = await getUserOrTriggerLogin(request); // @todo revisit
   const url = await createCheckoutSessionURL({
     user,
     price,

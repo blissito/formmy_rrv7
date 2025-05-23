@@ -201,7 +201,7 @@ export const PriceCards = ({ plan }: { plan?: string }) => {
                     }}
                     className="w-full text-clear mt-0  hover:scale-95 transition-all"
                   >
-                    ¡Quiero ser pro!
+                    ¡Quiero ser PRO!
                   </Button>
                 }
                 cta="¡Quiero ser PRO!"

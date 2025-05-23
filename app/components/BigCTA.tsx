@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { GradientButton } from "./ui/GradientButton";
 import { cn } from "~/lib/utils";
-import { Link } from "react-router";
 
 export const BigCTA = ({
   onClick,

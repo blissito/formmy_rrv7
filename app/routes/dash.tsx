@@ -122,6 +122,8 @@ export default function Dash() {
     projects.concat(invitedProyects)
   );
   const [isSearch, setIsSearch] = useState<string>();
+  const isLimited = user.plan === "PRO" ? false : projects.length > 2;
+  const isPro = user.plan === "PRO";
   const [isProOpen, setIsProOpen] = useState<boolean>(false);
   const { get, save } = useLocalStorage();
   const [showModal, setShowModal] = useState(false);
@@ -134,7 +136,7 @@ export default function Dash() {
       )
     );
   };
-  const isLimited = user.plan === "PRO" ? false : projects.length > 2;
+
   // if from landing, show modal with tiers
   useEffect(() => {
     const value = get("from_landing");
@@ -152,8 +154,38 @@ export default function Dash() {
     }
   }, [actionData]);
   const [showInviteModal, setShowInviteModal] = useState(!!permission);
+
+  // hidding prices for 15 days
+  const hid = () => {
+    const until = new Date();
+    // until.setMinutes(until.getMinutes() + 1);
+    until.setDate(until.getDate() + 15);
+    localStorage.setItem("hide_price", until.toISOString());
+    // close
+    setIsProOpen(false);
+  };
+  useEffect(() => {
+    // check for hidden price
+    const hide_price = localStorage.getItem("hide_price");
+    if (hide_price) {
+      const date = new Date(hide_price).getTime();
+      const now = Date.now();
+      if (now > date) {
+        localStorage.removeItem("hide_price");
+        setIsProOpen(true);
+      }
+    } else {
+      !isPro && setIsProOpen(true);
+    }
+  }, []);
+
   return (
     <>
+      <ProTag
+        onClose={hid}
+        isOpen={isProOpen}
+        onChange={(val) => setIsProOpen(val)}
+      />
       <ConfirmModal
         onClose={() => setShowInviteModal(false)}
         isOpen={showInviteModal}
