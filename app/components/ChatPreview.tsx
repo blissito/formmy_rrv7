@@ -134,15 +134,47 @@ export default function ChatPreview({
         </div>
       </div>
       {/* Chat Messages */}
-      <div className="h-96 p-4 space-y-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+      <div className="h-96 p-4 space-y-4 overflow-y-auto bg-gray-50 dark:bg-gray-800 min-w-0">
         {chatMessages.map((msg, idx) =>
           msg.role === "assistant" ? (
             <div className="flex items-start gap-3" key={idx}>
               <div className="w-8 h-8 flex-shrink-0">{avatarComponent}</div>
-              <div className="bg-white dark:bg-space-700 rounded-lg p-3 max-w-xs shadow-sm">
-                <p className="text-sm text-gray-900 dark:text-white">
-                  {msg.content}
-                </p>
+              <div className="bg-white dark:bg-space-700 rounded-lg p-3 max-w-md shadow-sm">
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:mb-2 prose-p:last:mb-0 prose-headings:mb-2 prose-headings:font-bold prose-ul:mb-2 prose-ol:mb-2 prose-li:text-sm prose-code:bg-gray-100 prose-code:dark:bg-gray-600 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-mono prose-pre:bg-gray-100 prose-pre:dark:bg-gray-600 prose-pre:p-2 prose-pre:rounded prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:mb-2 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:dark:border-gray-500 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:dark:text-gray-400 prose-blockquote:mb-2 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:dark:text-blue-400 prose-a:hover:underline prose-table:overflow-x-auto prose-table:w-full prose-th:px-2 prose-th:py-1 prose-th:text-xs prose-th:font-semibold prose-td:px-2 prose-td:py-1 prose-td:text-xs">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      a: ({ children, href }) => (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {children}
+                        </a>
+                      ),
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                      th: ({ children }) => (
+                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-left">
+                          {children}
+                        </th>
+                      ),
+                      td: ({ children }) => (
+                        <td className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs">
+                          {children}
+                        </td>
+                      ),
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
           ) : (
@@ -158,9 +190,9 @@ export default function ChatPreview({
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 flex-shrink-0">{avatarComponent}</div>
             <div className="bg-white dark:bg-space-700 rounded-lg p-3 max-w-xs shadow-sm opacity-60">
-              <p className="text-sm text-gray-900 dark:text-white animate-pulse">
+              <div className="text-sm text-gray-900 dark:text-white animate-pulse">
                 ...
-              </p>
+              </div>
             </div>
           </div>
         )}
