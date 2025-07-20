@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useActionData, useLoaderData } from "react-router";
 import type { Route } from "./+types/chat.config";
 import { Toggle } from "~/components/Switch";
@@ -16,6 +16,7 @@ import {
   getUserPlanFeatures,
   validateUserAIModelAccess,
 } from "~/server/chatbot";
+import { ValidationMessage } from "~/components/ui/ValidationMessage";
 type Integration = any;
 type User = any;
 type Project = any;
@@ -199,15 +200,42 @@ export default function ChatConfig() {
   const { chatbot, availableModels, personalities, planFeatures } =
     useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const manualSave = useManualSave(
-    { ...chatbot, chatbotId: chatbot.id }, // Forzar que chatbotId esté siempre en el estado
-    { availableModels: availableModels.map((m) => m.value) },
-    "update_chatbot"
-  );
+  const defaultChatbot = {
+    id: "",
+    chatbotId: "",
+    name: "",
+    description: "",
+    personality: "customer-service",
+    welcomeMessage: "¡Hola! ¿Cómo puedo ayudarte hoy?",
+    aiModel: "gpt-4o-mini",
+    primaryColor: "#63CFDE",
+    theme: "light",
+    temperature: 0.7,
+    prompt: "",
+    isActive: false,
+  };
+  const manualSave = useManualSave({
+    initialData: { ...defaultChatbot, ...chatbot, chatbotId: chatbot?.id },
+    validate: validateChatbotDataEffect,
+    endpoint: "/api/v1/chatbot",
+    intent: "update_chatbot",
+    idField: "chatbotId",
+    planLimits: { availableModels: availableModels.map((m) => m.value) },
+  });
 
   const [activeTab, setActiveTab] = useState("preview");
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showPersonalityDropdown, setShowPersonalityDropdown] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Mostrar mensaje de éxito temporal
+  useEffect(() => {
+    if (manualSave.success) {
+      setShowSuccess(true);
+      const timeout = setTimeout(() => setShowSuccess(false), 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [manualSave.success]);
 
   const tabs = [
     { id: "preview", label: "Preview" },
@@ -228,10 +256,10 @@ export default function ChatConfig() {
   };
 
   const selectedModel = availableModels.find(
-    (m) => m.value === manualSave.formData.aiModel
+    (m) => m.value === (manualSave.formData?.aiModel ?? "")
   );
   const selectedPersonality = personalities.find(
-    (p) => p.value === manualSave.formData.personality
+    (p) => p.value === (manualSave.formData?.personality ?? "")
   );
 
   return (
@@ -248,17 +276,17 @@ export default function ChatConfig() {
                 <IoArrowBack className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </Link>
               <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {manualSave.formData.name}
+                {manualSave.formData?.name ?? "Mi Chatbot"}
               </h1>
             </div>
 
             <div className="flex items-center gap-4">
               <Toggle
-                defaultValue={manualSave.formData.isActive}
+                defaultValue={manualSave.formData?.isActive ?? false}
                 onChange={(value) => handleInputChange("isActive", value)}
               />
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {manualSave.formData.isActive ? "Activo" : "Inactivo"}
+                {manualSave.formData?.isActive ? "Activo" : "Inactivo"}
               </span>
             </div>
           </div>
@@ -299,7 +327,7 @@ export default function ChatConfig() {
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                   <Avatar
-                    fill={manualSave.formData.primaryColor ?? "#63CFDE"}
+                    fill={manualSave.formData?.primaryColor ?? "#63CFDE"}
                   />
                 </div>
                 <div className="flex-1">
@@ -308,7 +336,7 @@ export default function ChatConfig() {
                   </label>
                   <input
                     type="text"
-                    value={manualSave.formData.name}
+                    value={manualSave.formData?.name ?? ""}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-space-700 dark:text-white"
                   />
@@ -325,19 +353,19 @@ export default function ChatConfig() {
                     className="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-600"
                     style={{
                       backgroundColor:
-                        manualSave.formData.primaryColor ?? undefined,
+                        manualSave.formData?.primaryColor ?? undefined,
                     }}
                   />
                   <input
                     type="color"
-                    value={manualSave.formData.primaryColor ?? undefined}
+                    value={manualSave.formData?.primaryColor ?? undefined}
                     onChange={(e) =>
                       handleInputChange("primaryColor", e.target.value)
                     }
                     className="w-16 h-10 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
                   />
                   <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-                    {manualSave.formData.primaryColor ?? "#63CFDE"}
+                    {manualSave.formData?.primaryColor ?? "#63CFDE"}
                   </span>
                 </div>
               </div>
@@ -493,29 +521,58 @@ export default function ChatConfig() {
             {/* Save Button */}
             <button
               type="button"
-              className="w-full bg-brand-500 text-white py-2 px-4 rounded-md hover:bg-brand-600 transition-colors disabled:opacity-50"
+              className={`w-full bg-brand-500 text-white py-2 px-4 rounded-md hover:bg-brand-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
+                manualSave.hasChanges ? "ring-2 ring-yellow-400" : ""
+              }`}
               onClick={manualSave.handleSave}
               disabled={manualSave.isSaving || !manualSave.hasChanges}
             >
+              {manualSave.isSaving && (
+                <span className="animate-spin mr-2">
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8z"
+                    />
+                  </svg>
+                </span>
+              )}
               {manualSave.isSaving ? "Guardando..." : "💾 Guardar cambios"}
             </button>
-            {manualSave.success && (
-              <div className="mt-2 text-green-600 dark:text-green-400 text-sm">
-                Cambios guardados exitosamente
-              </div>
+            {showSuccess && (
+              <ValidationMessage
+                type="success"
+                message="Cambios guardados exitosamente"
+              />
             )}
             {manualSave.error && (
-              <div className="mt-2 text-red-600 dark:text-red-400 text-sm">
-                Error:{" "}
-                {typeof manualSave.error === "string"
-                  ? manualSave.error
-                  : JSON.stringify(manualSave.error)}
-              </div>
+              <ValidationMessage
+                type="error"
+                message={
+                  typeof manualSave.error === "string"
+                    ? manualSave.error
+                    : JSON.stringify(manualSave.error)
+                }
+              />
             )}
             {manualSave.hasChanges && !manualSave.isSaving && (
-              <div className="mt-2 text-yellow-600 dark:text-yellow-400 text-sm">
-                Tienes cambios sin guardar
-              </div>
+              <ValidationMessage
+                type="warning"
+                message="Tienes cambios sin guardar"
+              />
             )}
             <button
               type="button"
@@ -535,11 +592,11 @@ export default function ChatConfig() {
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8">
                     <Avatar
-                      fill={manualSave.formData.primaryColor ?? "#63CFDE"}
+                      fill={manualSave.formData?.primaryColor ?? "#63CFDE"}
                     />
                   </div>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {manualSave.formData.name}
+                    {manualSave.formData?.name ?? "Mi Chatbot"}
                   </span>
                 </div>
               </div>
@@ -550,12 +607,13 @@ export default function ChatConfig() {
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 flex-shrink-0">
                     <Avatar
-                      fill={manualSave.formData.primaryColor ?? "#63CFDE"}
+                      fill={manualSave.formData?.primaryColor ?? "#63CFDE"}
                     />
                   </div>
                   <div className="bg-white dark:bg-space-700 rounded-lg p-3 max-w-xs shadow-sm">
                     <p className="text-sm text-gray-900 dark:text-white">
-                      {manualSave.formData.welcomeMessage}
+                      {manualSave.formData?.welcomeMessage ??
+                        "¡Hola! ¿Cómo puedo ayudarte hoy?"}
                     </p>
                   </div>
                 </div>

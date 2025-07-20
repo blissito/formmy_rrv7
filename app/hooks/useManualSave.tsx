@@ -1,13 +1,24 @@
 import { useState, useRef, useCallback } from "react";
 import { Effect, pipe } from "effect";
-import { validateChatbotDataEffect } from "~/utils/zod";
 
-export function useManualSave(
-  initialData: any,
-  planLimits?: { availableModels?: string[] },
-  intent: string = "update_chatbot"
-) {
-  const [formData, setFormData] = useState(initialData);
+export interface UseManualSaveOptions<T> {
+  initialData: T;
+  validate: (data: T, planLimits?: any) => { success: boolean; error?: any };
+  endpoint: string;
+  intent?: string;
+  idField?: string;
+  planLimits?: any;
+}
+
+export function useManualSave<T = any>({
+  initialData,
+  validate,
+  endpoint,
+  intent = "update",
+  idField = "id",
+  planLimits,
+}: UseManualSaveOptions<T>) {
+  const [formData, setFormData] = useState<T>(initialData);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<any>(null);
   const [success, setSuccess] = useState(false);
@@ -20,14 +31,6 @@ export function useManualSave(
       const updated = { ...prev, [field]: value };
       const isChanged =
         JSON.stringify(updated) !== JSON.stringify(initialRef.current);
-      console.log(
-        "handleChange: updated=",
-        updated,
-        "initial=",
-        initialRef.current,
-        "isChanged=",
-        isChanged
-      );
       setHasChanges(isChanged);
       return updated;
     });
@@ -41,11 +44,11 @@ export function useManualSave(
     const effect = pipe(
       Effect.sync(() => {
         // Validación síncrona
-        const parsed = validateChatbotDataEffect(formData, planLimits);
+        const parsed = validate(formData, planLimits);
         if (!parsed.success) {
           throw parsed.error;
         }
-        return { ...formData, intent };
+        return { ...formData, intent } as T & { [key: string]: any };
       }),
       Effect.flatMap((data) =>
         Effect.tryPromise(async () => {
@@ -56,33 +59,25 @@ export function useManualSave(
               fd.append(key, String(value));
             }
           });
-          // Si existe chatbotId en data pero no se añadió (por falsy), forzar su inclusión
-          if (data.chatbotId && !fd.has("chatbotId")) {
-            fd.append("chatbotId", String(data.chatbotId));
+          // Si existe idField en data pero no se añadió (por falsy), forzar su inclusión
+          if ((data as any)[idField] && !fd.has(idField)) {
+            fd.append(idField, String((data as any)[idField]));
           }
-          console.log("[useManualSave] Enviando fetch a /api/v1/chatbot", fd);
-          const response = await fetch("/api/v1/chatbot", {
+          const response = await fetch(endpoint, {
             method: "POST",
             body: fd,
           });
-          console.log("[useManualSave] response", response);
           let result;
           try {
             result = await response.json();
           } catch (e) {
-            console.error(
-              "[useManualSave] Error al parsear response.json()",
-              e
-            );
             throw new Error("Respuesta no es JSON válido");
           }
-          console.log("[useManualSave] result", result);
           if (!response.ok) throw new Error(result.error || "Error al guardar");
           return result;
         })
       ),
       Effect.catchAll((err) => {
-        console.error("[useManualSave] Error en Effect.tryPromise:", err);
         return Effect.sync(() => {
           throw err;
         });
@@ -97,7 +92,7 @@ export function useManualSave(
     } catch (err) {
       setError(err);
     }
-  }, [formData, planLimits, intent]);
+  }, [formData, planLimits, intent, endpoint, idField, validate]);
 
   // Resetear cambios
   const resetChanges = useCallback(() => {

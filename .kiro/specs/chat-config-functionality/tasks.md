@@ -78,9 +78,9 @@
   - Mantener funcionalidad de scroll e interacción en preview
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 9. Añadir sistema de feedback visual
+- [x] 9. Añadir sistema de feedback visual
 
-  - [ ] 9.1 Implementar indicadores de estado de guardado
+  - [x] 9.1 Implementar indicadores de estado de guardado
 
     - Mostrar spinner en botón durante guardado
     - Añadir mensaje de éxito temporal (3 segundos)
@@ -88,34 +88,9 @@
     - Crear indicador visual para cambios sin guardar
     - _Requirements: 8.1, 8.2, 8.3, 8.5_
 
-  - [ ] 9.2 Crear componente de mensajes de validación
+  - [x] 9.2 Crear componente de mensajes de validación
     - Implementar componente `ValidationMessage` para errores y warnings
     - Añadir iconos apropiados para cada tipo de mensaje
     - Integrar mensajes en cada campo del formulario
     - Implementar colores y estilos consistentes con el tema
     - _Requirements: 2.3, 8.3, 8.4_
-
-- [ ] 10. Implementar navegación entre pestañas
-
-  - Mantener funcionalidad existente de cambio de pestañas
-  - Añadir modal de confirmación para cambios sin guardar
-  - Implementar alerta del navegador para cierre de página
-  - Crear lógica para mostrar contenido específico por pestaña
-  - _Requirements: 5.1, 5.2, 7.6, 7.7_
-
-- [ ] 11. Añadir manejo de límites de plan en la UI
-
-  - Filtrar modelos de IA disponibles según plan en dropdown
-  - Mostrar mensajes de upgrade para funcionalidades PRO
-  - Implementar validación visual antes de permitir cambios
-  - Añadir tooltips informativos sobre limitaciones del plan
-  - _Requirements: 6.1, 6.2, 6.3, 6.5_
-
-- [ ] 12. Implementar manejo de errores y casos edge
-
-  - Añadir error boundary para capturar errores de componentes
-  - Implementar fallbacks apropiados para errores de carga
-  - Crear manejo de errores de conectividad
-  - Añadir logging de errores para debugging
-  - Implementar recuperación graceful de errores
-  - _Requirements: 1.5, 2.4, 3.5, 7.8_
