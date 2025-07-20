@@ -53,6 +53,9 @@ export const action = async ({ request }: ActionArgs) => {
         const primaryColor =
           (formData.get("primaryColor") as string) || undefined;
         const theme = (formData.get("theme") as string) || undefined;
+        const temperature = formData.get("temperature")
+          ? parseFloat(formData.get("temperature") as string)
+          : undefined;
 
         if (!name) {
           return json(
@@ -98,6 +101,7 @@ export const action = async ({ request }: ActionArgs) => {
           aiModel,
           primaryColor,
           theme,
+          temperature,
         });
 
         return json({ success: true, chatbot });
@@ -160,6 +164,10 @@ export const action = async ({ request }: ActionArgs) => {
 
         const theme = formData.get("theme") as string;
         if (theme) updateData.theme = theme;
+
+        const temperature = formData.get("temperature");
+        if (temperature)
+          updateData.temperature = parseFloat(temperature as string);
 
         // Actualizar el chatbot
         const updatedChatbot = await updateChatbot(chatbotId, updateData);

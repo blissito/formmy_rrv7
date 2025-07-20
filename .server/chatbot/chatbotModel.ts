@@ -15,6 +15,7 @@ export async function createChatbot({
   aiModel = "mistralai/mistral-small-3.2-24b-instruct",
   primaryColor,
   theme,
+  temperature = 0.7,
 }: {
   name: string;
   description?: string;
@@ -24,6 +25,7 @@ export async function createChatbot({
   aiModel?: string;
   primaryColor?: string;
   theme?: string;
+  temperature?: number;
 }): Promise<Chatbot> {
   // Validar límite de chatbots por usuario
   const { validateChatbotLimit, validateAvailableModel } = await import(
@@ -61,6 +63,7 @@ export async function createChatbot({
       aiModel,
       primaryColor,
       theme,
+      temperature,
       status: ChatbotStatus.DRAFT,
       isActive: false,
       conversationCount: 0,

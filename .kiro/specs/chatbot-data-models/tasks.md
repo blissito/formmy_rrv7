@@ -102,6 +102,14 @@
   - _Requirements: 1.1, 1.2, 7.3, 7.4, 7.5_
 
 - [x] 11. Añadir endpoint e intent blocks, en la ruta app/routes/api/v1/chatbot.tsx
+
   - Añadir función action (de react router 7) usando formData.get('intent') para construir un arbol de if statements.
   - Crear todas las posibilidades (if, intent) para que el cliente pueda actualizar el chatbot fácilmente con fetch.
+  - _Requirements: 1.1, 1.2, 7.3, 7.4, 7.5_
+
+- [x] 12. Crear ruta de pruebas para los endpoints del chatbot
+  - Crear ruta app/routes/chatbot-test.tsx para probar los endpoints
+  - Implementar interfaz de usuario para probar todas las operaciones de la API
+  - Usar componentes existentes del app para crear la pantalla de pruebas
+  - Incluir formularios para probar cada intent de los diferentes endpoints
   - _Requirements: 1.1, 1.2, 7.3, 7.4, 7.5_
