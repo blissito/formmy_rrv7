@@ -6,6 +6,7 @@ export const PLAN_LIMITS = {
   [Plans.FREE]: {
     maxChatbots: 1,
     maxContextSizeKB: 1000, // 1MB
+    maxConversationsPerMonth: 100,
     availableModels: [
       "mistralai/mistral-small-3.2-24b-instruct",
       "gpt-4o-mini",
@@ -15,6 +16,7 @@ export const PLAN_LIMITS = {
   [Plans.PRO]: {
     maxChatbots: Infinity,
     maxContextSizeKB: 10000, // 10MB
+    maxConversationsPerMonth: Infinity,
     availableModels: [
       "mistralai/mistral-small-3.2-24b-instruct",
       "mistralai/mistral-medium-3.2-24b-instruct",
@@ -160,5 +162,51 @@ export async function getUserPlanLimits(userId: string): Promise<{
   return {
     plan: user.plan,
     limits: PLAN_LIMITS[user.plan],
+  };
+}
+/**
+ * Valida si un chatbot puede iniciar más conversaciones este mes según el plan del usuario
+ */
+export async function validateMonthlyConversationLimit(
+  chatbotId: string
+): Promise<{
+  canCreate: boolean;
+  currentCount: number;
+  maxAllowed: number;
+  remainingCount: number;
+}> {
+  // Obtener el chatbot y su usuario
+  const chatbot = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: { userId: true, monthlyUsage: true },
+  });
+
+  if (!chatbot) {
+    throw new Error(`Chatbot con ID ${chatbotId} no encontrado`);
+  }
+
+  // Obtener el plan del usuario
+  const user = await db.user.findUnique({
+    where: { id: chatbot.userId },
+    select: { plan: true },
+  });
+
+  if (!user) {
+    throw new Error(`Usuario no encontrado`);
+  }
+
+  const maxAllowed = PLAN_LIMITS[user.plan].maxConversationsPerMonth;
+  const currentCount = chatbot.monthlyUsage;
+
+  // Si el plan es PRO, maxAllowed es Infinity, por lo que siempre puede crear más
+  const canCreate = currentCount < maxAllowed;
+  const remainingCount =
+    maxAllowed === Infinity ? Infinity : Math.max(0, maxAllowed - currentCount);
+
+  return {
+    canCreate,
+    currentCount,
+    maxAllowed,
+    remainingCount,
   };
 }

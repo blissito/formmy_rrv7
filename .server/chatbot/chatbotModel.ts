@@ -205,19 +205,15 @@ export async function removeContextItem(
 
 /**
  * Updates the status of a chatbot
+ * @deprecated Use chatbotStateManager functions instead
  */
 export async function updateChatbotStatus(
   id: string,
   status: ChatbotStatus,
   isActive: boolean
 ): Promise<Chatbot> {
-  return db.chatbot.update({
-    where: { id },
-    data: {
-      status,
-      isActive,
-    },
-  });
+  const { changeChatbotState } = await import("./chatbotStateManager");
+  return changeChatbotState(id, status);
 }
 
 /**
@@ -295,8 +291,6 @@ export async function getChatbotsByUserId(userId: string): Promise<Chatbot[]> {
  * Deletes a chatbot
  */
 export async function deleteChatbot(id: string): Promise<Chatbot> {
-  return db.chatbot.update({
-    where: { id },
-    data: { status: "DELETED" },
-  });
+  const { markChatbotAsDeleted } = await import("./chatbotStateManager");
+  return markChatbotAsDeleted(id);
 }

@@ -207,6 +207,7 @@ enum ConversationStatus {
   ACTIVE
   COMPLETED
   TIMEOUT
+  DELETED
 }
 
 model Conversation {
@@ -242,6 +243,7 @@ model Message {
   id      String      @id @default(auto()) @map("_id") @db.ObjectId
   content String
   role    MessageRole
+  deleted Boolean     @default(false)
 
   // Metadata
   tokens       Int? // for usage tracking
