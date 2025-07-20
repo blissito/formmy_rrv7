@@ -3,7 +3,7 @@ import { BsPersonVideo2 } from "react-icons/bs";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
 import { useLoaderData } from "react-router";
-import { getUserOrNull } from ".server/getUserUtils";
+import { getUserOrNull } from "../server/getUserUtils";
 
 export const loader = async ({ request }: LoaderArgs) => {
   const user = await getUserOrNull(request);

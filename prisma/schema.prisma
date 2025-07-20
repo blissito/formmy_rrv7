@@ -176,6 +176,7 @@ model Chatbot {
   personality    String?
   welcomeMessage String?
   aiModel        String  @default("mistralai/mistral-small-3.2-24b-instruct")
+  temperature    Float   @default(1) // revisit
 
   // Context items embedded
   contexts ContextItem[]

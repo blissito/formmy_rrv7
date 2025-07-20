@@ -1,88 +1,211 @@
 import { useState } from "react";
-import { Form, Link, useActionData, useLoaderData } from "react-router";
+import { Link, useActionData, useLoaderData } from "react-router";
 import type { Route } from "./+types/chat.config";
-import { Button } from "~/components/Button";
 import { Toggle } from "~/components/Switch";
 import { Avatar } from "~/components/icons/Avatar";
 import { data as json } from "react-router";
 import { IoChevronDown, IoArrowBack, IoSend } from "react-icons/io5";
+import { Effect, pipe } from "effect";
+import { validateChatbotDataEffect } from "~/utils/zod";
+import { useManualSave } from "~/hooks/useManualSave";
+import { getUserOrRedirect } from "../server/getUserUtils";
+import {
+  createChatbot,
+  getChatbotById,
+  getChatbotsByUserId,
+  getUserPlanFeatures,
+  validateUserAIModelAccess,
+} from "~/server/chatbot";
+type Integration = any;
+type User = any;
+type Project = any;
 
 export const meta = () => [
-  { title: "Configuración del Chatbot - Fixtergeek" },
+  { title: "Configuración del Chatbot - Formmy" },
   { name: "description", content: "Configura tu chatbot personalizado" },
 ];
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  // Aquí cargarías los datos del chatbot desde la base de datos
-  // Por ahora devolvemos datos de ejemplo
-  return json({
-    chatbot: {
-      id: "fixtergeek-123",
-      name: "Fixtergeek",
-      primaryColor: "#63CFDE",
-      welcomeMessage: "¡Hola! ¿Cómo puedo ayudarte hoy?",
-      personality: "Agente de servicio al cliente",
-      aiModel: "gpt-4o-mini",
-      temperature: 0.7,
-      prompt: `### Rol
-- Función principal: Eres un agente de atención al cliente que asiste a los usuarios con base en los datos de capacitación específicos proporcionados. Tu objetivo principal es informar, aclarar y responder preguntas estrictamente relacionadas con estos datos de capacitación y tu rol.
+  const user = await getUserOrRedirect(request);
 
-### Proceso`,
-      isActive: true,
-    },
-    availableModels: [
-      { value: "gpt-4o-mini", label: "GPT-4o Mini" },
-      {
-        value: "mistralai/mistral-small-3.2-24b-instruct",
-        label: "Mistral Small",
-      },
-      { value: "anthropic/claude-3-haiku-20240307", label: "Claude Haiku" },
-    ],
-    personalities: [
-      { value: "customer-service", label: "Agente de servicio al cliente" },
-      { value: "sales-assistant", label: "Asistente de ventas" },
-      { value: "technical-support", label: "Soporte técnico" },
-      { value: "friendly-assistant", label: "Asistente amigable" },
-    ],
+  // Obtener chatbotId de la URL si existe
+  const url = new URL(request.url);
+  const chatbotId = url.searchParams.get("chatbotId");
+  let chatbot = null;
+
+  if (chatbotId) {
+    chatbot = await getChatbotById(chatbotId);
+    if (!chatbot || chatbot.userId !== user.id) {
+      throw json(
+        { error: "Chatbot no encontrado o sin permiso" },
+        { status: 404 }
+      );
+    }
+  } else {
+    // Buscar el primer chatbot activo del usuario
+    const chatbots = await getChatbotsByUserId(user.id);
+    chatbot = chatbots.find((c) => c.isActive) || chatbots[0];
+    // Si no tiene chatbots, crear uno por defecto
+    if (!chatbot) {
+      chatbot = await createChatbot({
+        name: `${user.name || "Mi Chatbot"}`,
+        userId: user.id,
+        personality: "customer-service",
+        welcomeMessage: "¡Hola! ¿Cómo puedo ayudarte hoy?",
+        aiModel: "gpt-4o-mini",
+        primaryColor: "#63CFDE",
+        theme: "light",
+        temperature: 0.7,
+      });
+    }
+  }
+
+  // Modelos y personalidades disponibles según el plan
+  const modelAccess = await validateUserAIModelAccess(user.id);
+  const planFeatures = await getUserPlanFeatures(user.id);
+
+  // Personalidades (puedes ajustar según planFeatures si aplica)
+  const personalities = [
+    { value: "customer-service", label: "Agente de servicio al cliente" },
+    { value: "sales-assistant", label: "Asistente de ventas" },
+    { value: "technical-support", label: "Soporte técnico" },
+    { value: "friendly-assistant", label: "Asistente amigable" },
+  ];
+
+  return json({
+    chatbot,
+    availableModels: modelAccess.availableModels.map((m) => ({
+      value: m,
+      label: m,
+    })),
+    personalities,
+    planFeatures,
   });
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
+  const user = await getUserOrRedirect(request);
+
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
 
-  // Simular userId para pruebas
+  // Simular userId para pruebas (reemplazar por lógica real si aplica)
   formData.set("userId", "test-user-123");
 
-  try {
-    const response = await fetch("http://localhost:3000/api/v1/chatbot", {
-      method: "POST",
-      body: formData,
-    });
+  // Handler para actualizar configuración del chatbot
+  const handleUpdateChatbotEffect = (formData: FormData, userId: string) =>
+    pipe(
+      Effect.tryPromise(async () => {
+        // Convertir FormData a objeto
+        const data = Object.fromEntries(formData.entries());
+        // Obtener límites del plan (puedes obtenerlos del loader o de una llamada si es necesario)
+        const planLimits = data.availableModels
+          ? { availableModels: JSON.parse(data.availableModels as string) }
+          : undefined;
+        const parsed = validateChatbotDataEffect(
+          {
+            name: data.name,
+            aiModel: data.aiModel,
+            personality: data.personality,
+            welcomeMessage: data.welcomeMessage,
+            primaryColor: data.primaryColor,
+            temperature: Number(data.temperature),
+            prompt: data.prompt,
+          },
+          planLimits
+        );
+        if (!parsed.success) {
+          throw new Error(JSON.stringify(parsed.error));
+        }
+        return formData;
+      }),
+      Effect.flatMap((data) =>
+        Effect.tryPromise(async () => {
+          const response = await fetch("http://localhost:3000/api/v1/chatbot", {
+            method: "POST",
+            body: data,
+          });
+          const result = await response.json();
+          if (!response.ok)
+            throw new Error(result.error || "Error al actualizar");
+          return result;
+        })
+      ),
+      Effect.catchAll((error) =>
+        Effect.succeed({
+          success: false,
+          error: error instanceof Error ? error.message : "Error desconocido",
+          intent,
+        })
+      )
+    );
 
-    const result = await response.json();
+  // Handler para alternar estado activo/inactivo
+  const handleToggleStatusEffect = (formData: FormData, userId: string) =>
+    pipe(
+      Effect.tryPromise(async () => {
+        // Aquí podrías validar ownership, etc.
+        return formData;
+      }),
+      Effect.flatMap((data) =>
+        Effect.tryPromise(async () => {
+          data.set("intent", "toggle_status");
+          const response = await fetch("http://localhost:3000/api/v1/chatbot", {
+            method: "POST",
+            body: data,
+          });
+          const result = await response.json();
+          if (!response.ok)
+            throw new Error(result.error || "Error al alternar estado");
+          return result;
+        })
+      ),
+      Effect.catchAll((error) =>
+        Effect.succeed({
+          success: false,
+          error: error instanceof Error ? error.message : "Error desconocido",
+          intent,
+        })
+      )
+    );
 
-    return json({
-      success: response.ok,
-      status: response.status,
-      data: result,
-      intent,
-    });
-  } catch (error) {
+  // Determinar handler según intent
+  let effect;
+  if (intent === "update_chatbot") {
+    effect = handleUpdateChatbotEffect(
+      formData,
+      formData.get("userId") as string
+    );
+  } else if (intent === "toggle_status") {
+    effect = handleToggleStatusEffect(
+      formData,
+      formData.get("userId") as string
+    );
+  } else {
+    // Fallback: intent no reconocido
     return json({
       success: false,
-      error: error instanceof Error ? error.message : "Error desconocido",
+      error: `Intent no reconocido: ${intent}`,
       intent,
     });
   }
+
+  // Ejecutar Effect y devolver resultado
+  const result = await Effect.runPromise(effect);
+  return json(result);
 };
 
 export default function ChatConfig() {
-  const { chatbot, availableModels, personalities } =
+  const { chatbot, availableModels, personalities, planFeatures } =
     useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const manualSave = useManualSave(
+    chatbot,
+    { availableModels: availableModels.map((m) => m.value) },
+    "update_chatbot"
+  );
+
   const [activeTab, setActiveTab] = useState("preview");
-  const [chatbotData, setChatbotData] = useState(chatbot);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showPersonalityDropdown, setShowPersonalityDropdown] = useState(false);
 
@@ -96,14 +219,14 @@ export default function ChatConfig() {
   ];
 
   const handleInputChange = (field: string, value: any) => {
-    setChatbotData((prev) => ({ ...prev, [field]: value }));
+    manualSave.handleChange(field, value);
   };
 
   const selectedModel = availableModels.find(
-    (m) => m.value === chatbotData.aiModel
+    (m) => m.value === manualSave.formData.aiModel
   );
   const selectedPersonality = personalities.find(
-    (p) => p.value === chatbotData.personality
+    (p) => p.value === manualSave.formData.personality
   );
 
   return (
@@ -120,17 +243,17 @@ export default function ChatConfig() {
                 <IoArrowBack className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </Link>
               <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {chatbotData.name}
+                {manualSave.formData.name}
               </h1>
             </div>
 
             <div className="flex items-center gap-4">
               <Toggle
-                defaultValue={chatbotData.isActive}
+                defaultValue={manualSave.formData.isActive}
                 onChange={(value) => handleInputChange("isActive", value)}
               />
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {chatbotData.isActive ? "Activo" : "Inactivo"}
+                {manualSave.formData.isActive ? "Activo" : "Inactivo"}
               </span>
             </div>
           </div>
@@ -170,7 +293,9 @@ export default function ChatConfig() {
               {/* Avatar and Name */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Avatar fill={chatbotData.primaryColor} />
+                  <Avatar
+                    fill={manualSave.formData.primaryColor ?? "#63CFDE"}
+                  />
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -178,7 +303,7 @@ export default function ChatConfig() {
                   </label>
                   <input
                     type="text"
-                    value={chatbotData.name}
+                    value={manualSave.formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-space-700 dark:text-white"
                   />
@@ -193,18 +318,21 @@ export default function ChatConfig() {
                 <div className="flex items-center gap-3">
                   <div
                     className="w-10 h-10 rounded-full border-2 border-gray-300 dark:border-gray-600"
-                    style={{ backgroundColor: chatbotData.primaryColor }}
+                    style={{
+                      backgroundColor:
+                        manualSave.formData.primaryColor ?? undefined,
+                    }}
                   />
                   <input
                     type="color"
-                    value={chatbotData.primaryColor}
+                    value={manualSave.formData.primaryColor ?? undefined}
                     onChange={(e) =>
                       handleInputChange("primaryColor", e.target.value)
                     }
                     className="w-16 h-10 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
                   />
                   <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-                    {chatbotData.primaryColor}
+                    {manualSave.formData.primaryColor ?? "#63CFDE"}
                   </span>
                 </div>
               </div>
@@ -329,7 +457,7 @@ export default function ChatConfig() {
                   min="0"
                   max="1"
                   step="0.1"
-                  value={chatbotData.temperature}
+                  value={manualSave.formData?.temperature ?? 0.7}
                   onChange={(e) =>
                     handleInputChange("temperature", parseFloat(e.target.value))
                   }
@@ -337,7 +465,7 @@ export default function ChatConfig() {
                 />
                 <div className="text-center mt-2">
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {chatbotData.temperature}
+                    {manualSave.formData?.temperature ?? 0.7}
                   </span>
                 </div>
               </div>
@@ -348,7 +476,7 @@ export default function ChatConfig() {
                   Prompt general
                 </label>
                 <textarea
-                  value={chatbotData.prompt}
+                  value={manualSave.formData?.prompt ?? ""}
                   onChange={(e) => handleInputChange("prompt", e.target.value)}
                   rows={8}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-space-700 dark:text-white text-sm"
@@ -358,32 +486,40 @@ export default function ChatConfig() {
             </div>
 
             {/* Save Button */}
-            <Form method="post">
-              <input type="hidden" name="intent" value="update_chatbot" />
-              <input type="hidden" name="chatbotId" value={chatbotData.id} />
-              <input type="hidden" name="name" value={chatbotData.name} />
-              <input
-                type="hidden"
-                name="primaryColor"
-                value={chatbotData.primaryColor}
-              />
-              <input type="hidden" name="aiModel" value={chatbotData.aiModel} />
-              <input
-                type="hidden"
-                name="personality"
-                value={chatbotData.personality}
-              />
-              <input type="hidden" name="prompt" value={chatbotData.prompt} />
-              <input
-                type="hidden"
-                name="temperature"
-                value={chatbotData.temperature}
-              />
-
-              <Button type="submit" className="w-full">
-                💾 Guardar cambios
-              </Button>
-            </Form>
+            <button
+              type="button"
+              className="w-full bg-brand-500 text-white py-2 px-4 rounded-md hover:bg-brand-600 transition-colors disabled:opacity-50"
+              onClick={manualSave.handleSave}
+              disabled={manualSave.isSaving || !manualSave.hasChanges}
+            >
+              {manualSave.isSaving ? "Guardando..." : "💾 Guardar cambios"}
+            </button>
+            {manualSave.success && (
+              <div className="mt-2 text-green-600 dark:text-green-400 text-sm">
+                Cambios guardados exitosamente
+              </div>
+            )}
+            {manualSave.error && (
+              <div className="mt-2 text-red-600 dark:text-red-400 text-sm">
+                Error:{" "}
+                {typeof manualSave.error === "string"
+                  ? manualSave.error
+                  : JSON.stringify(manualSave.error)}
+              </div>
+            )}
+            {manualSave.hasChanges && !manualSave.isSaving && (
+              <div className="mt-2 text-yellow-600 dark:text-yellow-400 text-sm">
+                Tienes cambios sin guardar
+              </div>
+            )}
+            <button
+              type="button"
+              className="w-full mt-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              onClick={manualSave.resetChanges}
+              disabled={manualSave.isSaving || !manualSave.hasChanges}
+            >
+              Descartar cambios
+            </button>
           </div>
 
           {/* Chat Preview */}
@@ -393,10 +529,12 @@ export default function ChatConfig() {
               <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8">
-                    <Avatar fill={chatbotData.primaryColor} />
+                    <Avatar
+                      fill={manualSave.formData.primaryColor ?? "#63CFDE"}
+                    />
                   </div>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {chatbotData.name}
+                    {manualSave.formData.name}
                   </span>
                 </div>
               </div>
@@ -406,11 +544,13 @@ export default function ChatConfig() {
                 {/* Bot Message */}
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 flex-shrink-0">
-                    <Avatar fill={chatbotData.primaryColor} />
+                    <Avatar
+                      fill={manualSave.formData.primaryColor ?? "#63CFDE"}
+                    />
                   </div>
                   <div className="bg-white dark:bg-space-700 rounded-lg p-3 max-w-xs shadow-sm">
                     <p className="text-sm text-gray-900 dark:text-white">
-                      {chatbotData.welcomeMessage}
+                      {manualSave.formData.welcomeMessage}
                     </p>
                   </div>
                 </div>

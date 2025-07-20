@@ -1,13 +1,13 @@
 # Implementation Plan
 
-- [ ] 1. Configurar Effect para manejo de errores y operaciones asíncronas
+- [x] 1. Configurar Effect para manejo de errores y operaciones asíncronas
 
   - Instalar dependencia `effect` si no está disponible
   - Importar `Effect` y `pipe` en los archivos necesarios
   - Configurar tipos TypeScript para Effect si es necesario
   - _Requirements: Todas (infraestructura)_
 
-- [ ] 2. Implementar funciones de utilidad para el loader
+- [x] 2. Implementar funciones de utilidad para el loader
 
   - Usar función existente `getUserOrNull` para obtener usuario de la sesión
   - Crear función `getUserWithPlan` para obtener usuario con información del plan
@@ -16,15 +16,15 @@
   - Crear función `createDefaultChatbot` para crear chatbot por defecto si no existe
   - _Requirements: 1.1, 1.2, 1.3, 1.5_
 
-- [ ] 3. Implementar funciones de configuración y límites de plan
+- [x] 3. Implementar funciones de configuración y límites de plan
 
-  - Crear función `getAvailableModels` que filtre modelos según el plan del usuario
-  - Crear función `getAvailablePersonalities` para obtener personalidades disponibles
-  - Crear función `getPlanLimits` para obtener límites específicos del plan
-  - Implementar constantes de configuración para planes FREE y PRO
+  - Crear función `getAvailableModels` que filtre modelos según el plan del usuario (validateUserAIModelAccess)
+  - Crear función `getAvailablePersonalities` para obtener personalidades disponibles (constante en loader)
+  - Crear función `getPlanLimits` para obtener límites específicos del plan (getUserPlanFeatures)
+  - Implementar constantes de configuración para planes FREE y PRO (Plans.FREE, Plans.PRO)
   - _Requirements: 6.1, 6.2, 6.5_
 
-- [ ] 3. Actualizar el loader de la ruta chat/config
+- [x] 4. Actualizar el loader de la ruta chat/config
 
   - Modificar el loader existente para usar las funciones de utilidad creadas
   - Implementar manejo de parámetros de URL para chatbotId
@@ -33,36 +33,22 @@
   - Añadir manejo de errores 404 para chatbots no encontrados
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 4. Implementar handlers para las acciones del formulario usando Effect
+- [x] 5. Implementar handlers para las acciones del formulario usando Effect
 
-  - [ ] 4.1 Crear handler `handleUpdateChatbotEffect` para actualizar configuración
+  - Crear handler `handleUpdateChatbotEffect` para actualizar configuración
+  - Crear handler `handleToggleStatusEffect` para cambiar estado activo/inactivo
+  - Usar Effect.tryPromise para validación y operaciones async
+  - Implementar Effect.catchAll para manejo robusto de errores
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 6.4_
 
-    - Usar Effect.tryPromise para validación de datos del formulario
-    - Implementar Effect.flatMap para validación de límites de plan
-    - Crear pipeline Effect para actualizar chatbot en la base de datos
-    - Usar Effect.catchAll para manejo robusto de errores
-    - Implementar respuesta con datos actualizados o errores usando Effect.map
-    - _Requirements: 2.1, 2.2, 2.3, 2.4, 6.4_
+- [x] 6. Implementar sistema de validación de datos con Effect.Schema
 
-  - [ ] 4.2 Crear handler `handleToggleStatusEffect` para cambiar estado activo/inactivo
-    - Usar Effect.tryPromise para cargar chatbot y validar ownership
-    - Implementar Effect.flatMap para alternar entre ACTIVE e INACTIVE
-    - Crear pipeline Effect para actualizar estado en base de datos
-    - Usar Effect.catchAll para manejo específico de errores
-    - _Requirements: 3.1, 3.2, 3.4, 3.5_
-
-- [ ] 5. Implementar sistema de validación de datos con Zod
-
-  - Crear schema `chatbotConfigSchema` usando Zod siguiendo el patrón del proyecto
-  - Implementar validación de nombre (2-50 caracteres)
-  - Añadir validación de modelo de IA con superRefine según plan del usuario
-  - Implementar validación de temperatura (0-1) con números
-  - Crear validación de longitud de prompt (máximo 4000 caracteres)
-  - Añadir validación de color primario (formato hex válido con regex)
-  - Crear función `validateChatbotData` que use el schema con límites de plan
+  - Crear schema `chatbotConfigEffectSchema` usando Effect.Schema
+  - Implementar validación de nombre, modelo, temperatura, prompt, color, etc.
+  - Crear función `validateChatbotDataEffect` que use el schema y los límites de plan
   - _Requirements: 2.1, 2.3, 6.4, 6.5_
 
-- [ ] 6. Crear hook personalizado para manejo de formulario con Effect
+- [x] 7. Crear hook personalizado para manejo de formulario con Effect
 
   - Implementar hook `useManualSave` con estado de formulario
   - Añadir tracking de cambios sin guardar (`hasChanges`)
@@ -74,7 +60,7 @@
   - Añadir función `resetChanges` para descartar modificaciones
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 7. Actualizar componente principal ChatConfig
+- [x] 8. Actualizar componente principal ChatConfig
 
   - Reemplazar estado local con el hook `useManualSave`
   - Conectar formulario con datos reales del loader
@@ -83,7 +69,7 @@
   - Actualizar botón "Guardar cambios" con estado dinámico
   - _Requirements: 7.1, 7.5, 8.1, 8.5_
 
-- [ ] 8. Implementar preview en tiempo real
+- [x] 9. Implementar preview en tiempo real
 
   - Conectar cambios de nombre con preview del chatbot
   - Actualizar colores del avatar y botones según primaryColor

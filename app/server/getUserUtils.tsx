@@ -1,5 +1,5 @@
 import { getSession } from "~/sessions";
-import { db } from "../app/utils/db.server";
+import { db } from "~/utils/db.server";
 import { redirectToGoogle } from "~/lib/google.server";
 import { redirect } from "react-router";
 import { type User } from "@prisma/client";

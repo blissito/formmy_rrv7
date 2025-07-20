@@ -10,7 +10,7 @@ import { z } from "zod";
 import { db } from "~/utils/db.server";
 import { EmojiConfetti } from "~/components/EmojiConffeti";
 import Spinner from "~/components/Spinner";
-import { getUserOrRedirect } from ".server/getUserUtils";
+import { getUserOrRedirect } from "../server/getUserUtils";
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Este campo es necesario" }),

@@ -1,4 +1,5 @@
-import { Integration, IntegrationType, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+import type { Integration, IntegrationType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 

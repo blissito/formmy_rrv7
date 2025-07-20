@@ -8,7 +8,7 @@ import { twMerge } from "tailwind-merge";
 import Spinner from "~/components/Spinner";
 import type { Route } from "./+types/profile";
 import SuccessModal from "~/components/SuccessModal";
-import { getUserOrRedirect } from ".server/getUserUtils";
+import { getUserOrRedirect } from "../server/getUserUtils";
 import useLocalStorage from "~/lib/hooks/useLocalStorage";
 import { Form, useFetcher, useLoaderData, useNavigation } from "react-router";
 
