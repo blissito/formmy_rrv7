@@ -1,5 +1,6 @@
 import { Plans } from "@prisma/client";
 import { db } from "~/utils/db.server";
+import { PLAN_MODELS } from "../../utils/aiModels";
 
 // Define los límites por plan
 export const PLAN_LIMITS = {
@@ -7,24 +8,14 @@ export const PLAN_LIMITS = {
     maxChatbots: 1,
     maxContextSizeKB: 1000, // 1MB
     maxConversationsPerMonth: 100,
-    availableModels: [
-      "google/gemini-2.0-flash-exp:free",
-      "mistralai/mistral-small-3.2-24b-instruct",
-    ],
+    availableModels: PLAN_MODELS.FREE,
     showBranding: true,
   },
   [Plans.PRO]: {
     maxChatbots: Infinity,
     maxContextSizeKB: 10000, // 10MB
     maxConversationsPerMonth: Infinity,
-    availableModels: [
-      "google/gemini-2.0-flash-exp:free",
-      "mistralai/mistral-small-3.2-24b-instruct",
-      "openai/gpt-4o-mini",
-      "openai/gpt-4o",
-      "anthropic/claude-3-5-sonnet",
-      "anthropic/claude-3-haiku",
-    ],
+    availableModels: PLAN_MODELS.PRO,
     showBranding: false,
   },
 };

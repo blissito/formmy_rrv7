@@ -19,7 +19,7 @@ import {
 import { ValidationMessage } from "~/components/ui/ValidationMessage";
 import ChatPreview from "../components/ChatPreview";
 import { sendOpenRouterMessageEffect } from "../lib/openrouter.client";
-import { DEFAULT_AI_MODEL } from "../utils/constants";
+import { AI_MODELS, MODEL_LABELS, DEFAULT_AI_MODEL } from "../utils/aiModels";
 type Integration = any;
 type User = any;
 type Project = any;
@@ -77,49 +77,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   ];
 
   // Lista de modelos populares para chatbots
-  const allModels = [
-    {
-      value: "google/gemini-2.0-flash-exp:free",
-      label: "Gemini 2.0 Flash (Google)",
-      category: "Free",
-    },
-    {
-      value: "openai/gpt-4o-mini",
-      label: "GPT-4o Mini (OpenAI)",
-      category: "Pro",
-    },
-    {
-      value: "openai/gpt-4o",
-      label: "GPT-4o (OpenAI)",
-      category: "Pro",
-    },
-    {
-      value: "anthropic/claude-3-5-sonnet",
-      label: "Claude 3.5 Sonnet (Anthropic)",
-      category: "Pro",
-    },
-    {
-      value: "anthropic/claude-3-haiku",
-      label: "Claude 3 Haiku (Anthropic)",
-      category: "Pro",
-    },
-    {
-      value: "mistralai/mistral-small-3.2-24b-instruct",
-      label: "Mistral Small 3.2 (Mistral AI)",
-      category: "Free",
-    },
-  ];
-
-  // Formatear modelos disponibles con etiquetas legibles
-  const modelLabels: Record<string, string> = {
-    "google/gemini-2.0-flash-exp:free": "Gemini 2.0 Flash (Google)",
-    "openai/gpt-4o-mini": "GPT-4o Mini (OpenAI)",
-    "openai/gpt-4o": "GPT-4o (OpenAI)",
-    "anthropic/claude-3-5-sonnet": "Claude 3.5 Sonnet (Anthropic)",
-    "anthropic/claude-3-haiku": "Claude 3 Haiku (Anthropic)",
-    "mistralai/mistral-small-3.2-24b-instruct":
-      "Mistral Small 3.2 (Mistral AI)",
-  };
+  const allModels = AI_MODELS;
+  const modelLabels = MODEL_LABELS;
 
   // Crear lista de todos los modelos con información de disponibilidad
   const availableModels = allModels.map((model) => ({
