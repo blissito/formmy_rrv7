@@ -17,6 +17,9 @@ import {
   validateUserAIModelAccess,
 } from "~/server/chatbot";
 import { ValidationMessage } from "~/components/ui/ValidationMessage";
+import ChatPreview from "../components/ChatPreview";
+import { sendOpenRouterMessageEffect } from "../lib/openrouter.client";
+import { DEFAULT_AI_MODEL } from "../utils/constants";
 type Integration = any;
 type User = any;
 type Project = any;
@@ -53,7 +56,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         userId: user.id,
         personality: "customer-service",
         welcomeMessage: "¡Hola! ¿Cómo puedo ayudarte hoy?",
-        aiModel: "gpt-4o-mini",
+        aiModel: DEFAULT_AI_MODEL,
         primaryColor: "#63CFDE",
         theme: "light",
         temperature: 0.7,
@@ -73,12 +76,22 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     { value: "friendly-assistant", label: "Asistente amigable" },
   ];
 
+  // Asegurar que el modelo free esté en la lista
+  const freeModel = {
+    value: "google/gemini-2.0-flash-exp:free",
+    label: "Gemini 2.0 Flash (Google, FREE)",
+  };
+  let availableModels = modelAccess.availableModels.map((m) => ({
+    value: m,
+    label: m,
+  }));
+  if (!availableModels.some((m) => m.value === freeModel.value)) {
+    availableModels = [freeModel, ...availableModels];
+  }
+
   return json({
     chatbot,
-    availableModels: modelAccess.availableModels.map((m) => ({
-      value: m,
-      label: m,
-    })),
+    availableModels,
     personalities,
     planFeatures,
   });
@@ -227,6 +240,7 @@ export default function ChatConfig() {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showPersonalityDropdown, setShowPersonalityDropdown] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // Eliminar toda la lógica y estado de chat local
 
   // Mostrar mensaje de éxito temporal
   useEffect(() => {
@@ -586,82 +600,26 @@ export default function ChatConfig() {
 
           {/* Chat Preview */}
           <div className="lg:sticky lg:top-8">
-            <div className="bg-white dark:bg-space-800 rounded-lg shadow overflow-hidden">
-              {/* Chat Header */}
-              <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8">
-                    <Avatar
-                      fill={manualSave.formData?.primaryColor ?? "#63CFDE"}
-                    />
-                  </div>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {manualSave.formData?.name ?? "Mi Chatbot"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Chat Messages */}
-              <div className="h-96 p-4 space-y-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
-                {/* Bot Message */}
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 flex-shrink-0">
-                    <Avatar
-                      fill={manualSave.formData?.primaryColor ?? "#63CFDE"}
-                    />
-                  </div>
-                  <div className="bg-white dark:bg-space-700 rounded-lg p-3 max-w-xs shadow-sm">
-                    <p className="text-sm text-gray-900 dark:text-white">
-                      {manualSave.formData?.welcomeMessage ??
-                        "¡Hola! ¿Cómo puedo ayudarte hoy?"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* User Message */}
-                <div className="flex items-start gap-3 justify-end">
-                  <div className="bg-brand-500 rounded-lg p-3 max-w-xs">
-                    <p className="text-sm text-white">
-                      ¡Hola! ¿Cómo puedo ayudarte hoy?
-                    </p>
-                  </div>
-                  <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex-shrink-0" />
-                </div>
-              </div>
-
-              {/* Chat Input */}
-              <div className="p-4 border-t border-gray-200 dark:border-gray-600">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Escribe un mensaje..."
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-space-700 dark:text-white text-sm"
+            {activeTab === "preview" && (
+              <ChatPreview
+                model={manualSave.formData?.aiModel}
+                instructions={
+                  manualSave.formData?.prompt ||
+                  manualSave.formData?.welcomeMessage ||
+                  ""
+                }
+                temperature={manualSave.formData?.temperature ?? 0.7}
+                primaryColor={manualSave.formData?.primaryColor || undefined}
+                name={manualSave.formData?.name ?? "Mi Ghosty bot"}
+                avatarComponent={
+                  <Avatar
+                    fill={manualSave.formData?.primaryColor ?? "#63CFDE"}
                   />
-                  <button
-                    type="button"
-                    className="p-2 bg-brand-500 text-white rounded-full hover:bg-brand-600 transition-colors"
-                  >
-                    <IoSend className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Result */}
-            {actionData && (
-              <div className="mt-4 p-4 bg-white dark:bg-space-800 rounded-lg shadow">
-                <div
-                  className={`text-sm ${
-                    actionData.success
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {actionData.success
-                    ? "✅ Cambios guardados exitosamente"
-                    : "❌ Error al guardar cambios"}
-                </div>
-              </div>
+                }
+                welcomeMessage={
+                  manualSave.formData?.welcomeMessage || undefined
+                }
+              />
             )}
           </div>
         </div>
