@@ -52,9 +52,14 @@ export function useManualSave(
           // Convertir a FormData
           const fd = new FormData();
           Object.entries(data).forEach(([key, value]) => {
-            if (value !== undefined && value !== null)
+            if (value !== undefined && value !== null) {
               fd.append(key, String(value));
+            }
           });
+          // Si existe chatbotId en data pero no se añadió (por falsy), forzar su inclusión
+          if (data.chatbotId && !fd.has("chatbotId")) {
+            fd.append("chatbotId", String(data.chatbotId));
+          }
           console.log("[useManualSave] Enviando fetch a /api/v1/chatbot", fd);
           const response = await fetch("/api/v1/chatbot", {
             method: "POST",

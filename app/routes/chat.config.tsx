@@ -200,7 +200,7 @@ export default function ChatConfig() {
     useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const manualSave = useManualSave(
-    chatbot,
+    { ...chatbot, chatbotId: chatbot.id }, // Forzar que chatbotId esté siempre en el estado
     { availableModels: availableModels.map((m) => m.value) },
     "update_chatbot"
   );
@@ -219,7 +219,12 @@ export default function ChatConfig() {
   ];
 
   const handleInputChange = (field: string, value: any) => {
-    manualSave.handleChange(field, value);
+    // Si el campo es name/id, asegúrate de que chatbotId se mantenga
+    if (field === "id" || field === "chatbotId") {
+      manualSave.handleChange("chatbotId", value);
+    } else {
+      manualSave.handleChange(field, value);
+    }
   };
 
   const selectedModel = availableModels.find(
