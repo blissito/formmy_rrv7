@@ -30,7 +30,7 @@ export default function ChatPreview({
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [stream, setStream] = useState(false);
+  const [stream, setStream] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleChatSend = async () => {

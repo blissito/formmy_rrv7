@@ -76,18 +76,57 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     { value: "friendly-assistant", label: "Asistente amigable" },
   ];
 
-  // Asegurar que el modelo free esté en la lista
-  const freeModel = {
-    value: "google/gemini-2.0-flash-exp:free",
-    label: "Gemini 2.0 Flash (Google, FREE)",
+  // Lista de modelos populares para chatbots
+  const allModels = [
+    {
+      value: "google/gemini-2.0-flash-exp:free",
+      label: "Gemini 2.0 Flash (Google)",
+      category: "Free",
+    },
+    {
+      value: "openai/gpt-4o-mini",
+      label: "GPT-4o Mini (OpenAI)",
+      category: "Pro",
+    },
+    {
+      value: "openai/gpt-4o",
+      label: "GPT-4o (OpenAI)",
+      category: "Pro",
+    },
+    {
+      value: "anthropic/claude-3-5-sonnet",
+      label: "Claude 3.5 Sonnet (Anthropic)",
+      category: "Pro",
+    },
+    {
+      value: "anthropic/claude-3-haiku",
+      label: "Claude 3 Haiku (Anthropic)",
+      category: "Pro",
+    },
+    {
+      value: "mistralai/mistral-small-3.2-24b-instruct",
+      label: "Mistral Small 3.2 (Mistral AI)",
+      category: "Free",
+    },
+  ];
+
+  // Formatear modelos disponibles con etiquetas legibles
+  const modelLabels: Record<string, string> = {
+    "google/gemini-2.0-flash-exp:free": "Gemini 2.0 Flash (Google)",
+    "openai/gpt-4o-mini": "GPT-4o Mini (OpenAI)",
+    "openai/gpt-4o": "GPT-4o (OpenAI)",
+    "anthropic/claude-3-5-sonnet": "Claude 3.5 Sonnet (Anthropic)",
+    "anthropic/claude-3-haiku": "Claude 3 Haiku (Anthropic)",
+    "mistralai/mistral-small-3.2-24b-instruct":
+      "Mistral Small 3.2 (Mistral AI)",
   };
-  let availableModels = modelAccess.availableModels.map((m) => ({
-    value: m,
-    label: m,
+
+  // Crear lista de todos los modelos con información de disponibilidad
+  const availableModels = allModels.map((model) => ({
+    ...model,
+    isAvailable: modelAccess.availableModels.includes(model.value),
+    label: modelLabels[model.value] || model.label,
   }));
-  if (!availableModels.some((m) => m.value === freeModel.value)) {
-    availableModels = [freeModel, ...availableModels];
-  }
 
   return json({
     chatbot,
@@ -220,7 +259,7 @@ export default function ChatConfig() {
     description: "",
     personality: "customer-service",
     welcomeMessage: "¡Hola! ¿Cómo puedo ayudarte hoy?",
-    aiModel: "gpt-4o-mini",
+    aiModel: DEFAULT_AI_MODEL,
     primaryColor: "#63CFDE",
     theme: "light",
     temperature: 0.7,
@@ -240,6 +279,23 @@ export default function ChatConfig() {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showPersonalityDropdown, setShowPersonalityDropdown] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Cerrar dropdowns cuando se hace click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (
+        !target.closest(".model-dropdown") &&
+        !target.closest(".personality-dropdown")
+      ) {
+        setShowModelDropdown(false);
+        setShowPersonalityDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   // Eliminar toda la lógica y estado de chat local
 
   // Mostrar mensaje de éxito temporal
@@ -396,7 +452,7 @@ export default function ChatConfig() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Selecciona el modelo IA
                 </label>
-                <div className="relative">
+                <div className="relative model-dropdown">
                   <button
                     type="button"
                     onClick={() => setShowModelDropdown(!showModelDropdown)}
@@ -406,9 +462,16 @@ export default function ChatConfig() {
                       <div className="w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center">
                         <span className="text-xs text-white font-bold">AI</span>
                       </div>
-                      <span className="text-gray-900 dark:text-white">
-                        {selectedModel?.label || "Selecciona un modelo"}
-                      </span>
+                      <div className="flex flex-col items-start">
+                        <span className="text-gray-900 dark:text-white font-medium">
+                          {selectedModel?.label || "Selecciona un modelo"}
+                        </span>
+                        {selectedModel && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {selectedModel.value}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <IoChevronDown className="w-5 h-5 text-gray-400" />
                   </button>
@@ -420,21 +483,105 @@ export default function ChatConfig() {
                           key={model.value}
                           type="button"
                           onClick={() => {
-                            handleInputChange("aiModel", model.value);
-                            setShowModelDropdown(false);
+                            if (model.isAvailable) {
+                              handleInputChange("aiModel", model.value);
+                              setShowModelDropdown(false);
+                            }
                           }}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2"
+                          disabled={!model.isAvailable}
+                          className={`w-full px-3 py-2 text-left flex items-center gap-2 ${
+                            !model.isAvailable
+                              ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-700"
+                              : "hover:bg-gray-50 dark:hover:bg-gray-600"
+                          } ${
+                            selectedModel?.value === model.value
+                              ? "bg-brand-50 dark:bg-brand-900/20"
+                              : ""
+                          }`}
                         >
-                          <div className="w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center">
+                          <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                              model.isAvailable ? "bg-brand-500" : "bg-gray-400"
+                            }`}
+                          >
                             <span className="text-xs text-white font-bold">
                               AI
                             </span>
                           </div>
-                          <span className="text-gray-900 dark:text-white">
-                            {model.label}
-                          </span>
+                          <div className="flex flex-col items-start flex-1">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`font-medium ${
+                                  model.isAvailable
+                                    ? "text-gray-900 dark:text-white"
+                                    : "text-gray-500 dark:text-gray-400"
+                                }`}
+                              >
+                                {model.label}
+                              </span>
+                              {!model.isAvailable && (
+                                <span className="text-xs bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">
+                                  PRO
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {model.value}
+                            </span>
+                          </div>
+                          {selectedModel?.value === model.value &&
+                            model.isAvailable && (
+                              <div className="ml-auto">
+                                <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
+                              </div>
+                            )}
+                          {!model.isAvailable && (
+                            <div className="ml-auto">
+                              <svg
+                                className="w-4 h-4 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                                />
+                              </svg>
+                            </div>
+                          )}
                         </button>
                       ))}
+
+                      {/* Mensaje informativo sobre modelos PRO */}
+                      {availableModels.some((m) => !m.isAvailable) && (
+                        <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+                          <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            <span>
+                              Los modelos marcados con{" "}
+                              <span className="bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-1 rounded">
+                                PRO
+                              </span>{" "}
+                              requieren actualizar tu plan
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -445,7 +592,7 @@ export default function ChatConfig() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Elige a tu agente
                 </label>
-                <div className="relative">
+                <div className="relative personality-dropdown">
                   <button
                     type="button"
                     onClick={() =>

@@ -8,8 +8,8 @@ export const PLAN_LIMITS = {
     maxContextSizeKB: 1000, // 1MB
     maxConversationsPerMonth: 100,
     availableModels: [
+      "google/gemini-2.0-flash-exp:free",
       "mistralai/mistral-small-3.2-24b-instruct",
-      "gpt-4o-mini",
     ],
     showBranding: true,
   },
@@ -18,10 +18,12 @@ export const PLAN_LIMITS = {
     maxContextSizeKB: 10000, // 10MB
     maxConversationsPerMonth: Infinity,
     availableModels: [
+      "google/gemini-2.0-flash-exp:free",
       "mistralai/mistral-small-3.2-24b-instruct",
-      "mistralai/mistral-medium-3.2-24b-instruct",
-      "anthropic/claude-3-haiku-20240307",
-      "anthropic/claude-3-sonnet-20240229",
+      "openai/gpt-4o-mini",
+      "openai/gpt-4o",
+      "anthropic/claude-3-5-sonnet",
+      "anthropic/claude-3-haiku",
     ],
     showBranding: false,
   },
