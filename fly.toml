@@ -3,7 +3,7 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'formmy-rr-frosty-thunder-9499'
+app = 'formmy-v2'
 primary_region = 'dfw'
 
 [build]
@@ -18,3 +18,5 @@ primary_region = 'dfw'
 
 [[vm]]
   size = 'shared-cpu-1x'
+  memory = 512
+  
