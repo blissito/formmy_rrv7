@@ -19,10 +19,14 @@ export const PageContainer = ({
   return (
     <main className="bg-indigo-50/70">
       <article
-        className={cn("min-h-screen pt-20 pb-10 pl-24 pr-6", MAX_WIDTH)}
+        className={cn(
+          "min-h-screen pt-20 pb-10 pl-24 pr-6",
+
+          MAX_WIDTH
+        )}
         {...props}
       >
-        <main className="bg-brand-100 h-full rounded-3xl py-6 px-8 shadow">
+        <main className="bg-[#fff] h-full rounded-3xl py-6 px-8 shadow">
           {children}
         </main>
       </article>
