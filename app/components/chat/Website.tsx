@@ -7,14 +7,20 @@ import { useFetchWebsite } from "../../hooks/useFetchWebsite";
 import { Table } from "./common/Table";
 import type { WebsiteEntry } from "../../types/website";
 
-export const Website = () => {
+export const Website = ({
+  websiteEntries,
+  onWebsiteEntriesChange,
+}: {
+  websiteEntries: WebsiteEntry[];
+  onWebsiteEntriesChange: (entries: WebsiteEntry[]) => void;
+}) => {
   const [formData, setFormData] = useState({
     url: "",
     includeRoutes: "",
     excludeRoutes: "",
     updateFrequency: "monthly" as "yearly" | "monthly",
   });
-  const [websiteEntries, setWebsiteEntries] = useState<WebsiteEntry[]>([]);
+
   const { fetchWebsiteContent, loading, error } = useFetchWebsite();
 
   const handleInputChange = (name: string, value: string) => {
@@ -58,7 +64,8 @@ export const Website = () => {
         lastUpdated: new Date(),
       };
 
-      setWebsiteEntries((prev) => [...prev, newEntry]);
+      const updatedEntries = [...websiteEntries, newEntry];
+      onWebsiteEntriesChange(updatedEntries);
 
       // Limpiar el formulario después de agregar
       setFormData({
@@ -153,8 +160,9 @@ export const Website = () => {
         title="Fuentes de texto"
         className="mt-4"
         websiteEntries={websiteEntries}
-        onRemoveEntry={(index) => {
-          setWebsiteEntries((prev) => prev.filter((_, i) => i !== index));
+        onRemoveEntry={(index: number) => {
+          const updatedEntries = websiteEntries.filter((_, i) => i !== index);
+          onWebsiteEntriesChange(updatedEntries);
         }}
       />
     </>

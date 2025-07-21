@@ -1,8 +1,7 @@
 import { Input } from "./Input";
 import { cn } from "~/lib/utils";
 import { Select } from "./Select";
-import { BsThreeDots } from "react-icons/bs";
-import type { WebsiteEntry } from "../../types/website";
+import type { WebsiteEntry } from "~/types/website";
 import { LuTrash2 } from "react-icons/lu";
 
 export const Table = ({

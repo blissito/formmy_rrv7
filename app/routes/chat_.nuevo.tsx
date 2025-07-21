@@ -4,21 +4,24 @@ import { InfoSources } from "~/components/chat/InfoSources";
 import { UploadFiles } from "~/components/chat/UploadFiles";
 import { useState } from "react";
 import { Website } from "~/components/chat/Website";
-import { useDropFiles } from "~/hooks/useDropfiles";
-/**
- * Main component for the chatbot config route
- * This is a placeholder that will be implemented in a future task
- */
+import type { WebsiteEntry } from "~/types/website";
+
 export default function ChatbotConfigRoute() {
   const [currentTab, setCurrentTab] = useState("website");
+  const [websiteEntries, setWebsiteEntries] = useState<WebsiteEntry[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const handleTabClick = (tabName: string) => () => {
     setCurrentTab(tabName);
   };
 
   const handleSubmit = () => {};
-  const handleWebsiteChange = () => {};
-  const handleFilesChange = () => {};
+  const handleWebsiteChange = (entries: WebsiteEntry[]) => {
+    setWebsiteEntries(entries);
+  };
+  const handleFilesChange = (files: File[]) => {
+    setUploadedFiles(files);
+  };
 
   return (
     <>
@@ -46,8 +49,17 @@ export default function ChatbotConfigRoute() {
           {currentTab === "files" && (
             <UploadFiles onChange={handleFilesChange} />
           )}
-          {currentTab === "website" && <Website />}
-          <InfoSources className="hidden lg:block" />
+          {currentTab === "website" && (
+            <Website
+              websiteEntries={websiteEntries}
+              onWebsiteEntriesChange={handleWebsiteChange}
+            />
+          )}
+          <InfoSources
+            className="hidden lg:block"
+            websiteEntries={websiteEntries}
+            uploadedFiles={uploadedFiles}
+          />
         </PageContainer.StickyGrid>
       </PageContainer>
     </>
