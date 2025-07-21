@@ -21,7 +21,7 @@ import useLocalStorage from "~/lib/hooks/useLocalStorage";
 import { type Project, type Permission } from "@prisma/client";
 import { type ChangeEvent, useState, type ReactNode, useEffect } from "react";
 import { IoMailUnreadOutline } from "react-icons/io5";
-import { getUserOrRedirect } from "../server/getUserUtils.server";
+import { getUserOrRedirect } from "server/getUserUtils.server";
 import type { Route } from "./+types/dash";
 
 const findActivePermissions = async (email: string): Promise<Permission[]> => {

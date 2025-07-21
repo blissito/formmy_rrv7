@@ -10,6 +10,7 @@ import {
   validateUserChatbotCreation,
 } from "../userModel";
 import { Plans, ChatbotStatus } from "@prisma/client";
+import * as planLimits from "../planLimits.server";
 
 // Mock the database
 vi.mock("~/utils/db.server", () => {
@@ -235,7 +236,7 @@ describe("userModel", () => {
   describe("canUserAccessModel", () => {
     it("should check if user can access a specific model", async () => {
       // Import the module with the mocked function
-      const planLimits = await import("../planLimits");
+      // const planLimits = await import("../planLimits"); // This line is removed
 
       // Mock the validateAvailableModel function
       vi.spyOn(planLimits, "validateAvailableModel").mockResolvedValue({

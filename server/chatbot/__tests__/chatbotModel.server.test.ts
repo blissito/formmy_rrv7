@@ -11,9 +11,10 @@ import {
   getChatbotBySlug,
   getChatbotsByUserId,
   deleteChatbot,
-} from "../chatbotModel";
+} from "../chatbotModel.server";
 import { ChatbotStatus } from "@prisma/client";
 import type { Chatbot } from "@prisma/client";
+import { db } from "~/utils/db.server";
 
 // Mock db
 vi.mock("~/utils/db.server", () => {
@@ -132,7 +133,6 @@ describe("Chatbot Model", () => {
     };
 
     // Override the findUnique mock for this test
-    const { db } = await import("~/utils/db.server");
     vi.mocked(db.chatbot.findUnique).mockResolvedValueOnce(
       mockChatbotWithContext as unknown as Chatbot
     );

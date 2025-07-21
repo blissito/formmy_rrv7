@@ -1,6 +1,6 @@
 import { Plans } from "@prisma/client";
 import { db } from "~/utils/db.server";
-import { PLAN_LIMITS } from "./planLimits";
+import { PLAN_LIMITS } from "./planLimits.server";
 
 /**
  * Gets a user by ID with chatbot information
@@ -93,7 +93,6 @@ export async function canUserAccessModel(
   userId: string,
   modelName: string
 ): Promise<boolean> {
-  const { validateAvailableModel } = await import("./planLimits");
   const validation = await validateAvailableModel(userId, modelName);
   return validation.isAvailable;
 }

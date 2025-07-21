@@ -8,18 +8,18 @@ import { IoChevronDown, IoArrowBack, IoSend } from "react-icons/io5";
 import { Effect, pipe } from "effect";
 import { validateChatbotDataEffect } from "~/utils/zod";
 import { useManualSave } from "~/hooks/useManualSave";
-import { getUserOrRedirect } from "../server/getUserUtils.server";
+import { getUserOrRedirect } from "server/getUserUtils.server";
 import {
   createChatbot,
   getChatbotById,
   getChatbotsByUserId,
   getUserPlanFeatures,
   validateUserAIModelAccess,
-} from "~/server/chatbot";
+} from "server/chatbot/index.server";
 import { ValidationMessage } from "~/components/ui/ValidationMessage";
 import ChatPreview from "../components/ChatPreview";
 import { sendOpenRouterMessageEffect } from "../lib/openrouter.client";
-import { AI_MODELS, MODEL_LABELS, DEFAULT_AI_MODEL } from "../utils/aiModels";
+import { AI_MODELS, MODEL_LABELS, DEFAULT_AI_MODEL } from "~/utils/aiModels";
 type Integration = any;
 type User = any;
 type Project = any;

@@ -1,7 +1,7 @@
 import { ChatbotStatus, type Chatbot } from "@prisma/client";
 import { db } from "~/utils/db.server";
-import { deactivateChatbot } from "./chatbotStateManager";
-import { PLAN_LIMITS } from "./planLimits";
+import { PLAN_LIMITS } from "./planLimits.server";
+import { deactivateChatbot } from "./chatbotStateManager.server";
 
 /**
  * Interface for usage tracking results

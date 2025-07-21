@@ -14,6 +14,7 @@ import {
   incrementMessageCount,
   getConversationById,
 } from "../conversationModel";
+import { db } from "~/utils/db.server";
 
 // Mock the database and other dependencies
 vi.mock("~/utils/db.server", () => ({
@@ -61,8 +62,7 @@ describe("Message Model", () => {
       };
 
       // Setup mocks
-      const db = await import("~/utils/db.server");
-      (db.db.message.create as any).mockResolvedValue(mockMessage);
+      (db.message.create as any).mockResolvedValue(mockMessage);
       (incrementMessageCount as any).mockResolvedValue({
         id: "conversation-id",
         messageCount: 1,
@@ -80,7 +80,7 @@ describe("Message Model", () => {
 
       // Assertions
       expect(getConversationById).toHaveBeenCalledWith("conversation-id");
-      expect(db.db.message.create).toHaveBeenCalledWith({
+      expect(db.message.create).toHaveBeenCalledWith({
         data: {
           conversationId: "conversation-id",
           content: "Hello, how can I help you?",
@@ -186,14 +186,13 @@ describe("Message Model", () => {
       ];
 
       // Setup mocks
-      const db = await import("~/utils/db.server");
-      (db.db.message.findMany as any).mockResolvedValue(mockMessages);
+      (db.message.findMany as any).mockResolvedValue(mockMessages);
 
       // Call the function
       const result = await getMessagesByConversationId("conversation-id");
 
       // Assertions
-      expect(db.db.message.findMany).toHaveBeenCalledWith({
+      expect(db.message.findMany).toHaveBeenCalledWith({
         where: { conversationId: "conversation-id" },
         orderBy: { createdAt: "asc" },
       });
@@ -231,8 +230,7 @@ describe("Message Model", () => {
       (getConversationById as any).mockResolvedValue(mockConversation);
 
       // Mock message creation
-      const db = import.meta.jest.requireActual("~/utils/db.server");
-      (db.db.message.create as any).mockImplementation(({ data }) => ({
+      (db.message.create as any).mockImplementation(({ data }) => ({
         id: "new-message-id",
         ...data,
         createdAt: new Date(),
@@ -242,8 +240,7 @@ describe("Message Model", () => {
     it("should add user message", async () => {
       await addUserMessage("conversation-id", "Hello", "192.168.1.1");
 
-      const db = await import("~/utils/db.server");
-      expect(db.db.message.create).toHaveBeenCalledWith({
+      expect(db.message.create).toHaveBeenCalledWith({
         data: {
           conversationId: "conversation-id",
           content: "Hello",
@@ -255,8 +252,7 @@ describe("Message Model", () => {
     it("should add assistant message with tracking", async () => {
       await addAssistantMessage("conversation-id", "Hello there", 10, 150);
 
-      const db = await import("~/utils/db.server");
-      expect(db.db.message.create).toHaveBeenCalledWith({
+      expect(db.message.create).toHaveBeenCalledWith({
         data: {
           conversationId: "conversation-id",
           content: "Hello there",
@@ -270,8 +266,7 @@ describe("Message Model", () => {
     it("should add system message", async () => {
       await addSystemMessage("conversation-id", "System notification");
 
-      const db = await import("~/utils/db.server");
-      expect(db.db.message.create).toHaveBeenCalledWith({
+      expect(db.message.create).toHaveBeenCalledWith({
         data: {
           conversationId: "conversation-id",
           content: "System notification",
@@ -284,14 +279,13 @@ describe("Message Model", () => {
   describe("getMessageCount", () => {
     it("should return the count of messages in a conversation", async () => {
       // Setup mock
-      const db = await import("~/utils/db.server");
-      (db.db.message.count as any).mockResolvedValue(5);
+      (db.message.count as any).mockResolvedValue(5);
 
       // Call the function
       const count = await getMessageCount("conversation-id");
 
       // Assertions
-      expect(db.db.message.count).toHaveBeenCalledWith({
+      expect(db.message.count).toHaveBeenCalledWith({
         where: { conversationId: "conversation-id" },
       });
       expect(count).toBe(5);

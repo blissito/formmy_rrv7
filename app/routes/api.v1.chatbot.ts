@@ -4,39 +4,38 @@ import {
   getChatbotById,
   getChatbotBySlug,
   getChatbotsByUserId,
-  addContextItem,
   removeContextItem,
-} from "../server/chatbot/chatbotModel";
+} from "../../server/chatbot/chatbotModel.server";
 import {
   activateChatbot,
   deactivateChatbot,
   setToDraftMode,
   markChatbotAsDeleted,
   getChatbotState,
-} from "../server/chatbot/chatbotStateManager";
+} from "../../server/chatbot/chatbotStateManager.server";
 import {
   validateUserChatbotCreation,
   validateUserAIModelAccess,
   getUserPlanFeatures,
-} from "../server/chatbot/userModel";
-import { getChatbotBrandingConfigById } from "../server/chatbot/brandingConfig";
+} from "../../server/chatbot/userModel.server";
+import { getChatbotBrandingConfigById } from "../../server/chatbot/brandingConfig.server";
 import {
   getChatbotUsageStats,
   checkMonthlyUsageLimit,
-} from "../server/chatbot/usageTracking";
+} from "../../server/chatbot/usageTracking.server";
 import {
   addFileContext,
   addUrlContext,
   addTextContext,
   getChatbotContexts,
-} from "../server/chatbot/contextManager";
+} from "../../server/chatbot/contextManager.server";
 import {
   createIntegration,
   getIntegrationsByChatbotId,
   updateIntegration,
   toggleIntegrationStatus,
   deleteIntegration,
-} from "../server/chatbot/integrationModel";
+} from "../../server/chatbot/integrationModel.server";
 
 export async function loader({ request }: any) {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {

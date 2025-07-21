@@ -7,7 +7,7 @@ import {
   ALLOWED_FILE_TYPES,
   MAX_FILE_SIZE_KB,
 } from "../contextManager";
-import * as chatbotModel from "../chatbotModel";
+import * as chatbotModel from "../chatbotModel.server";
 
 // Mock the chatbotModel module
 vi.mock("../chatbotModel", () => {

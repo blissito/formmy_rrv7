@@ -1,9 +1,9 @@
 import { ConversationStatus, type Conversation } from "@prisma/client";
 import { nanoid } from "nanoid";
 import { db } from "~/utils/db.server";
-import { incrementConversationCount } from "./chatbotModel";
-import { validateMonthlyConversationLimit } from "./planLimits";
-import { pauseChatbotIfLimitReached } from "./usageTracking";
+import { incrementConversationCount } from "./chatbotModel.server";
+import { validateMonthlyConversationLimit } from "./planLimits.server";
+import { pauseChatbotIfLimitReached } from "./usageTracking.server";
 
 /**
  * Creates a new conversation for a chatbot

@@ -1,6 +1,6 @@
 import { Plans } from "@prisma/client";
 import { db } from "~/utils/db.server";
-import { PLAN_MODELS } from "../../utils/aiModels";
+import { PLAN_MODELS } from "../../app/utils/aiModels";
 
 // Define los límites por plan
 export const PLAN_LIMITS = {

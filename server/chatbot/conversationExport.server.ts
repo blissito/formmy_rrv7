@@ -5,7 +5,7 @@ import {
   type Message,
 } from "@prisma/client";
 import { db } from "~/utils/db.server";
-import { getMessagesByConversationId } from "./messageModel";
+import { getMessagesByConversationId } from "./messageModel.server";
 
 /**
  * Interface for conversation export options

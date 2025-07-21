@@ -3,7 +3,7 @@ import { db } from "~/utils/db.server";
 import {
   incrementMessageCount,
   getConversationById,
-} from "./conversationModel";
+} from "./conversationModel.server";
 
 /**
  * Interface for creating a new message

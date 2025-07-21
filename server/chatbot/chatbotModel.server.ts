@@ -2,6 +2,15 @@ import { ChatbotStatus } from "@prisma/client";
 import type { Chatbot, ContextItem } from "@prisma/client";
 import { nanoid } from "nanoid";
 import { db } from "~/utils/db.server";
+import {
+  validateChatbotLimit,
+  validateAvailableModel,
+} from "./planLimits.server";
+import { validateContextSizeLimit } from "./planLimits.server";
+import {
+  changeChatbotState,
+  markChatbotAsDeleted,
+} from "./chatbotStateManager.server";
 
 /**
  * Creates a new chatbot with basic fields
@@ -28,10 +37,6 @@ export async function createChatbot({
   temperature?: number;
 }): Promise<Chatbot> {
   // Validar límite de chatbots por usuario
-  const { validateChatbotLimit, validateAvailableModel } = await import(
-    "./planLimits"
-  );
-
   const limitValidation = await validateChatbotLimit(userId);
   if (!limitValidation.canCreate) {
     throw new Error(
@@ -92,7 +97,6 @@ export async function updateChatbot(
       throw new Error(`Chatbot with ID ${id} not found`);
     }
 
-    const { validateAvailableModel } = await import("./planLimits");
     const modelValidation = await validateAvailableModel(
       chatbot.userId,
       data.aiModel
@@ -130,13 +134,10 @@ export async function addContextItem(
   }
 
   // Validar límite de tamaño de contexto
-  const { validateContextSizeLimit } = await import("./planLimits");
-  const additionalSizeKB = contextItem.sizeKB || 0;
-
   const sizeValidation = await validateContextSizeLimit(
     chatbot.userId,
     chatbot.contextSizeKB,
-    additionalSizeKB
+    contextItem.sizeKB || 0
   );
 
   if (!sizeValidation.canAdd) {
@@ -215,7 +216,6 @@ export async function updateChatbotStatus(
   status: ChatbotStatus,
   isActive: boolean
 ): Promise<Chatbot> {
-  const { changeChatbotState } = await import("./chatbotStateManager");
   return changeChatbotState(id, status);
 }
 
@@ -294,6 +294,5 @@ export async function getChatbotsByUserId(userId: string): Promise<Chatbot[]> {
  * Deletes a chatbot
  */
 export async function deleteChatbot(id: string): Promise<Chatbot> {
-  const { markChatbotAsDeleted } = await import("./chatbotStateManager");
   return markChatbotAsDeleted(id);
 }

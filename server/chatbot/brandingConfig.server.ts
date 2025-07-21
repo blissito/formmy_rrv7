@@ -1,4 +1,5 @@
-import { shouldShowBranding } from "./planLimits";
+import { shouldShowBranding } from "./planLimits.server";
+import { db } from "~/utils/db.server";
 
 /**
  * Configuración de branding para el widget de chat
@@ -38,8 +39,6 @@ export async function getChatbotBrandingConfig(
 export async function getChatbotBrandingConfigById(
   chatbotId: string
 ): Promise<BrandingConfig> {
-  const { db } = await import("~/utils/db.server");
-
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
     select: { userId: true },

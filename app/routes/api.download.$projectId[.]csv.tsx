@@ -1,10 +1,6 @@
 import { data as json } from "react-router";
-import {
-  getPermission,
-  getProjectOwner,
-  getUserOrNull,
-} from "../server/getUserUtils.server";
 import type { Answer } from "@prisma/client";
+import { getProjectOwner, getUserOrNull } from "server/getUserUtils.server";
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const user = await getUserOrNull(request);

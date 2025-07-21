@@ -1,5 +1,5 @@
 import Nav from "~/components/NavBar";
-import { getUserOrRedirect } from "../server/getUserUtils.server";
+import { getUserOrRedirect } from "server/getUserUtils.server";
 import { twMerge } from "tailwind-merge";
 import {
   Link,

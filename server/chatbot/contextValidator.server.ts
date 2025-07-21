@@ -1,5 +1,5 @@
-import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE_KB } from "./contextManager";
-import { validateContextSizeLimit } from "./planLimits";
+import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE_KB } from "./contextManager.server";
+import { validateContextSizeLimit } from "./planLimits.server";
 
 /**
  * Interfaz para el resultado de la validación de contexto

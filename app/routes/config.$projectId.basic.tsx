@@ -30,7 +30,7 @@ import useLocalStorage from "~/lib/hooks/useLocalStorage";
 import { db } from "~/utils/db.server";
 // import scrollbarStyles from "~/styles/app.css";
 import { ProTag } from "~/components/ProTag";
-import { getUserOrRedirect } from "../server/getUserUtils.server";
+import { getUserOrRedirect } from "server/getUserUtils.server";
 import { Sorter } from "~/components/dragNdrop/NewSorter";
 import { motion } from "framer-motion";
 import { cn } from "~/lib/utils";

@@ -1,5 +1,5 @@
 import { Effect, Schema } from "effect";
-import { FALLBACK_MODELS } from "../utils/aiModels";
+import { FALLBACK_MODELS } from "~/utils/aiModels";
 
 const OpenRouterStreamSchema = Schema.Struct({
   model: Schema.String,

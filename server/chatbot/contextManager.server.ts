@@ -1,7 +1,12 @@
 import { ContextType } from "@prisma/client";
 import type { ContextItem } from "@prisma/client";
-import { nanoid } from "nanoid";
-import { addContextItem } from "./chatbotModel";
+import { addContextItem } from "./chatbotModel.server";
+import {
+  validateFileContext,
+  validateUrlContext,
+} from "./contextValidator.server";
+import { db } from "~/utils/db.server";
+import { validateTextContext } from "./contextValidator.server";
 
 /**
  * Tipos de archivo permitidos para subir como contexto
@@ -90,7 +95,6 @@ export async function addFileContext(
   }
 ) {
   // Obtener el chatbot para validaciones
-  const { db } = await import("~/utils/db.server");
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
     select: { userId: true, contextSizeKB: true },
@@ -99,9 +103,6 @@ export async function addFileContext(
   if (!chatbot) {
     throw new Error(`Chatbot with ID ${chatbotId} not found`);
   }
-
-  // Importar validador de contexto
-  const { validateFileContext } = await import("./contextValidator");
 
   // Validar el archivo y límites de contexto
   const validation = await validateFileContext(
@@ -162,7 +163,6 @@ export async function addUrlContext(
   }
 ) {
   // Obtener el chatbot para validaciones
-  const { db } = await import("~/utils/db.server");
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
     select: { userId: true, contextSizeKB: true },
@@ -176,9 +176,6 @@ export async function addUrlContext(
   // Para URLs sin contenido procesado, asignamos un tamaño estimado de 1KB
   const estimatedSizeKB =
     sizeKB || (content ? Math.ceil(content.length / 1024) : 1);
-
-  // Importar validador de contexto
-  const { validateUrlContext } = await import("./contextValidator");
 
   // Validar la URL y límites de contexto
   const validation = await validateUrlContext(
@@ -223,7 +220,6 @@ export async function addTextContext(
   }
 ) {
   // Obtener el chatbot para validaciones
-  const { db } = await import("~/utils/db.server");
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
     select: { userId: true, contextSizeKB: true },
@@ -232,9 +228,6 @@ export async function addTextContext(
   if (!chatbot) {
     throw new Error(`Chatbot with ID ${chatbotId} not found`);
   }
-
-  // Importar validador de contexto
-  const { validateTextContext } = await import("./contextValidator");
 
   // Validar el texto y límites de contexto
   const validation = await validateTextContext(
@@ -273,8 +266,6 @@ export async function addTextContext(
 export async function getChatbotContexts(
   chatbotId: string
 ): Promise<ContextItem[]> {
-  const { db } = await import("~/utils/db.server");
-
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
     select: { contexts: true },
@@ -306,8 +297,6 @@ export async function calculateTotalContextSize(
 export async function updateContextSizeCounter(
   chatbotId: string
 ): Promise<number> {
-  const { db } = await import("~/utils/db.server");
-
   const totalSize = await calculateTotalContextSize(chatbotId);
 
   await db.chatbot.update({
