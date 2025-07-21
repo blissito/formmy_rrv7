@@ -7,8 +7,10 @@ export const Input = ({
   className,
   label,
   onChange,
+  containerClassName,
   ...props
 }: {
+  containerClassName?: string;
   onChange?: (value: string) => void;
   label?: string;
   className?: string;
@@ -20,7 +22,12 @@ export const Input = ({
   return (
     <section className={cn("grid gap-1 grow", className)}>
       {label && <p className="text-gray-600">{label}</p>}
-      <main className="flex items-stretch border rounded-2xl">
+      <main
+        className={cn(
+          "flex items-stretch border rounded-2xl",
+          containerClassName
+        )}
+      >
         {left && <div className="pl-3">{left}</div>}
         <input
           onChange={(ev) => onChange?.(ev.currentTarget.value)}

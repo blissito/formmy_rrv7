@@ -47,7 +47,7 @@ export default function ChatbotConfigRoute() {
             <UploadFiles onChange={handleFilesChange} />
           )}
           {currentTab === "website" && <Website />}
-          <InfoSources />
+          <InfoSources className="hidden lg:block" />
         </PageContainer.StickyGrid>
       </PageContainer>
     </>

@@ -1,8 +1,8 @@
 import { Button } from "./PageContainer";
 
-export const InfoSources = () => {
+export const InfoSources = ({ className }: { className?: string }) => {
   return (
-    <article>
+    <article className={className}>
       <section className="grid gap-2 border border-gray-300 rounded-2xl p-4 shadow min-w-[220px] text-xs">
         <div className="flex gap-2 items-center">
           <span className="w-4">

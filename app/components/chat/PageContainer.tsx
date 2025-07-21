@@ -23,7 +23,7 @@ export const PageContainer = ({
         {...props}
       >
         {/* Revisit: alto de la tarjeta */}
-        <main className="bg-[#fff] h-[80vh] rounded-3xl py-6 px-8 shadow min-w-5xl">
+        <main className="bg-[#fff] min-h-[80vh] rounded-3xl py-6 px-8 shadow min-w-5xl">
           <section className="max-w-7xl mx-auto">{children}</section>
         </main>
       </article>
