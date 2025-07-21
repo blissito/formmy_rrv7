@@ -3,15 +3,23 @@ import { ConfigMenu } from "~/components/chat/ConfigMenu";
 import { InfoSources } from "~/components/chat/InfoSources";
 import { UploadFiles } from "~/components/chat/UploadFiles";
 import { useState } from "react";
+import { Website } from "~/components/chat/Website";
+import { useDropFiles } from "~/hooks/useDropfiles";
 /**
  * Main component for the chatbot config route
  * This is a placeholder that will be implemented in a future task
  */
 export default function ChatbotConfigRoute() {
-  const [currentTab, setCurrentTab] = useState("files");
+  const [currentTab, setCurrentTab] = useState("website");
+
   const handleTabClick = (tabName: string) => () => {
     setCurrentTab(tabName);
   };
+
+  const handleSubmit = () => {};
+  const handleWebsiteChange = () => {};
+  const handleFilesChange = () => {};
+
   return (
     <>
       <PageContainer>
@@ -35,9 +43,10 @@ export default function ChatbotConfigRoute() {
               Website
             </ConfigMenu.MenuButton>
           </ConfigMenu>
-          <div className="h-[300vh]">
-            <UploadFiles />
-          </div>
+          {currentTab === "files" && (
+            <UploadFiles onChange={handleFilesChange} />
+          )}
+          {currentTab === "website" && <Website />}
           <InfoSources />
         </PageContainer.StickyGrid>
       </PageContainer>

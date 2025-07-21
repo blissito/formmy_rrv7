@@ -17,17 +17,14 @@ export const PageContainer = ({
   [x: string]: unknown;
 }) => {
   return (
-    <main className="bg-indigo-50/70">
+    <main className="bg-indigo-50/70 ">
       <article
-        className={cn(
-          "min-h-screen pt-20 pb-10 pl-24 pr-6",
-
-          MAX_WIDTH
-        )}
+        className={cn("min-h-screen pt-20 pb-10 pl-24 pr-6 ")}
         {...props}
       >
-        <main className="bg-[#fff] h-full rounded-3xl py-6 px-8 shadow">
-          {children}
+        {/* Revisit: alto de la tarjeta */}
+        <main className="bg-[#fff] h-[80vh] rounded-3xl py-6 px-8 shadow min-w-5xl">
+          <section className="max-w-7xl mx-auto">{children}</section>
         </main>
       </article>
     </main>
