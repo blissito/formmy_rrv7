@@ -1,9 +1,10 @@
 import type { Chatbot, User } from "@prisma/client";
-import { useState, type ReactNode, useEffect } from "react";
-import { MAX } from "uuid";
+import { useState, type ReactNode, useEffect, Children } from "react";
 import { cn } from "~/lib/utils";
 import Spinner from "../Spinner";
 import { Effect, pipe } from "effect";
+import { Link } from "react-router";
+import { IoIosArrowRoundBack } from "react-icons/io";
 
 const MAX_WIDTH = "max-w-7xl";
 
@@ -18,7 +19,7 @@ export const PageContainer = ({
   return (
     <main className="bg-indigo-50/70">
       <article
-        className={cn("h-svh pt-20 pb-10 pl-24 pr-6", MAX_WIDTH)}
+        className={cn("min-h-screen pt-20 pb-10 pl-24 pr-6", MAX_WIDTH)}
         {...props}
       >
         <main className="bg-brand-100 h-full rounded-3xl py-6 px-8 shadow">
@@ -31,16 +32,25 @@ export const PageContainer = ({
 
 export const Title = ({
   children,
+  back,
   cta,
   ...props
 }: {
+  back?: string;
   cta?: ReactNode;
   children: ReactNode;
   [x: string]: unknown;
 }) => {
   return (
-    <nav className="flex justify-between items-center">
-      <h1 className="font-medium text-2xl md:text-3xl">{children}</h1>
+    <nav className="flex justify-between items-center mb-10">
+      <div className="flex items-end gap-4">
+        {back && (
+          <Link to={back} className="text-4xl">
+            <IoIosArrowRoundBack />
+          </Link>
+        )}
+        <h1 className="font-medium text-2xl md:text-3xl">{children}</h1>
+      </div>
       {cta}
     </nav>
   );
@@ -88,12 +98,14 @@ export const Header = ({
   );
 };
 
-const Button = ({
+export const Button = ({
   children,
   onClick,
   isLoading,
+  className,
   ...props
 }: {
+  className?: string;
   isLoading?: boolean;
   onClick?: () => void;
   children: ReactNode;
@@ -102,7 +114,7 @@ const Button = ({
   return (
     <button
       onClick={onClick}
-      className={cn("p-2 bg-brand-500 text-white rounded-full px-6")}
+      className={cn("p-2 bg-brand-500 text-white rounded-full px-6", className)}
       {...props}
     >
       {isLoading && <Spinner />}
@@ -162,8 +174,13 @@ export const ChatCard = ({
   }, []);
 
   return (
-    <section className="border rounded-3xl border-gray-300 px-5 py-4 max-w-80">
-      <h3 className="font-medium text-xl">{chatbot.name}</h3>
+    <section className="border rounded-3xl border-gray-300 px-5 py-4 max-w-80 hover:shadow-lg transition-all">
+      <Link
+        to={`/chat/config/${chatbot.slug}`}
+        className="font-medium text-xl hover:underline"
+      >
+        {chatbot.name}
+      </Link>
       <p className="text-gray-600 py-4">
         Tus clientes suelen preguntar por tu servicio de consultoría
       </p>
@@ -210,6 +227,18 @@ export const ChatCard = ({
   );
 };
 
+export const StickyGrid = ({ children }: { children: ReactNode }) => {
+  const nodes = Children.toArray(children);
+  return (
+    <article className="flex gap-6">
+      <section className="self-start sticky top-4">{nodes[0]}</section>
+      <section className="grow">{nodes[1]}</section>
+      <section className="self-start sticky top-4">{nodes[2]}</section>
+    </article>
+  );
+};
+
+PageContainer.StickyGrid = StickyGrid;
 PageContainer.Title = Title;
 PageContainer.ChatCard = ChatCard;
 PageContainer.Header = Header;
