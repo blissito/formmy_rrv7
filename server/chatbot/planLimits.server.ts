@@ -40,7 +40,7 @@ export async function validateChatbotLimit(userId: string): Promise<{
 
   // Obtener el número actual de chatbots del usuario
   const chatbotCount = await db.chatbot.count({
-    where: { userId },
+    where: { userId, status: { not: "DELETED" } },
   });
 
   const maxAllowed = PLAN_LIMITS[user.plan].maxChatbots;

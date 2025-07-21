@@ -1,4 +1,4 @@
-import { Plans } from "@prisma/client";
+import { Plans, type User } from "@prisma/client";
 import { db } from "~/utils/db.server";
 import { PLAN_LIMITS } from "./planLimits.server";
 
@@ -25,6 +25,7 @@ export async function getUserChatbotsWithPlanInfo(userId: string) {
       plan: true,
       chatbots: {
         orderBy: { createdAt: "desc" },
+        where: { status: { not: "DELETED" } },
       },
     },
   });
@@ -168,32 +169,20 @@ export async function getUserPlanFeatures(userId: string): Promise<{
  * Requirement 1.1: WHEN un usuario FREE crea un chatbot THEN el sistema SHALL permitir solo un chatbot activo por usuario
  * Requirement 1.2: WHEN un usuario PRO crea chatbots THEN el sistema SHALL permitir múltiples chatbots sin límite específico
  */
-export async function validateUserChatbotCreation(userId: string): Promise<{
+export async function validateUserChatbotCreation(user: User): Promise<{
   canCreate: boolean;
   currentCount: number;
   maxAllowed: number;
   isPro: boolean;
 }> {
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: {
-      plan: true,
-      chatbots: {
-        where: {
-          status: {
-            not: "DELETED",
-          },
-        },
-      },
+  const chatbots = await db.chatbot.findMany({
+    where: {
+      userId: user.id,
+      status: { not: "DELETED" },
     },
   });
-
-  if (!user) {
-    throw new Error(`Usuario con ID ${userId} no encontrado`);
-  }
-
   const planLimits = PLAN_LIMITS[user.plan];
-  const currentCount = user.chatbots.length;
+  const currentCount = chatbots.length;
   const maxAllowed = planLimits.maxChatbots;
   const isPro = user.plan === Plans.PRO;
 

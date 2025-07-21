@@ -1,18 +1,13 @@
-import { useLoaderData } from "react-router";
-import type { Route } from "./+types/chat";
+import { useLoaderData, useSubmit } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { getUserChatbotsWithPlanInfo } from "server/chatbot/userModel.server";
-import {
-  createChatbot,
-  getChatbotById,
-  deleteChatbot,
-} from "server/chatbot/chatbotModel.server";
-import {
-  activateChatbot,
-  deactivateChatbot,
-} from "server/chatbot/chatbotStateManager.server";
-import { effect } from "../utils/effect";
 import { PageContainer } from "~/components/chat/PageContainer";
+import type { Route } from "./+types/chat";
+import type { Chatbot } from "@prisma/client";
+import toast, { Toaster } from "react-hot-toast";
+import { useState } from "react";
+import ConfirmModal from "~/components/ConfirmModal";
+import { effect } from "../utils/effect";
 
 /**
  * Loader function for the chat list route
@@ -33,144 +28,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 };
 
 /**
- * Action function for the at li
-ex Handles create, toggle status, and delete operations
- */
-export const action = async ({ request }: Route.ActionArgs) => {
-  const user = await getUserOrRedirect(request);
-  const formData = await request.formData();
-  const intent = formData.get("intent") as string;
-
-  switch (intent) {
-    case "create_chatbot": {
-      const name = formData.get("name") as string;
-      const description = (formData.get("description") as string) || undefined;
-
-      return effect(
-        async () => {
-          const newChatbot = await createChatbot({
-            name,
-            description,
-            userId: user.id,
-          });
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              data: newChatbot,
-              redirectTo: `/chat/config/${newChatbot.id}`,
-            })
-          );
-        },
-        (error) => {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: error.message || "Error creating chatbot",
-            }),
-            { status: 400 }
-          );
-        }
-      );
-    }
-
-    case "toggle_status": {
-      const chatbotId = formData.get("chatbotId") as string;
-      const isActive = formData.get("isActive") === "true";
-
-      return effect(
-        async () => {
-          // Verify ownership
-          const chatbot = await getChatbotById(chatbotId);
-          if (!chatbot || chatbot.userId !== user.id) {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: "Chatbot not found or you don't have permission",
-              }),
-              { status: 404 }
-            );
-          }
-
-          // Update status
-          const updatedChatbot = isActive
-            ? await activateChatbot(chatbotId)
-            : await deactivateChatbot(chatbotId);
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              data: updatedChatbot,
-            })
-          );
-        },
-        (error) => {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: error.message || "Error updating chatbot status",
-            }),
-            { status: 500 }
-          );
-        }
-      );
-    }
-
-    case "delete_chatbot": {
-      const chatbotId = formData.get("chatbotId") as string;
-
-      return effect(
-        async () => {
-          // Verify ownership
-          const chatbot = await getChatbotById(chatbotId);
-          if (!chatbot || chatbot.userId !== user.id) {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                error: "Chatbot not found or you don't have permission",
-              }),
-              { status: 404 }
-            );
-          }
-
-          // Delete chatbot
-          await deleteChatbot(chatbotId);
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              message: "Chatbot deleted successfully",
-            })
-          );
-        },
-        (error) => {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: error.message || "Error deleting chatbot",
-            }),
-            { status: 500 }
-          );
-        }
-      );
-    }
-
-    default:
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid intent",
-        }),
-        { status: 400 }
-      );
-  }
-};
-
-/**
  * Main component for the chat list routeProps
  * This is a placeholder that will be implemented in a future task
  */
 export default function ChatListRoute({ loaderData }: Route.ComponentProps) {
+  const submit = useSubmit();
   const {
     chatbots = [],
     plan,
@@ -178,18 +40,173 @@ export default function ChatListRoute({ loaderData }: Route.ComponentProps) {
     canCreateMore,
     user,
   } = loaderData;
+
+  // Estado para controlar la visibilidad del modal de límite
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitError, setLimitError] = useState<{
+    error: string;
+    currentCount: number;
+    maxAllowed: number;
+    isPro: boolean;
+  } | null>(null);
+  const [shouldDelete, setShouldDelete] = useState("");
+  const [isLoading, setLoading] = useState(false);
+
+  const handleChatbotCreation = async () => {
+    setLoading(true);
+    await effect(
+      async () => {
+        const response = await fetch("/api/v1/chatbot", {
+          method: "post",
+          body: new URLSearchParams({
+            intent: "create_chatbot",
+          }),
+        });
+        const data = await response.json();
+        console.log("DATA:", data);
+
+        if (!data.success && data.error) {
+          // Si hay un error de límite, mostrar el modal en lugar del toast
+          if (data.currentCount && data.maxAllowed) {
+            setLimitError(data);
+            setShowLimitModal(true);
+          } else {
+            toast.error(data.error);
+          }
+        } else {
+          submit({});
+        }
+      },
+      (error) => {
+        console.error("Error al crear chatbot:", error);
+        toast.error("Error al crear chatbot: " + error.message);
+      }
+    );
+    setLoading(false);
+  };
+
+  const handleDelete = async () => {
+    setLoading(true);
+    await effect(
+      async () => {
+        const response = await fetch("/api/v1/chatbot", {
+          method: "post",
+          body: new URLSearchParams({
+            intent: "delete_chatbot",
+            chatbotId: shouldDelete,
+          }),
+        });
+        const data = await response.json();
+
+        if (!data.success && data.error) {
+          toast.error(data.error);
+        } else {
+          submit({});
+          setShouldDelete("");
+        }
+      },
+      (error) => {
+        console.error("Error al eliminar chatbot:", error);
+        toast.error("Error al eliminar chatbot: " + error.message);
+      }
+    );
+    setLoading(false);
+  };
+
+  const handleDeleteIntention = (id: string) => () => {
+    setShouldDelete(id);
+  };
+
   return (
-    <PageContainer>
-      <PageContainer.Header user={user} />
-      <PageContainer.Title
-        cta={<PageContainer.Button>+ Chat</PageContainer.Button>}
-      >
-        Tus Chats IA
-      </PageContainer.Title>
-      <section className="my-10">
-        <PageContainer.ChatCard chatbot={{ name: "perro" }} />
-      </section>
-    </PageContainer>
+    <>
+      <PageContainer>
+        <PageContainer.Header user={user} />
+        <PageContainer.Title
+          cta={
+            <PageContainer.Button
+              isLoading={isLoading}
+              onClick={handleChatbotCreation}
+            >
+              + Chat
+            </PageContainer.Button>
+          }
+        >
+          Tus Chats IA
+        </PageContainer.Title>
+        <section className="my-10">
+          {chatbots.map((chatbot: Chatbot, i: number) => (
+            <PageContainer.ChatCard
+              onDelete={handleDeleteIntention(chatbot.id)}
+              key={i}
+              chatbot={chatbot}
+            />
+          ))}
+        </section>
+      </PageContainer>
+
+      {/* Modal de eliminación */}
+      {shouldDelete && (
+        <ConfirmModal
+          isOpen={!!shouldDelete}
+          onClose={() => setShouldDelete("")}
+          title="Esta acción no se puede revertir"
+          message={`¿Estas segur@ de borrar?`}
+          emojis="⛔️🤖"
+          footer={
+            <div className="flex gap-6 mb-6">
+              <button
+                onClick={handleDelete}
+                className="bg-gray-100 text-gray-600 mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6"
+              >
+                Sí, quiero destruirlo
+              </button>
+              <button
+                onClick={() => {
+                  setShouldDelete("");
+                }}
+                className="bg-brand-500 text-white mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6"
+              >
+                Cancelar
+              </button>
+            </div>
+          }
+        />
+      )}
+
+      {/* Modal de límite de chatbots */}
+      {limitError && (
+        <ConfirmModal
+          isOpen={showLimitModal}
+          onClose={() => setShowLimitModal(false)}
+          title="Límite de chatbots alcanzado"
+          message={`Has alcanzado el límite de ${limitError.maxAllowed} chatbots para tu plan actual. Actualiza a un plan superior para crear más chatbots.`}
+          emojis="🤖🔒💼"
+          footer={
+            <div className="flex gap-6 mb-6">
+              <button
+                onClick={() => setShowLimitModal(false)}
+                className="bg-gray-100 text-gray-600 mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6"
+              >
+                Entendido
+              </button>
+              <button
+                onClick={() => {
+                  // Aquí puedes redirigir a la página de planes
+                  window.location.href = "/planes";
+                  setShowLimitModal(false);
+                }}
+                className="bg-brand-500 text-white mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6"
+              >
+                Ver planes
+              </button>
+            </div>
+          }
+        />
+      )}
+
+      {/* Toaster component para mostrar notificaciones */}
+      <Toaster position="top-center" />
+    </>
   );
 }
 

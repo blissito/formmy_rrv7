@@ -1,7 +1,9 @@
 import type { Chatbot, User } from "@prisma/client";
-import type { ReactNode } from "react";
+import { useState, type ReactNode, useEffect } from "react";
 import { MAX } from "uuid";
 import { cn } from "~/lib/utils";
+import Spinner from "../Spinner";
+import { Effect, pipe } from "effect";
 
 const MAX_WIDTH = "max-w-7xl";
 
@@ -19,7 +21,7 @@ export const PageContainer = ({
         className={cn("h-svh pt-20 pb-10 pl-24 pr-6", MAX_WIDTH)}
         {...props}
       >
-        <main className="bg-brand-100 h-full rounded-3xl py-6 px-8 shadow-sm">
+        <main className="bg-brand-100 h-full rounded-3xl py-6 px-8 shadow">
           {children}
         </main>
       </article>
@@ -45,12 +47,11 @@ export const Title = ({
 };
 
 export const Header = ({
-  children,
   user,
   ...props
 }: {
   user: User;
-  children: ReactNode;
+
   [x: string]: unknown;
 }) => {
   return (
@@ -89,19 +90,77 @@ export const Header = ({
 
 const Button = ({
   children,
+  onClick,
+  isLoading,
   ...props
 }: {
+  isLoading?: boolean;
+  onClick?: () => void;
   children: ReactNode;
   [x: string]: unknown;
 }) => {
   return (
-    <button className={cn("p-2 bg-brand-500 text-white rounded-full px-6")}>
-      {children}
+    <button
+      onClick={onClick}
+      className={cn("p-2 bg-brand-500 text-white rounded-full px-6")}
+      {...props}
+    >
+      {isLoading && <Spinner />}
+      {!isLoading && children}
     </button>
   );
 };
 
-export const ChatCard = ({ chatbot }: { chatbot: Chatbot }) => {
+// delete is possible from the card directly
+export const ChatCard = ({
+  onDelete,
+  chatbot,
+}: {
+  onDelete?: () => void;
+  chatbot: Chatbot;
+}) => {
+  const [conversationsCount, setConversationsCount] = useState(0);
+
+  const effectRunner = async () => {
+    const program = pipe(
+      Effect.tryPromise({
+        try: () =>
+          fetch("/api/v1/chatbot", {
+            method: "post",
+            body: new URLSearchParams({
+              intent: "get_conversations_count",
+              chatbotId: chatbot.id,
+            }),
+          }),
+        catch: (error) => new Error(`Error en la petición: ${error}`),
+      }),
+      Effect.flatMap((response) =>
+        Effect.tryPromise({
+          try: () => response.json(),
+          catch: (error) =>
+            new Error(`Error al procesar la respuesta: ${error}`),
+        })
+      ),
+      Effect.map((data) => {
+        if (data.success && data.count !== undefined) {
+          setConversationsCount(data.count);
+        }
+        return data;
+      }),
+      Effect.catchAll((error) => {
+        console.error("Error al obtener el conteo de conversaciones:", error);
+        return Effect.succeed(null);
+      })
+    );
+
+    await Effect.runPromise(program);
+  };
+
+  useEffect(() => {
+    // get conversations
+    effectRunner();
+  }, []);
+
   return (
     <section className="border rounded-3xl border-gray-300 px-5 py-4 max-w-80">
       <h3 className="font-medium text-xl">{chatbot.name}</h3>
@@ -117,16 +176,19 @@ export const ChatCard = ({ chatbot }: { chatbot: Chatbot }) => {
               alt="avatares"
             />
           </span>
-          <span>20 chats</span>
+          <span>{conversationsCount} chats</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-6">
+          <button
+            className="hover:bg-gray-300 w-6 rounded-full"
+            onClick={onDelete}
+          >
             <img
               className="w-full h-full"
               src="/assets/chat/recyclebin.svg"
               alt="avatares"
             />
-          </span>
+          </button>
           <hr className="h-[18px] border-l-2 border-l-gray-300" />
           <span>
             <img

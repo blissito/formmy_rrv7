@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import {
   createChatbot,
   updateChatbot,
@@ -36,6 +37,83 @@ import {
   toggleIntegrationStatus,
   deleteIntegration,
 } from "../../server/chatbot/integrationModel.server";
+import { getUserOrRedirect } from "server/getUserUtils.server";
+import { db } from "~/utils/db.server";
+
+// Arrays para generar nombres aleatorios
+const ANIMALS = [
+  "leon",
+  "tigre",
+  "oso",
+  "lobo",
+  "aguila",
+  "halcon",
+  "delfin",
+  "ballena",
+  "elefante",
+  "jirafa",
+  "panda",
+  "koala",
+  "zorro",
+  "conejo",
+  "gato",
+  "perro",
+  "caballo",
+  "unicornio",
+  "dragon",
+  "fenix",
+  "buho",
+  "colibri",
+  "mariposa",
+  "abeja",
+];
+
+const ADJECTIVES = [
+  "valiente",
+  "potente",
+  "bernaculo",
+  "fuerte",
+  "inteligente",
+  "amigable",
+  "entrañable",
+  "brillante",
+  "audaz",
+  "gentil",
+  "noble",
+  "magico",
+  "poderoso",
+  "elegante",
+  "gracioso",
+  "curioso",
+  "satírico",
+  "pacifico",
+  "energico",
+  "luminoso",
+  "fluorecente",
+];
+
+// Configuración por defecto para nuevos chatbots
+const DEFAULT_CHATBOT_CONFIG = {
+  description: "Un asistente virtual inteligente y amigable",
+  personality:
+    "Eres un asistente virtual amigable, profesional y servicial. Respondes de manera clara y concisa, siempre tratando de ser útil.",
+  welcomeMessage:
+    "¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?",
+  aiModel: "google/gemini-2.0-flash-exp:free",
+  primaryColor: "#3B82F6",
+  theme: "light",
+  temperature: 0.7,
+  instructions:
+    "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios.",
+};
+
+// Función para generar nombre aleatorio
+function generateRandomChatbotName(): string {
+  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const id = nanoid(3);
+  return `${animal}-${adjective}-${id}`;
+}
 
 export async function loader({ request }: any) {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {
@@ -47,39 +125,44 @@ export async function action({ request }: any) {
   try {
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
-    const userId = formData.get("userId") as string;
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Usuario no autenticado" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    const user = await getUserOrRedirect(request);
     switch (intent) {
       case "create_chatbot": {
-        const name = formData.get("name") as string;
+        // Usar nombre aleatorio si no se proporciona uno
+        const name =
+          (formData.get("name") as string) || generateRandomChatbotName();
+
+        // Usar configuración por defecto para todos los campos opcionales
         const description =
-          (formData.get("description") as string) || undefined;
+          (formData.get("description") as string) ||
+          DEFAULT_CHATBOT_CONFIG.description;
         const personality =
-          (formData.get("personality") as string) || undefined;
+          (formData.get("personality") as string) ||
+          DEFAULT_CHATBOT_CONFIG.personality;
         const welcomeMessage =
-          (formData.get("welcomeMessage") as string) || undefined;
-        const aiModel = (formData.get("aiModel") as string) || undefined;
+          (formData.get("welcomeMessage") as string) ||
+          DEFAULT_CHATBOT_CONFIG.welcomeMessage;
+        const aiModel =
+          (formData.get("aiModel") as string) || DEFAULT_CHATBOT_CONFIG.aiModel;
         const primaryColor =
-          (formData.get("primaryColor") as string) || undefined;
-        const theme = (formData.get("theme") as string) || undefined;
+          (formData.get("primaryColor") as string) ||
+          DEFAULT_CHATBOT_CONFIG.primaryColor;
+        const theme =
+          (formData.get("theme") as string) || DEFAULT_CHATBOT_CONFIG.theme;
+        const temperature = formData.get("temperature")
+          ? Number(formData.get("temperature"))
+          : DEFAULT_CHATBOT_CONFIG.temperature;
         const instructions =
-          (formData.get("instructions") as string) || undefined;
-        if (!name) {
-          return new Response(
-            JSON.stringify({ error: "El nombre del chatbot es obligatorio" }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
-          );
-        }
-        const validation = await validateUserChatbotCreation(userId);
+          (formData.get("instructions") as string) ||
+          DEFAULT_CHATBOT_CONFIG.instructions;
+
+        const validation = await validateUserChatbotCreation(user);
+        console.log("WTF", validation.canCreate);
         if (!validation.canCreate) {
+          console.log("AQUIO");
           return new Response(
             JSON.stringify({
-              error: `Has alcanzado el límite de ${validation.maxAllowed} chatbots para tu plan actual.`,
+              error: `VALIO alcanzado el límite de ${validation.maxAllowed} chatbots para tu plan actual.`,
               currentCount: validation.currentCount,
               maxAllowed: validation.maxAllowed,
               isPro: validation.isPro,
@@ -87,8 +170,10 @@ export async function action({ request }: any) {
             { status: 403, headers: { "Content-Type": "application/json" } }
           );
         }
-        if (aiModel) {
-          const modelAccess = await validateUserAIModelAccess(userId);
+
+        // Validar modelo de IA si se especifica uno diferente al por defecto
+        if (aiModel !== DEFAULT_CHATBOT_CONFIG.aiModel) {
+          const modelAccess = await validateUserAIModelAccess(user.id);
           if (!modelAccess.availableModels.includes(aiModel)) {
             return new Response(
               JSON.stringify({
@@ -99,17 +184,20 @@ export async function action({ request }: any) {
             );
           }
         }
+
         const chatbot = await createChatbot({
           name,
           description,
-          userId,
+          userId: user.id,
           personality,
           welcomeMessage,
           aiModel,
           primaryColor,
           theme,
+          temperature,
           instructions,
         });
+
         return new Response(JSON.stringify({ success: true, chatbot }), {
           headers: { "Content-Type": "application/json" },
         });
@@ -259,7 +347,7 @@ export async function action({ request }: any) {
             { status: 404, headers: { "Content-Type": "application/json" } }
           );
         }
-        if (chatbot.userId !== userId) {
+        if (chatbot.userId !== user.id) {
           return new Response(
             JSON.stringify({
               error: "No tienes permiso para eliminar este chatbot",
@@ -387,6 +475,16 @@ export async function action({ request }: any) {
         return new Response(JSON.stringify({ success: true, state }), {
           headers: { "Content-Type": "application/json" },
         });
+      }
+      case "get_conversations_count": {
+        const chatbotId = formData.get("chatbotId") as string;
+        const count = await db.conversation.count({
+          where: {
+            chatbotId,
+            status: { not: "DELETED" },
+          },
+        });
+        return new Response(JSON.stringify({ success: true, count }));
       }
       case "get_usage_stats": {
         const chatbotId = formData.get("chatbotId") as string;
