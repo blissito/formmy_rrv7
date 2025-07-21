@@ -5,6 +5,7 @@ import { Input } from "./common/Input";
 import { Select } from "./common/Select";
 import { useFetchWebsite } from "../../hooks/useFetchWebsite";
 import { Table } from "./common/Table";
+import type { WebsiteEntry } from "../../types/website";
 
 export const Website = () => {
   const [formData, setFormData] = useState({
@@ -13,7 +14,7 @@ export const Website = () => {
     excludeRoutes: "",
     updateFrequency: "monthly" as "yearly" | "monthly",
   });
-  const [websiteContent, setWebsiteContent] = useState<string>("");
+  const [websiteEntries, setWebsiteEntries] = useState<WebsiteEntry[]>([]);
   const { fetchWebsiteContent, loading, error } = useFetchWebsite();
 
   const handleInputChange = (name: string, value: string) => {
@@ -47,7 +48,26 @@ export const Website = () => {
     console.log("RESULT?", result);
 
     if (result) {
-      setWebsiteContent(result.content);
+      const newEntry: WebsiteEntry = {
+        url: formData.url,
+        content: result.content,
+        routes: result.routes,
+        includeRoutes,
+        excludeRoutes,
+        updateFrequency: formData.updateFrequency,
+        lastUpdated: new Date(),
+      };
+
+      setWebsiteEntries((prev) => [...prev, newEntry]);
+
+      // Limpiar el formulario después de agregar
+      setFormData({
+        url: "",
+        includeRoutes: "",
+        excludeRoutes: "",
+        updateFrequency: "monthly",
+      });
+
       console.log("Rutas encontradas:", result.routes);
       console.log("Contenido del sitio web:", result.content);
     }
@@ -119,15 +139,6 @@ export const Website = () => {
           <div className="text-red-500 text-sm mt-2">Error: {error}</div>
         )}
 
-        {websiteContent && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg max-h-40 overflow-y-auto">
-            <h4 className="font-medium mb-2">Contenido obtenido:</h4>
-            <pre className="text-xs whitespace-pre-wrap">
-              {websiteContent.substring(0, 500)}...
-            </pre>
-          </div>
-        )}
-
         <Button
           className="mx-0 ml-auto"
           isDisabled={!isDirty || loading}
@@ -136,7 +147,16 @@ export const Website = () => {
           {loading ? "Obteniendo..." : "Agregar"}
         </Button>
       </Card>
-      <Table title="Fuentes de texto" className="mt-4" />
+      <Table
+        noSelect
+        noSearch
+        title="Fuentes de texto"
+        className="mt-4"
+        websiteEntries={websiteEntries}
+        onRemoveEntry={(index) => {
+          setWebsiteEntries((prev) => prev.filter((_, i) => i !== index));
+        }}
+      />
     </>
   );
 };

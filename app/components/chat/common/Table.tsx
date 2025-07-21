@@ -2,13 +2,23 @@ import { Input } from "./Input";
 import { cn } from "~/lib/utils";
 import { Select } from "./Select";
 import { BsThreeDots } from "react-icons/bs";
+import type { WebsiteEntry } from "../../types/website";
+import { LuTrash2 } from "react-icons/lu";
 
 export const Table = ({
+  noSelect,
+  noSearch,
   title,
   className,
+  websiteEntries = [],
+  onRemoveEntry,
 }: {
+  noSearch?: true;
+  noSelect?: true;
   className?: string;
   title?: string;
+  websiteEntries?: WebsiteEntry[];
+  onRemoveEntry?: (index: number) => void;
 }) => {
   return (
     <article>
@@ -20,47 +30,117 @@ export const Table = ({
       >
         <section className="flex justify-between items-center">
           <h3 className="font-medium text-2xl">{title}</h3>
-          <Input
-            containerClassName="rounded-full"
-            left={
-              <span className="flex items-center h-full pr-2">
-                <img
-                  className="w-8"
-                  alt="search icon"
-                  src="/assets/chat/search.svg"
-                />
-              </span>
-            }
-            placeholder="Buscar..."
-            name="search"
-          />
+          {!noSearch && (
+            <Input
+              containerClassName="rounded-full"
+              left={
+                <span className="flex items-center h-full pr-2">
+                  <img
+                    className="w-8"
+                    alt="search icon"
+                    src="/assets/chat/search.svg"
+                  />
+                </span>
+              }
+              placeholder="Buscar..."
+              name="search"
+            />
+          )}
         </section>
-        <Header />
+
+        {!noSelect && <Header />}
         <hr className="my-2" />
-        <LinkRow link="https://www.fixtergeek.com" />
+        {websiteEntries.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No hay sitios web agregados aún
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {websiteEntries.map((entry, index) => (
+              <LinkRow
+                noSelect
+                key={index}
+                entry={entry}
+                onRemove={() => onRemoveEntry?.(index)}
+              />
+            ))}
+          </div>
+        )}
       </main>
     </article>
   );
 };
 
-const LinkRow = ({ link }: { link?: string }) => {
+const LinkRow = ({
+  entry,
+  onRemove,
+  noSelect,
+}: {
+  noSelect?: true;
+  entry: WebsiteEntry;
+  onRemove?: () => void;
+}) => {
+  const formatLastUpdated = (date: Date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60)
+    );
+
+    if (diffInMinutes < 1) return "hace un momento";
+    if (diffInMinutes < 60)
+      return `hace ${diffInMinutes} minuto${diffInMinutes > 1 ? "s" : ""}`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24)
+      return `hace ${diffInHours} hora${diffInHours > 1 ? "s" : ""}`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `hace ${diffInDays} día${diffInDays > 1 ? "s" : ""}`;
+  };
+
+  const displayUrl = entry.url.startsWith("http")
+    ? entry.url
+    : `https://${entry.url}`;
+
   return (
-    <main className="flex items-center justify-between">
+    <main className="group flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2">
       <div className="flex items-center gap-4">
-        <Checkbox />
+        {!noSelect && <Checkbox />}
         <div>
-          <img alt="worlkd icon" src={`/assets/chat/earth.svg`} />
+          <img alt="world icon" src={`/assets/chat/earth.svg`} />
         </div>
         <div>
-          <h4 className="semibold">{link}</h4>
+          <h4 className="font-semibold">{displayUrl}</h4>
           <p className="text-gray-600 text-xs">
-            Última actualización: hace 2 días | 9 link
+            Última actualización: {formatLastUpdated(entry.lastUpdated)} |{" "}
+            {entry.routes.length} página{entry.routes.length !== 1 ? "s" : ""}{" "}
+            encontrada{entry.routes.length !== 1 ? "s" : ""}
           </p>
+          {(entry.includeRoutes?.length || entry.excludeRoutes?.length) && (
+            <p className="text-gray-500 text-xs mt-1">
+              {entry.includeRoutes?.length &&
+                `Incluye: ${entry.includeRoutes.join(", ")}`}
+              {entry.includeRoutes?.length &&
+                entry.excludeRoutes?.length &&
+                " | "}
+              {entry.excludeRoutes?.length &&
+                `Excluye: ${entry.excludeRoutes.join(", ")}`}
+            </p>
+          )}
         </div>
       </div>
-      <button className="text-2xl text-gray-600">
-        <BsThreeDots />
-      </button>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+          {entry.updateFrequency === "monthly" ? "Mensual" : "Anual"}
+        </span>
+        <button
+          onClick={onRemove}
+          className="text-xl text-gray-600 hover:text-red-500 transition-colors invisible group-hover:visible"
+          title="Eliminar sitio web"
+        >
+          <LuTrash2 />
+        </button>
+      </div>
     </main>
   );
 };
