@@ -6,8 +6,10 @@ export const Input = ({
   left = null,
   className,
   label,
+  onChange,
   ...props
 }: {
+  onChange?: (value: string) => void;
   label?: string;
   className?: string;
   left?: ReactNode;
@@ -21,6 +23,7 @@ export const Input = ({
       <main className="flex items-stretch border rounded-2xl">
         {left && <div className="pl-3">{left}</div>}
         <input
+          onChange={(ev) => onChange?.(ev.currentTarget.value)}
           placeholder={placeholder}
           className={cn(
             "border-none focus:outline-none py-3 focus:border-none  w-full min-h-full",
