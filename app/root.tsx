@@ -12,6 +12,7 @@ import stylesheet from "./app.css?url";
 import type { ReactNode } from "react";
 import useHotjar from "./utils/useHotjar";
 import useGoogleTM from "./utils/useGoogleTM";
+import { Toaster } from "react-hot-toast";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -49,6 +50,7 @@ export function Layout({ children }: { children: ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        <Toaster />
       </body>
     </html>
   );

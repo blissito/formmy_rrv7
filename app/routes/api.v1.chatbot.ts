@@ -157,12 +157,10 @@ export async function action({ request }: any) {
           DEFAULT_CHATBOT_CONFIG.instructions;
 
         const validation = await validateUserChatbotCreation(user);
-        console.log("WTF", validation.canCreate);
         if (!validation.canCreate) {
-          console.log("AQUIO");
           return new Response(
             JSON.stringify({
-              error: `VALIO alcanzado el límite de ${validation.maxAllowed} chatbots para tu plan actual.`,
+              error: `Haz alcanzado el límite de ${validation.maxAllowed} chatbots para tu plan actual.`,
               currentCount: validation.currentCount,
               maxAllowed: validation.maxAllowed,
               isPro: validation.isPro,

@@ -5,10 +5,14 @@ export const InfoSources = ({
   className,
   websiteEntries = [],
   uploadedFiles = [],
+  onCreateChatbot,
+  isCreating = false,
 }: {
   className?: string;
   websiteEntries?: WebsiteEntry[];
   uploadedFiles?: File[];
+  onCreateChatbot?: () => void;
+  isCreating?: boolean;
 }) => {
   // Calcular el peso total de los sitios web (basado en el contenido de texto)
   const websiteWeight = websiteEntries.reduce((total, entry) => {
@@ -92,7 +96,16 @@ export const InfoSources = ({
           <div className="text-red-500 text-xs">⚠️ Límite excedido</div>
         )}
 
-        <Button className="mt-4">Actualizar Chatbot</Button>
+        <Button
+          className="mt-4"
+          onClick={onCreateChatbot}
+          disabled={
+            isCreating ||
+            (websiteEntries.length === 0 && uploadedFiles.length === 0)
+          }
+        >
+          {isCreating ? "Creando..." : "Crear Chatbot"}
+        </Button>
       </section>
     </article>
   );
