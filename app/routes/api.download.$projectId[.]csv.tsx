@@ -3,7 +3,7 @@ import {
   getPermission,
   getProjectOwner,
   getUserOrNull,
-} from "../server/getUserUtils";
+} from "../server/getUserUtils.server";
 import type { Answer } from "@prisma/client";
 
 export const loader = async ({ request, params }: LoaderArgs) => {

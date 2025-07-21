@@ -8,7 +8,7 @@ import { IoChevronDown, IoArrowBack, IoSend } from "react-icons/io5";
 import { Effect, pipe } from "effect";
 import { validateChatbotDataEffect } from "~/utils/zod";
 import { useManualSave } from "~/hooks/useManualSave";
-import { getUserOrRedirect } from "../server/getUserUtils";
+import { getUserOrRedirect } from "../server/getUserUtils.server";
 import {
   createChatbot,
   getChatbotById,

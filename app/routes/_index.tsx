@@ -16,7 +16,7 @@ import { FormmysTypes } from "~/components/home/FormmysTypes";
 import { StickySection } from "~/components/home/StickySection";
 import { CompaniesScroll } from "~/components/home/CompaniesScroll";
 import { createSession, redirectToGoogle } from "~/lib/google.server";
-import { redirectIfUser } from "../server/getUserUtils";
+import { redirectIfUser } from "../server/getUserUtils.server";
 import { WitoutFormmy } from "~/components/home/WithoutFormmy";
 import { Faq } from "~/components/home/Faq";
 import { Join } from "~/components/home/Join";

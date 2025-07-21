@@ -1,7 +1,7 @@
 import {
   getUserOrRedirect,
   getUserOrTriggerLogin,
-} from "../server/getUserUtils";
+} from "../server/getUserUtils.server";
 import { type User } from "@prisma/client";
 import { data as json } from "react-router";
 import Stripe from "stripe";

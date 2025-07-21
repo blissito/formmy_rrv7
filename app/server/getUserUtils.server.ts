@@ -1,8 +1,10 @@
-import { getSession } from "~/sessions";
-import { db } from "~/utils/db.server";
-import { redirectToGoogle } from "~/lib/google.server";
+import { getSession } from "../sessions";
+import { db } from "../utils/db.server";
+import { redirectToGoogle } from "../lib/google.server";
 import { redirect } from "react-router";
 import { type User } from "@prisma/client";
+
+// Este archivo es SOLO para uso en el servidor. No debe ser importado desde ningún código que termine en el cliente.
 
 export const getUserOrRedirect = async (request: Request): Promise<User> => {
   const session = await getSession(request.headers.get("Cookie"));
@@ -40,8 +42,6 @@ export const getUserOrNull = async (request: Request): Promise<User | null> => {
   }
   return user;
 };
-
-// @TODO bring the dash functions in here
 
 const ADMINS = ["fixtergeek@gmail.com", "bremin11.20.93@gmail.com"];
 
