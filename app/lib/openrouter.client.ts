@@ -5,7 +5,9 @@ export const OpenRouterClientSchema = Schema.Struct({
   model: Schema.String,
   instructions: Schema.String,
   temperature: Schema.Number,
-  message: Schema.String,
+  messages: Schema.Array(
+    Schema.Struct({ role: Schema.String, content: Schema.String })
+  ),
   stream: Schema.optional(Schema.Boolean),
 });
 
@@ -13,16 +15,16 @@ export type OpenRouterClientInput = {
   model?: string;
   instructions?: string;
   temperature?: number;
-  message?: string;
+  messages: { role: string; content: string }[];
   stream?: boolean;
-  onStreamChunk?: (text: string) => void;
+  onStreamChunk?: (partial: string) => void;
 };
 
 export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
   Effect.gen(function* (_) {
-    // No enviar petición si el mensaje está vacío
-    if (!input.message || !input.message.trim()) {
-      throw new Error("El mensaje no puede estar vacío.");
+    // No enviar petición si el array de mensajes está vacío
+    if (!input.messages || !input.messages.length) {
+      throw new Error("El historial de mensajes no puede estar vacío.");
     }
     // Validar input
     yield* _(
@@ -31,20 +33,23 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
         instructions: input.instructions || "",
         temperature:
           typeof input.temperature === "number" ? input.temperature : 0.7,
-        message: input.message,
+        messages: input.messages,
         stream: input.stream,
       })
     );
     // Hacer request al endpoint correcto
-    console.log("[OpenRouterClient] Mensaje enviado:", input.message);
+    console.log("[OpenRouterClient] Mensajes enviados:", input.messages);
     const fd = new FormData();
-    fd.set("model", input.model || DEFAULT_AI_MODEL);
-    fd.set("instructions", input.instructions || "");
+    fd.set("model", input.model ? String(input.model) : DEFAULT_AI_MODEL);
+    fd.set(
+      "instructions",
+      input.instructions ? String(input.instructions) : ""
+    );
     fd.set(
       "temperature",
       String(typeof input.temperature === "number" ? input.temperature : 0.7)
     );
-    fd.set("message", input.message);
+    fd.set("messages", JSON.stringify(input.messages));
     if (input.stream) fd.set("stream", "true");
     const endpoint = input.stream
       ? "/api/v1/openrouter/stream"

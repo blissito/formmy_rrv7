@@ -5,7 +5,9 @@ const OpenRouterRequestSchema = Schema.Struct({
   model: Schema.String,
   instructions: Schema.String,
   temperature: Schema.Number,
-  message: Schema.String,
+  messages: Schema.Array(
+    Schema.Struct({ role: Schema.String, content: Schema.String })
+  ),
   stream: Schema.optional(Schema.Boolean),
 });
 
@@ -21,11 +23,6 @@ async function tryModelWithFallback(
   while (attempts < maxAttempts) {
     try {
       const requestBody = { ...bodyToSend, model: currentModel };
-      console.log(
-        `[OpenRouter] Intentando modelo: ${currentModel} (intento ${
-          attempts + 1
-        })`
-      );
 
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -76,20 +73,21 @@ async function tryModelWithFallback(
 
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
-  for (const [key, value] of formData.entries()) {
-    console.log(`[OpenRouter API] FormData: ${key} = ${value}`);
-  }
   const data = {
     model: String(formData.get("model") ?? ""),
     instructions: String(formData.get("instructions") ?? ""),
     temperature: Number(formData.get("temperature")),
-    message: String(formData.get("message") ?? ""),
+    messages: formData.get("messages")
+      ? JSON.parse(String(formData.get("messages")))
+      : [],
     stream: formData.get("stream") === "true",
   };
-  console.log(
-    "[OpenRouter API] Mensaje recibido en backend:",
-    formData.get("message")
-  );
+  if (!data.messages) {
+    return new Response(JSON.stringify({ error: "Debes enviar 'messages'." }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const input = await Effect.runPromise(
@@ -97,14 +95,13 @@ export async function action({ request }: { request: Request }) {
         Promise.resolve(Schema.decodeUnknown(OpenRouterRequestSchema)(data))
       )
     );
-    const { model, instructions, temperature, message, stream } = input as any;
+    const { model, instructions, temperature, messages, stream } = input as any;
     // Usa los valores del FormData (data) para construir el body
     const safeModel = data.model || "gpt-4"; // Default to gpt-4
     const safeInstructions = data.instructions || "";
     const safeTemperature =
       typeof data.temperature === "number" ? data.temperature : 0.7;
-    const safeMessage = data.message || "";
-    console.log("[OpenRouter] Model enviado:", safeModel);
+    const safeMessages = data.messages;
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       return new Response(
@@ -123,16 +120,9 @@ export async function action({ request }: { request: Request }) {
 
     while (attempts < maxAttempts) {
       try {
-        console.log(
-          `[OpenRouter] Intento ${attempts + 1}: usando modelo ${currentModel}`
-        );
-
         const bodyToSend = {
           model: currentModel,
-          messages: [
-            { role: "system", content: safeInstructions },
-            { role: "user", content: safeMessage },
-          ],
+          messages: safeMessages,
           temperature: safeTemperature,
         };
 

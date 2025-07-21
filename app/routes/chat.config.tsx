@@ -81,11 +81,17 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const modelLabels = MODEL_LABELS;
 
   // Crear lista de todos los modelos con información de disponibilidad
-  const availableModels = allModels.map((model) => ({
-    ...model,
-    isAvailable: modelAccess.availableModels.includes(model.value),
-    label: modelLabels[model.value] || model.label,
-  }));
+  const availableModels = allModels.map((model) => {
+    // Si es modelo free, siempre disponible
+    if (model.category === "Free") {
+      return { ...model, isAvailable: true };
+    }
+    // Si es modelo de pago, depende del plan
+    return {
+      ...model,
+      isAvailable: modelAccess.availableModels.includes(model.value),
+    };
+  });
 
   return json({
     chatbot,
@@ -122,7 +128,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
             welcomeMessage: data.welcomeMessage,
             primaryColor: data.primaryColor,
             temperature: Number(data.temperature),
-            prompt: data.prompt,
+            instructions: data.instructions,
+            isActive: data.isActive, // <-- enviar isActive
           },
           planLimits
         );
@@ -222,7 +229,7 @@ export default function ChatConfig() {
     primaryColor: "#63CFDE",
     theme: "light",
     temperature: 0.7,
-    prompt: "",
+    instructions: "", // <-- usar instructions
     isActive: false,
   };
   const manualSave = useManualSave({
@@ -629,8 +636,10 @@ export default function ChatConfig() {
                   Prompt general
                 </label>
                 <textarea
-                  value={manualSave.formData?.prompt ?? ""}
-                  onChange={(e) => handleInputChange("prompt", e.target.value)}
+                  value={manualSave.formData?.instructions ?? ""}
+                  onChange={(e) =>
+                    handleInputChange("instructions", e.target.value)
+                  }
                   rows={8}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 dark:bg-space-700 dark:text-white text-sm"
                   placeholder="Describe cómo debe comportarse tu chatbot..."
@@ -710,7 +719,7 @@ export default function ChatConfig() {
               <ChatPreview
                 model={manualSave.formData?.aiModel}
                 instructions={
-                  manualSave.formData?.prompt ||
+                  manualSave.formData?.instructions ||
                   manualSave.formData?.welcomeMessage ||
                   ""
                 }

@@ -5,7 +5,9 @@ const OpenRouterStreamSchema = Schema.Struct({
   model: Schema.String,
   instructions: Schema.String,
   temperature: Schema.Number,
-  message: Schema.String,
+  messages: Schema.Array(
+    Schema.Struct({ role: Schema.String, content: Schema.String })
+  ),
 });
 
 async function tryModelWithFallback(apiKey: string, bodyToSend: any) {
@@ -16,11 +18,6 @@ async function tryModelWithFallback(apiKey: string, bodyToSend: any) {
   while (attempts < maxAttempts) {
     try {
       const requestBody = { ...bodyToSend, model: currentModel };
-      console.log(
-        `[OpenRouter Stream] Intentando modelo: ${currentModel} (intento ${
-          attempts + 1
-        })`
-      );
 
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -40,9 +37,6 @@ async function tryModelWithFallback(apiKey: string, bodyToSend: any) {
         const fallbackModel =
           FALLBACK_MODELS[currentModel as keyof typeof FALLBACK_MODELS];
         if (fallbackModel && fallbackModel !== currentModel) {
-          console.log(
-            `[OpenRouter Stream] Cambiando a modelo de fallback: ${fallbackModel}`
-          );
           currentModel = fallbackModel;
           attempts++;
           continue;
@@ -52,10 +46,6 @@ async function tryModelWithFallback(apiKey: string, bodyToSend: any) {
       // Si no es rate limit o no hay fallback, devolver el error
       return res;
     } catch (error) {
-      console.error(
-        `[OpenRouter Stream] Error de red con modelo ${currentModel}:`,
-        error
-      );
       attempts++;
       if (attempts >= maxAttempts) {
         throw error;
@@ -79,20 +69,28 @@ export async function action({ request }: { request: Request }) {
     model: String(formData.get("model") ?? ""),
     instructions: String(formData.get("instructions") ?? ""),
     temperature: Number(formData.get("temperature")),
-    message: String(formData.get("message") ?? ""),
+    messages: formData.get("messages")
+      ? JSON.parse(String(formData.get("messages")))
+      : [],
   };
+  if (!data.messages) {
+    return new Response(JSON.stringify({ error: "Debes enviar 'messages'." }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   try {
     const input = await Effect.runPromise(
       Effect.tryPromise(() =>
         Promise.resolve(Schema.decode(OpenRouterStreamSchema)(data))
       )
     );
-    const { model, instructions, temperature, message } = input as any;
+    const { model, instructions, temperature, messages } = input as any;
     const safeModel = data.model || "mistral"; // Assuming a default model
     const safeInstructions = data.instructions || "";
     const safeTemperature =
       typeof data.temperature === "number" ? data.temperature : 0.7;
-    const safeMessage = data.message || "";
+    const safeMessages = data.messages;
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       return new Response("No OpenRouter API key configured", {
@@ -101,11 +99,6 @@ export async function action({ request }: { request: Request }) {
       });
     }
 
-    // Log para verificar que se está usando la API key
-    console.log(
-      `[OpenRouter Stream] Usando API key: ${apiKey.substring(0, 10)}...`
-    );
-
     // Intentar con el modelo original
     let currentModel = safeModel;
     let attempts = 0;
@@ -113,18 +106,9 @@ export async function action({ request }: { request: Request }) {
 
     while (attempts < maxAttempts) {
       try {
-        console.log(
-          `[OpenRouter Stream] Intento ${
-            attempts + 1
-          }: usando modelo ${currentModel}`
-        );
-
         const bodyToSend = {
           model: currentModel,
-          messages: [
-            { role: "system", content: safeInstructions },
-            { role: "user", content: safeMessage },
-          ],
+          messages: safeMessages,
           temperature: safeTemperature,
           stream: true,
         };
@@ -148,9 +132,6 @@ export async function action({ request }: { request: Request }) {
           const fallbackModel =
             FALLBACK_MODELS[currentModel as keyof typeof FALLBACK_MODELS];
           if (fallbackModel && fallbackModel !== currentModel) {
-            console.log(
-              `[OpenRouter Stream] Rate limit en ${currentModel}, cambiando a ${fallbackModel}`
-            );
             currentModel = fallbackModel;
             attempts++;
             continue;
@@ -185,10 +166,6 @@ export async function action({ request }: { request: Request }) {
           },
         });
       } catch (error) {
-        console.error(
-          `[OpenRouter Stream] Error en intento ${attempts + 1}:`,
-          error
-        );
         attempts++;
 
         if (attempts >= maxAttempts) {

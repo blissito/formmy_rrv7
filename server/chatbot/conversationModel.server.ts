@@ -4,6 +4,8 @@ import { db } from "~/utils/db.server";
 import { incrementConversationCount } from "./chatbotModel.server";
 import { validateMonthlyConversationLimit } from "./planLimits.server";
 import { pauseChatbotIfLimitReached } from "./usageTracking.server";
+import { addSystemMessage } from "./messageModel.server";
+import { getChatbotById } from "./chatbotModel.server";
 
 /**
  * Creates a new conversation for a chatbot
@@ -40,6 +42,12 @@ export async function createConversation({
       messageCount: 0,
     },
   });
+
+  // Guardar el mensaje SYSTEM con el prompt general (instructions)
+  const chatbot = await getChatbotById(chatbotId);
+  if (chatbot?.instructions) {
+    await addSystemMessage(conversation.id, chatbot.instructions);
+  }
 
   // Increment the conversation count for the chatbot
   await incrementConversationCount(chatbotId);

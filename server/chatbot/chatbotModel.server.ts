@@ -25,6 +25,7 @@ export async function createChatbot({
   primaryColor,
   theme,
   temperature = 0.7,
+  instructions,
 }: {
   name: string;
   description?: string;
@@ -35,6 +36,7 @@ export async function createChatbot({
   primaryColor?: string;
   theme?: string;
   temperature?: number;
+  instructions?: string;
 }): Promise<Chatbot> {
   // Validar límite de chatbots por usuario
   const limitValidation = await validateChatbotLimit(userId);
@@ -69,6 +71,7 @@ export async function createChatbot({
       primaryColor,
       theme,
       temperature,
+      instructions,
       status: ChatbotStatus.DRAFT,
       isActive: false,
       conversationCount: 0,

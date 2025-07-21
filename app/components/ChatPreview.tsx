@@ -48,7 +48,11 @@ export default function ChatPreview({
           model: model || DEFAULT_AI_MODEL,
           instructions,
           temperature,
-          message: chatInput,
+          messages: [
+            { role: "system", content: instructions },
+            ...chatMessages,
+            { role: "user", content: chatInput },
+          ],
           stream: true,
           onStreamChunk: (partial) => {
             lastBotMsg = partial;
@@ -80,7 +84,11 @@ export default function ChatPreview({
           model: model || DEFAULT_AI_MODEL,
           instructions,
           temperature,
-          message: chatInput,
+          messages: [
+            { role: "system", content: instructions },
+            ...chatMessages,
+            { role: "user", content: chatInput },
+          ],
         })
       )
         .then((result: any) => {

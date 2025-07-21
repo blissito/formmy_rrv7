@@ -166,7 +166,7 @@ export const chatbotConfigSchema = z.object({
     .number()
     .min(0, "Temperatura mínima 0")
     .max(1, "Temperatura máxima 1"),
-  prompt: z
+  instructions: z
     .string()
     .max(4000, "El prompt no puede superar 4000 caracteres")
     .optional(),

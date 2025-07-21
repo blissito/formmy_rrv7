@@ -6,24 +6,34 @@ export const AI_MODELS = [
     category: "Free",
   },
   {
-    value: "mistralai/mistral-small-3.2-24b-instruct",
-    label: "Mistral Small 3.2 (Mistral AI)",
-    category: "Paid",
+    value: "mistralai/mistral-small-3.1-24b-instruct:free",
+    label: "Mistral Small 3.1 (Mistral AI)",
+    category: "Free",
   },
   {
-    value: "meta-llama/llama-3.3-70b-instruct",
+    value: "deepseek/deepseek-chat:free",
+    label: "DeepSeek V3 (DeepSeek)",
+    category: "Free",
+  },
+  {
+    value: "meta-llama/llama-3.3-70b-instruct:free",
     label: "Llama 3.3 70B (Meta)",
-    category: "Paid",
+    category: "Free",
   },
   {
-    value: "qwen/qwen-2.5-7b-instruct",
-    label: "Qwen 2.5 7B (Qwen)",
-    category: "Paid",
+    value: "qwen/qwen-2.5-72b-instruct:free",
+    label: "Qwen 2.5 72B (Qwen)",
+    category: "Free",
   },
   {
-    value: "moonshotai/kimi-k2",
+    value: "google/gemini-2.0-flash-exp:free",
+    label: "Gemini 2.0 Flash (Google)",
+    category: "Free",
+  },
+  {
+    value: "moonshotai/kimi-k2:free",
     label: "Kimi K2 (Moonshot AI)",
-    category: "Paid",
+    category: "Free",
   },
   {
     value: "anthropic/claude-3-haiku",
@@ -33,11 +43,6 @@ export const AI_MODELS = [
   {
     value: "openai/gpt-4o-mini",
     label: "GPT-4o Mini (OpenAI)",
-    category: "Paid",
-  },
-  {
-    value: "deepseek/deepseek-chat",
-    label: "DeepSeek V3 (DeepSeek)",
     category: "Paid",
   },
 ];

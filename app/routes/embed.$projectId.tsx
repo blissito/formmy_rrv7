@@ -96,7 +96,7 @@ export function ErrorBoundary() {
   const error = useRouteError();
 
   if (isRouteErrorResponse(error)) {
-    console.error(error);
+    // No log
     return <Custom404 />;
   } else if (error instanceof Error) {
     return (

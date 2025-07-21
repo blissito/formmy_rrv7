@@ -67,6 +67,8 @@ export async function action({ request }: any) {
         const primaryColor =
           (formData.get("primaryColor") as string) || undefined;
         const theme = (formData.get("theme") as string) || undefined;
+        const instructions =
+          (formData.get("instructions") as string) || undefined;
         if (!name) {
           return new Response(
             JSON.stringify({ error: "El nombre del chatbot es obligatorio" }),
@@ -106,6 +108,7 @@ export async function action({ request }: any) {
           aiModel,
           primaryColor,
           theme,
+          instructions,
         });
         return new Response(JSON.stringify({ success: true, chatbot }), {
           headers: { "Content-Type": "application/json" },
@@ -168,6 +171,12 @@ export async function action({ request }: any) {
           temperature !== ""
         ) {
           updateData.temperature = Number(temperature);
+        }
+        const instructions = formData.get("instructions") as string;
+        if (instructions) updateData.instructions = instructions;
+        const isActive = formData.get("isActive");
+        if (isActive !== null && isActive !== undefined && isActive !== "") {
+          updateData.isActive = isActive === "true" || isActive === true;
         }
         const updatedChatbot = await updateChatbot(chatbotId, updateData);
         return new Response(
