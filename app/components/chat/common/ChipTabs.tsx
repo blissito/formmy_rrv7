@@ -12,13 +12,13 @@ export const ChipTabs = ({
   const tabs = ["Chat", "Agente"];
 
   return (
-    <section className="flex gap-2 bg-gray-200 rounded-full">
+    <section className="flex gap-1 bg-gray-200 rounded-full">
       {tabs.map((tab) => (
         <button
           key={tab}
           onClick={() => onTabChange?.(tab)}
           className={cn(
-            "px-4 py-3 rounded-full text-sm font-medium transition-colors",
+            "px-3 py-3 rounded-full text-sm font-medium transition-colors",
             "px-6",
             {
               "bg-black text-[#fff]": activeTab === tab,

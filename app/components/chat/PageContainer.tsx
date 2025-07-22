@@ -20,10 +20,7 @@ export const PageContainer = ({
 }) => {
   return (
     <main className="bg-indigo-50/70 ">
-      <article
-        className={cn("min-h-screen pt-20 pb-10 pl-24 pr-6 ")}
-        {...props}
-      >
+      <article className={cn("h-svh pt-20 pb-10 pl-24 pr-6 ")} {...props}>
         {/* Revisit: alto de la tarjeta */}
         <main className="bg-[#fff] min-h-[80vh] rounded-3xl py-6 px-8 shadow min-w-5xl">
           <section className="max-w-7xl mx-auto">{children}</section>
@@ -286,9 +283,9 @@ export const EditionPair = ({
   }
 
   return (
-    <article className="flex gap-6">
+    <article className="flex gap-6 items-stretch">
       <section className="grow flex-1">{c}</section>
-      <section className="grow flex-1">{p}</section>
+      <section className="grow flex-2">{p}</section>
     </article>
   );
 };

@@ -16,7 +16,7 @@ export const PreviewForm = ({
   chatbot: Chatbot;
   user: User;
 }) => {
-  const [activeTab, setActiveTab] = useState("Chat");
+  const [activeTab, setActiveTab] = useState("Agente");
   const [selectedModel, setSelectedModel] = useState(
     chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free"
   );
