@@ -205,7 +205,7 @@ const DropdownMenu = ({
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="text-xl text-gray-600 hover:text-gray-800 transition-colors invisible group-hover:visible p-1"
+        className="text-xl text-gray-600 hover:text-gray-800 transition-colors p-1"
         title="Más opciones"
       >
         <BsThreeDots />

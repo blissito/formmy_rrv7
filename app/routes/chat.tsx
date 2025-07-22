@@ -1,4 +1,4 @@
-import { useLoaderData, useSubmit } from "react-router";
+import { useLoaderData, useSubmit, Link } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { getUserChatbotsWithPlanInfo } from "server/chatbot/userModel.server";
 import { PageContainer } from "~/components/chat/PageContainer";
@@ -52,39 +52,6 @@ export default function ChatListRoute({ loaderData }: Route.ComponentProps) {
   const [shouldDelete, setShouldDelete] = useState("");
   const [isLoading, setLoading] = useState(false);
 
-  const handleChatbotCreation = async () => {
-    setLoading(true);
-    await effect(
-      async () => {
-        const response = await fetch("/api/v1/chatbot", {
-          method: "post",
-          body: new URLSearchParams({
-            intent: "create_chatbot",
-          }),
-        });
-        const data = await response.json();
-        console.log("DATA:", data);
-
-        if (!data.success && data.error) {
-          // Si hay un error de límite, mostrar el modal en lugar del toast
-          if (data.currentCount && data.maxAllowed) {
-            setLimitError(data);
-            setShowLimitModal(true);
-          } else {
-            toast.error(data.error);
-          }
-        } else {
-          submit({});
-        }
-      },
-      (error) => {
-        console.error("Error al crear chatbot:", error);
-        toast.error("Error al crear chatbot: " + error.message);
-      }
-    );
-    setLoading(false);
-  };
-
   const handleDelete = async () => {
     setLoading(true);
     await effect(
@@ -123,10 +90,7 @@ export default function ChatListRoute({ loaderData }: Route.ComponentProps) {
         <PageContainer.Header user={user} />
         <PageContainer.Title
           cta={
-            <PageContainer.Button
-              isLoading={isLoading}
-              onClick={handleChatbotCreation}
-            >
+            <PageContainer.Button isLoading={isLoading} to="/chat/nuevo">
               + Chat
             </PageContainer.Button>
           }

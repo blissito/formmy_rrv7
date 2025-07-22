@@ -3,7 +3,7 @@ import { useState, type ReactNode, useEffect, Children } from "react";
 import { cn } from "~/lib/utils";
 import Spinner from "../Spinner";
 import { Effect, pipe } from "effect";
-import { Link } from "react-router";
+import { Link, Links } from "react-router";
 import { IoIosArrowRoundBack } from "react-icons/io";
 
 const MAX_WIDTH = "max-w-7xl";
@@ -104,6 +104,7 @@ export const Button = ({
   onClick,
   isLoading,
   className,
+  to,
   ...props
 }: {
   className?: string;
@@ -112,6 +113,22 @@ export const Button = ({
   children: ReactNode;
   [x: string]: unknown;
 }) => {
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className={cn(
+          "p-2 bg-brand-500 text-white rounded-full px-6",
+          className
+        )}
+        {...props}
+      >
+        {isLoading && <Spinner />}
+        {!isLoading && children}
+      </Link>
+    );
+  }
+  //   else
   return (
     <button
       onClick={onClick}

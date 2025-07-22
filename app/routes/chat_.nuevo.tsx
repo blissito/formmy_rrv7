@@ -7,8 +7,13 @@ import { Website } from "~/components/chat/Website";
 import type { WebsiteEntry } from "~/types/website";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
+import type { Route } from "./+types/chat_.nuevo";
+import { getUserOrRedirect } from "server/getUserUtils.server";
 
-export default function ChatbotConfigRoute() {
+export default function ChatbotConfigRoute({
+  loaderData,
+}: Route.ComponentProps) {
+  const { user } = loaderData;
   const [currentTab, setCurrentTab] = useState("website");
   const [websiteEntries, setWebsiteEntries] = useState<WebsiteEntry[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -117,6 +122,7 @@ export default function ChatbotConfigRoute() {
   return (
     <>
       <PageContainer>
+        <PageContainer.Header user={user} />
         <PageContainer.Title back="/chat">
           {"Nuevo Chatbot"}
         </PageContainer.Title>
@@ -158,6 +164,11 @@ export default function ChatbotConfigRoute() {
     </>
   );
 }
+
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const user = await getUserOrRedirect(request);
+  return { user };
+};
 
 export const meta = ({ data }: { data: any }) => {
   if (!data?.chatbot) {
