@@ -18,7 +18,7 @@ export const ChipTabs = ({
           key={tab}
           onClick={() => onTabChange?.(tab)}
           className={cn(
-            "px-4 py-2 rounded-full text-sm font-medium transition-colors",
+            "px-4 py-3 rounded-full text-sm font-medium transition-colors",
             "px-6",
             {
               "bg-black text-[#fff]": activeTab === tab,

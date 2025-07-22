@@ -281,18 +281,14 @@ export const EditionPair = ({
   let c;
   let p;
   if (currentTab === "Preview") {
-    c =
-      currentTab === "Preview" ? (
-        <PreviewForm chatbot={chatbot} user={user} />
-      ) : null;
-    p = currentTab === "Preview" ? <ChatPreview chatbot={chatbot} /> : null;
+    c = <PreviewForm chatbot={chatbot} user={user} />;
+    p = <ChatPreview chatbot={chatbot} />;
   }
-  //
 
   return (
     <article className="flex gap-6">
       <section className="grow flex-1">{c}</section>
-      <section className="grow flex-2">{p}</section>
+      <section className="grow flex-1">{p}</section>
     </article>
   );
 };

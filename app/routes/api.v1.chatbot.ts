@@ -126,6 +126,7 @@ export async function action({ request }: any) {
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
     const user = await getUserOrRedirect(request);
+    const userId = user.id;
     switch (intent) {
       case "create_chatbot": {
         // Usar nombre aleatorio si no se proporciona uno
@@ -234,7 +235,7 @@ export async function action({ request }: any) {
         if (welcomeMessage) updateData.welcomeMessage = welcomeMessage;
         const aiModel = formData.get("aiModel") as string;
         if (aiModel) {
-          const modelAccess = await validateUserAIModelAccess(userId);
+          const modelAccess = await validateUserAIModelAccess(user.id);
           if (!modelAccess.availableModels.includes(aiModel)) {
             return new Response(
               JSON.stringify({

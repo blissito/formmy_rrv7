@@ -4,10 +4,8 @@ import { getChatbotBySlug } from "server/chatbot/chatbotModel.server";
 import { PageContainer } from "~/components/chat/PageContainer";
 import { useState } from "react";
 import type { Route } from "./+types/chat_.$chatbotSlug";
+import { Toaster } from "react-hot-toast";
 
-/**
- * Loader function for the chatbot detail route
- */
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   const { chatbotSlug } = params;
@@ -30,9 +28,6 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   return { user, chatbot };
 };
 
-/**
- * Main component for the chatbot detail route
- */
 export default function ChatbotDetailRoute() {
   const { user, chatbot } = useLoaderData<typeof loader>();
   const [currentTab, setCurrentTab] = useState("Preview");
