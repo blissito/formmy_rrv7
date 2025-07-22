@@ -8,29 +8,21 @@ import { MessageBubble } from "./chat/MessageBubble";
 import { ChatHeader } from "./chat/ChatHeader";
 import { StreamToggle } from "./chat/StreamToggle";
 import { LoadingIndicator } from "./chat/LoadingIndicator";
+import type { Chatbot } from "@prisma/client";
 
 export type ChatPreviewProps = {
-  model?: string;
-  instructions: string;
-  temperature: number;
-  primaryColor?: string;
-  name?: string;
-
-  welcomeMessage?: string;
+  chatbot: Chatbot;
 };
 
-export default function ChatPreview({
-  model,
-  instructions,
-  temperature,
-  primaryColor = "#63CFDE",
-  name = "Mi Chatbot",
-
-  welcomeMessage = "¡Hola! ¿Cómo puedo ayudarte hoy?",
-}: ChatPreviewProps) {
+export default function ChatPreview({ chatbot }: ChatPreviewProps) {
   const [chatMessages, setChatMessages] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
-  >([{ role: "assistant", content: welcomeMessage }]);
+  >([
+    {
+      role: "assistant",
+      content: chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?",
+    },
+  ]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
@@ -39,22 +31,26 @@ export default function ChatPreview({
 
   const handleChatSend = async () => {
     if (!chatInput.trim()) return;
+
+    const currentInput = chatInput.trim();
     setChatLoading(true);
     setChatError(null);
-    const userMessage = { role: "user" as const, content: chatInput };
-    setChatMessages((msgs) => [...msgs, userMessage]);
+
+    const userMessage = { role: "user" as const, content: currentInput };
+    const updatedMessages = [...chatMessages, userMessage];
+    setChatMessages(updatedMessages);
     setChatInput("");
+
     if (stream) {
       setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
       Effect.runPromise(
         sendOpenRouterMessageEffect({
-          model: model || DEFAULT_AI_MODEL,
-          instructions,
-          temperature,
+          model: chatbot.model || DEFAULT_AI_MODEL,
+          instructions: chatbot.instructions,
+          temperature: chatbot.temperature,
           messages: [
-            { role: "system", content: instructions },
-            ...chatMessages,
-            { role: "user", content: chatInput },
+            { role: "system", content: chatbot.instructions },
+            ...updatedMessages,
           ],
           stream: true,
           onStreamChunk: (partial) => {
@@ -83,13 +79,12 @@ export default function ChatPreview({
     } else {
       Effect.runPromise(
         sendOpenRouterMessageEffect({
-          model: model || DEFAULT_AI_MODEL,
-          instructions,
-          temperature,
+          model: chatbot.model || DEFAULT_AI_MODEL,
+          instructions: chatbot.instructions,
+          temperature: chatbot.temperature,
           messages: [
-            { role: "system", content: instructions },
-            ...chatMessages,
-            { role: "user", content: chatInput },
+            { role: "system", content: chatbot.instructions },
+            ...updatedMessages,
           ],
         })
       )
@@ -124,21 +119,26 @@ export default function ChatPreview({
           "overflow-y-auto dark:bg-gray-800 max-w-xs mx-auto"
         )}
       >
-        <ChatHeader primaryColor={primaryColor} name={name} />
+        <ChatHeader
+          primaryColor={chatbot.primaryColor || "#63CFDE"}
+          name={chatbot.name}
+        />
 
-        <section className="grow pt-4 overflow-y-auto">
+        <section className="pr-4 grow pt-4 overflow-y-auto flex flex-col gap-2">
           {chatMessages.map((msg, idx) => (
             <MessageBubble
               key={idx}
               message={msg}
-              primaryColor={primaryColor}
+              primaryColor={chatbot.primaryColor || "#63CFDE"}
             />
           ))}
         </section>
 
         <section>
           {chatLoading && stream && (
-            <LoadingIndicator primaryColor={primaryColor} />
+            <LoadingIndicator
+              primaryColor={chatbot.primaryColor || "#63CFDE"}
+            />
           )}
         </section>
 
