@@ -20,7 +20,7 @@ export const PageContainer = ({
 }) => {
   return (
     <main className="bg-indigo-50/70 ">
-      <article className={cn("h-svh pt-20 pb-10 pl-24 pr-6 ")} {...props}>
+      <article className={cn("min-h-svh pt-20 pb-10 pl-24 pr-6 ")} {...props}>
         {/* Revisit: alto de la tarjeta */}
         <main className="bg-[#fff] min-h-[80vh] rounded-3xl py-6 px-8 shadow min-w-5xl">
           <section className="max-w-7xl mx-auto">{children}</section>

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Button } from "../PageContainer";
 import { ChipTabs } from "../common/ChipTabs";
-import { ChatPreview } from "./ChatPreview";
+import ChatPreview from "../../ChatPreview";
 import type { Chatbot, User } from "@prisma/client";
-import { ModelDropdown } from "../common/ModelDropdown";
-import { AgentDropdown, type AgentType } from "../common/AgentDropdown";
-import { IoInformationCircleOutline } from "react-icons/io5";
+import { type AgentType } from "../common/AgentDropdown";
 import toast from "react-hot-toast";
+import { AgentForm } from "../forms/AgentForm";
+import { ChatForm } from "../forms/ChatForm";
 
 // Componente para el tab de Preview
 export const PreviewForm = ({
@@ -16,7 +16,7 @@ export const PreviewForm = ({
   chatbot: Chatbot;
   user: User;
 }) => {
-  const [activeTab, setActiveTab] = useState("Agente");
+  const [activeTab, setActiveTab] = useState("Chat");
   const [selectedModel, setSelectedModel] = useState(
     chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free"
   );
@@ -27,6 +27,17 @@ export const PreviewForm = ({
   const [instructions, setInstructions] = useState(
     chatbot.instructions ||
       "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios."
+  );
+  const [name, setName] = useState(chatbot.name || "Geeki");
+  const [primaryColor, setPrimaryColor] = useState(
+    chatbot.primaryColor || "#63CFDE"
+  );
+  const [welcomeMessage, setWelcomeMessage] = useState(
+    chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?"
+  );
+  const [goodbyeMessage, setGoodbyeMessage] = useState(
+    chatbot.goodbyeMessage ||
+      "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte."
   );
   const [isSaving, setIsSaving] = useState(false);
 
@@ -48,6 +59,22 @@ export const PreviewForm = ({
     setInstructions(e.target.value);
   };
 
+  const handleNameChange = (value: string) => {
+    setName(value);
+  };
+
+  const handlePrimaryColorChange = (value: string) => {
+    setPrimaryColor(value);
+  };
+
+  const handleWelcomeMessageChange = (value: string) => {
+    setWelcomeMessage(value);
+  };
+
+  const handleGoodbyeMessageChange = (value: string) => {
+    setGoodbyeMessage(value);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
 
@@ -58,6 +85,10 @@ export const PreviewForm = ({
     formData.append("temperature", temperature.toString());
     formData.append("instructions", instructions);
     formData.append("personality", selectedAgent); // Guardamos el tipo de agente en personality
+    formData.append("name", name);
+    formData.append("primaryColor", primaryColor);
+    formData.append("welcomeMessage", welcomeMessage);
+    formData.append("goodbyeMessage", goodbyeMessage);
     // No necesitamos enviar userId, el endpoint lo obtiene del request
 
     try {
@@ -97,65 +128,28 @@ export const PreviewForm = ({
           </div>
         </Button>
       </header>
-
-      <div className="grid gap-4">
-        {/* Panel de configuración */}
-        <h2 className="text-lg font-medium">Características de tu agente</h2>
-
-        {/* Selector de modelo de IA */}
-        <div>
-          <ModelDropdown
-            selectedModel={selectedModel}
-            onChange={handleModelChange}
-            user={user}
-          />
-        </div>
-
-        {/* Selector de tipo de agente */}
-        <div>
-          <AgentDropdown
-            selectedAgent={selectedAgent}
-            onChange={handleAgentChange}
-            label="Elige a tu agente"
-          />
-        </div>
-
-        <div>
-          <label className="text-sm text-gray-600 mb-2 flex items-center gap-1">
-            Creatividad
-            <button className="group flex gap-2">
-              <IoInformationCircleOutline />
-              <span className="text-xs bg-black text-white rounded-full px-2 invisible group-hover:visible">
-                Temperatura
-              </span>
-            </button>
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="2"
-            step="0.1"
-            value={temperature}
-            onChange={handleTemperatureChange}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Reservado</span>
-            <span>Muy creativo</span>
-          </div>
-        </div>
-
-        {/* Instrucciones */}
-        <div>
-          <h3 className="text-sm mb-2">Instrucciones</h3>
-          <textarea
-            value={instructions}
-            onChange={handleInstructionsChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            rows={8}
-          />
-        </div>
-      </div>
+      {activeTab === "Chat" && (
+        <ChatForm
+          chatbot={chatbot}
+          onNameChange={handleNameChange}
+          onPrimaryColorChange={handlePrimaryColorChange}
+          onWelcomeMessageChange={handleWelcomeMessageChange}
+          onGoodbyeMessageChange={handleGoodbyeMessageChange}
+        />
+      )}
+      {activeTab === "Agente" && (
+        <AgentForm
+          selectedModel={selectedModel}
+          handleModelChange={handleModelChange}
+          user={user}
+          selectedAgent={selectedAgent}
+          handleAgentChange={handleAgentChange}
+          temperature={temperature}
+          handleTemperatureChange={handleTemperatureChange}
+          instructions={instructions}
+          handleInstructionsChange={handleInstructionsChange}
+        />
+      )}
     </article>
   );
 };

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { sendOpenRouterMessageEffect } from "../lib/openrouter.client";
 import { Effect } from "effect";
 import { DEFAULT_AI_MODEL } from "../utils/constants";
@@ -28,6 +28,49 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
   const [chatError, setChatError] = useState<string | null>(null);
   const [stream, setStream] = useState(true);
   const inputRef = useRef<ChatInputRef>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+  // Auto-scroll logic
+  const scrollToBottom = () => {
+    if (shouldAutoScroll && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+    // If user scrolled up, disable auto-scroll
+    if (!isNearBottom && !isUserScrolling) {
+      setIsUserScrolling(true);
+      setShouldAutoScroll(false);
+    }
+
+    // If user scrolled back to bottom, enable auto-scroll
+    if (isNearBottom && isUserScrolling) {
+      setIsUserScrolling(false);
+      setShouldAutoScroll(true);
+    }
+  };
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages, shouldAutoScroll]);
+
+  // Auto-scroll when streaming updates
+  useEffect(() => {
+    if (stream && chatLoading) {
+      scrollToBottom();
+    }
+  }, [chatMessages, stream, chatLoading]);
 
   const handleChatSend = async () => {
     if (!chatInput.trim()) return;
@@ -41,15 +84,19 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
     setChatMessages(updatedMessages);
     setChatInput("");
 
+    // Reset auto-scroll when sending a new message
+    setIsUserScrolling(false);
+    setShouldAutoScroll(true);
+
     if (stream) {
       setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
       Effect.runPromise(
         sendOpenRouterMessageEffect({
-          model: chatbot.model || DEFAULT_AI_MODEL,
-          instructions: chatbot.instructions,
+          model: chatbot.aiModel || DEFAULT_AI_MODEL,
+          instructions: chatbot.instructions || "",
           temperature: chatbot.temperature,
           messages: [
-            { role: "system", content: chatbot.instructions },
+            { role: "system", content: chatbot.instructions || "" },
             ...updatedMessages,
           ],
           stream: true,
@@ -79,11 +126,11 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
     } else {
       Effect.runPromise(
         sendOpenRouterMessageEffect({
-          model: chatbot.model || DEFAULT_AI_MODEL,
-          instructions: chatbot.instructions,
+          model: chatbot.aiModel || DEFAULT_AI_MODEL,
+          instructions: chatbot.instructions || "",
           temperature: chatbot.temperature,
           messages: [
-            { role: "system", content: chatbot.instructions },
+            { role: "system", content: chatbot.instructions || "" },
             ...updatedMessages,
           ],
         })
@@ -107,7 +154,7 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
   };
 
   return (
-    <main className="bg-brand-500/20 h-full dark:bg-space-800 rounded-lg shadow overflow-hidden">
+    <main className="bg-brand-500/20 h-full dark:bg-space-800 rounded-lg shadow overflow-hidden px-4">
       <StreamToggle stream={stream} onToggle={setStream} />
 
       <article
@@ -116,7 +163,8 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
           "bg-[#fff]",
           "rounded-3xl",
           "flex flex-col",
-          "overflow-y-auto dark:bg-gray-800 max-w-xs mx-auto"
+          // Aquí cambiamos el ancho del chat
+          "overflow-y-auto dark:bg-gray-800 max-w-lg mx-auto"
         )}
       >
         <ChatHeader
@@ -124,7 +172,11 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
           name={chatbot.name}
         />
 
-        <section className="pr-4 grow pt-4 overflow-y-auto flex flex-col gap-2">
+        <section
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="pr-4 grow pt-4 overflow-y-auto flex flex-col gap-2"
+        >
           {chatMessages.map((msg, idx) => (
             <MessageBubble
               key={idx}
@@ -132,6 +184,7 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
               primaryColor={chatbot.primaryColor || "#63CFDE"}
             />
           ))}
+          <div ref={messagesEndRef} />
         </section>
 
         <section>

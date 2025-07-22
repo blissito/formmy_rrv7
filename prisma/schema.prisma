@@ -175,6 +175,7 @@ model Chatbot {
   // Configuration
   personality    String?
   welcomeMessage String?
+  goodbyeMessage String?
   aiModel        String  @default("mistralai/mistral-small-3.2-24b-instruct")
   temperature    Float   @default(1) // revisit
   instructions   String? // prompt general editable

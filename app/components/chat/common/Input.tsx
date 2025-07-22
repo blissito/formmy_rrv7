@@ -8,8 +8,10 @@ export const Input = ({
   label,
   onChange,
   containerClassName,
+  type,
   ...props
 }: {
+  type?: string;
   containerClassName?: string;
   onChange?: (value: string) => void;
   label?: string;
@@ -19,6 +21,7 @@ export const Input = ({
 
   [x: string]: unknown;
 }) => {
+  const TextField = type === "textarea" ? "textarea" : "input";
   return (
     <section className={cn("grid gap-1 grow", className)}>
       {label && <p className="text-gray-600">{label}</p>}
@@ -29,7 +32,7 @@ export const Input = ({
         )}
       >
         {left && <div className="pl-3">{left}</div>}
-        <input
+        <TextField
           onChange={(ev) => onChange?.(ev.currentTarget.value)}
           placeholder={placeholder}
           className={cn(
@@ -37,8 +40,11 @@ export const Input = ({
             {
               "rounded-r-2xl": !!left,
               "rounded-full": !left,
+              "rounded-2xl": type === "textarea",
             }
           )}
+          type={type === "textarea" ? undefined : type}
+          rows={type === "textarea" ? 8 : undefined}
           {...props}
         />
       </main>
