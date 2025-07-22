@@ -164,6 +164,22 @@ export const Website = ({
           const updatedEntries = websiteEntries.filter((_, i) => i !== index);
           onWebsiteEntriesChange(updatedEntries);
         }}
+        onEditEntry={(index: number) => {
+          const entry = websiteEntries[index];
+          if (entry) {
+            // Cargar los datos en el formulario para editar
+            setFormData({
+              url: entry.url,
+              includeRoutes: entry.includeRoutes?.join(", ") || "",
+              excludeRoutes: entry.excludeRoutes?.join(", ") || "",
+              updateFrequency: entry.updateFrequency,
+            });
+
+            // Remover la entrada actual para que se pueda actualizar
+            const updatedEntries = websiteEntries.filter((_, i) => i !== index);
+            onWebsiteEntriesChange(updatedEntries);
+          }
+        }}
       />
     </>
   );

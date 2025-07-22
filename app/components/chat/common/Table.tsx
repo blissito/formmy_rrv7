@@ -2,7 +2,9 @@ import { Input } from "./Input";
 import { cn } from "~/lib/utils";
 import { Select } from "./Select";
 import type { WebsiteEntry } from "~/types/website";
-import { LuTrash2 } from "react-icons/lu";
+import { BsThreeDots } from "react-icons/bs";
+import { LuPencil, LuTrash2 } from "react-icons/lu";
+import { useState, useRef, useEffect } from "react";
 
 export const Table = ({
   noSelect,
@@ -11,6 +13,7 @@ export const Table = ({
   className,
   websiteEntries = [],
   onRemoveEntry,
+  onEditEntry,
 }: {
   noSearch?: true;
   noSelect?: true;
@@ -18,12 +21,13 @@ export const Table = ({
   title?: string;
   websiteEntries?: WebsiteEntry[];
   onRemoveEntry?: (index: number) => void;
+  onEditEntry?: (index: number) => void;
 }) => {
   return (
     <article>
       <main
         className={cn(
-          "rounded-3xl border border-gray-300 py-6 px-4",
+          "rounded-3xl border border-gray-300 py-6 px-4 shadow-lg",
           className
         )}
       >
@@ -61,6 +65,7 @@ export const Table = ({
                 key={index}
                 entry={entry}
                 onRemove={() => onRemoveEntry?.(index)}
+                onEdit={() => onEditEntry?.(index)}
               />
             ))}
           </div>
@@ -73,11 +78,13 @@ export const Table = ({
 const LinkRow = ({
   entry,
   onRemove,
+  onEdit,
   noSelect,
 }: {
   noSelect?: true;
   entry: WebsiteEntry;
   onRemove?: () => void;
+  onEdit?: () => void;
 }) => {
   const formatLastUpdated = (date: Date) => {
     const now = new Date();
@@ -132,13 +139,7 @@ const LinkRow = ({
         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
           {entry.updateFrequency === "monthly" ? "Mensual" : "Anual"}
         </span>
-        <button
-          onClick={onRemove}
-          className="text-xl text-gray-600 hover:text-red-500 transition-colors invisible group-hover:visible"
-          title="Eliminar sitio web"
-        >
-          <LuTrash2 />
-        </button>
+        <DropdownMenu onEdit={onEdit} onRemove={onRemove} />
       </div>
     </main>
   );
@@ -164,4 +165,70 @@ const Header = () => {
 
 const Checkbox = () => {
   return <input type="checkbox" className="rounded border-gray-300" />;
+};
+
+const DropdownMenu = ({
+  onEdit,
+  onRemove,
+}: {
+  onEdit?: () => void;
+  onRemove?: () => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar el menú cuando se hace clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleEdit = () => {
+    onEdit?.();
+    setIsOpen(false);
+  };
+
+  const handleRemove = () => {
+    onRemove?.();
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="text-xl text-gray-600 hover:text-gray-800 transition-colors invisible group-hover:visible p-1"
+        title="Más opciones"
+      >
+        <BsThreeDots />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] z-10">
+          <button
+            onClick={handleEdit}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <LuPencil className="w-4 h-4" />
+            Editar
+          </button>
+          <button
+            onClick={handleRemove}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <LuTrash2 className="w-4 h-4" />
+            Eliminar
+          </button>
+        </div>
+      )}
+    </div>
+  );
 };
