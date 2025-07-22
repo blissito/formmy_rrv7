@@ -5,6 +5,8 @@ import Spinner from "../Spinner";
 import { Effect, pipe } from "effect";
 import { Link, Links } from "react-router";
 import { IoIosArrowRoundBack } from "react-icons/io";
+import { PreviewForm } from "./tab_sections/Preview";
+import ChatPreview from "../ChatPreview";
 
 const MAX_WIDTH = "max-w-7xl";
 
@@ -104,21 +106,28 @@ export const Button = ({
   onClick,
   isLoading,
   className,
+  mode,
   to,
   ...props
 }: {
+  mode?: "ghost";
   className?: string;
   isLoading?: boolean;
   onClick?: () => void;
   children: ReactNode;
   [x: string]: unknown;
 }) => {
+  const modes = {
+    "bg-[#fff] border border-gray-300 rounded-lg text-gray-600 px-2":
+      mode === "ghost",
+  };
   if (to) {
     return (
       <Link
         to={to}
         className={cn(
           "p-2 bg-brand-500 text-white rounded-full px-6",
+          modes,
           className
         )}
         {...props}
@@ -132,7 +141,11 @@ export const Button = ({
   return (
     <button
       onClick={onClick}
-      className={cn("p-2 bg-brand-500 text-white rounded-full px-6", className)}
+      className={cn(
+        "p-2 bg-brand-500 text-white rounded-full px-6",
+        modes,
+        className
+      )}
       {...props}
     >
       {isLoading && <Spinner />}
@@ -256,8 +269,124 @@ export const StickyGrid = ({ children }: { children: ReactNode }) => {
   );
 };
 
+export const EditionPair = ({
+  currentTab,
+  chatbot,
+  user,
+}: {
+  chatbot: Chatbot;
+  user: User;
+  currentTab?: string;
+}) => {
+  let c;
+  let p;
+  if (currentTab === "Preview") {
+    c =
+      currentTab === "Preview" ? (
+        <PreviewForm chatbot={chatbot} user={user} />
+      ) : null;
+    p = currentTab === "Preview" ? <ChatPreview chatbot={chatbot} /> : null;
+  }
+  //
+
+  return (
+    <article className="flex gap-6">
+      <section className="grow flex-1">{c}</section>
+      <section className="grow flex-2">{p}</section>
+    </article>
+  );
+};
+
+export const TabSelector = ({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+}) => {
+  const [selectedTab, setSelectedTab] = useState(activeTab || "Preview");
+
+  const handleTabClick = (tab: string) => {
+    setSelectedTab(tab);
+    onTabChange?.(tab);
+  };
+
+  const tabs = [
+    "Preview",
+    "Conversaciones",
+    "Entrenamiento",
+    "Tareas",
+    "Código",
+    "Configuración",
+  ];
+
+  return (
+    <nav
+      className={cn(
+        "border-b",
+        "flex overflow-auto items-end justify-center",
+        "mb-6"
+      )}
+      style={{
+        scrollbarWidth: "none",
+      }}
+    >
+      {tabs.map((tab) => (
+        <TabButton
+          key={tab}
+          isActive={selectedTab === tab}
+          onClick={() => handleTabClick(tab)}
+        >
+          {tab}
+        </TabButton>
+      ))}
+    </nav>
+  );
+};
+
+export const TabButton = ({
+  children,
+  onClick,
+  isLoading,
+  className,
+  to,
+  isActive,
+  ...props
+}: {
+  isActive?: boolean;
+  className?: string;
+  isLoading?: boolean;
+  onClick?: () => void;
+  children: ReactNode;
+  [x: string]: unknown;
+}) => {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "text-sm",
+        "text-gray-600",
+        // @TODO: Revisit rpundeness, podría ser un elemento aparte con Motion
+        "border-b-4 border-transparent",
+        "p-2 px-6",
+        "hover:text-black transition-colors",
+        {
+          "border-b-brand-500 text-black": isActive,
+        },
+        className
+      )}
+      {...props}
+    >
+      {isLoading && <Spinner />}
+      {!isLoading && children}
+    </button>
+  );
+};
+
+PageContainer.TabSelector = TabSelector;
 PageContainer.StickyGrid = StickyGrid;
 PageContainer.Title = Title;
 PageContainer.ChatCard = ChatCard;
 PageContainer.Header = Header;
 PageContainer.Button = Button;
+PageContainer.EditionPair = EditionPair;
