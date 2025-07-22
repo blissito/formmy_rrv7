@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { sendOpenRouterMessageEffect } from "../lib/openrouter.client";
 import { Effect } from "effect";
 import { DEFAULT_AI_MODEL } from "../utils/constants";
@@ -32,6 +32,18 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [isConversationEnded, setIsConversationEnded] = useState(false);
+  const inactivityTimerRef = useRef<number | null>(null);
+
+  // Update welcome message when chatbot.welcomeMessage changes
+  useEffect(() => {
+    if (chatMessages.length > 0 && chatMessages[0].role === 'assistant') {
+      setChatMessages(prevMessages => [
+        { ...prevMessages[0], content: chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?" },
+        ...prevMessages.slice(1)
+      ]);
+    }
+  }, [chatbot.welcomeMessage]);
 
   // Auto-scroll logic
   const scrollToBottom = () => {
@@ -60,10 +72,54 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
     }
   };
 
+  // Mostrar mensaje de despedida después de inactividad
+  const showGoodbyeMessage = useCallback(() => {
+    if (chatbot.goodbyeMessage && !isConversationEnded) {
+      const newMessage = { 
+        role: "assistant" as const, 
+        content: chatbot.goodbyeMessage 
+      };
+      setChatMessages(prev => [...prev, newMessage]);
+      setIsConversationEnded(true);
+    }
+  }, [chatbot.goodbyeMessage, isConversationEnded]);
+
+  // Reiniciar el temporizador de inactividad
+  const resetInactivityTimer = useCallback(() => {
+    // Limpiar el temporizador existente
+    if (inactivityTimerRef.current !== null) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+    
+    // Establecer un nuevo temporizador (5 minutos de inactividad)
+    // @ts-ignore - setTimeout returns a number in the browser
+    inactivityTimerRef.current = window.setTimeout(() => {
+      showGoodbyeMessage();
+    }, 5 * 60 * 1000); // 5 minutos
+  }, [showGoodbyeMessage]);
+
+  // Configurar el temporizador de inactividad
+  useEffect(() => {
+    // Iniciar el temporizador inicial
+    resetInactivityTimer();
+    
+    // Limpiar el temporizador al desmontar el componente
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [resetInactivityTimer]);
+
   // Auto-scroll when messages change
   useEffect(() => {
     scrollToBottom();
-  }, [chatMessages, shouldAutoScroll]);
+    // Reiniciar el temporizador cuando hay nuevos mensajes
+    if (!isConversationEnded) {
+      resetInactivityTimer();
+    }
+  }, [chatMessages, shouldAutoScroll, resetInactivityTimer, isConversationEnded]);
 
   // Auto-scroll when streaming updates
   useEffect(() => {
@@ -73,6 +129,10 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
   }, [chatMessages, stream, chatLoading]);
 
   const handleChatSend = async () => {
+    if (isConversationEnded) {
+      // Si la conversación ya terminó, no hacer nada
+      return;
+    }
     if (!chatInput.trim()) return;
 
     const currentInput = chatInput.trim();
@@ -198,7 +258,13 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
         <ChatInput
           ref={inputRef}
           value={chatInput}
-          onChange={setChatInput}
+          onChange={(value) => {
+            setChatInput(value);
+            // Reiniciar el temporizador cuando el usuario está escribiendo
+            if (!isConversationEnded) {
+              resetInactivityTimer();
+            }
+          }}
           onSend={handleChatSend}
           disabled={chatLoading}
           error={chatError}

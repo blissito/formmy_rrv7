@@ -14,7 +14,7 @@ export const Input = ({
   type?: string;
   containerClassName?: string;
   onChange?: (value: string) => void;
-  label?: string;
+  label?: ReactNode;
   className?: string;
   left?: ReactNode;
   placeholder?: string;

@@ -12,18 +12,23 @@ const MAX_WIDTH = "max-w-7xl";
 
 export const PageContainer = ({
   children,
-
   ...props
 }: {
   children: ReactNode;
   [x: string]: unknown;
 }) => {
+  const HeaderComponent = Children.toArray(children).find(
+    (child) => child.type === PageContainer.Header
+  );
+  const nodes = Children.toArray(children).filter(
+    (child) => child.type !== PageContainer.Header
+  );
   return (
-    <main className="bg-indigo-50/70 ">
-      <article className={cn("min-h-svh pt-20 pb-10 pl-24 pr-6 ")} {...props}>
-        {/* Revisit: alto de la tarjeta */}
+    <main className="bg-indigo-50/70">
+      {HeaderComponent && HeaderComponent}
+      <article className={cn("min-h-svh pb-10 pl-24 pr-6")} {...props}>
         <main className="bg-[#fff] min-h-[80vh] rounded-3xl py-6 px-8 shadow min-w-5xl">
-          <section className="max-w-7xl mx-auto">{children}</section>
+          <section className="max-w-7xl mx-auto">{nodes}</section>
         </main>
       </article>
     </main>
@@ -65,7 +70,7 @@ export const Header = ({
   [x: string]: unknown;
 }) => {
   return (
-    <section className="fixed top-0 left-0 right-0">
+    <section className="top-0 left-0 right-0">
       <nav
         className={cn(
           "flex gap-1 text-xs font-thin justify-end py-2",

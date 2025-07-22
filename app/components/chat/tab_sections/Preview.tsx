@@ -6,6 +6,7 @@ import { type AgentType } from "../common/AgentDropdown";
 import toast from "react-hot-toast";
 import { AgentForm } from "../forms/AgentForm";
 import { ChatForm } from "../forms/ChatForm";
+import { useSubmit } from "react-router";
 
 // Componente para el tab de Preview
 export const PreviewForm = ({
@@ -15,6 +16,7 @@ export const PreviewForm = ({
   chatbot: Chatbot;
   user: User;
 }) => {
+  const submit = useSubmit();
   const [activeTab, setActiveTab] = useState("Chat");
   const [selectedModel, setSelectedModel] = useState(
     chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free"
@@ -100,6 +102,7 @@ export const PreviewForm = ({
 
       if (result.success) {
         toast.success("Cambios guardados correctamente");
+submit({})
       } else {
         toast.error(result.error || "Error al actualizar chatbot");
         console.error("Error al actualizar chatbot:", result.error);

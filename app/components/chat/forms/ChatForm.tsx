@@ -43,9 +43,17 @@ export const ChatForm = ({
           onChange={onNameChange}
         />
         <Input
+          left={
+            <div
+              style={{
+                background: primaryColor,
+              }}
+              className="w-10 h-6 bg-red-500 mt-3 rounded-2xl"
+            />
+          }
           label="Color"
           name="color"
-          type="color"
+          type="text"
           value={primaryColor}
           onChange={onPrimaryColorChange}
         />
@@ -57,7 +65,9 @@ export const ChatForm = ({
         placeholder="¡Hola! ¿Cómo puedo ayudarte hoy?"
         onChange={onWelcomeMessageChange}
         value={welcomeMessage}
-        label="Saludo inicial"
+        label={<div className="flex flex-col gap-1"><span className="font-medium">Saludo inicial</span>
+        <span className="text-xs text-gray-500">Puedes usar markdown para formatear el texto</span>
+        </div>}
       />
       {/* Despedida */}
       <Input
@@ -65,7 +75,9 @@ export const ChatForm = ({
         placeholder="Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte."
         onChange={onGoodbyeMessageChange}
         value={goodbyeMessage}
-        label="Mensaje de despedida"
+        label={<div className="flex flex-col gap-1"><span className="font-medium">Mensaje de despedida</span>
+          <span className="text-xs text-gray-500">Puedes usar markdown para formatear el texto</span>
+          </div>}
       />
     </div>
   );

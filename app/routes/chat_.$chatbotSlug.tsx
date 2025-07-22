@@ -37,9 +37,9 @@ export default function ChatbotDetailRoute() {
   };
 
   return (
-    <PageContainer>
-      <PageContainer.Title back="/chat">{chatbot.name}</PageContainer.Title>
+    <PageContainer >
       <PageContainer.Header user={user} />
+      <PageContainer.Title back="/chat">{chatbot.name}</PageContainer.Title>
       <PageContainer.TabSelector
         activeTab={currentTab}
         onTabChange={handleTabChange}
