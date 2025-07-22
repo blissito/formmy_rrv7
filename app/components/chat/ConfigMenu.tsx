@@ -69,6 +69,7 @@ const MenuButton = ({
   isActive,
   onClick,
   src,
+  icon,
   to,
 }: {
   onClick?: () => void;
@@ -76,6 +77,7 @@ const MenuButton = ({
   isActive?: boolean;
   to?: string;
   src?: string;
+  icon?: ReactNode;
   children: ReactNode;
 }) => {
   if (typeof onClick === "function") {
@@ -93,8 +95,12 @@ const MenuButton = ({
           }
         )}
       >
-        <span className="w-6">
-          <img alt="files-icon" src={src} />
+        <span className="w-6 flex items-center justify-center">
+          {icon ? (
+            <span className="text-lg">{icon}</span>
+          ) : (
+            <img alt="files-icon" src={src} />
+          )}
         </span>
         <span className="block min-w-max">{children}</span>
       </button>
@@ -110,8 +116,12 @@ const MenuButton = ({
         hidden,
       })}
     >
-      <span className="w-6">
-        <img alt="files-icon" src={src} />
+      <span className="w-6 flex items-center justify-center">
+        {icon ? (
+          <span className="text-lg">{icon}</span>
+        ) : (
+          <img alt="files-icon" src={src} />
+        )}
       </span>
       <span className="block min-w-max">{children}</span>
     </Link>

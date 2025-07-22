@@ -194,7 +194,7 @@ export const ChatCard = ({
   return (
     <section className="border rounded-3xl border-gray-300 px-5 py-4 max-w-80 hover:shadow-lg transition-all">
       <Link
-        to={`/chat/config/${chatbot.slug}`}
+        to={`/chat/${chatbot.slug}`}
         className="font-medium text-xl hover:underline"
       >
         {chatbot.name}
@@ -232,13 +232,13 @@ export const ChatCard = ({
               alt="avatares"
             />
           </span>
-          <span>
+          <Link to={`/chat/${chatbot.slug}`}>
             <img
               className="w-full h-full"
               src="/assets/chat/paintbrush.svg"
               alt="avatares"
             />
-          </span>
+          </Link>
         </div>
       </nav>
     </section>
