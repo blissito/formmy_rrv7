@@ -232,7 +232,13 @@ export async function action({ request }: any) {
         const personality = formData.get("personality") as string;
         if (personality) updateData.personality = personality;
         const welcomeMessage = formData.get("welcomeMessage") as string;
-        if (welcomeMessage) updateData.welcomeMessage = welcomeMessage;
+        if (welcomeMessage !== null && welcomeMessage !== undefined) {
+          updateData.welcomeMessage = welcomeMessage;
+        }
+        const goodbyeMessage = formData.get("goodbyeMessage") as string;
+        if (goodbyeMessage !== null && goodbyeMessage !== undefined) {
+          updateData.goodbyeMessage = goodbyeMessage;
+        }
         const aiModel = formData.get("aiModel") as string;
         if (aiModel) {
           const modelAccess = await validateUserAIModelAccess(user.id);

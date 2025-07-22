@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "../PageContainer";
 import { ChipTabs } from "../common/ChipTabs";
-import ChatPreview from "../../ChatPreview";
 import type { Chatbot, User } from "@prisma/client";
 import { type AgentType } from "../common/AgentDropdown";
 import toast from "react-hot-toast";
@@ -130,7 +129,10 @@ export const PreviewForm = ({
       </header>
       {activeTab === "Chat" && (
         <ChatForm
-          chatbot={chatbot}
+          name={name}
+          primaryColor={primaryColor}
+          welcomeMessage={welcomeMessage}
+          goodbyeMessage={goodbyeMessage}
           onNameChange={handleNameChange}
           onPrimaryColorChange={handlePrimaryColorChange}
           onWelcomeMessageChange={handleWelcomeMessageChange}

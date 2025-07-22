@@ -1,8 +1,10 @@
-import type { Chatbot } from "@prisma/client";
 import { Input } from "../common/Input";
 
 interface ChatFormProps {
-  chatbot: Chatbot;
+  name: string;
+  primaryColor: string;
+  welcomeMessage: string;
+  goodbyeMessage: string;
   onNameChange: (name: string) => void;
   onPrimaryColorChange: (color: string) => void;
   onWelcomeMessageChange: (message: string) => void;
@@ -10,7 +12,10 @@ interface ChatFormProps {
 }
 
 export const ChatForm = ({
-  chatbot,
+  name,
+  primaryColor,
+  welcomeMessage,
+  goodbyeMessage,
   onNameChange,
   onPrimaryColorChange,
   onWelcomeMessageChange,
@@ -26,7 +31,7 @@ export const ChatForm = ({
           alt="Avatar del chatbot"
           style={{
             filter: `hue-rotate(${
-              chatbot.primaryColor === "#63CFDE" ? "0" : "180"
+              primaryColor === "#63CFDE" ? "0" : "180"
             }deg)`,
           }}
           className="object-cover p-4 border rounded-3xl row-span-2 w-full h-full"
@@ -34,14 +39,14 @@ export const ChatForm = ({
         <Input
           label="Nombre"
           name="name"
-          value={chatbot.name || "Geeki"}
+          value={name}
           onChange={onNameChange}
         />
         <Input
           label="Color"
           name="color"
           type="color"
-          value={chatbot.primaryColor || "#63CFDE"}
+          value={primaryColor}
           onChange={onPrimaryColorChange}
         />
       </div>
@@ -51,7 +56,7 @@ export const ChatForm = ({
         type="textarea"
         placeholder="¡Hola! ¿Cómo puedo ayudarte hoy?"
         onChange={onWelcomeMessageChange}
-        value={chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?"}
+        value={welcomeMessage}
         label="Saludo inicial"
       />
       {/* Despedida */}
@@ -59,10 +64,7 @@ export const ChatForm = ({
         type="textarea"
         placeholder="Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte."
         onChange={onGoodbyeMessageChange}
-        value={
-          chatbot.goodbyeMessage ||
-          "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte."
-        }
+        value={goodbyeMessage}
         label="Mensaje de despedida"
       />
     </div>
