@@ -4,7 +4,7 @@ import { IoReturnUpBackOutline } from "react-icons/io5";
 import { BiSave } from "react-icons/bi";
 import Code, { iconBtnClass } from "~/components/Code";
 import Nav from "~/components/NavBar";
-import { getUserOrRedirect } from ".server/getUserUtils";
+import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
 import type { ProjectType, UserType } from "~/utils/zod";
 import { useState } from "react";

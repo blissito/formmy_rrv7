@@ -7,7 +7,7 @@ import type { ConfigSchema } from "~/components/formmys/FormyV1";
 import { FiEdit3 } from "react-icons/fi";
 import Message from "~/components/formmys/MessageV1";
 import toast, { Toaster } from "react-hot-toast";
-import { getUserOrNull } from ".server/getUserUtils";
+import { getUserOrNull } from "server/getUserUtils.server";
 import { useState } from "react";
 import { CopyOrCheckButton } from "~/components/CopyOrCheckButton";
 import type { Route } from "./+types/config.$projectId.share";

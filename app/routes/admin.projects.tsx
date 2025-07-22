@@ -3,7 +3,7 @@ import { useLoaderData } from "react-router";
 import { Children, type ReactNode } from "react";
 import { type LoaderFunctionArgs } from "react-router";
 import { db } from "~/utils/db.server";
-import { getAdminUserOrRedirect } from ".server/getUserUtils";
+import { getAdminUserOrRedirect } from "server/getUserUtils.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await getAdminUserOrRedirect(request);

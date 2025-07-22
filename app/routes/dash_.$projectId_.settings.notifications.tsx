@@ -4,7 +4,7 @@ import { ProTag } from "~/components/ProTag";
 import Spinner from "~/components/Spinner";
 import { Toggle } from "~/components/Switch";
 import { db } from "~/utils/db.server";
-import { getUserOrNull } from ".server/getUserUtils";
+import { getUserOrNull } from "server/getUserUtils.server";
 import { type Notifications, notificationsSchema } from "~/utils/zod";
 import type { Route } from "./+types/dash_.$projectId_.settings.notifications";
 

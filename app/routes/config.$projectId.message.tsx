@@ -21,7 +21,7 @@ import type { ConfigSchema } from "~/components/formmys/FormyV1";
 import { ProTag } from "~/components/ProTag";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { removePublicPic, uploadPublicPic } from "~/lib/firebase.client";
-import { getUserOrNull } from ".server/getUserUtils";
+import { getUserOrNull } from "server/getUserUtils.server";
 import { v4 as uuid } from "uuid";
 import toast, { Toaster } from "react-hot-toast";
 import { IconCube } from "~/components/IconCube";

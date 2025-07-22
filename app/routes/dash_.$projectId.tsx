@@ -26,7 +26,7 @@ import {
   getPermission,
   getProjectOwner,
   getUserOrRedirect,
-} from ".server/getUserUtils";
+} from "server/getUserUtils.server";
 import type { Route } from "./+types/dash_.$projectId";
 
 export const action = async ({ request, params }: Route.ActionArgs) => {

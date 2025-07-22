@@ -8,7 +8,7 @@ import { slugify } from "~/utils/slugify";
 import { v4 as uuidv4 } from "uuid";
 import { IconCube } from "~/components/IconCube";
 import { useState } from "react";
-import { getUserOrRedirect } from ".server/getUserUtils";
+import { getUserOrRedirect } from "server/getUserUtils.server";
 
 export const action: ActionFunction = async ({ request }) => {
   const user = await getUserOrRedirect(request);

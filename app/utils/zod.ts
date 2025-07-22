@@ -1,4 +1,6 @@
 import { z } from "zod";
+import * as S from "@effect/schema/Schema";
+import { Effect } from "effect";
 
 export const customInputSchema = z
   .object({
@@ -148,3 +150,81 @@ export const messageSchema = z.object({
   border: z.union([z.literal("redondo"), z.literal("cuadrado")]),
 });
 export type MessageSchema = z.infer<typeof messageSchema>;
+
+export const chatbotConfigSchema = z.object({
+  name: z
+    .string()
+    .min(2, "El nombre debe tener al menos 2 caracteres")
+    .max(50, "El nombre no puede superar 50 caracteres"),
+  aiModel: z.string(),
+  personality: z.string(),
+  welcomeMessage: z.string().min(1, "El mensaje de bienvenida es obligatorio"),
+  primaryColor: z
+    .string()
+    .regex(/^#([0-9A-Fa-f]{6})$/, "Color primario inválido"),
+  temperature: z
+    .number()
+    .min(0, "Temperatura mínima 0")
+    .max(1, "Temperatura máxima 1"),
+  instructions: z
+    .string()
+    .max(4000, "El prompt no puede superar 4000 caracteres")
+    .optional(),
+});
+
+export function validateChatbotData(
+  data: unknown,
+  planLimits?: { availableModels?: string[] }
+) {
+  return chatbotConfigSchema
+    .superRefine((val, ctx) => {
+      if (
+        planLimits?.availableModels &&
+        !planLimits.availableModels.includes(val.aiModel)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `El modelo ${val.aiModel} no está disponible en tu plan.`,
+          path: ["aiModel"],
+        });
+      }
+    })
+    .safeParse(data);
+}
+
+export const chatbotConfigEffectSchema = S.Struct({
+  name: S.String.pipe(S.minLength(2), S.maxLength(50)),
+  aiModel: S.String,
+  personality: S.String,
+  welcomeMessage: S.String,
+  primaryColor: S.String.pipe(S.pattern(/^#([0-9A-Fa-f]{6})$/)),
+  temperature: S.Number.pipe(S.greaterThanOrEqualTo(0), S.lessThanOrEqualTo(1)),
+  prompt: S.optional(S.String.pipe(S.maxLength(4000))),
+});
+
+export function validateChatbotDataEffect(
+  data: unknown,
+  planLimits?: { availableModels?: string[] }
+) {
+  try {
+    const value = Effect.runSync(
+      S.decodeUnknown(chatbotConfigEffectSchema)(data)
+    );
+    if (
+      planLimits?.availableModels &&
+      !planLimits.availableModels.includes((data as any).aiModel)
+    ) {
+      return {
+        success: false,
+        error: {
+          aiModel: `El modelo ${
+            (data as any).aiModel
+          } no está disponible en tu plan.`,
+        },
+      };
+    }
+    return { success: true, data: value };
+  } catch (error) {
+    return { success: false, error };
+  }
+}

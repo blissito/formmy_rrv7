@@ -24,8 +24,8 @@ export const Button = ({
       type={type}
       className={twMerge(
         "bg-brand-500 text-clear mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6",
-        className,
-        "disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:border-none"
+        "disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:border-none",
+        className
       )}
     >
       {!isLoading && (children || "Agregar")}

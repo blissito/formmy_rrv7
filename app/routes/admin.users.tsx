@@ -2,7 +2,7 @@ import { data as json } from "react-router";
 import { useLoaderData } from "react-router";
 import { type LoaderFunctionArgs } from "react-router";
 import { db } from "~/utils/db.server";
-import { getAdminUserOrRedirect } from ".server/getUserUtils";
+import { getAdminUserOrRedirect } from "server/getUserUtils.server";
 import { Row } from "./admin.projects";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

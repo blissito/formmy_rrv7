@@ -1,7 +1,7 @@
 import { Button } from "~/components/Button";
 import { FaUsers } from "react-icons/fa";
 import { twMerge } from "tailwind-merge";
-import { getUserOrRedirect } from ".server/getUserUtils";
+import { getUserOrRedirect } from "server/getUserUtils.server";
 import { data as json } from "react-router";
 import {
   Form,

@@ -110,7 +110,11 @@ export default {
       },
     },
   },
-  plugins: [require("@tailwindcss/forms"), addVariablesForColors],
+  plugins: [
+    require("@tailwindcss/forms"),
+    require("@tailwindcss/typography"),
+    addVariablesForColors,
+  ],
 } satisfies Config;
 
 function addVariablesForColors({ addBase, theme }: any) {
