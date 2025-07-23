@@ -6,6 +6,10 @@ import { Effect, pipe } from "effect";
 import { Link, Links } from "react-router";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { PreviewForm } from "./tab_sections/Preview";
+import {
+  Conversations,
+  ConversationsPreview,
+} from "./tab_sections/Conversations";
 import ChatPreview from "../ChatPreview";
 
 const MAX_WIDTH = "max-w-7xl";
@@ -17,11 +21,20 @@ export const PageContainer = ({
   children: ReactNode;
   [x: string]: unknown;
 }) => {
-  const HeaderComponent = Children.toArray(children).find(
-    (child) => child.type === PageContainer.Header
+  const childrenArray = Children.toArray(children);
+  const HeaderComponent = childrenArray.find(
+    (child) =>
+      typeof child === "object" &&
+      child !== null &&
+      "type" in child &&
+      (child as React.ReactElement).type === PageContainer.Header
   );
-  const nodes = Children.toArray(children).filter(
-    (child) => child.type !== PageContainer.Header
+  const nodes = childrenArray.filter(
+    (child) =>
+      typeof child !== "object" ||
+      child === null ||
+      !("type" in child) ||
+      (child as React.ReactElement).type !== PageContainer.Header
   );
   return (
     <main className="bg-indigo-50/70">
@@ -280,17 +293,27 @@ export const EditionPair = ({
   user: User;
   currentTab?: string;
 }) => {
-  let c;
-  let p;
-  if (currentTab === "Preview") {
-    c = <PreviewForm chatbot={chatbot} user={user} />;
-    p = <ChatPreview chatbot={chatbot} />;
+  let content;
+  let preview;
+
+  switch (currentTab) {
+    case "Preview":
+      content = <PreviewForm chatbot={chatbot} user={user} />;
+      preview = <ChatPreview chatbot={chatbot} />;
+      break;
+    case "Conversaciones":
+      content = <Conversations chatbot={chatbot} user={user} />;
+      preview = <ConversationsPreview conversation={undefined} />; // No preview for conversations tab
+      break;
+    default:
+      content = null;
+      preview = null;
   }
 
   return (
     <article className="flex gap-6 items-stretch">
-      <section className="grow flex-1">{c}</section>
-      <section className="grow flex-2">{p}</section>
+      <section className="flex-1">{content}</section>
+      {preview && <section className="grow flex-2">{preview}</section>}
     </article>
   );
 };

@@ -226,6 +226,7 @@ model Conversation {
   startedAt    DateTime           @default(now())
   endedAt      DateTime?
   messageCount Int                @default(0)
+  isFavorite   Boolean            @default(false)
 
   // Relations
   chatbotId String    @db.ObjectId
@@ -247,6 +248,7 @@ model Message {
   content String
   role    MessageRole
   deleted Boolean     @default(false)
+  picture String?
 
   // Metadata
   tokens       Int? // for usage tracking
