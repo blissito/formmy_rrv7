@@ -124,6 +124,44 @@ export const ArchivosButton = ({
   );
 };
 
+export const IntegracionesButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("integrations")}
+      to="/chat/nuevo"
+      src={"/assets/chat/database.svg"}
+    >
+      Integraciones
+    </MenuButton>
+  );
+};
+
+export const EmbebidoButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("embed")}
+      to="/chat/nuevo"
+      src={"/assets/chat/code.svg"}
+    >
+      Embebido
+    </MenuButton>
+  );
+};
+
 export const TextButton = ({
   onClick,
   current,
