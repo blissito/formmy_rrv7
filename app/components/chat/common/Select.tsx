@@ -6,6 +6,7 @@ export const Select = ({
   value,
   onChange,
   className,
+  mode,
   ...props
 }: {
   className?: string;
@@ -13,6 +14,7 @@ export const Select = ({
   options: { value: string; label: string }[];
   value?: string;
   onChange?: (value: string) => void;
+  mode?: "ghost";
   [x: string]: unknown;
 }) => {
   return (
@@ -21,6 +23,9 @@ export const Select = ({
       <select
         className={cn(
           "rounded-2xl border-gray-300 min-w-[220px] py-3",
+          {
+            "bg-transparent border-none text-gray-600": mode === "ghost",
+          },
           className
         )}
         value={value}

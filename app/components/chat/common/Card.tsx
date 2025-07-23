@@ -8,7 +8,7 @@ export const Card = ({
   text,
   children,
   className,
-  noSearch,
+  noSearch = true,
 }: {
   noSearch?: true;
   className?: string;
@@ -24,8 +24,8 @@ export const Card = ({
         className
       )}
     >
-      <nav className="flex justify-between gap-3 items-baseline mb-6">
-        <h3 className="text-2xl font-medium mb-2 min-w-max">{title}</h3>
+      <nav className="flex justify-between gap-3 items-baseline">
+        <h3 className="text-2xl font-medium min-w-max mb-4">{title}</h3>
         {!noSearch && <SearchInput />}
       </nav>
       <p className="text-gray-500 mb-6 text-xs">{text}</p>
