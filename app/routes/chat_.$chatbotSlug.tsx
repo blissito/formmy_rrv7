@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { Route } from "./+types/chat_.$chatbotSlug";
 import { Toaster } from "react-hot-toast";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
+import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -31,7 +32,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 
 export default function ChatbotDetailRoute() {
   const { user, chatbot } = useLoaderData<typeof loader>();
-  const [currentTab, setCurrentTab] = useState("Conversaciones");
+  const [currentTab, setCurrentTab] = useState("Entrenamiento");
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);
@@ -54,6 +55,9 @@ export default function ChatbotDetailRoute() {
       )}
       {currentTab === "Conversaciones" && (
         <Conversations chatbot={chatbot} user={user} />
+      )}
+      {currentTab === "Entrenamiento" && (
+        <Entrenamiento chatbot={chatbot} user={user} />
       )}
     </PageContainer>
   );

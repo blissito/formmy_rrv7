@@ -1,17 +1,24 @@
 import { useDropFiles } from "~/hooks/useDropfiles";
+import { cn } from "~/lib/utils";
 
 export const Dropzone = ({ onDrop }: { onDrop?: (files: File[]) => void }) => {
   // hooks
-  const { ref } = useDropFiles<HTMLDivElement>({
+  const { ref, isHovered } = useDropFiles<HTMLDivElement>({
     onDrop,
   });
 
   return (
     <div
       ref={ref}
-      className="grid place-content-center place-items-center border-dashed border-2 border-gray-300 rounded-3xl h-[200px] px-4"
+      className={cn(
+        "group",
+        "cursor-pointer",
+        "bg-gray-50",
+        "grid place-content-center place-items-center border-dashed border-2 border-gray-300 rounded-3xl h-[200px] px-4",
+        isHovered === "dropping" && "border-brand-500 bg-brand-500/20"
+      )}
     >
-      <span>
+      <span className="group-hover:scale-110 transition-all">
         <img src="/assets/chat/upload.svg" alt="upload icon" />
       </span>
       <h4 className="text-xs text-gray-500 font-medium text-center mt-2">

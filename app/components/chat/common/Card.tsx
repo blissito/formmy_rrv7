@@ -1,12 +1,16 @@
 import type { ReactNode } from "react";
 import { cn } from "~/lib/utils";
+import { SearchInput } from "./SearchInput";
+// import { SearchInput } from "./SearchInput";
 
 export const Card = ({
   title,
   text,
   children,
   className,
+  noSearch,
 }: {
+  noSearch?: true;
   className?: string;
   children?: ReactNode;
   title?: string;
@@ -16,12 +20,15 @@ export const Card = ({
   return (
     <article
       className={cn(
-        "flex flex-col bg-[#fff] p-4 rounded-2xl shadow-lg border",
+        "flex flex-col bg-[#fff] p-6 rounded-2xl shadow-lg border",
         className
       )}
     >
-      <h3 className="text-2xl font-medium">{title}</h3>
-      <p className="text-gray-500 mb-6">{text}</p>
+      <nav className="flex justify-between gap-3 items-baseline mb-6">
+        <h3 className="text-2xl font-medium mb-2 min-w-max">{title}</h3>
+        {!noSearch && <SearchInput />}
+      </nav>
+      <p className="text-gray-500 mb-6 text-xs">{text}</p>
       <section>{children}</section>
     </article>
   );

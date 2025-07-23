@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { FaSearch } from "react-icons/fa";
 import { cn } from "~/lib/utils";
 
 export const Input = ({
@@ -11,16 +12,29 @@ export const Input = ({
   type,
   ...props
 }: {
-  type?: string;
+  type?: "text" | "search" | "textarea";
   containerClassName?: string;
   onChange?: (value: string) => void;
   label?: ReactNode;
   className?: string;
   left?: ReactNode;
   placeholder?: string;
-
   [x: string]: unknown;
 }) => {
+  // Icono de lupita
+  if (type === "search") {
+    left = (
+      <span
+        className={cn(
+          "mr-3",
+          "text-gray-500",
+          "grid place-items-center h-full"
+        )}
+      >
+        <img className="w-8" src="/assets/chat/search.svg" alt="search" />
+      </span>
+    );
+  }
   const TextField = type === "textarea" ? "textarea" : "input";
   return (
     <section className={cn("grid gap-1 grow", className)}>

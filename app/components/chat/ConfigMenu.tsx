@@ -3,13 +3,11 @@ import { Link } from "react-router";
 import { cn } from "~/lib/utils";
 
 export const ConfigMenu = ({
-  only = [],
   current,
   children,
 }: {
   children?: ReactNode;
-  only?: string[];
-  current: string;
+  current?: string;
 }) => {
   if (children) {
     return <article className="min-w-[220px] group">{children}</article>;
@@ -17,46 +15,25 @@ export const ConfigMenu = ({
   return (
     <article className="min-w-[220px] group">
       <MenuButton
-        hidden={!only.includes("files")}
-        isActive={current.includes("files")}
+        isActive={current?.includes("files")}
         to="/chat/nuevo"
         src={"/assets/chat/document.svg"}
       >
         Archivos
       </MenuButton>
-      <MenuButton
-        hidden={!only.includes("text")}
-        to="/text"
-        src={"/assets/chat/increase.svg"}
-      >
+      <MenuButton to="/text" src={"/assets/chat/increase.svg"}>
         Texto
       </MenuButton>
-      <MenuButton
-        hidden={!only.includes("website")}
-        to="/website"
-        src={"/assets/chat/earth.svg"}
-      >
+      <MenuButton to="/website" src={"/assets/chat/earth.svg"}>
         Website
       </MenuButton>
-      <MenuButton
-        hidden={!only.includes("questions")}
-        to="/questions"
-        src={"/assets/chat/message.svg"}
-      >
+      <MenuButton to="/questions" src={"/assets/chat/message.svg"}>
         Preguntas específicas
       </MenuButton>
-      <MenuButton
-        hidden={!only.includes("gdrive")}
-        to="/gdrive"
-        src={"/assets/chat/google_drive.svg"}
-      >
+      <MenuButton to="/gdrive" src={"/assets/chat/google_drive.svg"}>
         Google drive
       </MenuButton>
-      <MenuButton
-        hidden={!only.includes("notion")}
-        to="/notion"
-        src={"/assets/chat/notion.svg"}
-      >
+      <MenuButton to="/notion" src={"/assets/chat/notion.svg"}>
         Notion
       </MenuButton>
     </article>
@@ -125,6 +102,120 @@ const MenuButton = ({
       </span>
       <span className="block min-w-max">{children}</span>
     </Link>
+  );
+};
+
+export const ArchivosButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("files")}
+      to="/chat/nuevo"
+      src={"/assets/chat/document.svg"}
+    >
+      Archivos
+    </MenuButton>
+  );
+};
+
+export const TextButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("text")}
+      to="/chat/nuevo"
+      src={"/assets/chat/increase.svg"}
+    >
+      Texto
+    </MenuButton>
+  );
+};
+
+export const WebsiteButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("website")}
+      to="/chat/nuevo"
+      src={"/assets/chat/earth.svg"}
+    >
+      Website
+    </MenuButton>
+  );
+};
+
+export const PreguntasButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("preguntas")}
+      to="/chat/nuevo"
+      src={"/assets/chat/message.svg"}
+    >
+      Preguntas específicas
+    </MenuButton>
+  );
+};
+
+export const GoogleDriveButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("google_drive")}
+      to="/chat/nuevo"
+      src={"/assets/chat/google_drive.svg"}
+    >
+      Google drive
+    </MenuButton>
+  );
+};
+
+export const NotionButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("notion")}
+      to="/chat/nuevo"
+      src={"/assets/chat/notion.svg"}
+    >
+      Notion
+    </MenuButton>
   );
 };
 
