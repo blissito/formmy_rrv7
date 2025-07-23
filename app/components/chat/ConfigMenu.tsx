@@ -72,11 +72,11 @@ const MenuButton = ({
           }
         )}
       >
-        <span className="w-6 flex items-center justify-center">
+        <span className="flex items-center">
           {icon ? (
             <span className="text-lg">{icon}</span>
           ) : (
-            <img alt="files-icon" src={src} />
+            <img className="min-w-6" alt="files-icon" src={src} />
           )}
         </span>
         <span className="block min-w-max">{children}</span>
@@ -219,6 +219,78 @@ export const PreguntasButton = ({
   );
 };
 
+export const GeneralButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("general")}
+      src={"/assets/chat/setting.svg"}
+    >
+      General
+    </MenuButton>
+  );
+};
+
+export const NotificacionesButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("notificaciones")}
+      src={"/assets/chat/bell.svg"}
+    >
+      Notificaciones
+    </MenuButton>
+  );
+};
+
+export const UsuariosButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("usuarios")}
+      src={"/assets/chat/users.svg"}
+    >
+      Usuarios
+    </MenuButton>
+  );
+};
+
+export const SeguridadButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("seguridad")}
+      src={"/assets/chat/folder.svg"}
+    >
+      Seguridad
+    </MenuButton>
+  );
+};
+
 export const GoogleDriveButton = ({
   onClick,
   current,
@@ -230,7 +302,6 @@ export const GoogleDriveButton = ({
     <MenuButton
       onClick={onClick}
       isActive={current?.includes("google_drive")}
-      to="/chat/nuevo"
       src={"/assets/chat/google_drive.svg"}
     >
       Google drive

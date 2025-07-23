@@ -2,6 +2,7 @@ import { cn } from "~/lib/utils";
 
 export const Select = ({
   label,
+  defaultValue,
   options,
   value,
   onChange,
@@ -11,6 +12,7 @@ export const Select = ({
 }: {
   className?: string;
   label?: string;
+  defaultValue?: string;
   options: { value: string; label: string }[];
   value?: string;
   onChange?: (value: string) => void;
@@ -28,6 +30,7 @@ export const Select = ({
           },
           className
         )}
+        defaultValue={defaultValue}
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
         {...props}

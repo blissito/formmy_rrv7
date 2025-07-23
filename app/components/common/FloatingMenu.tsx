@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { BsThreeDots } from "react-icons/bs";
+import { cn } from "~/lib/utils";
 
 type MenuItem = {
   label: string;
   onClick: () => void;
   className?: string;
+  icon?: React.ReactNode;
 };
 
 interface FloatingMenuProps {
@@ -46,7 +48,7 @@ export const FloatingMenu = ({
   };
 
   return (
-    <div className={`relative ${className}`} ref={menuRef}>
+    <div className={`relative flex ${className}`} ref={menuRef}>
       <button
         onClick={toggleMenu}
         className={`text-2xl text-gray-600 hover:bg-gray-100 p-1 rounded-full ${buttonClassName}`}
@@ -57,7 +59,11 @@ export const FloatingMenu = ({
 
       {isOpen && (
         <div
-          className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200 ${menuClassName}`}
+          className={cn(
+            "absolute right-12 mt-2 w-max bg-[#fff] rounded-xl",
+            "shadow-lg z-10 border border-gray-200",
+            menuClassName
+          )}
         >
           {items.map((item, index) => (
             <button
@@ -66,9 +72,15 @@ export const FloatingMenu = ({
                 item.onClick();
                 setIsOpen(false);
               }}
-              className={`block w-full text-left px-4 py-2 text-sm ${item.className || 'text-gray-700 hover:bg-gray-100'}`}
+              className={cn(
+                "rounded-lg h-8",
+                "w-full text-left px-4 py-1 text-xs",
+                { "text-gray-700 hover:bg-gray-50": !item.className },
+                "flex items-center gap-2"
+              )}
             >
-              {item.label}
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
             </button>
           ))}
         </div>

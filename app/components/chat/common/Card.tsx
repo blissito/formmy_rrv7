@@ -22,7 +22,7 @@ export const Card = ({
   return (
     <article
       className={cn(
-        "flex flex-col bg-[#fff] p-6 rounded-2xl shadow-lg border",
+        "flex flex-col bg-[#fff] p-6 rounded-3xl shadow-lg border",
         className
       )}
     >
@@ -30,7 +30,7 @@ export const Card = ({
         <h3 className="text-2xl font-medium min-w-max mb-2">{title}</h3>
         {!noSearch && <SearchInput />}
       </nav>
-      <p className="text-gray-500 mb-6 text-xs">{text}</p>
+      {text && <p className="text-gray-500 mb-6 text-xs">{text}</p>}
       <section>{children}</section>
     </article>
   );

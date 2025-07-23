@@ -8,6 +8,7 @@ import { Toaster } from "react-hot-toast";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
+import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -33,7 +34,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 
 export default function ChatbotDetailRoute() {
   const { user, chatbot } = useLoaderData<typeof loader>();
-  const [currentTab, setCurrentTab] = useState("Código");
+  const [currentTab, setCurrentTab] = useState("Configuración");
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);
@@ -61,6 +62,7 @@ export default function ChatbotDetailRoute() {
         <Entrenamiento chatbot={chatbot} user={user} />
       )}
       {currentTab === "Código" && <Codigo chatbot={chatbot} user={user} />}
+      {currentTab === "Configuración" && <Configuracion chatbot={chatbot} />}
     </PageContainer>
   );
 }
