@@ -114,3 +114,48 @@ export const MiniCardGroup = ({
     </article>
   );
 };
+
+export const IntegrationCard = ({
+  name,
+  logo,
+  description,
+}: {
+  name: string;
+  logo: string;
+  description: string;
+}) => {
+  return (
+    <div className="grid shadow-lg border border-gray-300 p-4 rounded-3xl">
+      <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
+      <h5 className="font-medium text-md mb-1">{name}</h5>
+      <p className="text-[10px] mb-4 text-gray-600">{description}</p>
+      <nav className="flex gap-2">
+        <SimpleButton className="grow">Instalar</SimpleButton>
+        <SimpleButton className="shrink-0">
+          <img src="/assets/chat/notebook.svg" alt="" />
+        </SimpleButton>
+      </nav>
+    </div>
+  );
+};
+
+const SimpleButton = ({
+  className,
+  children,
+}: {
+  children: ReactNode;
+  className?: string;
+}) => {
+  return (
+    <button
+      className={cn(
+        "enabled:active:scale-95",
+        "hover:bg-gray-50 hover:shadow-sm transition-all",
+        "border-gray-300 border py-2 px-4 rounded-xl min-w-max",
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+};
