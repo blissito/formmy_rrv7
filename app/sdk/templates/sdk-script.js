@@ -118,23 +118,22 @@
       console.log("- Bot Name:", this.botName);
 
       // Create main container - exactly matching ChatPreview.tsx
-      const container = document.createElement("main");
-      container.id = "formmy-chat-widget";
+      const container = document.createElement("div");
+      container.id = "formmy-chat-container";
       container.style.cssText = `
         position: fixed;
         bottom: 20px;
         right: 20px;
-        width: 100%;
-        max-width: 400px;
-        height: 600px;
-        background: rgba(${this.hexToRgb(this.primaryColor)}, 0.125);
-        border-radius: 0.75rem;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        width: 350px;
+        height: 500px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         display: none;
         flex-direction: column;
         z-index: 9999;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         overflow: hidden;
+        border: 1px solid #e5e7eb;
       `;
 
       // Create main article container (like ChatPreview.tsx)
@@ -225,8 +224,15 @@
         flex-direction: column;
         gap: 0.75rem;
       `;
+      
+      // Track scroll position
+      this.isUserAtBottom = true;
+      messagesContainer.addEventListener('scroll', () => {
+        const distanceFromBottom = messagesContainer.scrollHeight - (messagesContainer.scrollTop + messagesContainer.clientHeight);
+        this.isUserAtBottom = distanceFromBottom <= 50;
+      });
 
-      // Create input area
+      // Create input area - identical to ChatPreview.tsx
       const inputArea = document.createElement("div");
       inputArea.style.cssText = `
         padding: 1rem;
@@ -241,6 +247,7 @@
         display: flex;
         gap: 0.5rem;
         align-items: flex-end;
+        width: 100%;
       `;
 
       const input = document.createElement("input");
@@ -248,12 +255,13 @@
       input.placeholder = "Escribe tu mensaje...";
       input.style.cssText = `
         flex: 1;
-        padding: 0.75rem;
-        border: 1px solid #d1d5db;
-        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 9999px;
         font-size: 0.875rem;
         outline: none;
-        transition: border-color 0.2s;
+        transition: all 0.2s;
+        background: #f9fafb;
       `;
       input.style.borderColor = this.primaryColor;
       input.addEventListener("keypress", (e) => {
@@ -263,22 +271,28 @@
       });
 
       const sendButton = document.createElement("button");
-      sendButton.textContent = "Enviar";
+      sendButton.type = "button";
       sendButton.style.cssText = `
-        padding: 0.5rem 1rem;
+        padding: 0.75rem;
         background: ${this.primaryColor};
         color: white;
         border: none;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        font-weight: 500;
+        border-radius: 50%;
         cursor: pointer;
-        transition: background-color 0.2s;
-        white-space: nowrap;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
         height: 2.5rem;
-        min-width: 4rem;
-        display: block !important;
-        opacity: 1 !important;
+        flex-shrink: 0;
+      `;
+      sendButton.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       `;
 
       // Add hover effects
@@ -345,10 +359,28 @@
 
       messagesContainer.appendChild(welcomeDiv);
 
+      // Create footer with Formmy.app link
+      const footer = document.createElement("div");
+      footer.style.cssText = `
+        padding: 0.5rem 1rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: #6b7280;
+        border-top: 1px solid #f3f4f6;
+        background: #fafafa;
+      `;
+      
+      const footerText = document.createElement("div");
+      footerText.innerHTML = `
+        Powered by <a href="https://formmy.app" target="_blank" rel="noopener noreferrer" style="color: ${this.primaryColor}; text-decoration: none; font-weight: 500;">Formmy.app</a>
+      `;
+      footer.appendChild(footerText);
+
       // Assemble the complete chat widget structure
       article.appendChild(header);
       article.appendChild(messagesContainer);
       article.appendChild(inputArea);
+      article.appendChild(footer);
       container.appendChild(article);
 
       // Add to body
@@ -556,11 +588,13 @@
     },
 
     showTypingIndicator: function () {
-      const { messagesContainer } = this.elements;
-
-      // Create typing indicator container
+      const messagesContainer = this.elements.messagesContainer;
+      
+      // Always clean up first
+      this.hideTypingIndicator();
+      
       const typingDiv = document.createElement("div");
-      typingDiv.className = "typing-indicator";
+      typingDiv.id = "formmy-typing-indicator";
       typingDiv.style.cssText = `
         display: flex;
         align-items: center;
@@ -568,7 +602,6 @@
         justify-content: flex-start;
       `;
 
-      // Create dots container
       const dots = document.createElement("div");
       dots.style.cssText = `
         display: flex;
@@ -579,7 +612,6 @@
         align-items: center;
       `;
 
-      // Add three animated dots
       for (let i = 0; i < 3; i++) {
         const dot = document.createElement("div");
         dot.style.cssText = `
@@ -588,10 +620,8 @@
           border-radius: 50%;
           background: #9ca3af;
           display: inline-block;
-          animation: bounce 1.4s infinite ease-in-out both;
+          animation: typing 1.4s ease-in-out ${i * 0.15}s infinite;
         `;
-        dot.style.animation =
-          "typing 1.4s ease-in-out " + i * 0.15 + "s infinite";
         dots.appendChild(dot);
       }
 
@@ -599,7 +629,6 @@
       messagesContainer.appendChild(typingDiv);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-      // Add animation keyframes
       const style = document.createElement("style");
       style.id = "typing-animation";
       style.textContent = `
@@ -612,9 +641,7 @@
     },
 
     hideTypingIndicator: function () {
-      const typingIndicator = document.getElementById(
-        "formmy-typing-indicator"
-      );
+      const typingIndicator = document.getElementById("formmy-typing-indicator");
       const animationStyle = document.getElementById("typing-animation");
 
       if (typingIndicator) typingIndicator.remove();
@@ -706,15 +733,21 @@
 
           const messagesContainer = this.elements.messagesContainer;
           messagesContainer.appendChild(messageDiv);
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          // Only auto-scroll if user hasn't scrolled up
+          const isScrolledToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 100;
+          if (isScrolledToBottom) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
 
-          // Hide typing indicator immediately when response starts
+          // Ensure typing indicator is removed before processing
           this.hideTypingIndicator();
-          
           // Process the stream
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              this.hideTypingIndicator();
+              break;
+            }
 
             const chunk = decoder.decode(value, { stream: true });
             const lines = chunk
@@ -731,23 +764,12 @@
                   if (parsed.content) {
                     fullResponse += parsed.content;
 
-                    // Typewriter effect
-                    if (isFirstChunk) {
-                      bubble.textContent = "";
-                      isFirstChunk = false;
-                    }
-
-                    // Add typing effect
-                    const typingSpeed = 20; // ms per character
-                    const chunk = parsed.content;
-                    for (let i = 0; i < chunk.length; i++) {
-                      await new Promise((resolve) =>
-                        setTimeout(resolve, typingSpeed)
-                      );
-                      bubble.textContent += chunk[i];
-                      messagesContainer.scrollTop =
-                        messagesContainer.scrollHeight;
-                    }
+                            bubble.textContent += parsed.content;
+                   
+                   // Scroll to bottom only if user is at bottom
+                   if (this.isUserAtBottom) {
+                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                   }
                   }
                 } catch (e) {
                   console.error("Error parsing SSE data:", e);
@@ -758,13 +780,21 @@
         } else {
           // Fallback to non-streaming if SSE not supported
           const data = await response.json();
+          // Add the complete message to history
+          this.messages.push({
+            role: "assistant",
+            content: fullResponse,
+          });
+          // Ensure typing indicator is removed
+          this.hideTypingIndicator();
           this.displayMessage(
             data.response || "Sorry, I could not process your message.",
             false
           );
         }
       } catch (error) {
-        console.error("Error sending message:", error);
+        console.error("Error:", error);
+        this.hideTypingIndicator();
         this.displayMessage(
           "Sorry, there was an error processing your message. Please try again.",
           false
