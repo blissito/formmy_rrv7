@@ -118,6 +118,11 @@ enum Plans {
   PRO
 }
 
+enum ApiKeyType {
+  LIVE
+  TEST
+}
+
 model User {
   name            String?
   email           String       @unique
@@ -133,6 +138,7 @@ model User {
   projects        Project[]
   permissions     Permission[]
   chatbots        Chatbot[] // New relation for chatbots
+  apiKeys         ApiKey[] // New relation for API keys
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -186,6 +192,10 @@ model Chatbot {
   // Visual customization
   primaryColor String?
   theme        String? @default("light")
+
+  // Streaming configuration
+  enableStreaming Boolean @default(true) // Typing effect habilitado
+  streamingSpeed  Int     @default(50) // Velocidad en ms entre caracteres
 
   // State management
   status   ChatbotStatus @default(DRAFT)
@@ -275,6 +285,34 @@ model Integration {
   // Relations
   chatbotId String  @db.ObjectId
   chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ApiKey {
+  id      String     @id @default(auto()) @map("_id") @db.ObjectId
+  key     String     @unique
+  name    String // User-friendly name
+  keyType ApiKeyType @default(LIVE)
+
+  // Security
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+
+  // Usage tracking
+  requestCount    Int @default(0)
+  monthlyRequests Int @default(0)
+
+  // Rate limiting
+  rateLimit Int @default(1000) // requests per hour
+
+  // Allowed domains (optional)
+  allowedDomains String[] // ["example.com", "*.example.com"]
+
+  // Relations
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
