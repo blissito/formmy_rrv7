@@ -235,7 +235,7 @@ export const ChatCard = ({
           <span className="w-5">
             <img
               className="w-full h-full"
-              src="/assets/chat/user.svg"
+              src="/assets/chat/users.svg"
               alt="avatares"
             />
           </span>

@@ -34,7 +34,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 
 export default function ChatbotDetailRoute() {
   const { user, chatbot } = useLoaderData<typeof loader>();
-  const [currentTab, setCurrentTab] = useState("Entrenamiento");
+  const [currentTab, setCurrentTab] = useState("Código"); // @TOOD: Update with the right one
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);

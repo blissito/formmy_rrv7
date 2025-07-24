@@ -141,7 +141,7 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
           <Card title="Configura tu seguridad">
             <main className="flex flex-col gap-4">
               <Input
-                label="Ingresa el o los dominios separados por coma"
+                label="Limita el acceso a tu agente"
                 placeholder="www.ejemplo.app, www.ejemplo.mx"
               />
               <section>

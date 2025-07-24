@@ -130,7 +130,7 @@ export const IntegrationCard = ({
       <h5 className="font-medium text-md mb-1">{name}</h5>
       <p className="text-[10px] mb-4 text-gray-600">{description}</p>
       <nav className="flex gap-2">
-        <SimpleButton className="grow">Instalar</SimpleButton>
+        <SimpleButton className="grow">Conectar</SimpleButton>
         <SimpleButton className="shrink-0">
           <img src="/assets/chat/notebook.svg" alt="" />
         </SimpleButton>
