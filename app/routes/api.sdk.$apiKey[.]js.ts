@@ -46,8 +46,8 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
       },
     });
 
-    // Find the requested chatbot - use first active chatbot
-    const requestedChatbot = chatbots.find(bot => bot.isActive) || chatbots[0];
+    // Use the specific chatbot by ID, or fallback to first available
+    const requestedChatbot = chatbots.find(bot => bot.id === '687eced5cd352f36e1ff8214') || chatbots.find(bot => bot.isActive) || chatbots[0];
 
     if (!requestedChatbot) {
       return new Response("No chatbots found", { status: 404 });
