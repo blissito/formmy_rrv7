@@ -1,7 +1,6 @@
 import type { Route } from "./+types/api.sdk.$apiKey[.]js";
 import { authenticateApiKey } from "server/chatbot/apiKeyAuth.server";
 import { db } from "../utils/db.server";
-import { Effect, pipe } from "effect";
 
 /**
  * Dynamic script generation endpoint for SDK
@@ -11,81 +10,76 @@ import { Effect, pipe } from "effect";
 export const loader = async ({ params }: Route.LoaderArgs) => {
   const { apiKey } = params;
 
-  const program = pipe(
-    Effect.succeed(apiKey),
-    Effect.filterOrFail(
-      (key): key is string => !!key,
-      () => new Response("API key required", { status: 400 })
-    ),
-    Effect.flatMap((key) =>
-      Effect.tryPromise({
-        try: () => authenticateApiKey(key),
-        catch: (error) =>
-          error instanceof Response
-            ? error
-            : new Response("Authentication failed", { status: 401 }),
-      })
-    ),
-    Effect.flatMap((authResult) =>
-      Effect.tryPromise({
-        try: () =>
-          db.chatbot.findMany({
-            where: {
-              userId: authResult.apiKey.user.id,
-              isActive: true,
-              status: "ACTIVE",
-            },
-            select: {
-              id: true,
-              slug: true,
-              name: true,
-              welcomeMessage: true,
-              primaryColor: true,
-              theme: true,
-              enableStreaming: true,
-              streamingSpeed: true,
-              personality: true,
-              aiModel: true,
-            },
-          }),
-        catch: () => new Response("Database error", { status: 500 }),
-      }).pipe(
-        Effect.map((chatbots) => ({
-          authResult,
-          chatbots,
-        }))
-      )
-    ),
-    Effect.map(({ authResult, chatbots }) => {
-      const script = generateSDKScript({
-        apiKey,
-        userId: authResult.apiKey.user.id,
-        chatbots,
-        plan: authResult.apiKey.user.plan,
-      });
+  try {
+    if (!apiKey) {
+      return new Response("API key required", { status: 400 });
+    }
 
-      return new Response(script, {
-        headers: {
-          "Content-Type": "application/javascript",
-          "Cache-Control": "public, max-age=3600", // 1 hour cache
-          "Access-Control-Allow-Origin": "*", // Allow cross-origin requests
-          "Access-Control-Allow-Methods": "GET",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
-      });
-    }),
-    Effect.catchAll((error) => {
-      if (error instanceof Response) {
-        return Effect.succeed(error);
-      }
-      console.error("SDK script generation error:", error);
-      return Effect.succeed(
-        new Response("Internal server error", { status: 500 })
-      );
-    })
-  );
+    // Authenticate API key and get user data
+    const authResult = await authenticateApiKey(apiKey);
+    const { user } = authResult.apiKey;
 
-  return Effect.runPromise(program);
+    // Fetch user's active chatbots with streaming configuration
+    const chatbots = await db.chatbot.findMany({
+      where: {
+        // @todo only active ones
+        userId: user.id,
+        // Remove the isActive and status filters to get all chatbots for now
+        // We can add these back later if needed
+      },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        welcomeMessage: true,
+        primaryColor: true,
+        theme: true,
+        enableStreaming: true,
+        streamingSpeed: true,
+        personality: true,
+        aiModel: true,
+        status: true,
+        isActive: true,
+      },
+    });
+
+    console.log(
+      `Found ${chatbots.length} chatbots for user ${user.id}:`,
+      chatbots.map((c) => ({
+        slug: c.slug,
+        status: c.status,
+        isActive: c.isActive,
+      }))
+    );
+
+    // Generate personalized script
+    const script = generateSDKScript({
+      apiKey,
+      userId: user.id,
+      chatbots,
+      plan: user.plan,
+    });
+
+    return new Response(script, {
+      headers: {
+        "Content-Type": "application/javascript",
+        "Cache-Control": "no-cache, no-store, must-revalidate", // Disable cache for debugging
+        Pragma: "no-cache",
+        Expires: "0",
+        "Access-Control-Allow-Origin": "*", // Allow cross-origin requests
+        "Access-Control-Allow-Methods": "GET",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    });
+  } catch (error) {
+    // Handle authentication errors
+    if (error instanceof Response) {
+      return error;
+    }
+
+    console.error("SDK script generation error:", error);
+    return new Response("Internal server error", { status: 500 });
+  }
 };
 
 /**
@@ -142,12 +136,23 @@ function generateSDKScript(config: SDKConfig): string {
   // Auto-detect chatbot from script data attributes or use first active one
   const scriptElement = document.currentScript;
   const requestedChatbot = scriptElement?.dataset?.chatbot;
+  
+  console.log('SDK Debug Info:', {
+    requestedChatbot,
+    availableChatbots: config.chatbots.map(c => ({ slug: c.slug, name: c.name })),
+    totalChatbots: config.chatbots.length
+  });
+  
   const chatbot = config.chatbots.find(c => c.slug === requestedChatbot) || config.chatbots[0];
 
   if (!chatbot) {
-    console.warn('No active chatbots found for API key: ${apiKey}');
+    console.warn('No chatbots found for API key: ${apiKey}');
+    console.warn('Available chatbots:', config.chatbots);
+    console.warn('Requested chatbot slug:', requestedChatbot);
     return;
   }
+  
+  console.log('Using chatbot:', { slug: chatbot.slug, name: chatbot.name });
 
   // SDK Core functionality
   const FormmyChatSDK = {
@@ -191,7 +196,7 @@ function generateSDKScript(config: SDKConfig): string {
         border-radius: 12px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        z-index: 10000;
+        z-index: 10002;
         display: none;
         flex-direction: column;
         overflow: hidden;
@@ -400,6 +405,14 @@ function generateSDKScript(config: SDKConfig): string {
       this.sendMessage(message);
     },
 
+    // Simple text formatter (no regex)
+    parseMarkdown: function(text) {
+      if (!text) return text;
+      
+      // Use split and join instead of regex to avoid syntax errors
+      return text.split('\\n').join('<br>');
+    },
+
     // Display a message in the chat
     displayMessage: function(content, isUser) {
       const { messagesContainer } = this.elements;
@@ -423,7 +436,34 @@ function generateSDKScript(config: SDKConfig): string {
           : \`background: #e9ecef; color: #333; border-bottom-left-radius: 4px;\`
         }
       \`;
-      bubble.textContent = content;
+      
+      // For user messages, use plain text. For bot messages, parse markdown
+      if (isUser) {
+        bubble.textContent = content;
+      } else {
+        bubble.innerHTML = this.parseMarkdown(content);
+        // Add basic styles for markdown elements
+        if (!document.getElementById('formmy-markdown-styles')) {
+          const style = document.createElement('style');
+          style.id = 'formmy-markdown-styles';
+          style.textContent = \`
+            #formmy-chat-widget strong {
+              font-weight: bold;
+            }
+            #formmy-chat-widget em {
+              font-style: italic;
+            }
+            #formmy-chat-widget code {
+              background: rgba(0,0,0,0.1);
+              padding: 2px 4px;
+              border-radius: 3px;
+              font-family: monospace;
+              font-size: 12px;
+            }
+          \`;
+          document.head.appendChild(style);
+        }
+      }
 
       messageDiv.appendChild(bubble);
       messagesContainer.appendChild(messageDiv);
@@ -513,7 +553,8 @@ function generateSDKScript(config: SDKConfig): string {
                 
                 if (data.type === 'chunk' && data.content) {
                   fullMessage += data.content;
-                  messageElement.textContent = fullMessage;
+                  // Update the typing indicator with parsed markdown
+                  messageElement.innerHTML = this.parseMarkdown(fullMessage);
                 } else if (data.type === 'end') {
                   this.hideTypingIndicator();
                   if (fullMessage) {

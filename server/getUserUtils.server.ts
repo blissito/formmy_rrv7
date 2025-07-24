@@ -1,8 +1,8 @@
 import { redirect } from "react-router";
 import { type User } from "@prisma/client";
-import { getSession } from "~/sessions";
-import { db } from "~/utils/db.server";
-import { redirectToGoogle } from "~/lib/google.server";
+import { getSession } from "../app/sessions";
+import { db } from "../app/utils/db.server";
+import { redirectToGoogle } from "../app/lib/google.server";
 
 // Este archivo es SOLO para uso en el servidor. No debe ser importado desde ningún código que termine en el cliente.
 
