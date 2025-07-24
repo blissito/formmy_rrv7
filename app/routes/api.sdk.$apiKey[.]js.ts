@@ -228,14 +228,12 @@ function generateSDKScript(config: SDKConfig): string {
       document.body.appendChild(container);
       document.body.appendChild(toggleButton);
       
-      // Store references
-      this.elements = {
-        container,
-        header,
-        messagesContainer,
-        inputContainer,
-        toggleButton
-      };
+      // Store references (input and sendButton are already stored by createChatInput)
+      this.elements.container = container;
+      this.elements.header = header;
+      this.elements.messagesContainer = messagesContainer;
+      this.elements.inputContainer = inputContainer;
+      this.elements.toggleButton = toggleButton;
 
       // Add welcome message
       if (chatbot.welcomeMessage) {
