@@ -2,13 +2,11 @@ import type { Route } from "./+types/api.sdk.$apiKey[.]js";
 import { authenticateApiKey } from "server/chatbot/apiKeyAuth.server";
 import { db } from "../utils/db.server";
 import { readFileSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import path from "path";
 import { chatWidgetStyles, processStyles } from "../sdk/chat-widget-styles";
 
 // Get the current directory in ES module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+
 
 /**
  * Dynamic script generation endpoint for SDK
@@ -91,13 +89,7 @@ function generateSDKScript(config: { apiKey: string; chatbot: any }): string {
 
   try {
     // Read the template file
-    const templatePath = join(
-      __dirname,
-      "..",
-      "sdk",
-      "templates",
-      "sdk-script.js"
-    );
+    const templatePath = path.join(process.cwd(), "public/sdk/sdk-script.js");
     let template = readFileSync(templatePath, "utf-8");
 
     // Process styles with dynamic values
