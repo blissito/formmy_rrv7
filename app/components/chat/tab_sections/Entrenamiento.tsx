@@ -12,9 +12,11 @@ import { InfoSources } from "../InfoSources";
 import { ListFiles } from "../ListFiles";
 import { StickyGrid } from "../PageContainer";
 import { UploadFiles } from "../UploadFiles";
+import { TextForm } from "../TextForm";
+import { Website } from "../Website";
 
 export const Entrenamiento = () => {
-  const { currentTab, setCurrentTab } = useChipTabs("files");
+  const { currentTab, setCurrentTab } = useChipTabs("website");
   return (
     <article>
       <StickyGrid>
@@ -46,10 +48,15 @@ export const Entrenamiento = () => {
             />
           </ConfigMenu>
         </section>
-        <section className="grid gap-6">
-          <UploadFiles />
-          <ListFiles />
-        </section>
+        {currentTab === "files" && (
+          <section className="grid gap-6">
+            <UploadFiles />
+            <ListFiles />
+          </section>
+        )}
+        {currentTab === "text" && <TextForm />}
+        {currentTab === "website" && <Website />}
+
         <section className="hidden lg:block">
           <InfoSources />
         </section>

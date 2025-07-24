@@ -157,7 +157,7 @@ export const Website = ({
       <Table
         noSelect
         noSearch
-        title="Fuentes de texto"
+        title="Fuentes web"
         className="mt-4"
         websiteEntries={websiteEntries}
         onRemoveEntry={(index: number) => {
