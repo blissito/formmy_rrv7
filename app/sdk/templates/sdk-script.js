@@ -26,7 +26,14 @@
       primaryColor: "#6366F1",
       welcomeMessage: "¡Hola! ¿Cómo puedo ayudarte hoy?",
     },
-    apiBaseUrl: "http://localhost:3000/api/sdk",
+    // Endpoint dinámico según entorno
+    get apiBaseUrl() {
+      const host = (typeof window !== 'undefined' ? window.location.hostname : '');
+      if (host === 'localhost' || host === '127.0.0.1') {
+        return 'http://localhost:3000/api/sdk';
+      }
+      return 'https://formmy-v2.fly.dev/api/sdk';
+    },
   };
 
   // Configuración desde el servidor (sin parseo de JSON)

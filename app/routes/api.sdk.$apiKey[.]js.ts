@@ -129,7 +129,7 @@ function generateSDKScript(config: { apiKey: string; chatbot: any }): string {
         /\{\{CHATBOT_WELCOME_MESSAGE\}\}/g, 
         chatbot.welcomeMessage || '¡Hola! ¿En qué puedo ayudarte?'
       )
-      .replace(/\{\{API_BASE_URL\}\}/g, 'https://formmy.app/api/sdk')
+      
       .replace(/\{\{STYLES\.(\w+)\}\}/g, (_, styleKey) => {
         return processedStyles[styleKey] || "";
       });

@@ -453,7 +453,7 @@ async function handleStreamingResponse(
  * Handle GET requests (not supported)
  */
 export const loader = async () => {
-  return json(
+  return jsonWithCors(
     { error: "This endpoint only supports POST requests" },
     { status: 405 }
   );
