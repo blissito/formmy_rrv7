@@ -46,36 +46,3 @@ export default function Code({ project }: { project: ProjectType }) {
     </>
   );
 }
-
-const Block = ({ children }) => {
-  const timeout = useRef<ReturnType<typeof setTimeout>>();
-  const [copied, setCopied] = useState(false);
-  const copyToClipboard = () => {
-    if (timeout.current) {
-      clearTimeout(timeout.current);
-    }
-    setCopied(true);
-    navigator.clipboard.writeText(children);
-    timeout.current = setTimeout(() => {
-      setCopied(false);
-    }, 3000);
-  };
-  return (
-    <>
-      <main className="pt-12 px-4 max-w-4xl mx-auto text-black dark:text-slate-400">
-        <h2 className="text-2xl font-bold px-4">
-          Solo copia y pega esta etiqueta en tu HTML o JSX.
-        </h2>
-      </main>
-      <div className="text-center p-12 border border-indigo-500/60 rounded-md text-xl font-thin h-[10vh] flex items-center justify-center my-4 gap-4 text-slate-800 dark:text-slate-400 max-w-4xl mx-auto px-4">
-        <h2 className="">{children}</h2>
-
-        <div className="tooltip" data-tip={copied ? "Copiado ✅" : "Copiar"}>
-          <button onClick={copyToClipboard} className={iconBtnClass}>
-            <BiCopy />
-          </button>
-        </div>
-      </div>
-    </>
-  );
-};

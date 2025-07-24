@@ -27,7 +27,7 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
     const authResult = await authenticateApiKey(apiKey);
     const { user } = authResult.apiKey;
 
-    // Fetch user's active chatbots
+    // Fetch user's chatbots (including inactive ones)
     const chatbots = await db.chatbot.findMany({
       where: {
         userId: user.id,
@@ -48,8 +48,8 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
       },
     });
 
-    // Find the requested chatbot
-    const requestedChatbot = chatbots[0];
+    // Find the requested chatbot - use first active chatbot
+    const requestedChatbot = chatbots.find(bot => bot.isActive) || chatbots[0];
 
     if (!requestedChatbot) {
       return new Response("No chatbots found", { status: 404 });
@@ -129,6 +129,7 @@ function generateSDKScript(config: { apiKey: string; chatbot: any }): string {
         /\{\{CHATBOT_WELCOME_MESSAGE\}\}/g, 
         chatbot.welcomeMessage || '¡Hola! ¿En qué puedo ayudarte?'
       )
+      .replace(/\{\{API_BASE_URL\}\}/g, 'https://formmy.app/api/sdk')
       .replace(/\{\{STYLES\.(\w+)\}\}/g, (_, styleKey) => {
         return processedStyles[styleKey] || "";
       });

@@ -14,8 +14,10 @@ import {
   getMessagesByConversationId,
   RateLimitError,
 } from "server/chatbot/messageModel.server";
-import { getChatbotById } from "server/chatbot/chatbotModel.server";
 import { FALLBACK_MODELS } from "../utils/aiModels";
+import { handleCorsPreflight, jsonWithCors } from "~/middleware/cors";
+import { db } from "../utils/db.server";
+import type { Chatbot } from "@prisma/client";
 
 /**
  * Chat conversation endpoint for SDK
@@ -23,11 +25,16 @@ import { FALLBACK_MODELS } from "../utils/aiModels";
  * Falls back to regular JSON response when streaming is disabled
  */
 export const action = async ({ request }: Route.ActionArgs) => {
+  // Handle CORS preflight OPTIONS request
+  if (request.method === "OPTIONS") {
+    return handleCorsPreflight();
+  }
+
   try {
     // Extract and authenticate API key
     const apiKey = extractApiKeyFromRequest(request);
     if (!apiKey) {
-      return json({ error: "API key required" }, { status: 401 });
+      return jsonWithCors({ error: "API key required" }, { status: 401 });
     }
 
     const authResult = await authenticateApiKey(apiKey);
@@ -38,7 +45,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     const { chatbotId, message, sessionId } = body;
 
     if (!chatbotId || !message || !sessionId) {
-      return json(
+      return jsonWithCors(
         {
           error: "Missing required fields: chatbotId, message, sessionId",
         },
@@ -47,11 +54,22 @@ export const action = async ({ request }: Route.ActionArgs) => {
     }
 
     // Verify chatbot ownership and get chatbot data
-    const chatbot = await getChatbotById(chatbotId);
-    if (!chatbot || chatbot.userId !== user.id || !chatbot.isActive) {
-      return json(
-        { error: "Chatbot not found or not accessible" },
-        { status: 404 }
+    // Find chatbot by slug/name for the authenticated user
+    const chatbots = await db.chatbot.findMany({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    // Find chatbot by slug or ID
+    const chatbot = chatbots.find(
+      (bot: Chatbot) => bot.id === chatbotId || bot.slug === chatbotId
+    );
+
+    if (!chatbot) {
+      return jsonWithCors(
+        { error: "Chatbot not found or not accessible for this user" },
+        { status: 400 }
       );
     }
 
@@ -92,7 +110,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         aiMessages,
         conversation.id
       );
-      return json({
+      return jsonWithCors({
         success: true,
         response: response.content,
         sessionId,
@@ -103,14 +121,22 @@ export const action = async ({ request }: Route.ActionArgs) => {
     console.error("Chat endpoint error:", error);
 
     if (error instanceof RateLimitError) {
-      return json({ error: error.message }, { status: 429 });
+      return jsonWithCors({ error: error.message }, { status: 429 });
     }
 
     if (error instanceof Response) {
-      return error;
+      return new Response(error.body, {
+        status: error.status,
+        headers: {
+          ...Object.fromEntries(error.headers?.entries() || []),
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Accept",
+        },
+      });
     }
 
-    return json({ error: "Internal server error" }, { status: 500 });
+    return jsonWithCors({ error: "Internal server error" }, { status: 500 });
   }
 };
 
@@ -205,10 +231,29 @@ async function processChatMessage(
       responseTime
     );
 
-    return { content: response.content };
+    return json(
+      { content: response.content },
+      {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Accept",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error processing chat message:", error);
-    throw new Error("Failed to process message");
+    return json(
+      { error: "Failed to process message" },
+      {
+        status: 500,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Accept",
+        },
+      }
+    );
   }
 }
 

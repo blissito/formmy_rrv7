@@ -5,6 +5,7 @@ import { Card, IntegrationCard, MiniCardGroup } from "../common/Card";
 import { useChipTabs } from "../common/ChipTabs";
 import { CodeBlock } from "../common/CodeBlock";
 import { useApiKey } from "../../../hooks/useApiKey";
+import type { Chatbot } from "@prisma/client";
 
 export const Codigo = () => {
   const { currentTab, setCurrentTab } = useChipTabs("embed");
@@ -155,7 +156,7 @@ const Iframe = () => {
 };
 
 const SDK = () => {
-  const { chatbot } = useLoaderData<{ chatbot: { slug: string } }>();
+  const { chatbot } = useLoaderData<{ chatbot: Chatbot }>();
   const { apiKey, loading, error, refetch } = useApiKey();
 
   // Generate the correct script URL with the user's API key
@@ -169,12 +170,8 @@ const SDK = () => {
   };
 
   const codeToCopy = apiKey
-    ? `<script 
-  src="${getScriptUrl()}" 
-  data-chatbot="${chatbot.slug}"
-  data-theme="light"
-  data-position="bottom-right">
-</script>`
+    ? `<!-- SDK Script - Configuración automática -->
+<script src="${getScriptUrl()}"></script>`
     : "";
 
   const instructions = [

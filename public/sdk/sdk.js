@@ -26,7 +26,7 @@
       primaryColor: "#6366F1",
       welcomeMessage: "¡Hola! ¿Cómo puedo ayudarte hoy?",
     },
-    apiBaseUrl: "http://localhost:3000/api/sdk",
+    apiBaseUrl: "/api/sdk",
   };
 
   // Configuración desde el servidor (sin parseo de JSON)
@@ -545,16 +545,6 @@
     showTypingIndicator: function () {
       const { messagesContainer } = this.elements;
 
-      // Create typing indicator container
-      const typingDiv = document.createElement("div");
-      typingDiv.className = "typing-indicator";
-      typingDiv.style.cssText = `
-        display: flex;
-        align-items: center;
-        margin: 8px 0;
-        justify-content: flex-start;
-      `;
-
       // Create dots container
       const dots = document.createElement("div");
       dots.style.cssText = `
@@ -627,7 +617,7 @@
       try {
         this.showTypingIndicator();
 
-        const response = await fetch(`${this.config.apiBaseUrl}/chat`, {
+        const response = await fetch(this.config.apiBaseUrl + "/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
