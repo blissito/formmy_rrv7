@@ -54,16 +54,22 @@
     },
   };
 
-  // Limpiar valores vacíos
+  // Limpiar valores vacíos o placeholders no reemplazados
   Object.keys(config.chatbot).forEach((key) => {
-    if (config.chatbot[key] === "") {
+    if (config.chatbot[key] === "" || config.chatbot[key]?.startsWith("{{")) {
       delete config.chatbot[key];
     }
   });
 
-  // Si no hay nombre de chatbot, usar el valor por defecto
+  // Si no hay valores válidos, usar los valores por defecto
   if (!config.chatbot.name || config.chatbot.name.startsWith("{{")) {
     config.chatbot.name = defaultConfig.chatbot.name;
+  }
+  if (!config.chatbot.primaryColor || config.chatbot.primaryColor.startsWith("{{")) {
+    config.chatbot.primaryColor = defaultConfig.chatbot.primaryColor;
+  }
+  if (!config.chatbot.welcomeMessage || config.chatbot.welcomeMessage.startsWith("{{")) {
+    config.chatbot.welcomeMessage = defaultConfig.chatbot.welcomeMessage;
   }
 
   console.log("Formmy Chat SDK loading for chatbot:", config.chatbot.name);
@@ -380,7 +386,7 @@
         cursor: pointer;
         font-size: 24px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        z-index: 10001;
+        z-index: 9998;
         display: flex !important;
         align-items: center;
         justify-content: center;
@@ -436,6 +442,13 @@
         toggleButton.innerHTML = shouldShow
           ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
           : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+
+      // Focus input when chat opens
+      if (shouldShow && this.elements.input) {
+        setTimeout(() => {
+          this.elements.input.focus();
+        }, 100);
       }
     },
 
@@ -695,6 +708,9 @@
           messagesContainer.appendChild(messageDiv);
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
+          // Hide typing indicator immediately when response starts
+          this.hideTypingIndicator();
+          
           // Process the stream
           while (true) {
             const { done, value } = await reader.read();
