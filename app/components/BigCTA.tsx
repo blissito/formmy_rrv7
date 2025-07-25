@@ -25,7 +25,7 @@ export const BigCTA = ({
       isLoading={isLoading}
       className={cn(
         (className =
-          "group bg-brand-500  dark:hover:scale-95 transition-all text-clear  dark:text-white border-neutral-200 dark:border-white/10"),
+          "group bg-brand-500 hover:bg-brand-700 transition-all transition-all text-clear  dark:text-white border-neutral-200 dark:border-white/10"),
         containerClassName
       )}
       value={value}
@@ -34,7 +34,7 @@ export const BigCTA = ({
       {...props}
     >
       {children ?? (
-        <p className="text-base">
+        <p className="text-base heading ">
           Comenzar gratis <span className="group-hover:rotate-45"> &rarr;</span>
         </p>
       )}

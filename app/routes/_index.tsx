@@ -1,25 +1,16 @@
 import { Link } from "react-router";
-import Nav from "~/components/NavBar";
 import { redirect } from "react-router";
 import { BsTwitter } from "react-icons/bs";
 import type { Route } from "./+types/_index";
-import { Hero } from "~/components/home/hero";
 import { type ReactNode, useRef } from "react";
 import { AiFillInstagram } from "react-icons/ai";
-import { Banner } from "~/components/home/Banner";
 import { motion, useInView } from "framer-motion";
-import { Pricing } from "~/components/home/Pricing";
 import { FaFacebook, FaYoutube } from "react-icons/fa";
 import getBasicMetaTags from "~/utils/getBasicMetaTags";
 import { destroySession, getSession } from "~/sessions";
-import { FormmysTypes } from "~/components/home/FormmysTypes";
-import { StickySection } from "~/components/home/StickySection";
-import { CompaniesScroll } from "~/components/home/CompaniesScroll";
 import { createSession, redirectToGoogle } from "~/lib/google.server";
+import { Home } from "./home/home";
 import { redirectIfUser } from "server/getUserUtils.server";
-import { WitoutFormmy } from "~/components/home/WithoutFormmy";
-import { Faq } from "~/components/home/Faq";
-import { Join } from "~/components/home/Join";
 
 // href: 'http://localhost:3000/',
 // origin: 'http://localhost:3000',
@@ -77,8 +68,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
 export default function Index() {
   return (
     <article id="theme-trick" className=" ">
-      <div className="dark:bg-dark ">
-        <Nav showcta />
+      <div className="bg-[#ffffff] relative size-full" data-name="Landingpage" id="node-1488_1172">
+        <Home/>
+        {/* <Nav showcta />
         <Hero />
         <CompaniesScroll />
         <FormmysTypes />
@@ -88,7 +80,7 @@ export default function Index() {
         <WitoutFormmy />
         <Faq />
         <Join />
-        <Footer />
+        <Footer /> */}
       </div>
     </article>
   );
@@ -219,7 +211,7 @@ const Footer = () => {
               href="https://www.youtube.com/@_FormmyApp"
               target="_blank"
               rel="noreferrer"
-            >
+            > 
               <FaYoutube className="dark:text-irongray text-gray-400 mt-6 text-2xl hover:opacity-60" />
             </a>
             <a
@@ -235,6 +227,13 @@ const Footer = () => {
               rel="noreferrer"
             >
               <FaFacebook className="dark:text-irongray text-gray-400 mt-6 text-2xl hover:opacity-60" />
+            </a>
+            <a
+              href="https://www.instagram.com/_formmyapp/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <AiFillInstagram className="dark:text-irongray text-gray-400 mt-6 text-2xl hover:opacity-60" />
             </a>
             <a
               href="https://www.instagram.com/_formmyapp/"

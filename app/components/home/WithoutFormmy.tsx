@@ -4,7 +4,7 @@ import { ScrollReveal } from "~/routes/_index";
 
 export const WitoutFormmy = () => {
   return (
-    <div className="bg-brand-500/10 dark:bg-dark py-10">
+
       <section className="h-auto w-[90%] xl:w-full  max-w-7xl mx-auto my-20 lg:mt-[80px] lg:mb-[80px] ">
         <ScrollReveal>
           <h2 className=" text-dark dark:text-white text-3xl lg:text-5xl font-bold text-center">
@@ -12,12 +12,12 @@ export const WitoutFormmy = () => {
           </h2>
           <div className="flex justify-between flex-wrap lg:flex-nowrap items-center mt-12 lg:mt-20">
             <div className="w-full lg:w-[40%] mb-8 lg:mb-0">
-              <p className=" text-lg md:text-xl xl:text-2xl text- font-extralight  text-gray-600 dark:text-irongray">
+              <p className=" text-lg md:text-xl xl:text-2xl  text-dark">
                 No te preocupes más por maquetar, estilizar y agregar
                 validaciones a cada uno de tus campos, ahorra líneas y líneas de
                 código al usar Formmy.
               </p>
-              <div className="text-gray-600 dark:text-irongray text-xl font-extralight flex flex-col gap-3 mt-6 lg:mt-12">
+              <div className="text-dark text-xl font-extralight flex flex-col gap-3 mt-6 lg:mt-12">
                 <div className="flex items-center gap-2 text-lg md:text-xl xl:text-2xl ">
                   <div className="min-w-10 ">
                     {" "}
@@ -59,12 +59,11 @@ export const WitoutFormmy = () => {
               secondImage="/assets/with-formmy.svg"
               firstImageClassName="object-cover object-left-top"
               secondImageClassname="object-cover object-left-top"
-              className="h-[320px]  w-full md:h-[500px] lg:w-[50%] mt-12 lg:mt-0 "
+              className="h-[320px]  w-full md:h-[500px] lg:w-[50%] mt-0 "
               slideMode="hover"
             />
           </div>
         </ScrollReveal>
       </section>
-    </div>
   );
 };
