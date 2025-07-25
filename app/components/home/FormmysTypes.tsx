@@ -5,7 +5,7 @@ import { ScrollRevealLeft, ScrollRevealRight } from "~/routes/_index";
 
 export const FormmysTypes = () => {
   return (
-    <section className="min-h-screen w-[90%] xl:w-full  max-w-7xl mx-auto mt-20 md:mt-[120px] pb-[120px] overflow-hidden">
+    <section className="min-h-screen w-[90%] xl:w-full  max-w-7xl mx-auto my-52 overflow-hidden">
       <h2 className=" text-dark dark:text-white text-3xl lg:text-5xl font-bold text-center">
         Personaliza tu formmy
       </h2>
@@ -57,7 +57,7 @@ export const FormmysTypes = () => {
   );
 };
 
-const Registration = () => {
+export const Registration = () => {
   const [switcher, setSwitcher] = useState({
     name: false,
     tel: false,
@@ -70,8 +70,8 @@ const Registration = () => {
   };
 
   return (
-    <ScrollRevealRight className="w-full lg:w-[50%] ">
-      <section className="group w-full lg:w-fullpy-8 px-0 lg:py-8 lg:pl-8 grid grid-cols-1 md:grid-cols-5 gap-6 relative">
+    <ScrollRevealRight className=" ">
+      <section className="group w-full max-w-2xl scale-[.90] py-8  lg:pl-8 hidden  md:grid grid-cols-1 md:grid-cols-5 gap-6 relative">
         <span
           style={{ fontFamily: "Licorice" }}
           className="absolute text-brand-500  licorice-regular flex right-16 lg:right-0 xl:right-10 -top-3 md:top-10 opacity-100 group-hover:opacity-100 group-hover:scale-100 transition-all"
@@ -85,7 +85,7 @@ const Registration = () => {
           <img className="w-32 -mt-10 ml-2" src="/assets/text.svg" />
         </span>
 
-        <div className="border-[#F1F1F1] shadow-[0px_2px_8px_#F8F7F7] dark:shadow-none order-2	md:order-1 dark:border-white/10  rounded-[40px] border h-auto lg:h-[520px] overflow-hidden col-span-1 md:col-span-3 p-6 lg:p-4 xl:p-6">
+        <div className="border-outlines bg-clear  dark:shadow-none order-2	md:order-1   rounded-[40px] border h-auto lg:h-[520px] overflow-hidden col-span-1 md:col-span-3 p-6 lg:p-4 xl:p-6">
           <h3 className="text-dark dark:text-[#D5D5D5] text-xl text-center">
             Completa el formulario
           </h3>
@@ -100,7 +100,7 @@ const Registration = () => {
                 animate={{ opacity: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, filter: "blur(4px)" }}
                 placeholder="Email"
-                className="text-gray-600  dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman dark:border-white/10 rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
+                className="text-gray-600  dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman  rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
               />
               {switcher.name && (
                 <motion.input
@@ -115,7 +115,7 @@ const Registration = () => {
                     bounce: 0.6,
                   }}
                   placeholder="Nombre completo"
-                  className="text-gray-600 dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman dark:border-white/10 rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
+                  className="text-gray-600 dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman  rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
                 />
               )}
               {switcher.tel && (
@@ -131,7 +131,7 @@ const Registration = () => {
                     bounce: 0.6,
                   }}
                   placeholder="Teléfono"
-                  className="text-gray-600 dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman dark:border-white/10 rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
+                  className="text-gray-600 dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman  rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
                 />
               )}
               {switcher.message && (
@@ -147,7 +147,7 @@ const Registration = () => {
                     bounce: 0.6,
                   }}
                   placeholder="Mensaje"
-                  className="text-gray-600 dark:text-white dark:active:border-brand-500 bg-transparent border-iman dark:border-white/10 rounded-2xl border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
+                  className="text-gray-600 dark:text-white dark:active:border-brand-500 bg-transparent border-iman  rounded-2xl border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
                 />
               )}
               <motion.button
@@ -166,7 +166,7 @@ const Registration = () => {
           </div>
         </div>
 
-        <div className="border-[#F1F1F1] shadow-[0px_2px_8px_#F8F7F7] dark:shadow-none order-1	md:order-2 dark:border-white/10 rounded-[40px] border gap-6 p-6  justify-center h-[240px] mt-0 md:mt-20  overflow-hidden col-span-1 md:col-span-2 flex flex-col">
+        <div className="border-outlines bg-clear  dark:shadow-none order-1	md:order-2  rounded-[40px] border gap-6 p-6  justify-center h-[240px] mt-0 md:mt-20  overflow-hidden col-span-1 md:col-span-2 flex flex-col">
           <Check defaultValue={true} isDisabled label="Email" />
           <Check
             onChange={({
@@ -198,7 +198,7 @@ const Registration = () => {
   );
 };
 
-const Check = ({
+export const Check = ({
   label,
   onChange,
   defaultValue = false,
@@ -227,12 +227,12 @@ const Check = ({
     </label>
   );
 };
-const Suscription = () => {
+export const Suscription = () => {
   const [color, setColor] = useState("#377CE2");
 
   return (
-    <ScrollRevealLeft className="w-full lg:w-[50%]">
-      <section className="group w-full py-8 px-0 lg:py-8 lg:pr-8 flex flex-col md:flex-row lg:flex-col gap-6 relative">
+    <ScrollRevealLeft className=" ">
+      <section className="group w-full  py-0 px-0 lg:py-8 lg:pr-8 flex flex-col md:flex-row lg:flex-col gap-6 relative max-w-2xl scale-[.8] md:scale-[.9]">
         <span
           style={{ fontFamily: "Licorice" }}
           className="absolute text-brand-500 licorice-regular flex flex-col right-16 lg:right-0 xl:right-10 -bottom-10 opacity-100  group-hover:opacity-100 group-hover:scale-100 transition-all"
@@ -245,12 +245,12 @@ const Suscription = () => {
           />{" "}
           <img className="w-24  ml-2" src="/assets/color-check.svg" />
         </span>
-        <div className="border-[#F1F1F1] shadow-[0px_2px_8px_#F8F7F7] dark:shadow-none dark:border-white/10 rounded-[40px] border flex h-[320px] lg:h-[400px] overflow-hidden ">
+        <div className="border-outlines  dark:shadow-none  rounded-[40px] border flex h-[320px] lg:h-[400px] overflow-hidden ">
           <img
             className="w-[30%] lg:w-[50%] h-full object-cover object-center lg:object-right"
             src="https://images.pexels.com/photos/5386754/pexels-photo-5386754.jpeg?auto=compress&cs=tinysrgb&w=800"
           />
-          <div className="w-full lg:w-[50%] px-4 py-4 xl:px-8 xl:py-10">
+          <div className="w-full lg:w-[50%] px-4 py-4 xl:px-8 xl:py-10 bg-clear">
             <h3 className="text-dark dark:text-[#D5D5D5] text-lg lg:text-xl">
               Únete a la lista de espera
             </h3>
@@ -263,7 +263,7 @@ const Suscription = () => {
             </label>
             <input
               placeholder="ejemplo@formmy.app"
-              className="text-gray-600 dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman dark:border-white/10 rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
+              className="text-gray-600 dark:text-white dark:active:border-brand-500 dark:focus:border-brand-500 bg-transparent border-iman  rounded-full border font-extralight mt-2 w-full focus:outline-none focus:ring-transparent  focus:border-brand-500 active:border-brand-500 active:outline-transparent"
             />
             <motion.button
               initial={{ backgroundColor: "blue" }}
@@ -274,7 +274,7 @@ const Suscription = () => {
             </motion.button>
           </div>
         </div>
-        <div className="border-[#F1F1F1] shadow-[0px_2px_8px_#F8F7F7] dark:shadow-none dark:border-white/10 rounded-[40px] border flex flex-row md:flex-col lg:flex-row items-center px-4 lg:px-6 gap-3 lg:gap-6 h-14 md:h-fit md:py-6 lg:py-0 py-0 lg:h-20   ">
+        <div className="border-outlines bg-clear shadow-[0px_2px_8px_#F8F7F7] dark:shadow-none  rounded-[40px] border flex flex-row md:flex-col lg:flex-row items-center px-4 lg:px-6 gap-3 lg:gap-6 h-14 md:h-fit md:py-6 lg:py-0 py-0 lg:h-20   ">
           <Color
             onClick={() => {
               setColor("#EB9F3A");
