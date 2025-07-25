@@ -16,12 +16,12 @@ export const MessageBubble = ({
 }: MessageBubbleProps) => {
   if (message.role === "assistant") {
     return (
-      <main className="px-4 flex items-start gap-3">
+      <main className="px-4 flex items-start gap-3 ">
         <Avatar primaryColor={primaryColor} />
-        <div className="bg-white dark:bg-space-700 rounded-lg p-3 max-w-md shadow-sm">
-          <div 
+        <div className="bg-white border dark:bg-space-700 rounded-tr-lg rounded-br-lg rounded-bl-lg p-3 max-w-md shadow-sm">
+          <div
             className="prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-li:text-sm prose-code:bg-gray-100 prose-code:dark:bg-gray-600 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-pre:bg-gray-100 prose-pre:dark:bg-gray-600 prose-pre:p-1 prose-pre:rounded prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-1 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:dark:border-gray-500 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:dark:text-gray-400 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:dark:text-blue-400 prose-a:hover:underline prose-table:overflow-x-auto prose-table:w-full prose-th:px-2 prose-th:py-0.5 prose-th:text-xs prose-th:font-semibold prose-td:px-2 prose-td:py-0.5 prose-td:text-xs"
-            style={{ whiteSpace: 'pre-line', lineHeight: '1' }}
+            style={{ whiteSpace: "pre-line", lineHeight: "1" }}
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -50,7 +50,7 @@ export const MessageBubble = ({
                 ),
               }}
             >
-              {message.content.replace(/\n/g, '  \n')}
+              {message.content.replace(/\n/g, "  \n")}
             </ReactMarkdown>
           </div>
         </div>
@@ -60,8 +60,10 @@ export const MessageBubble = ({
 
   return (
     <div className="flex items-start gap-3 justify-end">
-      <div className="bg-brand-500 rounded-lg p-2 max-w-xs">
-        <p className="text-sm text-white whitespace-pre-line leading-tight">{message.content}</p>
+      <div className="bg-brand-500 rounded-tl-lg rounded-bl-lg rounded-br-lg p-2 max-w-xs">
+        <p className="text-sm text-white whitespace-pre-line leading-tight">
+          {message.content}
+        </p>
       </div>
       <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex-shrink-0" />
     </div>

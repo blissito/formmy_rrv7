@@ -94,8 +94,8 @@ const LinkBlock = () => {
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : "https://yourdomain.com";
-  const codeToCopy = `${baseUrl}/chat/${chatbot.slug}`;
+      : "https://formmy-v2.fly.dev";
+  const codeToCopy = `${baseUrl}/chat/embed?slug=${chatbot.slug}`;
 
   const instructions = [
     { step: "1", description: "Copia el enlace" },
@@ -125,14 +125,18 @@ const Iframe = () => {
     typeof window !== "undefined"
       ? window.location.origin
       : "https://formmy-v2.fly.dev";
-  const codeToCopy = `<iframe 
-  src="${baseUrl}/chat_/embed?slug=${chatbot.slug}" 
+  const codeToCopy = `
+  <article style="display:grid;place-items:end;height:98vh;">
+  <iframe 
+  src="${baseUrl}/chat/embed?slug=${chatbot.slug}" 
   width="400" 
   height="600"
   frameborder="0"
   style="border-radius: 8px;"
 >
-</iframe>`;
+</iframe>
+</article>
+`;
 
   const instructions = [
     { step: "1", description: "Copia el código del iframe" },
@@ -146,11 +150,13 @@ const Iframe = () => {
     },
     {
       step: "4",
-      description: "El chatbot se adaptará automáticamente y ocupará todo el espacio disponible",
+      description:
+        "El chatbot se adaptará automáticamente y ocupará todo el espacio disponible",
     },
     {
       step: "5",
-      description: "La ruta /chat/embed usa el slug de tu chatbot para mostrarlo correctamente",
+      description:
+        "La ruta /chat/embed usa el slug de tu chatbot para mostrarlo correctamente",
     },
   ];
 

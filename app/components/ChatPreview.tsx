@@ -223,11 +223,21 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   };
 
   return (
-    <main className="bg-brand-500/20 h-full dark:bg-space-800 rounded-lg shadow overflow-hidden px-4 py-20 h-screen">
+    <main
+      className={cn(
+        "h-full dark:bg-space-800 rounded-lg shadow overflow-hidden px-4 py-20 h-screen",
+        {
+          "bg-brand-500/20": !production,
+          "bg-transparent": production,
+        }
+      )}
+    >
       {!production && <StreamToggle stream={stream} onToggle={setStream} />}
 
       <article
         className={cn(
+          "border",
+          "border-gray-300",
           "h-full",
           "bg-[#fff]",
           "rounded-3xl",
