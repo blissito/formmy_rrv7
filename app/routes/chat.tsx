@@ -97,7 +97,7 @@ export default function ChatListRoute({ loaderData }: Route.ComponentProps) {
         >
           Tus Chats IA
         </PageContainer.Title>
-        <section className="my-10">
+        <section className="my-10 flex flex-wrap gap-6">
           {chatbots.map((chatbot: Chatbot, i: number) => (
             <PageContainer.ChatCard
               onDelete={handleDeleteIntention(chatbot.id)}
