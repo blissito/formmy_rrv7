@@ -135,8 +135,8 @@ export const Conversations = ({
   );
 
   return (
-    <main className="grid grid-cols-2">
-      <article className="flex flex-col gap-6 min-w-[270px]">
+    <main className="flex flex-wrap gap-6">
+      <article className={cn("grow flex-1", "flex flex-col gap-6")}>
         <ChipTabs
           names={["Todos", "Favoritos"]}
           onTabChange={setCurrentTab}
@@ -152,7 +152,7 @@ export const Conversations = ({
           currentConversation={conversation}
         />
       </article>
-      <section className="flex-2">
+      <section className="grow max-w-">
         <ConversationsPreview conversation={conversation} />
       </section>
     </main>
@@ -169,7 +169,7 @@ const ConversationsList = ({
   currentConversation: Conversation;
 }) => {
   return (
-    <section className="flex flex-col gap-1 pr-6">
+    <section className="flex flex-col gap-1">
       {conversations.map((conversation) => (
         <Conversation
           key={conversation.id}
@@ -201,21 +201,26 @@ const Conversation = ({
     <section
       onClick={onClick}
       className={cn(
-        "px-2 py-3 rounded-2xl hover:bg-brand-500/10 transition-colors",
-        "flex items-center gap-2 cursor-pointer",
+        "overflow-hidden",
+        "px-2 py-3 rounded-2xl transition-colors",
+        "hover:bg-brand-500/10",
+        "cursor-pointer",
+        "flex gap-3",
+        "items-center",
+        "w-[320px] min-w-full",
         {
           "bg-brand-500/10": isActive,
         }
       )}
     >
       <Avatar className="w-10" src={pic || "/assets/chat/ghosty.svg"} />
-      <div>
+      <div className="flex-1 truncate">
         <p className="font-medium text-sm">{conversation.userName}</p>
-        <p className="text-xs text-gray-600 max-w-[200px] truncate">
+        <p className="text-xs text-gray-600 truncate">
           {lastUserMessage?.content}
         </p>
       </div>
-      <div className="ml-auto">
+      <div className="flex-2 pr-3">
         <p className="ml-3 text-xs text-gray-500">{conversation.time}</p>
         {conversation.isFavorite && (
           <img className="ml-auto" src="/assets/chat/pin.svg" alt="pin icon" />
@@ -296,6 +301,7 @@ const SimpleButton = ({
   );
 };
 
+// This should be reusable for any conversation
 export const ConversationsPreview = ({
   conversation,
   primaryColor,

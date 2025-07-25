@@ -40,7 +40,9 @@ export const PageContainer = ({
     <main className="bg-indigo-50/70">
       {HeaderComponent && HeaderComponent}
       <article className={cn("min-h-svh pb-10 pl-24 pr-6")} {...props}>
-        <main className="bg-[#fff] min-h-[80vh] rounded-3xl py-6 px-8 shadow min-w-5xl">
+        <main
+          className={cn("bg-[#fff] min-h-[80vh] rounded-3xl py-6 px-8 shadow")}
+        >
           <section className="max-w-7xl mx-auto">{nodes}</section>
         </main>
       </article>

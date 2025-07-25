@@ -223,14 +223,18 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   };
 
   return (
-    <main className={cn("h-full")}>
+    <main
+      className={cn("h-full", {
+        "bg-brand-500/20": !production,
+      })}
+    >
       {!production && <StreamToggle stream={stream} onToggle={setStream} />}
 
       <article
         className={cn(
           "border",
           "border-gray-300",
-          "h-full",
+          "h-svh mb-6", // @TODO Revisit
           "bg-[#fff]",
           "rounded-3xl",
           "flex flex-col",
