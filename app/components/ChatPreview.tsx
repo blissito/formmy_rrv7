@@ -12,9 +12,10 @@ import type { Chatbot } from "@prisma/client";
 
 export type ChatPreviewProps = {
   chatbot: Chatbot;
+  production?: boolean;
 };
 
-export default function ChatPreview({ chatbot }: ChatPreviewProps) {
+export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [chatMessages, setChatMessages] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
   >([
@@ -37,10 +38,13 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
 
   // Update welcome message when chatbot.welcomeMessage changes
   useEffect(() => {
-    if (chatMessages.length > 0 && chatMessages[0].role === 'assistant') {
-      setChatMessages(prevMessages => [
-        { ...prevMessages[0], content: chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?" },
-        ...prevMessages.slice(1)
+    if (chatMessages.length > 0 && chatMessages[0].role === "assistant") {
+      setChatMessages((prevMessages) => [
+        {
+          ...prevMessages[0],
+          content: chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?",
+        },
+        ...prevMessages.slice(1),
       ]);
     }
   }, [chatbot.welcomeMessage]);
@@ -75,11 +79,11 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
   // Mostrar mensaje de despedida después de inactividad
   const showGoodbyeMessage = useCallback(() => {
     if (chatbot.goodbyeMessage && !isConversationEnded) {
-      const newMessage = { 
-        role: "assistant" as const, 
-        content: chatbot.goodbyeMessage 
+      const newMessage = {
+        role: "assistant" as const,
+        content: chatbot.goodbyeMessage,
       };
-      setChatMessages(prev => [...prev, newMessage]);
+      setChatMessages((prev) => [...prev, newMessage]);
       setIsConversationEnded(true);
     }
   }, [chatbot.goodbyeMessage, isConversationEnded]);
@@ -91,7 +95,7 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
-    
+
     // Establecer un nuevo temporizador (5 minutos de inactividad)
     // @ts-ignore - setTimeout returns a number in the browser
     inactivityTimerRef.current = window.setTimeout(() => {
@@ -103,7 +107,7 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
   useEffect(() => {
     // Iniciar el temporizador inicial
     resetInactivityTimer();
-    
+
     // Limpiar el temporizador al desmontar el componente
     return () => {
       if (inactivityTimerRef.current) {
@@ -119,7 +123,12 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
     if (!isConversationEnded) {
       resetInactivityTimer();
     }
-  }, [chatMessages, shouldAutoScroll, resetInactivityTimer, isConversationEnded]);
+  }, [
+    chatMessages,
+    shouldAutoScroll,
+    resetInactivityTimer,
+    isConversationEnded,
+  ]);
 
   // Auto-scroll when streaming updates
   useEffect(() => {
@@ -214,12 +223,12 @@ export default function ChatPreview({ chatbot }: ChatPreviewProps) {
   };
 
   return (
-    <main className="bg-brand-500/20 h-full dark:bg-space-800 rounded-lg shadow overflow-hidden px-4">
-      <StreamToggle stream={stream} onToggle={setStream} />
+    <main className="bg-brand-500/20 h-full dark:bg-space-800 rounded-lg shadow overflow-hidden px-4 py-20 h-screen">
+      {!production && <StreamToggle stream={stream} onToggle={setStream} />}
 
       <article
         className={cn(
-          "h-[90%]",
+          "h-full",
           "bg-[#fff]",
           "rounded-3xl",
           "flex flex-col",

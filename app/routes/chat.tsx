@@ -1,10 +1,10 @@
-import { useLoaderData, useSubmit, Link } from "react-router";
+import { useSubmit } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { getUserChatbotsWithPlanInfo } from "server/chatbot/userModel.server";
 import { PageContainer } from "~/components/chat/PageContainer";
 import type { Route } from "./+types/chat";
 import type { Chatbot } from "@prisma/client";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { useState } from "react";
 import ConfirmModal from "~/components/ConfirmModal";
 import { effect } from "../utils/effect";
@@ -167,9 +167,6 @@ export default function ChatListRoute({ loaderData }: Route.ComponentProps) {
           }
         />
       )}
-
-      {/* Toaster component para mostrar notificaciones */}
-      <Toaster position="top-center" />
     </>
   );
 }

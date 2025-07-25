@@ -124,13 +124,14 @@ const Iframe = () => {
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : "https://yourdomain.com";
+      : "https://formmy-v2.fly.dev";
   const codeToCopy = `<iframe 
-  src="${baseUrl}/chat/${chatbot.slug}" 
+  src="${baseUrl}/chat_/embed?slug=${chatbot.slug}" 
   width="400" 
   height="600"
   frameborder="0"
-  style="border-radius: 8px;">
+  style="border-radius: 8px;"
+>
 </iframe>`;
 
   const instructions = [
@@ -142,6 +143,14 @@ const Iframe = () => {
     {
       step: "3",
       description: "Ajusta el width y height según tus necesidades",
+    },
+    {
+      step: "4",
+      description: "El chatbot se adaptará automáticamente y ocupará todo el espacio disponible",
+    },
+    {
+      step: "5",
+      description: "La ruta /chat/embed usa el slug de tu chatbot para mostrarlo correctamente",
     },
   ];
 

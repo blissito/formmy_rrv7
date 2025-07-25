@@ -93,20 +93,20 @@ export const MiniCardGroup = ({
       <section className="grid lg:grid-cols-3 grid-cols-2 gap-4">
         <MiniCard
           isSelected={selectedMinicard === "sdk"}
-          title="User el SDK"
-          text="El SDK Te permite user todas las funciones avanzadas del agente"
+          title="Usar el SDK"
+          text="El SDK te permite usar todas las funciones avanzadas del agente"
           onSelect={() => onSelect("sdk")}
         />
         <MiniCard
           isSelected={selectedMinicard === "iframe"}
           title="Embeber el iframe"
-          text="Agrega el chat en cualquier lugar de su sitio web."
+          text="Agrega el chat en cualquier lugar de tu sitio web con un simple iframe."
           onSelect={() => onSelect("iframe")}
         />
         <MiniCard
           isSelected={selectedMinicard === "link"}
           title="Obtener el Link"
-          text="Accede a tu chatbot directamente o usa el linkd entro de tu sitio web."
+          text="Accede a tu chatbot directamente o usa el link dentro de tu sitio web."
           onSelect={() => onSelect("link")}
         />
       </section>
