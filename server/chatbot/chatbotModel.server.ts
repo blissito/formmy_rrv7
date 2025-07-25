@@ -280,6 +280,9 @@ export async function getChatbotById(id: string): Promise<Chatbot | null> {
 export async function getChatbotBySlug(slug: string): Promise<Chatbot | null> {
   return db.chatbot.findUnique({
     where: { slug },
+    include: {
+      user: true,
+    },
   });
 }
 

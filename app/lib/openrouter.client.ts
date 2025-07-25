@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect";
 import { DEFAULT_AI_MODEL } from "../utils/constants";
+import { v4 as uuidv4 } from "uuid";
 
 export const OpenRouterClientSchema = Schema.Struct({
   model: Schema.String,
@@ -18,6 +19,7 @@ export type OpenRouterClientInput = {
   messages: { role: string; content: string }[];
   stream?: boolean;
   onStreamChunk?: (partial: string) => void;
+  chatbotId?: string;
 };
 
 export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
@@ -26,6 +28,7 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
     if (!input.messages || !input.messages.length) {
       throw new Error("El historial de mensajes no puede estar vacío.");
     }
+
     // Validar input
     yield* _(
       Schema.decode(OpenRouterClientSchema)({
@@ -37,41 +40,43 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
         stream: input.stream,
       })
     );
-    // Hacer request al endpoint correcto
-    console.log("[OpenRouterClient] Mensajes enviados:", input.messages);
-    const fd = new FormData();
-    fd.set("model", input.model ? String(input.model) : DEFAULT_AI_MODEL);
-    fd.set(
-      "instructions",
-      input.instructions ? String(input.instructions) : ""
-    );
-    fd.set(
-      "temperature",
-      String(typeof input.temperature === "number" ? input.temperature : 0.7)
-    );
-    fd.set("messages", JSON.stringify(input.messages));
-    if (input.stream) fd.set("stream", "true");
-    const endpoint = input.stream
-      ? "/api/v1/openrouter/stream"
-      : "/api/v1/openrouter";
+
+    // Crear sessionId si no existe
+    const sessionId = input.chatbotId || uuidv4();
+
+    // Preparar el cuerpo de la petición
+    const body = {
+      chatbotId: input.chatbotId || sessionId,
+      message: input.messages[input.messages.length - 1].content,
+      sessionId,
+      stream: input.stream,
+    };
+
+    // Hacer request al nuevo endpoint
+    console.log("[OpenRouterClient] Enviando mensaje a SDK chat:", body);
     const res = yield* _(
       Effect.tryPromise(() =>
-        fetch(endpoint, {
+        fetch("/api/sdk/chat", {
           method: "POST",
-          body: fd,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
         })
       )
     );
+
     if (!res.ok) {
       const error = yield* _(Effect.tryPromise(() => res.text()));
       throw new Error(error);
     }
+
     if (input.stream && input.onStreamChunk) {
       // Procesar stream SSE
       const reader = res.body?.getReader();
       if (!reader) throw new Error("No stream body");
+
       let accumulated = "";
-      let buffer = "";
       const decoder = new TextDecoder();
       let done = false;
 
@@ -82,40 +87,26 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
         done = doneReading;
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
-          buffer += chunk;
-
-          // Procesar líneas completas
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || ""; // Mantener línea incompleta en buffer
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6); // Remover "data: "
-              if (data === "[DONE]") {
-                done = true;
-                break;
-              }
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.choices?.[0]?.delta?.content) {
-                  const content = parsed.choices[0].delta.content;
-                  accumulated += content;
-                  input.onStreamChunk(accumulated);
-                }
-              } catch (e) {
-                // Ignorar líneas que no son JSON válido
-                console.log("[OpenRouterClient] Línea SSE no válida:", line);
-              }
+          
+          // Buscar el contenido en el chunk
+          try {
+            const parsed = JSON.parse(chunk);
+            if (parsed.type === "chunk" && parsed.content) {
+              accumulated += parsed.content;
+              input.onStreamChunk(accumulated);
             }
+          } catch (e) {
+            console.log("[OpenRouterClient] Chunk no válido:", chunk);
           }
         }
       }
+      
       return { streamed: true, content: accumulated };
     } else {
       const json = yield* _(Effect.tryPromise(() => res.json()));
       if (!json.success) {
-        throw new Error(json.error || "Error desconocido en OpenRouter");
+        throw new Error(json.error || "Error desconocido en SDK chat");
       }
-      return json.result;
+      return json.response;
     }
   });

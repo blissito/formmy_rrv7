@@ -1,5 +1,5 @@
 import type { Route } from "./+types/api.sdk.chat";
-import { data as json } from "react-router";
+import { Effect, pipe } from "effect";
 import {
   authenticateApiKey,
   extractApiKeyFromRequest,
@@ -15,7 +15,6 @@ import {
   RateLimitError,
 } from "server/chatbot/messageModel.server";
 import { FALLBACK_MODELS } from "../utils/aiModels";
-import { handleCorsPreflight, jsonWithCors } from "~/middleware/cors";
 import { db } from "../utils/db.server";
 import type { Chatbot } from "@prisma/client";
 
@@ -24,115 +23,206 @@ import type { Chatbot } from "@prisma/client";
  * Handles chat messages with streaming support using Server-Sent Events
  * Falls back to regular JSON response when streaming is disabled
  */
-export const action = async ({ request }: Route.ActionArgs) => {
-  // CORS ya está manejado por el middleware de Express
-
-  try {
-    // Extract and authenticate API key
-    const apiKey = extractApiKeyFromRequest(request);
-    if (!apiKey) {
-      return jsonWithCors({ error: "API key required" }, { status: 401 });
-    }
-
-    const authResult = await authenticateApiKey(apiKey);
-    const { user } = authResult.apiKey;
-
-    // Parse request body
-    const body = await request.json();
-    const { chatbotId, message, sessionId } = body;
-
-    if (!chatbotId || !message || !sessionId) {
-      return jsonWithCors(
-        {
-          error: "Missing required fields: chatbotId, message, sessionId",
+export const action = ({ request }: Route.ActionArgs) => {
+  const result = pipe(
+    // Extraer y autenticar API key
+    Effect.gen(function* () {
+      const apiKey = extractApiKeyFromRequest(request);
+      if (!apiKey) {
+        return yield* Effect.fail({
+          status: 401,
+          error: "API key required",
+        });
+      }
+      return yield* Effect.tryPromise({
+        try: () => authenticateApiKey(apiKey),
+        catch: (error) => {
+          console.error("Error in API key authentication:", error);
+          return {
+            status: 500,
+            error: "Internal server error during authentication",
+          };
         },
-        { status: 400 }
-      );
-    }
+      });
+    }),
+    Effect.flatMap((authResult) =>
+      Effect.gen(function* () {
+        const { user } = authResult.apiKey;
 
-    // Verify chatbot ownership and get chatbot data
-    // Find chatbot by slug/name for the authenticated user
-    const chatbots = await db.chatbot.findMany({
-      where: {
-        userId: user.id,
+        // Parsear el cuerpo de la petición
+        const body = yield* Effect.tryPromise({
+          try: () => request.json(),
+          catch: () => ({} as any), // En caso de error, devolvemos un objeto vacío
+        });
+
+        // Validar que el body sea un objeto
+        if (typeof body !== "object" || body === null) {
+          return yield* Effect.fail({
+            status: 400,
+            error: "Invalid request body",
+          });
+        }
+
+        const { chatbotId, message, sessionId } = body as any;
+
+        // Validar campos requeridos
+        if (!chatbotId || !message || !sessionId) {
+          return yield* Effect.fail({
+            status: 400,
+            error: "Missing required fields: chatbotId, message, sessionId",
+          });
+        }
+
+        // Obtener chatbots del usuario
+        const chatbots = yield* Effect.promise(() =>
+          db.chatbot.findMany({
+            where: { userId: user.id },
+            // @todo only active ones
+          })
+        );
+
+        // Buscar chatbot por ID o slug
+        const chatbot = chatbots.find(
+          (bot: Chatbot) => bot.id === chatbotId || bot.slug === chatbotId
+        );
+
+        if (!chatbot) {
+          return yield* Effect.fail({
+            status: 400,
+            error: "Chatbot not found or not accessible for this user",
+          });
+        }
+
+        // Obtener IP del visitante
+        const visitorIp =
+          request.headers.get("x-forwarded-for") ||
+          request.headers.get("x-real-ip") ||
+          "unknown";
+
+        // Obtener o crear conversación
+        let conversation = yield* Effect.promise(() =>
+          getConversationBySessionId(sessionId)
+        );
+
+        if (!conversation) {
+          conversation = yield* Effect.promise(() =>
+            createConversation({
+              chatbotId,
+              visitorIp,
+              visitorId: sessionId,
+            })
+          );
+        }
+
+        // Agregar mensaje del usuario
+        yield* Effect.promise(() =>
+          addUserMessage(conversation.id, message, visitorIp)
+        );
+
+        // Obtener historial de la conversación
+        const messages = yield* Effect.promise(() =>
+          getMessagesByConversationId(conversation.id)
+        );
+
+        const aiMessages = messages.map((msg) => ({
+          role: msg.role.toLowerCase(),
+          content: msg.content,
+        }));
+
+        // Manejar respuesta según si streaming está habilitado
+        if (chatbot.enableStreaming) {
+          return {
+            type: "stream",
+            chatbot,
+            messages: aiMessages,
+            conversationId: conversation.id,
+          } as const;
+        } else {
+          const response = yield* Effect.promise(() =>
+            processChatMessage(chatbot, aiMessages, conversation.id)
+          );
+          return {
+            type: "json",
+            response: response.content,
+            sessionId,
+            conversationId: conversation.id,
+          } as const;
+        }
+      })
+    ),
+    // Mapear el resultado a una respuesta HTTP
+    Effect.match({
+      onSuccess: (result) => {
+        if (result.type === "stream") {
+          return createStreamingResponse(
+            result.chatbot,
+            result.messages,
+            result.conversationId
+          );
+        } else {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              response: result.response,
+              sessionId: result.sessionId,
+              conversationId: result.conversationId,
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
       },
-    });
+      onFailure: (error) => {
+        console.error("Chat endpoint error:", error);
 
-    // Find chatbot by slug or ID
-    const chatbot = chatbots.find(
-      (bot: Chatbot) => bot.id === chatbotId || bot.slug === chatbotId
-    );
+        // Usar Effect.try para manejar los errores de forma funcional
+        const errorResponse = Effect.runSync(
+          Effect.match(error, {
+            onSuccess: (response) => response, // No debería pasar ya que es un error
+            onFailure: (error) => {
+              if (error instanceof RateLimitError) {
+                return new Response(JSON.stringify({ error: error.message }), {
+                  status: 429,
+                  headers: { "Content-Type": "application/json" },
+                });
+              }
 
-    if (!chatbot) {
-      return jsonWithCors(
-        { error: "Chatbot not found or not accessible for this user" },
-        { status: 400 }
-      );
-    }
+              if (error instanceof Response) {
+                return error;
+              }
 
-    // Get visitor IP for rate limiting
-    const visitorIp =
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
+              const status =
+                typeof error === "object" && error !== null && "status" in error
+                  ? (error as any).status
+                  : 500;
 
-    // Get or create conversation
-    let conversation = await getConversationBySessionId(sessionId);
-    if (!conversation) {
-      conversation = await createConversation({
-        chatbotId,
-        visitorIp,
-        visitorId: sessionId, // Use sessionId as visitorId for SDK
-      });
-    }
+              const message =
+                typeof error === "object" && error !== null && "error" in error
+                  ? (error as any).error
+                  : "Internal server error";
 
-    // Add user message to conversation
-    await addUserMessage(conversation.id, message, visitorIp);
+              return new Response(JSON.stringify({ error: message }), {
+                status,
+                headers: { "Content-Type": "application/json" },
+              });
+            },
+          })
+        );
 
-    // Get conversation history for AI context
-    const messages = await getMessagesByConversationId(conversation.id);
-    const aiMessages = messages.map((msg) => ({
-      role: msg.role.toLowerCase(),
-      content: msg.content,
-    }));
-
-    // Check if streaming is enabled for this chatbot
-    if (chatbot.enableStreaming) {
-      // Return streaming response
-      return createStreamingResponse(chatbot, aiMessages, conversation.id);
-    } else {
-      // Return regular JSON response
-      const response = await processChatMessage(
-        chatbot,
-        aiMessages,
-        conversation.id
-      );
-      return jsonWithCors({
-        success: true,
-        response: response.content,
-        sessionId,
-        conversationId: conversation.id,
-      });
-    }
-  } catch (error) {
-    console.error("Chat endpoint error:", error);
-
-    if (error instanceof RateLimitError) {
-      return jsonWithCors({ error: error.message }, { status: 429 });
-    }
-
-    if (error instanceof Response) {
-      return new Response(error.body, {
-        status: error.status,
-        headers: {
-          ...Object.fromEntries(error.headers?.entries() || [])
-          // CORS ya manejado por el middleware Express
-        },
-      });
-    }
-
-    return jsonWithCors({ error: "Internal server error" }, { status: 500 });
-  }
+        // Si algo falla en el manejo de errores, devolver un error genérico
+        return (
+          errorResponse ||
+          new Response(JSON.stringify({ error: "Internal server error" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          })
+        );
+      },
+    })
+  );
+  return Effect.runSync(result);
 };
 
 /**
@@ -155,7 +245,7 @@ function createStreamingResponse(
         );
 
         // Process streaming message
-        const responseContent = await processStreamingMessage(
+        await processStreamingMessage(
           chatbot,
           messages,
           conversationId,
@@ -196,7 +286,7 @@ function createStreamingResponse(
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      Connection: "keep-alive"
+      Connection: "keep-alive",
       // CORS ya manejado por el middleware Express
     },
   });
@@ -429,8 +519,11 @@ async function handleStreamingResponse(
  * Handle GET requests (not supported)
  */
 export const loader = async () => {
-  return jsonWithCors(
-    { error: "This endpoint only supports POST requests" },
-    { status: 405 }
+  return new Response(
+    JSON.stringify({ error: "This endpoint only supports POST requests" }),
+    {
+      status: 405,
+      headers: { "Content-Type": "application/json" },
+    }
   );
 };

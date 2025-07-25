@@ -161,6 +161,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
       setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
       Effect.runPromise(
         sendOpenRouterMessageEffect({
+          apiKey: chatbot.user.apiKeys[0].key,
           model: chatbot.aiModel || DEFAULT_AI_MODEL,
           instructions: chatbot.instructions || "",
           temperature: chatbot.temperature,
@@ -170,6 +171,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           ],
           stream: true,
           onStreamChunk: (partial) => {
+            // updating state
             setChatMessages((msgs) => {
               // Actualiza solo el último mensaje assistant
               const updated = [...msgs];
