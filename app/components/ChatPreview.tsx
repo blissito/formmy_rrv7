@@ -223,15 +223,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   };
 
   return (
-    <main
-      className={cn(
-        "h-full dark:bg-space-800 rounded-lg shadow overflow-hidden px-4 py-20 h-screen",
-        {
-          "bg-brand-500/20": !production,
-          "bg-transparent": production,
-        }
-      )}
-    >
+    <main className={cn("h-full rounded-lg h-screen")}>
       {!production && <StreamToggle stream={stream} onToggle={setStream} />}
 
       <article
@@ -243,7 +235,10 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           "rounded-3xl",
           "flex flex-col",
           // Aquí cambiamos el ancho del chat
-          "overflow-y-auto dark:bg-gray-800 max-w-lg mx-auto"
+          "overflow-y-auto dark:bg-gray-800 max-w-lg mx-auto",
+          {
+            "h-full w-full": production,
+          }
         )}
       >
         <ChatHeader
