@@ -126,7 +126,7 @@ const Iframe = () => {
       ? window.location.origin
       : "https://formmy-v2.fly.dev";
   const codeToCopy = `
-  <article style="background:transparent;position:fixed;bottom:0;right:0;">
+  <article style="background:transparent;position:fixed;bottom:40px;right:40px;">
   <iframe 
   src="${baseUrl}/chat/embed?slug=${chatbot.slug}" 
   width="400" 
