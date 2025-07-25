@@ -50,19 +50,11 @@ export function GradientButton({
         className="absolute inset-0"
         style={{ borderRadius: `calc(${borderRadius} * 0.96)` }}
       >
-        {/* <MovingBorder duration={duration} rx="30%" ry="30%">
-          <div
-            className={cn(
-              "h-20 w-16 opacity-[0.8] bg-[radial-gradient(var(--brand-500)_40%,transparent_60%)]",
-              borderClassName
-            )}
-          />
-        </MovingBorder> */}
       </div>
 
       <div
         className={cn(
-          "relative px-4  bg-slate-900/[0.8] border border-slate-800 backdrop-blur-xl text-white flex items-center justify-center w-fit  h-full  antialiased",
+          "relative px-4  bg-slate-900/[0.8] backdrop-blur-xl text-white flex items-center justify-center w-fit  h-full  antialiased",
           className
         )}
         style={{
