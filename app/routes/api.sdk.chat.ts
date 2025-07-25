@@ -315,6 +315,11 @@ async function processStreamingMessage(
       onChunk
     );
     const responseTime = Date.now() - startTime;
+    
+    // Calcular firstTokenLatency si está disponible
+    const firstTokenLatency = response.firstTokenLatency 
+      ? response.firstTokenLatency - startTime
+      : null;
 
     fullContent = response.content;
 
@@ -323,7 +328,8 @@ async function processStreamingMessage(
       conversationId,
       fullContent,
       response.tokens,
-      responseTime
+      responseTime,
+      firstTokenLatency ? Math.max(0, firstTokenLatency) : undefined
     );
 
     return fullContent;
@@ -341,7 +347,11 @@ async function callOpenRouterAPI(
   messages: any[],
   stream: boolean = false,
   onChunk?: (chunk: string) => void
-): Promise<{ content: string; tokens?: number }> {
+): Promise<{ 
+  content: string; 
+  tokens?: number;
+  firstTokenLatency?: number;
+}> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OpenRouter API key not configured");
@@ -437,7 +447,11 @@ async function callOpenRouterAPI(
 async function handleStreamingResponse(
   response: Response,
   onChunk?: (chunk: string) => void
-): Promise<{ content: string; tokens?: number }> {
+): Promise<{ 
+  content: string; 
+  tokens?: number;
+  firstTokenLatency?: number;
+}> {
   const reader = response.body?.getReader();
   if (!reader) {
     throw new Error("No response body stream");
@@ -446,6 +460,7 @@ async function handleStreamingResponse(
   const decoder = new TextDecoder();
   let fullContent = "";
   let buffer = "";
+  let firstChunkTime: number | null = null;
 
   try {
     while (true) {
@@ -473,6 +488,11 @@ async function handleStreamingResponse(
             const content = parsed.choices?.[0]?.delta?.content;
 
             if (content) {
+              // Registrar el tiempo del primer chunk
+              if (firstChunkTime === null) {
+                firstChunkTime = Date.now();
+              }
+              
               fullContent += content;
               if (onChunk) {
                 onChunk(content);

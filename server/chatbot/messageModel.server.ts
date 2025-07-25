@@ -14,6 +14,7 @@ interface CreateMessageParams {
   role: MessageRole;
   tokens?: number;
   responseTime?: number;
+  firstTokenLatency?: number; // Tiempo hasta el primer chunk en ms
   visitorIp?: string; // Added for rate limiting
 }
 
@@ -36,6 +37,7 @@ export async function createMessage({
   role,
   tokens,
   responseTime,
+  firstTokenLatency,
   visitorIp,
 }: CreateMessageParams): Promise<Message> {
   // Check if the conversation exists and is active
@@ -66,6 +68,7 @@ export async function createMessage({
       role,
       tokens,
       responseTime,
+      firstTokenLatency,
     },
   });
 
@@ -177,7 +180,8 @@ export async function addAssistantMessage(
   conversationId: string,
   content: string,
   tokens?: number,
-  responseTime?: number
+  responseTime?: number,
+  firstTokenLatency?: number
 ): Promise<Message> {
   return createMessage({
     conversationId,
@@ -185,6 +189,7 @@ export async function addAssistantMessage(
     role: MessageRole.ASSISTANT,
     tokens,
     responseTime,
+    firstTokenLatency,
   });
 }
 

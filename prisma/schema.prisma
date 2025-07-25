@@ -262,8 +262,9 @@ model Message {
   picture String?
 
   // Metadata
-  tokens       Int? // for usage tracking
-  responseTime Int? // in milliseconds
+  tokens           Int? // for usage tracking
+  responseTime     Int? // in milliseconds
+  firstTokenLatency Int? // time to first chunk in milliseconds
 
   // Relations
   conversationId String       @db.ObjectId
