@@ -3,16 +3,16 @@ import { nanoid } from "nanoid";
 import { db } from "../../app/utils/db.server";
 
 /**
- * Creates a new API key for a user
+ * Creates a new API key for a chatbot
  */
 export async function createApiKey({
-  userId,
+  chatbotId,
   name,
   keyType = ApiKeyType.LIVE,
   rateLimit = 1000,
   allowedDomains = [],
 }: {
-  userId: string;
+  chatbotId: string;
   name: string;
   keyType?: ApiKeyType;
   rateLimit?: number;
@@ -26,7 +26,7 @@ export async function createApiKey({
       key,
       name,
       keyType,
-      userId,
+      chatbotId,
       rateLimit,
       allowedDomains,
       isActive: true,
@@ -37,25 +37,40 @@ export async function createApiKey({
 }
 
 /**
- * Gets all API keys for a user
+ * Gets all API keys for a chatbot
  */
-export async function getApiKeysByUserId(userId: string): Promise<ApiKey[]> {
+export async function getApiKeysByChatbotId(
+  chatbotId: string
+): Promise<ApiKey[]> {
   return db.apiKey.findMany({
-    where: { userId },
+    where: { chatbotId },
     orderBy: { createdAt: "desc" },
   });
 }
 
 /**
- * Gets the first active API key for a user, or creates one if none exists
+ * Gets all API keys for a user's chatbots
+ */
+export async function getApiKeysByUserId(userId: string): Promise<ApiKey[]> {
+  return db.apiKey.findMany({
+    where: {
+      chatbot: { userId },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+/**
+ * Gets the first active API key for a chatbot, or creates one if none exists
  */
 export async function getOrCreateDefaultApiKey(
-  userId: string
+  chatbotId: string,
+  chatbotName: string = "Chatbot"
 ): Promise<ApiKey> {
-  // Try to find an existing active API key
+  // Try to find an existing active API key for this chatbot
   const existingKey = await db.apiKey.findFirst({
     where: {
-      userId,
+      chatbotId,
       isActive: true,
     },
     orderBy: { createdAt: "asc" }, // Get the oldest one (first created)
@@ -65,10 +80,10 @@ export async function getOrCreateDefaultApiKey(
     return existingKey;
   }
 
-  // Create a new default API key
+  // Create a new default API key for the chatbot
   return createApiKey({
-    userId,
-    name: "Default SDK Key",
+    chatbotId,
+    name: `${chatbotName} Default Key`,
     keyType: ApiKeyType.LIVE,
   });
 }
@@ -83,12 +98,24 @@ export async function getApiKeyById(id: string): Promise<ApiKey | null> {
 }
 
 /**
+ * Gets an API key by key value
+ */
+export async function getApiKeyByKey(key: string): Promise<ApiKey | null> {
+  return db.apiKey.findUnique({
+    where: { key },
+    include: {
+      chatbot: true,
+    },
+  });
+}
+
+/**
  * Updates an API key
  */
 export async function updateApiKey(
   id: string,
   data: Partial<
-    Omit<ApiKey, "id" | "key" | "userId" | "createdAt" | "updatedAt">
+    Omit<ApiKey, "id" | "key" | "chatbotId" | "createdAt" | "updatedAt">
   >
 ): Promise<ApiKey> {
   return db.apiKey.update({
@@ -120,10 +147,8 @@ export async function deleteApiKey(id: string): Promise<ApiKey> {
  * Generates a secure API key
  */
 function generateApiKey(): string {
-  // Generate a secure random key with prefix
-  const prefix = "fmy_"; // Formmy prefix
-  const randomPart = nanoid(32); // 32 character random string
-  return `${prefix}${randomPart}`;
+  // Generate a secure random string FRMY?
+  return `formmy_${nanoid(7)}`;
 }
 
 /**
@@ -136,8 +161,7 @@ export async function regenerateApiKey(id: string): Promise<ApiKey> {
     where: { id },
     data: {
       key: newKey,
-      requestCount: 0, // Reset usage stats
-      monthlyRequests: 0,
+      lastUsedAt: null,
     },
   });
 }

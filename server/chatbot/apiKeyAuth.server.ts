@@ -1,4 +1,5 @@
 import { type ApiKey, type User } from "@prisma/client";
+import { Effect } from "effect";
 import { db } from "~/utils/db.server";
 
 /**
@@ -49,7 +50,11 @@ export async function authenticateApiKey(
       isActive: true,
     },
     include: {
-      user: true,
+      chatbot: {
+        include: {
+          user: true,
+        },
+      },
     },
   });
 
@@ -84,8 +89,12 @@ export async function authenticateApiKey(
   // Update usage stats
   await updateKeyUsage(keyRecord.id);
 
+  // Return the key record with user info via chatbot
   return {
-    apiKey: keyRecord,
+    apiKey: {
+      ...keyRecord,
+      user: keyRecord.chatbot.user,
+    },
     isValid: true,
   };
 }
@@ -203,7 +212,9 @@ export async function updateKeyUsage(
  * @param request The incoming request object
  * @returns string | null The extracted API key or null if not found
  */
-export function extractApiKeyFromRequest(request: Request): string | null {
+export async function extractApiKeyFromRequest(
+  request: Request
+): Promise<string | null> {
   // Check Authorization header (Bearer token)
   const authHeader = request.headers.get("Authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -223,6 +234,9 @@ export function extractApiKeyFromRequest(request: Request): string | null {
   if (apiKeyParam) {
     return apiKeyParam;
   }
+
+  // Skip body parsing to avoid conflicts with request body reading
+  // API key should be provided via headers or URL parameters
 
   return null;
 }

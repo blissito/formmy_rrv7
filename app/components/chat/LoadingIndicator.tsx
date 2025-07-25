@@ -1,15 +1,20 @@
-import { Avatar } from "./Avatar";
+import { cn } from "~/lib/utils";
 
-interface LoadingIndicatorProps {
-  primaryColor?: string;
-}
-
-export const LoadingIndicator = ({ primaryColor }: LoadingIndicatorProps) => {
+export const LoadingIndicator = () => {
   return (
-    <div className="px-4 flex items-start gap-3">
-      <Avatar primaryColor={primaryColor} />
-      <div className="text-sm text-gray-900 dark:text-white animate-pulse">
-        ...
+    <div className="items-center justify-center flex text-3xl">
+      <div className={cn("animate-bounce", "brand-500")}>.</div>
+      <div
+        className={cn("animate-bounce", "brand-500")}
+        style={{ animationDelay: "0.1s" }}
+      >
+        .
+      </div>
+      <div
+        className={cn("animate-bounce", "brand-500")}
+        style={{ animationDelay: "0.2s" }}
+      >
+        .
       </div>
     </div>
   );

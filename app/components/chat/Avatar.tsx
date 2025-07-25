@@ -5,7 +5,7 @@ export const Avatar = ({
   primaryColor = "brand-500",
   className,
 }: {
-  src: string;
+  src?: string;
   primaryColor?: string;
   className?: string;
 }) => {

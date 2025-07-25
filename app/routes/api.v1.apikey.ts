@@ -1,127 +1,121 @@
 import type { Route } from "./+types/api.v1.apikey";
-import { getUserOrRedirect } from "server/getUserUtils.server";
+import { Effect, pipe } from "effect";
+
+type ApiError = {
+  _tag: "ApiError";
+  status: number;
+  message: string;
+  details?: string;
+};
 import { getOrCreateDefaultApiKey } from "server/chatbot/apiKeyModel.server";
+import { db } from "~/utils/db.server";
 
-/**
- * Gets or creates the default API key for the authenticated user
- */
-export const loader = async ({
-  request,
-}: Route.LoaderArgs): Promise<Response> => {
-  console.log("API key loader called");
+// Helper function to create error responses
+const createErrorResponse = (
+  status: number,
+  error: string,
+  details?: unknown
+) => {
+  const responseBody = {
+    success: false,
+    error,
+  };
 
-  try {
-    const user = await getUserOrRedirect(request);
-    console.log("User authenticated:", user.id);
-
-    // Get or create the default API key for this user
-    const apiKey = await getOrCreateDefaultApiKey(user.id);
-    console.log("API key retrieved/created:", apiKey.id);
-
-    const responseData = {
-      success: true,
-      data: {
-        id: apiKey.id,
-        key: apiKey.key,
-        name: apiKey.name,
-        keyType: apiKey.keyType,
-        isActive: apiKey.isActive,
-        rateLimit: apiKey.rateLimit,
-        requestCount: apiKey.requestCount,
-        monthlyRequests: apiKey.monthlyRequests,
-        lastUsedAt: apiKey.lastUsedAt?.toISOString() || null,
-        createdAt: apiKey.createdAt.toISOString(),
-      },
-    };
-
-    return new Response(JSON.stringify(responseData), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  } catch (error) {
-    console.error("API key loader error:", error);
-
-    // If it's already a Response (like a redirect), return it
-    if (error instanceof Response) {
-      return error;
-    }
-
-    // For any other error, return a 500 response
-    const errorData = {
-      success: false,
-      error: "Internal server error",
-      details: error instanceof Error ? error.message : String(error),
-    };
-
-    return new Response(JSON.stringify(errorData), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+  if (details) {
+    Object.assign(responseBody, { details });
   }
+
+  return new Response(JSON.stringify(responseBody), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+// Helper function to create success response
+const createSuccessResponse = (data: unknown) =>
+  new Response(JSON.stringify({ success: true, data }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+// Type for API key response data
+type ApiKeyResponse = {
+  id: string;
+  key: string;
+  name: string;
+  keyType: string;
+  isActive: boolean;
+  rateLimit: number;
+  requestCount: number;
+  monthlyRequests: number;
+  lastUsedAt: string | null;
+  createdAt: string;
 };
 
 /**
- * Handle POST requests for API key operations (regenerate, etc.)
+ * Gets or creates the default API key for a chatbot
+ */
+const handleApiKeyRequest = async (request: Request) => {
+  const url = new URL(request.url);
+  const chatbotId = url.searchParams.get("chatbotId");
+
+  if (!chatbotId) {
+    return createErrorResponse(400, "Chatbot ID is required");
+  }
+
+  const program = pipe(
+    Effect.tryPromise({
+      try: () =>
+        db.chatbot.findUnique({
+          where: { id: chatbotId },
+          select: { name: true },
+        }),
+      catch: (error) =>
+        Effect.fail(
+          error instanceof Error
+            ? error
+            : new Error(`Failed to fetch chatbot: ${error}`)
+        ),
+    }),
+    Effect.flatMap((chatbot) =>
+      chatbot
+        ? Effect.succeed(chatbot)
+        : Effect.fail(new Error(`Chatbot not found`))
+    ),
+    Effect.flatMap((chatbot) =>
+      Effect.tryPromise({
+        try: () => getOrCreateDefaultApiKey(chatbotId, chatbot.name),
+        catch: (error) => Effect.fail(error),
+      })
+    ),
+    Effect.match({
+      onSuccess: (apiKey) => createSuccessResponse(apiKey),
+      onFailure: (error) => {
+        const errorMessage =
+          error instanceof Error ? error.message : "An unknown error occurred";
+        return createErrorResponse(500, errorMessage);
+      },
+    })
+  );
+
+  return Effect.runPromise(program);
+};
+
+export const loader = async ({
+  request,
+}: Route.LoaderArgs): Promise<Response> => {
+  return handleApiKeyRequest(request);
+};
+
+/**
+ * Handle POST requests for API key operations (regenerate, create new, etc.)
  */
 export const action = async ({
   request,
 }: Route.ActionArgs): Promise<Response> => {
-  console.log("API key action called");
-
-  try {
-    const user = await getUserOrRedirect(request);
-    console.log("User authenticated for action:", user.id);
-
-    // For now, just return the current API key
-    // In the future, this could handle regeneration, creation of new keys, etc.
-    const apiKey = await getOrCreateDefaultApiKey(user.id);
-
-    const responseData = {
-      success: true,
-      data: {
-        id: apiKey.id,
-        key: apiKey.key,
-        name: apiKey.name,
-        keyType: apiKey.keyType,
-        isActive: apiKey.isActive,
-        rateLimit: apiKey.rateLimit,
-        requestCount: apiKey.requestCount,
-        monthlyRequests: apiKey.monthlyRequests,
-        lastUsedAt: apiKey.lastUsedAt?.toISOString() || null,
-        createdAt: apiKey.createdAt.toISOString(),
-      },
-    };
-
-    return new Response(JSON.stringify(responseData), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  } catch (error) {
-    console.error("API key action error:", error);
-
-    // If it's already a Response (like a redirect), return it
-    if (error instanceof Response) {
-      return error;
-    }
-
-    // For any other error, return a 500 response
-    const errorData = {
-      success: false,
-      error: "Internal server error",
-      details: error instanceof Error ? error.message : String(error),
-    };
-
-    return new Response(JSON.stringify(errorData), {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  }
+  return handleApiKeyRequest(request);
 };

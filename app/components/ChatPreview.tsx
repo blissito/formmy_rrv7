@@ -3,6 +3,7 @@ import { sendOpenRouterMessageEffect } from "../lib/openrouter.client";
 import { Effect } from "effect";
 import { DEFAULT_AI_MODEL } from "../utils/constants";
 import { cn } from "~/lib/utils";
+import type { ChatbotWithApiKeys } from "~/types/chatbot";
 import { ChatInput, type ChatInputRef } from "./chat/ChatInput";
 import { MessageBubble } from "./chat/MessageBubble";
 import { ChatHeader } from "./chat/ChatHeader";
@@ -10,10 +11,10 @@ import { StreamToggle } from "./chat/StreamToggle";
 import { LoadingIndicator } from "./chat/LoadingIndicator";
 import type { Chatbot } from "@prisma/client";
 
-export type ChatPreviewProps = {
-  chatbot: Chatbot;
+export interface ChatPreviewProps {
+  chatbot: ChatbotWithApiKeys;
   production?: boolean;
-};
+}
 
 export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [chatMessages, setChatMessages] = useState<
@@ -159,9 +160,17 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
 
     if (stream) {
       setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
+      if (!chatbot.apiKeys || chatbot.apiKeys.length === 0) {
+        setChatError(
+          "No se encontraron claves API configuradas para este chatbot"
+        );
+        setChatLoading(false);
+        return;
+      }
       Effect.runPromise(
         sendOpenRouterMessageEffect({
-          apiKey: chatbot.user.apiKeys[0].key,
+          chatbotId: chatbot.id,
+          apiKey: chatbot.apiKeys[0].key, // Ahora sabemos que existe al menos una clave
           model: chatbot.aiModel || DEFAULT_AI_MODEL,
           instructions: chatbot.instructions || "",
           temperature: chatbot.temperature,
@@ -197,6 +206,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     } else {
       Effect.runPromise(
         sendOpenRouterMessageEffect({
+          apiKey: chatbot.apiKeys[0].key,
           model: chatbot.aiModel || DEFAULT_AI_MODEL,
           instructions: chatbot.instructions || "",
           temperature: chatbot.temperature,
@@ -257,21 +267,30 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           onScroll={handleScroll}
           className="pr-4 grow pt-4 overflow-y-auto flex flex-col gap-2"
         >
-          {chatMessages.map((msg, idx) => (
-            <MessageBubble
-              key={idx}
-              message={msg}
-              primaryColor={chatbot.primaryColor || "#63CFDE"}
-            />
-          ))}
+          {chatMessages
+            .filter((msg) => msg.content !== "")
+            .map((msg, idx) => (
+              <MessageBubble
+                key={idx}
+                message={msg}
+                primaryColor={chatbot.primaryColor || "#63CFDE"}
+              />
+            ))}
           <div ref={messagesEndRef} />
         </section>
 
         <section>
+          {/* {true && ( */}
           {chatLoading && stream && (
-            <LoadingIndicator
+            // <LoadingIndicator
+            //   primaryColor={chatbot.primaryColor || "#63CFDE"}
+            // />
+            <MessageBubble
+              role="assistant"
               primaryColor={chatbot.primaryColor || "#63CFDE"}
-            />
+            >
+              <LoadingIndicator />
+            </MessageBubble>
           )}
         </section>
 

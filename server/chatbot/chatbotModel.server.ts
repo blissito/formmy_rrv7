@@ -281,6 +281,7 @@ export async function getChatbotBySlug(slug: string): Promise<Chatbot | null> {
   return db.chatbot.findUnique({
     where: { slug },
     include: {
+      apiKeys: true,
       user: true,
     },
   });

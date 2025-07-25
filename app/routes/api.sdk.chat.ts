@@ -1,8 +1,8 @@
 import type { Route } from "./+types/api.sdk.chat";
-import { Effect, pipe } from "effect";
 import {
   authenticateApiKey,
   extractApiKeyFromRequest,
+  type ApiKeyAuthResult,
 } from "server/chatbot/apiKeyAuth.server";
 import {
   createConversation,
@@ -12,285 +12,259 @@ import {
   addUserMessage,
   addAssistantMessage,
   getMessagesByConversationId,
-  RateLimitError,
 } from "server/chatbot/messageModel.server";
 import { FALLBACK_MODELS } from "../utils/aiModels";
 import { db } from "../utils/db.server";
-import type { Chatbot } from "@prisma/client";
+import type { Chatbot, User } from "@prisma/client";
+
+// Type for the chat message request body
+interface ChatMessageRequest {
+  chatbotId: string;
+  message: string;
+  sessionId: string;
+  stream?: boolean;
+}
+
+// Type for the successful auth result
+interface AuthSuccessResult {
+  status: "success";
+  apiKey: ApiKeyAuthResult["apiKey"];
+  user: User;
+}
+
+// Type for error responses
+interface ErrorResponse {
+  status: number;
+  error: string;
+  details?: any;
+}
+
+// Type for the chat message response
+interface ChatMessageResponse {
+  type: "stream" | "json";
+  chatbot?: Chatbot;
+  messages?: Array<{ role: string; content: string }>;
+  response?: string;
+  sessionId?: string;
+  conversationId: string;
+}
 
 /**
  * Chat conversation endpoint for SDK
  * Handles chat messages with streaming support using Server-Sent Events
  * Falls back to regular JSON response when streaming is disabled
  */
-export const action = ({ request }: Route.ActionArgs) => {
-  const result = pipe(
-    // Extraer y autenticar API key
-    Effect.gen(function* () {
-      const apiKey = extractApiKeyFromRequest(request);
-      if (!apiKey) {
-        return yield* Effect.fail({
-          status: 401,
-          error: "API key required",
+export const action = async ({
+  request,
+}: Route.ActionArgs): Promise<Response> => {
+  try {
+    // Extract and authenticate API key
+    const apiKey = await extractApiKeyFromRequest(request);
+
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "API key required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const authResult = await authenticateApiKey(apiKey);
+    const { user } = authResult.apiKey;
+
+    // Parse request body
+    let body: ChatMessageRequest;
+    try {
+      const contentType = request.headers.get("content-type") || "";
+      const text = await request.text();
+
+      if (!text.trim()) {
+        return new Response(JSON.stringify({ error: "Empty request body" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
         });
       }
-      return yield* Effect.tryPromise({
-        try: () => authenticateApiKey(apiKey),
-        catch: (error) => {
-          console.error("Error in API key authentication:", error);
-          return {
-            status: 500,
-            error: "Internal server error during authentication",
-          };
-        },
+
+      if (
+        contentType.includes("application/x-www-form-urlencoded") ||
+        contentType.includes("multipart/form-data")
+      ) {
+        // Handle form data
+        const params = new URLSearchParams(text);
+        body = {
+          chatbotId: params.get("chatbotId") || "",
+          message: params.get("message") || "",
+          sessionId: params.get("sessionId") || "",
+          stream: params.get("stream") === "true",
+        };
+      } else {
+        // Handle JSON
+        body = JSON.parse(text) as ChatMessageRequest;
+      }
+    } catch (error) {
+      console.error("Error parsing request body:", error);
+      return new Response(
+        JSON.stringify({
+          error: "Invalid request format",
+          details: error instanceof Error ? error.message : "Unknown error",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const { chatbotId, message, sessionId, stream = false } = body;
+
+    // Validate required fields
+    if (!chatbotId || !message || !sessionId) {
+      return new Response(
+        JSON.stringify({
+          error: "Missing required fields: chatbotId, message, sessionId",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get user IP from headers
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const userIp = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
+
+    // Find the chatbot
+    const chatbot = await db.chatbot.findUnique({
+      where: { id: chatbotId, userId: user.id },
+    });
+
+    if (!chatbot) {
+      return new Response(JSON.stringify({ error: "Chatbot not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
       });
-    }),
-    Effect.flatMap((authResult) =>
-      Effect.gen(function* () {
-        const { user } = authResult.apiKey;
+    }
 
-        // Parsear el cuerpo de la petición
-        const body = yield* Effect.tryPromise({
-          try: () => request.json(),
-          catch: () => ({} as any), // En caso de error, devolvemos un objeto vacío
-        });
+    // Find or create conversation
+    let conversation = await getConversationBySessionId(sessionId);
+    if (!conversation) {
+      conversation = await createConversation({
+        chatbotId,
+        visitorIp: userIp,
+        visitorId: sessionId,
+      });
+    }
 
-        // Validar que el body sea un objeto
-        if (typeof body !== "object" || body === null) {
-          return yield* Effect.fail({
-            status: 400,
-            error: "Invalid request body",
-          });
-        }
+    // Add user message to conversation
+    await addUserMessage(conversation.id, message, userIp);
 
-        const { chatbotId, message, sessionId } = body as any;
+    // Get conversation history
+    const messages = await getMessagesByConversationId(conversation.id);
+    const aiMessages = messages.map((msg) => ({
+      role: msg.role.toLowerCase(),
+      content: msg.content,
+    }));
 
-        // Validar campos requeridos
-        if (!chatbotId || !message || !sessionId) {
-          return yield* Effect.fail({
-            status: 400,
-            error: "Missing required fields: chatbotId, message, sessionId",
-          });
-        }
+    // Handle response based on whether streaming is enabled
+    if (chatbot.enableStreaming && stream) {
+      // Create streaming response
+      const encoder = new TextEncoder();
 
-        // Obtener chatbots del usuario
-        const chatbots = yield* Effect.promise(() =>
-          db.chatbot.findMany({
-            where: { userId: user.id },
-            // @todo only active ones
-          })
-        );
+      return new Response(
+        new ReadableStream({
+          async start(controller) {
+            try {
+              // Add assistant message placeholder
+              const assistantMessage = await addAssistantMessage(
+                conversation.id,
+                "generando..."
+              );
 
-        // Buscar chatbot por ID o slug
-        const chatbot = chatbots.find(
-          (bot: Chatbot) => bot.id === chatbotId || bot.slug === chatbotId
-        );
+              // Process streaming message
+              let accumulatedContent = "";
 
-        if (!chatbot) {
-          return yield* Effect.fail({
-            status: 400,
-            error: "Chatbot not found or not accessible for this user",
-          });
-        }
+              // Create a streaming callback that yields chunks
+              const streamingCallback = (chunk: string) => {
+                accumulatedContent += chunk;
 
-        // Obtener IP del visitante
-        const visitorIp =
-          request.headers.get("x-forwarded-for") ||
-          request.headers.get("x-real-ip") ||
-          "unknown";
-
-        // Obtener o crear conversación
-        let conversation = yield* Effect.promise(() =>
-          getConversationBySessionId(sessionId)
-        );
-
-        if (!conversation) {
-          conversation = yield* Effect.promise(() =>
-            createConversation({
-              chatbotId,
-              visitorIp,
-              visitorId: sessionId,
-            })
-          );
-        }
-
-        // Agregar mensaje del usuario
-        yield* Effect.promise(() =>
-          addUserMessage(conversation.id, message, visitorIp)
-        );
-
-        // Obtener historial de la conversación
-        const messages = yield* Effect.promise(() =>
-          getMessagesByConversationId(conversation.id)
-        );
-
-        const aiMessages = messages.map((msg) => ({
-          role: msg.role.toLowerCase(),
-          content: msg.content,
-        }));
-
-        // Manejar respuesta según si streaming está habilitado
-        if (chatbot.enableStreaming) {
-          return {
-            type: "stream",
-            chatbot,
-            messages: aiMessages,
-            conversationId: conversation.id,
-          } as const;
-        } else {
-          const response = yield* Effect.promise(() =>
-            processChatMessage(chatbot, aiMessages, conversation.id)
-          );
-          return {
-            type: "json",
-            response: response.content,
-            sessionId,
-            conversationId: conversation.id,
-          } as const;
-        }
-      })
-    ),
-    // Mapear el resultado a una respuesta HTTP
-    Effect.match({
-      onSuccess: (result) => {
-        if (result.type === "stream") {
-          return createStreamingResponse(
-            result.chatbot,
-            result.messages,
-            result.conversationId
-          );
-        } else {
-          return new Response(
-            JSON.stringify({
-              success: true,
-              response: result.response,
-              sessionId: result.sessionId,
-              conversationId: result.conversationId,
-            }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-      },
-      onFailure: (error) => {
-        console.error("Chat endpoint error:", error);
-
-        // Usar Effect.try para manejar los errores de forma funcional
-        const errorResponse = Effect.runSync(
-          Effect.match(error, {
-            onSuccess: (response) => response, // No debería pasar ya que es un error
-            onFailure: (error) => {
-              if (error instanceof RateLimitError) {
-                return new Response(JSON.stringify({ error: error.message }), {
-                  status: 429,
-                  headers: { "Content-Type": "application/json" },
-                });
-              }
-
-              if (error instanceof Response) {
-                return error;
-              }
-
-              const status =
-                typeof error === "object" && error !== null && "status" in error
-                  ? (error as any).status
-                  : 500;
-
-              const message =
-                typeof error === "object" && error !== null && "error" in error
-                  ? (error as any).error
-                  : "Internal server error";
-
-              return new Response(JSON.stringify({ error: message }), {
-                status,
-                headers: { "Content-Type": "application/json" },
-              });
-            },
-          })
-        );
-
-        // Si algo falla en el manejo de errores, devolver un error genérico
-        return (
-          errorResponse ||
-          new Response(JSON.stringify({ error: "Internal server error" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          })
-        );
-      },
-    })
-  );
-  return Effect.runSync(result);
-};
-
-/**
- * Creates a streaming response using Server-Sent Events
- * NOTE: This function does NOT use Effect as per instructions for streaming endpoints
- */
-function createStreamingResponse(
-  chatbot: any,
-  messages: any[],
-  conversationId: string
-): Response {
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        // Send start event
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: "start" })}\n\n`)
-        );
-
-        // Process streaming message
-        await processStreamingMessage(
-          chatbot,
-          messages,
-          conversationId,
-          (chunk) => {
-            // Send chunk event
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
+                // Send SSE data
+                const data = {
                   type: "chunk",
                   content: chunk,
-                })}\n\n`
-              )
-            );
-          }
-        );
+                  conversationId: conversation.id,
+                  messageId: assistantMessage.id,
+                };
 
-        // Send end event
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: "end" })}\n\n`)
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
+                );
+              };
+
+              // Use the existing streaming function
+              await processStreamingMessage(
+                chatbot,
+                aiMessages,
+                conversation.id,
+                streamingCallback
+              );
+
+              // Update the assistant message with final content
+              await db.message.update({
+                where: { id: assistantMessage.id },
+                data: { content: accumulatedContent },
+              });
+
+              // Send completion signal
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({
+                    type: "done",
+                    conversationId: conversation.id,
+                  })}\n\n`
+                )
+              );
+              controller.close();
+            } catch (error) {
+              console.error("Streaming error:", error);
+              controller.error(error);
+            }
+          },
+        }),
+        {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+          },
+        }
+      );
+    } else {
+      try {
+        const response = await processChatMessage(
+          chatbot,
+          aiMessages,
+          conversation.id
         );
-        controller.close();
+        const jsonResponse: ChatMessageResponse = {
+          type: "json",
+          response: response.content,
+          sessionId,
+          conversationId: conversation.id,
+        };
+
+        return new Response(JSON.stringify(jsonResponse), {
+          headers: { "Content-Type": "application/json" },
+        });
       } catch (error) {
-        console.error("Streaming error:", error);
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: "error",
-              message: "Error processing message",
-            })}\n\n`
-          )
+        console.error("Error processing chat message:", error);
+        return new Response(
+          JSON.stringify({ error: "Internal server error" }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
         );
-        controller.close();
       }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-      // CORS ya manejado por el middleware Express
-    },
-  });
-}
+    }
+  } catch (error) {
+    console.error("Error in chat API:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+};
 
 /**
  * Processes a chat message and returns a regular response
@@ -314,11 +288,9 @@ async function processChatMessage(
       responseTime
     );
 
-    // Retornar directamente el objeto en lugar de usar json() para evitar errores de tipado
     return { content: response.content };
   } catch (error) {
     console.error("Error processing chat message:", error);
-    // Retornar un objeto con el formato esperado
     return { content: "Error: Failed to process message" };
   }
 }
@@ -330,13 +302,18 @@ async function processStreamingMessage(
   chatbot: any,
   messages: any[],
   conversationId: string,
-  onChunk: (chunk: string) => void
+  onChunk?: (chunk: string) => void
 ): Promise<string> {
   const startTime = Date.now();
   let fullContent = "";
 
   try {
-    const response = await callOpenRouterAPI(chatbot, messages, true, onChunk);
+    const response = await callOpenRouterAPI(
+      chatbot,
+      messages,
+      true,
+      onChunk
+    );
     const responseTime = Date.now() - startTime;
 
     fullContent = response.content;

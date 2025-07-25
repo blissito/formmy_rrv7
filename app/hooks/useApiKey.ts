@@ -1,3 +1,4 @@
+import { Effect, pipe } from "effect";
 import { useEffect, useState } from "react";
 
 interface ApiKeyData {
@@ -14,52 +15,75 @@ interface ApiKeyData {
 }
 
 interface UseApiKeyResult {
-  apiKey: ApiKeyData | null;
+  apiKeyData: ApiKeyData | null;
   loading: boolean;
   error: string | null;
-  refetch: () => Promise<void>;
+  refetch: () => void;
+}
+
+interface UseApiKeyOptions {
+  chatbotId: string;
 }
 
 /**
  * Hook to get or create the user's default API key
+ * @param options Options for the hook
+ * @param options.chatbotId The ID of the chatbot to get the API key for
  */
-export function useApiKey(): UseApiKeyResult {
-  const [apiKey, setApiKey] = useState<ApiKeyData | null>(null);
+export function useApiKey({ chatbotId }: UseApiKeyOptions): UseApiKeyResult {
+  const [apiKeyData, setApiKeyData] = useState<ApiKeyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchApiKey = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch("/api/v1/apikey");
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setApiKey(data.data);
-      } else {
-        throw new Error(data.error || "Failed to fetch API key");
-      }
-    } catch (err) {
-      console.error("Error fetching API key:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
+  const fetchApiKey = () => {
+    if (!chatbotId) {
+      setError("Chatbot ID is required");
       setLoading(false);
+      return;
     }
+
+    const effect = pipe(
+      Effect.tryPromise({
+        try: () =>
+          fetch(`/api/v1/apikey?chatbotId=${encodeURIComponent(chatbotId)}`),
+        catch: (error) => new Error(`Failed to fetch: ${error}`),
+      }),
+      Effect.flatMap((response) =>
+        response.ok
+          ? Effect.succeed(response)
+          : Effect.fail(new Error(`HTTP error! status: ${response.status}`))
+      ),
+      Effect.flatMap((response) =>
+        Effect.tryPromise({
+          try: () => response.json(),
+          catch: (error) => new Error(`Failed to parse JSON: ${error}`),
+        })
+      ),
+      Effect.match({
+        onSuccess: (data: ApiKeyData) => {
+          setApiKeyData(data);
+          setLoading(false);
+        },
+        onFailure: (error) => {
+          console.error("Error in API key effect:", error);
+          setError(error.message);
+          setLoading(false);
+        },
+      })
+    );
+
+    // Run the effect
+    Effect.runPromise(effect);
   };
 
   useEffect(() => {
-    fetchApiKey();
-  }, []);
+    if (chatbotId) {
+      fetchApiKey();
+    }
+  }, [chatbotId]);
 
   return {
-    apiKey,
+    apiKeyData,
     loading,
     error,
     refetch: fetchApiKey,

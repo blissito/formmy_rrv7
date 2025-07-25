@@ -10,6 +10,7 @@ export const OpenRouterClientSchema = Schema.Struct({
     Schema.Struct({ role: Schema.String, content: Schema.String })
   ),
   stream: Schema.optional(Schema.Boolean),
+  apiKey: Schema.String,
 });
 
 export type OpenRouterClientInput = {
@@ -20,6 +21,7 @@ export type OpenRouterClientInput = {
   stream?: boolean;
   onStreamChunk?: (partial: string) => void;
   chatbotId?: string;
+  apiKey: string;
 };
 
 export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
@@ -29,7 +31,7 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
       throw new Error("El historial de mensajes no puede estar vacío.");
     }
 
-    // Validar input
+    // Validar input Better than zod?
     yield* _(
       Schema.decode(OpenRouterClientSchema)({
         model: input.model || DEFAULT_AI_MODEL,
@@ -38,6 +40,7 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
           typeof input.temperature === "number" ? input.temperature : 0.7,
         messages: input.messages,
         stream: input.stream,
+        apiKey: input.apiKey,
       })
     );
 
@@ -46,7 +49,7 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
 
     // Preparar el cuerpo de la petición
     const body = {
-      chatbotId: input.chatbotId || sessionId,
+      chatbotId: input.chatbotId,
       message: input.messages[input.messages.length - 1].content,
       sessionId,
       stream: input.stream,
@@ -60,6 +63,7 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "X-API-Key": input.apiKey,
           },
           body: JSON.stringify(body),
         })
@@ -78,6 +82,7 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
 
       let accumulated = "";
       const decoder = new TextDecoder();
+      let buffer = "";
       let done = false;
 
       while (!done) {
@@ -85,22 +90,39 @@ export const sendOpenRouterMessageEffect = (input: OpenRouterClientInput) =>
           Effect.tryPromise(() => reader.read())
         );
         done = doneReading;
+        
         if (value) {
-          const chunk = decoder.decode(value, { stream: true });
+          buffer += decoder.decode(value, { stream: true });
           
-          // Buscar el contenido en el chunk
-          try {
-            const parsed = JSON.parse(chunk);
-            if (parsed.type === "chunk" && parsed.content) {
-              accumulated += parsed.content;
-              input.onStreamChunk(accumulated);
+          // Procesar líneas completas
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ""; // Mantener línea incompleta
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6); // Remover "data: "
+              
+              if (data.trim() === '[DONE]') {
+                continue;
+              }
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.type === "chunk" && parsed.content) {
+                  accumulated += parsed.content;
+                  input.onStreamChunk(accumulated);
+                } else if (parsed.type === "done") {
+                  // Señal de finalización recibida
+                  break;
+                }
+              } catch (e) {
+                console.log("[OpenRouterClient] Línea SSE no válida:", line);
+              }
             }
-          } catch (e) {
-            console.log("[OpenRouterClient] Chunk no válido:", chunk);
           }
         }
       }
-      
+
       return { streamed: true, content: accumulated };
     } else {
       const json = yield* _(Effect.tryPromise(() => res.json()));

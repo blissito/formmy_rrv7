@@ -10,7 +10,7 @@ import type { Chatbot } from "@prisma/client";
 export const Codigo = () => {
   const { currentTab, setCurrentTab } = useChipTabs("embed");
   const { currentTab: miniCard, setCurrentTab: setMiniCard } =
-    useChipTabs("sdk");
+    useChipTabs("iframe");
 
   return (
     <StickyGrid>
@@ -127,15 +127,14 @@ const Iframe = () => {
       : "https://formmy-v2.fly.dev";
   const codeToCopy = `
   <article style="background:transparent;position:fixed;bottom:40px;right:40px;">
-  <iframe 
-  src="${baseUrl}/chat/embed?slug=${chatbot.slug}" 
-  width="400" 
-  height="600"
-  frameborder="0"
-  style="border-radius: 8px;"
->
-</iframe>
-</article>
+      <iframe 
+      src="${baseUrl}/chat/embed?slug=${chatbot.slug}" 
+      width="400" 
+      height="600"
+      frameborder="0"
+      style="border-radius: 8px;"
+    ></iframe>
+  </article>
 `;
 
   const instructions = [
@@ -172,19 +171,21 @@ const Iframe = () => {
 
 const SDK = () => {
   const { chatbot } = useLoaderData<{ chatbot: Chatbot }>();
-  const { apiKey, loading, error, refetch } = useApiKey();
+  const { apiKeyData, loading, error, refetch } = useApiKey({
+    chatbotId: chatbot.id,
+  });
 
   // Generate the correct script URL with the user's API key
   const getScriptUrl = () => {
-    if (!apiKey) return "";
+    if (!apiKeyData) return "";
     const baseUrl =
       typeof window !== "undefined"
         ? window.location.origin
         : "https://yourdomain.com";
-    return `${baseUrl}/api/sdk/${apiKey.key}.js`;
+    return `${baseUrl}/api/sdk/${apiKeyData.key}.js`;
   };
 
-  const codeToCopy = apiKey
+  const codeToCopy = apiKeyData
     ? `<!-- SDK Script - Configuración automática -->
 <script src="${getScriptUrl()}"></script>`
     : "";
@@ -231,10 +232,11 @@ const SDK = () => {
     );
   }
 
-  if (!apiKey) {
+  if (!apiKeyData) {
     return (
       <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
         <p className="text-yellow-600">No se pudo generar la API key</p>
+        <p className="text-yellow-600">{error}</p>
         <button
           onClick={() => refetch()}
           className="mt-2 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
@@ -261,39 +263,44 @@ const SDK = () => {
         </h4>
         <div className="space-y-1 text-sm text-blue-700">
           <p>
-            <strong>Nombre:</strong> {apiKey.name}
+            <strong>Nombre:</strong> {apiKeyData.name}
           </p>
           <p>
-            <strong>Tipo:</strong> {apiKey.keyType}
+            <strong>Tipo:</strong> {apiKeyData.keyType}
           </p>
           <p>
             <strong>Límite por hora:</strong>{" "}
-            {apiKey.rateLimit.toLocaleString()} requests
+            {apiKeyData.rateLimit ? apiKeyData.rateLimit.toLocaleString() : "0"}{" "}
+            requests
           </p>
           <p>
             <strong>Requests este mes:</strong>{" "}
-            {apiKey.monthlyRequests.toLocaleString()}
+            {apiKeyData.monthlyRequests
+              ? apiKeyData.monthlyRequests.toLocaleString()
+              : "0"}
           </p>
           <p>
             <strong>Total requests:</strong>{" "}
-            {apiKey.requestCount.toLocaleString()}
+            {apiKeyData.requestCount
+              ? apiKeyData.requestCount.toLocaleString()
+              : "0"}
           </p>
           <p>
             <strong>Estado:</strong>
             <span
               className={`ml-1 px-2 py-1 rounded text-xs ${
-                apiKey.isActive
+                apiKeyData.isActive
                   ? "bg-green-100 text-green-800"
                   : "bg-red-100 text-red-800"
               }`}
             >
-              {apiKey.isActive ? "Activa" : "Inactiva"}
+              {apiKeyData.isActive ? "Activa" : "Inactiva"}
             </span>
           </p>
-          {apiKey.lastUsedAt && (
+          {apiKeyData.lastUsedAt && (
             <p>
               <strong>Último uso:</strong>{" "}
-              {new Date(apiKey.lastUsedAt).toLocaleString()}
+              {new Date(apiKeyData.lastUsedAt).toLocaleString()}
             </p>
           )}
         </div>
