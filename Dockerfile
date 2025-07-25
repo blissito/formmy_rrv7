@@ -19,6 +19,7 @@ RUN npm run build
 
 FROM node:20-alpine
 COPY ./package.json package-lock.json /app/
+COPY server.js /app/server.js
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
 # Ya sé, pero ps no se copia

@@ -25,10 +25,7 @@ import type { Chatbot } from "@prisma/client";
  * Falls back to regular JSON response when streaming is disabled
  */
 export const action = async ({ request }: Route.ActionArgs) => {
-  // Handle CORS preflight OPTIONS request
-  if (request.method === "OPTIONS") {
-    return handleCorsPreflight();
-  }
+  // CORS ya está manejado por el middleware de Express
 
   try {
     // Extract and authenticate API key
@@ -128,10 +125,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
       return new Response(error.body, {
         status: error.status,
         headers: {
-          ...Object.fromEntries(error.headers?.entries() || []),
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Accept",
+          ...Object.fromEntries(error.headers?.entries() || [])
+          // CORS ya manejado por el middleware Express
         },
       });
     }
@@ -201,10 +196,8 @@ function createStreamingResponse(
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST",
-      "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
+      Connection: "keep-alive"
+      // CORS ya manejado por el middleware Express
     },
   });
 }
@@ -231,29 +224,12 @@ async function processChatMessage(
       responseTime
     );
 
-    return json(
-      { content: response.content },
-      {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Accept",
-        },
-      }
-    );
+    // Retornar directamente el objeto en lugar de usar json() para evitar errores de tipado
+    return { content: response.content };
   } catch (error) {
     console.error("Error processing chat message:", error);
-    return json(
-      { error: "Failed to process message" },
-      {
-        status: 500,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Accept",
-        },
-      }
-    );
+    // Retornar un objeto con el formato esperado
+    return { content: "Error: Failed to process message" };
   }
 }
 

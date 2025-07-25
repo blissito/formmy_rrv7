@@ -5,7 +5,8 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production react-router build",
     "dev": "react-router dev",
-    "start": "cross-env NODE_ENV=production react-router-serve ./build/server/index.js",
+    "start": "cross-env NODE_ENV=production node ./server.js",
+    "start:original": "cross-env NODE_ENV=production react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.0",
     "clsx": "^2.1.1",
+    "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "effect": "^3.16.16",
     "firebase": "^11.2.0",
