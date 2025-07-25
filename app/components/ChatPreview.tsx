@@ -223,7 +223,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   };
 
   return (
-    <main className={cn("h-full rounded-lg h-screen")}>
+    <main className={cn("h-full")}>
       {!production && <StreamToggle stream={stream} onToggle={setStream} />}
 
       <article

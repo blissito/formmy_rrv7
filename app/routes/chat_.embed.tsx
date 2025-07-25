@@ -43,6 +43,20 @@ export async function loader({ request }: { request: Request }) {
 }
 
 // Componente principal para la ruta de embebido
+// Estilo global para hacer transparente el fondo
+function GlobalStyles() {
+  return (
+    <style dangerouslySetInnerHTML={{ __html: `
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background-color: transparent !important;
+      }
+    `}} />
+  );
+}
+
 export default function ChatEmbedRoute() {
   const data = useLoaderData<{
     chatbot?: Chatbot;
@@ -65,6 +79,11 @@ export default function ChatEmbedRoute() {
     );
   }
 
-  // Si todo está bien, mostrar el chatbot
-  return <ChatPreview production chatbot={data.chatbot as Chatbot} />;
+  // Si todo está bien, mostrar el chatbot con fondo transparente
+  return (
+    <>
+      <GlobalStyles />
+      <ChatPreview production chatbot={data.chatbot as Chatbot} />
+    </>
+  );
 }
