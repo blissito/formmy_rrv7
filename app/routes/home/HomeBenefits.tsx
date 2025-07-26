@@ -19,7 +19,7 @@ export function BenefitCard({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="relative bg-slate-100 w-full my-4 h-fit lg:h-[124px] py-4 lg:py-0 rounded-3xl items-center justify-between px-4 lg:px-8 gap-4 md:gap-6 grid grid-cols-12">
+    <div className="relative bg-slate-100 w-full my-0 md:my-4 h-fit lg:h-[124px] py-4 lg:py-0 rounded-3xl items-center justify-between px-4 lg:px-8 gap-4 md:gap-6 grid grid-cols-12">
       <div className="flex gap-4 col-span-12 md:col-span-4 items-center">
         <div
           className={cn(
@@ -29,11 +29,11 @@ export function BenefitCard({
         >
           {icon}
         </div>
-        <h3 className="heading font-bold text-[#080923] text-[22px] ">
+        <h3 className="heading font-bold text-dark text-xl md:text-2xl ">
           {title}
         </h3>
       </div>
-      <p className="paragraph text-gray-600 text-base md:text-[20px] col-span-12 md:col-span-8">
+      <p className="paragraph text-metal text-base leading-tight col-span-12 md:col-span-8">
         {desc}
       </p>
     </div>
