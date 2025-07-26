@@ -199,8 +199,8 @@ export const ChatBenefits = () => {
               años
             </h2>
             <img
-              className="h-[148px] w-full object-cover"
-              src="https://images.pexels.com/photos/15940001/pexels-photo-15940001.jpeg"
+              className="h-[148px] w-full object-contain bg-top"
+              src="/home/data.png"
               alt="empresas ia"
             />
           </BentoCard>
