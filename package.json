@@ -7,6 +7,8 @@
     "dev": "react-router dev",
     "start": "cross-env NODE_ENV=production node ./server.js",
     "start:original": "cross-env NODE_ENV=production react-router-serve ./build/server/index.js",
+    "test": "vitest",
+    "test:run": "vitest run",
     "test:production": "npm run build && cross-env NODE_ENV=production node ./server.js",
     "typecheck": "react-router typegen && tsc"
   },
