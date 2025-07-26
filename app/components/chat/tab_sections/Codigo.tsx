@@ -77,6 +77,7 @@ export const Codigo = () => {
             description="Utiliza el plugin para Wordpress para agregar el widget de chat a su sitio web."
             name="Wordpress"
             logo="/assets/chat/wordpress.svg"
+            cta="Descargar plugin"
           />
           <IntegrationCard
             description="Conecta a tu agente a Slack, menciónalo y haz que responda cualquier mensaje."

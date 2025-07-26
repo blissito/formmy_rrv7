@@ -119,10 +119,12 @@ export const IntegrationCard = ({
   name,
   logo,
   description,
+  cta,
 }: {
   name: string;
   logo: string;
   description: string;
+  cta?: string;
 }) => {
   return (
     <div className="grid shadow-lg border border-gray-300 p-4 rounded-3xl">
@@ -130,7 +132,7 @@ export const IntegrationCard = ({
       <h5 className="font-medium text-md mb-1">{name}</h5>
       <p className="text-[10px] mb-4 text-gray-600">{description}</p>
       <nav className="flex gap-2">
-        <SimpleButton className="grow">Conectar</SimpleButton>
+        <SimpleButton className="grow">{cta || "Conectar"}</SimpleButton>
         <SimpleButton className="shrink-0">
           <img src="/assets/chat/notebook.svg" alt="" />
         </SimpleButton>
