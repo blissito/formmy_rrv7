@@ -199,7 +199,7 @@ export const ChatBenefits = () => {
               años
             </h2>
             <img
-              className="h-[148px] w-full object-contain bg-top"
+              className=" h-auto md:h-[148px] w-full object-contain bg-top"
               src="/home/data.png"
               alt="empresas ia"
             />

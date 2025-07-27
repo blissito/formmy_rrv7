@@ -24,7 +24,7 @@ export const Banner = () => {
       <Meteors />
       <img
         alt="purple ghost"
-        className="absolute bottom-0"
+        className="absolute -bottom-16 md:bottom-0"
         src="/assets/ghost-glasses.svg"
       />
     </section>

@@ -11,7 +11,6 @@ function ProductCard({ bg, title, desc, img, icon, svgPattern, patternClassName 
       
       <img className={cn("absolute right-0 bottom-0 z-0 w-[50%] md:w-[auto] ", patternClassName)} src={svgPattern} alt="pattern"/>
       <div className="p-6 md:p-12 w-full md:w-[60%] relative z-[1]">
-        <img className="mb-2 md:mb-6 w-12 md:w-22" alt="icon" src={icon}/>
         <h3 className="heading font-bold text-black text-3xl md:text-4xl lg:text-5xl mb-4">{title}</h3>
         <p className="paragraph text-neutral-900 text-lg md:text-2xl lg:text-3xl leading-6   lg:leading-10 mb-0 md:mb-8 ">{desc}</p>
         <Button variant="white" className=" !bg-dark/10 border-none ml-0 mt-4">
@@ -54,7 +53,7 @@ export default function HomeProducts() {
     },
   ];
   return (
-    <section className="flex flex-col items-center  max-w-7xl px-4 md:px-[5%] xl:px-0 mx-auto -mt-32 md:-mt-20">
+    <section className="flex flex-col items-center  max-w-7xl px-4 md:px-[5%] xl:px-0 mx-auto -mt-16 md:-mt-20">
       <h2 className="heading font-bold text-[#080923] text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 lg:leading-[1.2]">
         ¿Cansado de perder clientes por formularios rotos o chats complicados?
       </h2>

@@ -89,7 +89,7 @@ export const FullBanner = () => {
       <DecorativeStarsBackground />
       <DiscountBanner copied={copied} handleCopy={handleCopy} />
       <div className="absolute bottom-0 -right-14 md:right-0 z-10 flex gap-2 md:gap-4 w-auto h-auto">
-        <img className="h-[220px] md:h-[400px]" src="/home/figures.svg" />
+        <img className="h-[180px] md:h-[400px]" src="/home/figures.svg" />
       </div>
     </div>
   );
@@ -109,8 +109,8 @@ export const AiBanner = () => {
         </h2>
         <Button className="ml-0">Probar por 30 días</Button>
       </div>
-      <div className="absolute bottom-0 right-0 z-10 flex gap-2 md:gap-4 w-auto h-auto">
-        <img className="h-[260px] md:h-[400px]" src="/home/figures.svg" />
+      <div className="absolute -bottom-10 md:bottom-0 right-0 z-10 flex gap-2 md:gap-4 w-auto h-auto">
+        <img className="h-[240px] md:h-[400px]" src="/home/figures.svg" />
       </div>
     </div>
   );
@@ -138,7 +138,7 @@ export const DemoBanner = () => {
           </Button>
         </a>
       </div>
-      <div className="absolute bottom-10 right-24 z-10 flex gap-2 md:gap-4 w-auto h-auto">
+      <div className="absolute -bottom-16 md:bottom-10 right-10 md:right-24 z-10 flex gap-2 md:gap-4 w-auto h-auto">
         <img className="h-[260px] md:h-[320px]" src="/home/ghosty.svg" />
       </div>
     </div>
