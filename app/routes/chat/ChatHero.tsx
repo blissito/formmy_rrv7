@@ -50,26 +50,30 @@ export const ChatHero = () => {
       [
         {
           from: "user" as const,
-          text: "¿Tienen clases de francés?",
+          text: "¿Tienen tazas de color negro en stock?",
           avatar: "https://randomuser.me/api/portraits/men/32.jpg",
         },
         {
           from: "agent" as const,
-          text: "¡Hola! Por el momento solo tenemos clases de inglés, pero pronto abriremos nuevos cursos.",
+          text: "¡Hola! Por el momento están agotadas, pero esperamos nueva mercancía la próxima semana.",
         },
         {
           from: "user" as const,
-          text: "¡Avísenme cuando abran!",
+          text: "¿Me pueden avisar cuando llegue?",
           avatar: "https://randomuser.me/api/portraits/men/32.jpg",
         },
         {
           from: "agent" as const,
-          text: "¡Por supuesto! Comparteme tu correo para agregarte a la lista de espera.",
+          text: "¡Por supuesto! Déjame tu correo para notificarte cuando tengamos inventario disponible.",
         },
         {
           from: "user" as const,
-          text: "arnulfo@gmail.com",
+          text: "carlos.rodriguez@gmail.com",
           avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+        },
+        {
+          from: "agent" as const,
+          text: "Gracias. Ahora estás en la lista.",
         },
       ],
       [
@@ -84,8 +88,21 @@ export const ChatHero = () => {
         },
         {
           from: "user" as const,
+          text: "¿Cuál es su dirección?",
+          avatar: "https://randomuser.me/api/portraits/women/65.jpg",
+        },
+        {
+          from: "agent" as const,
+          text: "Estamos ubicados en Av. Reforma 123, Col. Centro, CDMX. También tenemos envíos a toda la República.",
+        },
+        {
+          from: "user" as const,
           text: "¡Perfecto, gracias!",
           avatar: "https://randomuser.me/api/portraits/women/65.jpg",
+        },
+        {
+          from: "agent" as const,
+          text: "¡De nada! Si tienes más preguntas, no dudes en escribirme. ¡Que tengas un excelente día! 😊",
         },
       ],
     ];
@@ -93,26 +110,26 @@ export const ChatHero = () => {
   
     return (
       <div className="w-full mb-10  max-w-7xl mx-auto h-fit md:h-[60vh]  px-4 md:px-[5%] xl:px-0 flex flex-col md:flex-row items-center justify-start md:justify-between gap-0 md:gap-8 ">
-        <ScrollRevealLeft className="w-full md:w-1/2 flex flex-col justify-center items-start md:items-start mb-8">
-          <h1 className="font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 leading-tight">
+        <div className="w-full md:w-1/2 flex flex-col justify-center items-start md:items-start mb-8">
+          <h1 className="font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 leading-tight text-center md:text-left">
             Chat IA que conecta
             <br className="hidden md:block" /> con tus clientes
           </h1>
-          <p className="text-gray-600 text-lg md:text-xl md:text-2xl  mb-0 max-w-lg">
+          <p className="text-gray-600 text-lg md:text-xl md:text-2xl  mb-0 max-w-lg text-center md:text-left">
             La forma para crear y desplegar agentes de soporte con IA en tu sitio
             web. Responde preguntas, guía a tus visitantes y capta leads
             automáticamente, 24/7.
           </p>
-          <Form method="post" className="mt-10">
-                    <BigCTA type="submit" name="intent" value="google-login" />
-                  </Form>
-          <div className="flex items-center gap-2 text-irongray text-base mt-2">
-            <span className="inline-block">No se requiere tarjeta</span>
+          <Form method="post" className="mt-10 mx-auto md:mx-0">
+            <BigCTA type="submit" name="intent" value="google-login" />
+          </Form>
+          <div className="flex items-center gap-2 text-irongray text-base mt-2 mx-auto md:mx-0">
+            <span className="inline-block">No necesitas tarjeta</span>
           </div>
-        </ScrollRevealLeft>
+        </div>
         <div className="w-full md:w-1/2 flex justify-center items-center pl-0 md:pl-16">
           <div className=" border border-gray-300 rounded-3xl p-8 w-full h-[480px] md:min-h-[550px] flex flex-col justify-end shadow-lg relative overflow-hidden ">
-           <div className="absolute left-0 top-0 w-full h-16 bg-brand-100 flex gap-3 items-center px-6 text-xl font-medium"><img src="/home/ghosty-avatar.svg" />Ghosty</div>
+           <div className="absolute z-10 border-b border-outlines left-0 top-0 w-full h-16 bg-brand-100 flex gap-3 items-center px-6 text-xl font-medium"><img src="/home/ghosty-avatar.svg" />Ghosty</div>
             <AnimatedChat
               conversations={conversations}
               current={current}
@@ -199,15 +216,15 @@ function AnimatedChat({
               } mb-4 w-full`}
             >
               <div
-                className={`max-w-[90%] rounded-xl px-5 py-3 border border-gray-300/50 flex items-center gap-2 ${
+                className={`max-w-[90%] rounded-xl px-5 py-3  flex items-center gap-2 ${
                   msg.from === "user"
-                    ? "bg-brand-100 text-gray-800"
-                    : "bg-[#F2F2FF] text-gray-800"
+                    ? "bg-dark  text-white"
+                    : "bg-surface text-gray-800"
                 }`}
               >
                 {msg.from === "agent" && (
                   <span className="inline-block bg-dark text-white rounded-full !min-w-8 !h-8 flex items-center justify-center font-bold mr-2">
-                    ✨
+                    <img src="/home/ghosty-avatar.svg"/>
                   </span>
                 )}
                 <span>{msg.text}</span>

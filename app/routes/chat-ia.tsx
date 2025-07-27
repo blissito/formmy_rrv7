@@ -19,29 +19,29 @@ import { ChatIntegrations } from "./chat/ChatIntegrations";
 
 const stepsWithImages = [
   {
-    title: "Crea un Proyecto",
-    desc: "Crear un Formmy es muy fácil desde el dashboard, solo da clic en «+ Formmy» y bautiza tu primer Formmy 👻.",
-    image: "https://images.pexels.com/photos/1595385/pexels-photo-1595385.jpeg",
+    title: "Crea un Chat",
+    desc: "Ve a tu Dashboard y da clic en la pestaña de Chatbots.",
+    image: "/home/chat-steper-1.png",
   },
   {
     title: "Entrena a tu Agente",
-    desc: "Elige entre formulario de contacto y de suscripción.",
-    image: "https://images.pexels.com/photos/1595385/pexels-photo-1595385.jpeg",
+    desc: "Comparte información, documentos o links sobre tu negocio con tu agente.",
+    image: "/home/chat-steper-2.png",
   },
   {
     title: "Personaliza los colores y estilos de tu chat",
-    desc: "Activa o agrega los campos para tu Formmy, personaliza el tema, el color principal y el estilo de tus inputs.",
-    image: "https://images.pexels.com/photos/1595385/pexels-photo-1595385.jpeg",
+    desc: "Personaliza el avatar, el color y el saludo de tu chat, además de la personalidad de tu agente.",
+    image: "/home/chat-steper-3.png",
   },
   {
     title: "Copia y pega en tu HTML o JSX",
-    desc: "Ponle tu estilo al mensaje que verán tus usuarios al completar el formulario.",
-    image: "https://images.pexels.com/photos/1595385/pexels-photo-1595385.jpeg",
+    desc: "Copia el SDK o el iframe de chat y pegala en tu proyecto. ¡Tu agente está listo para atender a tus clientes!",
+    image: "/home/chat-steper-4.png",
   },
   {
     title: "Observa y mejora tu agente",
-    desc: "Formmy es compatible con cualquier lenguaje, así que solo tienes que copiar una línea de código y pégarla en el tu proyecto. Espera un poco y ¡Empieza a recibir mensajes de tus clientes!",
-    image: "https://images.pexels.com/photos/1595385/pexels-photo-1595385.jpeg",
+    desc: "Visualiza cómo interactúa con los usuarios, detecta patrones y encuentra puntos de mejora. Desde el panel de control puedes ajustar respuestas o afinar el tono del chatbot. Porque un buen agente no solo se lanza, se entrena constantemente.",
+    image: "/home/chat-steper-5.png",
   },
 ];
 
@@ -58,15 +58,13 @@ export default function ChatIA() {
       </section>
       <ChatTypes/>
       <ChatIntegrations />
-      <section className="grid-cols-2 max-w-7xl mx-auto">
+      <section className="grid-cols-2 max-w-7xl mx-auto px-4 ">
         <FullComment
           className=""
           image=""
-          client="Lucía Mendez"
-          comment="Lorem ipsum dolor sit amet consectetur adipisicing elit. Alias, architecto. 
-        Quam voluptate aspernatur ea dicta voluptates accusantium aliquid ratione, consequatur animi,
-         reprehenderit eum cupiditate repellat vel eos maiores. Repellat, eos? "
-          clientCompany="Notion"
+          client="Rosalba Flores"
+          comment="Implementé Formmy en mi plataforma de encuestas y es increíble cómo resuelve las dudas de los usuarios. El chatbot explica perfectamente cómo repsonder encuestas y hasta ayuda con el análisis de resultados. Antes me escribían constantemente preguntas repetitivas, ahora el 80% de las consultas se resuelven automáticamente. ¡Los usuarios están más satisfechos y yo tengo más tiempo para mejorar la plataforma!"
+          clientCompany="Collectum"
         />
       </section>
       <section
@@ -74,7 +72,7 @@ export default function ChatIA() {
         className="w-full md:min-h-fit max-w-7xl mx-auto my-20 md:my-40 px-4 md:px-[5%] xl:px-0 min-h-[800px]"
       >
         <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center text-dark">
-          Crea tu primer Formmy Chat en 5 minutos
+          Crea tu primer Chatbot en 5 minutos
         </h3>
         <Steper
           steps={stepsWithImages.map(({ title, desc }) => ({ title, desc }))}

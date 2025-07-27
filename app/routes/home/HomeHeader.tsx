@@ -125,7 +125,7 @@ export default function HomeHeader() {
           </div>
           <Link className="relative text-dark text-lg font-regular pl-3" to="/planes">
             {pathname === "/planes" && (
-               <span className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-brand-500" />
+               <span className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-brand-500" />
             )}
             Planes
           </Link>
