@@ -1,9 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { cn } from "~/lib/utils";
 import { SearchInput } from "./SearchInput";
-import Markdown from "react-markdown";
-import { children } from "effect/Fiber";
-// import { SearchInput } from "./SearchInput";
+import type { Integration as PrismaIntegration } from "@prisma/client";
 
 export const Card = ({
   title,
@@ -118,8 +116,8 @@ export const MiniCardGroup = ({
 export const IntegrationCard = ({
   name,
   logo,
+  integration,
   description,
-  status = 'disconnected',
   lastActivity,
   onConnect,
   onDisconnect,
@@ -127,22 +125,30 @@ export const IntegrationCard = ({
 }: {
   name: string;
   logo: string;
+  integration?: PrismaIntegration;
   description: string;
-  status?: 'connected' | 'disconnected' | 'connecting';
+  // status?: 'connected' | 'disconnected' | 'connecting';
   lastActivity?: string;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onEdit?: () => void;
 }) => {
+  const isActive = integration?.isActive;
+  const exists = !!integration;
   return (
     <div className="grid shadow-lg border border-gray-300 p-4 rounded-3xl">
       <div className="flex justify-between items-start">
         <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
-        {status === 'connected' && (
-          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-            Conectado
-          </span>
-        )}
+        {exists &&
+          (isActive ? (
+            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+              Conectado
+            </span>
+          ) : (
+            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+              Necesita revisión
+            </span>
+          ))}
       </div>
       <h5 className="font-medium text-md mb-1">{name}</h5>
       <p className="text-[10px] mb-4 text-gray-600">{description}</p>
@@ -152,26 +158,16 @@ export const IntegrationCard = ({
         </p>
       )}
       <nav className="flex gap-2 mt-auto">
-        {status !== 'connected' ? (
-          <SimpleButton 
-            className="grow" 
-            onClick={onConnect}
-            disabled={status === 'connecting'}
-          >
-            {status === 'connecting' ? 'Conectando...' : 'Conectar'}
+        {!exists ? (
+          <SimpleButton className="grow" onClick={onConnect}>
+            Conectar
           </SimpleButton>
         ) : (
           <>
-            <SimpleButton 
-              className="grow"
-              onClick={onEdit}
-            >
+            <SimpleButton className="grow" onClick={onEdit}>
               Editar
             </SimpleButton>
-            <SimpleButton 
-              className="shrink-0"
-              onClick={onDisconnect}
-            >
+            <SimpleButton className="shrink-0" onClick={onDisconnect}>
               <img src="/assets/chat/notebook.svg" alt="Configuración" />
             </SimpleButton>
           </>

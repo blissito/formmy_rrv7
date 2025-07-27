@@ -8,6 +8,7 @@ import { Conversations } from "~/components/chat/tab_sections/Conversations";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
 import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
+import { db } from "../utils/db.server";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -28,11 +29,17 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     throw new Response("Unauthorized", { status: 403 });
   }
 
-  return { user, chatbot };
+  const integrations = await db.integration.findMany({
+    where: {
+      chatbotId: chatbot.id,
+    },
+  });
+
+  return { user, chatbot, integrations };
 };
 
 export default function ChatbotDetailRoute() {
-  const { user, chatbot } = useLoaderData<typeof loader>();
+  const { user, chatbot, integrations } = useLoaderData<typeof loader>();
   const [currentTab, setCurrentTab] = useState("Código"); // @TOOD: Update with the right one
 
   const handleTabChange = (tab: string) => {
@@ -60,7 +67,9 @@ export default function ChatbotDetailRoute() {
       {currentTab === "Entrenamiento" && (
         <Entrenamiento chatbot={chatbot} user={user} />
       )}
-      {currentTab === "Código" && <Codigo chatbot={chatbot} user={user} />}
+      {currentTab === "Código" && (
+        <Codigo chatbot={chatbot} user={user} integrations={integrations} />
+      )}
       {currentTab === "Configuración" && <Configuracion chatbot={chatbot} />}
     </PageContainer>
   );

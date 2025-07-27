@@ -283,7 +283,7 @@ model Integration {
   id       String          @id @default(auto()) @map("_id") @db.ObjectId
   platform IntegrationType
   token    String? // Access token
-  isActive Boolean         @default(false)
+  isActive Boolean         @default(true)
 
   // New fields for WhatsApp
   phoneNumberId      String?

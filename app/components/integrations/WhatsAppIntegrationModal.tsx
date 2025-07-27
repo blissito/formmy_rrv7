@@ -140,35 +140,44 @@ export default function WhatsAppIntegrationModal({
     setError(null);
 
     try {
-      // Simulate API call to test connection
+      const requestBody: any = {
+        intent: 'test',
+        chatbotId,
+        phoneNumberId: formData.phoneNumberId,
+        accessToken: formData.accessToken,
+        businessAccountId: formData.businessAccountId,
+      };
+
+      // Si es una integración existente, incluir el ID
+      if (existingIntegration?.id) {
+        requestBody.integrationId = existingIntegration.id;
+      }
+
       const response = await fetch('/api/v1/integrations/whatsapp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          intent: 'test',
-          chatbotId,
-          phoneNumberId: formData.phoneNumberId,
-          accessToken: formData.accessToken,
-          businessAccountId: formData.businessAccountId,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
+      console.log('Test connection response:', data);
 
-      if (response.ok) {
+      if (response.ok && data.success) {
         setTestResult({
           success: true,
           message: '¡Conexión exitosa! Las credenciales son válidas.'
         });
       } else {
-        throw new Error(data.message || 'Error al probar la conexión');
+        const errorMessage = data.testResult?.message || data.message || 'Error al probar la conexión con WhatsApp';
+        throw new Error(errorMessage);
       }
     } catch (err) {
+      console.error('Error testing connection:', err);
       setTestResult({
         success: false,
-        message: err instanceof Error ? err.message : 'Error desconocido al probar la conexión'
+        message: err instanceof Error ? err.message : 'Error desconocido al probar la conexión con WhatsApp'
       });
     } finally {
       setIsTesting(false);
@@ -183,25 +192,30 @@ export default function WhatsAppIntegrationModal({
     setError(null);
 
     try {
-      const url = existingIntegration 
-        ? `/api/v1/integrations/whatsapp/${existingIntegration.id}`
-        : '/api/v1/integrations/whatsapp';
-      
-      const method = existingIntegration ? 'PUT' : 'POST';
+      // Always use POST method with intent field - the API handles routing internally
+      const url = '/api/v1/integrations/whatsapp';
+      const method = 'POST';
+
+      const requestBody: any = {
+        intent: existingIntegration ? 'update' : 'create',
+        chatbotId,
+        phoneNumberId: formData.phoneNumberId,
+        accessToken: formData.accessToken,
+        businessAccountId: formData.businessAccountId,
+        webhookVerifyToken: formData.webhookVerifyToken || undefined,
+      };
+
+      // For updates, include the integration ID
+      if (existingIntegration) {
+        requestBody.integrationId = existingIntegration.id;
+      }
 
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          intent: existingIntegration ? 'update' : 'create',
-          chatbotId,
-          phoneNumberId: formData.phoneNumberId,
-          accessToken: formData.accessToken,
-          businessAccountId: formData.businessAccountId,
-          webhookVerifyToken: formData.webhookVerifyToken || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
