@@ -86,7 +86,7 @@ const tabContent = [
 export const ChatTypes=()=>{
     return(
         <section className="w-full max-w-7xl mx-auto my-20 md:my-40 px-4">
-        <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center text-dark mb-16">
+        <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center text-dark mb-10 md:mb-16">
         Para que puedes usar Formmy Chat
         </h3>
         <ChatExample />
