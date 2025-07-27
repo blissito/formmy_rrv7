@@ -110,18 +110,41 @@ const testWhatsAppConnection = (config: WhatsAppConnectionConfig) => {
           ),
       });
     }),
-    Effect.map(
-      (data) =>
-        ({
-          success: true,
-          message: "Connection test successful",
-          details: {
-            phoneNumber: data.display_phone_number || config.phoneNumberId,
-            businessName: data.name || "Unknown",
-            verificationStatus: data.verified_name || "unverified",
-          },
-        } as ConnectionTestResult)
-    ),
+    Effect.flatMap((apiResponse) => {
+      if (!apiResponse.data || !Array.isArray(apiResponse.data)) {
+        return Effect.fail(
+          new IntegrationError(
+            "INVALID_RESPONSE",
+            "API response is missing phone number data.",
+            apiResponse
+          )
+        );
+      }
+
+      const phoneInfo = apiResponse.data.find(
+        (p: any) => p.id === config.phoneNumberId
+      );
+
+      if (!phoneInfo) {
+        return Effect.fail(
+          new IntegrationError(
+            "PHONE_NUMBER_NOT_FOUND",
+            "The provided Phone Number ID was not found in the business account.",
+            { businessAccountId: config.businessAccountId }
+          )
+        );
+      }
+
+      return Effect.succeed({
+        success: true,
+        message: "Connection test successful",
+        details: {
+          phoneNumber: phoneInfo.display_phone_number || config.phoneNumberId,
+          businessName: phoneInfo.verified_name || "Unknown",
+          verificationStatus: phoneInfo.quality_rating || "unknown",
+        },
+      } as ConnectionTestResult);
+    }),
     Effect.catchAll((error) =>
       Effect.succeed({
         success: false,
