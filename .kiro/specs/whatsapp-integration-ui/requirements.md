@@ -66,15 +66,15 @@ Esta funcionalidad permitirá a los usuarios conectar sus chatbots con WhatsApp 
 
 ### Requirement 6
 
-**User Story:** Como desarrollador, quiero tener endpoints API bien estructurados para manejar integraciones, para facilitar el mantenimiento y testing del sistema.
+**User Story:** Como desarrollador, quiero tener rutas de recursos de React Router v7 bien estructuradas para manejar integraciones, para facilitar el mantenimiento y testing del sistema.
 
 #### Acceptance Criteria
 
-1. WHEN se accede a la ruta de integraciones THEN el sistema SHALL proporcionar operaciones CRUD completas
-2. WHEN se realiza una operación POST THEN el sistema SHALL crear una nueva integración con validación
-3. WHEN se realiza una operación GET THEN el sistema SHALL retornar las integraciones del chatbot específico
-4. WHEN se realiza una operación PUT THEN el sistema SHALL actualizar la integración existente
-5. WHEN se realiza una operación DELETE THEN el sistema SHALL eliminar la integración de manera segura
+1. WHEN se accede a la ruta `api.v1.integrations.ts` THEN el sistema SHALL proporcionar operaciones CRUD completas usando `export const action` y `export const loader`
+2. WHEN se realiza una operación POST via `action` THEN el sistema SHALL crear una nueva integración con validación usando `Route.ActionArgs`
+3. WHEN se realiza una operación GET via `loader` THEN el sistema SHALL retornar las integraciones del chatbot específico usando `Route.LoaderArgs`
+4. WHEN se envía un intent "update" via FormData THEN el sistema SHALL actualizar la integración existente
+5. WHEN se envía un intent "delete" via FormData THEN el sistema SHALL eliminar la integración de manera segura
 
 ### Requirement 7
 
