@@ -119,23 +119,63 @@ export const IntegrationCard = ({
   name,
   logo,
   description,
-  cta,
+  status = 'disconnected',
+  lastActivity,
+  onConnect,
+  onDisconnect,
+  onEdit,
 }: {
   name: string;
   logo: string;
   description: string;
-  cta?: string;
+  status?: 'connected' | 'disconnected' | 'connecting';
+  lastActivity?: string;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  onEdit?: () => void;
 }) => {
   return (
     <div className="grid shadow-lg border border-gray-300 p-4 rounded-3xl">
-      <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
+      <div className="flex justify-between items-start">
+        <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
+        {status === 'connected' && (
+          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+            Conectado
+          </span>
+        )}
+      </div>
       <h5 className="font-medium text-md mb-1">{name}</h5>
       <p className="text-[10px] mb-4 text-gray-600">{description}</p>
-      <nav className="flex gap-2">
-        <SimpleButton className="grow">{cta || "Conectar"}</SimpleButton>
-        <SimpleButton className="shrink-0">
-          <img src="/assets/chat/notebook.svg" alt="" />
-        </SimpleButton>
+      {lastActivity && (
+        <p className="text-[10px] text-gray-500 mb-2">
+          Última actividad: {lastActivity}
+        </p>
+      )}
+      <nav className="flex gap-2 mt-auto">
+        {status !== 'connected' ? (
+          <SimpleButton 
+            className="grow" 
+            onClick={onConnect}
+            disabled={status === 'connecting'}
+          >
+            {status === 'connecting' ? 'Conectando...' : 'Conectar'}
+          </SimpleButton>
+        ) : (
+          <>
+            <SimpleButton 
+              className="grow"
+              onClick={onEdit}
+            >
+              Editar
+            </SimpleButton>
+            <SimpleButton 
+              className="shrink-0"
+              onClick={onDisconnect}
+            >
+              <img src="/assets/chat/notebook.svg" alt="Configuración" />
+            </SimpleButton>
+          </>
+        )}
       </nav>
     </div>
   );
@@ -144,16 +184,23 @@ export const IntegrationCard = ({
 const SimpleButton = ({
   className,
   children,
+  onClick,
+  disabled = false,
 }: {
   children: ReactNode;
   className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
 }) => {
   return (
     <button
+      onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "enabled:active:scale-95",
+        "active:scale-95",
         "hover:bg-gray-50 hover:shadow-sm transition-all",
         "border-gray-300 border py-2 px-4 rounded-xl min-w-max",
+        disabled && "opacity-50 cursor-not-allowed",
         className
       )}
     >

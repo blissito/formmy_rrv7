@@ -62,7 +62,7 @@ class ValidationError extends Error {
  * Tests WhatsApp connection using simple HTTP request
  */
 const testWhatsAppConnection = (config: WhatsAppConnectionConfig) => {
-  const testUrl = `https://graph.facebook.com/v17.0/${config.phoneNumberId}`;
+  const testUrl = `https://graph.facebook.com/v20.0/${config.businessAccountId}/phone_numbers`;
 
   return Effect.tryPromise({
     try: () =>

@@ -99,43 +99,49 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const mode = url.searchParams.get("hub.mode");
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
+    const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
 
     yield* Effect.logInfo("Webhook verification request", {
       mode,
       token,
       challenge,
+      hasVerifyToken: !!verifyToken,
     });
 
     // Verify that this is a webhook verification request
     if (mode !== "subscribe") {
-      yield* Effect.logWarning("Invalid mode", { mode });
+      const error = `Invalid mode: ${mode}. Expected 'subscribe'`;
+      yield* Effect.logWarning(error);
       return yield* Effect.fail(
         new ValidationError({
           field: "hub.mode",
           value: mode,
-          message: "Mode must be 'subscribe'",
+          message: error,
         })
       );
     }
 
-    if (!token) {
-      yield* Effect.logWarning("No verify token provided");
+    // Verify token matches
+    if (token !== verifyToken) {
+      const error = `Token verification failed. Received: ${token}, Expected: ${verifyToken}`;
+      yield* Effect.logWarning(error);
       return yield* Effect.fail(
         new ValidationError({
           field: "hub.verify_token",
-          value: token,
-          message: "Verify token is required",
+          value: "[REDACTED]", // Don't log the actual tokens
+          message: "Token verification failed",
         })
       );
     }
 
     if (!challenge) {
-      yield* Effect.logWarning("No challenge provided");
+      const error = "No challenge provided";
+      yield* Effect.logWarning(error);
       return yield* Effect.fail(
         new ValidationError({
           field: "hub.challenge",
           value: challenge,
-          message: "Challenge is required",
+          message: error,
         })
       );
     }

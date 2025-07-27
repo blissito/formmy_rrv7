@@ -1,16 +1,126 @@
 import { useLoaderData } from "react-router";
+import { useState } from "react";
 import { ConfigMenu, EmbebidoButton, IntegracionesButton } from "../ConfigMenu";
 import { StickyGrid } from "../PageContainer";
-import { Card, IntegrationCard, MiniCardGroup } from "../common/Card";
+import {
+  Card,
+  IntegrationCard,
+  MiniCardGroup,
+  type IntegrationStatus,
+} from "../common/Card";
 import { useChipTabs } from "../common/ChipTabs";
 import { CodeBlock } from "../common/CodeBlock";
 import { useApiKey } from "../../../hooks/useApiKey";
 import type { Chatbot } from "@prisma/client";
+import WhatsAppIntegrationModal from "../../integrations/WhatsAppIntegrationModal";
+
+const integrations = [
+  {
+    id: "whatsapp",
+    name: "WhatsApp",
+    logo: "/assets/chat/whatsapp.svg",
+    description:
+      "Conecta a tu agente a un número de WhatsApp y deja que responda los mensajes de tus clientes.",
+  },
+  {
+    id: "instagram",
+    name: "Instagram",
+    logo: "/assets/chat/instagram.svg",
+    description:
+      "Conecta a tu agente a una página de Instagram y deja que responda los mensajes de tus clientes.",
+  },
+  {
+    id: "messenger",
+    name: "Messenger",
+    logo: "/assets/chat/messenger.svg",
+    description:
+      "Conecta a tu agente a tu fan page y deja que responda los mensajes de tus clientes.",
+  },
+  {
+    id: "shopify",
+    name: "Shopify",
+    logo: "/assets/chat/shopify.svg",
+    description:
+      "Deje que tu agente interactúe con sus clientes, responda a sus consultas, ayude con los pedidos y más.",
+  },
+  {
+    id: "wordpress",
+    name: "WordPress",
+    logo: "/assets/chat/wordpress.svg",
+    description:
+      "Utiliza el plugin para Wordpress para agregar el widget de chat a su sitio web.",
+  },
+  {
+    id: "slack",
+    name: "Slack",
+    logo: "/assets/chat/slack.svg",
+    description:
+      "Conecta a tu agente a Slack, menciónalo y haz que responda cualquier mensaje.",
+  },
+];
 
 export const Codigo = () => {
-  const { currentTab, setCurrentTab } = useChipTabs("embed");
+  const { currentTab, setCurrentTab } = useChipTabs("integrations");
   const { currentTab: miniCard, setCurrentTab: setMiniCard } =
     useChipTabs("iframe");
+  const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
+    null
+  );
+  const [integrationStatus, setIntegrationStatus] = useState<
+    Record<string, IntegrationStatus>
+  >({});
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+  const { chatbot } = useLoaderData<{ chatbot: Chatbot }>();
+
+  const handleConnect = (integrationId: string) => {
+    setIntegrationStatus((prev) => ({
+      ...prev,
+      [integrationId]: "connecting",
+    }));
+
+    // Simular conexión
+    setTimeout(() => {
+      if (integrationId === "whatsapp") {
+        setSelectedIntegration(integrationId);
+        setIsWhatsAppModalOpen(true);
+        setIntegrationStatus((prev) => ({
+          ...prev,
+          [integrationId]: "disconnected",
+        }));
+      } else {
+        setIntegrationStatus((prev) => ({
+          ...prev,
+          [integrationId]: "connected",
+        }));
+      }
+    }, 1000);
+  };
+
+  const handleDisconnect = (integrationId: string) => {
+    setIntegrationStatus((prev) => ({
+      ...prev,
+      [integrationId]: "disconnected",
+    }));
+  };
+
+  const handleEdit = (integrationId: string) => {
+    setSelectedIntegration(integrationId);
+    if (integrationId === "whatsapp") {
+      setIsWhatsAppModalOpen(true);
+    }
+  };
+
+  const handleWhatsAppSuccess = (integration: any) => {
+    if (selectedIntegration) {
+      setIntegrationStatus((prev) => ({
+        ...prev,
+        [selectedIntegration]: "connected",
+      }));
+      setIsWhatsAppModalOpen(false);
+      // Aquí podrías actualizar el estado con los datos de la integración
+      console.log("Integración exitosa:", integration);
+    }
+  };
 
   return (
     <StickyGrid>
@@ -53,37 +163,33 @@ export const Codigo = () => {
       )}
       {currentTab === "integrations" && (
         <article className="grid lg:grid-cols-3 grid-cols-2 gap-4 py-3">
-          <IntegrationCard
-            description="Conecta a tu agente a un número de WhatsApp y deja que responda los mensajes de tus clientes."
-            name="Whatsapp"
-            logo="/assets/chat/whatsapp.svg"
-          />
-          <IntegrationCard
-            description="Conecta a tu agente a una página de Instagram y deja que responda los mensajes de tus clientes."
-            name="Instagram"
-            logo="/assets/chat/instagram.svg"
-          />
-          <IntegrationCard
-            description="Conecta a tu agente a tu fan page y deja que responda los mensajes de tus clientes."
-            name="Messenger"
-            logo="/assets/chat/messenger.svg"
-          />
-          <IntegrationCard
-            description="Deje que tu agente interactúe con sus clientes, responda a sus consultas, ayude con los pedidos y más."
-            name="Shopify"
-            logo="/assets/chat/shopify.svg"
-          />
-          <IntegrationCard
-            description="Utiliza el plugin para Wordpress para agregar el widget de chat a su sitio web."
-            name="Wordpress"
-            logo="/assets/chat/wordpress.svg"
-            cta="Descargar plugin"
-          />
-          <IntegrationCard
-            description="Conecta a tu agente a Slack, menciónalo y haz que responda cualquier mensaje."
-            name="Slack"
-            logo="/assets/chat/slack.svg"
-          />
+          {integrations.map((integration) => (
+            <IntegrationCard
+              key={integration.id}
+              name={integration.name}
+              logo={integration.logo}
+              description={integration.description}
+              status={integrationStatus[integration.id] || "disconnected"}
+              lastActivity={
+                integrationStatus[integration.id] === "connected"
+                  ? "Hoy"
+                  : undefined
+              }
+              onConnect={() => handleConnect(integration.id)}
+              onDisconnect={() => handleDisconnect(integration.id)}
+              onEdit={() => handleEdit(integration.id)}
+            />
+          ))}
+
+          {selectedIntegration === "whatsapp" && (
+            <WhatsAppIntegrationModal
+              isOpen={isWhatsAppModalOpen}
+              onClose={() => setIsWhatsAppModalOpen(false)}
+              onSuccess={handleWhatsAppSuccess}
+              chatbotId={chatbot.id}
+              existingIntegration={null} // O pasar una integración existente si la hay
+            />
+          )}
         </article>
       )}
     </StickyGrid>

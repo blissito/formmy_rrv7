@@ -4,7 +4,6 @@ import { getChatbotBySlug } from "server/chatbot/chatbotModel.server";
 import { PageContainer } from "~/components/chat/PageContainer";
 import { useState } from "react";
 import type { Route } from "./+types/chat_.$chatbotSlug";
-import { Toaster } from "react-hot-toast";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
@@ -34,7 +33,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 
 export default function ChatbotDetailRoute() {
   const { user, chatbot } = useLoaderData<typeof loader>();
-  const [currentTab, setCurrentTab] = useState("Preview"); // @TOOD: Update with the right one
+  const [currentTab, setCurrentTab] = useState("Código"); // @TOOD: Update with the right one
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);
