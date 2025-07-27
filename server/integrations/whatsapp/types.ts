@@ -432,6 +432,157 @@ export const TimestampSchema = Schema.String.pipe(
 export type Timestamp = Schema.Schema.Type<typeof TimestampSchema>;
 
 // ============================================================================
+// Webhook Payload Schemas
+// ============================================================================
+
+// Webhook Contact Schema
+export const WebhookContactSchema = Schema.Struct({
+  profile: Schema.Struct({
+    name: Schema.String,
+  }),
+  wa_id: Schema.String,
+});
+
+export type WebhookContact = Schema.Schema.Type<typeof WebhookContactSchema>;
+
+// Webhook Media Schema
+export const WebhookMediaSchema = Schema.Struct({
+  id: Schema.String,
+  mime_type: Schema.optional(Schema.String),
+  sha256: Schema.optional(Schema.String),
+  filename: Schema.optional(Schema.String),
+  caption: Schema.optional(Schema.String),
+});
+
+export type WebhookMedia = Schema.Schema.Type<typeof WebhookMediaSchema>;
+
+// Webhook Text Schema
+export const WebhookTextSchema = Schema.Struct({
+  body: Schema.String,
+});
+
+export type WebhookText = Schema.Schema.Type<typeof WebhookTextSchema>;
+
+// Webhook Context Schema (for replies)
+export const WebhookContextSchema = Schema.Struct({
+  from: Schema.String,
+  id: Schema.String,
+});
+
+export type WebhookContext = Schema.Schema.Type<typeof WebhookContextSchema>;
+
+// Webhook Message Schema
+export const WebhookMessageSchema = Schema.Struct({
+  from: Schema.String,
+  id: Schema.String,
+  timestamp: Schema.String,
+  type: Schema.Literal(
+    "text",
+    "image",
+    "document",
+    "audio",
+    "video",
+    "voice",
+    "sticker",
+    "location",
+    "contacts",
+    "interactive",
+    "button",
+    "order",
+    "system"
+  ),
+  text: Schema.optional(WebhookTextSchema),
+  image: Schema.optional(WebhookMediaSchema),
+  document: Schema.optional(WebhookMediaSchema),
+  audio: Schema.optional(WebhookMediaSchema),
+  video: Schema.optional(WebhookMediaSchema),
+  voice: Schema.optional(WebhookMediaSchema),
+  sticker: Schema.optional(WebhookMediaSchema),
+  context: Schema.optional(WebhookContextSchema),
+});
+
+export type WebhookMessage = Schema.Schema.Type<typeof WebhookMessageSchema>;
+
+// Webhook Status Schema
+export const WebhookStatusSchema = Schema.Struct({
+  id: Schema.String,
+  status: Schema.Literal("sent", "delivered", "read", "failed"),
+  timestamp: Schema.String,
+  recipient_id: Schema.String,
+  conversation: Schema.optional(
+    Schema.Struct({
+      id: Schema.String,
+      expiration_timestamp: Schema.optional(Schema.String),
+      origin: Schema.Struct({
+        type: Schema.String,
+      }),
+    })
+  ),
+  pricing: Schema.optional(
+    Schema.Struct({
+      billable: Schema.Boolean,
+      pricing_model: Schema.String,
+      category: Schema.String,
+    })
+  ),
+});
+
+export type WebhookStatus = Schema.Schema.Type<typeof WebhookStatusSchema>;
+
+// Webhook Error Schema
+export const WebhookErrorSchema = Schema.Struct({
+  code: Schema.Number,
+  title: Schema.String,
+  message: Schema.String,
+  error_data: Schema.optional(
+    Schema.Struct({
+      details: Schema.String,
+    })
+  ),
+});
+
+export type WebhookError = Schema.Schema.Type<typeof WebhookErrorSchema>;
+
+// Webhook Value Schema
+export const WebhookValueSchema = Schema.Struct({
+  messaging_product: Schema.Literal("whatsapp"),
+  metadata: Schema.Struct({
+    display_phone_number: Schema.String,
+    phone_number_id: Schema.String,
+  }),
+  contacts: Schema.optional(Schema.Array(WebhookContactSchema)),
+  messages: Schema.optional(Schema.Array(WebhookMessageSchema)),
+  statuses: Schema.optional(Schema.Array(WebhookStatusSchema)),
+  errors: Schema.optional(Schema.Array(WebhookErrorSchema)),
+});
+
+export type WebhookValue = Schema.Schema.Type<typeof WebhookValueSchema>;
+
+// Webhook Change Schema
+export const WebhookChangeSchema = Schema.Struct({
+  value: WebhookValueSchema,
+  field: Schema.Literal("messages"),
+});
+
+export type WebhookChange = Schema.Schema.Type<typeof WebhookChangeSchema>;
+
+// Webhook Entry Schema
+export const WebhookEntrySchema = Schema.Struct({
+  id: Schema.String,
+  changes: Schema.Array(WebhookChangeSchema),
+});
+
+export type WebhookEntry = Schema.Schema.Type<typeof WebhookEntrySchema>;
+
+// Main Webhook Payload Schema
+export const WebhookPayloadSchema = Schema.Struct({
+  object: Schema.Literal("whatsapp_business_account"),
+  entry: Schema.Array(WebhookEntrySchema),
+});
+
+export type WebhookPayload = Schema.Schema.Type<typeof WebhookPayloadSchema>;
+
+// ============================================================================
 // Validation Utility Functions
 // ============================================================================
 

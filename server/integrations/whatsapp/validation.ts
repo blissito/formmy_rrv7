@@ -22,6 +22,7 @@ import {
   WebhookSignatureSchema,
   TimestampSchema,
   TemplateComponentSchema,
+  WebhookPayloadSchema,
   ValidationError,
   type PhoneNumber,
   type MessageText,
@@ -33,6 +34,7 @@ import {
   type WebhookSignature,
   type Timestamp,
   type TemplateComponent,
+  type WebhookPayload,
 } from "./types.js";
 
 // ============================================================================
@@ -396,6 +398,23 @@ export const validateTimestamp = (
           field: "timestamp",
           value: timestamp,
           message: `Invalid timestamp: ${error.message}`,
+        })
+    )
+  );
+
+/**
+ * Validates webhook payload structure
+ */
+export const validateWebhookPayload = (
+  payload: unknown
+): Effect.Effect<WebhookPayload, ValidationError> =>
+  Schema.decodeUnknown(WebhookPayloadSchema)(payload).pipe(
+    Effect.mapError(
+      (error) =>
+        new ValidationError({
+          field: "webhookPayload",
+          value: payload,
+          message: `Invalid webhook payload: ${error.message}`,
         })
     )
   );

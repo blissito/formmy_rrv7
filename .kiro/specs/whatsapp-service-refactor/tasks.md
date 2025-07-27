@@ -52,7 +52,7 @@
   - Add generic sendMessage method with Effect error handling
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
 
-- [ ] 8. Implement media handling capabilities
+- [x] 8. Implement media handling capabilities
 
   - Create uploadMedia method with file validation and Effect error handling
   - Implement getMediaUrl for retrieving media information
@@ -60,7 +60,7 @@
   - Add file size and MIME type validation
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
 
-- [ ] 9. Build webhook processing system
+- [x] 9. Build webhook processing system
 
   - Implement webhook signature verification using Effect
   - Create processWebhook method with payload validation

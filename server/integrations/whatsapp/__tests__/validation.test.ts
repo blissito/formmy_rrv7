@@ -12,6 +12,7 @@ import {
   validateMediaUrl,
   validateWebhookSignature,
   validateTimestamp,
+  validateWebhookPayload,
   validateTextMessage,
   validateTemplateMessage,
   validateMediaMessage,
@@ -348,5 +349,144 @@ describe("Composite Validation", () => {
       validateMediaMessage("+1234567890", "invalid-url", "Caption")
     );
     await expect(result3).rejects.toThrow();
+  });
+});
+describe("Webhook Payload Validation", () => {
+  const validWebhookPayload = {
+    object: "whatsapp_business_account",
+    entry: [
+      {
+        id: "entry-123",
+        changes: [
+          {
+            value: {
+              messaging_product: "whatsapp",
+              metadata: {
+                display_phone_number: "+1234567890",
+                phone_number_id: "123456789",
+              },
+              messages: [
+                {
+                  from: "+1987654321",
+                  id: "msg-123",
+                  timestamp: "1640995200",
+                  type: "text" as const,
+                  text: {
+                    body: "Hello, world!",
+                  },
+                },
+              ],
+            },
+            field: "messages" as const,
+          },
+        ],
+      },
+    ],
+  };
+
+  it("should validate correct webhook payload", async () => {
+    const result = await Effect.runPromise(
+      validateWebhookPayload(validWebhookPayload)
+    );
+
+    expect(result.object).toBe("whatsapp_business_account");
+    expect(result.entry).toHaveLength(1);
+    expect(result.entry[0].changes).toHaveLength(1);
+    expect(result.entry[0].changes[0].value.messages).toHaveLength(1);
+    expect(result.entry[0].changes[0].value.messages![0].from).toBe(
+      "+1987654321"
+    );
+    expect(result.entry[0].changes[0].value.messages![0].text!.body).toBe(
+      "Hello, world!"
+    );
+  });
+
+  it("should validate webhook payload with image message", async () => {
+    const imageWebhookPayload = {
+      ...validWebhookPayload,
+      entry: [
+        {
+          ...validWebhookPayload.entry[0],
+          changes: [
+            {
+              ...validWebhookPayload.entry[0].changes[0],
+              value: {
+                ...validWebhookPayload.entry[0].changes[0].value,
+                messages: [
+                  {
+                    from: "+1987654321",
+                    id: "img-123",
+                    timestamp: "1640995200",
+                    type: "image" as const,
+                    image: {
+                      id: "media-123",
+                      mime_type: "image/jpeg",
+                      caption: "Check this out!",
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = await Effect.runPromise(
+      validateWebhookPayload(imageWebhookPayload)
+    );
+
+    expect(result.entry[0].changes[0].value.messages![0].type).toBe("image");
+    expect(result.entry[0].changes[0].value.messages![0].image!.id).toBe(
+      "media-123"
+    );
+    expect(result.entry[0].changes[0].value.messages![0].image!.caption).toBe(
+      "Check this out!"
+    );
+  });
+
+  it("should reject invalid webhook payload", async () => {
+    const invalidPayload = {
+      object: "invalid_object",
+      entry: [],
+    };
+
+    await expect(
+      Effect.runPromise(validateWebhookPayload(invalidPayload))
+    ).rejects.toThrow();
+  });
+
+  it("should reject webhook payload with invalid message type", async () => {
+    const invalidMessagePayload = {
+      ...validWebhookPayload,
+      entry: [
+        {
+          ...validWebhookPayload.entry[0],
+          changes: [
+            {
+              ...validWebhookPayload.entry[0].changes[0],
+              value: {
+                ...validWebhookPayload.entry[0].changes[0].value,
+                messages: [
+                  {
+                    from: "+1987654321",
+                    id: "msg-123",
+                    timestamp: "1640995200",
+                    type: "invalid_type" as any,
+                    text: {
+                      body: "Hello, world!",
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    await expect(
+      Effect.runPromise(validateWebhookPayload(invalidMessagePayload))
+    ).rejects.toThrow();
   });
 });
