@@ -78,24 +78,36 @@ Esta funcionalidad permitirá a los usuarios conectar sus chatbots con WhatsApp 
 
 ### Requirement 7
 
-**User Story:** Como sistema, quiero manejar webhooks de WhatsApp de manera segura y eficiente, para procesar mensajes entrantes sin interrupciones.
+**User Story:** Como sistema, quiero manejar webhooks de WhatsApp de manera segura y eficiente usando una ruta de recursos dedicada, para procesar mensajes entrantes sin interrupciones.
 
 #### Acceptance Criteria
 
-1. WHEN se recibe un webhook de WhatsApp THEN el sistema SHALL verificar la firma usando el webhook verify token
-2. WHEN la verificación es exitosa THEN el sistema SHALL procesar el payload del webhook
+1. WHEN se recibe un webhook POST en `api.whatsapp.webhook.ts` THEN el sistema SHALL verificar la firma usando el webhook verify token
+2. WHEN la verificación es exitosa THEN el sistema SHALL procesar el payload del webhook usando `Route.ActionArgs`
 3. WHEN se procesa el webhook THEN el sistema SHALL responder con status 200 dentro de 20 segundos
 4. IF la verificación falla THEN el sistema SHALL responder con status 401 y registrar el intento
 5. WHEN se procesa un mensaje THEN el sistema SHALL crear o actualizar la conversación correspondiente en la base de datos
 
 ### Requirement 8
 
-**User Story:** Como usuario del chatbot, quiero que mis conversaciones de WhatsApp se integren con el historial del chatbot, para tener un registro completo de las interacciones.
+**User Story:** Como usuario del chatbot, quiero que mis conversaciones de WhatsApp se integren automáticamente con la sección de conversaciones existente, para tener un registro unificado de todas las interacciones.
 
 #### Acceptance Criteria
 
-1. WHEN se recibe un mensaje de WhatsApp THEN el sistema SHALL crear o encontrar la conversación existente
-2. WHEN se procesa el mensaje THEN el sistema SHALL guardarlo en la tabla de mensajes con el rol USER
+1. WHEN se recibe un mensaje de WhatsApp THEN el sistema SHALL crear o encontrar la conversación existente usando el mismo modelo de datos
+2. WHEN se procesa el mensaje THEN el sistema SHALL guardarlo en la tabla de mensajes con el rol USER y metadata del canal WhatsApp
 3. WHEN el chatbot responde THEN el sistema SHALL guardar la respuesta con el rol ASSISTANT
 4. WHEN se guarda un mensaje THEN el sistema SHALL actualizar los contadores de uso del chatbot
-5. WHEN se visualiza el historial THEN el sistema SHALL mostrar los mensajes de WhatsApp integrados con otros canales
+5. WHEN se visualiza la sección conversaciones THEN el sistema SHALL mostrar las conversaciones de WhatsApp junto con las conversaciones web, diferenciadas por iconos de canal
+
+### Requirement 9
+
+**User Story:** Como usuario del chatbot, quiero poder identificar fácilmente el canal de origen de cada conversación en la sección conversaciones existente, para entender de dónde vienen mis usuarios.
+
+#### Acceptance Criteria
+
+1. WHEN se muestra una conversación en la lista THEN el sistema SHALL mostrar un icono que identifique el canal (web, WhatsApp, etc.)
+2. WHEN se almacena un mensaje de WhatsApp THEN el sistema SHALL incluir metadata del número de teléfono del usuario
+3. WHEN se visualiza el detalle de una conversación de WhatsApp THEN el sistema SHALL mostrar el número de teléfono (enmascarado por privacidad)
+4. WHEN se filtra conversaciones THEN el sistema SHALL permitir filtrar por canal de origen
+5. WHEN se exportan conversaciones THEN el sistema SHALL incluir información del canal en los datos exportados
