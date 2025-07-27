@@ -111,20 +111,20 @@ export const ChatHero = () => {
     return (
       <div className="w-full mb-10  max-w-7xl mx-auto h-fit md:h-[60vh]  px-4 md:px-[5%] xl:px-0 flex flex-col md:flex-row items-center justify-start md:justify-between gap-0 md:gap-8 ">
         <div className="w-full md:w-1/2 flex flex-col justify-center items-start md:items-start mb-8">
-          <h1 className="font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 leading-tight">
+          <h1 className="font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 leading-tight text-center md:text-left">
             Chat IA que conecta
             <br className="hidden md:block" /> con tus clientes
           </h1>
-          <p className="text-gray-600 text-lg md:text-xl md:text-2xl  mb-0 max-w-lg">
+          <p className="text-gray-600 text-lg md:text-xl md:text-2xl  mb-0 max-w-lg text-center md:text-left">
             La forma para crear y desplegar agentes de soporte con IA en tu sitio
             web. Responde preguntas, guía a tus visitantes y capta leads
             automáticamente, 24/7.
           </p>
-          <Form method="post" className="mt-10">
+          <Form method="post" className="mt-10 mx-auto md:mx-0">
             <BigCTA type="submit" name="intent" value="google-login" />
           </Form>
-          <div className="flex items-center gap-2 text-irongray text-base mt-2">
-            <span className="inline-block">No se requiere tarjeta</span>
+          <div className="flex items-center gap-2 text-irongray text-base mt-2 mx-auto md:mx-0">
+            <span className="inline-block">No necesitas tarjeta</span>
           </div>
         </div>
         <div className="w-full md:w-1/2 flex justify-center items-center pl-0 md:pl-16">

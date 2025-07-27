@@ -58,7 +58,7 @@ export default function ChatIA() {
       </section>
       <ChatTypes/>
       <ChatIntegrations />
-      <section className="grid-cols-2 max-w-7xl mx-auto px-4 md:px-[5%]">
+      <section className="grid-cols-2 max-w-7xl mx-auto px-4 ">
         <FullComment
           className=""
           image=""
