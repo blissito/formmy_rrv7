@@ -19,11 +19,11 @@ function CardDemoIA({ gradient, content, title, description }: {
 }) {
   return (
     <div className={`flex-1  `}>
-      <div className={` rounded-3xl p-8 flex flex-col items-center shadow-lg  h-[320px] relative overflow-hidden ${gradient}`}>
+      <div className={` rounded-3xl p-8 flex flex-col items-center shadow-lg h-[280px] md:h-[320px] relative overflow-hidden ${gradient}`}>
     {content}
       </div>
-      <h3 className="font-bold text-2xl text-center mb-2 text-dark mt-8">{title}</h3>
-      <p className="text-gray-700 text-center text-lg">{description}</p>
+      <h3 className="font-bold text-xl md:text-2xl text-center mb-2 text-dark mt-6 md:mt-8">{title}</h3>
+      <p className="text-gray-700 text-center text-base md:text-lg">{description}</p>
     </div>
   );
 }
@@ -88,7 +88,7 @@ export default function Formularios() {
    <CompaniesScroll/>
       <section id="cards" className="w-full max-w-7xl mx-auto my-20 md:my-40 px-4">
         <h2 className="text-3xl md:text-4xl lg:text-5xl  font-bold text-center mb-10 md:mb-16 text-dark">Por qué debes probar Formmy</h2>
-        <div className="flex flex-col md:flex-row gap-8 justify-center items-stretch">
+        <div className="flex flex-col md:flex-row gap-10 md:gap-8 justify-center items-stretch">
           <CardDemoIA
             gradient="bg-[#FBE05D]"
             content={

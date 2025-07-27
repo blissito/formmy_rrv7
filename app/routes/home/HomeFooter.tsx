@@ -71,8 +71,7 @@ export default function HomeFooter() {
               <li><a href="/academy" className="hover:underline">Formmy Academy</a></li>
               {/* <li><a href="#" className="hover:underline">Blog</a></li> */}
             </ul>
-          </div>
-          <div>
+            <div className="block md:hidden mt-7">
             <div className="font-semibold mb-3 text-base">Empresa</div>
             <ul className="space-y-2 text-gray-500 text-sm text-lightGray">
               {/* <li><a href="#" className="hover:underline">Acerca de</a></li>
@@ -80,7 +79,16 @@ export default function HomeFooter() {
               <li> <a href="https://wa.me/527757609276?text=¡Hola!%20Quiero%20agendar%20un%20demo." target="_blank" className="hover:underline">Contacto</a></li>
             </ul>
           </div>
-          <div>
+          </div>
+          <div className="hidden md:block">
+            <div className="font-semibold mb-3 text-base">Empresa</div>
+            <ul className="space-y-2 text-gray-500 text-sm text-lightGray">
+              {/* <li><a href="#" className="hover:underline">Acerca de</a></li>
+              <li><a href="#" className="hover:underline">Carreras</a></li> */}
+              <li> <a href="https://wa.me/527757609276?text=¡Hola!%20Quiero%20agendar%20un%20demo." target="_blank" className="hover:underline">Contacto</a></li>
+            </ul>
+          </div>
+          <div className="col-span-2 md:col-span-1">
             <div className="font-semibold mb-3 text-base">Únete al newsletter</div>
             <form className="flex items-center gap-2 mt-2">
               <input type="email" placeholder="Escribe tu correo" className="rounded-full px-4 py-2 bg-white/5 border-none text-white placeholder:text-white/20 focus:ring-brand-500 focus:outline-none w-full" />
