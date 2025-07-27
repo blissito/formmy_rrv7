@@ -92,8 +92,8 @@ export default function Formularios() {
           <CardDemoIA
             gradient="bg-[#FBE05D]"
             content={
-             <div>
-              <img className="h-[70%]" src="/home/bento1.png"/>
+             <div className=" h-full place-content-center">
+              <img className=" w-fit max-h-full" src="/home/bento1.png"/>
               </div>
             }
          
