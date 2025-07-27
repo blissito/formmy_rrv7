@@ -33,7 +33,7 @@ export const ChatIntegrations = () => {
             icon={<FaWhatsapp />}
           />
         </div>
-        <div className="flex flex-col gap-4 mt-4 md:mt-8">
+        <div className="flex flex-col gap-0 md:gap-4 mt-4 md:mt-8">
           <BenefitCard
             color="bg-[#BBF0FF]"
             title="Define las reglas"

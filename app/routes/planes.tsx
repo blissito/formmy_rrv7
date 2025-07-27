@@ -18,7 +18,7 @@ export default function Planes() {
       <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 lg:leading-[1.2]">
         Elige el plan perfecto para ti
       </h1>
-      <p className="paragraph text-gray-600 font-light text-lg md:text-xl md:text-2xl text-center mb-10 md:mb-20">
+      <p className="paragraph text-metal font-light text-lg md:text-xl md:text-2xl text-center mb-10 md:mb-20">
       Empieza a usar Formmy sin pagar nada. Puedes cambiar de Plan cuando lo necesites.
       </p>
       <PricingCards />
