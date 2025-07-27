@@ -119,13 +119,52 @@ export const createSession = async (code: string, request: Request) => {
     provider: "google",
     access_token: data.access_token,
   };
-  await db.user.upsert({
-    where: {
-      email: extra.email,
-    },
-    create: propieties,
-    update: propieties,
-  });
+  try {
+    // First, try to find if the user exists
+    const existingUser = await db.user.findUnique({
+      where: { email: extra.email },
+      select: { id: true, customerId: true }
+    });
+
+    if (existingUser) {
+      // If user exists, update only the necessary fields
+      await db.user.update({
+        where: { email: extra.email },
+        data: {
+          name: propieties.name,
+          picture: propieties.picture,
+          access_token: propieties.access_token,
+          provider: propieties.provider,
+          updatedAt: new Date()
+        }
+      });
+    } else {
+      // If user doesn't exist, create without customerId
+      await db.user.create({
+        data: {
+          ...propieties,
+          customerId: undefined, // Let the database handle the default value
+          plan: 'FREE', // Ensure default plan is set
+          subscriptionIds: [] // Initialize empty array for subscriptionIds
+        }
+      });
+    }
+  } catch (error: any) {
+    console.error('Error in user upsert:', error);
+    // If there's still an error with customerId, try one more time with a generated ID
+    if (error?.code === 'P2002' && error?.meta?.target?.includes('customerId')) {
+      await db.user.create({
+        data: {
+          ...propieties,
+          customerId: `cust_${Date.now()}`,
+          plan: 'FREE',
+          subscriptionIds: []
+        }
+      });
+    } else {
+      throw error; // Re-throw if it's a different error
+    }
+  }
 
   session.set("userId", extra.email);
 
