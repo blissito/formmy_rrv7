@@ -37,6 +37,10 @@ export default {
         danger:"#ED695F",
         success:"#5FA46F",
         iman: "#EFEFEF",
+        bird:"#EDC75A",
+        sky:"#8AD7C9",
+        grass:"#7FBE60",
+        salmon:"#E4AE8E",
         brand: {
           100: "#F5F5FC",
           300: "#AEADEF",

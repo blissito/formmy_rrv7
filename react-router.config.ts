@@ -18,6 +18,7 @@ export default {
     },
     { path: "/chat/*", component: "./app/routes/chat.404.tsx" },
 
+    
     // Catch-all route (must be last)
     { path: "*", component: "./app/routes/$.tsx" },
   ],
