@@ -26,15 +26,16 @@ export const Button = ({
       disabled={isDisabled || isLoading}
       type={type}
       className={cn(
-        "bg-brand-500 text-clear mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6",
-        { "bg-secondary text-dark hover:bg-gray-200" : variant === "secondary"},
+        "bg-brand-500 text-clear mt-6 block mx-auto cursor-pointer rounded-full  px-6 grid place-content-center",
+        { "bg-perl text-metal hover:bg-[#E1E3E7] mt-0 mx-0" : variant === "secondary"},
+        { "bg-transparent text-dark hover:bg-gray-300 mt-0 mx-0" : variant === "ghost"},
         className,
         "disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:border-none"
       )}
     >
       {!isLoading && (children || "Agregar")}
       {isLoading && (
-        <div className="flex justify-center">
+        <div className="flex justify-center items-center">
           <Spinner />
         </div>
       )}
