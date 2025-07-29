@@ -53,27 +53,22 @@ export default function Modal({
                 "flex flex-col"
               )}
             >
-              <Dialog.Title className="bg-clear dark:bg-space-900 flex justify-between items-center rounded-t-3xl ">
-                <div className="text-2xl px-8 pt-8 pb-4 font-bold dark:text-white text-space-800">
+              <Dialog.Title className="bg-clear pt-8 dark:bg-space-900 flex justify-between items-center rounded-t-3xl relative">
+                <div className="text-2xl font-bold grow !text-center text-dark">
                   {title}
                 </div>
                 <button onClick={onClose || (() => navigate(-1))}>
                   <img
                     alt="close"
                     src="/assets/close.svg"
-                    className="dark:hidden block mr-4 mt-4"
-                  />
-                  <img
-                    alt="close"
-                    src="/assets/close-dark.svg"
-                    className="dark:block hidden mr-4 mt-4"
+                    className="absolute right-8 top-8"
                   />
                 </button>
               </Dialog.Title>
 
               <section
                 className={twMerge(
-                  "min-w-[320px] h-min bg-clear dark:bg-space-900 rounded-b-3xl md:pt-0 px-12 ",
+                  "min-w-[320px] h-min bg-white rounded-b-3xl md:pt-0 px-8 pb-8 ",
                   className // this is here just for semantics
                 )}
               >

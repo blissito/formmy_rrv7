@@ -75,6 +75,7 @@ export default {
         pattern: "url('/assets/pattern.svg')",
         patternwhite: "url('/assets/pattern-w.svg')",
         steperCover: "url('/home/steper-cover.png')",
+        actionsBack: "url('/dash/actions-back.svg')",
       },
       animation: {
         scroll:

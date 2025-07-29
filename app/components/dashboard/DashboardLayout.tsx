@@ -9,6 +9,7 @@ import { DocumentIcon } from '../ui/icons/DocumentIcon';
 import ChatIconActive from '../ui/icons/ChatIconActive';
 import DocumentIconActive from '../ui/icons/DocumentIconActive';
 import AiIconActive from '../ui/icons/AiIconActive';
+import Usage from '../ui/icons/Usage';
 
 interface DashboardLayoutProps {
   title: string;
@@ -65,11 +66,11 @@ export function DashboardLayout({ title, children, actionButton }: DashboardLayo
       </div>
       <div className='flex flex-col grow w-full pb-8'>
         <div className='h-20 flex items-center justify-end gap-2 w-full'>
-          <Button variant="secondary">Menu superior</Button>
+          <Button variant="secondary" className='h-10 flex gap-1 items-center px-2'><Usage className='w-8 h-8 ml-1 mt-1'/> Uso</Button>
           <Button variant="ghost">Docs</Button>
           <Avatar/>
         </div>
-        <div className="bg-white w-full h-full rounded-[40px] ">
+        <div className="bg-white w-full h-full rounded-[40px] overflow-hidden ">
           {children}
         </div>
       </div>
