@@ -10,6 +10,8 @@ import ChatIconActive from '../ui/icons/ChatIconActive';
 import DocumentIconActive from '../ui/icons/DocumentIconActive';
 import AiIconActive from '../ui/icons/AiIconActive';
 import Usage from '../ui/icons/Usage';
+import HelpIcon from '../ui/icons/Help';
+import HelpIconActive from '../ui/icons/HelpActive';
 
 interface DashboardLayoutProps {
   title: string;
@@ -47,7 +49,7 @@ export function DashboardLayout({ title, children, actionButton }: DashboardLayo
             className="w-full justify-start px-3  rounded-xl"
           />
           <IconButtonLink
-            to="/dashboard/chat-ia"
+            to="/dashboard/chat"
             icon={<ChatIcon className="w-10 h-10 text-dark" />}
             activeIcon={<ChatIconActive className="w-10 h-10 text-brand-500" />}
             title="Chatbots"
@@ -56,8 +58,8 @@ export function DashboardLayout({ title, children, actionButton }: DashboardLayo
           />
           <IconButtonLink
             to="/dashboard/ayuda"
-            icon={<ChatIcon className="w-10 h-10 text-dark" />}
-            activeIcon={<ChatIcon className="w-10 h-10 text-brand-500" />}
+            icon={<HelpIcon className="w-10 h-10 text-dark" />}
+            activeIcon={<HelpIconActive className="w-10 h-10 text-brand-500" />}
             title="Ayuda"
             variant="ghost"
             className="w-full justify-start px-3  rounded-xl"

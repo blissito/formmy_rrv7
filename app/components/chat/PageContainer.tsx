@@ -11,7 +11,11 @@ import {
   ConversationsPreview,
 } from "./tab_sections/Conversations";
 import ChatPreview from "../ChatPreview";
-
+import DeleteIcon from "../ui/icons/Delete";
+import CodeIcon from "../ui/icons/Code";
+import OpenTabIcon from "../ui/icons/OpenTab";
+import UsersIcon from "../ui/icons/Users";
+import {motion} from "framer-motion";
 const MAX_WIDTH = "max-w-7xl";
 
 export const PageContainer = ({
@@ -37,14 +41,10 @@ export const PageContainer = ({
       (child as React.ReactElement).type !== PageContainer.Header
   );
   return (
-    <main className="bg-indigo-50/70">
+    <main className="h-full max-w-7xl mx-auto py-8">
       {HeaderComponent && HeaderComponent}
-      <article className={cn("min-h-svh pb-10 pl-24 pr-6")} {...props}>
-        <main
-          className={cn("bg-[#fff] min-h-[80vh] rounded-3xl py-6 px-8 shadow")}
-        >
+      <article className={cn("h-full")} {...props}>
           <section className="max-w-7xl mx-auto">{nodes}</section>
-        </main>
       </article>
     </main>
   );
@@ -69,7 +69,9 @@ export const Title = ({
             <IoIosArrowRoundBack />
           </Link>
         )}
-        <h1 className="font-medium text-2xl md:text-3xl">{children}</h1>
+        <h2 className="text-3xl font-bold  text-dark">
+        {children}
+        </h2>
       </div>
       {cta}
     </nav>
@@ -143,7 +145,7 @@ export const Button = ({
       <Link
         to={to}
         className={cn(
-          "p-2 bg-brand-500 text-white rounded-full px-6",
+          "h-10 w-[auto] flex gap-1 items-center bg-brand-500 py-3 px-6 rounded-full text-clear hover:ring hover:ring-brand-500 transition-all",
           modes,
           className
         )}
@@ -222,56 +224,48 @@ export const ChatCard = ({
   }, []);
 
   return (
-    <section className="border rounded-3xl border-gray-300 px-5 py-4 max-w-80 hover:shadow-lg transition-all">
-      <Link
-        to={`/chat/${chatbot.slug}`}
-        className="font-medium text-xl hover:underline"
-      >
-        {chatbot.name}
-      </Link>
-      <p className="text-gray-600 py-4">
-        Tus clientes suelen preguntar por tu servicio de consultoría
-      </p>
-      <nav className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <span className="w-5">
-            <img
-              className="w-full h-full"
-              src="/assets/chat/users.svg"
-              alt="avatares"
-            />
-          </span>
-          <span>{conversationsCount} chats</span>
+    <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{
+      duration: 0.4,
+      // delay: index * 0.05,
+      ease: [0.25, 0.1, 0.25, 1]
+    }}
+    className="w-full md:w-[268px]"
+  >
+    <Link
+      to={`/chat/${chatbot.slug}`}
+      className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl px-4 pt-4 pb-2 w-full h-full block"
+    >
+      <div className="flex flex-col h-full">
+        <section className="flex justify-between items-center gap-2 mb-2">
+          <h2 className="text-xl font-medium text-darktruncate">
+          {chatbot.name}
+          </h2>
+        </section>
+        <p className="text-sm text-metal flex-grow">
+          {chatbot.summary || 'Pronto podrás saber que es lo que más preguntan tus clientes'}
+        </p>
+        <div className="flex text-sm gap-4 mt-4 justify-between items-end">
+          <p className="text-space-600 dark:text-space-400 font-normal flex gap-1 items-center">
+            <UsersIcon /> {conversationsCount} convers
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            className="hover:bg-gray-300 w-6 rounded-full"
-            onClick={onDelete}
-          >
-            <img
-              className="w-full h-full"
-              src="/assets/chat/recyclebin.svg"
-              alt="avatares"
-            />
+        <div id="actions" className="w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3">
+        <button  className="hover:bg-gray-300 w-6 rounded-full"
+            onClick={onDelete}>
+          <DeleteIcon />
           </button>
-          <hr className="h-[18px] border-l-2 border-l-gray-300" />
-          <span>
-            <img
-              className="w-full h-full"
-              src="/assets/chat/code.svg"
-              alt="avatares"
-            />
-          </span>
+          <hr className="h-6 w-[1px] border-none bg-outlines"/>
+          <CodeIcon />
           <Link to={`/chat/${chatbot.slug}`}>
-            <img
-              className="w-full h-full"
-              src="/assets/chat/paintbrush.svg"
-              alt="avatares"
-            />
+          <OpenTabIcon />
           </Link>
         </div>
-      </nav>
-    </section>
+      </div>
+    </Link>
+  </motion.div>
   );
 };
 

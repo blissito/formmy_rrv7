@@ -10,7 +10,6 @@ import {
 import Nav from "~/components/NavBar";
 import invariant from "tiny-invariant";
 import { db } from "~/utils/db.server";
-import { useCallback } from "react";
 import { twMerge } from "tailwind-merge";
 import { ProTag } from "~/components/ProTag";
 import { Dropdown } from "~/components/Menu";
@@ -30,6 +29,7 @@ import ChatIcon from "~/components/ui/icons/ChatIcon";
 import CodeIcon from "~/components/ui/icons/Code";
 import { MessageIcon } from "~/components/ui/icons/MessageIcon";
 import BubbleIcon from "~/components/ui/icons/Buuble";
+import { motion } from "framer-motion";
 
 const findActivePermissions = async (email: string): Promise<Permission[]> => {
   const permissions = await db.permission.findMany({
@@ -124,30 +124,24 @@ export const action = async ({ request }: Route.ActionArgs) => {
 export default function DashboardFormmys({ loaderData }: { loaderData: LoaderData }) {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
-  const { user, projects, permission, invitedProyects } = useLoaderData();
+  const { user, projects, permission, invitedProyects } =
+    useLoaderData<typeof loader>();
   const [filtered, setFiltered] = useState<Project[]>(
     projects.concat(invitedProyects)
   );
-  const [isSearch, setIsSearch] = useState<string>('');
-  const [isClearing, setIsClearing] = useState(false);
+  const [isSearch, setIsSearch] = useState<string>();
   const isLimited = user.plan === "PRO" ? false : projects.length > 2;
   const isPro = user.plan === "PRO";
   const [isProOpen, setIsProOpen] = useState<boolean>(false);
   const { get, save } = useLocalStorage();
+  const [showModal, setShowModal] = useState(false);
 
-  const clearSearch = useCallback(() => {
-    if (!isSearch) return; // Don't clear if already empty
-    
-    setIsClearing(true);
-    setTimeout(() => {
-      setIsSearch('');
-      setFiltered(projects.concat(invitedProyects));
-      setIsClearing(false);
-    }, 200); // Match this with the CSS transition duration
-  }, [isSearch, projects, invitedProyects]);
+  const clearSearch = () => {
+    setIsSearch('');
+    setFiltered(projects.concat(invitedProyects));
+  };
 
   const onSearch = ({ target: { value } }: ChangeEvent<HTMLInputElement>) => {
-    if (isClearing) return; // Prevent updates during fade-out
     setIsSearch(value);
     setFiltered(
       projects.filter((pro) =>
@@ -244,7 +238,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
               emojis={"📢 📩"}
               title={"¡Hey! Tienes una invitación pendiente"}
             />
-      <div className="max-w-6xl mx-auto py-8 px-4">
+      <div className="max-w-7xl mx-auto py-8">
         <nav className="flex gap-2 flex-wrap justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold dark:text-white text-space-800">
@@ -252,11 +246,10 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
             </h2>
           </div>
           <div className="flex gap-2 mt-2 md:mt-0 w-full md:w-fit">
-            <div className="relative w-full">
-              <span className="absolute top-3 left-2 text-gray-400">
+              <div className="relative w-full">
+              <span className="absolute top-[11px] left-2 text-gray-400">
                 <BsSearch />
               </span>
-              <div className="relative w-full">
                 <input
                   onChange={onSearch}
                   onKeyDown={(e) => {
@@ -268,8 +261,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                   type="search"
                   placeholder="Busca un Formmy"
                   className={twMerge(
-                    "text-gray-600 dark:text-white pl-8 pr-8 border-none input bg-[#F7F7F9] placeholder:text-space-400 focus:ring-1 focus:ring-brand-500 placeholder:font-light rounded-full w-full transition-colors duration-200",
-                    isClearing ? "text-opacity-0" : "text-opacity-100"
+                    "text-dark dark:text-white pl-8 pr-8 border-none input bg-[#F7F7F9] placeholder:text-lightgray focus:ring-1 focus:ring-brand-500 placeholder:font-light rounded-full w-full [&::-webkit-search-cancel-button]:hidden"
                   )}
                   name="search"
                 />
@@ -277,14 +269,13 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                   <button
                     type="button"
                     onClick={clearSearch}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                    className="absolute bg-perl w-6 h-6 rounded-full right-3 top-1/2 -translate-y-1/2 text-metal transition-colors grid place-items-center"
                     aria-label="Clear search"
                   >
-                    ✕
+                  <p>  ✕</p>
                   </button>
                 )}
               </div>
-            </div>
 
         
             {!isLimited && (
@@ -308,37 +299,61 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
               )}  
           </div>
         </nav>
-
         <section className="py-10 flex flex-wrap gap-4">
-            {filtered.map((p) => (
+          {filtered.map((p, index) => (
             <ProjectCard
+              key={p.id}
               isInvite={p.userId !== user.id}
-               key={p.id}
-                 project={p}
-                  {...p}
-          />
+              project={p}
+              index={index}
+              {...p}
+            />
           ))}
           {filtered.length === 0 && (
-            <div className="mx-auto text-center flex flex-col justify-center w-full min-h-[60vh]">
-              <img
-                className="flex dark:hidden w-[320px] mx-auto"
-                src="/assets/empty_ghost.svg"
-                alt="empty ghost"
-              />
-              <img
-                className="hidden dark:flex w-[320px] mx-auto"
-                src="/assets/empty-ghost-dark.svg"
-                alt="empty ghost"
-              />
-              <h2 className="font-bold text-dark text-2xl">
+            <motion.div 
+              className="mx-auto text-center flex flex-col justify-center w-full min-h-[60vh]"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{
+                duration: 0.5,
+                ease: [0.16, 1, 0.3, 1]
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.5 }}
+              >
+                <img
+                  className="flex dark:hidden w-[320px] mx-auto"
+                  src="/assets/empty_ghost.svg"
+                  alt="empty ghost"
+                />
+                <img
+                  className="hidden dark:flex w-[320px] mx-auto"
+                  src="/assets/empty-ghost-dark.svg"
+                  alt="empty ghost"
+                />
+              </motion.div>
+              <motion.h2 
+                className="font-bold text-dark text-2xl mt-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
                 ¡Nada por aquí!
-              </h2>
-              <p className="font-light text-lg mt-4 text-metal">
+              </motion.h2>
+              <motion.p 
+                className="font-light text-lg mt-4 text-metal"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
                 {!isSearch
                   ? "Empieza a recibir mensajes creando tu primer Formmy."
                   : "No encontramos ningún Formmy con ese nombre. Intenta con otro."}
-              </p>
-            </div>
+              </motion.p>
+            </motion.div>
           )}
         </section>
       </div>
@@ -376,40 +391,56 @@ export const ProjectCard = ({
   project,
   name,
   id,
+  index = 0,
 }: {
   isInvite?: boolean;
   actionNode?: ReactNode;
   project: Project;
   name: string;
   id: string;
+  index?: number;
 }) => {
   return (
-    <Link
-      to={id ?? ""}
-      className="group relative overflow-hidden  hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)]
-        dark:shadow-none border border-outlines bg-white rounded-2xl px-4 pt-4 pb-2  w-full md:w-[268px] cursor-pointer  transition-all"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.4,
+        delay: index * 0.05,
+        ease: [0.25, 0.1, 0.25, 1]
+      }}
+      className="w-full md:w-[268px]"
     >
-      <section className="flex justify-between items-center gap-2">
-        <h2 className="text-xl font-medium dark:text-white text-space-800 truncate">
-          {name}
-        </h2>
-        {actionNode}
-        {project.type === 'subscription' && <ModificameBRENDIYellowCorner />}
-      </section>
-      <p className="text-sm text-metal">{project.summary? project.summary : 'Pronto podrás saber que es lo que más preguntan tus clientes'}</p>
-      <div className="flex text-sm gap-4 mt-4 justify-between">
-        <p className="text-space-600 dark:text-space-400 font-normal flex gap-1 items-center">
-          <BubbleIcon /> {project.answers?.length} mensajes
-        </p>
-        {isInvite && <ModificameBRENDIPurpleCorner />}
-      </div>
-      <div id="actions" className="w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3">
-      <DeleteIcon />
-      <hr className="h-6 w-[1px] border-none bg-outlines"/>
-      <CodeIcon />
-      <OpenTabIcon />
-      </div>
-    </Link>
+      <Link
+        to={id ?? ""}
+        className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl px-4 pt-4 pb-2 w-full h-full block"
+      >
+        <div className="flex flex-col h-full">
+          <section className="flex justify-between items-center gap-2 mb-2">
+            <h2 className="text-xl font-medium text-darktruncate">
+              {name}
+            </h2>
+            {actionNode}
+            {project.type === 'subscription' && <ModificameBRENDIYellowCorner />}
+          </section>
+          <p className="text-sm text-metal flex-grow">
+            {project.summary || 'Pronto podrás saber que es lo que más preguntan tus clientes'}
+          </p>
+          <div className="flex text-sm gap-4 mt-4 justify-between items-end">
+            <p className="text-space-600 dark:text-space-400 font-normal flex gap-1 items-center">
+              <BubbleIcon /> {project.answers?.length || 0} {project.answers?.length === 1 ? 'mensaje' : 'mensajes'}
+            </p>
+            {isInvite && <ModificameBRENDIPurpleCorner />}
+          </div>
+          <div id="actions" className="w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3">
+            <DeleteIcon />
+            <hr className="h-6 w-[1px] border-none bg-outlines"/>
+            <CodeIcon />
+            <OpenTabIcon />
+          </div>
+        </div>
+      </Link>
+    </motion.div>
   );
 };
 
