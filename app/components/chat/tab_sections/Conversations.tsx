@@ -135,8 +135,8 @@ export const Conversations = ({
   );
 
   return (
-    <main className="flex flex-wrap gap-6">
-      <article className={cn("grow flex-1", "flex flex-col gap-6")}>
+    <main className="grid grid-cols-12 gap-6">
+      <article className={cn("col-span-3 overflow-hidden", "flex flex-col gap-6")}>
         <ChipTabs
           names={["Todos", "Favoritos"]}
           onTabChange={setCurrentTab}
@@ -152,7 +152,7 @@ export const Conversations = ({
           currentConversation={conversation}
         />
       </article>
-      <section className="grow max-w-">
+      <section className="col-span-9">
         <ConversationsPreview conversation={conversation} />
       </section>
     </main>
@@ -207,7 +207,7 @@ const Conversation = ({
         "cursor-pointer",
         "flex gap-3",
         "items-center",
-        "w-[320px] min-w-full",
+        "w-full min-w-full",
         {
           "bg-brand-500/10": isActive,
         }
@@ -215,8 +215,8 @@ const Conversation = ({
     >
       <Avatar className="w-10" src={pic || "/assets/chat/ghosty.svg"} />
       <div className="flex-1 truncate">
-        <p className="font-medium text-sm">{conversation.userName}</p>
-        <p className="text-xs text-gray-600 truncate">
+        <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
+        <p className="text-xs text-irongray truncate -mt-[2px]">
           {lastUserMessage?.content}
         </p>
       </div>
@@ -242,25 +242,25 @@ const ChatHeader = ({
     <header
       style={{ borderColor: primaryColor || "brand-500" }}
       className={cn(
-        "border",
+        "border-t border-l border-r border-outlines",
         "flex",
         "items-center",
         "gap-2",
         "rounded-t-3xl",
-        "bg-gray-100/30 w-full p-3"
+        "bg-brand-100/40 w-full p-3"
       )}
     >
-      <Avatar src={conversation.messages[0].picture} />
+      <Avatar className="h-10 w-10" src={conversation.messages[0].picture || "/assets/chat/ghosty.svg"} />
       <div>
         <div className="flex items-center gap-1">
-          <h3 className="text-sm font-medium">{tel}</h3>
+          <h3 className="text-base font-medium text-dark">{tel}</h3>
           {/* @TODO: This should match chat icons */}
           <img src="/assets/chat/whatsapp.svg" alt="whatsapp icon" />
         </div>
         <p className="text-xs text-gray-500">{date}</p>
       </div>
       <button className="ml-auto mr-3">
-        <img src="/assets/chat/recyclebin.svg" alt="trash icon" />
+        <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
       </button>
     </header>
   );
@@ -310,7 +310,7 @@ export const ConversationsPreview = ({
   primaryColor?: string;
 }) => {
   return (
-    <article className="flex items-end flex-col">
+    <article className="flex items-end flex-col ">
       <ActionButtons />
       <hr className="my-3" />
       <ChatHeader conversation={conversation} />
@@ -321,7 +321,7 @@ export const ConversationsPreview = ({
           "flex-col",
           "border",
           "rounded-b-3xl",
-          "w-full p-3"
+          "w-full p-3 shadow-standard"
         )}
       >
         {conversation.messages.map((message) => (
@@ -342,11 +342,11 @@ export const SingleMessage = ({ message }: { message: Message }) => {
 
 const UserMessage = ({ message }: { message: Message }) => {
   return (
-    <main className="justify-end p-2 rounded-xl flex items-start gap-2">
-      <div className="text-xs p-2 bg-brand-500/10 text-brand-500 rounded-lg">
+    <main className="justify-end p-2 flex items-start gap-2">
+      <div className="text-base p-2 bg-dark text-white rounded-xl">
         {message.content}
       </div>
-      <Avatar src={message.picture} />
+      <Avatar className="w-8 h-8" src={message.picture} />
     </main>
   );
 };
@@ -359,9 +359,9 @@ const UserMessage = ({ message }: { message: Message }) => {
  */
 const AssistantMessage = ({ message }: { message: Message }) => {
   return (
-    <main className="justify-start p-2 rounded-xl flex items-start gap-2">
+    <main className="justify-start p-2  flex items-start gap-2">
       <Avatar className="w-6" />
-      <div className="text-xs p-2 bg-black text-gray-300 rounded-lg relative">
+      <div className="text-base p-2 bg-white border border-outlines rounded-xl relative">
         {message.content}
         <MicroLikeButton />
       </div>

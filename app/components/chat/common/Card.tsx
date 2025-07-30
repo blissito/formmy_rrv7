@@ -22,7 +22,7 @@ export const Card = ({
   return (
     <article
       className={cn(
-        "flex flex-col bg-[#fff] p-6 rounded-3xl font-light  border border-outlines shadow-[8px_16px_14px_#F8F8FB]",
+        "flex flex-col bg-[#fff] p-6 rounded-3xl font-light  border border-outlines shadow-standard",
         className
       )}
     >
@@ -49,27 +49,27 @@ export const MiniCard = ({
 }) => {
   return (
     <label
-      className={cn("flex gap-3 p-4 rounded-2xl border-gray-300 border", {
-        "border-brand-500": isSelected,
+      className={cn("flex gap-3 p-4 rounded-2xl border-outlines border", {
+        "border-outlines": isSelected,
       })}
     >
       <input
         checked={isSelected}
         type="checkbox"
-        className="w-4 h-4 rounded-full aspect-square ring ring-gray-300"
+        className="w-4 h-4 mt-[6px] rounded-full text-brand-500 border-outlines focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
         onChange={(ev) => onSelect?.(ev.target.checked)}
       />
       <div>
         <h3
-          className={cn("text-lg font-medium", {
-            "text-brand-500": isSelected,
+          className={cn("text-lg text-dark font-medium", {
+            "text-dark": isSelected,
           })}
         >
           {title}
         </h3>
         <p
-          className={cn("text-gray-600 text-xs", {
-            "text-brand-300": isSelected,
+          className={cn("text-irongray text-xs", {
+            "text-irongray": isSelected,
           })}
         >
           {text}
@@ -125,12 +125,12 @@ export const IntegrationCard = ({
   description: string;
 }) => {
   return (
-    <div className="grid shadow-lg border border-gray-300 p-4 rounded-3xl">
+    <div className="grid shadow-standard border border-outlines p-4 rounded-2xl">
       <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
       <h5 className="font-medium text-md mb-1">{name}</h5>
-      <p className="text-[10px] mb-4 text-gray-600">{description}</p>
+      <p className="text-sm mb-4 text-metal">{description}</p>
       <nav className="flex gap-2">
-        <SimpleButton className="grow">Conectar</SimpleButton>
+        <SimpleButton className="grow text-metal">Conectar</SimpleButton>
         <SimpleButton className="shrink-0">
           <img src="/assets/chat/notebook.svg" alt="" />
         </SimpleButton>

@@ -50,11 +50,11 @@ export const AgentForm = ({
       </div>
 
       <div>
-        <label className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+        <label className="text-sm text-metal mb-2 flex items-center gap-1">
           Creatividad
           <button className="group flex gap-2">
             <IoInformationCircleOutline />
-            <span className="text-xs bg-black text-white rounded-full px-2 invisible group-hover:visible">
+            <span className="text-xs bg-black text-white rounded px-2 opacity-0 group-hover:opacity-100 transition-all duration-200 ease-in-out transform scale-95 group-hover:scale-100">
               Temperatura
             </span>
           </button>
@@ -66,9 +66,8 @@ export const AgentForm = ({
           step="0.1"
           value={temperature}
           onChange={handleTemperatureChange}
-          className="w-full"
         />
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
+        <div className="flex justify-between text-sm text-dark mt-0">
           <span>Reservado</span>
           <span>Muy creativo</span>
         </div>
@@ -76,11 +75,11 @@ export const AgentForm = ({
 
       {/* Instrucciones */}
       <div>
-        <h3 className="text-sm mb-2">Instrucciones</h3>
+        <h3 className="text-sm text-metal mb-1">Prompt inicial</h3>
         <textarea
           value={instructions}
           onChange={handleInstructionsChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full px-3 py-2 border border-outlines rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           rows={8}
         />
       </div>

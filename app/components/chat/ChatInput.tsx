@@ -30,7 +30,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
     };
 
     return (
-      <div className="self-end w-full">
+      <div className="self-end w-full px-2 pb-1">
         <p className="text-xs text-gray-400 text-center mb-2">
           Powered by{" "}
           <a
@@ -42,7 +42,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
             Formmy.app
           </a>
         </p>
-        <div className="m-2 flex items-center gap-2 border rounded-2xl">
+        <div className="m-2 flex items-center gap-2 border border-outlines focus:border-dark rounded-full">
           <input
             ref={inputRef}
             type="text"
@@ -51,7 +51,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={disabled}
-            className="border-none w-min bg-transparent grow text-xs placeholder-slate-300 rounded-2xl"
+            className="w-min h-10 bg-transparent border-none grow text-base placeholder-lightgray rounded-full focus:outline-none focus:ring-0 focus:border-none"
           />
           <button
             className="w-min pr-3 flex-2"

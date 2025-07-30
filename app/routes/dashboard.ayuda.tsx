@@ -43,7 +43,7 @@ export const HelpCard=({title,image,className,index = 0}: {title: string, image:
           ease: [0.25, 0.1, 0.25, 1]
         }}
       >
-        <img className="object-cover w-full h-full" src={image} alt="blog post" />
+        <img className="object-cover object-center  w-full h-full" src={image} alt="blog post" />
       </motion.div>
       <motion.h3 
         className="text-dark text-lg heading mt-2"

@@ -87,7 +87,7 @@ export const Website = ({
       <Card
         title="Website o links"
         text={
-          <span>
+          <span className="text-metal">
             Rastrea páginas web específicas para actualizar continuamente tu IA.
             Configura las rutas incluidas y excluidas para refinar lo que tu IA
             aprende. Más información.{" "}

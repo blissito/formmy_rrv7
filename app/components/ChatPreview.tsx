@@ -236,7 +236,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
 
   return (
     <main
-      className={cn("h-full", {
+      className={cn("h-full max-h-[680px] ", {
         "bg-chatPattern bg-cover rounded-3xl  ": !production,
       })}
     >

@@ -6,6 +6,7 @@ export const Input = ({
   placeholder,
   left = null,
   className,
+  inputClassName,
   label,
   onChange,
   containerClassName,
@@ -16,6 +17,7 @@ export const Input = ({
   containerClassName?: string;
   onChange?: (value: string) => void;
   label?: ReactNode;
+  inputClassName?: string;
   className?: string;
   left?: ReactNode;
   placeholder?: string;
@@ -55,8 +57,9 @@ export const Input = ({
             {
               "rounded-r-xl": !!left,
               "rounded-xl": !left,
-              "rounded-l-xl": type === "textarea",
-            }
+              "rounded-l-xl ": type === "textarea",
+            },
+            inputClassName
           )}
           type={type === "textarea" ? undefined : type}
           rows={type === "textarea" ? 8 : undefined}

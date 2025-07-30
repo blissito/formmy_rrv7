@@ -29,30 +29,30 @@ export const CodeBlock = ({
   };
 
   return (
-    <section className="mt-6">
-      <h4 className="text-gray-900 text-lg font-medium mb-4">{title}</h4>
+    <section className="mt-8">
+      <h4 className="text-dark text-lg font-medium mb-2">{title}</h4>
       <ol className="space-y-2 text-gray-600 mb-6">
         {instructions.map((instruction, index) => (
           <li key={index} className="flex items-center">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-brand-100 text-brand-600 text-sm font-medium mr-2">
-              {index + 1}
+            <span className="flex items-center justify-center w-6 h-6 rounded-full text-metal text-base font-medium mr-2">
+              {index + 1}.
             </span>
-            {instruction.description}
+            {instruction.description}.
           </li>
         ))}
       </ol>
-      <div className="bg-gray-800 rounded-lg p-4 overflow-x-auto">
-        <div className="flex justify-between items-center text-gray-400 text-xs mb-2">
-          <span>{language}</span>
+      <div className="bg-[#F8F9F9] border border-outlines rounded-2xl p-4 overflow-x-auto">
+        <div className="flex justify-between items-center text-metal text-xs mb-2">
+          <span className="text-metal uppercase">{language}</span>
           <button
             onClick={copyToClipboard}
-            className="text-gray-400 hover:text-white transition-colors relative w-4 h-4 flex items-center justify-center"
+            className="text-metal hover:text-metal/70 transition-colors relative w-6 h-6 flex items-center justify-center"
             aria-label="Copiar código"
             title="Copiar al portapapeles"
           >
             {isCopied ? (
               <svg
-                className="w-4 h-4 text-green-400"
+                className="w-6 h-6 text-grass"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -66,7 +66,7 @@ export const CodeBlock = ({
               </svg>
             ) : (
               <svg
-                className="w-4 h-4"
+                className="w-5 h-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -81,7 +81,7 @@ export const CodeBlock = ({
             )}
           </button>
         </div>
-        <pre className="text-gray-200 text-sm font-mono max-w-[30ch]">
+        <pre className="text-dark text-sm font-mono max-w-[30ch]">
           <code>{code}</code>
         </pre>
       </div>
