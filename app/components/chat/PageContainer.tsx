@@ -1,5 +1,5 @@
 import type { Chatbot, User } from "@prisma/client";
-import { useState, type ReactNode, useEffect, Children } from "react";
+import { useState, type ReactNode, useEffect, Children, useRef } from "react";
 import { cn } from "~/lib/utils";
 import Spinner from "../Spinner";
 import { Effect, pipe } from "effect";
@@ -312,7 +312,7 @@ export const EditionPair = ({
   }
 
   return (
-    <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-290px)]">
+    <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-300px)]">
       <section className="col-span-4">{content}</section>
       {preview && <section className="col-span-8">{preview}</section>}
     </article>
@@ -327,11 +327,9 @@ export const TabSelector = ({
   onTabChange?: (tab: string) => void;
 }) => {
   const [selectedTab, setSelectedTab] = useState(activeTab || "Preview");
-
-  const handleTabClick = (tab: string) => {
-    setSelectedTab(tab);
-    onTabChange?.(tab);
-  };
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const tabs = [
     "Preview",
@@ -342,10 +340,35 @@ export const TabSelector = ({
     "Configuración",
   ];
 
+  const activeIndex = tabs.indexOf(selectedTab);
+
+  useEffect(() => {
+    const updateIndicator = () => {
+      const activeTab = tabRefs.current[activeIndex];
+      if (activeTab && containerRef.current) {
+        const tabRect = activeTab.getBoundingClientRect();
+        const containerRect = containerRef.current.getBoundingClientRect();
+        setIndicatorStyle({
+          left: activeTab.offsetLeft,
+          width: tabRect.width,
+        });
+      }
+    };
+
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [activeIndex]);
+
+  const handleTabClick = (tab: string) => {
+    setSelectedTab(tab);
+    onTabChange?.(tab);
+  };
+
   return (
     <nav
       className={cn(
-        "border-b",
+        "relative",
         "flex overflow-auto items-end justify-center",
         "mb-6"
       )}
@@ -353,15 +376,27 @@ export const TabSelector = ({
         scrollbarWidth: "none",
       }}
     >
-      {tabs.map((tab) => (
-        <TabButton
-          key={tab}
-          isActive={selectedTab === tab}
-          onClick={() => handleTabClick(tab)}
-        >
-          {tab}
-        </TabButton>
-      ))}
+      <div ref={containerRef} className="relative flex">
+        {tabs.map((tab, index) => (
+          <TabButton
+            key={tab}
+            ref={(el: HTMLButtonElement | null) => (tabRefs.current[index] = el)}
+            isActive={selectedTab === tab}
+            onClick={() => handleTabClick(tab)}
+          >
+            {tab}
+          </TabButton>
+        ))}
+        
+        {/* Barra animada sin bordes laterales */}
+        <div
+          className="absolute bottom-0 h-0.5 bg-brand-500 transition-all duration-300 ease-out"
+          style={{
+            left: `${indicatorStyle.left}px`,
+            width: `${indicatorStyle.width}px`,
+          }}
+        />
+      </div>
     </nav>
   );
 };
@@ -386,21 +421,30 @@ export const TabButton = ({
     <button
       onClick={onClick}
       className={cn(
+        "relative",
         "text-base",
         "text-gray-600",
-        // @TODO: Revisit rpundeness, podría ser un elemento aparte con Motion
-        "border-b-4 border-transparent",
-        "p-2 px-6",
-        "hover:text-black transition-colors",
+        "p-3 px-6",
+        "hover:text-black transition-all duration-200",
+        "focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-none",
+        "border-none outline-none",
+        "select-none",
         {
-          "border-b-brand-500 text-black": isActive,
+          "text-black font-medium": isActive,
         },
         className
       )}
+      style={{
+        WebkitTapHighlightColor: 'transparent',
+        outline: 'none',
+        border: 'none',
+      }}
       {...props}
     >
-      {isLoading && <Spinner />}
-      {!isLoading && children}
+      <span className="relative z-10">
+        {isLoading && <Spinner />}
+        {!isLoading && children}
+      </span>
     </button>
   );
 };
