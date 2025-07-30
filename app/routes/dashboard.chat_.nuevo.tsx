@@ -122,8 +122,7 @@ export default function ChatbotConfigRoute({
   return (
     <>
       <PageContainer>
-        <PageContainer.Header user={user} />
-        <PageContainer.Title back="/chat">
+        <PageContainer.Title back="/dashboard/chat">
           {"Nuevo Chatbot"}
         </PageContainer.Title>
         <PageContainer.StickyGrid>

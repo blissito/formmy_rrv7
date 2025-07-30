@@ -11,7 +11,12 @@ import {
   ConversationsPreview,
 } from "./tab_sections/Conversations";
 import ChatPreview from "../ChatPreview";
-
+import DeleteIcon from "../ui/icons/Delete";
+import CodeIcon from "../ui/icons/Code";
+import OpenTabIcon from "../ui/icons/OpenTab";
+import UsersIcon from "../ui/icons/Users";
+import {motion} from "framer-motion";
+import EditIcon from "../ui/icons/Edit";
 const MAX_WIDTH = "max-w-7xl";
 
 export const PageContainer = ({
@@ -37,14 +42,10 @@ export const PageContainer = ({
       (child as React.ReactElement).type !== PageContainer.Header
   );
   return (
-    <main className="bg-indigo-50/70">
+    <main className="h-full max-w-7xl mx-auto py-8 ">
       {HeaderComponent && HeaderComponent}
-      <article className={cn("min-h-svh pb-10 pl-24 pr-6")} {...props}>
-        <main
-          className={cn("bg-[#fff] min-h-[80vh] rounded-3xl py-6 px-8 shadow")}
-        >
+      <article className={cn("h-full")} {...props}>
           <section className="max-w-7xl mx-auto">{nodes}</section>
-        </main>
       </article>
     </main>
   );
@@ -62,14 +63,16 @@ export const Title = ({
   [x: string]: unknown;
 }) => {
   return (
-    <nav className="flex justify-between items-center mb-10">
-      <div className="flex items-end gap-4">
+    <nav className="flex justify-between items-center mb-8">
+      <div className="flex items-end gap-4 relative">
         {back && (
-          <Link to={back} className="text-4xl">
+          <Link to={back} className="text-4xl absolute -left-10">
             <IoIosArrowRoundBack />
           </Link>
         )}
-        <h1 className="font-medium text-2xl md:text-3xl">{children}</h1>
+        <h2 className="text-3xl font-bold  text-dark">
+        {children}
+        </h2>
       </div>
       {cta}
     </nav>
@@ -143,7 +146,7 @@ export const Button = ({
       <Link
         to={to}
         className={cn(
-          "p-2 bg-brand-500 text-white rounded-full px-6",
+          "h-10 w-[auto] flex gap-1 items-center bg-brand-500 px-6 rounded-full text-clear hover:ring hover:ring-brand-500 transition-all",
           modes,
           className
         )}
@@ -159,7 +162,7 @@ export const Button = ({
     <button
       onClick={onClick}
       className={cn(
-        "p-2 bg-brand-500 text-white rounded-full px-6",
+        "h-12 bg-brand-500 text-white rounded-full px-6",
         modes,
         className
       )}
@@ -222,56 +225,49 @@ export const ChatCard = ({
   }, []);
 
   return (
-    <section className="border rounded-3xl border-gray-300 px-5 py-4 max-w-80 hover:shadow-lg transition-all">
-      <Link
-        to={`/chat/${chatbot.slug}`}
-        className="font-medium text-xl hover:underline"
-      >
-        {chatbot.name}
-      </Link>
-      <p className="text-gray-600 py-4">
-        Tus clientes suelen preguntar por tu servicio de consultoría
-      </p>
-      <nav className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <span className="w-5">
-            <img
-              className="w-full h-full"
-              src="/assets/chat/users.svg"
-              alt="avatares"
-            />
-          </span>
-          <span>{conversationsCount} chats</span>
+    <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{
+      duration: 0.4,
+      // delay: index * 0.05,
+      ease: [0.25, 0.1, 0.25, 1]
+    }}
+    className="w-full md:w-[268px]"
+  >
+    <Link
+      to={`/dashboard/chat/${chatbot.slug}`}
+      className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)]  border border-outlines bg-white rounded-2xl  w-full h-full block"
+    >
+        <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
+          <img src="/dash/chat.png" alt="chatbot" />
+        </section>
+        <div className="flex flex-col  px-4 pt-4 pb-2">
+          <h2 className="text-xl font-medium text-darktruncate">
+          {chatbot.name}
+          </h2>
+        <p className="text-sm text-metal flex-grow">
+          {chatbot.summary || 'Pronto podrás saber que es lo que más preguntan tus clientes'}
+        </p>
+        <div className="flex text-sm gap-4 mt-4 justify-between items-end">
+          <p className="text-metal font-normal flex gap-1 items-center">
+            <UsersIcon className="w-5 h-5" /> {conversationsCount} {conversationsCount === 1 ? 'chat' : 'chats'}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            className="hover:bg-gray-300 w-6 rounded-full"
-            onClick={onDelete}
-          >
-            <img
-              className="w-full h-full"
-              src="/assets/chat/recyclebin.svg"
-              alt="avatares"
-            />
+        <div id="actions" className="w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3">
+        <button  className="hover:bg-gray-300 w-6 rounded-full"
+            onClick={onDelete}>
+          <DeleteIcon />
           </button>
-          <hr className="h-[18px] border-l-2 border-l-gray-300" />
-          <span>
-            <img
-              className="w-full h-full"
-              src="/assets/chat/code.svg"
-              alt="avatares"
-            />
-          </span>
-          <Link to={`/chat/${chatbot.slug}`}>
-            <img
-              className="w-full h-full"
-              src="/assets/chat/paintbrush.svg"
-              alt="avatares"
-            />
+          <hr className="h-6 w-[1px] border-none bg-outlines"/>
+          <CodeIcon />
+          <Link to={`/dashboard/chat/${chatbot.slug}`}>
+          <EditIcon />
           </Link>
         </div>
-      </nav>
-    </section>
+      </div>
+    </Link>
+  </motion.div>
   );
 };
 
@@ -313,7 +309,7 @@ export const EditionPair = ({
   }
 
   return (
-    <article className="flex gap-6 items-stretch">
+    <article className="flex gap-6 items-stretch h-full min-h-[700px)]  max-h-[calc(100vh-310px)]">
       <section className="flex-1">{content}</section>
       {preview && <section className="grow flex-2">{preview}</section>}
     </article>

@@ -76,6 +76,10 @@ export default {
         patternwhite: "url('/assets/pattern-w.svg')",
         steperCover: "url('/home/steper-cover.png')",
         actionsBack: "url('/dash/actions-back.svg')",
+        chatPattern:"url('/dash/chat-pattern.svg')"
+      },
+      boxShadow: {
+        standard: "8px 16px 14px #F8F8FB",
       },
       animation: {
         scroll:

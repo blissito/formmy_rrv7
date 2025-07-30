@@ -51,7 +51,7 @@ export const Input = ({
           placeholder={placeholder}
           className={cn(
             "placeholder:text-gray-400",
-            "border-none focus:outline-none py-3 focus:border-none  w-full min-h-full",
+            "border-none focus:outline-none py-3 focus:border-none  focus:ring-brand-500 w-full min-h-full",
             {
               "rounded-r-2xl": !!left,
               "rounded-2xl": !left,
