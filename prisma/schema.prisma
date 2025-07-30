@@ -139,7 +139,6 @@ model User {
   permissions     Permission[]
   chatbots        Chatbot[] // New relation for chatbots
 
-
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 }
@@ -211,7 +210,7 @@ model Chatbot {
   user          User           @relation(fields: [userId], references: [id])
   conversations Conversation[]
   integrations  Integration[]
-  apiKeys         ApiKey[] // New relation for API keys
+  apiKeys       ApiKey[] // New relation for API keys
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -261,9 +260,11 @@ model Message {
   deleted Boolean     @default(false)
   picture String?
 
-  // Metadata
-  tokens           Int? // for usage tracking
-  responseTime     Int? // in milliseconds
+  // Metadata - add channel info
+  channel           String? // 'web', 'whatsapp', 'telegram'
+  externalMessageId String? // WhatsApp message ID
+  tokens            Int? // for usage tracking
+  responseTime      Int? // in milliseconds
   firstTokenLatency Int? // time to first chunk in milliseconds
 
   // Relations
@@ -281,8 +282,15 @@ enum IntegrationType {
 model Integration {
   id       String          @id @default(auto()) @map("_id") @db.ObjectId
   platform IntegrationType
-  token    String?
-  isActive Boolean         @default(false)
+  token    String? // Access token
+  isActive Boolean         @default(true)
+
+  // New fields for WhatsApp
+  phoneNumberId      String?
+  businessAccountId  String?
+  webhookVerifyToken String?
+  lastActivity       DateTime?
+  errorMessage       String?
 
   // Relations
   chatbotId String  @db.ObjectId
@@ -313,8 +321,8 @@ model ApiKey {
   allowedDomains String[] // ["example.com", "*.example.com"]
 
   // Relations
-  chatbotId String @db.ObjectId
-  chatbot   Chatbot   @relation(fields: [chatbotId], references: [id])
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

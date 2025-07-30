@@ -82,6 +82,15 @@ export async function getConversationBySessionId(
 }
 
 /**
+ * Finds a conversation by session ID (alias for getConversationBySessionId)
+ */
+export async function findConversationBySessionId(
+  sessionId: string
+): Promise<Conversation | null> {
+  return getConversationBySessionId(sessionId);
+}
+
+/**
  * Gets all conversations for a chatbot
  */
 export async function getConversationsByChatbotId(

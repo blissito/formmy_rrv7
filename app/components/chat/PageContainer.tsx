@@ -356,6 +356,7 @@ export const TabSelector = ({
     >
       {tabs.map((tab) => (
         <TabButton
+          isDisabled={tab === "Tareas"}
           key={tab}
           isActive={selectedTab === tab}
           onClick={() => handleTabClick(tab)}
@@ -374,6 +375,7 @@ export const TabButton = ({
   className,
   to,
   isActive,
+  isDisabled,
   ...props
 }: {
   isActive?: boolean;
@@ -381,10 +383,12 @@ export const TabButton = ({
   isLoading?: boolean;
   onClick?: () => void;
   children: ReactNode;
+  isDisabled?: boolean;
   [x: string]: unknown;
 }) => {
   return (
     <button
+      disabled={isDisabled}
       onClick={onClick}
       className={cn(
         "text-sm",
@@ -395,6 +399,7 @@ export const TabButton = ({
         "hover:text-black transition-colors",
         {
           "border-b-brand-500 text-black": isActive,
+          "opacity-50 cursor-not-allowed": isDisabled,
         },
         className
       )}
@@ -405,6 +410,7 @@ export const TabButton = ({
     </button>
   );
 };
+// @todo: añade un tag de próximamente
 
 PageContainer.TabSelector = TabSelector;
 PageContainer.StickyGrid = StickyGrid;
