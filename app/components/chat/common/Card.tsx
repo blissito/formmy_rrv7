@@ -25,7 +25,9 @@ export const Card = ({
       )}
     >
       <nav className="flex justify-between gap-3 items-baseline">
-        <h3 className="text-2xl font-medium min-w-max text-dark mb-2">{title}</h3>
+        <h3 className="text-2xl font-medium min-w-max text-dark mb-2">
+          {title}
+        </h3>
         {!noSearch && <SearchInput />}
       </nav>
       {text && <p className="text-metal mb-6 text-base ">{text}</p>}
@@ -136,44 +138,6 @@ export const IntegrationCard = ({
   const isActive = integration?.isActive;
   const exists = !!integration;
   return (
-<<<<<<< HEAD
-    <div className="grid shadow-lg border border-gray-300 p-4 rounded-3xl">
-      <div className="flex justify-between items-start">
-        <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
-        {exists &&
-          (isActive ? (
-            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-              Conectado
-            </span>
-          ) : (
-            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-              Necesita revisión
-            </span>
-          ))}
-      </div>
-      <h5 className="font-medium text-md mb-1">{name}</h5>
-      <p className="text-[10px] mb-4 text-gray-600">{description}</p>
-      {lastActivity && (
-        <p className="text-[10px] text-gray-500 mb-2">
-          Última actividad: {lastActivity}
-        </p>
-      )}
-      <nav className="flex gap-2 mt-auto">
-        {!exists ? (
-          <SimpleButton className="grow" onClick={onConnect}>
-            Conectar
-          </SimpleButton>
-        ) : (
-          <>
-            <SimpleButton className="grow" onClick={onEdit}>
-              Editar
-            </SimpleButton>
-            <SimpleButton className="shrink-0" onClick={onDisconnect}>
-              <img src="/assets/chat/notebook.svg" alt="Configuración" />
-            </SimpleButton>
-          </>
-        )}
-=======
     <div className="grid shadow-standard border border-outlines p-4 rounded-2xl">
       <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
       <h5 className="font-medium text-md mb-1">{name}</h5>
@@ -183,7 +147,6 @@ export const IntegrationCard = ({
         <SimpleButton className="shrink-0">
           <img src="/assets/chat/notebook.svg" alt="" />
         </SimpleButton>
->>>>>>> 3eeeafefa3eb5b5542946d36a39c2cd7fa357ac4
       </nav>
     </div>
   );

@@ -15,7 +15,7 @@ import DeleteIcon from "../ui/icons/Delete";
 import CodeIcon from "../ui/icons/Code";
 import OpenTabIcon from "../ui/icons/OpenTab";
 import UsersIcon from "../ui/icons/Users";
-import {motion} from "framer-motion";
+import { motion } from "framer-motion";
 import EditIcon from "../ui/icons/Edit";
 const MAX_WIDTH = "max-w-7xl";
 
@@ -45,7 +45,7 @@ export const PageContainer = ({
     <main className="h-full max-w-7xl mx-auto py-8 ">
       {HeaderComponent && HeaderComponent}
       <article className={cn("h-full")} {...props}>
-          <section>{nodes}</section>
+        <section>{nodes}</section>
       </article>
     </main>
   );
@@ -72,9 +72,7 @@ export const Title = ({
             <IoIosArrowRoundBack />
           </Link>
         )}
-        <h2 className="text-3xl font-bold  text-dark">
-        {children}
-        </h2>
+        <h2 className="text-3xl font-bold  text-dark">{children}</h2>
       </div>
       {cta}
     </nav>
@@ -139,15 +137,14 @@ export const Button = ({
   children: ReactNode;
   [x: string]: unknown;
 }) => {
-
   if (to) {
     return (
       <Link
         to={to}
         className={cn(
           "h-10 w-[auto] flex gap-1 items-center px-6 rounded-full transition-all",
-          mode === "ghost" 
-            ? "bg-white border border-gray-300 rounded-lg text-gray-600 px-2 hover:bg-surfaceFour " 
+          mode === "ghost"
+            ? "bg-white border border-gray-300 rounded-lg text-gray-600 px-2 hover:bg-surfaceFour "
             : "bg-brand-500 text-clear hover:ring hover:ring-brand-500",
           className
         )}
@@ -164,8 +161,8 @@ export const Button = ({
       onClick={onClick}
       className={cn(
         "h-10 w-[auto] flex gap-1 items-center px-6 rounded-full transition-all",
-        mode === "ghost" 
-          ? "bg-white border border-gray-300 rounded-lg text-gray-600 px-2 hover:bg-surfaceFour " 
+        mode === "ghost"
+          ? "bg-white border border-gray-300 rounded-lg text-gray-600 px-2 hover:bg-surfaceFour "
           : "bg-brand-500 text-white hover:ring hover:ring-brand-500",
         className
       )}
@@ -229,48 +226,55 @@ export const ChatCard = ({
 
   return (
     <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{
-      duration: 0.4,
-      // delay: index * 0.05,
-      ease: [0.25, 0.1, 0.25, 1]
-    }}
-    className="w-full md:w-[268px]"
-  >
-    <Link
-      to={`/dashboard/chat/${chatbot.slug}`}
-      className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)]  border border-outlines bg-white rounded-2xl  w-full h-full block"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.4,
+        // delay: index * 0.05,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
+      className="w-full md:w-[268px]"
     >
+      <Link
+        to={`/dashboard/chat/${chatbot.slug}`}
+        className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)]  border border-outlines bg-white rounded-2xl  w-full h-full block"
+      >
         <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
           <img src="/dash/chat.png" alt="chatbot" />
         </section>
         <div className="flex flex-col  px-4 pt-4 pb-2">
           <h2 className="text-xl font-medium text-darktruncate">
-          {chatbot.name}
+            {chatbot.name}
           </h2>
-        <p className="text-sm text-metal flex-grow">
-          {chatbot.summary || 'Pronto podrás saber que es lo que más preguntan tus clientes'}
-        </p>
-        <div className="flex text-sm gap-4 mt-4 justify-between items-end">
-          <p className="text-metal font-normal flex gap-1 items-center">
-            <UsersIcon className="w-5 h-5" /> {conversationsCount} {conversationsCount === 1 ? 'chat' : 'chats'}
+          <p className="text-sm text-metal flex-grow">
+            {chatbot.summary ||
+              "Pronto podrás saber que es lo que más preguntan tus clientes"}
           </p>
+          <div className="flex text-sm gap-4 mt-4 justify-between items-end">
+            <p className="text-metal font-normal flex gap-1 items-center">
+              <UsersIcon className="w-5 h-5" /> {conversationsCount}{" "}
+              {conversationsCount === 1 ? "chat" : "chats"}
+            </p>
+          </div>
+          <div
+            id="actions"
+            className="w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3"
+          >
+            <button
+              className="hover:bg-gray-300 w-6 rounded-full"
+              onClick={onDelete}
+            >
+              <DeleteIcon />
+            </button>
+            <hr className="h-6 w-[1px] border-none bg-outlines" />
+            <CodeIcon />
+            <Link to={`/dashboard/chat/${chatbot.slug}`}>
+              <EditIcon />
+            </Link>
+          </div>
         </div>
-        <div id="actions" className="w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3">
-        <button  className="hover:bg-gray-300 w-6 rounded-full"
-            onClick={onDelete}>
-          <DeleteIcon />
-          </button>
-          <hr className="h-6 w-[1px] border-none bg-outlines"/>
-          <CodeIcon />
-          <Link to={`/dashboard/chat/${chatbot.slug}`}>
-          <EditIcon />
-          </Link>
-        </div>
-      </div>
-    </Link>
-  </motion.div>
+      </Link>
+    </motion.div>
   );
 };
 
@@ -356,8 +360,8 @@ export const TabSelector = ({
     };
 
     updateIndicator();
-    window.addEventListener('resize', updateIndicator);
-    return () => window.removeEventListener('resize', updateIndicator);
+    window.addEventListener("resize", updateIndicator);
+    return () => window.removeEventListener("resize", updateIndicator);
   }, [activeIndex]);
 
   const handleTabClick = (tab: string) => {
@@ -376,30 +380,20 @@ export const TabSelector = ({
         scrollbarWidth: "none",
       }}
     >
-<<<<<<< HEAD
-      {tabs.map((tab) => (
-        <TabButton
-          isDisabled={tab === "Tareas"}
-          key={tab}
-          isActive={selectedTab === tab}
-          onClick={() => handleTabClick(tab)}
-        >
-          {tab}
-        </TabButton>
-      ))}
-=======
       <div ref={containerRef} className="relative flex">
         {tabs.map((tab, index) => (
           <TabButton
             key={tab}
-            ref={(el: HTMLButtonElement | null) => (tabRefs.current[index] = el)}
+            ref={(el: HTMLButtonElement | null) =>
+              (tabRefs.current[index] = el)
+            }
             isActive={selectedTab === tab}
             onClick={() => handleTabClick(tab)}
           >
             {tab}
           </TabButton>
         ))}
-        
+
         {/* Barra animada sin bordes laterales */}
         <div
           className="absolute bottom-0 h-0.5 bg-brand-500 transition-all duration-300 ease-out"
@@ -409,7 +403,6 @@ export const TabSelector = ({
           }}
         />
       </div>
->>>>>>> 3eeeafefa3eb5b5542946d36a39c2cd7fa357ac4
     </nav>
   );
 };
@@ -446,19 +439,14 @@ export const TabButton = ({
         "border-none outline-none",
         "select-none",
         {
-<<<<<<< HEAD
-          "border-b-brand-500 text-black": isActive,
-          "opacity-50 cursor-not-allowed": isDisabled,
-=======
           "text-black font-medium": isActive,
->>>>>>> 3eeeafefa3eb5b5542946d36a39c2cd7fa357ac4
         },
         className
       )}
       style={{
-        WebkitTapHighlightColor: 'transparent',
-        outline: 'none',
-        border: 'none',
+        WebkitTapHighlightColor: "transparent",
+        outline: "none",
+        border: "none",
       }}
       {...props}
     >

@@ -19,7 +19,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
   // Obtener el código de referido del usuario
   const referral = await findReferralByUserId(user.id);
-  console.log("WTF?", referral);
+
   // Si el usuario no tiene un código de referido, crear uno
   if (!referral) {
     const newReferral = await createReferralCode(user.id);
@@ -173,7 +173,8 @@ export default function ReferralsDashboard({
                 Gana créditos
               </h3>
               <p className="text-gray-600">
-                Recibe 1 mes gratis por cada amigo que se convierta en usuario Pro con tu enlace
+                Recibe 1 mes gratis por cada amigo que se convierta en usuario
+                Pro con tu enlace
               </p>
             </div>
           </div>
