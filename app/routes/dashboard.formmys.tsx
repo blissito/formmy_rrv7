@@ -420,7 +420,7 @@ export const ProjectCard = ({
         </section>
         <div className="flex flex-col px-4 pt-4 pb-2">
           <section className="flex justify-between items-center gap-2 ">
-            <h2 className="text-xl font-medium text-darktruncate">
+            <h2 className="text-xl font-medium text-dark truncate">
               {name}
             </h2>
             {actionNode}

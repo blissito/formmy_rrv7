@@ -1,4 +1,5 @@
 import { cn } from "~/lib/utils"
+import { motion } from "framer-motion"
 
 export default function DashboardAyuda() {
   return(
@@ -7,12 +8,12 @@ export default function DashboardAyuda() {
     <h2 className="text-4xl heading text-center mb-8">¿Necesitas ayuda? 
     </h2>
     <div className="grid grid-cols-4 gap-6">
-      <HelpCard  title="Introducción" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
-      <HelpCard title="Tu primer chatbot ia" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
-      <HelpCard className="col-span-2" title="Entrenamiento de agentes" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
-      <HelpCard  title="Tu primer formmy" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
-      <HelpCard className="col-span-2" title="Integra WhatsApp a tu chatbot" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
-      <HelpCard title="Personaliza tu chatbot" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
+      <HelpCard index={0} title="Introducción" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
+      <HelpCard index={1} title="Tu primer chatbot ia" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
+      <HelpCard index={2} className="col-span-2" title="Entrenamiento de agentes" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
+      <HelpCard index={3} title="Tu primer formmy" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
+      <HelpCard index={4} className="col-span-2" title="Integra WhatsApp a tu chatbot" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
+      <HelpCard index={5} title="Personaliza tu chatbot" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
       </div>
     </div>
     </section>
@@ -20,13 +21,42 @@ export default function DashboardAyuda() {
 }
 
 
-export const HelpCard=({title,image,className}: {title: string, image: string, className?: string})=>{
+export const HelpCard=({title,image,className,index = 0}: {title: string, image: string, className?: string, index?: number})=>{
   return(
-    <section className={cn("grid place-content-center h-full", className)}>
-      <div className="w-full h-40 rounded-2xl overflow-hidden border border-outlines">
-        <img className="object-cover " src={image} alt="blog post" />
-      </div>
-      <h3 className="text-dark text-lg heading mt-2">{title}</h3>
-    </section>
+    <motion.section 
+      className={cn("flex flex-col justify-center h-full", className)}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        duration: 0.4,
+        delay: index * 0.1,
+        ease: [0.25, 0.1, 0.25, 1]
+      }}
+    >
+      <motion.div 
+        className="w-full h-40 rounded-2xl overflow-hidden border border-outlines"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{
+          duration: 0.5,
+          delay: index * 0.1 + 0.1,
+          ease: [0.25, 0.1, 0.25, 1]
+        }}
+      >
+        <img className="object-cover w-full h-full" src={image} alt="blog post" />
+      </motion.div>
+      <motion.h3 
+        className="text-dark text-lg heading mt-2"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: 0.4,
+          delay: index * 0.1 + 0.2,
+          ease: [0.25, 0.1, 0.25, 1]
+        }}
+      >
+        {title}
+      </motion.h3>
+    </motion.section>
   )
 }

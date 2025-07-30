@@ -55,15 +55,17 @@ export const Title = ({
   children,
   back,
   cta,
+  className,
   ...props
 }: {
   back?: string;
   cta?: ReactNode;
   children: ReactNode;
+  className?: string;
   [x: string]: unknown;
 }) => {
   return (
-    <nav className="flex justify-between items-center mb-8">
+    <nav className={cn("flex justify-between items-center mb-8", className)}>
       <div className="flex items-end gap-4 relative">
         {back && (
           <Link to={back} className="text-4xl absolute -left-10">
@@ -309,7 +311,7 @@ export const EditionPair = ({
   }
 
   return (
-    <article className="flex gap-6 items-stretch h-full min-h-[700px)]  max-h-[calc(100vh-310px)]">
+    <article className="flex gap-6 items-stretch h-full min-h-[700px)]  max-h-[calc(100vh-290px)]">
       <section className="flex-1">{content}</section>
       {preview && <section className="grow flex-2">{preview}</section>}
     </article>
@@ -383,7 +385,7 @@ export const TabButton = ({
     <button
       onClick={onClick}
       className={cn(
-        "text-sm",
+        "text-base",
         "text-gray-600",
         // @TODO: Revisit rpundeness, podría ser un elemento aparte con Motion
         "border-b-4 border-transparent",
