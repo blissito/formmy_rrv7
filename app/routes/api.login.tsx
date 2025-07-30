@@ -3,6 +3,18 @@ import { redirectToGoogle } from "~/lib/google.server";
 import { destroySession, getSession } from "~/sessions";
 import type { Route } from "./+types/api.login";
 
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const url = new URL(request.url);
+  const refCode = url.searchParams.get('ref');
+  
+  // Redirigir a Google con el código de referido en el state
+  return redirectToGoogle<typeof redirect>(
+    redirect, 
+    url.host, 
+    refCode ? `ref_${refCode}` : undefined
+  );
+};
+
 export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");

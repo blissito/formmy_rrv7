@@ -3,9 +3,17 @@ import {
   getUserOrTriggerLogin,
 } from "server/getUserUtils.server";
 import { type User } from "@prisma/client";
-import { data as json } from "react-router";
 import Stripe from "stripe";
+import type { StripeEvent } from "~/routes/stripe.webhook";
 import { db } from "~/utils/db.server";
+
+// Función de utilidad para crear respuestas de error
+function createErrorResponse(error: Error, status = 400): Response {
+  return new Response(JSON.stringify({ error: error.message }), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -99,30 +107,38 @@ export const createBillingSessionOrCheckoutURL = async (
 export const getStripeEvent = async (
   request: Request
 ): Promise<StripeEvent | undefined> => {
-  const stripe = new Stripe(
-    process.env.NODE_ENV === "development"
-      ? process.env.TEST_STRIPE_PV ?? ""
-      : process.env.STRIPE_PRIVATE_KEY ?? ""
-  );
+  // En desarrollo, devolvemos un evento simulado sin verificar la firma
+  if (process.env.NODE_ENV === "development") {
+    try {
+      const payload = await request.text();
+      console.log('[Webhook] Modo desarrollo: omitiendo verificación de firma');
+      return JSON.parse(payload) as StripeEvent;
+    } catch (error) {
+      console.error('Error al parsear el payload en modo desarrollo:', error);
+      throw new Error('Error al parsear el payload del webhook');
+    }
+  }
+
+  // En producción, verificamos la firma del webhook
+  const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY || '');
   const payload = await request.text();
-  const webhookSecret =
-    (process.env.NODE_ENV === "development"
-      ? process.env.TEST_STRIPE_SS
-      : process.env.STRIPE_SIGNING_SECRET) ?? "";
-  const webhookStripeSignatureHeader =
-    request.headers.get("stripe-signature") || "";
-  let event;
+  const webhookSecret = process.env.STRIPE_SIGNING_SECRET || '';
+  const webhookStripeSignatureHeader = request.headers.get("stripe-signature") || "";
+  
   try {
-    event = stripe.webhooks.constructEvent(
+    const event = stripe.webhooks.constructEvent(
       payload,
       webhookStripeSignatureHeader,
       webhookSecret
     );
+    return event;
   } catch (error) {
     console.error(`Stripe construct event error: ${error}`);
-    throw json(error, { status: 400 });
+    if (error instanceof Error) {
+      throw createErrorResponse(error);
+    }
+    throw new Error('Error desconocido al verificar el evento de Stripe');
   }
-  return event;
 };
 
 export const createCheckoutSessionURL = async ({

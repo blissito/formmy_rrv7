@@ -1,0 +1,146 @@
+# Formmy.app - Referral System Micro-Spec
+# ======================================
+
+## User Stories
+1. **As a Pro User**
+   - I want to receive a unique referral link to share with others
+   - I want to see how many people have signed up using my referral link
+   - I want to see how many free months I've earned from referrals
+
+2. **As a New User**
+   - I want to sign up through a referral link without any extra steps
+   - I don't need to know or enter any referral codes manually
+   - The referral is handled automatically through the signup link
+
+3. **As the System**
+   - When a referred user upgrades to Pro, add 1 free month to the referrer's account
+   - Prevent abuse by validating referral claims
+   - Log all referral activities for auditing
+
+## Technical Requirements
+
+### Data Models
+
+**Referral Model**
+- userId: ObjectId (usuario que refiere)
+- referralCode: String (código único, generado automáticamente)
+- stats: {
+    totalReferrals: Number (default: 0),
+    successfulReferrals: Number (default: 0),
+    freeMonthsEarned: Number (default: 0),
+    maxReferralMonths: Number (default: 12)
+  }
+- referrals: [{
+    referredUserId: ObjectId,
+    referralCode: String,
+    rewardGranted: Boolean,
+    rewardType: String (ej: 'free_month'),
+    rewardDetails: {},
+    status: String ('pending', 'completed', 'failed'),
+    referredAt: Date,
+    completedAt: Date
+  }]
+- isActive: Boolean (default: true)
+- createdAt: Date
+- updatedAt: Date
+
+### API Endpoint
+
+#### POST /api/referral
+- **Content-Type**: multipart/form-data
+- **Parámetros**:
+  - `intent`: String (required) - Acción a realizar. Valores posibles:
+    - `get_stats`: Obtener estadísticas de referidos
+    - `generate_code`: Generar nuevo código de referencia
+    - `process_referral`: Procesar un nuevo referido (se usa internamente)
+  - `code`: String (opcional) - Código de referencia (solo para process_referral)
+  - `referredUserId`: String (opcional) - ID del usuario referido (solo para process_referral)
+
+**Ejemplos**:
+
+1. Obtener estadísticas:
+```
+POST /api/referral
+intent=get_stats
+```
+
+2. Generar código de referencia:
+```
+POST /api/referral
+intent=generate_code
+```
+
+3. Registrar nuevo referido (uso interno):
+```
+POST /api/referral
+intent=process_referral
+code=ABC123
+referredUserId=60d5ec9f8b3f8b3f8b3f8b3f
+```
+
+### Business Logic
+
+1. **Eligibilidad de Referidos**
+   - Cualquier usuario (free o Pro) puede tener y compartir su enlace de referido
+   - El enlace se genera automáticamente al crear la cuenta
+   - Formato del código: 4 caracteres alfanuméricos (insensible a mayúsculas)
+   - Debe ser único en toda la plataforma
+
+2. **Sistema de Recompensas**
+   - Cuando un usuario referido se convierte en Pro:
+     1. **Usuario que refirió (cualquier tipo de cuenta)**: Recibe 1 mes de descuento en su próxima factura de Stripe
+     2. **Usuario referido**: No recibe beneficio directo (solo el que da la suscripción Pro)
+   - El descuento se aplica como un crédito en la factura de Stripe
+   - Sin límite en la cantidad de meses de descuento que puede recibir un referente
+   - Solo aplica para primeras suscripciones Pro (no renovaciones)
+   - Si el referente es usuario free y luego se convierte en Pro, el descuento se aplica igualmente
+
+3. **Reglas de Validación**
+   - Un usuario no puede auto-referirse
+   - El código debe ser válido y no expirado
+   - Solo se aplica un código de referido por usuario (el primero que use)
+   - El referente debe tener una cuenta activa (no suspendida o eliminada)
+
+## Dependencias (ya instaladas)
+- @prisma/client (ORM para la base de datos)
+- stripe (para integración con pagos)
+- nanoid (para generación de códigos de referencia)
+
+## Consideraciones de Seguridad
+- Validación básica de entrada en el endpoint
+- Protección contra auto-referencias
+- Registro mínimo de actividades de referencia
+
+## Integración con Stripe
+
+### Opciones para aplicar el mes gratis:
+
+1. **Usar Códigos de Cupón** (Recomendado):
+   - Crear un cupón en Stripe con un mes de descuento
+   - Aplicar automáticamente al usuario referido
+   - Ventajas: Fácil de rastrear en Stripe
+
+2. **Ajustar la Próxima Factura**:
+   - Usar `stripe.invoiceItems.create` para agregar un crédito
+   - Se aplica en la próxima facturación
+   - Ejemplo:
+     ```javascript
+     await stripe.invoiceItems.create({
+       customer: customerId,
+       amount: -1000, // $10.00 de descuento
+       currency: 'usd',
+       description: '1 mes gratis por referido',
+     });
+     ```
+
+3. **Extender la Suscripción**:
+   - Añadir 30 días adicionales al período de facturación
+   - Usar `trial_end` o `billing_cycle_anchor`
+
+**Nota**: El código de referencia solo existe en nuestra base de datos para seguimiento. La aplicación del descuento se maneja internamente en nuestro sistema al detectar una conversión exitosa a Pro.
+
+## Future Enhancements
+- Tiered rewards system
+- Referral leaderboard
+- Custom referral codes
+- Analytics dashboard for referral performance
