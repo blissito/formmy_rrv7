@@ -5,7 +5,7 @@ import FloatingMenu from "~/components/common/FloatingMenu";
 export const UsersTable = () => {
   return (
     <article>
-      <section className="grid grid-cols-10 text-xs font-medium">
+      <section className="grid grid-cols-10 text-sm px-4 ">
         <h6 className="col-span-1"></h6>
         <h6 className="col-span-2">Email</h6>
         <h6 className="col-span-2">Rol</h6>
@@ -24,19 +24,21 @@ export const UsersTable = () => {
 
 export const UserRow = () => {
   return (
-    <section className="grid items-center grid-cols-10 my-3 border border-gray-300 p-3 rounded-xl">
+    <section className="grid items-center grid-cols-10 my-3 border border-outlines p-4 rounded-xl">
+      <div className="col-span-1">
       <img
-        className="w-7 h-7 col-span-1"
+        className="w-10 h-10"
         src="/assets/chat/ghosty.svg"
         alt="user's avatar"
       />
+      </div>
 
-      <p className="font-medium text-xs truncate col-span-2">
+      <p className="font-medium text-sm truncate col-span-2">
         brenda@fixter.org
       </p>
 
-      <p className="col-span-2 text-xs">Propietario</p>
-      <p className="col-span-2 text-xs">
+      <p className="col-span-2 text-sm">Propietario</p>
+      <p className="col-span-2 text-sm">
         <Status status="activo" />
       </p>
       <p className="col-span-2 scale-75">
@@ -55,7 +57,7 @@ export const UserRow = () => {
             onClick: () => {},
           },
         ]}
-        buttonClassName="text-2xl text-gray-600 hover:bg-gray-100 p-1 rounded-full"
+        buttonClassName="text-2xl text-metal hover:bg-irongray/10 transition-all p-1 rounded-full"
         buttonLabel="Opciones"
       />
     </section>
@@ -65,6 +67,6 @@ export const UserRow = () => {
 // @TODO: add colors
 const Status = ({ status }: { status: string }) => {
   return (
-    <p className="col-span-2 text-xs text-green-500 capitalize">{status}</p>
+    <p className="col-span-2 text-sm text-green-500 capitalize">{status}</p>
   );
 };

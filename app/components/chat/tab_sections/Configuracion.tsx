@@ -55,8 +55,8 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
       {currentTab === "general" && (
         <section className="grid gap-5">
           <Card title="General">
-            <div className="mb-6">
-              <span className="text-xs text-gray-600 block mb-2">
+            <div className="mb-6 mt-4">
+              <span className="text-sm text-gray-600 block mb-2">
                 Id de tu chatbot
               </span>
               <nav className="flex gap-2 items-center">
@@ -92,11 +92,11 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
               </nav>
             </div>
             <div className="mb-6">
-              <span className="text-xs text-gray-600 block mb-2">Tamaño</span>
+              <span className="text-sm text-gray-600 block mb-2">Tamaño</span>
               <p>{chatbot.contextSizeKB || 400} KB</p>
             </div>
-            <div className="mb-6">
-              <span className="text-xs text-gray-600 block mb-2">
+            <div className="mb-0">
+              <span className="text-sm text-gray-600 block mb-2">
                 Historial del chat
               </span>
               <p>7 días</p>
@@ -104,14 +104,17 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
           </Card>
           <Card
             title="Eliminar chatbot"
-            text="Una vez que elimines tu chatbot, tu agente será eliminado al igual que toda la información que subiste. Está acción es irreversible, así que asegúrate de que está es la acción que quieres tomar."
+    
           >
+           <div className="flex gap-6">
+            <p className="text-metal max-w-[700px]">Una vez que elimines tu chatbot, tu agente será eliminado al igual que toda la información que subiste. Está acción es irreversible, así que asegúrate de que está es la acción que quieres tomar.</p>
             <button
               disabled
               className="block max-w-[220px] ml-auto disabled:opacity-50 disabled:cursor-not-allowed w-full bg-red-500 text-white py-2 px-4 rounded-full"
             >
               Eliminar
             </button>
+           </div>        
           </Card>
         </section>
       )}
@@ -119,10 +122,10 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
       {currentTab === "notificaciones" && (
         <section className="">
           <Card title="Configura tus notificaciones">
-            <main className="grid gap-4">
-              <Toggler text="Notificar cuando reciba un nuevo mensaje" />
-              <Toggler text="Recibe un correo cuando estes cerca del límite de uso de mensajes" />
-              <Toggler text="Recibe un correo cuando haya cambios importantes en la configuración de tu chat" />
+            <main className="grid gap-6 mt-4">
+              <Toggler title="Resumen semanal" text="Recibe un correo con un resumen de las conversaciones del día" />
+              <Toggler title="Límite de uso" text="Recibe un correo cuando estes cerca del límite de uso de mensajes" />
+              <Toggler title="Configuración" text="Recibe un correo cuando haya cambios importantes en la configuración de tu chat" />
             </main>
           </Card>
         </section>
@@ -138,7 +141,7 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
 
       {currentTab === "seguridad" && (
         <section className="">
-          <Card title="Configura tu seguridad">
+          <Card title="Configura tu seguridad" text="Aumenta la seguridad de tu chatbot permitiendo la conexión desde dominios específicos y estableciendo un límite de mensajes por minuto.">
             <main className="flex flex-col gap-4">
               <Input
                 label="Limita el acceso a tu agente"
@@ -153,8 +156,8 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
                   label="Estado"
                   placeholder="Selecciona un estado"
                 />
-                <div className="flex gap-2 items-start text-[10px] text-gray-400 mt-px">
-                  <span className="">
+                <div className="flex gap-1 items-start text-[12px] text-gray-400 mt-px">
+                  <span className="mt-[2px]">
                     <IoInformationCircleOutline />
                   </span>
                   <p>
@@ -175,8 +178,8 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
                   label="Límite de consultas por minuto"
                   placeholder="Selecciona un estado"
                 />
-                <div className="flex gap-2 items-start text-[10px] text-gray-400 mt-px">
-                  <span className="">
+                <div className="flex gap-1 items-start text-[12px] text-gray-400 mt-px">
+                <span className="mt-[2px]">
                     <IoInformationCircleOutline />
                   </span>
                   <p>
@@ -186,7 +189,9 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
                   </p>
                 </div>
               </section>
-              <Button className="ml-auto">Actualizar</Button>
+              <div className="flex w-full justify-end">
+              <Button className="!mr-0">Actualizar</Button>
+              </div>
             </main>
           </Card>
         </section>
@@ -197,14 +202,19 @@ export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
 
 const Toggler = ({
   text,
+  title,
   onChange,
 }: {
   text: string;
+  title?: string;
   onChange?: () => void;
 }) => {
   return (
     <div className="flex gap-2 items-center justify-between">
+      <div className="flex flex-col">
+      <h4 className="dark font-medium">{title}</h4>
       <p className="text-sm text-gray-600">{text}</p>
+      </div>
       <Toggle onChange={onChange} />
     </div>
   );

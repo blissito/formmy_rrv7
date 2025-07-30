@@ -45,7 +45,7 @@ export const PageContainer = ({
     <main className="h-full max-w-7xl mx-auto py-8 ">
       {HeaderComponent && HeaderComponent}
       <article className={cn("h-full")} {...props}>
-          <section className="max-w-7xl mx-auto">{nodes}</section>
+          <section>{nodes}</section>
       </article>
     </main>
   );
@@ -139,17 +139,16 @@ export const Button = ({
   children: ReactNode;
   [x: string]: unknown;
 }) => {
-  const modes = {
-    "bg-[#fff] border border-gray-300 rounded-lg text-gray-600 px-2":
-      mode === "ghost",
-  };
+
   if (to) {
     return (
       <Link
         to={to}
         className={cn(
-          "h-10 w-[auto] flex gap-1 items-center bg-brand-500 px-6 rounded-full text-clear hover:ring hover:ring-brand-500 transition-all",
-          modes,
+          "h-10 w-[auto] flex gap-1 items-center px-6 rounded-full transition-all",
+          mode === "ghost" 
+            ? "bg-white border border-gray-300 rounded-lg text-gray-600 px-2 hover:bg-surfaceFour " 
+            : "bg-brand-500 text-clear hover:ring hover:ring-brand-500",
           className
         )}
         {...props}
@@ -164,8 +163,10 @@ export const Button = ({
     <button
       onClick={onClick}
       className={cn(
-        "h-12 bg-brand-500 text-white rounded-full px-6",
-        modes,
+        "h-10 w-[auto] flex gap-1 items-center px-6 rounded-full transition-all",
+        mode === "ghost" 
+          ? "bg-white border border-gray-300 rounded-lg text-gray-600 px-2 hover:bg-surfaceFour " 
+          : "bg-brand-500 text-white hover:ring hover:ring-brand-500",
         className
       )}
       {...props}
@@ -311,9 +312,9 @@ export const EditionPair = ({
   }
 
   return (
-    <article className="flex gap-6 items-stretch h-full min-h-[700px)]  max-h-[calc(100vh-290px)]">
-      <section className="flex-1">{content}</section>
-      {preview && <section className="grow flex-2">{preview}</section>}
+    <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-290px)]">
+      <section className="col-span-4">{content}</section>
+      {preview && <section className="col-span-8">{preview}</section>}
     </article>
   );
 };
