@@ -183,7 +183,7 @@ export const createSession = async (code: string, request: Request, state?: stri
 
   session.set("userId", extra.email);
 
-  throw redirect("/dash", {
+  throw redirect("/dashboard/ghosty", {
     headers: {
       "set-cookie": await commitSession(session),
     },

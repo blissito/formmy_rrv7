@@ -31,7 +31,7 @@ export default function HomeHeader() {
       {/* Header mobile: estático, sin animación */}
       <header className="block md:hidden fixed bg-[#ffffff] !h-16 md:!h-20 top-6 left-1/2 translate-x-[-45vw] z-30 flex justify-between items-center pl-6 pr-4 w-[90vw] rounded-[99px] shadow-[0px_2px_32px_0px_rgba(33,22,76,0.08)]">
         <Link to="/">
-          <img className="w-14 md:auto" src={imgVector} alt="logo" />
+          <img className="w-20 md:auto" src={imgVector} alt="logo" />
         </Link>
         <button className="block md:hidden text-2xl text-dark focus:outline-none border border-gray-200 rounded-full w-12 h-12 flex items-center justify-center" aria-label="Abrir menú" onClick={() => setMobileMenu((v) => !v)}>
           {mobileMenu ? <HiX /> : <HiMenu />}

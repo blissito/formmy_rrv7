@@ -47,7 +47,27 @@ html:not(.dark) {
   background: #ebebfb;
 }
 
+/* Clases para ocultar scrollbar completamente */
 .noscroll::-webkit-scrollbar {
+  display: none;
+}
+
+.noscroll {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.noscroll::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Clase adicional para ocultar scrollbar manteniendo funcionalidad de scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
@@ -156,4 +176,42 @@ body {
 @keyframes carousel-x {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+
+
+input[type="range"] {
+  -webkit-appearance: none; /* Hides the slider so we can style it */
+  width: 100%; /* Full-width */
+  height: 8px;
+  border-radius: 5px; /* Rounded corners */
+  background: #E1E3E7; /* Grey background */
+  outline: none; /* Remove outline */
+  opacity: 0.7; /* Slightly transparent */
+  -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+  transition: opacity .2s;
+}
+
+/* Mouse-over effects */
+input[type="range"]:hover {
+  opacity: 1; /* Fully opaque on hover */
+}
+
+/* Webkit (Chrome, Safari, etc.) */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #9A99EA;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+/* Firefox */
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #9A99EA;
+  cursor: pointer;
+  border-radius: 50%;
 }

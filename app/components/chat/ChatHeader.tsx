@@ -11,8 +11,8 @@ export const ChatHeader = ({
 }: ChatHeaderProps) => {
   return (
     <section className="bg-brand-300/10 flex items-center py-3 px-3 h-min gap-3">
-      <Avatar primaryColor={primaryColor} />
-      <p className="font-medium text-xs">{name}</p>
+      <Avatar  />
+      <p className="heading text-lg ">{name}</p>
     </section>
   );
 };

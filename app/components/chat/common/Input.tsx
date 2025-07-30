@@ -6,6 +6,7 @@ export const Input = ({
   placeholder,
   left = null,
   className,
+  inputClassName,
   label,
   onChange,
   containerClassName,
@@ -16,6 +17,7 @@ export const Input = ({
   containerClassName?: string;
   onChange?: (value: string) => void;
   label?: ReactNode;
+  inputClassName?: string;
   className?: string;
   left?: ReactNode;
   placeholder?: string;
@@ -38,10 +40,10 @@ export const Input = ({
   const TextField = type === "textarea" ? "textarea" : "input";
   return (
     <section className={cn("grid gap-1 grow", className)}>
-      {label && <p className="text-gray-600 text-sm mb-1">{label}</p>}
+      {label && <p className="text-metal font-light text-sm ">{label}</p>}
       <main
         className={cn(
-          "flex items-stretch border rounded-2xl",
+          "flex items-stretch border border-outlines rounded-xl",
           containerClassName
         )}
       >
@@ -50,13 +52,14 @@ export const Input = ({
           onChange={(ev) => onChange?.(ev.currentTarget.value)}
           placeholder={placeholder}
           className={cn(
-            "placeholder:text-gray-400",
-            "border-none focus:outline-none py-3 focus:border-none  w-full min-h-full",
+            "placeholder:text-lightgray text-dark",
+            "border-none focus:outline-none py-3 focus:border-none  focus:ring-brand-500 w-full min-h-full",
             {
-              "rounded-r-2xl": !!left,
-              "rounded-2xl": !left,
-              "rounded-l-2xl": type === "textarea",
-            }
+              "rounded-r-xl": !!left,
+              "rounded-xl": !left,
+              "rounded-l-xl ": type === "textarea",
+            },
+            inputClassName
           )}
           type={type === "textarea" ? undefined : type}
           rows={type === "textarea" ? 8 : undefined}

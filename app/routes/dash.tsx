@@ -91,6 +91,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const user = await getUserOrRedirect(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
+  
 
   if (intent === "accept_invite") {
     const permissionId = formData.get("permissionId") as string;

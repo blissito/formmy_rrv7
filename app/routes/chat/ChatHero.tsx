@@ -128,7 +128,7 @@ export const ChatHero = () => {
           </div>
         </div>
         <div className="w-full md:w-1/2 flex justify-center items-center pl-0 md:pl-16">
-          <div className=" border border-gray-300 rounded-3xl p-8 w-full h-[480px] md:min-h-[550px] flex flex-col justify-end shadow-lg relative overflow-hidden ">
+          <div className=" border border-gray-300 rounded-3xl p-4 md:p-8 w-full h-[480px] md:min-h-[550px] flex flex-col justify-end shadow-lg relative overflow-hidden ">
            <div className="absolute z-10 border-b border-outlines left-0 top-0 w-full h-16 bg-brand-100 flex gap-3 items-center px-6 text-xl font-medium"><img src="/home/ghosty-avatar.svg" />Ghosty</div>
             <AnimatedChat
               conversations={conversations}
@@ -194,7 +194,7 @@ function AnimatedChat({
           initial={{ opacity: 0 }}
           animate={{ opacity: isTransitioning ? 0 : 1 }}
           transition={{ duration: 0.35 }}
-          className="flex flex-col justify-end mb-6 h-full w-full"
+          className="flex flex-col justify-end mb-6 h-full w-full text-sm md:text-base"
         >
           {messages.slice(0, visible).map((msg, idx) => (
             <motion.div
@@ -216,7 +216,7 @@ function AnimatedChat({
               } mb-4 w-full`}
             >
               <div
-                className={`max-w-[90%] rounded-xl px-5 py-3  flex items-center gap-2 ${
+                className={`max-w-[90%] rounded-xl px-2 md:px-5 py-3  flex items-center gap-2 ${
                   msg.from === "user"
                     ? "bg-dark  text-white"
                     : "bg-surface text-gray-800"
@@ -240,7 +240,7 @@ function AnimatedChat({
           ))}
         </motion.div>
         {/* Controles de navegación: botones circulares con iconos */}
-        <div className="absolute -bottom-4 left-0 flex gap-2 z-10">
+        <div className="absolute -bottom-2 md:-bottom-4 left-0 flex gap-2 z-10">
           <button
             onClick={onPrev}
             disabled={current === 0}

@@ -231,7 +231,7 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
             title="Embebe tu chatbot en tu sitio web"
             text={
               <div>
-                <p>
+                <p className="text-metal font-light">
                   Elige la forma de embebido que más te convenga.{" "}
                   <a href="#!" className="underline">
                     Más información
@@ -475,11 +475,11 @@ const SDK = ({ chatbot }: SDKProps) => {
       />
 
       {/* API Key Info */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-semibold text-blue-900 mb-2">
+      <div className="p-4 bg-cloud/20 border border-cloud rounded-2xl">
+        <h4 className="font-semibold text-dark mb-2">
           Información de tu API Key
         </h4>
-        <div className="space-y-1 text-sm text-blue-700">
+        <div className="space-y-1 text-sm text-metal">
           <p>
             <strong>Nombre:</strong> {apiKeyData.name}
           </p>
@@ -525,24 +525,24 @@ const SDK = ({ chatbot }: SDKProps) => {
       </div>
 
       {/* Configuration Options */}
-      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+      <div className="p-4 bg-bird/20 border border-bird rounded-2xl">
         <h4 className="font-semibold text-gray-900 mb-2">
           Opciones de configuración
         </h4>
         <div className="space-y-2 text-sm text-gray-600">
           <div>
             <strong>data-chatbot:</strong> Especifica qué chatbot usar
-            <code className="ml-2 px-2 py-1 bg-gray-200 rounded text-xs">
+            <code className="ml-2 px-2 py-1 bg-bird rounded text-xs">
               data-chatbot="{chatbot.slug}"
             </code>
           </div>
           <div>
             <strong>data-theme:</strong> Tema del widget
             <div className="ml-4 mt-1">
-              <code className="px-2 py-1 bg-gray-200 rounded text-xs mr-2">
+              <code className="px-2 py-1 bg-bird rounded text-xs mr-2">
                 data-theme="light"
               </code>
-              <code className="px-2 py-1 bg-gray-200 rounded text-xs">
+              <code className="px-2 py-1 bg-bird rounded text-xs">
                 data-theme="dark"
               </code>
             </div>
@@ -550,18 +550,18 @@ const SDK = ({ chatbot }: SDKProps) => {
           <div>
             <strong>data-position:</strong> Posición del widget
             <div className="ml-4 mt-1 space-x-2">
-              <code className="px-2 py-1 bg-gray-200 rounded text-xs">
+              <code className="px-2 py-1 bg-bird rounded text-xs">
                 data-position="bottom-right"
               </code>
-              <code className="px-2 py-1 bg-gray-200 rounded text-xs">
+              <code className="px-2 py-1 bg-bird rounded text-xs">
                 data-position="bottom-left"
               </code>
             </div>
             <div className="ml-4 mt-1 space-x-2">
-              <code className="px-2 py-1 bg-gray-200 rounded text-xs">
+              <code className="px-2 py-1 bg-bird rounded text-xs">
                 data-position="top-right"
               </code>
-              <code className="px-2 py-1 bg-gray-200 rounded text-xs">
+              <code className="px-2 py-1 bg-bird rounded text-xs">
                 data-position="top-left"
               </code>
             </div>
@@ -570,11 +570,11 @@ const SDK = ({ chatbot }: SDKProps) => {
       </div>
 
       {/* Usage Example */}
-      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-        <h4 className="font-semibold text-green-900 mb-2">
+      <div className="p-4 bg-grass/20 border border-grass rounded-2xl">
+        <h4 className="font-semibold text-dark mb-2">
           Ejemplo de uso completo
         </h4>
-        <pre className="text-sm text-green-700 bg-green-100 p-3 rounded overflow-x-auto">
+        <pre className="text-sm text-metal p-3 rounded overflow-x-auto">
           {`<!DOCTYPE html>
 <html>
 <head>

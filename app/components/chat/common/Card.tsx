@@ -20,15 +20,15 @@ export const Card = ({
   return (
     <article
       className={cn(
-        "flex flex-col bg-[#fff] p-6 rounded-3xl shadow-lg border",
+        "flex flex-col bg-[#fff] p-6 rounded-3xl font-light  border border-outlines shadow-standard",
         className
       )}
     >
       <nav className="flex justify-between gap-3 items-baseline">
-        <h3 className="text-2xl font-medium min-w-max mb-2">{title}</h3>
+        <h3 className="text-2xl font-medium min-w-max text-dark mb-2">{title}</h3>
         {!noSearch && <SearchInput />}
       </nav>
-      {text && <p className="text-gray-500 mb-6 text-xs">{text}</p>}
+      {text && <p className="text-metal mb-6 text-base ">{text}</p>}
       <section>{children}</section>
     </article>
   );
@@ -47,27 +47,27 @@ export const MiniCard = ({
 }) => {
   return (
     <label
-      className={cn("flex gap-3 p-4 rounded-2xl border-gray-300 border", {
-        "border-brand-500": isSelected,
+      className={cn("flex gap-3 p-4 rounded-2xl border-outlines border", {
+        "border-outlines": isSelected,
       })}
     >
       <input
         checked={isSelected}
         type="checkbox"
-        className="w-4 h-4 rounded-full aspect-square ring ring-gray-300"
+        className="w-4 h-4 mt-[6px] rounded-full text-brand-500 border-outlines focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
         onChange={(ev) => onSelect?.(ev.target.checked)}
       />
       <div>
         <h3
-          className={cn("text-lg font-medium", {
-            "text-brand-500": isSelected,
+          className={cn("text-lg text-dark font-medium", {
+            "text-dark": isSelected,
           })}
         >
           {title}
         </h3>
         <p
-          className={cn("text-gray-600 text-xs", {
-            "text-brand-300": isSelected,
+          className={cn("text-irongray text-xs", {
+            "text-irongray": isSelected,
           })}
         >
           {text}
@@ -136,6 +136,7 @@ export const IntegrationCard = ({
   const isActive = integration?.isActive;
   const exists = !!integration;
   return (
+<<<<<<< HEAD
     <div className="grid shadow-lg border border-gray-300 p-4 rounded-3xl">
       <div className="flex justify-between items-start">
         <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
@@ -172,6 +173,17 @@ export const IntegrationCard = ({
             </SimpleButton>
           </>
         )}
+=======
+    <div className="grid shadow-standard border border-outlines p-4 rounded-2xl">
+      <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
+      <h5 className="font-medium text-md mb-1">{name}</h5>
+      <p className="text-sm mb-4 text-metal">{description}</p>
+      <nav className="flex gap-2">
+        <SimpleButton className="grow text-metal">Conectar</SimpleButton>
+        <SimpleButton className="shrink-0">
+          <img src="/assets/chat/notebook.svg" alt="" />
+        </SimpleButton>
+>>>>>>> 3eeeafefa3eb5b5542946d36a39c2cd7fa357ac4
       </nav>
     </div>
   );

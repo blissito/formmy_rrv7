@@ -11,11 +11,9 @@ export const Avatar = ({
 }) => {
   return (
     <img
-      style={{
-        borderColor: primaryColor,
-      }}
+  
       className={cn(
-        "border rounded-full border-gray-300 p-0",
+        "border rounded-full border-outlines object-cover p-0",
         {
           "aspect-square": !!src,
           "w-6": !!src,

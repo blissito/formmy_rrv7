@@ -10,7 +10,7 @@ export const WitoutFormmy = () => {
           <h2 className=" text-dark dark:text-white text-3xl lg:text-5xl font-bold text-center">
             No más líneas y líneas de inputs y validaciones
           </h2>
-          <div className="flex justify-between flex-wrap lg:flex-nowrap items-center mt-12 lg:mt-20">
+          <div className="flex justify-between flex-wrap lg:flex-nowrap items-center mt-4 lg:mt-20">
             <div className="w-full lg:w-[40%] mb-8 lg:mb-0">
               <p className=" text-lg md:text-xl xl:text-2xl  text-dark">
                 No te preocupes más por maquetar, estilizar y agregar

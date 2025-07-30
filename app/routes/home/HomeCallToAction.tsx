@@ -9,14 +9,14 @@ const imgCapturaDePantalla20250708ALaS35003PM1 = "http://localhost:3845/assets/6
 
 export default function HomeCallToAction() {
   return (
-    <section className="relative w-full rounded-t-[40px] bg-dark overflow-hidden flex flex-col md:flex-row items-center justify-between min-h-[500px] py-24 px-4 md:px-0">
+    <section className="relative w-full rounded-t-[40px] bg-dark overflow-hidden flex flex-col md:flex-row items-center justify-between min-h-[500px] py-0 pb-10  md:py-24 px-4 md:px-0">
       {/* SVG decorativo en la esquina superior izquierda */}
       <svg className="absolute left-0 top-0 z-0 rotate-[180deg]" width="100%" height="500" viewBox="0 0 1920 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
         <path d="M0 500C640 0 1280 1000 1920 500" stroke="#8b8ae2" strokeWidth="80" fill="none" />
       </svg>
       <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-start  justify-between z-10">
         <div className="flex-1 flex flex-col items-start justify-center mt-16">
-          <h2 className="text-white text-5xl md:text-6xl font-bold !leading-[1.3] mb-8">
+          <h2 className="text-white text-4xl md:text-6xl font-bold !leading-[1.3] mb-4 md:mb-8">
             Da el siguiente paso.<br />
             Descubre el poder de <span className="text-brand-500">Formmy</span>.
           </h2>
@@ -27,7 +27,7 @@ export default function HomeCallToAction() {
         </div>
         <div className="flex-1 flex items-center justify-center mt-12 md:mt-0 relative">
           {/* Mockup móvil */}
-          <div className="w-[320px] h-[600px] bg-white rounded-[40px] shadow-2xl border-8 border-dark overflow-hidden flex items-end justify-center relative">
+          <div className="w-[320px] h-[400px] md:h-[600px] bg-white rounded-[40px] shadow-2xl border-8 border-dark overflow-hidden flex items-end justify-center relative">
             <img src={imgCapturaDePantalla20250708ALaS35003PM1} alt="App preview" className="w-full h-full object-cover" />
           </div>
         </div>
@@ -79,7 +79,7 @@ export const GeneralCallToAction=()=>{
       <path d="M0 500C640 0 1280 1000 1920 500" stroke="#8b8ae2" strokeWidth="80" fill="none" />
     </svg>
    
-    <section className="w-full flex flex-col justify-center items-center">
+    <section className="w-full flex flex-col justify-center items-center relative z-10">
         <h2 className=" text-white text-3xl lg:text-5xl font-bold text-center">
           Usa Formmy. Ahorra tiempo.
           <span className="block lg:hidden"> Y reduce costos.</span>

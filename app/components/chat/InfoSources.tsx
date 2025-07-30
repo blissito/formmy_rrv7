@@ -43,12 +43,12 @@ export const InfoSources = ({
 
   return (
     <article className={className}>
-      <section className="grid gap-2 border border-gray-300 rounded-2xl p-4 shadow min-w-[220px] text-xs">
+      <section className="grid gap-2 border border-outlines rounded-2xl p-4 shadow-standard min-w-[280px] ">
         <div className="flex gap-2 items-center">
           <span className="w-4">
             <img src="/assets/chat/receipt.svg" alt="icon" />
           </span>
-          <h4 className="font-medium">Fuentes de información</h4>
+          <h4 className="font-medium text-dark">Fuentes de información</h4>
         </div>
 
         <div className="flex gap-2 items-center">
@@ -80,7 +80,7 @@ export const InfoSources = ({
           <p className="text-gray-600">0 preguntas</p>
         </div>
 
-        <hr className="border-b border-dashed my-3 w-[80%] mx-auto" />
+        <hr className="border-b border-dashed my-2 w-full" />
 
         <div className="flex justify-between">
           <p>Peso total:</p>
@@ -88,7 +88,7 @@ export const InfoSources = ({
             <span className={totalWeight > maxWeight ? "text-red-500" : ""}>
               {formatBytes(totalWeight)}
             </span>
-            <span className="text-gray-500">/ {formatBytes(maxWeight)}</span>
+            <span className="text-irongray">/ {formatBytes(maxWeight)} </span>
           </div>
         </div>
 
@@ -97,7 +97,7 @@ export const InfoSources = ({
         )}
 
         <Button
-          className="mt-4"
+          className="mt-6 "
           onClick={onCreateChatbot}
           disabled={
             isCreating ||

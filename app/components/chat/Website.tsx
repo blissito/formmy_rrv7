@@ -87,7 +87,7 @@ export const Website = ({
       <Card
         title="Website o links"
         text={
-          <span>
+          <span className="text-metal">
             Rastrea páginas web específicas para actualizar continuamente tu IA.
             Configura las rutas incluidas y excluidas para refinar lo que tu IA
             aprende. Más información.{" "}
@@ -99,7 +99,7 @@ export const Website = ({
       >
         <Input
           label="Sitio web"
-          className="mb-2"
+          className="mb-6"
           left={
             <span className="border-r pr-3 min-h-full flex items-center">
               https://
@@ -110,7 +110,7 @@ export const Website = ({
           value={formData.url}
           onChange={(value) => handleInputChange("url", value)}
         />
-        <div className="flex justify-between w-full gap-2 flex-wrap md:grid-cols-3">
+        <div className="flex justify-between w-full gap-4 flex-wrap md:grid-cols-3">
           <Input
             label="Incluye solo rutas"
             placeholder="/blog, /ayuda"

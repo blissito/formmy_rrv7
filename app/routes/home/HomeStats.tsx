@@ -5,7 +5,7 @@ const imgWandTool = "/home/magic.svg";
 
 export default function HomeStats() {
   return (
-    <section className="flex flex-col items-center gap-8 my-20 md:my-40">
+    <section className="flex flex-col items-center gap-0 my-20 md:my-40">
       <h2 className="heading font-bold text-[#080923] text-3xl md:text-4xl lg:text-6xl text-center mb-10 md:mb-16 mt-0 leading-tight">
         Nuestro viaje hasta ahora
       </h2>
