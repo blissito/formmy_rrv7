@@ -38,10 +38,10 @@ export const Input = ({
   const TextField = type === "textarea" ? "textarea" : "input";
   return (
     <section className={cn("grid gap-1 grow", className)}>
-      {label && <p className="text-gray-600 text-sm mb-1">{label}</p>}
+      {label && <p className="text-metal font-light text-sm ">{label}</p>}
       <main
         className={cn(
-          "flex items-stretch border rounded-2xl",
+          "flex items-stretch border border-outlines rounded-xl",
           containerClassName
         )}
       >
@@ -50,12 +50,12 @@ export const Input = ({
           onChange={(ev) => onChange?.(ev.currentTarget.value)}
           placeholder={placeholder}
           className={cn(
-            "placeholder:text-gray-400",
+            "placeholder:text-lightgray text-dark",
             "border-none focus:outline-none py-3 focus:border-none  focus:ring-brand-500 w-full min-h-full",
             {
-              "rounded-r-2xl": !!left,
-              "rounded-2xl": !left,
-              "rounded-l-2xl": type === "textarea",
+              "rounded-r-xl": !!left,
+              "rounded-xl": !left,
+              "rounded-l-xl": type === "textarea",
             }
           )}
           type={type === "textarea" ? undefined : type}
