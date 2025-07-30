@@ -22,15 +22,15 @@ export const Card = ({
   return (
     <article
       className={cn(
-        "flex flex-col bg-[#fff] p-6 rounded-3xl shadow-lg border",
+        "flex flex-col bg-[#fff] p-6 rounded-3xl font-light  border border-outlines shadow-[8px_16px_14px_#F8F8FB]",
         className
       )}
     >
       <nav className="flex justify-between gap-3 items-baseline">
-        <h3 className="text-2xl font-medium min-w-max mb-2">{title}</h3>
+        <h3 className="text-2xl font-medium min-w-max text-dark mb-2">{title}</h3>
         {!noSearch && <SearchInput />}
       </nav>
-      {text && <p className="text-gray-500 mb-6 text-xs">{text}</p>}
+      {text && <p className="text-metal mb-6 text-base ">{text}</p>}
       <section>{children}</section>
     </article>
   );

@@ -44,9 +44,11 @@ export const IconButtonLink: React.FC<IconButtonLinkProps> = ({
 
   return (
     <Link
+   
       to={to}
       className={`${baseStyles} ${variantStyles[variant]} ${className}`}
       {...props}
+       prefetch='render'
     >
       <div className="flex flex-col gap-2 items-center text-center">
         <div className={`w-full grid place-content-center rounded-xl !w-[60px] h-12 transition-all duration-200 ${isActive ? 'bg-brand-500/20' : 'bg-transparent hover:bg-brand-500/10'}`}>

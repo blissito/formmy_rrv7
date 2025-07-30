@@ -237,7 +237,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   return (
     <main
       className={cn("h-full", {
-        "bg-brand-500/20": !production,
+        "bg-chatPattern bg-cover rounded-3xl  ": !production,
       })}
     >
       {!production && <StreamToggle stream={stream} onToggle={setStream} />}
@@ -246,12 +246,12 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         className={cn(
           "border",
           "border-gray-300",
-          "h-svh mb-6", // @TODO Revisit
+          "h-svh max-h-[600px] mb-6", // @TODO Revisit
           "bg-[#fff]",
           "rounded-3xl",
           "flex flex-col",
           // Aquí cambiamos el ancho del chat
-          "overflow-y-auto dark:bg-gray-800 max-w-lg mx-auto",
+          "overflow-y-auto dark:bg-gray-800 max-w-lg mx-auto ",
           {
             "h-full w-full": production,
           }
@@ -265,7 +265,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         <section
           ref={messagesContainerRef}
           onScroll={handleScroll}
-          className="pr-4 grow pt-4 overflow-y-auto flex flex-col gap-2"
+          className="pr-4 grow pt-4 overflow-y-auto flex flex-col gap-2 "
         >
           {chatMessages
             .filter((msg) => msg.content !== "")

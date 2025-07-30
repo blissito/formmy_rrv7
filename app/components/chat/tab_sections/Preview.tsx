@@ -116,10 +116,10 @@ submit({})
   };
 
   return (
-    <article className="w-full">
-      <header className="flex items-center justify-between w-full mb-6">
+    <article className="w-full h-full overflow-y-scroll">
+      <header className="flex items-center justify-between w-full mb-6 ">
         <ChipTabs activeTab={activeTab} onTabChange={setActiveTab} />
-        <Button mode="ghost" onClick={handleSave} isLoading={isSaving}>
+        <Button className="h-10" mode="ghost" onClick={handleSave} isLoading={isSaving}>
           <div className="flex gap-2 items-center">
             <img
               src="/assets/chat/diskette.svg"

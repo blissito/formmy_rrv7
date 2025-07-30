@@ -26,7 +26,7 @@ export const Button = ({
       disabled={isDisabled || isLoading}
       type={type}
       className={cn(
-        "bg-brand-500 text-clear mt-6 block mx-auto cursor-pointer rounded-full  px-6 grid place-content-center",
+        "bg-brand-500 text-clear mt-6 block mx-auto cursor-pointer rounded-full h-12 px-6 grid place-content-center",
         { "bg-perl text-metal hover:bg-[#E1E3E7] mt-0 mx-0" : variant === "secondary"},
         { "bg-transparent text-dark hover:bg-gray-300 mt-0 mx-0" : variant === "ghost"},
         className,

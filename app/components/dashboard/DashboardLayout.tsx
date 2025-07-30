@@ -27,7 +27,7 @@ export function DashboardLayout({ title, children, actionButton }: DashboardLayo
   return (
     <div className="mx-auto w-full h-full min-h-screen bg-surface flex  pr-8 box-border">
       <div className="flex h-full flex-col justify-center items-center py-8 w-[120px] gap-8 rounded-r-3xl h-screen sticky top-0">
-        <Link to="/dashboard" className="">
+        <Link prefetch='render' to="/dashboard" className="">
           <img className='w-[60px]' src="/dash/logo-full.svg" alt="Formmy Logo" />
         </Link>
         <nav className="flex flex-col items-center justify-center gap-8 w-full px-2">

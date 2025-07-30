@@ -24,7 +24,7 @@ export const Select = ({
       <span className="text-gray-600">{label}</span>
       <select
         className={cn(
-          "rounded-2xl border-gray-300 min-w-[220px] py-3",
+          "rounded-2xl border-gray-300 min-w-[220px] py-3 focus:ring-brand-500 focus:border-none",
           {
             "bg-transparent border-none text-gray-600": mode === "ghost",
           },

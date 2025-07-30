@@ -27,7 +27,7 @@ export const Table = ({
     <article>
       <main
         className={cn(
-          "rounded-3xl border border-gray-300 py-6 px-4 shadow-lg",
+          "rounded-3xl border border-gray-300 p-6 shadow-standard",
           className
         )}
       >

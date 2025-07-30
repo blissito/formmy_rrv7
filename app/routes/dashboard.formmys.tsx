@@ -299,7 +299,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
               )}  
           </div>
         </nav>
-        <section className="py-10 flex flex-wrap gap-4">
+        <section className="flex flex-wrap gap-6">
           {filtered.map((p, index) => (
             <ProjectCard
               key={p.id}
@@ -413,10 +413,13 @@ export const ProjectCard = ({
     >
       <Link
         to={id ?? ""}
-        className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl px-4 pt-4 pb-2 w-full h-full block"
+        className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl w-full h-full block"
       >
-        <div className="flex flex-col h-full">
-          <section className="flex justify-between items-center gap-2 mb-2">
+        <section className="bg-gradient-to-r from-[#51B8BF] to-bird w-full h-24 flex items-end justify-center border-b border-outlines">
+          <img src="/dash/chat.png" alt="chatbot" />
+        </section>
+        <div className="flex flex-col px-4 pt-4 pb-2">
+          <section className="flex justify-between items-center gap-2 ">
             <h2 className="text-xl font-medium text-darktruncate">
               {name}
             </h2>
@@ -427,8 +430,8 @@ export const ProjectCard = ({
             {project.summary || 'Pronto podrás saber que es lo que más preguntan tus clientes'}
           </p>
           <div className="flex text-sm gap-4 mt-4 justify-between items-end">
-            <p className="text-space-600 dark:text-space-400 font-normal flex gap-1 items-center">
-              <BubbleIcon /> {project.answers?.length || 0} {project.answers?.length === 1 ? 'mensaje' : 'mensajes'}
+            <p className="text-metal font-normal flex gap-1 items-center">
+              <BubbleIcon className="mb-[2px]" /> {project.answers?.length || 0} {project.answers?.length === 1 ? 'mensaje' : 'mensajes'}
             </p>
             {isInvite && <ModificameBRENDIPurpleCorner />}
           </div>

@@ -89,14 +89,14 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
       <PageContainer>
         <PageContainer.Title
           cta={
-            <PageContainer.Button isLoading={isLoading} to="/chat/nuevo">
-              + Chat
+            <PageContainer.Button isLoading={isLoading} to="/dashboard/chat/nuevo">
+              + Chatbot 
             </PageContainer.Button>
           }
         >
           Tus Chats IA
         </PageContainer.Title>
-        <section className="my-10 flex flex-wrap gap-6">
+        <section className="flex flex-wrap gap-6">
           {chatbots.map((chatbot: Chatbot, i: number) => (
             <PageContainer.ChatCard
               onDelete={handleDeleteIntention(chatbot.id)}
