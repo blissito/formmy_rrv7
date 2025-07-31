@@ -108,7 +108,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       where: { id: permissionId },
     });
     invariant(permission);
-    return redirect("/dash/" + permission.projectId);
+    return redirect("/dashboard/formmys/" + permission.projectId);
   }
 
   if (intent === "reject_invite") {
