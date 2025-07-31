@@ -1,0 +1,64 @@
+{
+  "name": "@formmy/celebration-flip",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A beautiful animated flip text component for celebrating milestones with customizable text and hearts",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "prepare": "npm run build",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "celebration",
+    "animation",
+    "flip-text",
+    "milestone",
+    "react",
+    "component",
+    "css-animation",
+    "subscribers",
+    "followers"
+  ],
+  "author": "Formmy Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/formmy/celebration-flip.git"
+  },
+  "homepage": "https://github.com/formmy/celebration-flip#readme",
+  "bugs": {
+    "url": "https://github.com/formmy/celebration-flip/issues"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "rollup": "^4.9.1",
+    "rollup-plugin-dts": "^6.1.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "typescript": "^5.3.3"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./styles": "./dist/styles.css"
+  }
+}

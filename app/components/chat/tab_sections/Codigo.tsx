@@ -100,7 +100,12 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
       integrations?.length || 0
     );
 
-    // Verificar si hay integraciones existentes
+    // Inicializar todas las integraciones disponibles como desconectadas
+    availableIntegrations.forEach((availableIntegration) => {
+      status[availableIntegration.id.toLowerCase()] = "disconnected";
+    });
+
+    // Verificar si hay integraciones existentes y actualizar su estado
     if (integrations && integrations.length > 0) {
       integrations.forEach((integration, index) => {
         console.log(`🔍 Debug - Integración ${index}:`, {
@@ -110,22 +115,22 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
           chatbotId: integration.chatbotId,
         });
 
-        if (integration.platform === "WHATSAPP") {
-          // Si la integración existe pero está inactiva, mostrarla como desconectada
-          // Si está activa, mostrarla como conectada
-          const whatsappStatus = integration.isActive
-            ? "connected"
-            : "disconnected";
-          status.whatsapp = whatsappStatus;
-          console.log(
-            "✅ Debug - WhatsApp encontrado, estado:",
-            whatsappStatus,
-            "(isActive:",
-            integration.isActive,
-            ")"
-          );
-        }
-        // Agregar más tipos de integraciones según sea necesario
+        const platformKey = integration.platform.toLowerCase();
+
+        // Si la integración existe pero está inactiva, mostrarla como desconectada
+        // Si está activa, mostrarla como conectada
+        const integrationStatus = integration.isActive
+          ? "connected"
+          : "disconnected";
+        status[platformKey] = integrationStatus;
+
+        console.log(
+          `✅ Debug - ${integration.platform} encontrado, estado:`,
+          integrationStatus,
+          "(isActive:",
+          integration.isActive,
+          ")"
+        );
       });
     } else {
       console.log("⚠️ Debug - No hay integraciones o array vacío");
@@ -137,13 +142,15 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
 
   const handleConnect = (integrationId: string) => {
+    console.log("🔍 Debug - Conectando integración:", integrationId);
+
     setIntegrationStatus((prev) => ({
       ...prev,
-      [integrationId]: "connecting",
+      [integrationId.toLowerCase()]: "connecting",
     }));
 
     // Para WhatsApp, abrir el modal de configuración
-    if (integrationId === "whatsapp") {
+    if (integrationId === "WHATSAPP") {
       // Verificar si ya existe una integración de WhatsApp
       const existingWhatsAppIntegration = integrations?.find(
         (integration) => integration.platform === "WHATSAPP"
@@ -160,45 +167,48 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
       // Resetear el estado a disconnected para que el modal maneje la conexión
       setIntegrationStatus((prev) => ({
         ...prev,
-        [integrationId]: "disconnected",
+        [integrationId.toLowerCase()]: "disconnected",
       }));
     } else {
       // Para otras integraciones, simular conexión
       setTimeout(() => {
         setIntegrationStatus((prev) => ({
           ...prev,
-          [integrationId]: "connected",
+          [integrationId.toLowerCase()]: "connected",
         }));
       }, 1000);
     }
   };
 
   const handleDisconnect = (integrationId: string) => {
+    console.log("🔍 Debug - Desconectando integración:", integrationId);
     setIntegrationStatus((prev) => ({
       ...prev,
-      [integrationId]: "disconnected",
+      [integrationId.toLowerCase()]: "disconnected",
     }));
   };
 
   const handleEdit = (integrationId: string) => {
-    console.log("Editando integración:", integrationId);
+    console.log("🔍 Debug - Editando integración:", integrationId);
     setSelectedIntegration(integrationId);
     if (integrationId === "WHATSAPP") {
       setIsWhatsAppModalOpen(true);
-      console.log("POSI");
     }
   };
 
   // Manejador de éxito para la integración de WhatsApp
   const handleWhatsAppSuccess = (integration: any) => {
+    console.log("🔍 Debug - WhatsApp integración exitosa:", integration);
+
     if (selectedIntegration) {
       // Actualizar el estado local
       setIntegrationStatus((prev) => ({
         ...prev,
-        [selectedIntegration]: "connected" as const,
+        [selectedIntegration.toLowerCase()]: "connected" as const,
       }));
 
       setIsWhatsAppModalOpen(false);
+      setSelectedIntegration(null);
 
       // Mostrar notificación de éxito
       // Aquí podrías usar tu sistema de notificaciones
@@ -252,26 +262,30 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
       )}
       {currentTab === "integrations" && (
         <article className="grid lg:grid-cols-3 grid-cols-1 md:grid-cols-2 gap-4 py-3">
-          {availableIntegrations.map((integration) => (
-            <IntegrationCard
-              integration={integrations.find(
-                (i) => i.platform === integration.id
-              )}
-              key={integration.id}
-              name={integration.name}
-              logo={integration.logo}
-              description={integration.description}
-              // status={integrationStatus[integration.id] || "disconnected"}
-              lastActivity={
-                integrationStatus[integration.id] === "connected"
-                  ? "Hoy"
-                  : undefined
-              }
-              onConnect={() => handleConnect(integration.id)}
-              onDisconnect={() => handleDisconnect(integration.id)}
-              onEdit={() => handleEdit(integration.id)}
-            />
-          ))}
+          {availableIntegrations.map((availableIntegration) => {
+            const existingIntegration = integrations.find(
+              (i) => i.platform === availableIntegration.id
+            );
+
+            return (
+              <IntegrationCard
+                integration={existingIntegration}
+                key={availableIntegration.id}
+                name={availableIntegration.name}
+                logo={availableIntegration.logo}
+                description={availableIntegration.description}
+                lastActivity={
+                  integrationStatus[availableIntegration.id.toLowerCase()] ===
+                  "connected"
+                    ? "Hoy"
+                    : undefined
+                }
+                onConnect={() => handleConnect(availableIntegration.id)}
+                onDisconnect={() => handleDisconnect(availableIntegration.id)}
+                onEdit={() => handleEdit(availableIntegration.id)}
+              />
+            );
+          })}
 
           {selectedIntegration === "WHATSAPP" && (
             <WhatsAppIntegrationModal
@@ -279,9 +293,21 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
               onClose={() => setIsWhatsAppModalOpen(false)}
               onSuccess={handleWhatsAppSuccess}
               chatbotId={chatbot.id}
-              existingIntegration={integrations.find(
-                (integration) => integration.platform === "WHATSAPP"
-              )} // O pasar una integración existente si la hay
+              existingIntegration={(() => {
+                const whatsappIntegration = integrations.find(
+                  (integration) => integration.platform === "WHATSAPP"
+                );
+                if (!whatsappIntegration) return null;
+
+                return {
+                  id: whatsappIntegration.id,
+                  phoneNumberId: whatsappIntegration.phoneNumberId || "",
+                  businessAccountId:
+                    whatsappIntegration.businessAccountId || "",
+                  webhookVerifyToken:
+                    whatsappIntegration.webhookVerifyToken || undefined,
+                };
+              })()}
             />
           )}
         </article>
@@ -301,7 +327,7 @@ const LinkBlock = ({ chatbot }: LinkBlockProps) => {
     typeof window !== "undefined"
       ? window.location.origin
       : "https://formmy-v2.fly.dev";
-  const chatUrl = `${baseUrl}/chat?slug=${chatbot.slug}`;
+  const chatUrl = `${baseUrl}/chat/embed?slug=${chatbot.slug}`;
 
   const codeToCopy = `
 <a href="${chatUrl}" target="_blank" rel="noopener noreferrer">
@@ -438,11 +464,13 @@ const SDK = ({ chatbot }: SDKProps) => {
 
   if (error) {
     return (
-      <div className="my-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <p className="text-red-600">Error al cargar la API key: {error}</p>
+      <div className="my-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-yellow-600">
+          SDK temporalmente no disponible: {error}
+        </p>
         <button
           onClick={() => refetch()}
-          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          className="mt-2 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
         >
           Reintentar
         </button>
@@ -453,8 +481,10 @@ const SDK = ({ chatbot }: SDKProps) => {
   if (!apiKeyData) {
     return (
       <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-yellow-600">No se pudo generar la API key</p>
-        <p className="text-yellow-600">{error}</p>
+        <p className="text-yellow-600">SDK temporalmente no disponible</p>
+        <p className="text-yellow-600">
+          Usa el iframe o enlace directo por ahora
+        </p>
         <button
           onClick={() => refetch()}
           className="mt-2 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CelebrationFlip - Example</title>
+    <style>
+      body {
+        background: #111;
+        margin: 0;
+        padding: 1rem;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        display: grid;
+        place-content: center;
+        color: white;
+      }
+
+      .container {
+        text-align: center;
+        max-width: 1200px;
+      }
+
+      .example {
+        margin: 2rem 0;
+        padding: 2rem;
+        border: 1px solid #333;
+        border-radius: 8px;
+      }
+
+      .example h3 {
+        color: #aaa;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎉 CelebrationFlip Examples</h1>
+
+      <div class="example">
+        <h3>4000 Subscribers</h3>
+        <div id="example1"></div>
+      </div>
+
+      <div class="example">
+        <h3>1M Followers</h3>
+        <div id="example2"></div>
+      </div>
+
+      <div class="example">
+        <h3>Custom Colors</h3>
+        <div id="example3"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      // This would be the actual usage once published
+      // import { CelebrationFlip } from '@formmy/celebration-flip';
+
+      // For now, we'll show the HTML structure
+      document.getElementById("example1").innerHTML = `
+            <div class="celebration-flip" style="--clr-1: dodgerblue; --clr-2: hotpink; --duration: 3s;">
+                <div class="flip-text">
+                    <span>4</span><span>0</span><span>0</span><span>0</span><span></span>
+                    <span>S</span><span>U</span><span>S</span><span>C</span><span>R</span><span>I</span><span>P</span><span>T</span><span>O</span><span>R</span><span>E</span><span>S</span>
+                </div>
+                <div class="flip-text">
+                    <span>♥</span><span>♥</span><span>♥</span><span>♥</span><span></span>
+                    <span>¡</span><span>G</span><span>R</span><span>A</span><span>C</span><span>I</span><span>A</span><span>S</span><span>!</span><span></span>
+                    <span>♥</span><span>♥</span><span>♥</span><span>♥</span>
+                </div>
+            </div>
+        `;
+
+      document.getElementById("example2").innerHTML = `
+            <div class="celebration-flip" style="--clr-1: #00ff88; --clr-2: #ff6b35; --duration: 2s;">
+                <div class="flip-text">
+                    <span>1</span><span>M</span><span></span>
+                    <span>F</span><span>O</span><span>L</span><span>L</span><span>O</span><span>W</span><span>E</span><span>R</span><span>S</span>
+                </div>
+                <div class="flip-text">
+                    <span>🎉</span><span>🎉</span><span></span>
+                    <span>A</span><span>M</span><span>A</span><span>Z</span><span>I</span><span>N</span><span>G</span><span></span>
+                    <span>🎉</span><span>🎉</span>
+                </div>
+            </div>
+        `;
+
+      document.getElementById("example3").innerHTML = `
+            <div class="celebration-flip" style="--clr-1: #ff0080; --clr-2: #8000ff; --duration: 4s;">
+                <div class="flip-text">
+                    <span>1</span><span>0</span><span>K</span><span></span>
+                    <span>L</span><span>I</span><span>K</span><span>E</span><span>S</span>
+                </div>
+                <div class="flip-text">
+                    <span>✨</span><span>✨</span><span></span>
+                    <span>T</span><span>H</span><span>A</span><span>N</span><span>K</span><span>S</span><span></span>
+                    <span>✨</span><span>✨</span>
+                </div>
+            </div>
+        `;
+    </script>
+
+    <!-- Include the CSS -->
+    <link rel="stylesheet" href="src/CelebrationFlip.css" />
+  </body>
+</html>

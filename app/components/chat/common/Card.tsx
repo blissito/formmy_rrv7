@@ -115,6 +115,8 @@ export const MiniCardGroup = ({
   );
 };
 
+export type IntegrationStatus = "connected" | "disconnected" | "connecting";
+
 export const IntegrationCard = ({
   name,
   logo,
@@ -129,7 +131,6 @@ export const IntegrationCard = ({
   logo: string;
   integration?: PrismaIntegration;
   description: string;
-  // status?: 'connected' | 'disconnected' | 'connecting';
   lastActivity?: string;
   onConnect?: () => void;
   onDisconnect?: () => void;
@@ -137,16 +138,81 @@ export const IntegrationCard = ({
 }) => {
   const isActive = integration?.isActive;
   const exists = !!integration;
+
+  const getButtonText = () => {
+    if (!exists) return "Conectar";
+    if (isActive) return "Conectado";
+    return "Desconectado";
+  };
+
+  const getButtonAction = () => {
+    if (!exists) return onConnect;
+    if (isActive) return onEdit;
+    return onConnect;
+  };
+
+  const isConnected = exists && isActive;
+
   return (
     <div className="grid shadow-standard border border-outlines p-4 rounded-2xl">
       <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
       <h5 className="font-medium text-md mb-1">{name}</h5>
       <p className="text-sm mb-4 text-metal">{description}</p>
+
+      {/* Status indicator */}
+      {exists && (
+        <div className="mb-3">
+          <span
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+              isActive
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full mr-1 ${
+                isActive ? "bg-green-400" : "bg-red-400"
+              }`}
+            ></span>
+            {isActive ? "Activo" : "Inactivo"}
+          </span>
+          {lastActivity && (
+            <p className="text-xs text-metal mt-1">
+              Última actividad: {lastActivity}
+            </p>
+          )}
+        </div>
+      )}
+
       <nav className="flex gap-2">
-        <SimpleButton className="grow text-metal">Conectar</SimpleButton>
-        <SimpleButton className="shrink-0">
-          <img src="/assets/chat/notebook.svg" alt="" />
+        <SimpleButton
+          className={`grow ${
+            isConnected ? "text-green-600 border-green-300" : "text-metal"
+          }`}
+          onClick={getButtonAction()}
+        >
+          {getButtonText()}
         </SimpleButton>
+
+        {exists && (
+          <SimpleButton
+            className="shrink-0"
+            onClick={onEdit}
+            title="Configurar"
+          >
+            <img src="/assets/chat/notebook.svg" alt="Configurar" />
+          </SimpleButton>
+        )}
+
+        {isConnected && (
+          <SimpleButton
+            className="shrink-0 text-red-600 border-red-300"
+            onClick={onDisconnect}
+            title="Desconectar"
+          >
+            <img src="/assets/chat/recyclebin.svg" alt="Desconectar" />
+          </SimpleButton>
+        )}
       </nav>
     </div>
   );

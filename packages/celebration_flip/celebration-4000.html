@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>¡4000 Suscriptores! - Celebración</title>
+    <style>
+      @import url(https://fonts.bunny.net/css?family=sixtyfour:400);
+
+      @layer base, demo;
+
+      @layer demo {
+        section {
+          align-content: center;
+          font-family: "Sixtyfour", monospace;
+        }
+
+        .flip-text {
+          --clr-1: dodgerblue;
+          --clr-2: hotpink;
+          --clr-3: rgb(94 165 0);
+          --translate-distance: 1lh;
+          --duration: 3s;
+          --timing-function: cubic-bezier(0.66, 0, 0.34, 1);
+          overflow-y: hidden;
+          width: min(100%, 1400px);
+          margin-inline: auto;
+          display: grid;
+          grid-auto-columns: 1fr;
+          grid-auto-flow: column;
+          gap: 0;
+          font-size: clamp(1rem, 4.5vw + 0.05rem, 5rem);
+          font-weight: 700;
+          color: var(--clr-1);
+          line-height: 1;
+        }
+
+        .flip-text:nth-child(2) {
+          font-size: clamp(1rem, 3.5vw + 0.05rem, 3rem);
+          font-weight: 300;
+          color: var(--clr-2);
+          --delay-factor: 300ms;
+        }
+
+        /* flipped items */
+        .flip-text > * {
+          --delay: calc(var(--i) * 100ms + var(--delay-factor, 0ms));
+          --translate: calc(var(--translate-distance) * 2);
+          display: grid;
+          place-content: center;
+        }
+
+        /* Individual span delays */
+        .flip-text > *:nth-child(1) {
+          --i: 1;
+        }
+        .flip-text > *:nth-child(2) {
+          --i: 2;
+        }
+        .flip-text > *:nth-child(3) {
+          --i: 3;
+        }
+        .flip-text > *:nth-child(4) {
+          --i: 4;
+        }
+        .flip-text > *:nth-child(5) {
+          --i: 5;
+        }
+        .flip-text > *:nth-child(6) {
+          --i: 6;
+        }
+        .flip-text > *:nth-child(7) {
+          --i: 7;
+        }
+        .flip-text > *:nth-child(8) {
+          --i: 8;
+        }
+        .flip-text > *:nth-child(9) {
+          --i: 9;
+        }
+        .flip-text > *:nth-child(10) {
+          --i: 10;
+        }
+        .flip-text > *:nth-child(11) {
+          --i: 11;
+        }
+        .flip-text > *:nth-child(12) {
+          --i: 12;
+        }
+        .flip-text > *:nth-child(13) {
+          --i: 13;
+        }
+        .flip-text > *:nth-child(14) {
+          --i: 14;
+        }
+        .flip-text > *:nth-child(15) {
+          --i: 15;
+        }
+        .flip-text > *:nth-child(16) {
+          --i: 16;
+        }
+        .flip-text > *:nth-child(17) {
+          --i: 17;
+        }
+        .flip-text > *:nth-child(18) {
+          --i: 18;
+        }
+        .flip-text > *:nth-child(19) {
+          --i: 19;
+        }
+        .flip-text > *:nth-child(20) {
+          --i: 20;
+        }
+        .flip-text > *:nth-child(21) {
+          --i: 21;
+        }
+        .flip-text > *:nth-child(22) {
+          --i: 22;
+        }
+
+        @media not (prefers-reduced-motion) {
+          .flip-text > * {
+            animation-name: flip-transform, flip-translate;
+            animation-duration: var(--duration);
+            animation-timing-function: var(--timing-function);
+            animation-iteration-count: infinite;
+            animation-delay: var(--delay);
+          }
+        }
+      }
+
+      footer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        font-size: 0.7rem;
+        color: #aaa;
+        margin-top: 2rem;
+      }
+
+      footer > a {
+        color: dodgerblue;
+        text-decoration: none;
+        transition: color 150ms ease-in-out;
+      }
+
+      footer > a:hover {
+        color: hotpink;
+      }
+
+      @keyframes flip-transform {
+        25% {
+          /*scale: 1 -1;*/
+        }
+        50%,
+        100% {
+          transform: translateY(calc(var(--translate) * -1));
+        }
+      }
+
+      @keyframes flip-translate {
+        24.999999% {
+          opacity: 1;
+          translate: 0 0;
+        }
+        25% {
+          opacity: 0;
+        }
+        25.000001%,
+        100% {
+          opacity: 1;
+          translate: 0 calc(var(--translate) * 1);
+        }
+      }
+
+      @layer base {
+        * {
+          box-sizing: border-box;
+        }
+
+        html {
+          scroll-behavior: smooth;
+        }
+
+        body {
+          background: #111;
+          margin: 0;
+          padding: 1rem;
+          min-height: 100svh;
+          font-family: system-ui, sans-serif;
+          display: grid;
+          place-content: center;
+          grid-template-rows: 1fr auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      <div class="flip-text">
+        <span>4</span>
+        <span>0</span>
+        <span>0</span>
+        <span>0</span>
+        <span></span>
+        <span>S</span>
+        <span>U</span>
+        <span>S</span>
+        <span>C</span>
+        <span>R</span>
+        <span>I</span>
+        <span>P</span>
+        <span>T</span>
+        <span>O</span>
+        <span>R</span>
+        <span>E</span>
+        <span>S</span>
+      </div>
+      <div class="flip-text">
+        <span>♥</span>
+        <span>♥</span>
+        <span>♥</span>
+        <span>♥</span>
+        <span></span>
+        <span>¡</span>
+        <span>G</span>
+        <span>R</span>
+        <span>A</span>
+        <span>C</span>
+        <span>I</span>
+        <span>A</span>
+        <span>S</span>
+        <span>!</span>
+        <span></span>
+        <span>♥</span>
+        <span>♥</span>
+        <span>♥</span>
+        <span>♥</span>
+      </div>
+    </section>
+
+    <footer>
+      <p>¡Celebrando nuestros increíbles 4000 suscriptores!</p>
+    </footer>
+  </body>
+</html>

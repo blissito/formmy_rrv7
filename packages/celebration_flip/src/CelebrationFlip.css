@@ -1,0 +1,153 @@
+@import url(https://fonts.bunny.net/css?family=sixtyfour:400);
+
+.celebration-flip {
+  align-content: center;
+  font-family: "Sixtyfour", monospace;
+}
+
+.celebration-flip .flip-text {
+  --clr-1: dodgerblue;
+  --clr-2: hotpink;
+  --clr-3: rgb(94 165 0);
+  --translate-distance: 1lh;
+  --duration: 3s;
+  --timing-function: cubic-bezier(0.66, 0, 0.34, 1);
+  overflow-y: hidden;
+  width: min(100%, 1200px);
+  margin-inline: auto;
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 0;
+  font-size: clamp(1rem, 4.5vw + 0.05rem, 5rem);
+  font-weight: 700;
+  color: var(--clr-1);
+  line-height: 1;
+}
+
+.celebration-flip .flip-text:nth-child(2) {
+  font-size: clamp(1rem, 3.5vw + 0.05rem, 3rem);
+  font-weight: 300;
+  color: var(--clr-2);
+  --delay-factor: 300ms;
+}
+
+/* flipped items */
+.celebration-flip .flip-text > * {
+  --delay: calc(var(--i) * 100ms + var(--delay-factor, 0ms));
+  --translate: calc(var(--translate-distance) * 2);
+  display: grid;
+  place-content: center;
+}
+
+/* Individual span delays */
+.celebration-flip .flip-text > *:nth-child(1) {
+  --i: 1;
+}
+.celebration-flip .flip-text > *:nth-child(2) {
+  --i: 2;
+}
+.celebration-flip .flip-text > *:nth-child(3) {
+  --i: 3;
+}
+.celebration-flip .flip-text > *:nth-child(4) {
+  --i: 4;
+}
+.celebration-flip .flip-text > *:nth-child(5) {
+  --i: 5;
+}
+.celebration-flip .flip-text > *:nth-child(6) {
+  --i: 6;
+}
+.celebration-flip .flip-text > *:nth-child(7) {
+  --i: 7;
+}
+.celebration-flip .flip-text > *:nth-child(8) {
+  --i: 8;
+}
+.celebration-flip .flip-text > *:nth-child(9) {
+  --i: 9;
+}
+.celebration-flip .flip-text > *:nth-child(10) {
+  --i: 10;
+}
+.celebration-flip .flip-text > *:nth-child(11) {
+  --i: 11;
+}
+.celebration-flip .flip-text > *:nth-child(12) {
+  --i: 12;
+}
+.celebration-flip .flip-text > *:nth-child(13) {
+  --i: 13;
+}
+.celebration-flip .flip-text > *:nth-child(14) {
+  --i: 14;
+}
+.celebration-flip .flip-text > *:nth-child(15) {
+  --i: 15;
+}
+.celebration-flip .flip-text > *:nth-child(16) {
+  --i: 16;
+}
+.celebration-flip .flip-text > *:nth-child(17) {
+  --i: 17;
+}
+.celebration-flip .flip-text > *:nth-child(18) {
+  --i: 18;
+}
+.celebration-flip .flip-text > *:nth-child(19) {
+  --i: 19;
+}
+.celebration-flip .flip-text > *:nth-child(20) {
+  --i: 20;
+}
+.celebration-flip .flip-text > *:nth-child(21) {
+  --i: 21;
+}
+.celebration-flip .flip-text > *:nth-child(22) {
+  --i: 22;
+}
+.celebration-flip .flip-text > *:nth-child(23) {
+  --i: 23;
+}
+.celebration-flip .flip-text > *:nth-child(24) {
+  --i: 24;
+}
+.celebration-flip .flip-text > *:nth-child(25) {
+  --i: 25;
+}
+
+@media not (prefers-reduced-motion) {
+  .celebration-flip .flip-text > * {
+    animation-name: flip-transform, flip-translate;
+    animation-duration: var(--duration);
+    animation-timing-function: var(--timing-function);
+    animation-iteration-count: infinite;
+    animation-delay: var(--delay);
+  }
+}
+
+@keyframes flip-transform {
+  25% {
+    /*scale: 1 -1;*/
+  }
+  50%,
+  100% {
+    transform: translateY(calc(var(--translate) * -1));
+  }
+}
+
+@keyframes flip-translate {
+  24.999999% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  25% {
+    opacity: 0;
+  }
+  25.000001%,
+  100% {
+    opacity: 1;
+    translate: 0 calc(var(--translate) * 1);
+  }
+}
