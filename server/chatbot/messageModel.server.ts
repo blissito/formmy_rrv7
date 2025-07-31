@@ -16,6 +16,8 @@ interface CreateMessageParams {
   responseTime?: number;
   firstTokenLatency?: number; // Tiempo hasta el primer chunk en ms
   visitorIp?: string; // Added for rate limiting
+  channel?: string; // 'web', 'whatsapp', 'telegram'
+  externalMessageId?: string; // WhatsApp message ID, etc.
 }
 
 /**
@@ -39,6 +41,8 @@ export async function createMessage({
   responseTime,
   firstTokenLatency,
   visitorIp,
+  channel,
+  externalMessageId,
 }: CreateMessageParams): Promise<Message> {
   // Check if the conversation exists and is active
   const conversation = await getConversationById(conversationId);
@@ -69,6 +73,8 @@ export async function createMessage({
       tokens,
       responseTime,
       firstTokenLatency,
+      channel,
+      externalMessageId,
     },
   });
 
@@ -163,13 +169,17 @@ export function cleanupRateLimits(): void {
 export async function addUserMessage(
   conversationId: string,
   content: string,
-  visitorIp?: string
+  visitorIp?: string,
+  channel?: string,
+  externalMessageId?: string
 ): Promise<Message> {
   return createMessage({
     conversationId,
     content,
     role: MessageRole.USER,
     visitorIp,
+    channel,
+    externalMessageId,
   });
 }
 
@@ -181,7 +191,9 @@ export async function addAssistantMessage(
   content: string,
   tokens?: number,
   responseTime?: number,
-  firstTokenLatency?: number
+  firstTokenLatency?: number,
+  channel?: string,
+  externalMessageId?: string
 ): Promise<Message> {
   return createMessage({
     conversationId,
@@ -190,6 +202,8 @@ export async function addAssistantMessage(
     tokens,
     responseTime,
     firstTokenLatency,
+    channel,
+    externalMessageId,
   });
 }
 
@@ -204,6 +218,46 @@ export async function addSystemMessage(
     conversationId,
     content,
     role: MessageRole.SYSTEM,
+  });
+}
+
+/**
+ * Adds a WhatsApp user message to a conversation
+ */
+export async function addWhatsAppUserMessage(
+  conversationId: string,
+  content: string,
+  whatsappMessageId: string
+): Promise<Message> {
+  return createMessage({
+    conversationId,
+    content,
+    role: MessageRole.USER,
+    channel: "whatsapp",
+    externalMessageId: whatsappMessageId,
+  });
+}
+
+/**
+ * Adds a WhatsApp assistant message to a conversation
+ */
+export async function addWhatsAppAssistantMessage(
+  conversationId: string,
+  content: string,
+  whatsappMessageId?: string,
+  tokens?: number,
+  responseTime?: number,
+  firstTokenLatency?: number
+): Promise<Message> {
+  return createMessage({
+    conversationId,
+    content,
+    role: MessageRole.ASSISTANT,
+    channel: "whatsapp",
+    externalMessageId: whatsappMessageId,
+    tokens,
+    responseTime,
+    firstTokenLatency,
   });
 }
 

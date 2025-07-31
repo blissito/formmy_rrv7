@@ -15,7 +15,12 @@ import { Select } from "../common/Select";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { Button } from "~/components/Button";
 
-export const Configuracion = ({ chatbot }: { chatbot: Chatbot }) => {
+interface ConfiguracionProps {
+  chatbot: Chatbot;
+  user: any; // Replace 'any' with the correct User type if available
+}
+
+export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
   const { currentTab, setCurrentTab } = useChipTabs("seguridad");
   const [isCopied, setIsCopied] = useState(false);
 

@@ -1,0 +1,345 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGO_ATLAS")
+}
+
+enum CustomFieldTypes {
+  text
+  select
+}
+
+// V1
+type CustomInput {
+  type        CustomFieldTypes
+  title       String
+  name        String           @default("no_name")
+  placeholder String?
+  isRequired  Boolean          @default(false)
+  options     String[]         @default([])
+}
+
+model Answer {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  data      Json?
+  projectId String   @db.ObjectId
+  project   Project  @relation(fields: [projectId], references: [id])
+  favorite  Boolean  @default(false)
+  deleted   Boolean  @default(false)
+  opened    Boolean? @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+type Notifications {
+  new     Boolean  @default(true)
+  members Boolean? @default(false)
+  warning Boolean? @default(false)
+}
+
+type ProjectSettings {
+  notifications Notifications
+}
+
+type ProjectConfig {
+  theme        String?
+  ctaColor     String?
+  inputs       String[]
+  border       String?
+  confetti     String?
+  message      String?
+  icon         String?
+  customInputs CustomInput[]
+  watermark    Boolean?      @default(false)
+}
+
+type Rights {
+  read   Boolean @default(true)
+  write  Boolean @default(false)
+  update Boolean @default(false)
+  delete Boolean @default(false)
+}
+
+enum Statuses {
+  pending
+  active
+  rejected
+}
+
+model Permission {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String
+  status        Statuses  @default(pending) // pending | active | rejected  
+  can           Rights?
+  notifications Boolean?  @default(true)
+  // relations
+  user          User?     @relation("UserPermissions", fields: [userId], references: [id])
+  userId        String?   @db.ObjectId
+  project       Project   @relation(fields: [projectId], references: [id])
+  projectId     String    @db.ObjectId
+  // pending state, no user but email
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime? @updatedAt
+}
+
+enum FormmyTypes {
+  contact
+  subscription
+}
+
+model Project {
+  isActive    Boolean          @default(true)
+  slug        String           @unique
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String           @db.ObjectId
+  name        String
+  User        User             @relation(fields: [userId], references: [id])
+  // optionals
+  email       String?
+  // project permissions
+  permissions Permission[]
+  // Formmy 2025: support for horizontal suscription layout
+  type        FormmyTypes?     @default(contact)
+  answers     Answer[]
+  config      ProjectConfig
+  settings    ProjectSettings?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+enum Plans {
+  FREE
+  PRO
+}
+
+enum ApiKeyType {
+  LIVE
+  TEST
+}
+
+model User {
+  name            String?
+  email           String       @unique
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  access_token    String?
+  picture         String?
+  provider        String?
+  refresh_token   String?
+  plan            Plans        @default(FREE)
+  customerId      String?      @unique
+  subscriptionIds String[]
+  // relations
+  projects        Project[]
+  chatbots       Chatbot[]
+  apiKeys        ApiKey[]
+  referrals      Referral[] @relation("Referrer")
+  permissions    Permission[] @relation("UserPermissions")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+// Chatbot models
+
+enum ChatbotStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+enum ContextType {
+  FILE
+  LINK
+  TEXT
+}
+
+type ContextItem {
+  id        String
+  type      ContextType
+  fileName  String?
+  fileType  String?
+  fileUrl   String?
+  url       String?
+  title     String?
+  sizeKB    Int?
+  content   String? // processed text content (optional)
+  createdAt DateTime
+}
+
+model Chatbot {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String  @unique
+  name        String
+  description String?
+
+  // Configuration
+  personality    String?
+  welcomeMessage String?
+  goodbyeMessage String?
+  aiModel        String  @default("mistralai/mistral-small-3.2-24b-instruct")
+  temperature    Float   @default(1) // revisit
+  instructions   String? // prompt general editable
+
+  // Context items embedded
+  contexts ContextItem[]
+
+  // Visual customization
+  primaryColor String?
+  theme        String? @default("light")
+
+  // Streaming configuration
+  enableStreaming Boolean @default(true) // Typing effect habilitado
+  streamingSpeed  Int     @default(50) // Velocidad en ms entre caracteres
+
+  // State management
+  status   ChatbotStatus @default(DRAFT)
+  isActive Boolean       @default(false)
+
+  // Usage tracking
+  conversationCount Int @default(0)
+  monthlyUsage      Int @default(0)
+  contextSizeKB     Int @default(0)
+
+  // Relations
+  userId        String         @db.ObjectId
+  user          User           @relation(fields: [userId], references: [id])
+  conversations Conversation[]
+  integrations  Integration[]
+  apiKeys       ApiKey[] // New relation for API keys
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ConversationStatus {
+  ACTIVE
+  COMPLETED
+  TIMEOUT
+  DELETED
+}
+
+model Conversation {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String @unique
+
+  // Visitor info
+  visitorIp String?
+  visitorId String? // anonymous ID
+
+  // Conversation state
+  status       ConversationStatus @default(ACTIVE)
+  startedAt    DateTime           @default(now())
+  endedAt      DateTime?
+  messageCount Int                @default(0)
+  isFavorite   Boolean            @default(false)
+
+  // Relations
+  chatbotId String    @db.ObjectId
+  chatbot   Chatbot   @relation(fields: [chatbotId], references: [id])
+  messages  Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model Message {
+  id      String      @id @default(auto()) @map("_id") @db.ObjectId
+  content String
+  role    MessageRole
+  deleted Boolean     @default(false)
+  picture String?
+
+  // Metadata - add channel info
+  channel           String? // 'web', 'whatsapp', 'telegram'
+  externalMessageId String? // WhatsApp message ID
+  tokens            Int? // for usage tracking
+  responseTime      Int? // in milliseconds
+  firstTokenLatency Int? // time to first chunk in milliseconds
+
+  // Relations
+  conversationId String       @db.ObjectId
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+enum IntegrationType {
+  WHATSAPP
+  TELEGRAM
+}
+
+model Integration {
+  id       String          @id @default(auto()) @map("_id") @db.ObjectId
+  platform IntegrationType
+  token    String? // Access token
+  isActive Boolean         @default(true)
+
+  // New fields for WhatsApp
+  phoneNumberId      String?
+  businessAccountId  String?
+  webhookVerifyToken String?
+  lastActivity       DateTime?
+  errorMessage       String?
+
+  // Relations
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ApiKey {
+  id      String     @id @default(auto()) @map("_id") @db.ObjectId
+  key     String     @unique
+  name    String // User-friendly name
+  keyType ApiKeyType @default(LIVE)
+
+  // Security
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+
+  // Usage tracking
+  requestCount    Int @default(0)
+  monthlyRequests Int @default(0)
+
+  // Rate limiting
+  rateLimit Int @default(1000) // requests per hour
+
+  // Allowed domains (optional)
+  allowedDomains String[] // ["example.com", "*.example.com"]
+
+  // Relations
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Referral {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  referrerId           String   @db.ObjectId // ID del usuario que refiere
+  referralCode         String   @unique // Código único de referencia
+  referredCount        Int      @default(0) // Número de referidos
+  successfulConversions Int      @default(0) // Número de conversiones exitosas a Pro
+  
+  // Relations
+  referrer User @relation("Referrer", fields: [referrerId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

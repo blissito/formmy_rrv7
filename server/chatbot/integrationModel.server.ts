@@ -8,18 +8,28 @@ const prisma = new PrismaClient();
  * @param chatbotId The ID of the chatbot to add the integration to
  * @param platform The type of integration platform (WHATSAPP, TELEGRAM)
  * @param token Optional authentication token for the integration
+ * @param whatsappData Optional WhatsApp-specific configuration data
  * @returns The created integration
  */
 export async function createIntegration(
   chatbotId: string,
   platform: IntegrationType,
-  token?: string
+  token?: string,
+  whatsappData?: {
+    phoneNumberId?: string;
+    businessAccountId?: string;
+    webhookVerifyToken?: string;
+  }
 ): Promise<Integration> {
   return prisma.integration.create({
     data: {
       platform,
       token,
       isActive: false, // Default to inactive until configured properly
+      // WhatsApp-specific fields
+      phoneNumberId: whatsappData?.phoneNumberId,
+      businessAccountId: whatsappData?.businessAccountId,
+      webhookVerifyToken: whatsappData?.webhookVerifyToken,
       chatbot: {
         connect: {
           id: chatbotId,
@@ -55,6 +65,11 @@ export async function updateIntegration(
   data: {
     token?: string;
     isActive?: boolean;
+    phoneNumberId?: string;
+    businessAccountId?: string;
+    webhookVerifyToken?: string;
+    lastActivity?: Date;
+    errorMessage?: string;
   }
 ): Promise<Integration> {
   return prisma.integration.update({
@@ -81,6 +96,29 @@ export async function toggleIntegrationStatus(
     },
     data: {
       isActive,
+    },
+  });
+}
+
+/**
+ * Updates integration activity and error status
+ * @param id The ID of the integration
+ * @param lastActivity The timestamp of last activity
+ * @param errorMessage Optional error message to store
+ * @returns The updated integration
+ */
+export async function updateIntegrationActivity(
+  id: string,
+  lastActivity: Date,
+  errorMessage?: string
+): Promise<Integration> {
+  return prisma.integration.update({
+    where: {
+      id,
+    },
+    data: {
+      lastActivity,
+      errorMessage,
     },
   });
 }

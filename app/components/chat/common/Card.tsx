@@ -1,9 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { cn } from "~/lib/utils";
 import { SearchInput } from "./SearchInput";
-import Markdown from "react-markdown";
-import { children } from "effect/Fiber";
-// import { SearchInput } from "./SearchInput";
+import type { Integration as PrismaIntegration } from "@prisma/client";
 
 export const Card = ({
   title,
@@ -27,7 +25,9 @@ export const Card = ({
       )}
     >
       <nav className="flex justify-between gap-3 items-baseline">
-        <h3 className="text-2xl font-medium min-w-max text-dark mb-2">{title}</h3>
+        <h3 className="text-2xl font-medium min-w-max text-dark mb-2">
+          {title}
+        </h3>
         {!noSearch && <SearchInput />}
       </nav>
       {text && <p className="text-metal mb-6 text-base ">{text}</p>}
@@ -118,12 +118,25 @@ export const MiniCardGroup = ({
 export const IntegrationCard = ({
   name,
   logo,
+  integration,
   description,
+  lastActivity,
+  onConnect,
+  onDisconnect,
+  onEdit,
 }: {
   name: string;
   logo: string;
+  integration?: PrismaIntegration;
   description: string;
+  // status?: 'connected' | 'disconnected' | 'connecting';
+  lastActivity?: string;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  onEdit?: () => void;
 }) => {
+  const isActive = integration?.isActive;
+  const exists = !!integration;
   return (
     <div className="grid shadow-standard border border-outlines p-4 rounded-2xl">
       <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
@@ -142,16 +155,23 @@ export const IntegrationCard = ({
 const SimpleButton = ({
   className,
   children,
+  onClick,
+  disabled = false,
 }: {
   children: ReactNode;
   className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
 }) => {
   return (
     <button
+      onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "enabled:active:scale-95",
+        "active:scale-95",
         "hover:bg-gray-50 hover:shadow-sm transition-all",
         "border-gray-300 border py-2 px-4 rounded-xl min-w-max",
+        disabled && "opacity-50 cursor-not-allowed",
         className
       )}
     >

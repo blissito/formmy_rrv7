@@ -157,15 +157,22 @@ export async function addContextItem(
     createdAt: new Date(),
   };
 
+  // Parse the existing contexts or initialize as empty array
+  const existingContexts = Array.isArray(chatbot.contexts)
+    ? chatbot.contexts
+    : chatbot.contexts
+    ? JSON.parse(JSON.stringify(chatbot.contexts))
+    : [];
+
   // Add the new context item to the chatbot's contexts
   return db.chatbot.update({
     where: { id: chatbotId },
     data: {
-      contexts: [...chatbot.contexts, newContextItem],
+      contexts: [...existingContexts, newContextItem],
       // Update the context size if the new item has a size
       contextSizeKB: contextItem.sizeKB
-        ? chatbot.contextSizeKB + contextItem.sizeKB
-        : chatbot.contextSizeKB,
+        ? (chatbot.contextSizeKB || 0) + contextItem.sizeKB
+        : chatbot.contextSizeKB || 0,
     },
   });
 }
@@ -186,26 +193,36 @@ export async function removeContextItem(
     throw new Error(`Chatbot with ID ${chatbotId} not found`);
   }
 
+  // Parse the contexts JSON if it's a string, otherwise use as is
+  const contexts = Array.isArray(chatbot.contexts)
+    ? chatbot.contexts
+    : chatbot.contexts
+    ? JSON.parse(JSON.stringify(chatbot.contexts))
+    : [];
+
   // Find the context item to remove
-  const contextItem = chatbot.contexts.find(
-    (item: any) => item.id === contextItemId
-  );
+  const contextItem = contexts.find((item: any) => item.id === contextItemId);
 
   if (!contextItem) {
     throw new Error(`Context item with ID ${contextItemId} not found`);
   }
 
   // Remove the context item from the chatbot's contexts
+  const updatedContexts = contexts.filter(
+    (item: any) => item.id !== contextItemId
+  );
+
+  // Calculate new context size
+  const newContextSizeKB = contextItem.sizeKB
+    ? (chatbot.contextSizeKB || 0) - contextItem.sizeKB
+    : chatbot.contextSizeKB || 0;
+
+  // Update the chatbot with the new contexts and size
   return db.chatbot.update({
     where: { id: chatbotId },
     data: {
-      contexts: chatbot.contexts.filter(
-        (item: any) => item.id !== contextItemId
-      ),
-      // Update the context size if the removed item had a size
-      contextSizeKB: contextItem.sizeKB
-        ? chatbot.contextSizeKB - contextItem.sizeKB
-        : chatbot.contextSizeKB,
+      contexts: updatedContexts,
+      contextSizeKB: Math.max(0, newContextSizeKB), // Ensure we don't go below 0
     },
   });
 }
@@ -280,17 +297,13 @@ export async function getChatbotById(id: string): Promise<Chatbot | null> {
 export async function getChatbotBySlug(slug: string): Promise<Chatbot | null> {
   return db.chatbot.findUnique({
     where: { slug },
-    include: {
-      apiKeys: true,
-      user: true,
-    },
   });
 }
 
 /**
  * Gets all chatbots for a user
  */
-export async function getChatbotsByUserId(userId: string): Promise<Chatbot[]> {
+export function getChatbotsByUserId(userId: string): Promise<Chatbot[]> {
   return db.chatbot.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
