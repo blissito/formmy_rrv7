@@ -112,7 +112,7 @@ export const TopMenu = ({ user }: { user: User }) => {
 
   return (
     <div className="h-20 flex items-center justify-end gap-2 w-full">
-      <Link to="/dashboard/referrals">
+      <Link to="">
         <Button
           variant="secondary"
           className="h-10 flex gap-1 items-center px-2"
