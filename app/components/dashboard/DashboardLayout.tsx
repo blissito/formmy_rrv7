@@ -101,10 +101,10 @@ export const TopMenu = ({user}: {user: User}) => {
   return (
     <div className='h-20 flex items-center justify-end gap-2 w-full'>
     <Button variant="secondary" className='h-10 flex gap-1 items-center px-2'><Usage className='w-8 h-8 ml-1 mt-1'/> Uso</Button>
-    <Button variant="ghost">Docs</Button>
+    <Button variant="ghost" className='h-10'>Docs</Button>
     {user ? (
       <Menu as="div" className="relative inline-block text-left">
-        <Menu.Button className="inline-flex w-full justify-center py-2 rounded-md text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+        <Menu.Button className="inline-flex w-full justify-center py-2 rounded-md text-base font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
           <img
             className="w-10 h-10 rounded-full"
             src={user.picture}
@@ -130,7 +130,7 @@ export const TopMenu = ({user}: {user: User}) => {
                       active
                         ? "bg-brand-100  text-dark "
                         : "text-dark "
-                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-sm`}
+                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-base`}
                   >
                     <BiGhost className="text-dark" size="20px" />
                         Ghosty
@@ -145,7 +145,7 @@ export const TopMenu = ({user}: {user: User}) => {
                       active
                         ? "bg-[#F5F5FC] dark:bg-gray-900/40 text-space-800 dark:text-space-300"
                         : "text-space-800 dark:text-clear"
-                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-sm`}
+                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-base`}
                   >
                     <IoGiftOutline size="20px" />
                    Compartir con amigos
@@ -160,7 +160,7 @@ export const TopMenu = ({user}: {user: User}) => {
                       active
                         ? "bg-[#F5F5FC] dark:bg-gray-900/40 text-space-800 dark:text-space-300"
                         : "text-space-800 dark:text-clear"
-                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-sm`}
+                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-base`}
                   >
                     <MdOutlineSpeakerNotes size="18px" />
                     Feedback
@@ -175,7 +175,7 @@ export const TopMenu = ({user}: {user: User}) => {
                       active
                         ? "bg-[#F5F5FC] dark:bg-gray-900/40 text-space-800 dark:text-space-300"
                         : "text-space-800 dark:text-clear"
-                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-sm`}
+                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-base`}
                   >
                     <RiUserSettingsLine size="18px" />
                   Suscripción
@@ -191,7 +191,7 @@ export const TopMenu = ({user}: {user: User}) => {
                       active
                         ? "bg-[#F5F5FC] dark:bg-gray-900/40 text-space-800 dark:text-space-300"
                         : "text-space-800 dark:text-clear"
-                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-sm`}
+                    } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-base`}
                   >
                     <AiOutlineLogout size="18px" />
                     Cerrar sesión
