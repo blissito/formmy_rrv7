@@ -12,6 +12,7 @@ import { CodeBlock } from "../common/CodeBlock";
 import { useApiKey } from "../../../hooks/useApiKey";
 import type { Chatbot, Integration as PrismaIntegration } from "@prisma/client";
 import WhatsAppIntegrationModal from "../../integrations/WhatsAppIntegrationModal";
+import GoogleCalendarIntegrationModal from "../../integrations/GoogleCalendarIntegrationCard";
 
 // Integraciones disponibles con sus configuraciones
 const availableIntegrations = [
@@ -146,7 +147,9 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
     console.log("🔍 Debug - Estado final de integraciones:", status);
     return status;
   });
-  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+  // Estados para controlar los modales de integración
+  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
+  const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false);
 
   const handleConnect = (integrationId: string) => {
     console.log("🔍 Debug - Conectando integración:", integrationId);
@@ -156,26 +159,14 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
       [integrationId.toLowerCase()]: "connecting",
     }));
 
-    // Para WhatsApp, abrir el modal de configuración
+    setSelectedIntegration(integrationId);
+
+    // Abrir el modal correspondiente
     if (integrationId === "WHATSAPP") {
-      // Verificar si ya existe una integración de WhatsApp
-      const existingWhatsAppIntegration = integrations?.find(
-        (integration) => integration.platform === "WHATSAPP"
-      );
-
-      console.log(
-        "🔍 Debug - Integración WhatsApp existente:",
-        existingWhatsAppIntegration
-      );
-
-      setSelectedIntegration(integrationId);
-      setIsWhatsAppModalOpen(true);
-
-      // Resetear el estado a disconnected para que el modal maneje la conexión
-      setIntegrationStatus((prev) => ({
-        ...prev,
-        [integrationId.toLowerCase()]: "disconnected",
-      }));
+      setWhatsAppModalOpen(true);
+    } else if (integrationId === "GOOGLE_CALENDAR") {
+      console.log("🔍 Starting Google Calendar OAuth2 flow");
+      handleGoogleCalendarOAuth();
     } else {
       // Para otras integraciones, simular conexión
       setTimeout(() => {
@@ -198,8 +189,11 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
   const handleEdit = (integrationId: string) => {
     console.log("🔍 Debug - Editando integración:", integrationId);
     setSelectedIntegration(integrationId);
+
     if (integrationId === "WHATSAPP") {
-      setIsWhatsAppModalOpen(true);
+      setWhatsAppModalOpen(true);
+    } else if (integrationId === "GOOGLE_CALENDAR") {
+      setGoogleCalendarModalOpen(true);
     }
   };
 
@@ -214,7 +208,7 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
         [selectedIntegration.toLowerCase()]: "connected" as const,
       }));
 
-      setIsWhatsAppModalOpen(false);
+      setWhatsAppModalOpen(false);
       setSelectedIntegration(null);
 
       // Mostrar notificación de éxito
@@ -225,6 +219,144 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
       // de las integraciones sin recargar la página, pero para este ejemplo
       // lo hacemos simple con una recarga
       window.location.reload();
+    }
+  };
+
+  const handleGoogleCalendarSuccess = (integration: any) => {
+    console.log("🔍 Debug - Google Calendar integración exitosa:", integration);
+
+    if (selectedIntegration) {
+      // Actualizar el estado local
+      setIntegrationStatus((prev) => ({
+        ...prev,
+        [selectedIntegration.toLowerCase()]: "connected" as const,
+      }));
+
+      setGoogleCalendarModalOpen(false);
+      setSelectedIntegration(null);
+
+      // Mostrar notificación de éxito
+      // Aquí podrías usar tu sistema de notificaciones
+      alert("¡Integración de Google Calendar configurada correctamente!");
+
+      // Nota: En una aplicación real, podrías querer actualizar el estado
+      // de las integraciones sin recargar la página, pero para este ejemplo
+      // lo hacemos simple con una recarga
+      window.location.reload();
+    }
+  };
+
+  // Función para manejar OAuth2 de Google Calendar
+  const handleGoogleCalendarOAuth = async () => {
+    try {
+      // Primero crear la integración (el servidor usará las credenciales del entorno)
+      const response = await fetch("/api/v1/integration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          intent: "create",
+          chatbotId: chatbot.id,
+          platform: "GOOGLE_CALENDAR",
+          token: "", // Token will be set later via OAuth callback
+          calendarId: "primary",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("API Error Response:", errorData);
+        throw new Error(`Error al crear la integración: ${response.status} - ${errorData}`);
+      }
+
+      const data = await response.json();
+      const integrationId = data.integration.id;
+      const integration = data.integration;
+
+      // Crear URL de OAuth con state conteniendo datos de integración
+      const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+      authUrl.searchParams.append("client_id", integration.clientId);
+      authUrl.searchParams.append("redirect_uri", integration.redirectUri);
+      authUrl.searchParams.append("response_type", "code");
+      authUrl.searchParams.append(
+        "scope",
+        "https://www.googleapis.com/auth/calendar"
+      );
+      authUrl.searchParams.append("access_type", "offline");
+      authUrl.searchParams.append("prompt", "consent");
+
+      // Incluir datos de integración en state
+      const state = encodeURIComponent(
+        JSON.stringify({
+          integrationId,
+          clientId: integration.clientId,
+          clientSecret: integration.clientSecret,
+          redirectUri: integration.redirectUri,
+        })
+      );
+      authUrl.searchParams.append("state", state);
+
+      // Abrir popup de OAuth
+      const popup = window.open(
+        authUrl.toString(),
+        "google-oauth",
+        "width=500,height=600,scrollbars=yes,resizable=yes"
+      );
+
+      if (!popup) {
+        throw new Error(
+          "No se pudo abrir la ventana de autorización. Verifica que no esté bloqueada por el navegador."
+        );
+      }
+
+      // Escuchar mensajes del popup
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+
+        if (event.data.type === "oauth_success") {
+          // Actualizar estado de integración
+          setIntegrationStatus((prev) => ({
+            ...prev,
+            google_calendar: "connected",
+          }));
+          
+          // Limpiar listener
+          window.removeEventListener("message", handleMessage);
+          
+          // Mostrar notificación de éxito
+          alert("¡Integración de Google Calendar configurada correctamente!");
+          
+          // Recargar para actualizar la lista de integraciones
+          window.location.reload();
+        } else if (event.data.type === "oauth_error") {
+          // Actualizar estado de integración a error
+          setIntegrationStatus((prev) => ({
+            ...prev,
+            google_calendar: "disconnected",
+          }));
+          
+          // Limpiar listener
+          window.removeEventListener("message", handleMessage);
+          
+          // Mostrar error
+          alert(`Error en la autorización: ${event.data.description || "Error desconocido"}`);
+        }
+      };
+
+      window.addEventListener("message", handleMessage);
+      
+    } catch (error) {
+      console.error("Error en OAuth2 de Google Calendar:", error);
+      
+      // Actualizar estado de integración a error
+      setIntegrationStatus((prev) => ({
+        ...prev,
+        google_calendar: "disconnected",
+      }));
+      
+      // Mostrar error al usuario
+      alert(error instanceof Error ? error.message : "Error desconocido en la autorización");
     }
   };
 
@@ -296,10 +428,10 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
 
           {selectedIntegration === "WHATSAPP" && (
             <WhatsAppIntegrationModal
-              isOpen={isWhatsAppModalOpen}
-              onClose={() => setIsWhatsAppModalOpen(false)}
-              onSuccess={handleWhatsAppSuccess}
+              isOpen={whatsAppModalOpen}
+              onClose={() => setWhatsAppModalOpen(false)}
               chatbotId={chatbot.id}
+              onSuccess={handleWhatsAppSuccess}
               existingIntegration={(() => {
                 const whatsappIntegration = integrations.find(
                   (integration) => integration.platform === "WHATSAPP"

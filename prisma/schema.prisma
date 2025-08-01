@@ -245,22 +245,36 @@ model Message {
 
 enum IntegrationType {
   WHATSAPP
-  TELEGRAM
+  GOOGLE_CALENDAR
 }
 
 model Integration {
   id                 String          @id @default(auto()) @map("_id") @db.ObjectId
   platform           IntegrationType
-  token              String?
+  token              String?         // Token de acceso para la API
+  refreshToken       String?         // Token de actualización para OAuth
   isActive           Boolean         @default(true)
-  phoneNumberId      String?
-  businessAccountId  String?
-  webhookVerifyToken String?
-  lastActivity       DateTime?
-  errorMessage       String?
+  
+  // Campos específicos de WhatsApp
+  phoneNumberId      String?         // ID del número de teléfono en WhatsApp
+  businessAccountId  String?         // ID de la cuenta de negocio en WhatsApp
+  webhookVerifyToken String?         // Token para verificar el webhook de WhatsApp
+  
+  // Campos específicos de Google Calendar
+  calendarId         String?         // ID del calendario (por defecto 'primary')
+  clientId           String?         // Client ID de OAuth 2.0
+  clientSecret       String?         // Client Secret de OAuth 2.0
+  redirectUri        String?         // URI de redirección para OAuth
+  
+  // Campos de auditoría
+  lastActivity       DateTime?       // Última actividad registrada
+  errorMessage       String?         // Último mensaje de error
+  
+  // Relaciones
   chatbotId          String          @db.ObjectId
   chatbot            Chatbot         @relation(fields: [chatbotId], references: [id])
 
+  // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

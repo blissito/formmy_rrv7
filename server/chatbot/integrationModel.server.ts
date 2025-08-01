@@ -19,6 +19,12 @@ export async function createIntegration(
     phoneNumberId?: string;
     businessAccountId?: string;
     webhookVerifyToken?: string;
+  },
+  googleCalendarData?: {
+    calendarId?: string;
+    clientId?: string;
+    clientSecret?: string;
+    redirectUri?: string;
   }
 ): Promise<Integration> {
   return prisma.integration.create({
@@ -30,6 +36,11 @@ export async function createIntegration(
       phoneNumberId: whatsappData?.phoneNumberId,
       businessAccountId: whatsappData?.businessAccountId,
       webhookVerifyToken: whatsappData?.webhookVerifyToken,
+      // Google Calendar-specific fields
+      calendarId: googleCalendarData?.calendarId,
+      clientId: googleCalendarData?.clientId,
+      clientSecret: googleCalendarData?.clientSecret,
+      redirectUri: googleCalendarData?.redirectUri,
       chatbot: {
         connect: {
           id: chatbotId,
@@ -64,10 +75,15 @@ export async function updateIntegration(
   id: string,
   data: {
     token?: string;
+    refreshToken?: string;
     isActive?: boolean;
     phoneNumberId?: string;
     businessAccountId?: string;
     webhookVerifyToken?: string;
+    calendarId?: string;
+    clientId?: string;
+    clientSecret?: string;
+    redirectUri?: string;
     lastActivity?: Date;
     errorMessage?: string;
   }

@@ -71,13 +71,28 @@ export async function action({ request }: any) {
 
 async function handleCreateIntegration(formData: FormData) {
   const chatbotId = formData.get("chatbotId") as string;
-  const platform = formData.get("platform") as IntegrationType;
+  const platformString = formData.get("platform") as string;
   const token = formData.get("token") as string;
+
+  // Validate and convert platform string to enum
+  const platform = platformString as IntegrationType;
+  if (!Object.values(IntegrationType).includes(platform)) {
+    return new Response(
+      JSON.stringify({ error: `Invalid platform: ${platformString}. Valid values are: ${Object.values(IntegrationType).join(", ")}` }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
 
   // WhatsApp-specific fields
   const phoneNumberId = formData.get("phoneNumberId") as string;
   const businessAccountId = formData.get("businessAccountId") as string;
   const webhookVerifyToken = formData.get("webhookVerifyToken") as string;
+
+  // Google Calendar-specific fields
+  const calendarId = formData.get("calendarId") as string;
+  const clientId = formData.get("clientId") as string;
+  const clientSecret = formData.get("clientSecret") as string;
+  const redirectUri = formData.get("redirectUri") as string;
 
   // Validation
   if (!chatbotId || !platform) {
@@ -99,6 +114,21 @@ async function handleCreateIntegration(formData: FormData) {
     }
   }
 
+  if (platform === IntegrationType.GOOGLE_CALENDAR) {
+    // Use environment variables for Google Calendar credentials
+    const envClientId = process.env.GOOGLE_CLIENT_ID;
+    const envClientSecret = process.env.GOOGLE_SECRET;
+    
+    if (!envClientId || !envClientSecret) {
+      return new Response(
+        JSON.stringify({
+          error: "Google OAuth credentials not configured in environment",
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }
+
   const whatsappData =
     platform === IntegrationType.WHATSAPP
       ? {
@@ -108,11 +138,22 @@ async function handleCreateIntegration(formData: FormData) {
         }
       : undefined;
 
+  const googleCalendarData =
+    platform === IntegrationType.GOOGLE_CALENDAR
+      ? {
+          calendarId: calendarId || "primary",
+          clientId: process.env.GOOGLE_CLIENT_ID!,
+          clientSecret: process.env.GOOGLE_SECRET!,
+          redirectUri: redirectUri || `${process.env.NODE_ENV === "production" ? "https" : "http"}://${process.env.HOST || "localhost:3000"}/api/v1/oauth2/google/calendar/callback`,
+        }
+      : undefined;
+
   const integration = await createIntegration(
     chatbotId,
     platform,
     token,
-    whatsappData
+    whatsappData,
+    googleCalendarData
   );
 
   return new Response(JSON.stringify({ integration, success: true }), {
