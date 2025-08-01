@@ -32,7 +32,7 @@ export const InputModalForm = ({
         className="px-6 py-8 md:py-10 gap-2 bg-clear dark:bg-space-900 rounded-3xl dark:text-white text-space-900 "
       >
         <h2 className="font-bold mb-10 text-2xl text-center mt-6 md:mt-0">
-          {title}
+          {title}ww
         </h2>
         <div className="flex w-full">
           <input

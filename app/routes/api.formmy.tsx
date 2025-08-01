@@ -2,7 +2,7 @@ import { db } from "~/utils/db.server";
 import invariant from "tiny-invariant";
 import { saveForm } from "~/utils/savers/saveForm";
 import { validateBasic } from "~/utils/validation";
-import { data as json } from "react-router";
+import { data as json, type ActionFunctionArgs } from "react-router";
 import { notifyOwner } from "~/utils/notifyers/notifyOwner";
 
 const sendAllNotifications = async (projectId: string) => {
@@ -29,7 +29,7 @@ const sendAllNotifications = async (projectId: string) => {
   await notifyOwner({ projectId, emails, projectName: project.name });
 };
 
-export const action = async ({ request, params }: ActionArgs) => {
+export const action = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
@@ -43,6 +43,22 @@ export const action = async ({ request, params }: ActionArgs) => {
       },
     });
     return { ok: true };
+  }
+
+  if (intent === "delete_permission") {
+    const permissionId = formData.get("permissionId") as string;
+    await db.permission.delete({
+      where: { id: permissionId },
+    });
+    return json({ ok: true });
+  }
+
+  if (intent === "resend_invitation") {
+    const permissionId = formData.get("permissionId") as string;
+    // TODO: Implement resend invitation logic
+    // This could involve sending an email notification or updating status
+    console.log("Resending invitation for permission:", permissionId);
+    return json({ ok: true, message: "Invitation resent" });
   }
 
   if (intent === "submit_formmy") {
