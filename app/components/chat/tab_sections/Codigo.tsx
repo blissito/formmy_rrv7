@@ -16,6 +16,13 @@ import WhatsAppIntegrationModal from "../../integrations/WhatsAppIntegrationModa
 // Integraciones disponibles con sus configuraciones
 const availableIntegrations = [
   {
+    id: "GOOGLE_CALENDAR",
+    name: "Google Calendar",
+    logo: "/assets/chat/calendar.png",
+    description:
+      "Conecta tu agente a Google Calendar para que pueda programar citas y recordatorios automáticamente.",
+  },
+  {
     id: "WHATSAPP",
     name: "WhatsApp",
     logo: "/assets/chat/whatsapp.svg",

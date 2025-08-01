@@ -156,33 +156,35 @@ export const IntegrationCard = ({
   return (
     <div className="grid shadow-standard border border-outlines p-4 rounded-2xl">
       <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
-      <h5 className="font-medium text-md mb-1">{name}</h5>
+      <div className="flex items-center justify-between mb-2">
+        <h5 className="font-medium text-md mb-1">{name}</h5>
+        {exists && (
+          <div className="">
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                isActive
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full mr-1 ${
+                  isActive ? "bg-green-400" : "bg-red-400"
+                }`}
+              ></span>
+              {isActive ? "Activo" : "Inactivo"}
+            </span>
+            {lastActivity && (
+              <p className="text-xs text-metal mt-1">
+                Última actividad: {lastActivity}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
       <p className="text-sm mb-4 text-metal">{description}</p>
 
       {/* Status indicator */}
-      {exists && (
-        <div className="mb-3">
-          <span
-            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              isActive
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full mr-1 ${
-                isActive ? "bg-green-400" : "bg-red-400"
-              }`}
-            ></span>
-            {isActive ? "Activo" : "Inactivo"}
-          </span>
-          {lastActivity && (
-            <p className="text-xs text-metal mt-1">
-              Última actividad: {lastActivity}
-            </p>
-          )}
-        </div>
-      )}
 
       <nav className="flex gap-2">
         <SimpleButton
@@ -234,6 +236,7 @@ const SimpleButton = ({
       onClick={onClick}
       disabled={disabled}
       className={cn(
+        "max-h-12 min-h-12",
         "active:scale-95",
         "hover:bg-gray-50 hover:shadow-sm transition-all",
         "border-gray-300 border py-2 px-4 rounded-xl min-w-max",
