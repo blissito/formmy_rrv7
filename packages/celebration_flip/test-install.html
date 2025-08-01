@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test CelebrationFlip from NPM</title>
+    <style>
+      body {
+        background: #111;
+        margin: 0;
+        padding: 1rem;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        display: grid;
+        place-content: center;
+        color: white;
+      }
+
+      .container {
+        text-align: center;
+        max-width: 1200px;
+      }
+
+      .test-section {
+        margin: 2rem 0;
+        padding: 2rem;
+        border: 1px solid #333;
+        border-radius: 8px;
+      }
+
+      .test-section h3 {
+        color: #aaa;
+        margin-bottom: 1rem;
+      }
+
+      .install-info {
+        background: #222;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        font-family: monospace;
+        text-align: left;
+      }
+    </style>
+    <!-- Load CSS from unpkg CDN -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/celebration-flip@1.0.0/dist/index.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎉 CelebrationFlip - NPM Package Test</h1>
+
+      <div class="install-info">
+        <strong>Package published successfully!</strong><br />
+        📦 NPM:
+        <a href="https://www.npmjs.com/package/celebration-flip" target="_blank"
+          >celebration-flip</a
+        ><br />
+        🐙 GitHub:
+        <a href="https://github.com/blissito/celebration-flip" target="_blank"
+          >blissito/celebration-flip</a
+        ><br /><br />
+
+        <strong>Install:</strong><br />
+        <code>npm install celebration-flip</code><br /><br />
+
+        <strong>CDN:</strong><br />
+        <code>https://unpkg.com/celebration-flip@1.0.0/dist/index.esm.js</code>
+      </div>
+
+      <div class="test-section">
+        <h3>✅ CSS Loaded from CDN</h3>
+        <div
+          class="celebration-flip"
+          style="--clr-1: dodgerblue; --clr-2: hotpink; --duration: 3s"
+        >
+          <div class="flip-text">
+            <span>P</span><span>U</span><span>B</span><span>L</span
+            ><span>I</span><span>S</span><span>H</span><span>E</span
+            ><span>D</span>
+          </div>
+          <div class="flip-text">
+            <span>♥</span><span>♥</span><span>♥</span><span>♥</span
+            ><span></span> <span>S</span><span>U</span><span>C</span
+            ><span>C</span><span>E</span><span>S</span><span>S</span
+            ><span></span> <span>♥</span><span>♥</span><span>♥</span
+            ><span>♥</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h3>🎨 Custom Colors</h3>
+        <div
+          class="celebration-flip"
+          style="--clr-1: #00ff88; --clr-2: #ff6b35; --duration: 2s"
+        >
+          <div class="flip-text">
+            <span>1</span><span>0</span><span>0</span><span>0</span
+            ><span></span> <span>D</span><span>O</span><span>W</span
+            ><span>N</span><span>L</span><span>O</span><span>A</span
+            ><span>D</span><span>S</span>
+          </div>
+          <div class="flip-text">
+            <span>🎉</span><span>🎉</span><span></span> <span>A</span
+            ><span>M</span><span>A</span><span>Z</span><span>I</span
+            ><span>N</span><span>G</span><span></span> <span>🎉</span
+            ><span>🎉</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h3>⚡ Fast Animation</h3>
+        <div
+          class="celebration-flip"
+          style="--clr-1: #ff0080; --clr-2: #8000ff; --duration: 1.5s"
+        >
+          <div class="flip-text">
+            <span>N</span><span>P</span><span>M</span><span></span>
+            <span>R</span><span>E</span><span>A</span><span>D</span
+            ><span>Y</span>
+          </div>
+          <div class="flip-text">
+            <span>✨</span><span>✨</span><span></span> <span>L</span
+            ><span>I</span><span>V</span><span>E</span><span></span>
+            <span>✨</span><span>✨</span>
+          </div>
+        </div>
+      </div>
+
+      <footer style="margin-top: 2rem; color: #666; font-size: 0.9rem">
+        <p>🎊 Package successfully published and working from CDN!</p>
+        <p>
+          Ready for installation via: <code>npm install celebration-flip</code>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

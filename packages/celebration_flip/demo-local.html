@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CelebrationFlip - Local Demo</title>
+    <link rel="stylesheet" href="src/CelebrationFlip.css" />
+    <style>
+      body {
+        background: #111;
+        margin: 0;
+        padding: 2rem;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        color: white;
+      }
+
+      .demo-container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .demo-section {
+        margin: 4rem 0;
+        text-align: center;
+      }
+
+      .demo-section h2 {
+        color: #aaa;
+        margin-bottom: 2rem;
+        font-size: 1.5rem;
+      }
+
+      .demo-grid {
+        display: grid;
+        gap: 3rem;
+        margin: 3rem 0;
+      }
+
+      .demo-item {
+        padding: 2rem;
+        border: 1px solid #333;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .demo-item h3 {
+        color: #ccc;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="demo-container">
+      <h1 style="text-align: center; color: white; margin-bottom: 3rem">
+        🎉 CelebrationFlip - Local Demo
+      </h1>
+
+      <div class="demo-section">
+        <h2>Original - 4000 Suscriptores</h2>
+        <div
+          class="celebration-flip"
+          style="--clr-1: dodgerblue; --clr-2: hotpink; --duration: 3s"
+        >
+          <div class="flip-text">
+            <span>4</span><span>0</span><span>0</span><span>0</span
+            ><span></span> <span>S</span><span>U</span><span>S</span
+            ><span>C</span><span>R</span><span>I</span><span>P</span
+            ><span>T</span><span>O</span><span>R</span><span>E</span
+            ><span>S</span>
+          </div>
+          <div class="flip-text">
+            <span>♥</span><span>♥</span><span>♥</span><span>♥</span
+            ><span></span> <span>¡</span><span>G</span><span>R</span
+            ><span>A</span><span>C</span><span>I</span><span>A</span
+            ><span>S</span><span>!</span><span></span> <span>♥</span
+            ><span>♥</span><span>♥</span><span>♥</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-grid">
+        <div class="demo-item">
+          <h3>YouTube Style</h3>
+          <div
+            class="celebration-flip"
+            style="--clr-1: #ff0000; --clr-2: #ffffff; --duration: 2.5s"
+          >
+            <div class="flip-text">
+              <span>1</span><span>0</span><span>0</span><span>K</span
+              ><span></span> <span>S</span><span>U</span><span>B</span
+              ><span>S</span>
+            </div>
+            <div class="flip-text">
+              <span>🎉</span><span>🎉</span><span></span> <span>T</span
+              ><span>H</span><span>A</span><span>N</span><span>K</span
+              ><span>S</span><span></span> <span>🎉</span><span>🎉</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <h3>Instagram Style</h3>
+          <div
+            class="celebration-flip"
+            style="--clr-1: #e1306c; --clr-2: #f77737; --duration: 3.5s"
+          >
+            <div class="flip-text">
+              <span>5</span><span>0</span><span>K</span><span></span>
+              <span>F</span><span>O</span><span>L</span><span>L</span
+              ><span>O</span><span>W</span><span>E</span><span>R</span
+              ><span>S</span>
+            </div>
+            <div class="flip-text">
+              <span>✨</span><span>✨</span><span></span> <span>A</span
+              ><span>M</span><span>A</span><span>Z</span><span>I</span
+              ><span>N</span><span>G</span><span></span> <span>✨</span
+              ><span>✨</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <h3>Gaming Style</h3>
+          <div
+            class="celebration-flip"
+            style="--clr-1: #00ff00; --clr-2: #ffff00; --duration: 1.5s"
+          >
+            <div class="flip-text">
+              <span>H</span><span>I</span><span>G</span><span>H</span
+              ><span></span> <span>S</span><span>C</span><span>O</span
+              ><span>R</span><span>E</span>
+            </div>
+            <div class="flip-text">
+              <span>🏆</span><span>🏆</span><span></span> <span>L</span
+              ><span>E</span><span>G</span><span>E</span><span>N</span
+              ><span>D</span><span></span> <span>🏆</span><span>🏆</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-item">
+          <h3>Business Style</h3>
+          <div
+            class="celebration-flip"
+            style="--clr-1: gold; --clr-2: green; --duration: 4s"
+          >
+            <div class="flip-text">
+              <span>$</span><span>1</span><span>M</span><span></span>
+              <span>R</span><span>E</span><span>V</span><span>E</span
+              ><span>N</span><span>U</span><span>E</span>
+            </div>
+            <div class="flip-text">
+              <span>💰</span><span>💰</span><span></span> <span>A</span
+              ><span>C</span><span>H</span><span>I</span><span>E</span
+              ><span>V</span><span>E</span><span>D</span><span></span>
+              <span>💰</span><span>💰</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 4rem; color: #666">
+        <p>
+          🎨 Customize colors, text, and duration by modifying the CSS custom
+          properties
+        </p>
+        <p>
+          📁 Files: <code>src/CelebrationFlip.css</code> and
+          <code>src/CelebrationFlip.tsx</code>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

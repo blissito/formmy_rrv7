@@ -10,7 +10,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:production": "npm run build && cross-env NODE_ENV=production node ./server.js",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@effect/platform": "^0.90.0",

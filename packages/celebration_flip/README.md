@@ -2,29 +2,56 @@
 
 A beautiful animated flip text component for celebrating milestones with customizable text and hearts. Perfect for social media celebrations, milestone announcements, and achievement showcases.
 
-![CelebrationFlip Demo](https://raw.githubusercontent.com/formmy/celebration-flip/main/demo.gif)
+<div align="center">
+  
+  [![npm version](https://badge.fury.io/js/celebration-flip.svg)](https://badge.fury.io/js/celebration-flip)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Bundle Size](https://img.shields.io/bundlephobia/minzip/celebration-flip)](https://bundlephobia.com/package/celebration-flip)
+  [![Downloads](https://img.shields.io/npm/dm/celebration-flip)](https://www.npmjs.com/package/celebration-flip)
+</div>
 
 ## ✨ Features
 
-- 🎬 **Smooth flip animations** with CSS transforms
-- 🎨 **Customizable colors** and styling
-- 📱 **Responsive design** that works on all devices
-- ⚡ **Lightweight** - No heavy dependencies
-- 🔧 **Easy to use** - Simple API
-- 🌐 **Framework agnostic** - Works with React, Vue, or vanilla HTML
-- ♿ **Accessible** - Respects `prefers-reduced-motion`
+- 🎬 **Smooth flip animations** with CSS transforms and 60fps performance
+- 🎨 **Fully customizable** - Colors, text, duration, and styling
+- 📱 **Responsive design** - Works perfectly on mobile, tablet, and desktop
+- ⚡ **Ultra lightweight** - Less than 5KB minified + gzipped
+- 🔧 **Zero configuration** - Works out of the box with sensible defaults
+- 🌐 **Framework agnostic** - React, Vue, Svelte, or vanilla HTML/CSS
+- ♿ **Accessibility first** - Respects `prefers-reduced-motion` and screen readers
+- 🎯 **TypeScript ready** - Full type definitions included
+- 📦 **Multiple formats** - ESM, CommonJS, and UMD builds
+- 🎨 **Retro aesthetic** - Uses the beautiful "Sixtyfour" pixel font
 
 ## 📦 Installation
 
 ```bash
 # npm
-npm install @formmy/celebration-flip
+npm install celebration-flip
 
 # yarn
-yarn add @formmy/celebration-flip
+yarn add celebration-flip
 
 # pnpm
-pnpm add @formmy/celebration-flip
+pnpm add celebration-flip
+
+# bun
+bun add celebration-flip
+```
+
+Or use it directly from CDN (no installation required):
+
+```html
+<!-- CSS -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/celebration-flip@latest/dist/styles.css"
+/>
+
+<!-- ESM -->
+<script type="module">
+  import { CelebrationFlip } from "https://unpkg.com/celebration-flip@latest/dist/index.esm.js";
+</script>
 ```
 
 ## 🚀 Quick Start
@@ -32,8 +59,8 @@ pnpm add @formmy/celebration-flip
 ### React Component
 
 ```jsx
-import { CelebrationFlip } from "@formmy/celebration-flip";
-import "@formmy/celebration-flip/styles";
+import { CelebrationFlip } from "celebration-flip";
+import "celebration-flip/dist/styles.css";
 
 function App() {
   return (
@@ -65,7 +92,7 @@ function App() {
   <head>
     <link
       rel="stylesheet"
-      href="https://unpkg.com/@formmy/celebration-flip/dist/styles.css"
+      href="https://unpkg.com/celebration-flip/dist/styles.css"
     />
     <style>
       body {
@@ -97,13 +124,6 @@ function App() {
     </div>
   </body>
 </html>
-```
-
-### ESM Import
-
-```javascript
-// Direct ESM import
-import { CelebrationFlip } from "https://unpkg.com/@formmy/celebration-flip/dist/index.esm.js";
 ```
 
 ## 📖 API Reference
@@ -209,15 +229,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
-MIT © [Formmy Team](https://github.com/formmy)
+MIT © [@blissito](https://github.com/blissito)
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/formmy/celebration-flip)
-- [NPM Package](https://www.npmjs.com/package/@formmy/celebration-flip)
-- [Live Demo](https://formmy.github.io/celebration-flip)
-- [Report Issues](https://github.com/formmy/celebration-flip/issues)
+- [GitHub Repository](https://github.com/blissito/celebration-flip)
+- [NPM Package](https://www.npmjs.com/package/celebration-flip)
+- [Report Issues](https://github.com/blissito/celebration-flip/issues)
 
 ---
 
-Made with ❤️ by the [Formmy](https://formmy.ai) team
+Made with ❤️ by the [Formmy](https://formmy.app) team
