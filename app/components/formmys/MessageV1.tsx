@@ -20,7 +20,7 @@ export default function Message({
   return (
     <article
       className={cn(
-        "mx-auto w-full px-4 h-screen flex items-center justify-center flex-col gap-4",
+        "mx-auto w-full h-fit px-4 box-border flex items-center justify-center flex-col gap-4",
         size === "sm" ? "max-w-sm" : null,
         config.theme,
         {

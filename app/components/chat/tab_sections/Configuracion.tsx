@@ -205,7 +205,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
   );
 };
 
-const Toggler = ({
+export const Toggler = ({
   text,
   title,
   onChange,

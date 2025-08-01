@@ -1,123 +1,40 @@
-import { data as json, redirect } from "react-router";
-import {
-  Outlet,
-  useFetcher,
-  useLoaderData,
-  useNavigate,
-  useParams,
-} from "react-router";
-import {
-  type ChangeEvent,
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  type FormEvent,
-  type SyntheticEvent,
-  useId,
-  type ReactNode,
-  forwardRef,
-  type Ref,
-} from "react";
+import { useState, useEffect, useRef, useMemo, forwardRef, type Ref } from "react";
+import { useFetcher, useNavigate, useParams } from "react-router";
 import { twMerge } from "tailwind-merge";
+import { motion } from "framer-motion";
+import { cn } from "~/lib/utils";
 import { Toggle } from "~/components/Switch";
+import { Sorter } from "~/components/dragNdrop/NewSorter";
+import { ProTag } from "~/components/ProTag";
 import Formmy, {
   BASIC_INPUTS,
   configSchema,
   type ConfigSchema,
-} from "~/components/formmys/FormyV1"; // importing v1 with its types and tools ;)
+} from "~/components/formmys/FormyV1";
 import useLocalStorage from "~/lib/hooks/useLocalStorage";
-import { db } from "~/utils/db.server";
-// import scrollbarStyles from "~/styles/app.css";
-import { ProTag } from "~/components/ProTag";
-import { getUserOrRedirect } from "server/getUserUtils.server";
-import { Sorter } from "~/components/dragNdrop/NewSorter";
-import { motion } from "framer-motion";
-import { cn } from "~/lib/utils";
+import type { ChangeEvent, FormEvent, SyntheticEvent, ReactNode } from "react";
 
-// export const links = () => {
-//   return [
-//     {
-//       rel: "stylesheet",
-//       href: scrollbarStyles,
-//     },
-//   ];
-// };
+interface FormmyDesignEditionProps {
+  configuration: ConfigSchema;
+  isPro: boolean;
+  projectId: string;
+  type: string;
+}
 
-export const action = async ({ request, params }: ActionArgs) => {
-  const formData = await request.formData();
-  const form = Object.fromEntries(formData);
-
-  if (form.intent === "update") {
-    // validation
-    const validation = configSchema.safeParse(JSON.parse(form.data as string));
-    if (!validation.success) {
-      return json(null, { status: 400 });
-    }
-    const project = await db.project.findUnique({
-      where: { id: params.projectId },
-    });
-    await db.project.update({
-      where: { id: params.projectId },
-      data: {
-        config: { ...project.config, ...validation.data } as ConfigSchema,
-      },
-    });
-  }
-
-  if (form.intent === "next") {
-    // validation
-    const validation = configSchema.safeParse(JSON.parse(form.data as string));
-    if (!validation.success) {
-      return json(null, { status: 400 });
-    }
-    // security and login check @TODO
-    const current = await db.project.findUnique({
-      where: {
-        id: params.projectId,
-      },
-    });
-    await db.project.update({
-      where: { id: params.projectId },
-      data: {
-        config: { ...current.config, ...validation.data } as ConfigSchema,
-      },
-    });
-
-    return redirect(`/config/${params.projectId}/message`);
-  }
-  // default:
-  return null;
-};
-
-// @TODO loader with saved config
-export const loader = async ({ params, request }: LoaderArgs) => {
-  const user = await getUserOrRedirect(request);
-  const project = await db.project.findUnique({
-    where: { id: params.projectId },
-    select: { id: true, type: true, config: true },
-  });
-  if (!project) throw json(null, { status: 404 });
-  return {
-    configuration: project.config as ConfigSchema,
-    isPro: user.plan === "PRO" ? true : false,
-    projectId: project.id,
-    type: project.type || "",
-  };
-};
-
-export default function BasicConfig() {
-  const { configuration, isPro, projectId, type } =
-    useLoaderData<typeof loader>();
+export function FormmyDesignEdition({
+  configuration,
+  isPro,
+  projectId,
+  type,
+}: FormmyDesignEditionProps) {
   const navigate = useNavigate();
   const fetcher = useFetcher();
-  const [config, setConfig] = useState<ConfigSchema>(configuration); // @TODO: specific keys only
+  const [config, setConfig] = useState<ConfigSchema>(configuration);
   const { save } = useLocalStorage();
   const renders = useRef(0);
   const params = useParams();
   const [isProOpen2, setIsProOpen2] = useState(false);
 
-  // effects @TODO: remove config
   useEffect(() => {
     setConfig(configuration);
   }, [configuration]);
@@ -129,15 +46,11 @@ export default function BasicConfig() {
     renders.current += 1;
   }, [save, config]);
 
-  // @TODO toaster when error
-  useEffect(() => {}, [fetcher]);
-
   const isDisabled = useMemo(() => {
     const result = configSchema.safeParse(config);
     return !result.success;
   }, [config]);
 
-  // handlers
   const handleInputOrder = (inputs: string[]) =>
     setConfig((c) => ({ ...c, inputs }));
   const handleThemeChange = (theme: "light" | "dark") =>
@@ -163,7 +76,7 @@ export default function BasicConfig() {
   };
 
   const getOrderFromConfig = () =>
-    config.inputs // should we compute this in other place?
+    config.inputs
       .concat(BASIC_INPUTS.filter((name) => !config.inputs.includes(name)))
       .concat(
         isPro
@@ -174,11 +87,10 @@ export default function BasicConfig() {
       );
 
   const [order, setOrder] = useState(getOrderFromConfig());
-  // listeners:
+
   useEffect(() => {
     const used = order.filter((name) => config.inputs.includes(name));
     handleInputOrder(used);
-    /* eslint-disable */
   }, [order]);
 
   useEffect(() => {
@@ -215,17 +127,10 @@ export default function BasicConfig() {
   };
 
   return (
-    <article className="flex flex-wrap h-[100vh] text-space-800 dark:text-white dark:bg-space-900  ">
-      <section className=" w-full lg:min-w-[520px] h-full lg:max-w-[520px] pt-12 md:px-12 px-4 overflow-y-scroll noscroll">
-        <div
-          style={{ height: "calc(100vh - 160px)" }}
-          className="w-full h-full "
-        >
-          <div className="h-full ">
-            <h2 className="text-3xl font-bold text-space-800 dark:text-white">
-              Configura tu formmy 🎯
-            </h2>
-            <p className="mb-4 pt-6 text-md font-normal text-gray-600 dark:text-space-300">
+    <article className="grid grid-cols-12 gap-8  h-full">
+      <section className="col-span-4 noscroll">
+        <div className="w-full h-fit">
+            <p className="mb-4 text-base font-normal text-metal ">
               {type === "subscription" ? (
                 <span>Tu Formmy de suscripción solo soporta email</span>
               ) : (
@@ -259,60 +164,18 @@ export default function BasicConfig() {
                   {!isPro && <ProTag />}
                 </button>
               )}
-              <p className="pt-6 text-md font-normal text-gray-600 dark:text-space-300">
+              <p className="pt-2 font-normal text-metal">
                 ¿Qué tema combina más con tu website?
               </p>
-              <div className="flex pt-4 text-xs gap-4">
-                <button
-                  type="button"
-                  className="text-center relative"
-                  onClick={() => handleThemeChange("light")}
+              <div className="pt-2 w-full">
+                <select
+                  value={config.theme}
+                  onChange={(e) => handleThemeChange(e.target.value as "light" | "dark")}
+                  className="w-full px-3 py-2 border border-outlines rounded-md focus:outline-none focus:border-none focus:ring-1 focus:ring-brand-500 "
                 >
-                  <img
-                    className={twMerge(
-                      "w-full object-contain   transition-all",
-                      config.theme === "light"
-                        ? " ring-brand-500 rounded-md ring"
-                        : null
-                    )}
-                    src="/assets/light-theme.svg"
-                    alt=""
-                  />
-                  {config.theme === "light" && <Palomita />}
-                  <p className="pt-2 fonr-light text-space-600 dark:text-space-300">
-                    Light
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleThemeChange("dark")}
-                  className="text-center relative"
-                >
-                  <img
-                    className={twMerge(
-                      "flex dark:hidden w-full object-contain  transition-all",
-                      config.theme === "dark"
-                        ? " ring-brand-500 rounded-md ring"
-                        : null
-                    )}
-                    src="/assets/dark-theme.svg"
-                    alt="darkmode"
-                  />
-                  <img
-                    className={twMerge(
-                      "hidden dark:flex w-full object-contain  transition-all",
-                      config.theme === "dark"
-                        ? " ring-brand-500 rounded-md ring"
-                        : null
-                    )}
-                    src="/assets/darkmode-dark.svg"
-                    alt="darkmode"
-                  />
-                  {config.theme === "dark" && <Palomita />}
-                  <p className="pt-2 text-space-600 dark:text-space-300">
-                    Dark
-                  </p>
-                </button>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
               </div>
               <p className="pt-6 text-md font-normal text-gray-600 dark:text-space-300">
                 ¿Qué estilo te gusta más?
@@ -325,22 +188,12 @@ export default function BasicConfig() {
                 >
                   <img
                     className={twMerge(
-                      "flex dark:hidden w-full object-contain",
+                      "flex dark:hidden w-full object-contain h-12",
                       config.border === "redondo"
                         ? " ring-brand-500 rounded-md ring"
                         : null
                     )}
                     src="/assets/rounded.svg"
-                    alt=" rounded input"
-                  />
-                  <img
-                    className={twMerge(
-                      "hidden dark:flex w-full object-contain",
-                      config.border === "redondo"
-                        ? " ring-brand-500 rounded-md ring"
-                        : null
-                    )}
-                    src="/assets/dark-rounded.svg"
                     alt=" rounded input"
                   />
                   {config.border === "redondo" && <Palomita />}
@@ -356,22 +209,12 @@ export default function BasicConfig() {
                   {config.border === "cuadrado" && <Palomita />}
                   <img
                     className={twMerge(
-                      "flex dark:hidden w-full object-contain",
+                      "flex dark:hidden w-full object-contain h-12",
                       config.border === "cuadrado"
                         ? " ring-brand-500 rounded-md ring"
                         : null
                     )}
                     src="/assets/not-rounded.svg"
-                    alt="no rounded input"
-                  />
-                  <img
-                    className={twMerge(
-                      "hidden dark:flex w-full object-contain",
-                      config.border === "cuadrado"
-                        ? " ring-brand-500 rounded-md ring"
-                        : null
-                    )}
-                    src="/assets/dark-norounded.svg"
                     alt="no rounded input"
                   />
                   <p className="pt-2 text-space-600 dark:text-space-300">
@@ -380,12 +223,13 @@ export default function BasicConfig() {
                 </button>
               </div>
 
-              <p className="pt-6 pb-4 text-md font-normal text-gray-600 dark:text-space-300">
+              <p className="pt-6 pb-2 text-md font-normal text-metal">
                 Elige o escribe el color del botón (hex)
               </p>
+              <div className="flex gap-4">
               <label
                 htmlFor="color"
-                className=" text-xs text-gray-400 flex items-center justify-between relative"
+                className="text-xs text-gray-400 flex items-center justify-between relative"
               >
                 <input
                   onClick={(e: SyntheticEvent<HTMLInputElement>) =>
@@ -394,17 +238,17 @@ export default function BasicConfig() {
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     handleColorChange(e.currentTarget.value);
                   }}
-                  className=" focus:border-brand-500 bg-transparent text-gray-600 focus:ring-brand-500 focus:outline-none ring-transparent  active:ring-transparent pl-8 w-28 py-2 pr-2 rounded border-gray-100 dark:border-clear/20"
+                  className="focus:border-brand-500 bg-transparent text-gray-600 focus:ring-brand-500 focus:outline-none ring-transparent active:ring-transparent pl-10 w-32 py-2 pr-0 rounded-lg border-gray-100 dark:border-clear/20"
                   id="color"
                   type="text"
                   value={config.ctaColor}
                 />
                 <ColorCube
                   style={{ backgroundColor: config.ctaColor }}
-                  className="absolute top-3 left-2"
+                  className="absolute top-[6px] left-2"
                 />
               </label>
-              <div className="flex flex-wrap gap-1 mt-2 ">
+              <div className="flex items-center flex-wrap gap-2">
                 <ColorCube
                   hexColor="#bb333c"
                   onClick={() => handleColorChange("#bb333c")}
@@ -434,33 +278,32 @@ export default function BasicConfig() {
                   hexColor="#1C7AE9"
                 />
               </div>
-              {
-                <div className="my-4">
-                  <p className="pt-6 pb-4 text-md font-normal text-gray-600 dark:text-space-300">
-                    Eliminar marca de agua
-                  </p>
-                  <div className="relative inline-block">
-                    {!isPro && (
-                      <ProTag
-                        isOpen={isProOpen2}
-                        onChange={(value) => setIsProOpen2(value)}
-                      />
-                    )}
-                    <Toggle
-                      isDisabled={!isPro}
-                      onChange={handleWaterMark}
-                      defaultValue={config.watermark}
+              </div>
+              <div className="">
+                <p className="pt-6 pb-2 text-md font-normal text-metal">
+                  Eliminar marca de agua
+                </p>
+                <div className="relative inline-block">
+                  {!isPro && (
+                    <ProTag
+                      isOpen={isProOpen2}
+                      onChange={(value) => setIsProOpen2(value)}
                     />
-                  </div>
+                  )}
+                  <Toggle
+                    isDisabled={!isPro}
+                    onChange={handleWaterMark}
+                    defaultValue={config.watermark}
+                  />
                 </div>
-              }
+              </div>
 
-              <div className="flex gap-4 mt-auto sticky w-full  bottom-0 z-10 bg-gradient-to-b from-transparent to-clear pb-8  dark:to-space-900 ">
+              {/* <div className="flex gap-4 mt-auto sticky w-full bottom-0 z-10 bg-gradient-to-b from-transparent to-clear pb-8 dark:to-space-900">
                 <button
-                  onClick={() => navigate("/dash/" + params.projectId)}
+                  onClick={() => navigate("/dashboard/formmys/" + params.projectId)}
                   type="button"
                   className={twMerge(
-                    " grow h-12 rounded-full text-base mt-10 disabled:bg-gray-100 bg-gray-200 text-gray-600 disabled:text-gray-400"
+                    "grow h-12 rounded-full text-base mt-10 disabled:bg-gray-100 bg-gray-200 text-gray-600 disabled:text-gray-400"
                   )}
                 >
                   Atrás
@@ -474,23 +317,20 @@ export default function BasicConfig() {
                 >
                   Continuar
                 </button>
-              </div>
+              </div> */}
             </fetcher.Form>
-          </div>
+
         </div>
       </section>
-
-      <section className={twMerge("grow h-full", config.theme)}>
+      <section className={twMerge("col-span-8 h-full min-h-[calc(100vh-300px)] ", config.theme)}>
         <Visualizer
           projectId={projectId}
           config={config}
           isPro={isPro}
           type={type}
-          message="¡Así se verá tu Formmy! Y se comportará de forma responsiva y con fondo
-        transparente."
+          message="¡Así se verá tu Formmy! Y se comportará de forma responsiva y con fondo transparente."
         />
       </section>
-      <Outlet />
     </article>
   );
 }
@@ -511,10 +351,7 @@ export const Visualizer = ({
   message: string;
 }) => {
   return (
-    <div className="w-full h-full bg-slate-100 dark:bg-hole py-10 lg:py-0 overflow-scroll">
-      <p className="text-space-800/40 dark:text-gray-400 font-light text-center w-full py-6 ">
-        {message}
-      </p>
+    <div className="w-full h-full noscroll bg-slate-100 dark:bg-hole py-10 lg:py-0 overflow-scroll">
       <div className="grid place-items-center h-[90%]">
         <Formmy
           type={type}
@@ -568,7 +405,7 @@ export const CheckInput = forwardRef(
         layoutId={name}
         key={name}
         layout
-        onDragEnd={handleDrag} // @todo improve
+        onDragEnd={handleDrag}
         data-index={index}
         whileDrag={{ zIndex: 10 }}
         ref={ref}
@@ -576,10 +413,7 @@ export const CheckInput = forwardRef(
         htmlFor={name}
         dragSnapToOrigin
         className={cn(
-          "rounded-lg border font-light border-outlines py-1 px-2 text-sm text-dark flex items-center justify-between w-32 h-[36px] bg-[white]  cursor-grab relative",
-          {
-            "": true,
-          }
+          "rounded-lg border font-light border-[#E3E1E1] dark:border-clear/20 py-1 px-2 text-sm text-gray-500 flex items-center justify-between w-32 h-[36px] bg-[white] dark:bg-transparent cursor-grab relative"
         )}
       >
         <span className="truncate pointer-events-none"> {label}</span>
@@ -590,7 +424,7 @@ export const CheckInput = forwardRef(
           id={name}
           type="checkbox"
           checked={isChecked}
-          className="rounded-full border-[1px] bg-transparent border-brand-500 ring-transparent focus:ring-1 focus:ring-brand-500 checked:bg-brand-500 	enabled:hover:none focus:bg-transparent bg-brand-500 checked:hover:bg-brand-500 checked:focus:bg-brand-500 "
+          className="rounded-full border-[1px] bg-transparent border-brand-500 ring-transparent focus:ring-1 focus:ring-brand-500 checked:bg-brand-500 enabled:hover:none focus:bg-transparent bg-brand-500 checked:hover:bg-brand-500 checked:focus:bg-brand-500"
         />
       </motion.label>
     );
@@ -600,7 +434,7 @@ export const CheckInput = forwardRef(
 export const Palomita = ({ className }: { className?: string }) => (
   <span
     className={twMerge(
-      "absolute top-2 right-2 text-[8px] text-white w-3 h-3 flex justify-center items-center bg-brand-500 rounded-full ",
+      "absolute top-2 right-2 text-[8px] text-white w-3 h-3 flex justify-center items-center bg-brand-500 rounded-full",
       className
     )}
   >
@@ -623,7 +457,7 @@ export const ColorCube = ({
     type="button"
     onClick={onClick}
     className={twMerge(
-      "w-4 h-4 rounded cursor-pointer",
+      "w-[28px] h-[28px] rounded cursor-pointer",
       `bg-[${hexColor}]`,
       className
     )}
@@ -655,7 +489,7 @@ export const SelectableImage = ({
       onClick={onClick}
       role="button"
       htmlFor={id}
-      className="text-center relative w-full "
+      className="text-center relative w-full"
     >
       <input
         ref={inputRef}
@@ -667,7 +501,7 @@ export const SelectableImage = ({
       />
       <img
         className={twMerge(
-          "w-full object-contain   transition-all",
+          "w-full object-contain transition-all",
           "peer-checked/radio:ring-brand-500 peer-checked/radio:rounded-md peer-checked/radio:ring"
         )}
         src={src || "/assets/light-theme.svg"}
