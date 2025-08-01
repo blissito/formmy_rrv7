@@ -339,20 +339,20 @@ export const SearchBar = ({
       ) : (
         <div className="flex gap-2">
           <Link
-            to={`/config/${projectId}/basic`}
+            to={`/dashboard/formmys/${projectId}/edition`}
             className= "text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
           >
             <EditIcon className="w-7 h-7"/>
           </Link>
           <Link
            className= "text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
-            to={`/config/${projectId}/share`}
+            to={`/dashboard/formmys/${projectId}/code`}
           >
             <CodeIcon className="text-metal w-7 h-7" />
           </Link>
           <Link
             prefetch="intent"
-            to="settings/notifications"
+            to={`/dashboard/formmys/${projectId}/settings`}
             className= "text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
           >
             <FiSettings  className="text-metal" />
@@ -455,7 +455,7 @@ const MessagesViewer = ({
       <section className="shadow-standard border border-outlines rounded-3xl md:py-6 md:px-6 px-4 py-4 grow relative">
         <header className="flex items-center md:mb-8 mb-2">
           <div className="rounded-full w-12 h-12 mr-2 bg-space-100 dark:bg-clear/5 flex justify-center items-center">
-            <img src="/home/ghosty-avatar.svg" alt="" />
+            <img src="/home/ghosty-avatar.svg" alt="avatar" />
           </div>
 
           <div>
