@@ -3,28 +3,38 @@ import { cn } from "~/lib/utils";
 
 type ChipTabsProps = {
   activeTab?: string;
+  type?: string;
   names?: string[];
   onTabChange?: (tab: string) => void;
 };
 
 export const ChipTabs = ({
   activeTab = "Chat",
+  type = "",
   names = ["Chat", "Agente"],
   onTabChange,
 }: ChipTabsProps) => {
   const tabs = names || ["Chat", "Agente"];
 
   return (
-    <section className="flex gap-1 bg-gray-200 rounded-full w-min">
+    <section className={cn(
+      "flex gap-1 bg-gray-200 rounded-full w-fit",
+      {
+        "w-full": type === "full",
+      }
+    )}>
       {tabs.map((tab) => (
         <button
           key={tab}
           onClick={() => onTabChange?.(tab)}
           className={cn(
-            "px-3 h-10 rounded-full text-base font-medium transition-colors",
+            "px-3 h-10 rounded-full text-base  font-medium transition-colors",
             "px-6",
             {
-              "bg-black text-[#fff]": activeTab === tab,
+              "w-[50%]": type === "full",
+            },
+            {
+              "bg-dark text-[#fff]": activeTab === tab,
             }
           )}
         >
