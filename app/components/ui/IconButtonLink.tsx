@@ -22,7 +22,7 @@ export const IconButtonLink: React.FC<IconButtonLinkProps> = ({
   ...props
 }) => {
   const location = useLocation();
-  const isActive = location.pathname === to;
+  const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
   
   // Estilos base para el botón
   const baseStyles = 'inline-flex items-center justify-center rounded-lg md:px-4 px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
