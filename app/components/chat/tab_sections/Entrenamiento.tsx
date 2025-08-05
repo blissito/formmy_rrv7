@@ -13,6 +13,7 @@ import { ListFiles } from "../ListFiles";
 import { StickyGrid } from "../PageContainer";
 import { UploadFiles } from "../UploadFiles";
 import { TextForm } from "../TextForm";
+import { QuestionsForm } from "../QuestionsForm";
 import { Website } from "../Website";
 import type { Chatbot, User } from "@prisma/client";
 import type { WebsiteEntry } from "~/types/website";
@@ -38,9 +39,15 @@ export const Entrenamiento = ({
   const [textContextsToRemove, setTextContextsToRemove] = useState<any[]>([]);
   const [fileContextsToRemove, setFileContextsToRemove] = useState<any[]>([]);
   const [websiteContextsToRemove, setWebsiteContextsToRemove] = useState<any[]>([]);
+  const [questionContexts, setQuestionContexts] = useState<any[]>([]);
+  const [questionContextsToRemove, setQuestionContextsToRemove] = useState<any[]>([]);
   const [textTitle, setTextTitle] = useState("");
   const [textContent, setTextContent] = useState("");
+  const [questionTitle, setQuestionTitle] = useState("");
+  const [questions, setQuestions] = useState<string[]>([""]);
+  const [answer, setAnswer] = useState("");
   const [isAddingText, setIsAddingText] = useState(false);
+  const [isAddingQuestion, setIsAddingQuestion] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
@@ -87,6 +94,18 @@ export const Entrenamiento = ({
           sizeKB: context.sizeKB,
         }));
       setTextContexts(textContextsFromDb);
+
+      // Extraer contextos de preguntas del chatbot
+      const questionContextsFromDb = chatbot.contexts
+        .filter((context: any) => context.type === "QUESTION" && context.title)
+        .map((context: any) => ({
+          id: context.id,
+          title: context.title,
+          questions: typeof context.questions === 'string' ? context.questions.split('\n').filter(q => q.trim()) : context.questions,
+          answer: context.answer,
+          sizeKB: context.sizeKB,
+        }));
+      setQuestionContexts(questionContextsFromDb);
     }
   }, [chatbot.contexts]);
 
@@ -152,6 +171,76 @@ export const Entrenamiento = ({
     const newContexts = [...textContexts];
     newContexts.splice(index, 1);
     setTextContexts(newContexts);
+  };
+
+  const handleAddQuestionContext = async () => {
+    const validQuestions = questions.filter(q => q.trim());
+    if (!questionTitle.trim() || validQuestions.length === 0 || !answer.trim()) {
+      return;
+    }
+
+    setIsAddingQuestion(true);
+    try {
+      const formData = new FormData();
+      formData.append("intent", "add_question_context");
+      formData.append("chatbotId", chatbot.id);
+      formData.append("title", questionTitle.trim());
+      formData.append("questions", validQuestions.join('\n'));
+      formData.append("answer", answer.trim());
+      formData.append(
+        "sizeKB",
+        Math.ceil((questionTitle.length + validQuestions.join('\n').length + answer.length) / 1024).toString()
+      );
+
+      const response = await fetch("/api/v1/chatbot", {
+        method: "POST",
+        body: formData,
+      });
+
+      const responseData = await response.json();
+
+      if (response.ok) {
+        // Limpiar formulario y recargar datos
+        setQuestionTitle("");
+        setQuestions([""]);
+        setAnswer("");
+        submit({});
+      } else {
+        throw new Error(responseData.error || "Error agregando contexto de pregunta");
+      }
+    } catch (error) {
+      console.error("Error agregando contexto de pregunta:", error);
+      throw error;
+    } finally {
+      setIsAddingQuestion(false);
+    }
+  };
+
+  const handleRemoveQuestionContext = (index: number, context: any) => {
+    // Marcar para eliminar (virtual)
+    setQuestionContextsToRemove(prev => [...prev, context]);
+    
+    // Remover del estado local para que no se muestre
+    const newContexts = [...questionContexts];
+    newContexts.splice(index, 1);
+    setQuestionContexts(newContexts);
+  };
+
+  const handleQuestionsChange = (index: number, value: string) => {
+    const newQuestions = [...questions];
+    newQuestions[index] = value;
+    setQuestions(newQuestions);
+  };
+
+  const handleAddQuestion = () => {
+    setQuestions([...questions, ""]);
+  };
+
+  const handleRemoveQuestion = (index: number) => {
+    if (questions.length > 1) {
+      const newQuestions = questions.filter((_, i) => i !== index);
+      setQuestions(newQuestions);
+    }
   };
 
   const handleUploadFiles = async () => {
@@ -242,8 +331,8 @@ export const Entrenamiento = ({
         }
       }
 
-      // Eliminar contextos marcados para eliminar (archivos, websites, texto)
-      const allContextsToRemove = [...fileContextsToRemove, ...websiteContextsToRemove, ...textContextsToRemove];
+      // Eliminar contextos marcados para eliminar (archivos, websites, texto, preguntas)
+      const allContextsToRemove = [...fileContextsToRemove, ...websiteContextsToRemove, ...textContextsToRemove, ...questionContextsToRemove];
       
       for (const context of allContextsToRemove) {
         try {
@@ -272,6 +361,7 @@ export const Entrenamiento = ({
         setTextContextsToRemove([]);
         setFileContextsToRemove([]);
         setWebsiteContextsToRemove([]);
+        setQuestionContextsToRemove([]);
         submit({});
       }
     } catch (error) {
@@ -374,6 +464,22 @@ export const Entrenamiento = ({
             chatbotId={chatbot.id}
           />
         )}
+        {currentTab === "preguntas" && (
+          <QuestionsForm
+            title={questionTitle}
+            questions={questions}
+            answer={answer}
+            questionContexts={questionContexts}
+            onTitleChange={setQuestionTitle}
+            onQuestionsChange={handleQuestionsChange}
+            onAnswerChange={setAnswer}
+            onAddContext={handleAddQuestionContext}
+            onRemoveContext={handleRemoveQuestionContext}
+            onAddQuestion={handleAddQuestion}
+            onRemoveQuestion={handleRemoveQuestion}
+            isAddingQuestion={isAddingQuestion}
+          />
+        )}
 
         <section className="hidden lg:block">
           <InfoSources
@@ -381,10 +487,11 @@ export const Entrenamiento = ({
             uploadedFiles={uploadedFiles}
             websiteEntries={[...existingWebsites, ...newWebsiteEntries]}
             textContexts={textContexts}
+            questionContexts={questionContexts}
             mode="edit"
             onCreateChatbot={handleUpdateChatbot}
             isCreating={isUpdating}
-            hasPendingChanges={uploadedFiles.length > 0 || newWebsiteEntries.length > 0 || textContextsToRemove.length > 0 || fileContextsToRemove.length > 0 || websiteContextsToRemove.length > 0}
+            hasPendingChanges={uploadedFiles.length > 0 || newWebsiteEntries.length > 0 || textContextsToRemove.length > 0 || fileContextsToRemove.length > 0 || websiteContextsToRemove.length > 0 || questionContextsToRemove.length > 0}
           />
         </section>
       </StickyGrid>

@@ -128,6 +128,8 @@ export async function addFileContext(
     // Añadir campos nulos requeridos por el tipo
     url: null,
     title: null,
+    questions: null,
+    answer: null,
   };
 
   // Añadir el contexto al chatbot
@@ -204,6 +206,8 @@ export async function addUrlContext(
     fileName: null,
     fileType: null,
     fileUrl: null,
+    questions: null,
+    answer: null,
   };
 
 
@@ -255,6 +259,68 @@ export async function addTextContext(
     content,
     sizeKB,
     routes: [], // Los textos no tienen rutas
+    // Añadir campos nulos requeridos por el tipo
+    fileName: null,
+    fileType: null,
+    fileUrl: null,
+    url: null,
+    questions: null,
+    answer: null,
+  };
+
+  // Añadir el contexto al chatbot
+  return addContextItem(chatbotId, contextItem);
+}
+
+/**
+ * Añade preguntas y respuestas como contexto al chatbot
+ */
+export async function addQuestionContext(
+  chatbotId: string,
+  {
+    title,
+    questions,
+    answer,
+  }: {
+    title: string;
+    questions: string;
+    answer: string;
+  }
+) {
+  // Obtener el chatbot para validaciones
+  const chatbot = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: { userId: true, contextSizeKB: true },
+  });
+
+  if (!chatbot) {
+    throw new Error(`Chatbot with ID ${chatbotId} not found`);
+  }
+
+  // Validar el contenido y límites de contexto
+  const totalContent = `${title}\n${questions}\n${answer}`;
+  const validation = await validateTextContext(
+    chatbot.userId,
+    chatbot.contextSizeKB,
+    totalContent
+  );
+
+  if (!validation.isValid) {
+    throw new Error(validation.error);
+  }
+
+  // Calcular el tamaño del contenido en KB
+  const sizeKB = Math.ceil(totalContent.length / 1024);
+
+  // Crear el item de contexto
+  const contextItem: Omit<ContextItem, "id" | "createdAt"> = {
+    type: "QUESTION" as ContextType,
+    title,
+    questions,
+    answer,
+    content: null, // Para preguntas, usamos campos específicos
+    sizeKB,
+    routes: [], // Las preguntas no tienen rutas
     // Añadir campos nulos requeridos por el tipo
     fileName: null,
     fileType: null,

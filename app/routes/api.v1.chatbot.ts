@@ -30,6 +30,7 @@ import {
   addFileContext,
   addUrlContext,
   addTextContext,
+  addQuestionContext,
   getChatbotContexts,
 } from "../../server/chatbot/contextManager.server";
 import {
@@ -737,6 +738,24 @@ export async function action({ request }: any) {
         const content = formData.get("content") as string;
         try {
           const chatbot = await addTextContext(chatbotId, { title, content });
+          return new Response(JSON.stringify({ success: true, chatbot }), {
+            headers: { "Content-Type": "application/json" },
+          });
+        } catch (error: any) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      }
+      case "add_question_context": {
+        const chatbotId = formData.get("chatbotId") as string;
+        const title = formData.get("title") as string;
+        const questions = formData.get("questions") as string;
+        const answer = formData.get("answer") as string;
+        
+        try {
+          const chatbot = await addQuestionContext(chatbotId, { title, questions, answer });
           return new Response(JSON.stringify({ success: true, chatbot }), {
             headers: { "Content-Type": "application/json" },
           });

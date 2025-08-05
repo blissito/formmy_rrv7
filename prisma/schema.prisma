@@ -149,6 +149,7 @@ enum ContextType {
   FILE
   LINK
   TEXT
+  QUESTION
 }
 
 type ContextItem {
@@ -162,6 +163,8 @@ type ContextItem {
   sizeKB    Int?
   content   String?
   routes    String[]  @default([])
+  questions String?
+  answer    String?
   createdAt DateTime
 }
 
