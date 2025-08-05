@@ -300,7 +300,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
               )}  
           </div>
         </nav>
-        <section className="flex flex-wrap gap-6">
+        <section className="flex flex-wrap gap-4 md:gap-6">
           {filtered.map((p, index) => (
             <ProjectCard
               key={p.id}

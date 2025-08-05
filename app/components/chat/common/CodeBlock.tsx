@@ -29,7 +29,7 @@ export const CodeBlock = ({
   };
 
   return (
-    <section className="mt-8">
+    <section className="mt-6 md:mt-8">
       <h4 className="text-dark text-lg font-medium mb-2">{title}</h4>
       <ol className="space-y-2 text-gray-600 mb-6">
         {instructions.map((instruction, index) => (

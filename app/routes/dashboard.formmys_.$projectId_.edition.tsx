@@ -94,7 +94,7 @@ export const FormmyEditionPair = ({
         />
       );
       break;
-    case "Mensaje Final":
+    case "Mensaje":
       content = (
         <FormmyMessageEdition
           configuration={configuration}
@@ -117,17 +117,17 @@ export const FormmyEditionPair = ({
 
   return (
     <main className="w-full  min-h-[calc(100vh-250px)]">
-        <div className="flex items-center justify-between mt-8">
+        <div className="flex items-center justify-between mt-4 md:mt-8">
           <ChipTabs
-            names={["Estilos", "Mensaje Final"]}
+            names={["Estilos", "Mensaje"]}
             onTabChange={setCurrentTab}
             activeTab={currentTab}
           />
-          <div className="flex gap-3">
-        <Button className="h-10 border border-outlines rounded-lg px-3 text-metal" variant="ghost">
+          <div className="flex gap-2 md:gap-3">
+        <Button className="h-10 w-10 border border-outlines rounded-lg px-3 text-metal" variant="ghost">
           <OpenTabIcon className="w-6 h-6"/>
         </Button>
-        <Button className="h-10 border border-outlines rounded-lg px-3 text-metal" variant="ghost"
+        <Button className="h-10 border border-outlines rounded-lg px-2 md:px-3 text-metal" variant="ghost"
         // onClick={handleSave} 
         // isLoading={isSaving}
         >
@@ -157,7 +157,7 @@ export default function FormmyEditionRoute() {
   return (
     <PageContainer>
       <PageContainer.Title
-      className="mb-2 flex w-full justify-between "  back={`/dashboard/formmys/${projectId}`}>
+      className="mb-2 flex w-full justify-between  "  back={`/dashboard/formmys/${projectId}`}>
         Edita tu Formmy
       </PageContainer.Title>
       <FormmyEditionPair

@@ -96,7 +96,7 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
         >
           Tus Chats IA
         </PageContainer.Title>
-        <section className="flex flex-wrap gap-6">
+        <section className="flex flex-wrap gap-4 md:gap-6">
           {chatbots.map((chatbot: Chatbot, i: number) => (
             <PageContainer.ChatCard
               onDelete={handleDeleteIntention(chatbot.id)}

@@ -68,11 +68,11 @@ export const Title = ({
     <nav className={cn("flex justify-between items-center mb-6 md:mb-8", className)}>
       <div className="flex items-end gap-4 relative">
         {back && (
-          <Link to={back} className="text-4xl absolute -left-10">
+          <Link to={back} className="text-4xl absolute -left-2 md:-left-10">
             <IoIosArrowRoundBack />
           </Link>
         )}
-        <h2 className="text-2xl md:text-3xl font-bold  text-dark">{children}</h2>
+        <h2 className="text-2xl md:text-3xl font-bold ml-8 md:ml-0 text-dark">{children}</h2>
       </div>
       {cta}
     </nav>
@@ -281,8 +281,8 @@ export const ChatCard = ({
 export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
-    <article className="flex gap-6">
-      <section className="self-start sticky top-4">{nodes[0]}</section>
+    <article className="flex gap-0 md:gap-6">
+      <section className="self-start sticky top-4 mr-4 md:mr-0">{nodes[0]}</section>
       <section className="grow">{nodes[1]}</section>
       <section className="self-start sticky top-4">{nodes[2]}</section>
     </article>
@@ -373,7 +373,7 @@ export const TabSelector = ({
     <nav
       className={cn(
         "relative",
-        "flex overflow-auto items-end justify-center",
+        "flex overflow-y-scroll md:overflow-auto items-start md:items-end justify-center",
         "mb-6"
       )}
       style={{

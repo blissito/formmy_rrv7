@@ -128,7 +128,7 @@ export function FormmyDesignEdition({
 
   return (
     <article className="grid grid-cols-12 gap-8  h-full">
-      <section className="col-span-4 noscroll">
+      <section className="col-span-12 md:col-span-4 noscroll">
         <div className="w-full h-fit">
             <p className="mb-4 text-base font-normal text-metal ">
               {type === "subscription" ? (
@@ -322,7 +322,7 @@ export function FormmyDesignEdition({
 
         </div>
       </section>
-      <section className={twMerge("col-span-8 h-full min-h-[calc(100vh-300px)] ", config.theme)}>
+      <section className={twMerge("col-span-12 md:col-span-8 h-fit  md:h-full md:min-h-[calc(100vh-300px)] ", config.theme)}>
         <Visualizer
           projectId={projectId}
           config={config}
@@ -457,7 +457,7 @@ export const ColorCube = ({
     type="button"
     onClick={onClick}
     className={twMerge(
-      "w-[28px] h-[28px] rounded cursor-pointer",
+      "w-[20px] md:w-[28px] h-[20px] md:h-[28px] rounded cursor-pointer",
       `bg-[${hexColor}]`,
       className
     )}
