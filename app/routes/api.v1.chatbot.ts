@@ -605,8 +605,6 @@ export async function action({ request }: any) {
                 // unpdf es muy simple: solo necesita el arrayBuffer
                 const result = await extractText(arrayBuffer);
                 
-                // Verificar la estructura de la respuesta
-                console.log('Estructura de respuesta unpdf:', typeof result, result);
                 
                 // Manejar diferentes posibles estructuras
                 if (typeof result === 'string') {
@@ -621,7 +619,6 @@ export async function action({ request }: any) {
                     .join('\n\n')
                     .trim();
                   
-                  console.log(`PDF con ${result.totalPages || result.text.length} páginas procesado`);
                 } else if (result && Array.isArray(result)) {
                   content = result.join('\n\n').trim();
                 } else if (result && typeof result === 'object') {
@@ -631,14 +628,7 @@ export async function action({ request }: any) {
                   content = String(result || '').trim();
                 }
                 
-                console.log(`PDF procesado exitosamente con unpdf: ${fileName}, texto extraído: ${content.length} caracteres`);
               } catch (pdfError) {
-                console.error("Error detallado procesando PDF:", {
-                  fileName,
-                  error: pdfError,
-                  message: pdfError instanceof Error ? pdfError.message : 'Error desconocido',
-                  stack: pdfError instanceof Error ? pdfError.stack : undefined
-                });
                 
                 // No hay fallback necesario con pdf2json
                 content = `[ERROR_PDF: ${pdfError instanceof Error ? pdfError.message : 'Error desconocido'} - archivo: ${fileName}]`;
@@ -652,7 +642,6 @@ export async function action({ request }: any) {
                 const result = await mammoth.extractRawText({ buffer });
                 content = result.value;
               } catch (docxError) {
-                console.error("Error procesando DOCX:", docxError);
                 content = `[ERROR_DOCX: No se pudo extraer texto del archivo ${fileName}]`;
               }
             } else if (fileName.toLowerCase().endsWith('.xlsx')) {
@@ -671,7 +660,6 @@ export async function action({ request }: any) {
                 
                 content = allText.trim();
               } catch (xlsxError) {
-                console.error("Error procesando XLSX:", xlsxError);
                 content = `[ERROR_XLSX: No se pudo extraer datos del archivo ${fileName}]`;
               }
             } else if (fileType.includes("text") || fileName.toLowerCase().endsWith('.txt') || fileName.toLowerCase().endsWith('.csv')) {
@@ -682,12 +670,10 @@ export async function action({ request }: any) {
               try {
                 content = await file.text();
               } catch (textError) {
-                console.error("Error leyendo archivo como texto:", textError);
                 content = `[ERROR_TEXT: No se pudo leer el archivo ${fileName}]`;
               }
             }
           } catch (error) {
-            console.error("Error procesando archivo:", error);
             content = `[ERROR: No se pudo procesar el archivo ${fileName}]`;
           }
         } else {
@@ -696,13 +682,6 @@ export async function action({ request }: any) {
         }
         
         try {
-          console.log(`Guardando archivo como contexto:`, {
-            fileName,
-            fileType,
-            sizeKB,
-            contentLength: content ? content.length : 0,
-            contentPreview: content ? content.substring(0, 200) + '...' : 'Sin contenido'
-          });
           
           const chatbot = await addFileContext(chatbotId, {
             fileName,
@@ -712,13 +691,11 @@ export async function action({ request }: any) {
             content,
           });
           
-          console.log(`Archivo guardado exitosamente en contexto`);
           
           return new Response(JSON.stringify({ success: true, chatbot }), {
             headers: { "Content-Type": "application/json" },
           });
         } catch (error: any) {
-          console.error("Error guardando archivo en contexto:", error);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 400,
             headers: { "Content-Type": "application/json" },
@@ -895,7 +872,6 @@ export async function action({ request }: any) {
         );
     }
   } catch (error: any) {
-    console.error("Error en API de chatbot:", error);
     return new Response(
       JSON.stringify({
         error:

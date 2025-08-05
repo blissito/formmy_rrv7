@@ -4,7 +4,23 @@ import { Input } from "./common/Input";
 import { InputRich } from "./common/InputRich";
 import { CardHeader, CardRow } from "./ListFiles";
 
-export const TextForm = () => {
+export const TextForm = ({
+  title,
+  content,
+  textContexts,
+  onTitleChange,
+  onContentChange,
+  onAddContext,
+  onRemoveContext,
+}: {
+  title: string;
+  content: string;
+  textContexts: any[];
+  onTitleChange: (title: string) => void;
+  onContentChange: (content: string) => void;
+  onAddContext: () => void;
+  onRemoveContext: (index: number, context: any) => void;
+}) => {
   return (
     <article>
       <Card
@@ -24,51 +40,54 @@ export const TextForm = () => {
           placeholder="Horarios de servicio"
           type="text"
           name="title"
+          value={title}
+          onChange={onTitleChange}
         />
         <hr className="my-3 border-none" />
         <InputRich
           label="Información"
-          value={"Perro"}
-          onChange={(html) => console.log(html)}
+          value={content}
+          onChange={onContentChange}
           placeholder="Escribe tu mensaje..."
         />
-          <Button className="w-full md:w-fit h-10 mr-0">Agregar</Button>
+          <Button 
+            className="w-full md:w-fit h-10 mr-0"
+            onClick={onAddContext}
+            isDisabled={!title.trim() || !content.trim()}
+          >
+            Agregar
+          </Button>
       </Card>
       <hr className="my-3 border-none" />
-      <Card noSearch={false} title="Fuentes de texto">
-        <CardHeader
-          left={
-            <input
-              className="rounded-md border-gray-300 scale-110 "
-              type="checkbox"
-              onChange={() => {}}
+      {textContexts.length > 0 && (
+        <Card noSearch={false} title="Fuentes de texto">
+          <CardHeader
+            left={
+              <input
+                className="rounded-md border-gray-300 scale-110 "
+                type="checkbox"
+                onChange={() => {}}
+              />
+            }
+            title="Seleccionar todos"
+          />
+          {textContexts.map((context, index) => (
+            <CardRow
+              key={context.id}
+              text={context.sizeKB ? `${context.sizeKB}kb` : "0kb"}
+              title={context.title}
+              icon={
+                <img
+                  className="w-6"
+                  src="/assets/chat/increase.svg"
+                  alt="text icon"
+                />
+              }
+              onRemove={() => onRemoveContext(index, context)}
             />
-          }
-          title="Seleccionar todos"
-        />
-        <CardRow
-          text={"60kb"}
-          title="Horarios de servicio"
-          icon={
-            <img
-              className="w-6"
-              src="/assets/chat/increase.svg"
-              alt="text icon"
-            />
-          }
-        />
-        <CardRow
-          title="Política de devoluciones"
-          text="120 kb"
-          icon={
-            <img
-              className="w-6"
-              src="/assets/chat/increase.svg"
-              alt="text icon"
-            />
-          }
-        />
-      </Card>
+          ))}
+        </Card>
+      )}
     </article>
   );
 };

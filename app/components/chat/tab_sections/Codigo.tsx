@@ -89,9 +89,9 @@ interface CodigoProps {
 }
 
 export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
-  const { currentTab, setCurrentTab } = useChipTabs("integrations");
+  const { currentTab, setCurrentTab } = useChipTabs("integrations", `codigo_${chatbot.id}`);
   const { currentTab: miniCard, setCurrentTab: setMiniCard } =
-    useChipTabs("iframe");
+    useChipTabs("iframe", `codigo_mini_${chatbot.id}`);
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
     null
   );

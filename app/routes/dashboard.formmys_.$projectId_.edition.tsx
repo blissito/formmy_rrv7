@@ -79,7 +79,7 @@ export const FormmyEditionPair = ({
   projectId: string;
   type: string;
 }) => {
-  const { currentTab, setCurrentTab } = useChipTabs("Estilos");
+  const { currentTab, setCurrentTab } = useChipTabs("Estilos", `edition_${projectId}`);
 
   let content;
 

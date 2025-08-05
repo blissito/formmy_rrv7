@@ -8,18 +8,22 @@ export const InfoSources = ({
   uploadedFiles = [],
   questions = [],
   contexts = [],
+  textContexts = [],
   onCreateChatbot,
   isCreating = false,
   mode = "create", // "create" o "edit"
+  hasPendingChanges = false,
 }: {
   className?: string;
   websiteEntries?: WebsiteEntry[];
   questions?: string[];
   uploadedFiles?: File[];
   contexts?: any[];
+  textContexts?: any[];
   onCreateChatbot?: () => void;
   isCreating?: boolean;
   mode?: "create" | "edit";
+  hasPendingChanges?: boolean;
 }) => {
   // Calcular el peso total de los sitios web (basado en el contenido de texto)
   const websiteWeight = websiteEntries.reduce((total, entry) => {
@@ -40,7 +44,12 @@ export const InfoSources = ({
         }, 0)
       : 0;
 
-  const totalWeight = websiteWeight + filesWeight + contextsWeight;
+  // Calcular el peso total de los contextos de texto
+  const textContextsWeight = textContexts.reduce((total, context) => {
+    return total + (context.sizeKB || 0) * 1024; // Convertir KB a bytes
+  }, 0);
+
+  const totalWeight = websiteWeight + filesWeight + contextsWeight + textContextsWeight;
   const maxWeight = 1 * 1024 * 1024; // 800KB en bytes
 
   // Función para formatear bytes a KB/MB
@@ -106,6 +115,17 @@ export const InfoSources = ({
           </div>
         )}
 
+        {textContexts.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="w-4">
+              <img src="/assets/chat/increase.svg" alt="icon" />
+            </span>
+            <p className="text-gray-600">
+              {textContexts.length} fuente{textContexts.length !== 1 ? "s" : ""} de texto ({formatBytes(textContextsWeight)})
+            </p>
+          </div>
+        )}
+
         {questions.length > 0 && (
           <div className="flex gap-2 items-center">
             <span className="w-4">
@@ -138,7 +158,7 @@ export const InfoSources = ({
             isDisabled={
               totalWeight > maxWeight ||
               isCreating ||
-              (websiteEntries.length === 0 && uploadedFiles.length === 0)
+              (websiteEntries.length === 0 && uploadedFiles.length === 0 && textContexts.length === 0)
             }
           >
             {isCreating ? "Creando..." : "Crear Chatbot"}
@@ -152,10 +172,10 @@ export const InfoSources = ({
             isDisabled={
               totalWeight > maxWeight || 
               isCreating || 
-              (uploadedFiles.length === 0 && websiteEntries.length === 0) // Habilitado si hay archivos o websites
+              !hasPendingChanges
             }
           >
-            {isCreating ? "Actualizando..." : (uploadedFiles.length === 0 && websiteEntries.length === 0) ? "Sin cambios" : "Actualizar Chatbot"}
+            {isCreating ? "Actualizando..." : !hasPendingChanges ? "Sin cambios" : "Actualizar Chatbot"}
           </Button>
         )}
       </section>

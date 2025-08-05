@@ -21,7 +21,7 @@ interface ConfiguracionProps {
 }
 
 export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
-  const { currentTab, setCurrentTab } = useChipTabs("seguridad");
+  const { currentTab, setCurrentTab } = useChipTabs("seguridad", `configuracion_${chatbot.id}`);
   const [isCopied, setIsCopied] = useState(false);
 
   const copyToClipboard = async (text: string) => {

@@ -217,6 +217,7 @@ export const CardRow = ({
   text,
   icon,
   onSelect,
+  onRemove,
   title,
 }: {
   type?: "docx";
@@ -224,10 +225,14 @@ export const CardRow = ({
   text?: string;
   icon?: ReactNode;
   onSelect?: () => void;
+  onRemove?: () => void;
   title: string;
 }) => {
   const handleAction = (action: string) => {
     console.log(`Acción seleccionada: ${action}`);
+    if (action === "eliminar" && onRemove) {
+      onRemove();
+    }
     // Aquí puedes agregar la lógica para cada acción
   };
 

@@ -125,7 +125,7 @@ export default function Route() {
     fetcher.submit({ ...notifications, new: bool }, { method: "post" });
   };
 
-  const { currentTab, setCurrentTab } = useChipTabs("general");
+  const { currentTab, setCurrentTab } = useChipTabs("general", `settings_${project.id}`);
   const [isCopied, setIsCopied] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [match, set] = useState("");

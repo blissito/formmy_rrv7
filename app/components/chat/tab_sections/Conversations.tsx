@@ -125,7 +125,7 @@ export const Conversations = ({
   chatbot,
   user,
 }: ConversationsProps) => {
-  const { currentTab, setCurrentTab } = useChipTabs("Todos");
+  const { currentTab, setCurrentTab } = useChipTabs("Todos", `conversations_${chatbot?.id || 'default'}`);
   const favoriteConversations = conversations.filter(
     (conversation) => conversation.isFavorite
   );

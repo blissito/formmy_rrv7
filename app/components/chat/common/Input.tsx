@@ -11,6 +11,7 @@ export const Input = ({
   onChange,
   containerClassName,
   type,
+  value,
   ...props
 }: {
   type?: "text" | "search" | "textarea";
@@ -21,6 +22,7 @@ export const Input = ({
   className?: string;
   left?: ReactNode;
   placeholder?: string;
+  value?: string;
   [x: string]: unknown;
 }) => {
   // Icono de lupita
@@ -51,6 +53,7 @@ export const Input = ({
         <TextField
           onChange={(ev) => onChange?.(ev.currentTarget.value)}
           placeholder={placeholder}
+          value={value}
           className={cn(
             "placeholder:text-lightgray text-dark",
             "border-none focus:outline-none py-3 focus:border-none  focus:ring-brand-500 w-full min-h-full",

@@ -11,25 +11,33 @@ import toast from "react-hot-toast";
 export const Website = ({
   websiteEntries = [],
   onWebsiteEntriesChange,
+  onMarkForRemoval,
   chatbotId,
 }: {
   websiteEntries?: WebsiteEntry[];
   onWebsiteEntriesChange?: (entries: WebsiteEntry[]) => void;
+  onMarkForRemoval?: (entry: WebsiteEntry) => void;
   chatbotId?: string;
 }) => {
   const [formData, setFormData] = useState({
     url: "",
     includeRoutes: "",
     excludeRoutes: "",
-    updateFrequency: "monthly" as "yearly" | "monthly",
+    updateFrequency: "yearly",
   });
-  
+
   // Usar estado interno si no se pasan props (para compatibilidad con Entrenamiento.tsx)
-  const [internalWebsiteEntries, setInternalWebsiteEntries] = useState<WebsiteEntry[]>([]);
-  
+  const [internalWebsiteEntries, setInternalWebsiteEntries] = useState<
+    WebsiteEntry[]
+  >([]);
+
   // Determinar qué estado usar
-  const currentWebsiteEntries = onWebsiteEntriesChange ? websiteEntries : internalWebsiteEntries;
-  const setCurrentWebsiteEntries = onWebsiteEntriesChange ? onWebsiteEntriesChange : setInternalWebsiteEntries;
+  const currentWebsiteEntries = onWebsiteEntriesChange
+    ? websiteEntries
+    : internalWebsiteEntries;
+  const setCurrentWebsiteEntries = onWebsiteEntriesChange
+    ? onWebsiteEntriesChange
+    : setInternalWebsiteEntries;
 
   const { fetchWebsiteContent, loading, error } = useFetchWebsite();
 
@@ -65,10 +73,15 @@ export const Website = ({
 
     if (result) {
       // Si no se encontraron rutas automáticamente, usar solo la página principal
-      const routes = result.routes && result.routes.length > 0 
-        ? result.routes 
-        : [formData.url.startsWith("http") ? formData.url : `https://${formData.url}`];
-      
+      const routes =
+        result.routes && result.routes.length > 0
+          ? result.routes
+          : [
+              formData.url.startsWith("http")
+                ? formData.url
+                : `https://${formData.url}`,
+            ];
+
       // Validar que haya contenido
       if (!result.content || result.content.trim().length === 0) {
         toast.error("No se pudo extraer contenido de este sitio web");
@@ -97,10 +110,11 @@ export const Website = ({
       });
 
       const routeCount = routes.length;
-      const message = result.routes && result.routes.length > 0
-        ? `Sitio web agregado con ${routeCount} página${routeCount !== 1 ? 's' : ''} encontradas`
-        : `Sitio web agregado (página principal únicamente - no se encontraron enlaces)`;
-      
+      const message =
+        result.routes && result.routes.length > 0
+          ? `Sitio web agregado con ${routeCount} página${routeCount !== 1 ? "s" : ""} encontradas`
+          : `Sitio web agregado (página principal únicamente - no se encontraron enlaces)`;
+
       toast.success(message);
       console.log("Rutas encontradas:", result.routes);
       console.log("Rutas usadas:", routes);
@@ -188,34 +202,18 @@ export const Website = ({
         title="Fuentes web"
         className="mt-4"
         websiteEntries={currentWebsiteEntries}
-        onRemoveEntry={async (index: number) => {
+        onRemoveEntry={(index: number) => {
           const entry = currentWebsiteEntries[index];
-          
-          // Si tiene contextId, es un sitio web existente que debe eliminarse de la base de datos
-          if (entry?.contextId) {
-            try {
-              const formData = new FormData();
-              formData.append("intent", "remove_context");
-              formData.append("chatbotId", chatbotId || "");
-              formData.append("contextItemId", entry.contextId);
 
-              const response = await fetch("/api/v1/chatbot", {
-                method: "POST",
-                body: formData,
-              });
-
-              if (!response.ok) {
-                console.error("Error eliminando contexto de sitio web");
-                return;
-              }
-            } catch (error) {
-              console.error("Error eliminando contexto de sitio web:", error);
-              return;
-            }
+          // Si tiene contextId y hay función de marcado para eliminar, usarla (virtual)
+          if (entry?.contextId && onMarkForRemoval) {
+            onMarkForRemoval(entry);
           }
-          
-          // Remover del estado local
-          const updatedEntries = currentWebsiteEntries.filter((_, i) => i !== index);
+
+          // Remover del estado local para que no se muestre
+          const updatedEntries = currentWebsiteEntries.filter(
+            (_, i) => i !== index
+          );
           setCurrentWebsiteEntries(updatedEntries);
         }}
         onEditEntry={(index: number) => {
@@ -230,7 +228,9 @@ export const Website = ({
             });
 
             // Remover la entrada actual para que se pueda actualizar
-            const updatedEntries = currentWebsiteEntries.filter((_, i) => i !== index);
+            const updatedEntries = currentWebsiteEntries.filter(
+              (_, i) => i !== index
+            );
             setCurrentWebsiteEntries(updatedEntries);
           }
         }}

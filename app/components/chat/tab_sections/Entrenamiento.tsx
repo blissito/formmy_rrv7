@@ -27,13 +27,19 @@ export const Entrenamiento = ({
   user: User;
 }) => {
   const submit = useSubmit();
-  const { currentTab, setCurrentTab } = useChipTabs("website");
+  const { currentTab, setCurrentTab } = useChipTabs("website", `entrenamiento_${chatbot.id}`);
   const [fileContexts, setFileContexts] = useState<any[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [existingWebsites, setExistingWebsites] = useState<WebsiteEntry[]>([]);
   const [newWebsiteEntries, setNewWebsiteEntries] = useState<WebsiteEntry[]>(
     []
   );
+  const [textContexts, setTextContexts] = useState<any[]>([]);
+  const [textContextsToRemove, setTextContextsToRemove] = useState<any[]>([]);
+  const [fileContextsToRemove, setFileContextsToRemove] = useState<any[]>([]);
+  const [websiteContextsToRemove, setWebsiteContextsToRemove] = useState<any[]>([]);
+  const [textTitle, setTextTitle] = useState("");
+  const [textContent, setTextContent] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
@@ -56,7 +62,10 @@ export const Entrenamiento = ({
         .map((context: any) => ({
           url: context.url,
           content: context.content || "",
-          routes: context.routes && context.routes.length > 0 ? context.routes : [context.url], // Usar rutas reales o fallback
+          routes:
+            context.routes && context.routes.length > 0
+              ? context.routes
+              : [context.url], // Usar rutas reales o fallback
           includeRoutes: undefined,
           excludeRoutes: undefined,
           updateFrequency: "monthly" as const,
@@ -66,6 +75,17 @@ export const Entrenamiento = ({
 
       // Actualizar los sitios web existentes desde la base de datos
       setExistingWebsites(websiteContextsFromDb);
+
+      // Extraer contextos de texto del chatbot
+      const textContextsFromDb = chatbot.contexts
+        .filter((context: any) => context.type === "TEXT" && context.title)
+        .map((context: any) => ({
+          id: context.id,
+          title: context.title,
+          content: context.content,
+          sizeKB: context.sizeKB,
+        }));
+      setTextContexts(textContextsFromDb);
     }
   }, [chatbot.contexts]);
 
@@ -84,6 +104,50 @@ export const Entrenamiento = ({
     const newFiles = [...uploadedFiles];
     newFiles.splice(index, 1);
     setUploadedFiles(newFiles);
+  };
+
+  const handleAddTextContext = async () => {
+    if (!textTitle.trim() || !textContent.trim()) {
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("intent", "add_text_context");
+      formData.append("chatbotId", chatbot.id);
+      formData.append("title", textTitle.trim());
+      formData.append("content", textContent.trim());
+      formData.append(
+        "sizeKB",
+        Math.ceil(textContent.length / 1024).toString()
+      );
+
+      const response = await fetch("/api/v1/chatbot", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        // Limpiar formulario y recargar datos
+        setTextTitle("");
+        setTextContent("");
+        submit({});
+      } else {
+        throw new Error("Error agregando contexto de texto");
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleRemoveTextContext = (index: number, context: any) => {
+    // Marcar para eliminar (virtual)
+    setTextContextsToRemove(prev => [...prev, context]);
+    
+    // Remover del estado local para que no se muestre
+    const newContexts = [...textContexts];
+    newContexts.splice(index, 1);
+    setTextContexts(newContexts);
   };
 
   const handleUploadFiles = async () => {
@@ -110,13 +174,11 @@ export const Entrenamiento = ({
           body: fileContextData,
         });
 
-        if (response.ok) {
-          console.log(`Archivo ${file.name} subido exitosamente`);
-        } else {
-          console.error(`Error subiendo archivo ${file.name}`);
+        if (!response.ok) {
+          throw new Error(`Error subiendo archivo ${file.name}`);
         }
       } catch (error) {
-        console.error(`Error procesando archivo ${file.name}:`, error);
+        throw error;
       }
     }
 
@@ -125,82 +187,91 @@ export const Entrenamiento = ({
     submit({});
   };
 
-  const handleRemoveContext = async (index: number, context: any) => {
-    try {
-      const formData = new FormData();
-      formData.append("intent", "remove_context");
-      formData.append("chatbotId", chatbot.id);
-      formData.append("contextItemId", context.id);
-
-      const response = await fetch("/api/v1/chatbot", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        // Remover del estado local
-        const newContexts = [...fileContexts];
-        newContexts.splice(index, 1);
-        setFileContexts(newContexts);
-      } else {
-        console.error("Error eliminando contexto");
-      }
-    } catch (error) {
-      console.error("Error eliminando contexto:", error);
-    }
+  const handleRemoveContext = (index: number, context: any) => {
+    // Marcar archivo para eliminar (virtual)
+    setFileContextsToRemove(prev => [...prev, context]);
+    
+    // Remover del estado local para que no se muestre
+    const newContexts = [...fileContexts];
+    newContexts.splice(index, 1);
+    setFileContexts(newContexts);
   };
 
   const handleUpdateChatbot = async () => {
     setIsUpdating(true);
-    
+
     try {
       // Subir archivos automáticamente cuando se presiona "Actualizar Chatbot"
       await handleUploadFiles();
 
-    // Agregar sitios web nuevos como contextos
-    for (const entry of newWebsiteEntries) {
-      try {
-        const contextFormData = new FormData();
-        contextFormData.append("intent", "add_url_context");
-        contextFormData.append("chatbotId", chatbot.id);
-        contextFormData.append(
-          "url",
-          entry.url.startsWith("http") ? entry.url : `https://${entry.url}`
-        );
-        contextFormData.append("title", entry.url);
-        contextFormData.append("content", entry.content);
-        contextFormData.append(
-          "sizeKB",
-          Math.ceil(entry.content.length / 1024).toString()
-        );
-        contextFormData.append("routes", JSON.stringify(entry.routes));
-
-        const contextResponse = await fetch("/api/v1/chatbot", {
-          method: "POST",
-          body: contextFormData,
-        });
-
-        if (!contextResponse.ok) {
-          const errorData = await contextResponse.json();
-          console.error(
-            `Error al agregar contexto para ${entry.url}:`,
-            errorData.error
+      // Agregar sitios web nuevos como contextos
+      for (const entry of newWebsiteEntries) {
+        try {
+          const contextFormData = new FormData();
+          contextFormData.append("intent", "add_url_context");
+          contextFormData.append("chatbotId", chatbot.id);
+          contextFormData.append(
+            "url",
+            entry.url.startsWith("http") ? entry.url : `https://${entry.url}`
           );
-        } else {
-          console.log(`Contexto agregado exitosamente para ${entry.url}`);
-        }
-      } catch (error) {
-        console.error(`Error procesando sitio web ${entry.url}:`, error);
-      }
-    }
+          contextFormData.append("title", entry.url);
+          contextFormData.append("content", entry.content);
+          contextFormData.append(
+            "sizeKB",
+            Math.ceil(entry.content.length / 1024).toString()
+          );
+          contextFormData.append("routes", JSON.stringify(entry.routes));
 
-      // Limpiar website entries nuevos después de subirlos y recargar datos
-      if (newWebsiteEntries.length > 0) {
+          const contextResponse = await fetch("/api/v1/chatbot", {
+            method: "POST",
+            body: contextFormData,
+          });
+
+          if (!contextResponse.ok) {
+            const errorData = await contextResponse.json();
+            throw new Error(
+              `Error al agregar contexto para ${entry.url}: ${errorData.error}`
+            );
+          }
+        } catch (error) {
+          throw error;
+        }
+      }
+
+      // Eliminar contextos marcados para eliminar (archivos, websites, texto)
+      const allContextsToRemove = [...fileContextsToRemove, ...websiteContextsToRemove, ...textContextsToRemove];
+      
+      for (const context of allContextsToRemove) {
+        try {
+          const formData = new FormData();
+          formData.append("intent", "remove_context");
+          formData.append("chatbotId", chatbot.id);
+          formData.append("contextItemId", context.id || context.contextId);
+
+          const response = await fetch("/api/v1/chatbot", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Error eliminando contexto: ${context.title || context.fileName || context.url}`);
+          }
+        } catch (error) {
+          throw error;
+        }
+      }
+
+      // Limpiar estados después de subirlos y recargar datos
+      const hasChanges = newWebsiteEntries.length > 0 || allContextsToRemove.length > 0;
+      if (hasChanges) {
         setNewWebsiteEntries([]);
+        setTextContextsToRemove([]);
+        setFileContextsToRemove([]);
+        setWebsiteContextsToRemove([]);
         submit({});
       }
     } catch (error) {
-      console.error("Error updating chatbot:", error);
+      throw error;
     } finally {
       setIsUpdating(false);
     }
@@ -270,7 +341,17 @@ export const Entrenamiento = ({
             )}
           </section>
         )}
-        {currentTab === "text" && <TextForm />}
+        {currentTab === "text" && (
+          <TextForm
+            title={textTitle}
+            content={textContent}
+            textContexts={textContexts}
+            onTitleChange={setTextTitle}
+            onContentChange={setTextContent}
+            onAddContext={handleAddTextContext}
+            onRemoveContext={handleRemoveTextContext}
+          />
+        )}
         {currentTab === "website" && (
           <Website
             websiteEntries={[...existingWebsites, ...newWebsiteEntries]}
@@ -281,6 +362,10 @@ export const Entrenamiento = ({
               setExistingWebsites(existing);
               setNewWebsiteEntries(newEntries);
             }}
+            onMarkForRemoval={(entry) => {
+              // Marcar para eliminar (virtual)
+              setWebsiteContextsToRemove(prev => [...prev, entry]);
+            }}
             chatbotId={chatbot.id}
           />
         )}
@@ -289,10 +374,12 @@ export const Entrenamiento = ({
           <InfoSources
             contexts={fileContexts}
             uploadedFiles={uploadedFiles}
-            websiteEntries={newWebsiteEntries}
+            websiteEntries={[...existingWebsites, ...newWebsiteEntries]}
+            textContexts={textContexts}
             mode="edit"
             onCreateChatbot={handleUpdateChatbot}
             isCreating={isUpdating}
+            hasPendingChanges={uploadedFiles.length > 0 || newWebsiteEntries.length > 0 || textContextsToRemove.length > 0 || fileContextsToRemove.length > 0 || websiteContextsToRemove.length > 0}
           />
         </section>
       </StickyGrid>

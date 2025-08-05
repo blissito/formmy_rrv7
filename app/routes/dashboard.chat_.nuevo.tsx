@@ -85,12 +85,7 @@ export default function ChatbotConfigRoute(
 
         if (!contextResponse.ok) {
           const errorData = await contextResponse.json();
-          console.error(
-            `Error al agregar contexto para ${entry.url}:`,
-            errorData.error
-          );
-        } else {
-          console.log(`Contexto agregado exitosamente para ${entry.url}`);
+          throw new Error(`Error al agregar contexto para ${entry.url}: ${errorData.error}`);
         }
       }
 
@@ -113,15 +108,10 @@ export default function ChatbotConfigRoute(
 
           if (!fileResponse.ok) {
             const errorData = await fileResponse.json();
-            console.error(
-              `Error al agregar archivo ${file.name}:`,
-              errorData.error
-            );
-          } else {
-            console.log(`Archivo ${file.name} agregado exitosamente como contexto`);
+            throw new Error(`Error al agregar archivo ${file.name}: ${errorData.error}`);
           }
         } catch (error) {
-          console.error(`Error procesando archivo ${file.name}:`, error);
+          throw error;
         }
       }
 
@@ -133,7 +123,6 @@ export default function ChatbotConfigRoute(
         navigate(`/dashboard/chat/${chatbot.slug}`);
       }, 1000);
     } catch (error) {
-      console.error("Error al crear chatbot:", error);
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -161,7 +150,6 @@ export default function ChatbotConfigRoute(
     newFiles.splice(index, 1);
     setUploadedFiles(newFiles);
   };
-  console.log("Uploaded files: ", uploadedFiles);
   return (
     <>
       <PageContainer>

@@ -80,7 +80,6 @@ export async function action({ request }: Route.ActionArgs) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error fetching website:", error);
     const errorMessage =
       error instanceof Error
         ? error.message

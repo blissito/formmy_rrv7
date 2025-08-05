@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "~/lib/utils";
 
 type ChipTabsProps = {
@@ -45,10 +45,46 @@ export const ChipTabs = ({
   );
 };
 
-export const useChipTabs = (initial: string = "") => {
-  const [currentTab, set] = useState(initial);
-  const setCurrentTab = (val: string) => set(val);
-  const catchCurrentTab = (val: string) => set(val);
+export const useChipTabs = (initial: string = "", context?: string) => {
+  // Crear una clave única para localStorage usando el contexto (ej: chatbotId)
+  const storageKey = context ? `activeTab_${context}` : 'activeTab_default';
+  
+  // Función para obtener el tab desde localStorage
+  const getStoredTab = (): string => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem(storageKey) || initial;
+      } catch {
+        return initial;
+      }
+    }
+    return initial;
+  };
+
+  const [currentTab, set] = useState(getStoredTab);
+
+  // Sincronizar con localStorage cuando cambie el tab
+  const setCurrentTab = (val: string) => {
+    set(val);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(storageKey, val);
+      } catch {
+        // Ignorar errores de localStorage (modo privado, etc.)
+      }
+    }
+  };
+
+  const catchCurrentTab = (val: string) => setCurrentTab(val);
+
+  // Cargar desde localStorage al montar el componente
+  useEffect(() => {
+    const stored = getStoredTab();
+    if (stored !== currentTab) {
+      set(stored);
+    }
+  }, [context]); // Re-ejecutar si cambia el contexto
+
   return {
     currentTab,
     setCurrentTab,
