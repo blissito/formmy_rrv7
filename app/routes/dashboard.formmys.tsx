@@ -243,7 +243,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
         <nav className="flex gap-2 flex-wrap justify-between items-center mb-6 md:mb-8">
           <div>
             <h2 className={cn("text-2xl font-bold dark:text-white text-space-800", "md:text-3xl")}>
-              Tus Formmys
+              Mis Formmys
             </h2>
           </div>
           <div className="flex gap-2 mt-2 md:mt-0 w-full md:w-fit">
@@ -300,7 +300,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
               )}  
           </div>
         </nav>
-        <section className="flex flex-wrap gap-4 md:gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {filtered.map((p, index) => (
             <ProjectCard
               key={p.id}
@@ -410,7 +410,7 @@ export const ProjectCard = ({
         delay: index * 0.05,
         ease: [0.25, 0.1, 0.25, 1]
       }}
-      className="w-full md:w-[268px]"
+      className="col-span-1"
     >
       <Link
         to={id ?? ""}
