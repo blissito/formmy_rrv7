@@ -124,6 +124,7 @@ export const Header = ({
 export const Button = ({
   children,
   onClick,
+  isDisabled,
   isLoading,
   className,
   mode,
@@ -136,6 +137,7 @@ export const Button = ({
   onClick?: () => void;
   children: ReactNode;
   [x: string]: unknown;
+  isDisabled?:boolean;
 }) => {
   if (to) {
     return (
@@ -164,8 +166,12 @@ export const Button = ({
         mode === "ghost"
           ? "bg-white border border-gray-300 rounded-lg text-gray-600 px-2 hover:bg-surfaceFour "
           : "bg-brand-500 text-white hover:ring hover:ring-brand-500",
+          {
+            'pointer-events-none bg-gray-300':isDisabled
+          },
         className
       )}
+      disabled={isDisabled}
       {...props}
     >
       {isLoading && <Spinner />}

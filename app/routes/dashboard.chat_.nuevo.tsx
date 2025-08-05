@@ -96,9 +96,6 @@ export default function ChatbotConfigRoute(
       // 3. Agregar archivos como contextos (si los hay)
       for (const file of uploadedFiles) {
         try {
-          // Leer el contenido del archivo
-          const content = await file.text();
-          
           const fileContextData = new FormData();
           fileContextData.append("intent", "add_file_context");
           fileContextData.append("chatbotId", chatbotId);
@@ -106,7 +103,7 @@ export default function ChatbotConfigRoute(
           fileContextData.append("fileType", file.type || "application/octet-stream");
           fileContextData.append("fileUrl", ""); // No hay URL para archivos locales
           fileContextData.append("sizeKB", Math.ceil(file.size / 1024).toString());
-          fileContextData.append("content", content);
+          fileContextData.append("file", file); // Enviar el archivo binario completo
 
           const fileResponse = await fetch("/api/v1/chatbot", {
             method: "POST",
@@ -149,8 +146,19 @@ export default function ChatbotConfigRoute(
   const handleWebsiteChange = (entries: WebsiteEntry[]) => {
     setWebsiteEntries(entries);
   };
-  const handleFilesChange = (files: File[]) => {
-    setUploadedFiles(files);
+  const handleFilesChange = (newFiles: File[]) => {
+    // Agregar nuevos archivos a los existentes, evitando duplicados por nombre
+    setUploadedFiles(prevFiles => {
+      const existingNames = new Set(prevFiles.map(file => file.name));
+      const uniqueNewFiles = newFiles.filter(file => !existingNames.has(file.name));
+      return [...prevFiles, ...uniqueNewFiles];
+    });
+  };
+
+  const handleRemoveFile = (index: number, file: File) => {
+    const newFiles = [...uploadedFiles];
+    newFiles.splice(index, 1);
+    setUploadedFiles(newFiles);
   };
   console.log("Uploaded files: ", uploadedFiles);
   return (
@@ -179,7 +187,13 @@ export default function ChatbotConfigRoute(
           {currentTab === "files" && (
             <>
               <UploadFiles onChange={handleFilesChange} />
-              {uploadedFiles.length > 0 && <ListFiles files={uploadedFiles} />}
+              {uploadedFiles.length > 0 && (
+                <ListFiles 
+                  files={uploadedFiles} 
+                  onRemoveFile={handleRemoveFile}
+                  mode="local"
+                />
+              )}
             </>
           )}
           {currentTab === "website" && (

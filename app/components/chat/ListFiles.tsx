@@ -5,10 +5,20 @@ import { Select } from "./common/Select";
 import { cn } from "~/lib/utils";
 import { span } from "effect/Layer";
 
-export const ListFiles = ({ files = [] }: { files?: File[] }) => {
+export const ListFiles = ({ 
+  files = [], 
+  onRemoveFile,
+  mode = "local" // "local" para archivos del navegador, "context" para contextos del chatbot
+}: { 
+  files?: File[] | any[]; 
+  onRemoveFile?: (index: number, file: any) => void;
+  mode?: "local" | "context";
+}) => {
   const getFileType = (fileName: string): string => {
     const extension = fileName.split(".").pop()?.toLowerCase();
     switch (extension) {
+      case "pdf":
+        return "pdf";
       case "doc":
       case "docx":
         return "docx";
@@ -20,22 +30,24 @@ export const ListFiles = ({ files = [] }: { files?: File[] }) => {
       case "txt":
         return "txt";
       default:
-        return "txt";
+        return "pdf";
     }
   };
 
   const getFileIcon = (type: string): string => {
     switch (type) {
+      case "pdf":
+        return "/assets/chat/pdf.svg";
       case "docx":
         return "/assets/chat/doc.svg";
       case "xlsx":
-        return "/assets/chat/excel.svg";
+        return "/assets/chat/xlsx.svg";
       case "csv":
         return "/assets/chat/csv.svg";
       case "txt":
         return "/assets/chat/txt.svg";
       default:
-        return "/assets/chat/txt.svg";
+        return "/assets/chat/pdf.svg";
     }
   };
 
@@ -64,11 +76,15 @@ export const ListFiles = ({ files = [] }: { files?: File[] }) => {
           files.map((file, index) => (
             <FileItem
               key={index}
-              type={getFileType(file.name)}
-              icon={getFileIcon(getFileType(file.name))}
-              fileName={file.name}
-              fileSize={formatFileSize(file.size)}
+              type={getFileType(file.name || file.fileName)}
+              icon={getFileIcon(getFileType(file.name || file.fileName))}
+              fileName={file.name || file.fileName}
+              fileSize={mode === "context" 
+                ? `${file.sizeKB || 0} KB` 
+                : formatFileSize(file.size)
+              }
               onSelect={() => {}}
+              onRemove={() => onRemoveFile?.(index, file)}
               tag={index === 0 ? "Nuevo" : undefined}
             />
           ))}
@@ -112,6 +128,7 @@ export const FileItem = ({
   type,
   tag,
   onSelect,
+  onRemove,
   icon,
   fileName = "Servicios.pdf",
   fileSize = "60Kb",
@@ -119,12 +136,16 @@ export const FileItem = ({
   type?: string;
   tag?: string;
   onSelect?: () => void;
+  onRemove?: () => void;
   icon?: string;
   fileName?: string;
   fileSize?: string;
 }) => {
   const handleAction = (action: string) => {
     console.log(`Acción seleccionada: ${action}`);
+    if (action === "eliminar" && onRemove) {
+      onRemove();
+    }
     // Aquí puedes agregar la lógica para cada acción
   };
 
