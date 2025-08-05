@@ -174,8 +174,8 @@ export default function Detail() {
   const [show, setShow] = useState(false);
 
   return (
-    <>
-     <article className="max-w-7xl mx-auto py-8">
+    <div className="h-full">
+     <article className="max-w-7xl mx-auto p-4 md:px-0 md:py-8 h-full">
         {/* <AnimatePresence>
           {show && (
             <div className="w-full h-20 flex justify-center absolute top-8 z-[999] ">
@@ -192,11 +192,11 @@ export default function Detail() {
         </AnimatePresence> */}
         <main>
           <nav className="flex items-center h-fit gap-2 flex-wrap ">
-            <div className="flex flex-col items-start mr-auto mb-0 relative">
+            <div className="flex flex-col items-start ml-8 md:mr-auto mb-0 relative">
               <Link to="/dashboard/formmys" className="text-4xl absolute -left-10">
                 <IoIosArrowRoundBack />
               </Link>
-              <h2 className="text-3xl heading text-dark  ">
+              <h2 className="text-2xl md:text-3xl heading text-dark  ">
                 {project.name}{" "}
               </h2>
               <div className="flex gap-4">
@@ -238,7 +238,7 @@ export default function Detail() {
           )}
         </main>
       </article>
-    </>
+    </div>
   );
 }
 
@@ -414,8 +414,8 @@ const MessagesViewer = ({
   }, [active, answers]);
 
   return (
-    <article className="flex mt-8 gap-8 md:gap-4 flex-col-reverse md:flex-row">
-      <section className="flex flex-col md:w-[280px]  w-full">
+    <article className="flex mt-6 md:mt-8 gap-8 md:gap-4 flex-col-reverse md:flex-row">
+      <section className="flex flex-col md:w-[280px] h-full w-full">
         <nav className="flex justify-center w-full mb-2 border-b-[1px] border-outlines ">
           <button
             onClick={() => setActive(0)}
@@ -437,7 +437,7 @@ const MessagesViewer = ({
           </button>
         </nav>
         {/* List */}
-        <div className="h-64 md:h-96 overflow-hidden overflow-y-scroll">
+        <div className="h-fit md:h-96 overflow-hidden overflow-y-scroll">
           <AnimatePresence mode="popLayout">
             {filtered.map((answer) => (
               <Card
@@ -506,8 +506,8 @@ const MessagesViewer = ({
 
 const EmptyFavorites = () => {
   return (
-    <div className="text-center mt-12 flex flex-col items-center ">
-      <Empty className="w-[200px] dark:hidden flex" />
+    <div className="text-center mt-0 md:mt-12 flex flex-col items-center ">
+      <Empty className="w-[160px] md:w-[200px] dark:hidden flex" />
       {/* <img
         alt="empty"
         className="w-[200px] dark:hidden flex"

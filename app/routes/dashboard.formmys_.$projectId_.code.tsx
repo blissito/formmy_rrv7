@@ -18,14 +18,13 @@ export default function FormmyCodeRoute() {
         Embebe tu formmy
       </PageContainer.Title>
       
-      <div className="flex flex-col gap-4 max-w-[600px] mx-auto">
-        <img        src="/assets/fantasma-globo.svg"alt="rocket" className="w-[246px] h-[246px] mx-auto" />
-        <h3 className="text-2xl font-bold text-center">¡Tu formmy está listo!</h3>
-        <p className="text-center text-gray-600">
+      <div className="flex flex-col max-w-[600px] mx-auto">
+        <img  src="/assets/fantasma-globo.svg" alt="rocket" className="md:w-[246px] md:h-[246px] w-[180px] h-[180px] mx-auto mb-0 md:mb-4" />
+        <h3 className="md:text-2xl text-xl font-bold text-center mb-2">¡Tu formmy está listo!</h3>
+        <p className="text-center text-metal mb-4 md:mb-8">
           Elige la forma de embebido que más te convenga. {""}
           <a href="#" className="underline">Más información</a>
         </p>
-        
         <section>
           <MiniCardGroup selectedMinicard={miniCard} onSelect={setMiniCard}>
             {miniCard === "iframe" && <FormmyIframe urls={urls} />}

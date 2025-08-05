@@ -46,6 +46,7 @@ export default function UsersConfig({ user, permissions, projectName, projectId 
       <Card title="Usuarios">
           <p className="text-xs text-gray-600 dark:text-gray-400 tracking-wide mb-8">
             {permissions.length}
+            {" "}
             <Pluralize
               singleWord="usuario"
               isPlural={isPlural}
@@ -61,7 +62,7 @@ export default function UsersConfig({ user, permissions, projectName, projectId 
           <Button
             variant="primary"
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 absolute top-0 right-6"
+            className="flex items-center gap-2 absolute top-0 right-6 h-10"
           >
             <span>+ Usuario</span>
           </Button>

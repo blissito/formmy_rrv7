@@ -30,6 +30,7 @@ import CodeIcon from "~/components/ui/icons/Code";
 import { MessageIcon } from "~/components/ui/icons/MessageIcon";
 import BubbleIcon from "~/components/ui/icons/Buuble";
 import { motion } from "framer-motion";
+import { cn } from "~/lib/utils";
 
 const findActivePermissions = async (email: string): Promise<Permission[]> => {
   const permissions = await db.permission.findMany({
@@ -238,10 +239,10 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
               emojis={"📢 📩"}
               title={"¡Hey! Tienes una invitación pendiente"}
             />
-      <div className="max-w-7xl mx-auto py-8">
-        <nav className="flex gap-2 flex-wrap justify-between items-center mb-8">
+      <div className={cn("max-w-7xl mx-auto py-4 px-4", "md:py-8 md:px-4")}>
+        <nav className="flex gap-2 flex-wrap justify-between items-center mb-6 md:mb-8">
           <div>
-            <h2 className="text-3xl font-bold dark:text-white text-space-800">
+            <h2 className={cn("text-2xl font-bold dark:text-white text-space-800", "md:text-3xl")}>
               Tus Formmys
             </h2>
           </div>
@@ -299,7 +300,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
               )}  
           </div>
         </nav>
-        <section className="flex flex-wrap gap-6">
+        <section className="flex flex-wrap gap-4 md:gap-6">
           {filtered.map((p, index) => (
             <ProjectCard
               key={p.id}
@@ -475,3 +476,8 @@ export const ModificameBRENDIYellowCorner = () => {
     </div>
   );
 };
+
+export const meta = () => [
+  { title: "Mis Formmys" },
+  { name: "description", content: "Administra tus formmys" },
+];

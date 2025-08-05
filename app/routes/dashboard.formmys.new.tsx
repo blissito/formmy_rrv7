@@ -72,23 +72,21 @@ export default function New() {
 
   return (
     <>
-      <Modal title="Ponle nombre a tu Formmy" className="min-w-[600px] px-20">
+      <Modal title="Ponle nombre a tu Formmy" size="md" className="  px-4 pb-4 md:pt-0 md:pb-8 md:px-20 box-border">
         <div>
           <Form
             method="post"
             className=" gap-2 bg-white rounded-3xl "
           >
-            <div className="flex w-full mt-8">
+            <div className="flex w-full mt-6 md:mt-8">
               <input
                 name="name"
                 required
                 placeholder="Nombre de tu proyecto "
                 className="h-12 input font-normal w-full border-[1px] border-outlines focus:outline-none focus:ring-0 bg-transparent focus:border-brand-500 rounded-xl placeholder:text-space-300"
-              />
-
-            
+              />            
             </div>
-            <p className="mt-6 text-metal">
+            <p className="mt-4 md:mt-6 text-metal">
             Elige el tipo de formmy
             </p>
             <FormmyTypeSelect />
@@ -105,7 +103,7 @@ export default function New() {
                 name="intent"
                 value="create"
                 type="submit"
-                className="bg-brand-500 h-12 w-full max-w-[200px] mx-auto mt-4 rounded-full text-white grid place-items-center"
+                className="bg-brand-500 h-10 md:h-12 w-full max-w-[120px] md:max-w-[200px] mx-auto mt-4 rounded-full text-white grid place-items-center"
               >
                 <div className="w-10 h-6">
                   {navigation.state !== "idle" ? <Spinner /> : "Crear"}
@@ -128,18 +126,18 @@ const FormmyTypeSelect = ({
   const [selected, setSelected] = useState(defaultValue);
 
   return (
-    <section className="mt-3 flex gap-4 items-center justify-between">
+    <section className="mt-2 md:mt-3 flex gap-4 items-center justify-between">
       <input type="hidden" name="type" value={selected} />
       <div>
         <IconCube
           isSelected={selected === "subscription"}
-          className=" h-full w-[200px]  block "
+          className=" h-full w-[100%] md:w-[200px]  block "
           src="/assets/hero/add-suscription-w.png "
           onClick={() => setSelected("subscription")}
         />
         <IconCube
           isSelected={selected === "subscription"}
-          className=" h-auto w-[200px] hidden dark:block  bg-transparent"
+          className=" h-auto w-[48%] md:w-[200px] hidden dark:block  bg-transparent"
           onClick={() => setSelected("subscription")}
           src="/assets/hero/add-suscription-d.png "
         />
@@ -151,7 +149,7 @@ const FormmyTypeSelect = ({
         {" "}
         <IconCube
           isSelected={selected === "contact"}
-          className=" h-auto w-[200px] dark:hidden block"
+          className=" h-auto w-[100%] md:w-[200px] dark:hidden block"
           onClick={() => setSelected("contact")}
           src="/assets/hero/add-form-w.png"
         />

@@ -81,7 +81,7 @@ export const GeneralConfig = ({
       </Card>
 
       <Card title="Eliminar Formmy">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center flex-wrap md:flex-nowrap gap-6">
           <p className="text-metal max-w-[700px]">
             Una vez que elimines tu formmy, tu proyecto y todos los mensajes
             relacionados serán eliminados de forma permanente. Está acción es
@@ -91,7 +91,7 @@ export const GeneralConfig = ({
           <Button
             isLoading={fetcherState !== "idle"}
             onClick={() => onSetShowConfirm(true)}
-            className="block max-w-[220px] mt-0 ml-auto disabled:opacity-50 disabled:cursor-not-allowed w-full bg-red-500 text-white py-2 px-4 rounded-full"
+            className="h-10 md:h-12 block max-w-fit md:max-w-[220px] mt-0 ml-0 md:ml-auto disabled:opacity-50 disabled:cursor-not-allowed w-full bg-red-500 text-white py-2 px-4 rounded-full"
             type="submit"
           >
             Eliminar Formmy

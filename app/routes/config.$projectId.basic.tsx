@@ -576,7 +576,7 @@ export const CheckInput = forwardRef(
         htmlFor={name}
         dragSnapToOrigin
         className={cn(
-          "rounded-lg border font-light border-outlines py-1 px-2 text-sm text-dark flex items-center justify-between w-32 h-[36px] bg-[white]  cursor-grab relative",
+          "rounded-lg border font-light border-outlines py-1 px-2 text-sm text-dark flex items-center justify-between w-28 md:w-32 h-[36px] bg-[white]  cursor-grab relative",
           {
             "": true,
           }

@@ -20,12 +20,12 @@ export const Card = ({
   return (
     <article
       className={cn(
-        "flex flex-col bg-[#fff] p-6 rounded-3xl font-light  border border-outlines shadow-standard",
+        "flex flex-col bg-[#fff] p-4 md:p-6 rounded-3xl font-light  border border-outlines shadow-standard",
         className
       )}
     >
       <nav className="flex justify-between gap-3 items-baseline">
-        <h3 className="text-2xl font-medium min-w-max text-dark mb-2">
+        <h3 className="text-xl md:text-2xl font-medium min-w-max text-dark mb-2">
           {title}
         </h3>
         {!noSearch && <SearchInput />}
@@ -49,7 +49,7 @@ export const MiniCard = ({
 }) => {
   return (
     <label
-      className={cn("flex gap-3 p-4 rounded-2xl border-outlines border", {
+      className={cn("flex gap-3 p-3 md:p-4 rounded-2xl border-outlines border", {
         "border-outlines": isSelected,
       })}
     >
@@ -61,7 +61,7 @@ export const MiniCard = ({
       />
       <div>
         <h3
-          className={cn("text-lg text-dark font-medium", {
+          className={cn("text-base md:text-lg text-dark font-medium", {
             "text-dark": isSelected,
           })}
         >
@@ -91,21 +91,21 @@ export const MiniCardGroup = ({
   return (
     <article>
       <section className="grid lg:grid-cols-3 grid-cols-2 gap-4">
-        <MiniCard
+        {/* <MiniCard
           isSelected={selectedMinicard === "sdk"}
           title="Usar el SDK"
           text="El SDK te permite usar todas las funciones avanzadas del agente"
           onSelect={() => onSelect("sdk")}
-        />
+        /> */}
         <MiniCard
           isSelected={selectedMinicard === "iframe"}
-          title="Embeber el iframe"
+          title="Embeber iframe"
           text="Agrega el chat en cualquier lugar de tu sitio web con un simple iframe."
           onSelect={() => onSelect("iframe")}
         />
         <MiniCard
           isSelected={selectedMinicard === "link"}
-          title="Obtener el Link"
+          title="Obtener link"
           text="Accede a tu chatbot directamente o usa el link dentro de tu sitio web."
           onSelect={() => onSelect("link")}
         />

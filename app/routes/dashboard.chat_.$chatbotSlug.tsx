@@ -48,7 +48,7 @@ export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
   const { user, chatbot, integrations } = loaderData;
-  const [currentTab, setCurrentTab] = useState("Código"); // @TOOD: Update with the right one
+  const [currentTab, setCurrentTab] = useState("Preview"); // @TOOD: Update with the right one
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);

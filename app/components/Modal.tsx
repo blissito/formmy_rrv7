@@ -39,7 +39,7 @@ export default function Modal({
         />
 
         {/* Full-screen container to center the panel */}
-        <div className="fixed inset-0 flex items-center justify-center p-4 ">
+        <div className="fixed inset-0 flex items-center justify-center p-4  w-full ">
           {/* The actual dialog panel  */}
           <motion.div
             initial={{ y: 100, opacity: 0, scale: 0.5 }}
@@ -47,28 +47,28 @@ export default function Modal({
           >
             <Dialog.Panel
               className={twMerge(
-                size === "xs" && "max-w-[400px]",
-                size === "md" && "max-w-[600px]",
-                size === "lg" && "max-w-[800px]",
+                size === "xs" ? "max-w-[400px]" : "",
+                size === "md" ? "max-w-[90%] mx-auto md:max-w-[600px]" : "",
+                size === "lg" ? "max-w-[800px]" : "",
                 "flex flex-col"
               )}
             >
               <Dialog.Title className="bg-clear pt-8 dark:bg-space-900 flex justify-between items-center rounded-t-3xl relative">
-                <div className="text-2xl font-bold grow !text-center text-dark">
+                <div className="text-xl md:text-2xl font-bold grow !text-center text-dark">
                   {title}
                 </div>
                 <button onClick={onClose || (() => navigate(-1))}>
                   <img
                     alt="close"
                     src="/assets/close.svg"
-                    className="absolute right-8 top-8"
+                    className="absolute right-4 md:right-8 top-4 md:top-8"
                   />
                 </button>
               </Dialog.Title>
 
               <section
                 className={twMerge(
-                  "min-w-[320px] h-min bg-white rounded-b-3xl md:pt-0 px-8 pb-8 ",
+                  "min-w-[320px] h-min bg-white rounded-b-3xl px-10 pb-4 md:pt-0 md:px-8 md:pb-8 box-border ",
                   className // this is here just for semantics
                 )}
               >

@@ -25,6 +25,7 @@ import HelpIconActive from "../ui/icons/HelpActive";
 import { HiOutlineGiftTop } from "react-icons/hi2";
 import { BiGhost } from "react-icons/bi";
 import { IoGiftOutline } from "react-icons/io5";
+import { cn } from "~/lib/utils";
 
 interface DashboardLayoutProps {
   title: string;
@@ -44,29 +45,31 @@ export function DashboardLayout({
   user,
 }: DashboardLayoutProps) {
   return (
-    <div className="mx-auto w-full h-full min-h-screen bg-surface flex pr-8 box-border overflow-y-scroll">
-      <div className="flex h-full flex-col justify-center items-center py-8 w-[120px] gap-8 rounded-r-3xl h-screen sticky top-0">
-        <Link prefetch="render" to="/dashboard" className="">
+    <div className="mx-auto w-full overflow-hidden h-full min-h-screen bg-surface flex md:flex-row flex-col-reverse pr-2 pl-2 md:pr-8 md:pl-0 box-border overflow-y-scroll">
+      <div className={cn("fixed bottom-0 flex h-full flex-row  justify-center  items-center py-0 pb-2 w-full gap-0 rounded-r-3xl  h-auto sticky top-0",
+                    "md:flex-col md:static md:justify-center  md:py-8 md:w-[120px]  md:gap-8 md:h-screen"
+      )}>
+        <Link prefetch="render" to="/dashboard" className=" hidden md:flex">
           <img
-            className="w-[60px]"
+            className="min-w-10 h-10 md:w-[60px] md:h-[60px]"
             src="/dash/logo-full.svg"
             alt="Formmy Logo"
           />
         </Link>
-        <nav className="flex flex-col items-center justify-center gap-8 w-full px-2">
+        <nav className="flex flex-row md:flex-col items-center justify-center md:gap-8 gap-0 w-fit md:w-full px-0 md:px-2">
           <IconButtonLink
             to="/dashboard/ghosty"
-            icon={<AiIcon className="w-10 h-10 text-dark" />}
-            activeIcon={<AiIconActive className="w-10 h-10 text-brand-500" />}
+            icon={<AiIcon className="w-8 h-8 md:w-10 h-10 text-dark" />}
+            activeIcon={<AiIconActive className="w-8 h-8 md:w-10 h-10 text-brand-500" />}
             title="Ghosty"
             variant="ghost"
             className="w-full justify-start px-3 rounded-xl"
           />
           <IconButtonLink
             to="/dashboard/formmys"
-            icon={<DocumentIcon className="w-10 h-10 text-dark" />}
+            icon={<DocumentIcon className="w-8 h-8 md:w-10 h-10 text-dark" />}
             activeIcon={
-              <DocumentIconActive className="w-10 h-10 text-brand-500" />
+              <DocumentIconActive className="w-8 h-8 md:w-10 h-10 text-brand-500" />
             }
             title="Formmys"
             variant="ghost"
@@ -74,25 +77,25 @@ export function DashboardLayout({
           />
           <IconButtonLink
             to="/dashboard/chat"
-            icon={<ChatIcon className="w-10 h-10 text-dark" />}
-            activeIcon={<ChatIconActive className="w-10 h-10 text-brand-500" />}
+            icon={<ChatIcon className="w-8 h-8 md:w-10 h-10 text-dark" />}
+            activeIcon={<ChatIconActive className="w-8 h-8 md:w-10 h-10 text-brand-500" />}
             title="Chatbots"
             variant="ghost"
             className="w-full justify-start px-3 rounded-xl"
           />
           <IconButtonLink
             to="/dashboard/ayuda"
-            icon={<HelpIcon className="w-10 h-10 text-dark" />}
-            activeIcon={<HelpIconActive className="w-10 h-10 text-brand-500" />}
+            icon={<HelpIcon className="w-8 h-8 md:w-10 h-10 text-dark" />}
+            activeIcon={<HelpIconActive className="w-8 h-8 md:w-10 h-10 text-brand-500" />}
             title="Ayuda"
             variant="ghost"
             className="w-full justify-start px-3 rounded-xl"
           />
         </nav>
       </div>
-      <div className="flex flex-col grow w-full pb-8">
+      <div className="flex flex-col grow w-full md:pb-8 pb-0">
         <TopMenu user={user} />
-        <div className="bg-white w-full h-full rounded-[40px] overflow-hidden">
+        <div className="bg-white w-full h-full rounded-3xl md:rounded-[40px] min-h-[calc(100vh-156px)] overflow-y-scroll md:overflow-y-auto max-h-[calc(100vh-156px)] md:max-h-none">
           {children}
         </div>
       </div>
@@ -111,7 +114,15 @@ export const TopMenu = ({ user }: { user: User }) => {
   };
 
   return (
-    <div className="h-20 flex items-center justify-end gap-2 w-full">
+    <div className="md:h-20 h-16 flex items-center justify-between  gap-2 w-full">
+      <Link prefetch="render" to="/dashboard" className=" flex md:hidden ">
+          <img
+            className="w-10 h-10  "
+            src="/dash/logo-full.svg"
+            alt="Formmy Logo"
+          />
+      </Link>
+      <div className="flex items-center justify-end md:gap-2 gap-0 w-full">
       <Link to="">
         <Button
           variant="secondary"
@@ -120,7 +131,7 @@ export const TopMenu = ({ user }: { user: User }) => {
           <Usage className="w-8 h-8 ml-1 mt-1" /> Uso
         </Button>
       </Link>
-      <Button variant="ghost">Docs</Button>
+      <Button className="h-10 px-4 md:px-6" variant="ghost">Docs</Button>
       {user ? (
         <Menu as="div" className="relative inline-block text-left">
           <Menu.Button className="inline-flex w-full justify-center py-2 rounded-md text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
@@ -222,6 +233,7 @@ export const TopMenu = ({ user }: { user: User }) => {
       ) : (
         <Avatar />
       )}
+      </div>
     </div>
   );
 };

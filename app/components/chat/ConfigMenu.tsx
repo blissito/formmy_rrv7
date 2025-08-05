@@ -10,7 +10,7 @@ export const ConfigMenu = ({
   current?: string;
 }) => {
   if (children) {
-    return <article className="min-w-[220px] group">{children}</article>;
+    return <article className="w-fit md:min-w-[220px] group">{children}</article>;
   }
   return (
     <article className="min-w-[220px] group">
@@ -63,7 +63,7 @@ const MenuButton = ({
         onClick={onClick}
         className={cn(
           "flex gap-2",
-          "rounded-xl py-3 px-2 min-w-[200px]",
+          "rounded-xl py-3 px-2 w-fit md:min-w-[200px]",
           "mb-1",
           {
             "bg-brand-500/10": isActive,
@@ -79,7 +79,7 @@ const MenuButton = ({
             <img className="min-w-6" alt="files-icon" src={src} />
           )}
         </span>
-        <span className="block min-w-max">{children}</span>
+        <span className="block min-w-max hidden md:block">{children}</span>
       </button>
     );
   }
