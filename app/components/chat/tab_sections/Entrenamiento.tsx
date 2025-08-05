@@ -40,6 +40,7 @@ export const Entrenamiento = ({
   const [websiteContextsToRemove, setWebsiteContextsToRemove] = useState<any[]>([]);
   const [textTitle, setTextTitle] = useState("");
   const [textContent, setTextContent] = useState("");
+  const [isAddingText, setIsAddingText] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
@@ -111,6 +112,7 @@ export const Entrenamiento = ({
       return;
     }
 
+    setIsAddingText(true);
     try {
       const formData = new FormData();
       formData.append("intent", "add_text_context");
@@ -137,6 +139,8 @@ export const Entrenamiento = ({
       }
     } catch (error) {
       throw error;
+    } finally {
+      setIsAddingText(false);
     }
   };
 
@@ -350,6 +354,7 @@ export const Entrenamiento = ({
             onContentChange={setTextContent}
             onAddContext={handleAddTextContext}
             onRemoveContext={handleRemoveTextContext}
+            isAddingText={isAddingText}
           />
         )}
         {currentTab === "website" && (

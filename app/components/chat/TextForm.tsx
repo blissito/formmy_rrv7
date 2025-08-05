@@ -12,6 +12,7 @@ export const TextForm = ({
   onContentChange,
   onAddContext,
   onRemoveContext,
+  isAddingText = false,
 }: {
   title: string;
   content: string;
@@ -20,6 +21,7 @@ export const TextForm = ({
   onContentChange: (content: string) => void;
   onAddContext: () => void;
   onRemoveContext: (index: number, context: any) => void;
+  isAddingText?: boolean;
 }) => {
   return (
     <article>
@@ -53,9 +55,9 @@ export const TextForm = ({
           <Button 
             className="w-full md:w-fit h-10 mr-0"
             onClick={onAddContext}
-            isDisabled={!title.trim() || !content.trim()}
+            isDisabled={!title.trim() || !content.trim() || isAddingText}
           >
-            Agregar
+            {isAddingText ? "Agregando..." : "Agregar"}
           </Button>
       </Card>
       <hr className="my-3 border-none" />

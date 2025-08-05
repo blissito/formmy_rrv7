@@ -1,10 +1,10 @@
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { PageContainer } from "~/components/chat/PageContainer";
-import { useState } from "react";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
 import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
+import { useChipTabs } from "~/components/chat/common/ChipTabs";
 import { db } from "../utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
 
@@ -48,7 +48,7 @@ export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
   const { user, chatbot, integrations } = loaderData;
-  const [currentTab, setCurrentTab] = useState("Entrenamiento"); // @TOOD: Update with the right one
+  const { currentTab, setCurrentTab } = useChipTabs("Entrenamiento", `main_${chatbot.id}`);
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);
