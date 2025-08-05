@@ -60,7 +60,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
       {currentTab === "general" && (
         <section className="grid gap-5">
           <Card title="General">
-            <div className="mb-6 mt-4">
+            <div className="mb-6 mt-2 md:mt-4">
               <span className="text-sm text-gray-600 block mb-2">
                 Id de tu chatbot
               </span>
@@ -111,11 +111,11 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
             title="Eliminar chatbot"
     
           >
-           <div className="flex gap-6">
+           <div className="flex flex-col md:flex-row gap-6">
             <p className="text-metal max-w-[700px]">Una vez que elimines tu chatbot, tu agente será eliminado al igual que toda la información que subiste. Está acción es irreversible, así que asegúrate de que está es la acción que quieres tomar.</p>
             <button
               disabled
-              className="block max-w-[220px] ml-auto disabled:opacity-50 disabled:cursor-not-allowed w-full bg-red-500 text-white py-2 px-4 rounded-full"
+              className="block max-w-full md:max-w-[220px] ml-auto disabled:opacity-50 disabled:cursor-not-allowed w-full bg-red-500 text-white py-2 px-4 h-10 rounded-full"
             >
               Eliminar
             </button>
@@ -139,7 +139,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
       {currentTab === "usuarios" && (
         <section className="">
           <Card title="Administra usuarios" text="3 usuarios">
-            <UsersTable />
+            {/* <UsersTable /> */}
           </Card>
         </section>
       )}
@@ -195,7 +195,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                 </div>
               </section>
               <div className="flex w-full justify-end">
-              <Button className="!mr-0">Actualizar</Button>
+              <Button className="w-full md:w-fit h-10 !mr-0">Actualizar</Button>
               </div>
             </main>
           </Card>

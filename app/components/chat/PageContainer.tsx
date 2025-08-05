@@ -72,7 +72,7 @@ export const Title = ({
             <IoIosArrowRoundBack />
           </Link>
         )}
-        <h2 className="text-2xl md:text-3xl font-bold ml-8 md:ml-0 text-dark">{children}</h2>
+        <h2 className={cn("text-2xl md:text-3xl font-bold ml-0 text-dark", back && "ml-8 md:ml-0")}>{children}</h2>
       </div>
       {cta}
     </nav>
@@ -233,7 +233,7 @@ export const ChatCard = ({
         // delay: index * 0.05,
         ease: [0.25, 0.1, 0.25, 1],
       }}
-      className="w-full md:w-[268px]"
+      className="col-span-1"
     >
       <Link
         to={`/dashboard/chat/${chatbot.slug}`}
@@ -282,11 +282,10 @@ export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
     <article className="flex  gap-0 md:gap-6">
-     
       <section className="self-start sticky top-4 mr-4 md:mr-0">{nodes[0]}</section>
-       <div className="flex flex-col">
+       <div className="flex flex-col md:flex-row gap-4 md:gap-6">
       <section className="grow">{nodes[1]}</section>
-      <section className="self-start sticky top-4 w-full">{nodes[2]}</section> 
+      <section className="self-start sticky top-4 w-full md:w-[280px]">{nodes[2]}</section> 
         </div>
     </article>
   );
@@ -319,7 +318,7 @@ export const EditionPair = ({
   }
 
   return (
-    <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-300px)]">
+    <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
       <section className="col-span-12 md:col-span-4">{content}</section>
       {preview && <section className="col-span-12 md:col-span-8">{preview}</section>}
     </article>
@@ -436,7 +435,7 @@ export const TabButton = ({
         "relative",
         "text-base",
         "text-gray-600",
-        "p-3 px-6",
+        "p-3 px-3 md:px-6",
         "hover:text-black transition-all duration-200",
         "focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-none",
         "border-none outline-none",

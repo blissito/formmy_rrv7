@@ -49,7 +49,7 @@ export const Entrenamiento = () => {
           </ConfigMenu>
         </section>
         {currentTab === "files" && (
-          <section >
+          <section className="flex flex-col gap-4 md:gap-6" >
             <UploadFiles />
             <ListFiles />
           </section>

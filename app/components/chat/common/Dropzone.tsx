@@ -14,7 +14,7 @@ export const Dropzone = ({ onDrop }: { onDrop?: (files: File[]) => void }) => {
         "group",
         "cursor-pointer",
         "bg-gray-50",
-        "grid place-content-center place-items-center border-dashed border-2 border-gray-300 rounded-3xl h-[200px] px-4",
+        "grid place-content-center place-items-center border-dashed border border-gray-300 rounded-3xl h-[200px] px-4",
         isHovered === "dropping" && "border-brand-500 bg-brand-500/20"
       )}
     >
