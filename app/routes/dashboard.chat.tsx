@@ -171,6 +171,6 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
 }
 
 export const meta = () => [
-  { title: "My Chatbots" },
-  { name: "description", content: "Manage your chatbots" },
+  { title: "Mis Chats IA" },
+  { name: "description", content: "Administra tus chatbots IA" },
 ];

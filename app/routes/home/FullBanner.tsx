@@ -133,7 +133,7 @@ export const DemoBanner = () => {
           href="https://wa.me/527757609276?text=¡Hola!%20Quiero%20agendar%20un%20demo."
           target="_blank"
         >
-          <Button variant="secondary" className="ml-0">
+          <Button variant="secondary" className="ml-0 mt-10">
             Agendar demo
           </Button>
         </a>

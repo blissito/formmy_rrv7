@@ -25,7 +25,7 @@ export const IconButtonLink: React.FC<IconButtonLinkProps> = ({
   const isActive = location.pathname === to;
   
   // Estilos base para el botón
-  const baseStyles = 'inline-flex items-center justify-center rounded-lg px-4  text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
+  const baseStyles = 'inline-flex items-center justify-center rounded-lg md:px-4 px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
   
   // Estilos para las variantes
   const variantStyles = {
@@ -50,7 +50,7 @@ export const IconButtonLink: React.FC<IconButtonLinkProps> = ({
       {...props}
        prefetch='render'
     >
-      <div className="flex flex-col gap-2 items-center text-center">
+      <div className="flex flex-col gap-0 md:gap-2 items-center text-center">
         <div className={`w-full grid place-content-center rounded-xl !w-[60px] h-12 transition-all duration-200 ${isActive ? 'bg-brand-500/20' : 'bg-transparent hover:bg-brand-500/10'}`}>
           {iconElement}
         </div>

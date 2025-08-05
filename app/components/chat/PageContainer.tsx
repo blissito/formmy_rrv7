@@ -42,7 +42,7 @@ export const PageContainer = ({
       (child as React.ReactElement).type !== PageContainer.Header
   );
   return (
-    <main className="h-full max-w-7xl mx-auto py-8 ">
+    <main className="h-full max-w-7xl mx-auto p-4 md:py-8 md:px-0 ">
       {HeaderComponent && HeaderComponent}
       <article className={cn("h-full")} {...props}>
         <section>{nodes}</section>
@@ -65,14 +65,14 @@ export const Title = ({
   [x: string]: unknown;
 }) => {
   return (
-    <nav className={cn("flex justify-between items-center mb-8", className)}>
+    <nav className={cn("flex justify-between items-center mb-6 md:mb-8", className)}>
       <div className="flex items-end gap-4 relative">
         {back && (
           <Link to={back} className="text-4xl absolute -left-10">
             <IoIosArrowRoundBack />
           </Link>
         )}
-        <h2 className="text-3xl font-bold  text-dark">{children}</h2>
+        <h2 className="text-2xl md:text-3xl font-bold  text-dark">{children}</h2>
       </div>
       {cta}
     </nav>
