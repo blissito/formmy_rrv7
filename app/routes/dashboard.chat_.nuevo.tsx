@@ -7,14 +7,17 @@ import { Website } from "~/components/chat/Website";
 import type { WebsiteEntry } from "~/types/website";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
-import type { Route } from "./+types/chat_.nuevo";
+import type { Route } from "./+types/dashboard.chat_.nuevo";
 import { getUserOrRedirect } from "server/getUserUtils.server";
+import { ListFiles } from "~/components/chat/ListFiles";
 
-export default function ChatbotConfigRoute({
-  loaderData,
-}: Route.ComponentProps) {
-  const { user } = loaderData;
-  const [currentTab, setCurrentTab] = useState("website");
+export default function ChatbotConfigRoute(
+  {
+    // loaderData,
+  }: Route.ComponentProps
+) {
+  // const { user } = loaderData;
+  const [currentTab, setCurrentTab] = useState("files");
   const [websiteEntries, setWebsiteEntries] = useState<WebsiteEntry[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -91,14 +94,45 @@ export default function ChatbotConfigRoute({
       }
 
       // 3. Agregar archivos como contextos (si los hay)
-      // TODO: Implementar subida de archivos
+      for (const file of uploadedFiles) {
+        try {
+          // Leer el contenido del archivo
+          const content = await file.text();
+          
+          const fileContextData = new FormData();
+          fileContextData.append("intent", "add_file_context");
+          fileContextData.append("chatbotId", chatbotId);
+          fileContextData.append("fileName", file.name);
+          fileContextData.append("fileType", file.type || "application/octet-stream");
+          fileContextData.append("fileUrl", ""); // No hay URL para archivos locales
+          fileContextData.append("sizeKB", Math.ceil(file.size / 1024).toString());
+          fileContextData.append("content", content);
+
+          const fileResponse = await fetch("/api/v1/chatbot", {
+            method: "POST",
+            body: fileContextData,
+          });
+
+          if (!fileResponse.ok) {
+            const errorData = await fileResponse.json();
+            console.error(
+              `Error al agregar archivo ${file.name}:`,
+              errorData.error
+            );
+          } else {
+            console.log(`Archivo ${file.name} agregado exitosamente como contexto`);
+          }
+        } catch (error) {
+          console.error(`Error procesando archivo ${file.name}:`, error);
+        }
+      }
 
       // 4. Mostrar éxito y redirigir
       toast.success("¡Chatbot creado exitosamente!", { id: loadingToast });
 
       // Pequeño delay para que el usuario vea el mensaje de éxito
       setTimeout(() => {
-        navigate(`/chat/config/${chatbot.slug}`);
+        navigate(`/dashboard/chat/${chatbot.slug}`);
       }, 1000);
     } catch (error) {
       console.error("Error al crear chatbot:", error);
@@ -118,7 +152,7 @@ export default function ChatbotConfigRoute({
   const handleFilesChange = (files: File[]) => {
     setUploadedFiles(files);
   };
-
+  console.log("Uploaded files: ", uploadedFiles);
   return (
     <>
       <PageContainer>
@@ -143,7 +177,10 @@ export default function ChatbotConfigRoute({
             </ConfigMenu.MenuButton>
           </ConfigMenu>
           {currentTab === "files" && (
-            <UploadFiles onChange={handleFilesChange} />
+            <>
+              <UploadFiles onChange={handleFilesChange} />
+              {uploadedFiles.length > 0 && <ListFiles files={uploadedFiles} />}
+            </>
           )}
           {currentTab === "website" && (
             <Website

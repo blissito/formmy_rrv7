@@ -5,7 +5,48 @@ import { Select } from "./common/Select";
 import { cn } from "~/lib/utils";
 import { span } from "effect/Layer";
 
-export const ListFiles = () => {
+export const ListFiles = ({ files = [] }: { files?: File[] }) => {
+  const getFileType = (fileName: string): string => {
+    const extension = fileName.split(".").pop()?.toLowerCase();
+    switch (extension) {
+      case "doc":
+      case "docx":
+        return "docx";
+      case "xls":
+      case "xlsx":
+        return "xlsx";
+      case "csv":
+        return "csv";
+      case "txt":
+        return "txt";
+      default:
+        return "txt";
+    }
+  };
+
+  const getFileIcon = (type: string): string => {
+    switch (type) {
+      case "docx":
+        return "/assets/chat/doc.svg";
+      case "xlsx":
+        return "/assets/chat/excel.svg";
+      case "csv":
+        return "/assets/chat/csv.svg";
+      case "txt":
+        return "/assets/chat/txt.svg";
+      default:
+        return "/assets/chat/txt.svg";
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  };
+
   return (
     <Card title="Lista de archivos" noSearch={false}>
       <CardHeader
@@ -19,8 +60,18 @@ export const ListFiles = () => {
         title="Seleccionar todos"
       />
       <section>
-        <FileItem onSelect={() => {}} tag="Nuevo" />
-        <FileItem type="docx" />
+        {files.length > 0 &&
+          files.map((file, index) => (
+            <FileItem
+              key={index}
+              type={getFileType(file.name)}
+              icon={getFileIcon(getFileType(file.name))}
+              fileName={file.name}
+              fileSize={formatFileSize(file.size)}
+              onSelect={() => {}}
+              tag={index === 0 ? "Nuevo" : undefined}
+            />
+          ))}
       </section>
     </Card>
   );
@@ -61,10 +112,16 @@ export const FileItem = ({
   type,
   tag,
   onSelect,
+  icon,
+  fileName = "Servicios.pdf",
+  fileSize = "60Kb",
 }: {
-  type?: "docx";
+  type?: string;
   tag?: string;
   onSelect?: () => void;
+  icon?: string;
+  fileName?: string;
+  fileSize?: string;
 }) => {
   const handleAction = (action: string) => {
     console.log(`Acción seleccionada: ${action}`);
@@ -103,16 +160,17 @@ export const FileItem = ({
         <img
           className="w-16"
           src={
-            type === "docx" ? "/assets/chat/doc.svg" : "/assets/chat/pdf.svg"
+            icon ||
+            (type === "docx" ? "/assets/chat/doc.svg" : "/assets/chat/pdf.svg")
           }
           alt="document"
         />
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-lg font-medium">Servicios.pdf</p>
+            <p className="text-lg font-medium">{fileName}</p>
             {tag && <Tag text={tag} />}
           </div>
-          <span className="text-md font-thin text-gray-500">60Kb</span>
+          <span className="text-md font-thin text-gray-500">{fileSize}</span>
         </div>
       </div>
       <FloatingMenu

@@ -11,6 +11,7 @@ export const useDropFiles = <T extends HTMLElement>(config?: {
   avoidClickWhenFiles?: boolean;
   name?: string;
   mode?: "single" | "multiple";
+  accept?: string;
 }) => {
   const {
     type,
@@ -20,6 +21,7 @@ export const useDropFiles = <T extends HTMLElement>(config?: {
     avoidClickWhenFiles = false,
     name,
     mode = "multiple",
+    accept,
   } = config || {};
 
   const [isHovered, setIsHovered] = useState<null | "hover" | "dropping">(null);
@@ -74,13 +76,16 @@ export const useDropFiles = <T extends HTMLElement>(config?: {
       hidden: true,
       multiple: true,
     });
-    input.accept = type!;
+    // input.accept = type!;
+    input.accept = accept;
     document.body.appendChild(input);
     input.onchange = (ev: ChangeEvent<HTMLInputElement>) => {
       if (!ev.currentTarget?.files || ev.currentTarget.files.length < 1) {
         return;
       }
-      addFiles([...ev.currentTarget.files]);
+      const selectedFiles = [...ev.currentTarget.files];
+      addFiles(selectedFiles);
+      onDrop?.(selectedFiles);
     };
     input.click();
   };

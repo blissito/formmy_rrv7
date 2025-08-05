@@ -14,9 +14,28 @@ import { StickyGrid } from "../PageContainer";
 import { UploadFiles } from "../UploadFiles";
 import { TextForm } from "../TextForm";
 import { Website } from "../Website";
+import type { Chatbot, User } from "@prisma/client";
+import { useEffect, useState } from "react";
 
-export const Entrenamiento = () => {
-  const { currentTab, setCurrentTab } = useChipTabs("website");
+export const Entrenamiento = ({ chatbot, user }: { chatbot: Chatbot; user: User }) => {
+  const { currentTab, setCurrentTab } = useChipTabs("files");
+  const [fileContexts, setFileContexts] = useState<any[]>([]);
+  
+  useEffect(() => {
+    // Extraer archivos del contexto del chatbot
+    if (chatbot.contexts && typeof chatbot.contexts === 'object') {
+      const contexts = chatbot.contexts as any;
+      const files = Object.entries(contexts)
+        .filter(([key, value]: [string, any]) => value.fileName && value.fileType)
+        .map(([key, value]: [string, any]) => ({
+          name: value.fileName,
+          size: (value.sizeKB || 0) * 1024, // Convertir KB a bytes
+          type: value.fileType
+        }));
+      setFileContexts(files);
+    }
+  }, [chatbot.contexts]);
+  
   return (
     <article>
       <StickyGrid>
@@ -51,7 +70,7 @@ export const Entrenamiento = () => {
         {currentTab === "files" && (
           <section className="grid gap-6">
             <UploadFiles />
-            <ListFiles />
+            {fileContexts.length > 0 && <ListFiles files={fileContexts} />}
           </section>
         )}
         {currentTab === "text" && <TextForm />}

@@ -5,11 +5,13 @@ export const InfoSources = ({
   className,
   websiteEntries = [],
   uploadedFiles = [],
+  questions = [],
   onCreateChatbot,
   isCreating = false,
 }: {
   className?: string;
   websiteEntries?: WebsiteEntry[];
+  questions?: string[];
   uploadedFiles?: File[];
   onCreateChatbot?: () => void;
   isCreating?: boolean;
@@ -51,34 +53,40 @@ export const InfoSources = ({
           <h4 className="font-medium text-dark">Fuentes de información</h4>
         </div>
 
-        <div className="flex gap-2 items-center">
-          <span className="w-4">
-            <img src="/assets/chat/document.svg" alt="icon" />
-          </span>
-          <p className="text-gray-600">
-            {uploadedFiles.length} archivo
-            {uploadedFiles.length !== 1 ? "s" : ""}
-          </p>
-        </div>
+        {uploadedFiles.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="w-4">
+              <img src="/assets/chat/document.svg" alt="icon" />
+            </span>
+            <p className="text-gray-600">
+              {uploadedFiles.length} archivo
+              {uploadedFiles.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        )}
 
-        <div className="flex gap-2 items-center">
-          <span className="w-4">
-            <img src="/assets/chat/earth.svg" alt="icon" />
-          </span>
-          <p className="text-gray-600">
-            {websiteEntries.length} sitio
-            {websiteEntries.length !== 1 ? "s" : ""} web
-            {totalWebPages > 0 &&
-              ` (${totalWebPages} página${totalWebPages !== 1 ? "s" : ""})`}
-          </p>
-        </div>
+        {websiteEntries.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="w-4">
+              <img src="/assets/chat/earth.svg" alt="icon" />
+            </span>
+            <p className="text-gray-600">
+              {websiteEntries.length} sitio
+              {websiteEntries.length !== 1 ? "s" : ""} web
+              {totalWebPages > 0 &&
+                ` (${totalWebPages} página${totalWebPages !== 1 ? "s" : ""})`}
+            </p>
+          </div>
+        )}
 
-        <div className="flex gap-2 items-center">
-          <span className="w-4">
-            <img src="/assets/chat/message.svg" alt="icon" />
-          </span>
-          <p className="text-gray-600">0 preguntas</p>
-        </div>
+        {questions.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="w-4">
+              <img src="/assets/chat/message.svg" alt="icon" />
+            </span>
+            <p className="text-gray-600">{questions.length} preguntas</p>
+          </div>
+        )}
 
         <hr className="border-b border-dashed my-2 w-full" />
 

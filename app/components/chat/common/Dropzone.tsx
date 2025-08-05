@@ -5,6 +5,7 @@ export const Dropzone = ({ onDrop }: { onDrop?: (files: File[]) => void }) => {
   // hooks
   const { ref, isHovered } = useDropFiles<HTMLDivElement>({
     onDrop,
+    accept: ".docx,.xlsx,.csv,.txt",
   });
 
   return (
@@ -25,7 +26,7 @@ export const Dropzone = ({ onDrop }: { onDrop?: (files: File[]) => void }) => {
         Arrastra los archivos aquí o selecciona desde tu computadora
       </h4>
       <p className="text-xs text-gray-400 text-center mt-2">
-        Puedes subir archivos .pdf, .docx, .xlsx, .csv o .txt
+        Puedes subir archivos .docx, .xlsx, .csv o .txt
       </p>
     </div>
   );
