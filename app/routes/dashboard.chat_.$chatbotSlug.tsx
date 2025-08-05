@@ -77,6 +77,9 @@ export default function ChatbotDetailRoute({
         {currentTab === "Entrenamiento" && (
           <Entrenamiento chatbot={chatbot} user={user} />
         )}
+        {currentTab === "Tareas" && (
+          <Tareas />
+        )}
         {currentTab === "Código" && (
           <Codigo chatbot={chatbot} user={user} integrations={integrations} />
         )}
@@ -87,3 +90,14 @@ export default function ChatbotDetailRoute({
     </PageContainer>
   );
 }
+
+
+const Tareas = () => {
+  return <section className="h-full min-h-[60vh] place-items-center grid">
+    <div>
+    <img className="w-[200px] mx-auto" src="/dash/comming.svg" alt="comming soon" />
+    <h3 className="text-2xl font-bold text-dark text-center heading mt-6">Tareas Automatizadas en Camino</h3>
+    <p className="paragraph text-center text-metal mt-3 max-w-md mx-auto">Estamos trabajando en una poderosa herramienta para que automatices tareas recurrentes y optimices la productividad de tu agente. ¡Muy pronto podrás programar acciones y flujos de trabajo personalizados!</p>
+    </div>
+  </section>;
+};
