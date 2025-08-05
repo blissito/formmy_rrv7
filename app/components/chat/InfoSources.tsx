@@ -1,3 +1,4 @@
+import { cn } from "~/lib/utils";
 import { Button } from "./PageContainer";
 import type { WebsiteEntry } from "~/types/website";
 
@@ -42,8 +43,8 @@ export const InfoSources = ({
   }, 0);
 
   return (
-    <article className={className}>
-      <section className="grid gap-2 border border-outlines rounded-2xl p-4 shadow-standard min-w-[280px] ">
+    <article className={cn("min-w-full", className)}>
+      <section className="grid gap-2 border border-outlines rounded-2xl p-4 shadow-standard md:min-w-[280px] min-w-full bg-white ">
         <div className="flex gap-2 items-center">
           <span className="w-4">
             <img src="/assets/chat/receipt.svg" alt="icon" />

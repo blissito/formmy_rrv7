@@ -20,7 +20,7 @@ export const Entrenamiento = () => {
   return (
     <article>
       <StickyGrid>
-        <section>
+        <section >
           <ConfigMenu current={currentTab}>
             <ArchivosButton
               onClick={() => setCurrentTab("files")}
@@ -49,7 +49,7 @@ export const Entrenamiento = () => {
           </ConfigMenu>
         </section>
         {currentTab === "files" && (
-          <section className="grid gap-6">
+          <section >
             <UploadFiles />
             <ListFiles />
           </section>
@@ -57,7 +57,7 @@ export const Entrenamiento = () => {
         {currentTab === "text" && <TextForm />}
         {currentTab === "website" && <Website />}
 
-        <section className="hidden lg:block">
+        <section >
           <InfoSources />
         </section>
       </StickyGrid>

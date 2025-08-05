@@ -281,10 +281,13 @@ export const ChatCard = ({
 export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
-    <article className="flex gap-0 md:gap-6">
+    <article className="flex  gap-0 md:gap-6">
+     
       <section className="self-start sticky top-4 mr-4 md:mr-0">{nodes[0]}</section>
+       <div className="flex flex-col">
       <section className="grow">{nodes[1]}</section>
-      <section className="self-start sticky top-4">{nodes[2]}</section>
+      <section className="self-start sticky top-4 w-full">{nodes[2]}</section> 
+        </div>
     </article>
   );
 };
@@ -317,8 +320,8 @@ export const EditionPair = ({
 
   return (
     <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-300px)]">
-      <section className="col-span-4">{content}</section>
-      {preview && <section className="col-span-8">{preview}</section>}
+      <section className="col-span-12 md:col-span-4">{content}</section>
+      {preview && <section className="col-span-12 md:col-span-8">{preview}</section>}
     </article>
   );
 };
@@ -373,14 +376,14 @@ export const TabSelector = ({
     <nav
       className={cn(
         "relative",
-        "flex overflow-y-scroll md:overflow-auto items-start md:items-end justify-center",
+        "flex overflow-y-scroll md:overflow-auto items-start md:items-end justify-start md:justify-center",
         "mb-6"
       )}
       style={{
         scrollbarWidth: "none",
       }}
     >
-      <div ref={containerRef} className="relative flex">
+      <div ref={containerRef} className="relative flex border-b border-outlines/50 ">
         {tabs.map((tab, index) => (
           <TabButton
             key={tab}
@@ -396,7 +399,7 @@ export const TabSelector = ({
 
         {/* Barra animada sin bordes laterales */}
         <div
-          className="absolute bottom-0 h-0.5 bg-brand-500 transition-all duration-300 ease-out"
+          className="absolute bottom-0 h-0.5 bg-brand-500 rounded-full top-[47px] transition-all duration-300 ease-out"
           style={{
             left: `${indicatorStyle.left}px`,
             width: `${indicatorStyle.width}px`,
