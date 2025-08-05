@@ -733,12 +733,16 @@ export async function action({ request }: any) {
         const sizeKB = formData.get("sizeKB")
           ? Number(formData.get("sizeKB"))
           : undefined;
+        const routesData = formData.get("routes") as string | undefined;
+        const routes = routesData ? JSON.parse(routesData) : undefined;
+        
         try {
           const chatbot = await addUrlContext(chatbotId, {
             url,
             title,
             content,
             sizeKB,
+            routes,
           });
           return new Response(JSON.stringify({ success: true, chatbot }), {
             headers: { "Content-Type": "application/json" },

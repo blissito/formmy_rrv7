@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../Button";
 import { Card } from "./common/Card";
 import { Input } from "./common/Input";
@@ -6,13 +6,16 @@ import { Select } from "./common/Select";
 import { useFetchWebsite } from "../../hooks/useFetchWebsite";
 import { Table } from "./common/Table";
 import type { WebsiteEntry } from "../../types/website";
+import toast from "react-hot-toast";
 
 export const Website = ({
-  websiteEntries,
+  websiteEntries = [],
   onWebsiteEntriesChange,
+  chatbotId,
 }: {
-  websiteEntries: WebsiteEntry[];
-  onWebsiteEntriesChange: (entries: WebsiteEntry[]) => void;
+  websiteEntries?: WebsiteEntry[];
+  onWebsiteEntriesChange?: (entries: WebsiteEntry[]) => void;
+  chatbotId?: string;
 }) => {
   const [formData, setFormData] = useState({
     url: "",
@@ -20,6 +23,13 @@ export const Website = ({
     excludeRoutes: "",
     updateFrequency: "monthly" as "yearly" | "monthly",
   });
+  
+  // Usar estado interno si no se pasan props (para compatibilidad con Entrenamiento.tsx)
+  const [internalWebsiteEntries, setInternalWebsiteEntries] = useState<WebsiteEntry[]>([]);
+  
+  // Determinar qué estado usar
+  const currentWebsiteEntries = onWebsiteEntriesChange ? websiteEntries : internalWebsiteEntries;
+  const setCurrentWebsiteEntries = onWebsiteEntriesChange ? onWebsiteEntriesChange : setInternalWebsiteEntries;
 
   const { fetchWebsiteContent, loading, error } = useFetchWebsite();
 
@@ -54,18 +64,29 @@ export const Website = ({
     console.log("RESULT?", result);
 
     if (result) {
+      // Si no se encontraron rutas automáticamente, usar solo la página principal
+      const routes = result.routes && result.routes.length > 0 
+        ? result.routes 
+        : [formData.url.startsWith("http") ? formData.url : `https://${formData.url}`];
+      
+      // Validar que haya contenido
+      if (!result.content || result.content.trim().length === 0) {
+        toast.error("No se pudo extraer contenido de este sitio web");
+        return;
+      }
+
       const newEntry: WebsiteEntry = {
         url: formData.url,
         content: result.content,
-        routes: result.routes,
+        routes: routes,
         includeRoutes,
         excludeRoutes,
         updateFrequency: formData.updateFrequency,
         lastUpdated: new Date(),
       };
 
-      const updatedEntries = [...websiteEntries, newEntry];
-      onWebsiteEntriesChange(updatedEntries);
+      const updatedEntries = [...currentWebsiteEntries, newEntry];
+      setCurrentWebsiteEntries(updatedEntries);
 
       // Limpiar el formulario después de agregar
       setFormData({
@@ -75,7 +96,14 @@ export const Website = ({
         updateFrequency: "monthly",
       });
 
+      const routeCount = routes.length;
+      const message = result.routes && result.routes.length > 0
+        ? `Sitio web agregado con ${routeCount} página${routeCount !== 1 ? 's' : ''} encontradas`
+        : `Sitio web agregado (página principal únicamente - no se encontraron enlaces)`;
+      
+      toast.success(message);
       console.log("Rutas encontradas:", result.routes);
+      console.log("Rutas usadas:", routes);
       console.log("Contenido del sitio web:", result.content);
     }
   };
@@ -147,7 +175,7 @@ export const Website = ({
         )}
 
         <Button
-    className="w-full md:w-fit h-10 mr-0"
+          className="w-full md:w-fit h-10 mr-0"
           isDisabled={!isDirty || loading}
           onClick={handleFetchWebsite}
         >
@@ -159,13 +187,39 @@ export const Website = ({
         noSearch
         title="Fuentes web"
         className="mt-4"
-        websiteEntries={websiteEntries}
-        onRemoveEntry={(index: number) => {
-          const updatedEntries = websiteEntries.filter((_, i) => i !== index);
-          onWebsiteEntriesChange(updatedEntries);
+        websiteEntries={currentWebsiteEntries}
+        onRemoveEntry={async (index: number) => {
+          const entry = currentWebsiteEntries[index];
+          
+          // Si tiene contextId, es un sitio web existente que debe eliminarse de la base de datos
+          if (entry?.contextId) {
+            try {
+              const formData = new FormData();
+              formData.append("intent", "remove_context");
+              formData.append("chatbotId", chatbotId || "");
+              formData.append("contextItemId", entry.contextId);
+
+              const response = await fetch("/api/v1/chatbot", {
+                method: "POST",
+                body: formData,
+              });
+
+              if (!response.ok) {
+                console.error("Error eliminando contexto de sitio web");
+                return;
+              }
+            } catch (error) {
+              console.error("Error eliminando contexto de sitio web:", error);
+              return;
+            }
+          }
+          
+          // Remover del estado local
+          const updatedEntries = currentWebsiteEntries.filter((_, i) => i !== index);
+          setCurrentWebsiteEntries(updatedEntries);
         }}
         onEditEntry={(index: number) => {
-          const entry = websiteEntries[index];
+          const entry = currentWebsiteEntries[index];
           if (entry) {
             // Cargar los datos en el formulario para editar
             setFormData({
@@ -176,8 +230,8 @@ export const Website = ({
             });
 
             // Remover la entrada actual para que se pueda actualizar
-            const updatedEntries = websiteEntries.filter((_, i) => i !== index);
-            onWebsiteEntriesChange(updatedEntries);
+            const updatedEntries = currentWebsiteEntries.filter((_, i) => i !== index);
+            setCurrentWebsiteEntries(updatedEntries);
           }
         }}
       />

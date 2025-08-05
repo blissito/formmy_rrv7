@@ -6,4 +6,5 @@ export interface WebsiteEntry {
   excludeRoutes?: string[];
   updateFrequency: "yearly" | "monthly";
   lastUpdated: Date;
+  contextId?: string; // ID del contexto si ya existe en la base de datos
 }

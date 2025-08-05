@@ -23,6 +23,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     },
   });
 
+
   if (!chatbot) {
     throw new Response("Chatbot not found or you don't have access to it", {
       status: 404,

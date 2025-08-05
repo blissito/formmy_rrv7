@@ -54,6 +54,7 @@ export async function action({ request }: Route.ActionArgs) {
     // Extraer texto del HTML usando JSDOM
     const textContent = extractTextFromHTML(html);
 
+
     // Descubrir rutas del sitio
     const discoveredRoutes = discoverRoutes(fullUrl, html);
 
@@ -97,13 +98,28 @@ const extractTextFromHTML = (html: string): string => {
     const dom = new JSDOM(html);
     const document = dom.window.document;
 
+    // Intentar extraer información antes de remover scripts
+    const title = document.querySelector("title")?.textContent || "";
+    const metaDescription = document.querySelector('meta[name="description"]')?.getAttribute("content") || "";
+    const h1Tags = Array.from(document.querySelectorAll("h1")).map(h => h.textContent).join(" ");
+    const h2Tags = Array.from(document.querySelectorAll("h2")).map(h => h.textContent).join(" ");
+
     // Remover scripts y estilos
     const scripts = document.querySelectorAll("script, style");
     scripts.forEach((script) => script.remove());
 
     // Obtener solo el texto del body
     const body = document.querySelector("body");
-    return body?.textContent || "";
+    const bodyText = body?.textContent || "";
+
+    // Combinar toda la información disponible
+    const combinedText = [title, metaDescription, h1Tags, h2Tags, bodyText]
+      .filter(text => text && text.trim().length > 0)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return combinedText;
   } catch {
     // Fallback: usar regex simple para remover tags HTML
     return html

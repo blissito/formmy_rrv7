@@ -161,6 +161,7 @@ type ContextItem {
   title     String?
   sizeKB    Int?
   content   String?
+  routes    String[]  @default([])
   createdAt DateTime
 }
 

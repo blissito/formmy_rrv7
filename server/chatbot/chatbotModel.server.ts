@@ -157,12 +157,19 @@ export async function addContextItem(
     createdAt: new Date(),
   };
 
+
   // Parse the existing contexts or initialize as empty array
-  const existingContexts = Array.isArray(chatbot.contexts)
+  let existingContexts = Array.isArray(chatbot.contexts)
     ? chatbot.contexts
     : chatbot.contexts
     ? JSON.parse(JSON.stringify(chatbot.contexts))
     : [];
+
+  // Migrar contextos existentes que no tienen el campo routes
+  existingContexts = existingContexts.map((context: any) => ({
+    ...context,
+    routes: context.routes || [] // Agregar campo routes si no existe
+  }));
 
   // Add the new context item to the chatbot's contexts
   return db.chatbot.update({

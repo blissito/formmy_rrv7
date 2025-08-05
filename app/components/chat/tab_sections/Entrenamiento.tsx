@@ -15,7 +15,9 @@ import { UploadFiles } from "../UploadFiles";
 import { TextForm } from "../TextForm";
 import { Website } from "../Website";
 import type { Chatbot, User } from "@prisma/client";
+import type { WebsiteEntry } from "~/types/website";
 import { useEffect, useState } from "react";
+import { useSubmit } from "react-router";
 
 export const Entrenamiento = ({
   chatbot,
@@ -24,9 +26,15 @@ export const Entrenamiento = ({
   chatbot: Chatbot;
   user: User;
 }) => {
-  const { currentTab, setCurrentTab } = useChipTabs("files");
+  const submit = useSubmit();
+  const { currentTab, setCurrentTab } = useChipTabs("website");
   const [fileContexts, setFileContexts] = useState<any[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [existingWebsites, setExistingWebsites] = useState<WebsiteEntry[]>([]);
+  const [newWebsiteEntries, setNewWebsiteEntries] = useState<WebsiteEntry[]>(
+    []
+  );
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     // Extraer archivos del contexto del chatbot
@@ -41,6 +49,23 @@ export const Entrenamiento = ({
           content: context.content,
         }));
       setFileContexts(fileContextsFromDb);
+
+      // Extraer sitios web del contexto del chatbot
+      const websiteContextsFromDb = chatbot.contexts
+        .filter((context: any) => context.type === "LINK" && context.url)
+        .map((context: any) => ({
+          url: context.url,
+          content: context.content || "",
+          routes: context.routes && context.routes.length > 0 ? context.routes : [context.url], // Usar rutas reales o fallback
+          includeRoutes: undefined,
+          excludeRoutes: undefined,
+          updateFrequency: "monthly" as const,
+          lastUpdated: new Date(context.createdAt),
+          contextId: context.id, // Guardamos el ID para poder eliminar
+        }));
+
+      // Actualizar los sitios web existentes desde la base de datos
+      setExistingWebsites(websiteContextsFromDb);
     }
   }, [chatbot.contexts]);
 
@@ -95,9 +120,9 @@ export const Entrenamiento = ({
       }
     }
 
-    // Limpiar archivos subidos y recargar página para mostrar nuevos contextos
+    // Limpiar archivos subidos y recargar datos
     setUploadedFiles([]);
-    window.location.reload();
+    submit({});
   };
 
   const handleRemoveContext = async (index: number, context: any) => {
@@ -126,14 +151,65 @@ export const Entrenamiento = ({
   };
 
   const handleUpdateChatbot = async () => {
-    // Subir archivos automáticamente cuando se presiona "Actualizar Chatbot"
-    await handleUploadFiles();
+    setIsUpdating(true);
+    
+    try {
+      // Subir archivos automáticamente cuando se presiona "Actualizar Chatbot"
+      await handleUploadFiles();
+
+    // Agregar sitios web nuevos como contextos
+    for (const entry of newWebsiteEntries) {
+      try {
+        const contextFormData = new FormData();
+        contextFormData.append("intent", "add_url_context");
+        contextFormData.append("chatbotId", chatbot.id);
+        contextFormData.append(
+          "url",
+          entry.url.startsWith("http") ? entry.url : `https://${entry.url}`
+        );
+        contextFormData.append("title", entry.url);
+        contextFormData.append("content", entry.content);
+        contextFormData.append(
+          "sizeKB",
+          Math.ceil(entry.content.length / 1024).toString()
+        );
+        contextFormData.append("routes", JSON.stringify(entry.routes));
+
+        const contextResponse = await fetch("/api/v1/chatbot", {
+          method: "POST",
+          body: contextFormData,
+        });
+
+        if (!contextResponse.ok) {
+          const errorData = await contextResponse.json();
+          console.error(
+            `Error al agregar contexto para ${entry.url}:`,
+            errorData.error
+          );
+        } else {
+          console.log(`Contexto agregado exitosamente para ${entry.url}`);
+        }
+      } catch (error) {
+        console.error(`Error procesando sitio web ${entry.url}:`, error);
+      }
+    }
+
+      // Limpiar website entries nuevos después de subirlos y recargar datos
+      if (newWebsiteEntries.length > 0) {
+        setNewWebsiteEntries([]);
+        submit({});
+      }
+    } catch (error) {
+      console.error("Error updating chatbot:", error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
     <article>
       <StickyGrid>
-        <section >
+        <section>
           <ConfigMenu current={currentTab}>
             <ArchivosButton
               onClick={() => setCurrentTab("files")}
@@ -195,14 +271,28 @@ export const Entrenamiento = ({
           </section>
         )}
         {currentTab === "text" && <TextForm />}
-        {currentTab === "website" && <Website />}
+        {currentTab === "website" && (
+          <Website
+            websiteEntries={[...existingWebsites, ...newWebsiteEntries]}
+            onWebsiteEntriesChange={(entries) => {
+              // Separar sitios existentes de nuevos
+              const existing = entries.filter((entry) => entry.contextId);
+              const newEntries = entries.filter((entry) => !entry.contextId);
+              setExistingWebsites(existing);
+              setNewWebsiteEntries(newEntries);
+            }}
+            chatbotId={chatbot.id}
+          />
+        )}
 
         <section className="hidden lg:block">
           <InfoSources
             contexts={fileContexts}
             uploadedFiles={uploadedFiles}
+            websiteEntries={newWebsiteEntries}
             mode="edit"
             onCreateChatbot={handleUpdateChatbot}
+            isCreating={isUpdating}
           />
         </section>
       </StickyGrid>

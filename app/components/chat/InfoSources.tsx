@@ -152,10 +152,10 @@ export const InfoSources = ({
             isDisabled={
               totalWeight > maxWeight || 
               isCreating || 
-              uploadedFiles.length === 0 // Solo habilitado si hay archivos pendientes
+              (uploadedFiles.length === 0 && websiteEntries.length === 0) // Habilitado si hay archivos o websites
             }
           >
-            {isCreating ? "Actualizando..." : uploadedFiles.length === 0 ? "Sin cambios" : "Actualizar Chatbot"}
+            {isCreating ? "Actualizando..." : (uploadedFiles.length === 0 && websiteEntries.length === 0) ? "Sin cambios" : "Actualizar Chatbot"}
           </Button>
         )}
       </section>

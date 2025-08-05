@@ -124,6 +124,7 @@ export async function addFileContext(
     fileUrl,
     sizeKB,
     content: content || null,
+    routes: [], // Los archivos no tienen rutas
     // Añadir campos nulos requeridos por el tipo
     url: null,
     title: null,
@@ -155,11 +156,13 @@ export async function addUrlContext(
     title,
     content,
     sizeKB,
+    routes,
   }: {
     url: string;
     title?: string;
     content?: string;
     sizeKB?: number;
+    routes?: string[];
   }
 ) {
   // Obtener el chatbot para validaciones
@@ -196,11 +199,13 @@ export async function addUrlContext(
     title: title || url,
     content: content || null,
     sizeKB: estimatedSizeKB,
+    routes: routes && routes.length > 0 ? routes : [url], // Asegurar que siempre sea un array con al menos la URL
     // Añadir campos nulos requeridos por el tipo
     fileName: null,
     fileType: null,
     fileUrl: null,
   };
+
 
   // Añadir el contexto al chatbot
   return addContextItem(chatbotId, contextItem);
@@ -249,6 +254,7 @@ export async function addTextContext(
     title,
     content,
     sizeKB,
+    routes: [], // Los textos no tienen rutas
     // Añadir campos nulos requeridos por el tipo
     fileName: null,
     fileType: null,

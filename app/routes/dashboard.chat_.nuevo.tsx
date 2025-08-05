@@ -76,6 +76,7 @@ export default function ChatbotConfigRoute(
           "sizeKB",
           Math.ceil(entry.content.length / 1024).toString()
         );
+        contextFormData.append("routes", JSON.stringify(entry.routes));
 
         const contextResponse = await fetch("/api/v1/chatbot", {
           method: "POST",
