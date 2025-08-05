@@ -5,6 +5,7 @@ export const Dropzone = ({ onDrop }: { onDrop?: (files: File[]) => void }) => {
   // hooks
   const { ref, isHovered } = useDropFiles<HTMLDivElement>({
     onDrop,
+    accept: ".pdf,.docx,.xlsx,.csv,.txt",
   });
 
   return (

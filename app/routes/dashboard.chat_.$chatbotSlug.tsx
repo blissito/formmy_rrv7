@@ -7,7 +7,6 @@ import { Codigo } from "~/components/chat/tab_sections/Codigo";
 import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
 import { db } from "../utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
-import type { Chatbot, User } from "@prisma/client";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -48,7 +47,7 @@ export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
   const { user, chatbot, integrations } = loaderData;
-  const [currentTab, setCurrentTab] = useState("Preview"); // @TOOD: Update with the right one
+  const [currentTab, setCurrentTab] = useState("Entrenamiento"); // @TOOD: Update with the right one
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);

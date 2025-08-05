@@ -6,14 +6,20 @@ export const InfoSources = ({
   className,
   websiteEntries = [],
   uploadedFiles = [],
+  questions = [],
+  contexts = [],
   onCreateChatbot,
   isCreating = false,
+  mode = "create", // "create" o "edit"
 }: {
   className?: string;
   websiteEntries?: WebsiteEntry[];
+  questions?: string[];
   uploadedFiles?: File[];
+  contexts?: any[];
   onCreateChatbot?: () => void;
   isCreating?: boolean;
+  mode?: "create" | "edit";
 }) => {
   // Calcular el peso total de los sitios web (basado en el contenido de texto)
   const websiteWeight = websiteEntries.reduce((total, entry) => {
@@ -26,7 +32,15 @@ export const InfoSources = ({
     return total + file.size;
   }, 0);
 
-  const totalWeight = websiteWeight + filesWeight;
+  // Calcular el peso total de los contextos existentes (solo en modo edit)
+  const contextsWeight =
+    mode === "edit"
+      ? contexts.reduce((total, context) => {
+          return total + (context.sizeKB || 0) * 1024; // Convertir KB a bytes
+        }, 0)
+      : 0;
+
+  const totalWeight = websiteWeight + filesWeight + contextsWeight;
   const maxWeight = 1 * 1024 * 1024; // 800KB en bytes
 
   // Función para formatear bytes a KB/MB
@@ -52,34 +66,54 @@ export const InfoSources = ({
           <h4 className="font-medium text-dark">Fuentes de información</h4>
         </div>
 
-        <div className="flex gap-2 items-center">
-          <span className="w-4">
-            <img src="/assets/chat/document.svg" alt="icon" />
-          </span>
-          <p className="text-gray-600">
-            {uploadedFiles.length} archivo
-            {uploadedFiles.length !== 1 ? "s" : ""}
-          </p>
-        </div>
+        {/* Mostrar archivos según el modo */}
+        {mode === "create" && uploadedFiles.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="w-4">
+              <img src="/assets/chat/document.svg" alt="icon" />
+            </span>
+            <p className="text-gray-600">
+              {uploadedFiles.length} archivo
+              {uploadedFiles.length !== 1 ? "s" : ""} (
+              {formatBytes(filesWeight)})
+            </p>
+          </div>
+        )}
 
-        <div className="flex gap-2 items-center">
-          <span className="w-4">
-            <img src="/assets/chat/earth.svg" alt="icon" />
-          </span>
-          <p className="text-gray-600">
-            {websiteEntries.length} sitio
-            {websiteEntries.length !== 1 ? "s" : ""} web
-            {totalWebPages > 0 &&
-              ` (${totalWebPages} página${totalWebPages !== 1 ? "s" : ""})`}
-          </p>
-        </div>
+        {mode === "edit" && contexts.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="w-4">
+              <img src="/assets/chat/document.svg" alt="icon" />
+            </span>
+            <p className="text-gray-600">
+              {contexts.length} archivo
+              {contexts.length !== 1 ? "s" : ""} ({formatBytes(contextsWeight)})
+            </p>
+          </div>
+        )}
 
-        <div className="flex gap-2 items-center">
-          <span className="w-4">
-            <img src="/assets/chat/message.svg" alt="icon" />
-          </span>
-          <p className="text-gray-600">0 preguntas</p>
-        </div>
+        {websiteEntries.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="w-4">
+              <img src="/assets/chat/earth.svg" alt="icon" />
+            </span>
+            <p className="text-gray-600">
+              {websiteEntries.length} sitio
+              {websiteEntries.length !== 1 ? "s" : ""} web
+              {totalWebPages > 0 &&
+                ` (${totalWebPages} página${totalWebPages !== 1 ? "s" : ""})`}
+            </p>
+          </div>
+        )}
+
+        {questions.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="w-4">
+              <img src="/assets/chat/message.svg" alt="icon" />
+            </span>
+            <p className="text-gray-600">{questions.length} preguntas</p>
+          </div>
+        )}
 
         <hr className="border-b border-dashed my-2 w-full" />
 
@@ -97,16 +131,33 @@ export const InfoSources = ({
           <div className="text-red-500 text-xs">⚠️ Límite excedido</div>
         )}
 
-        <Button
-          className="mt-6 "
-          onClick={onCreateChatbot}
-          disabled={
-            isCreating ||
-            (websiteEntries.length === 0 && uploadedFiles.length === 0)
-          }
-        >
-          {isCreating ? "Creando..." : "Crear Chatbot"}
-        </Button>
+        {mode === "create" && (
+          <Button
+            className="mt-6 "
+            onClick={onCreateChatbot}
+            isDisabled={
+              totalWeight > maxWeight ||
+              isCreating ||
+              (websiteEntries.length === 0 && uploadedFiles.length === 0)
+            }
+          >
+            {isCreating ? "Creando..." : "Crear Chatbot"}
+          </Button>
+        )}
+
+        {mode === "edit" && onCreateChatbot && (
+          <Button
+            className="mt-6 "
+            onClick={onCreateChatbot}
+            isDisabled={
+              totalWeight > maxWeight || 
+              isCreating || 
+              uploadedFiles.length === 0 // Solo habilitado si hay archivos pendientes
+            }
+          >
+            {isCreating ? "Actualizando..." : uploadedFiles.length === 0 ? "Sin cambios" : "Actualizar Chatbot"}
+          </Button>
+        )}
       </section>
     </article>
   );
