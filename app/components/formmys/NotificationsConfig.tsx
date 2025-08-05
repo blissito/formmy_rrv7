@@ -33,7 +33,7 @@ export const NotificationsConfig = ({
               />
             </div>
   
-            <div className="flex justify-between">
+            <div className="flex items-center  justify-between">
               <div>
                 <p className="font-bold text-md">Cambio en los miembros</p>
                 <p className="font-light text-sm text-gray-500">
@@ -51,7 +51,7 @@ export const NotificationsConfig = ({
               </div>
             </div>
   
-            <div className="flex justify-between">
+            <div className="flex items-center  justify-between">
               <div>
                 <p className="font-bold text-md">Actividad en tu formmy</p>
                 <p className="font-light text-sm text-gray-500">

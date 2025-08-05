@@ -32,14 +32,14 @@ export const TextForm = () => {
           onChange={(html) => console.log(html)}
           placeholder="Escribe tu mensaje..."
         />
-        <Button className="ml-auto">Agregar</Button>
+          <Button className="w-full md:w-fit h-10 mr-0">Agregar</Button>
       </Card>
       <hr className="my-3 border-none" />
       <Card noSearch={false} title="Fuentes de texto">
         <CardHeader
           left={
             <input
-              className="rounded-md border-gray-300 scale-110"
+              className="rounded-md border-gray-300 scale-110 "
               type="checkbox"
               onChange={() => {}}
             />

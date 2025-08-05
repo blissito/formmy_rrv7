@@ -80,7 +80,7 @@ export function FormmyMessageEdition({
 
   return (
     <article className="grid grid-cols-12 gap-8 h-full">
-      <section className="col-span-4 noscroll">
+      <section className="col-span-12 md:col-span-4 noscroll">
         <div className="w-full h-fit">
            <div className=" h-full  w-full relative">
                     <p className=" text-sm font-normal text-metal">
@@ -241,9 +241,9 @@ export function FormmyMessageEdition({
         </div>
       </section>
 
-      <section className={twMerge("col-span-8 h-full min-h-[calc(100vh-300px)]", config.theme)}>
-      <div className="w-full h-full noscroll bg-slate-100 dark:bg-hole overflow-scroll">
-      <div className="grid place-items-center h-[90%]">
+      <section className={twMerge("col-span-12 md:col-span-8 h-fit  md:h-full md:min-h-[calc(100vh-300px)]", config.theme)}>
+      <div className="w-full h-full noscroll bg-slate-100 dark:bg-hole overflow-scroll py-10 md:py-0">
+      <div className="grid place-items-center h-[90%] ">
             <Message config={config} type={type} />
             {showConfetti ? (
               <EmojiConfetti

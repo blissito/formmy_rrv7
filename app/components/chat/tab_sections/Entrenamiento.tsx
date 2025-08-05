@@ -133,7 +133,7 @@ export const Entrenamiento = ({
   return (
     <article>
       <StickyGrid>
-        <section>
+        <section >
           <ConfigMenu current={currentTab}>
             <ArchivosButton
               onClick={() => setCurrentTab("files")}

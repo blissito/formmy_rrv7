@@ -23,10 +23,10 @@ export const UsersTable = ({
 }: UsersTableProps) => {
   return (
     <article>
-      <section className="grid grid-cols-10 text-sm px-4 text-dark ">
+      <section className="grid grid-cols-10 md:text-sm text-xs px-4 text-dark ">
         <h6 className="col-span-1"></h6>
-        <h6 className="col-span-2">Email</h6>
-        <h6 className="col-span-2">Rol</h6>
+        <h6 className="col-span-4 md:col-span-2">Email</h6>
+        <h6 className="col-span-2 hidden md:block">Rol</h6>
         <h6 className="col-span-2">Estatus</h6>
         <h6 className="col-span-2">Notificaciones</h6>
         <h6 className="col-span-1"></h6>
@@ -127,26 +127,24 @@ export const UserRow = ({
   const displayPicture = isOwner ? user?.picture : permission?.user?.picture;
 
   return (
-    <section className="grid items-center grid-cols-10 my-3 border border-outlines p-4 rounded-xl">
+    <section className="grid items-center grid-cols-10 my-3 border border-outlines md:p-4 p-2 rounded-xl">
       <div className="col-span-1">
         <img
           onError={(ev) => {
             ev.target.onerror = null;
             ev.target.src = avatar;
           }}
-          className="w-10 h-10 rounded-full object-cover"
+          className="md:w-10 md:h-10 w-6 h-6 rounded-full object-cover"
           src={displayPicture ?? avatar}
           alt={displayName ?? "avatar"}
         />
       </div>
 
-      <p className="font-medium text-sm truncate col-span-2">
+      <p className="font-medium text-xs md:text-sm truncate col-span-4 md:col-span-2">
         {displayEmail}
       </p>
-
-      <p className="col-span-2 text-sm text-metal">{isOwner ? "Propietario" : "Invitado"}</p>
-      
-      <p className="col-span-2 text-sm">
+      <p className="col-span-2 text-xs md:text-sm text-metal hidden md:block">{isOwner ? "Propietario" : "Invitado"}</p>
+      <p className="col-span-2 text-xs md:text-sm">
         <Status status={isOwner ? "active" : permission?.status || "pending"} />
       </p>
       
@@ -185,7 +183,7 @@ const Status = ({ status }: { status: string }) => {
   
   return (
     <p className={twMerge(
-      "col-span-2 text-sm capitalize",
+      "col-span-2 text-xs md:text-sm capitalize",
       statusColors[status as keyof typeof statusColors] || "text-gray-500"
     )}>
       {status}

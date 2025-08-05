@@ -7,7 +7,6 @@ import { Codigo } from "~/components/chat/tab_sections/Codigo";
 import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
 import { db } from "../utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
-import type { Chatbot, User } from "@prisma/client";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -56,14 +55,14 @@ export default function ChatbotDetailRoute({
 
   return (
     <PageContainer>
-      <PageContainer.Title className="mb-2" back="/dashboard/chat">
+      <PageContainer.Title className="!mb-2 md:!mb-4" back="/dashboard/chat">
         {chatbot.name}
       </PageContainer.Title>
       <PageContainer.TabSelector
         activeTab={currentTab}
         onTabChange={handleTabChange}
       />
-      <div className="mt-6">
+      <div className="mt-0">
         {currentTab === "Preview" && (
           <PageContainer.EditionPair
             chatbot={chatbot}

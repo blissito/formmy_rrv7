@@ -94,9 +94,9 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
             </PageContainer.Button>
           }
         >
-          Tus Chats IA
+          Mis Chats IA
         </PageContainer.Title>
-        <section className="flex flex-wrap gap-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {chatbots.map((chatbot: Chatbot, i: number) => (
             <PageContainer.ChatCard
               onDelete={handleDeleteIntention(chatbot.id)}
@@ -171,6 +171,6 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
 }
 
 export const meta = () => [
-  { title: "My Chatbots" },
-  { name: "description", content: "Manage your chatbots" },
+  { title: "Mis Chats IA" },
+  { name: "description", content: "Administra tus chatbots IA" },
 ];

@@ -8,16 +8,16 @@ import { cn } from "~/lib/utils";
 
 export default function DashboardGhosty() {
   return(
-    <section className="grid place-content-center h-full">
+    <section className={cn("grid place-content-center min-h-[calc(100vh-156px)] p-4", "md:p-2 md:h-full")}>
     <div className="max-w-3xl">
-    <h2 className="text-4xl heading text-center mb-6">¡Hola! Conoce a <span className="text-brand-500">Ghosty IA 👻</span>
+    <h2 className={cn("text-2xl heading text-center mb-6", "md:text-4xl")}>¡Hola! Conoce a <span className="text-brand-500">Ghosty IA 👻</span>
     </h2>
     <IAInput/>
     <div className="grid grid-cols-2 gap-4 mt-8">
-      <ShortCutAi className="bg-bird" title="Genera un reporte de..." description="Interacciones, mensajes, etc." icon={<DiagramIcon className="w-10 h-10 mt-1 ml-1" />}/>
-      <ShortCutAi className="bg-salmon" title="Lo nuevo en Formmy ✨" description="features, noticias, estrenos." icon={<PartyIcon className="w-10 h-10 mt-1 ml-1" />}/>
-      <ShortCutAi className="bg-grass" title="Explícame..." description="como funcionan los agentes." icon={<BookIcon className="w-10 h-10 mt-1 ml-1" />}/>
-      <ShortCutAi className="bg-sky" title="Haz un resumen de..." description="las preguntas más comunes." icon={<PresentationIcon className="w-10 h-10 mt-1 ml-1" />}/>
+      <ShortCutAi className="bg-bird" title="Genera un reporte de..." description="Interacciones, mensajes, etc." icon={<DiagramIcon className="md:w-10 md:h-10 w-6 h-6 md:mt-1 md:ml-1 mt-0 ml-0" />}/>
+      <ShortCutAi className="bg-salmon" title="Lo nuevo en Formmy ✨" description="features, noticias, estrenos." icon={<PartyIcon className="md:w-10 md:h-10 w-6 h-6 md:mt-1 md:ml-1 mt-[2px] ml-[2px]" />}/>
+      <ShortCutAi className="bg-grass" title="Explícame..." description="como funcionan los agentes." icon={<BookIcon className="md:w-10 md:h-10 w-6 h-6 md:mt-1 md:ml-1 mt-0 ml-0" />}/>
+      <ShortCutAi className="bg-cloud" title="Haz un resumen de..." description="las preguntas más comunes." icon={<PresentationIcon className="md:w-10 md:h-10 w-6 h-6 md:mt-1 md:ml-1 mt-[2px] ml-[2px]" />}/>
      </div>
     </div>
   </section>
@@ -44,13 +44,13 @@ const ShortCutAi = ({
   icon: React.ReactNode;
 }) => {
   return (
-    <div className="flex items-center gap-3 border border-outlines bg-[#FCFDFE] rounded-2xl overflow-hidden p-4 hover:bg-brand-100/40 cursor-pointer">
-      <div className={cn("w-10 h-10 md:min-w-12 md:min-h-12 text-4xl rounded-xl grid place-content-center", className)}>
+    <div className={cn("flex flex-col items-start gap-2 border border-outlines bg-[#FCFDFE] rounded-2xl overflow-hidden   p-2 hover:bg-brand-100/40 cursor-pointer", "md:flex-row md:items-center md:gap-3 md:p-4")}>
+      <div className={cn("w-6 h-6 text-4xl rounded grid place-content-center", "md:rounded-xl md:min-w-12 md:min-h-12", className)}>
         {icon}
       </div>
       <div>
-      <span className="text-dark font-semibold">{title}</span>
-      <p className="text-irongray text-sm">{description}</p>
+      <span className="text-sm md:text-base text-dark font-semibold">{title}</span>
+      <p className="text-irongray text-xs md:text-sm">{description}</p>
       </div>
     </div>
   );

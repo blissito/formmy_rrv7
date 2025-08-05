@@ -28,8 +28,8 @@ export const ChipTabs = ({
           key={tab}
           onClick={() => onTabChange?.(tab)}
           className={cn(
-            "px-3 h-10 rounded-full text-base  font-medium transition-colors",
-            "px-6",
+            " h-10 rounded-full text-base  font-medium transition-colors",
+            "px-3 md:px-6",
             {
               "w-[50%]": type === "full",
             },

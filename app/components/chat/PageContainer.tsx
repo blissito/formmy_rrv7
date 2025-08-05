@@ -42,7 +42,7 @@ export const PageContainer = ({
       (child as React.ReactElement).type !== PageContainer.Header
   );
   return (
-    <main className="h-full max-w-7xl mx-auto py-8 ">
+    <main className="h-full max-w-7xl mx-auto p-4 md:py-8 md:px-0 ">
       {HeaderComponent && HeaderComponent}
       <article className={cn("h-full")} {...props}>
         <section>{nodes}</section>
@@ -65,14 +65,14 @@ export const Title = ({
   [x: string]: unknown;
 }) => {
   return (
-    <nav className={cn("flex justify-between items-center mb-8", className)}>
+    <nav className={cn("flex justify-between items-center mb-6 md:mb-8", className)}>
       <div className="flex items-end gap-4 relative">
         {back && (
-          <Link to={back} className="text-4xl absolute -left-10">
+          <Link to={back} className="text-4xl absolute -left-2 md:-left-10">
             <IoIosArrowRoundBack />
           </Link>
         )}
-        <h2 className="text-3xl font-bold  text-dark">{children}</h2>
+        <h2 className={cn("text-2xl md:text-3xl font-bold ml-0 text-dark", back && "ml-8 md:ml-0")}>{children}</h2>
       </div>
       {cta}
     </nav>
@@ -239,7 +239,7 @@ export const ChatCard = ({
         // delay: index * 0.05,
         ease: [0.25, 0.1, 0.25, 1],
       }}
-      className="w-full md:w-[268px]"
+      className="col-span-1"
     >
       <Link
         to={`/dashboard/chat/${chatbot.slug}`}
@@ -287,10 +287,12 @@ export const ChatCard = ({
 export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
-    <article className="flex gap-6">
-      <section className="self-start sticky top-4">{nodes[0]}</section>
+    <article className="flex  gap-0 md:gap-6">
+      <section className="self-start sticky top-4 mr-4 md:mr-0">{nodes[0]}</section>
+       <div className="flex flex-col md:flex-row gap-4 md:gap-6">
       <section className="grow">{nodes[1]}</section>
-      <section className="self-start sticky top-4">{nodes[2]}</section>
+      <section className="self-start sticky top-4 w-full md:w-[280px]">{nodes[2]}</section> 
+        </div>
     </article>
   );
 };
@@ -322,9 +324,9 @@ export const EditionPair = ({
   }
 
   return (
-    <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-300px)]">
-      <section className="col-span-4">{content}</section>
-      {preview && <section className="col-span-8">{preview}</section>}
+    <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
+      <section className="col-span-12 md:col-span-4">{content}</section>
+      {preview && <section className="col-span-12 md:col-span-8">{preview}</section>}
     </article>
   );
 };
@@ -379,14 +381,14 @@ export const TabSelector = ({
     <nav
       className={cn(
         "relative",
-        "flex overflow-auto items-end justify-center",
+        "flex overflow-y-scroll md:overflow-auto items-start md:items-end justify-start md:justify-center",
         "mb-6"
       )}
       style={{
         scrollbarWidth: "none",
       }}
     >
-      <div ref={containerRef} className="relative flex">
+      <div ref={containerRef} className="relative flex border-b border-outlines/50 ">
         {tabs.map((tab, index) => (
           <TabButton
             key={tab}
@@ -402,7 +404,7 @@ export const TabSelector = ({
 
         {/* Barra animada sin bordes laterales */}
         <div
-          className="absolute bottom-0 h-0.5 bg-brand-500 transition-all duration-300 ease-out"
+          className="absolute bottom-0 h-0.5 bg-brand-500 rounded-full top-[47px] transition-all duration-300 ease-out"
           style={{
             left: `${indicatorStyle.left}px`,
             width: `${indicatorStyle.width}px`,
@@ -439,7 +441,7 @@ export const TabButton = ({
         "relative",
         "text-base",
         "text-gray-600",
-        "p-3 px-6",
+        "p-3 px-3 md:px-6",
         "hover:text-black transition-all duration-200",
         "focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-none",
         "border-none outline-none",

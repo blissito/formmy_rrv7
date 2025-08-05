@@ -29,10 +29,10 @@ export const InputModalForm = ({
     <Modal onClose={onClose}>
       <Form
         method="post"
-        className="px-6 py-8 md:py-10 gap-2 bg-clear dark:bg-space-900 rounded-3xl dark:text-white text-space-900 "
+        className="md:px-6 px-4 py-4 md:py-10 gap-2 bg-clear dark:bg-space-900 rounded-3xl dark:text-white text-space-900 "
       >
         <h2 className="font-bold mb-10 text-2xl text-center mt-6 md:mt-0">
-          {title}ww
+          {title}
         </h2>
         <div className="flex w-full">
           <input

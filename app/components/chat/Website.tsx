@@ -147,7 +147,7 @@ export const Website = ({
         )}
 
         <Button
-          className="mx-0 ml-auto"
+    className="w-full md:w-fit h-10 mr-0"
           isDisabled={!isDirty || loading}
           onClick={handleFetchWebsite}
         >

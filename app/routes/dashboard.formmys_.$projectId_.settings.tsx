@@ -146,7 +146,7 @@ export default function Route() {
   return (
     <PageContainer>
       <PageContainer.Title
-        className="mb-8 flex w-full justify-between" 
+        className=" flex w-full justify-between" 
         back={`/dashboard/formmys/`}
       >
        Configuración
