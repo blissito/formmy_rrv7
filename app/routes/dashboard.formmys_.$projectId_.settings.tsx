@@ -47,6 +47,7 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
       role: roleEnum,
       can: permissions,
       projectId: String(params.projectId),
+      resourceType: "PROJECT" as const,
     };
     
     const exists = await db.permission.findFirst({
@@ -85,6 +86,7 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
       role: Role.VIEWER,
       can: permissions,
       projectId: String(params.projectId),
+      resourceType: "PROJECT" as const,
     };
     const exists = await db.permission.findFirst({
       where: { email, projectId: params.projectId },

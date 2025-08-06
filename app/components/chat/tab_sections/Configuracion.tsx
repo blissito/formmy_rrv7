@@ -4,16 +4,17 @@ import { GeneralButton } from "../ConfigMenu";
 import { NotificacionesButton } from "../ConfigMenu";
 import { UsuariosButton } from "../ConfigMenu";
 import { SeguridadButton } from "../ConfigMenu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useChipTabs } from "../common/ChipTabs";
 import { Card } from "../common/Card";
-import type { Chatbot } from "@prisma/client";
+import type { Chatbot, Permission, User } from "@prisma/client";
 import { Toggle } from "~/components/Switch";
-import { UsersTable } from "./UsersTable";
 import { Input } from "../common/Input";
 import { Select } from "../common/Select";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { Button } from "~/components/Button";
+import { ChatbotUsersTable } from "~/components/chat/tab_sections/ChatbotUsersTable";
+import { AddUserModal } from "~/components/chat/common/AddUserModal";
 
 interface ConfiguracionProps {
   chatbot: Chatbot;
@@ -24,6 +25,10 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
   const { currentTab, setCurrentTab } = useChipTabs("seguridad", `configuracion_${chatbot.id}`);
   const [isCopied, setIsCopied] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [permissions, setPermissions] = useState<(Permission & { user?: User | null })[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isAddingUser, setIsAddingUser] = useState(false);
   
   // Estado para notificaciones
   const [notifications, setNotifications] = useState({
@@ -57,6 +62,64 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
       });
     } catch (error) {
       console.error("Error updating notifications:", error);
+    }
+  };
+  
+  // Cargar usuarios al montar o cambiar de tab
+  useEffect(() => {
+    if (currentTab === "usuarios") {
+      loadUsers();
+    }
+  }, [currentTab]);
+  
+  const loadUsers = async () => {
+    setIsLoadingUsers(true);
+    const formData = new FormData();
+    formData.append("intent", "get_chatbot_users");
+    formData.append("chatbotId", chatbot.id);
+    
+    try {
+      const response = await fetch("/api/v1/chatbot", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setPermissions(data);
+      }
+    } catch (error) {
+      console.error("Error loading users:", error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+  
+  const handleAddUser = async (email: string, role: string) => {
+    setIsAddingUser(true);
+    const formData = new FormData();
+    formData.append("intent", "add_chatbot_user");
+    formData.append("chatbotId", chatbot.id);
+    formData.append("email", email);
+    formData.append("role", role);
+    
+    try {
+      const response = await fetch("/api/v1/chatbot", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (response.ok) {
+        setShowAddUserModal(false);
+        loadUsers(); // Recargar la lista
+      } else {
+        const error = await response.json();
+        alert(error.error || "Error al agregar usuario");
+      }
+    } catch (error) {
+      console.error("Error adding user:", error);
+      alert("Error al agregar usuario");
+    } finally {
+      setIsAddingUser(false);
     }
   };
   
@@ -210,9 +273,35 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
 
       {currentTab === "usuarios" && (
         <section className="">
-          <Card title="Administra usuarios" text="3 usuarios">
-            {/* <UsersTable /> */}
+          <Card 
+            title="Administra usuarios" 
+            text={`${permissions.length + 1} usuario${permissions.length !== 0 ? 's' : ''}`}
+            action={
+              <Button 
+                onClick={() => setShowAddUserModal(true)}
+                className="h-9"
+              >
+                Agregar usuario
+              </Button>
+            }
+          >
+            <ChatbotUsersTable
+              isLoading={isLoadingUsers}
+              permissions={permissions}
+              user={user}
+              chatbotId={chatbot.id}
+              onUpdate={loadUsers}
+            />
           </Card>
+          
+          {showAddUserModal && (
+            <AddUserModal
+              isLoading={isAddingUser}
+              onClose={() => setShowAddUserModal(false)}
+              onSubmit={handleAddUser}
+              projectName={chatbot.name}
+            />
+          )}
         </section>
       )}
 

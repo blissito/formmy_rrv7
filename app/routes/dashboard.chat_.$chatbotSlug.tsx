@@ -16,23 +16,46 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     throw new Response("Chatbot slug is required", { status: 400 });
   }
 
-  const chatbot = await db.chatbot.findUnique({
+  // Primero intentar encontrar por slug
+  let chatbot = await db.chatbot.findFirst({
     where: {
       slug: chatbotSlug,
-      userId: user.id,
     },
   });
 
-
-  if (!chatbot) {
-    throw new Response("Chatbot not found or you don't have access to it", {
-      status: 404,
+  // Si no se encuentra por slug, intentar por ID (solo si es un ObjectID válido)
+  if (!chatbot && chatbotSlug.length === 24 && /^[a-f\d]{24}$/i.test(chatbotSlug)) {
+    chatbot = await db.chatbot.findFirst({
+      where: {
+        id: chatbotSlug,
+      },
     });
   }
 
-  // Verificar que el chatbot pertenece al usuario
-  if (chatbot.userId !== user.id) {
-    throw new Response("Unauthorized", { status: 403 });
+  if (!chatbot) {
+    throw new Response("Chatbot not found", { status: 404 });
+  }
+
+  // Verificar si el usuario es propietario o tiene permisos
+  const isOwner = chatbot.userId === user.id;
+  let hasPermission = false;
+  
+  if (!isOwner) {
+    const permission = await db.permission.findFirst({
+      where: {
+        email: user.email,
+        chatbotId: chatbot.id,
+        resourceType: "CHATBOT",
+        status: "active",
+      },
+    });
+    hasPermission = !!permission;
+  }
+
+  if (!isOwner && !hasPermission) {
+    throw new Response("You don't have access to this chatbot", {
+      status: 403,
+    });
   }
 
   const integrations = await db.integration.findMany({

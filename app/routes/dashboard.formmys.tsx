@@ -34,7 +34,11 @@ import { cn } from "~/lib/utils";
 
 const findActivePermissions = async (email: string): Promise<Permission[]> => {
   const permissions = await db.permission.findMany({
-    where: { email, OR: [{ status: "active" }, { status: "pending" }] },
+    where: { 
+      email, 
+      resourceType: "PROJECT",
+      OR: [{ status: "active" }, { status: "pending" }] 
+    },
     include: {
       project: {
         select: {

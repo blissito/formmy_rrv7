@@ -34,9 +34,10 @@ export const action = async ({ request, params }: ActionArgs) => {
       email: String(email),
       can: { read: true },
       projectId: String(params.projectId), // @TODO: check if exists
+      resourceType: "PROJECT" as const,
     };
     const exists = await db.permission.findFirst({
-      where: { email, projectId: params.projectId },
+      where: { email, projectId: params.projectId, resourceType: "PROJECT" },
     });
     if (exists) return json({ success: true }, { status: 200 }); // retun null equivalent
     // if user add it
@@ -78,6 +79,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   const permissions = await db.permission.findMany({
     where: {
       projectId: access.project.id,
+      resourceType: "PROJECT",
     },
     include: {
       project: true,

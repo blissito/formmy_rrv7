@@ -1,13 +1,41 @@
-import { useSubmit } from "react-router";
+import { useSubmit, redirect } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { getUserChatbotsWithPlanInfo } from "server/chatbot/userModel.server";
 import { PageContainer } from "~/components/chat/PageContainer";
 import type { Route } from "./+types/chat";
-import type { Chatbot } from "@prisma/client";
+import type { Chatbot, Permission } from "@prisma/client";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import ConfirmModal from "~/components/ConfirmModal";
 import { effect } from "../utils/effect";
+import { db } from "~/utils/db.server";
+
+const findActiveChatbotPermissions = async (email: string): Promise<Permission[]> => {
+  const permissions = await db.permission.findMany({
+    where: { 
+      email, 
+      resourceType: "CHATBOT",
+      OR: [{ status: "active" }, { status: "pending" }] 
+    },
+    include: {
+      chatbot: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+        },
+      },
+    },
+  });
+  const permissionsIdsToRemove = permissions
+    .filter((p) => !p.chatbot)
+    .map((p) => p.id);
+  // this is necesary to not send empty permissions
+  await db.permission.deleteMany({
+    where: { id: { in: permissionsIdsToRemove } },
+  });
+  return permissions.filter((p) => !!p.chatbot);
+};
 
 /**
  * Loader function for the chat list route
@@ -16,15 +44,65 @@ import { effect } from "../utils/effect";
 export const loader = async ({ request }: Route.LoaderArgs) => {
   // Get the current user or redirect to login
   const user = await getUserOrRedirect(request);
+  
   // Get all chatbots for the user with plan information
   const chatbotsWithPlanInfo = await getUserChatbotsWithPlanInfo(user.id);
+  
+  // Get chatbot permissions for invitations
+  const permissions = await findActiveChatbotPermissions(user.email);
+  
   return {
     user,
     plan: chatbotsWithPlanInfo.plan,
     limits: chatbotsWithPlanInfo.limits,
     chatbots: chatbotsWithPlanInfo.chatbots,
     canCreateMore: chatbotsWithPlanInfo.limits.canCreateMore,
+    invitedChatbots: permissions
+      .filter((p) => p.status === "active")
+      .map((p) => ({ ...p.chatbot, userRole: p.role })),
+    permission: permissions.find((p) => p.status === "pending"), // Key: finds first pending invitation
   };
+};
+
+const updatePermission = async (
+  status: "active" | "rejected",
+  permissionId: string,
+  userId: string
+) => {
+  return await db.permission.update({
+    where: { id: permissionId },
+    data: { status, userId },
+  });
+};
+
+export const action = async ({ request }: Route.ActionArgs) => {
+  const user = await getUserOrRedirect(request);
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent === "accept_invite") {
+    const permissionId = formData.get("permissionId") as string;
+    await updatePermission("active", permissionId, user.id);
+    const permission = await db.permission.findUnique({
+      where: { id: permissionId },
+      include: { chatbot: true },
+    });
+    
+    // Usar el slug del chatbot si existe, sino usar el ID
+    const redirectPath = permission?.chatbot?.slug 
+      ? `/dashboard/chat/${permission.chatbot.slug}` 
+      : `/dashboard/chat/${permission?.chatbotId}`;
+    
+    throw redirect(redirectPath);
+  }
+
+  if (intent === "reject_invite") {
+    const permissionId = formData.get("permissionId") as string;
+    await updatePermission("rejected", permissionId, user.id);
+    return { close: true };
+  }
+
+  return null;
 };
 
 /**
@@ -39,10 +117,14 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
     limits = { maxChatbots: 1 },
     canCreateMore,
     user,
+    permission,
+    invitedChatbots = [],
   } = loaderData;
+  
 
   // Estado para controlar la visibilidad del modal de límite
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(!!permission);
   const [limitError, setLimitError] = useState<{
     error: string;
     currentCount: number;
@@ -97,11 +179,22 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
           Mis Chats IA
         </PageContainer.Title>
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {/* Chatbots propios */}
           {chatbots.map((chatbot: Chatbot, i: number) => (
             <PageContainer.ChatCard
               onDelete={handleDeleteIntention(chatbot.id)}
-              key={i}
+              key={`own-${i}`}
               chatbot={chatbot}
+            />
+          ))}
+          
+          {/* Chatbots invitados */}
+          {invitedChatbots.map((chatbot: any, i: number) => (
+            <PageContainer.ChatCard
+              key={`invited-${i}`}
+              chatbot={chatbot}
+              userRole={chatbot.userRole}
+              isInvited={true}
             />
           ))}
         </section>
@@ -161,6 +254,53 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
                 className="bg-brand-500 text-white mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6"
               >
                 Ver planes
+              </button>
+            </div>
+          }
+        />
+      )}
+
+      {/* Modal de invitación a chatbot */}
+      {permission && (
+        <ConfirmModal
+          onClose={() => setShowInviteModal(false)}
+          isOpen={showInviteModal}
+          message={
+            <div className="text-base font-normal text-center mb-6 text-gray-600 dark:text-space-400">
+              <p>Te han invitado al Chatbot: <strong>{permission?.chatbot?.name}</strong></p>
+              <p className="mt-2">Tu rol será: <strong className="text-brand-500">
+                {permission?.role === "VIEWER" && "Viewer (Solo lectura)"}
+                {permission?.role === "EDITOR" && "Editor (Lectura y escritura)"}
+                {permission?.role === "ADMIN" && "Admin (Todos los permisos)"}
+              </strong></p>
+              <p className="mt-2 text-sm">Acepta la invitación si quieres ser parte del chatbot.</p>
+            </div>
+          }
+          emojis="🤖✉️"
+          footer={
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  submit(
+                    { intent: "accept_invite", permissionId: permission.id },
+                    { method: "post" }
+                  );
+                }}
+                className="bg-brand-500 text-white mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6 hover:bg-brand-600 transition-colors"
+              >
+                Aceptar invitación
+              </button>
+              <button
+                onClick={() => {
+                  submit(
+                    { intent: "reject_invite", permissionId: permission.id },
+                    { method: "post" }
+                  );
+                  setShowInviteModal(false);
+                }}
+                className="bg-gray-100 text-gray-600 mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6 hover:bg-gray-200 transition-colors"
+              >
+                Rechazar
               </button>
             </div>
           }

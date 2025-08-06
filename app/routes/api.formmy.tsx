@@ -14,6 +14,7 @@ const sendAllNotifications = async (projectId: string) => {
   const permissions = await db.permission.findMany({
     where: {
       projectId,
+      resourceType: "PROJECT",
       notifications: true,
       status: "active",
     },

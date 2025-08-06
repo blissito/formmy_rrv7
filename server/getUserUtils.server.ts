@@ -100,6 +100,7 @@ export const getPermission = ({
     where: {
       userId,
       projectId,
+      resourceType: "PROJECT",
     },
     include: {
       project: {
@@ -178,6 +179,7 @@ export const hasPermission = async (
     where: {
       userId,
       projectId,
+      resourceType: "PROJECT",
       status: "active",
     },
   });

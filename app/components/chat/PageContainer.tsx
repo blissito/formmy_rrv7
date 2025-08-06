@@ -184,9 +184,13 @@ export const Button = ({
 export const ChatCard = ({
   onDelete,
   chatbot,
+  userRole,
+  isInvited,
 }: {
   onDelete?: () => void;
   chatbot: Chatbot;
+  userRole?: string;
+  isInvited?: boolean;
 }) => {
   const [conversationsCount, setConversationsCount] = useState(0);
 
@@ -249,9 +253,18 @@ export const ChatCard = ({
           <img src="/dash/chat.png" alt="chatbot" />
         </section>
         <div className="flex flex-col  px-4 pt-4 pb-2">
-          <h2 className="text-xl font-medium text-darktruncate">
-            {chatbot.name}
-          </h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-medium text-dark truncate">
+              {chatbot.name}
+            </h2>
+            {isInvited && userRole && (
+              <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {userRole === "VIEWER" && "Viewer"}
+                {userRole === "EDITOR" && "Editor"} 
+                {userRole === "ADMIN" && "Admin"}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-metal flex-grow">
             {chatbot.summary ||
               "Pronto podrás saber que es lo que más preguntan tus clientes"}
@@ -262,22 +275,24 @@ export const ChatCard = ({
               {conversationsCount === 1 ? "chat" : "chats"}
             </p>
           </div>
-          <div
-            id="actions"
-            className="w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3"
-          >
-            <button
-              className="hover:bg-gray-300 w-6 rounded-full"
-              onClick={onDelete}
+          {!isInvited && (
+            <div
+              id="actions"
+              className="w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3"
             >
-              <DeleteIcon />
-            </button>
-            <hr className="h-6 w-[1px] border-none bg-outlines" />
-            <CodeIcon />
-            <Link to={`/dashboard/chat/${chatbot.slug}`}>
-              <EditIcon />
-            </Link>
-          </div>
+              <button
+                className="hover:bg-gray-300 w-6 rounded-full"
+                onClick={onDelete}
+              >
+                <DeleteIcon />
+              </button>
+              <hr className="h-6 w-[1px] border-none bg-outlines" />
+              <CodeIcon />
+              <Link to={`/dashboard/chat/${chatbot.slug}`}>
+                <EditIcon />
+              </Link>
+            </div>
+          )}
         </div>
       </Link>
     </motion.div>

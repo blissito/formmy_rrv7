@@ -977,6 +977,203 @@ export async function action({ request }: any) {
         });
       }
 
+      case "add_chatbot_user": {
+        const chatbotId = formData.get("chatbotId") as string;
+        const email = formData.get("email") as string;
+        const role = formData.get("role") as string;
+        
+        if (!chatbotId || !email || !role) {
+          return new Response(
+            JSON.stringify({ error: "Faltan parámetros requeridos" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "No tienes permiso para modificar este chatbot",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Verificar si ya existe un permiso para este usuario
+        const existingPermission = await db.permission.findFirst({
+          where: {
+            email,
+            chatbotId,
+            resourceType: "CHATBOT",
+          },
+        });
+
+        if (existingPermission) {
+          return new Response(
+            JSON.stringify({ error: "El usuario ya tiene acceso a este chatbot" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Crear el nuevo permiso
+        const permission = await db.permission.create({
+          data: {
+            email,
+            chatbotId,
+            resourceType: "CHATBOT",
+            role: role as any,
+            status: "pending",
+            notifications: true,
+          },
+        });
+
+        return new Response(JSON.stringify(permission), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      case "remove_chatbot_user": {
+        const permissionId = formData.get("permissionId") as string;
+        
+        if (!permissionId) {
+          return new Response(
+            JSON.stringify({ error: "ID de permiso no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        const permission = await db.permission.findUnique({
+          where: { id: permissionId },
+          include: { chatbot: true },
+        });
+        
+        if (!permission || !permission.chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Permiso no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        if (permission.chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "No tienes permiso para modificar este chatbot",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        await db.permission.delete({
+          where: { id: permissionId },
+        });
+
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      case "toggle_chatbot_user_notifications": {
+        const permissionId = formData.get("permissionId") as string;
+        const value = formData.get("value") === "true";
+        
+        if (!permissionId) {
+          return new Response(
+            JSON.stringify({ error: "ID de permiso no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        const permission = await db.permission.findUnique({
+          where: { id: permissionId },
+          include: { chatbot: true },
+        });
+        
+        if (!permission || !permission.chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Permiso no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        if (permission.chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "No tienes permiso para modificar este chatbot",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const updated = await db.permission.update({
+          where: { id: permissionId },
+          data: { notifications: value },
+        });
+
+        return new Response(JSON.stringify(updated), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      case "get_chatbot_users": {
+        const chatbotId = formData.get("chatbotId") as string;
+        
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "No tienes permiso para ver este chatbot",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const permissions = await db.permission.findMany({
+          where: {
+            chatbotId,
+            resourceType: "CHATBOT",
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+                picture: true,
+              },
+            },
+          },
+        });
+
+        return new Response(JSON.stringify(permissions), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       case "update_security": {
         const chatbotId = formData.get("chatbotId") as string;
         if (!chatbotId) {

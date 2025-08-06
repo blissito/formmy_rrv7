@@ -76,19 +76,32 @@ enum Role {
   ADMIN
 }
 
+enum ResourceType {
+  PROJECT
+  CHATBOT
+}
+
 model Permission {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
   email         String
-  status        Statuses  @default(pending)
-  role          Role      @default(VIEWER)
+  status        Statuses      @default(pending)
+  role          Role          @default(VIEWER)
   can           Rights?
-  notifications Boolean?  @default(true)
-  user          User?     @relation("UserPermissions", fields: [userId], references: [id])
-  userId        String?   @db.ObjectId
-  project       Project   @relation(fields: [projectId], references: [id])
-  projectId     String    @db.ObjectId
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime? @updatedAt
+  notifications Boolean?      @default(true)
+  resourceType  ResourceType  @default(PROJECT)
+  
+  // Usuario relacionado
+  user          User?         @relation("UserPermissions", fields: [userId], references: [id])
+  userId        String?       @db.ObjectId
+  
+  // Recurso relacionado (uno u otro)
+  project       Project?      @relation(fields: [projectId], references: [id])
+  projectId     String?       @db.ObjectId
+  chatbot       Chatbot?      @relation(fields: [chatbotId], references: [id])
+  chatbotId     String?       @db.ObjectId
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime?     @updatedAt
 }
 
 enum FormmyTypes {
@@ -216,6 +229,7 @@ model Chatbot {
   settings          ChatbotSettings?
   userId            String           @db.ObjectId
   user              User             @relation(fields: [userId], references: [id])
+  permissions       Permission[]
   conversations     Conversation[]
   integrations      Integration[]
   apiKeys           ApiKey[]

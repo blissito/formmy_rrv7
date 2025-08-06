@@ -9,12 +9,14 @@ export const Card = ({
   children,
   className,
   noSearch = true,
+  action,
 }: {
   noSearch?: true;
   className?: string;
   children?: ReactNode;
   title?: string;
   text?: ReactNode;
+  action?: ReactNode;
   [x: string]: unknown;
 }) => {
   return (
@@ -24,13 +26,17 @@ export const Card = ({
         className
       )}
     >
-      <nav className="flex justify-between gap-3 items-baseline">
-        <h3 className="text-xl md:text-2xl font-medium min-w-max text-dark mb-2">
-          {title}
-        </h3>
-        {!noSearch && <SearchInput />}
+      <nav className="flex justify-between gap-3 items-center">
+        <div>
+          <h3 className="text-xl md:text-2xl font-medium min-w-max text-dark mb-2">
+            {title}
+          </h3>
+          {text && <p className="text-metal mb-2 text-base">{text}</p>}
+        </div>
+        {!noSearch && !action && <SearchInput />}
+        {action && <div className="flex-shrink-0">{action}</div>}
       </nav>
-      {text && <p className="text-metal mb-6 text-base ">{text}</p>}
+      {!text && <div className="mb-4"></div>}
       <section>{children}</section>
     </article>
   );
