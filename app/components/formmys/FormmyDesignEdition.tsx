@@ -6,7 +6,7 @@ import {
   forwardRef,
   type Ref,
 } from "react";
-import { useFetcher, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { twMerge } from "tailwind-merge";
 import { motion } from "framer-motion";
 import { cn } from "~/lib/utils";
@@ -18,7 +18,7 @@ import Formmy, {
   configSchema,
   type ConfigSchema,
 } from "~/components/formmys/FormyV1";
-import useLocalStorage from "~/lib/hooks/useLocalStorage";
+import { useFormmyEdition } from "~/contexts/FormmyEditionContext";
 import type { ChangeEvent, FormEvent, SyntheticEvent, ReactNode } from "react";
 
 interface FormmyDesignEditionProps {
@@ -35,23 +35,9 @@ export function FormmyDesignEdition({
   type,
 }: FormmyDesignEditionProps) {
   const navigate = useNavigate();
-  const fetcher = useFetcher();
-  const [config, setConfig] = useState<ConfigSchema>(configuration);
-  const { save } = useLocalStorage();
-  const renders = useRef(0);
+  const { virtualConfig: config, updateVirtualConfig } = useFormmyEdition();
   const params = useParams();
   const [isProOpen2, setIsProOpen2] = useState(false);
-
-  useEffect(() => {
-    setConfig(configuration);
-  }, [configuration]);
-
-  useEffect(() => {
-    if (renders.current > 0) {
-      save("config", config);
-    }
-    renders.current += 1;
-  }, [save, config]);
 
   const isDisabled = useMemo(() => {
     const result = configSchema.safeParse(config);
@@ -59,24 +45,16 @@ export function FormmyDesignEdition({
   }, [config]);
 
   const handleInputOrder = (inputs: string[]) =>
-    setConfig((c) => ({ ...c, inputs }));
+    updateVirtualConfig({ inputs });
   const handleThemeChange = (theme: "light" | "dark") =>
-    setConfig((c) => ({ ...c, theme }));
+    updateVirtualConfig({ theme });
   const handleBorderChange = (border: "redondo" | "cuadrado") =>
-    setConfig((c) => ({ ...c, border }));
+    updateVirtualConfig({ border });
   const handleColorChange = (ctaColor: string) =>
-    setConfig((c) => ({ ...c, ctaColor }));
+    updateVirtualConfig({ ctaColor });
 
   const handleWaterMark = (watermark: boolean) =>
-    setConfig((c) => ({ ...c, watermark }));
-
-  const handleSubmit = (e?: FormEvent<HTMLFormElement>) => {
-    e?.preventDefault();
-    fetcher.submit(
-      { intent: "next", data: JSON.stringify(config) },
-      { method: "post" }
-    );
-  };
+    updateVirtualConfig({ watermark });
 
   const openCustomInputModal = () => {
     navigate("custom");
@@ -105,7 +83,7 @@ export function FormmyDesignEdition({
   }, [config.customInputs]);
 
   const handleInputsUpdate = (inputs: string[]) => {
-    setConfig((c) => ({ ...c, inputs }));
+    updateVirtualConfig({ inputs });
   };
 
   const getSorterInfo = (info: "names" | "active" | "onUpdate") => {
@@ -147,8 +125,7 @@ export function FormmyDesignEdition({
               </span>
             )}
           </p>
-          <fetcher.Form
-            onSubmit={handleSubmit}
+          <form
             className="flex flex-col items-start h-full"
           >
             <Sorter
@@ -327,7 +304,7 @@ export function FormmyDesignEdition({
                   Continuar
                 </button>
               </div> */}
-          </fetcher.Form>
+          </form>
         </div>
       </section>
       <section

@@ -1,10 +1,8 @@
 
-import { useFetcher } from "react-router";
 import {
   useState,
   useEffect,
   useRef,
-  type FormEvent,
   type ChangeEvent,
 } from "react";
 import { twMerge } from "tailwind-merge";
@@ -22,6 +20,7 @@ import { v4 as uuid } from "uuid";
 import toast, { Toaster } from "react-hot-toast";
 import { IconCube } from "~/components/IconCube";
 import { Palomita } from "./FormmyDesignEdition";
+import { useFormmyEdition } from "~/contexts/FormmyEditionContext";
 
 interface FormmyMessageEditionProps {
   configuration: ConfigSchema;
@@ -36,23 +35,14 @@ export function FormmyMessageEdition({
   projectId, 
   type 
 }: FormmyMessageEditionProps) {
-  const fetcher = useFetcher();
-  const [config, setConfig] = useState<MessageSchema>(configuration);
-  const { save } = useLocalStorage();
-  const renders = useRef(0);
-
+  const { virtualConfig: config, updateVirtualConfig } = useFormmyEdition();
   const [showConfetti, setShowConfetti] = useState(false);
 
-  useEffect(() => {
-    save("config", config);
-    renders.current += 1;
-  }, [save, config]);
-
   const handleTextChange = (message: string) =>
-    setConfig((c) => ({ ...c, message }));
+    updateVirtualConfig({ message });
 
   const handleConfettiSelection = (confetti: "paper" | "emoji" | null) => {
-    setConfig((c) => ({ ...c, confetti }));
+    updateVirtualConfig({ confetti });
     if (!confetti) {
       setShowConfetti(false);
       return;
@@ -64,18 +54,10 @@ export function FormmyMessageEdition({
   };
 
   const handleIconSelection = (icon: string) => {
-    setConfig((c) => ({ ...c, icon }));
+    updateVirtualConfig({ icon });
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    fetcher.submit(
-      { intent: "next", data: JSON.stringify(config) },
-      { method: "post" }
-    );
-  };
-    const isButtonDisabled =
-      !messageSchema.safeParse(config).success || fetcher.state !== "idle";
+  const isButtonDisabled = !messageSchema.safeParse(config).success;
   
 
   return (
@@ -86,7 +68,7 @@ export function FormmyMessageEdition({
                     <p className=" text-sm font-normal text-metal">
                       ¿Qué icono quieres mostrar a tu usuario al enviarte un mensaje?
                     </p>
-                    <fetcher.Form onSubmit={handleSubmit} className="flex flex-col">
+                    <form className="flex flex-col">
                       <div className="flex gap-4 pt-4 overflow-x-scroll pb-2">
                         <IconCube
                           onClick={() => handleIconSelection(null)}
@@ -236,7 +218,7 @@ export function FormmyMessageEdition({
                           Guardar
                         </button>
                       </div> */}
-                    </fetcher.Form>
+                    </form>
                   </div>
         </div>
       </section>
