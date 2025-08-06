@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useMemo, forwardRef, type Ref } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  forwardRef,
+  type Ref,
+} from "react";
 import { useFetcher, useNavigate, useParams } from "react-router";
 import { twMerge } from "tailwind-merge";
 import { motion } from "framer-motion";
@@ -130,103 +137,105 @@ export function FormmyDesignEdition({
     <article className="grid grid-cols-12 gap-8  h-full">
       <section className="col-span-12 md:col-span-4 noscroll">
         <div className="w-full h-fit">
-            <p className="mb-4 text-base font-normal text-metal ">
-              {type === "subscription" ? (
-                <span>Tu Formmy de suscripción solo soporta email</span>
-              ) : (
-                <span>
-                  ¿Qué campos quieres agregar a tu formmy? Arrastra los campos
-                  para acomodarlos o eliminarlos.
-                </span>
-              )}
+          <p className="mb-4 text-base font-normal text-metal ">
+            {type === "subscription" ? (
+              <span>Tu Formmy de suscripción solo soporta email</span>
+            ) : (
+              <span>
+                ¿Qué campos quieres agregar a tu formmy? Arrastra los campos
+                para acomodarlos o eliminarlos.
+              </span>
+            )}
+          </p>
+          <fetcher.Form
+            onSubmit={handleSubmit}
+            className="flex flex-col items-start h-full"
+          >
+            <Sorter
+              names={getSorterInfo("names")}
+              defaultActive={getSorterInfo("active")}
+              onUpdate={getSorterInfo("onUpdate")}
+            />
+            {type !== "subscription" && (
+              <button
+                onClick={
+                  isPro ? openCustomInputModal : () => setIsProOpen2(true)
+                }
+                type="button"
+                className={twMerge(
+                  "relative text-left text-gray-500 hover:text-gray-600 text-sm py-3",
+                  !isPro && "mt-2"
+                )}
+              >
+                <span>+ Agregar otro</span>
+                {!isPro && <ProTag />}
+              </button>
+            )}
+            <p className="pt-2 font-normal text-metal">
+              ¿Qué tema combina más con tu website?
             </p>
-            <fetcher.Form
-              onSubmit={handleSubmit}
-              className="flex flex-col items-start h-full"
-            >
-              <Sorter
-                names={getSorterInfo("names")}
-                defaultActive={getSorterInfo("active")}
-                onUpdate={getSorterInfo("onUpdate")}
-              />
-              {type !== "subscription" && (
-                <button
-                  onClick={
-                    isPro ? openCustomInputModal : () => setIsProOpen2(true)
-                  }
-                  type="button"
+            <div className="pt-2 w-full">
+              <select
+                value={config.theme}
+                onChange={(e) =>
+                  handleThemeChange(e.target.value as "light" | "dark")
+                }
+                className="w-full px-3 py-2 border border-outlines rounded-md focus:outline-none focus:border-none focus:ring-1 focus:ring-brand-500 "
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </div>
+            <p className="pt-6 text-md font-normal text-gray-600 dark:text-space-300">
+              ¿Qué estilo te gusta más?
+            </p>
+            <div className="flex pt-4 text-xs gap-4">
+              <button
+                type="button"
+                onClick={() => handleBorderChange("redondo")}
+                className="text-center relative"
+              >
+                <img
                   className={twMerge(
-                    "relative text-left text-gray-500 hover:text-gray-600 text-sm py-3",
-                    !isPro && "mt-2"
+                    "flex dark:hidden w-full object-contain h-12",
+                    config.border === "redondo"
+                      ? " ring-brand-500 rounded-md ring"
+                      : null
                   )}
-                >
-                  <span>+ Agregar otro</span>
-                  {!isPro && <ProTag />}
-                </button>
-              )}
-              <p className="pt-2 font-normal text-metal">
-                ¿Qué tema combina más con tu website?
-              </p>
-              <div className="pt-2 w-full">
-                <select
-                  value={config.theme}
-                  onChange={(e) => handleThemeChange(e.target.value as "light" | "dark")}
-                  className="w-full px-3 py-2 border border-outlines rounded-md focus:outline-none focus:border-none focus:ring-1 focus:ring-brand-500 "
-                >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                </select>
-              </div>
-              <p className="pt-6 text-md font-normal text-gray-600 dark:text-space-300">
-                ¿Qué estilo te gusta más?
-              </p>
-              <div className="flex pt-4 text-xs gap-4">
-                <button
-                  type="button"
-                  onClick={() => handleBorderChange("redondo")}
-                  className="text-center relative"
-                >
-                  <img
-                    className={twMerge(
-                      "flex dark:hidden w-full object-contain h-12",
-                      config.border === "redondo"
-                        ? " ring-brand-500 rounded-md ring"
-                        : null
-                    )}
-                    src="/assets/rounded.svg"
-                    alt=" rounded input"
-                  />
-                  {config.border === "redondo" && <Palomita />}
-                  <p className="pt-2 text-space-600 dark:text-space-300">
-                    Redondo
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBorderChange("cuadrado")}
-                  className="text-center relative"
-                >
-                  {config.border === "cuadrado" && <Palomita />}
-                  <img
-                    className={twMerge(
-                      "flex dark:hidden w-full object-contain h-12",
-                      config.border === "cuadrado"
-                        ? " ring-brand-500 rounded-md ring"
-                        : null
-                    )}
-                    src="/assets/not-rounded.svg"
-                    alt="no rounded input"
-                  />
-                  <p className="pt-2 text-space-600 dark:text-space-300">
-                    Cuadrado
-                  </p>
-                </button>
-              </div>
+                  src="/assets/rounded.svg"
+                  alt=" rounded input"
+                />
+                {config.border === "redondo" && <Palomita />}
+                <p className="pt-2 text-space-600 dark:text-space-300">
+                  Redondo
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBorderChange("cuadrado")}
+                className="text-center relative"
+              >
+                {config.border === "cuadrado" && <Palomita />}
+                <img
+                  className={twMerge(
+                    "flex dark:hidden w-full object-contain h-12",
+                    config.border === "cuadrado"
+                      ? " ring-brand-500 rounded-md ring"
+                      : null
+                  )}
+                  src="/assets/not-rounded.svg"
+                  alt="no rounded input"
+                />
+                <p className="pt-2 text-space-600 dark:text-space-300">
+                  Cuadrado
+                </p>
+              </button>
+            </div>
 
-              <p className="pt-6 pb-2 text-md font-normal text-metal">
-                Elige o escribe el color del botón (hex)
-              </p>
-              <div className="flex gap-4">
+            <p className="pt-6 pb-2 text-md font-normal text-metal">
+              Elige o escribe el color del botón (hex)
+            </p>
+            <div className="flex gap-4">
               <label
                 htmlFor="color"
                 className="text-xs text-gray-400 flex items-center justify-between relative"
@@ -278,27 +287,27 @@ export function FormmyDesignEdition({
                   hexColor="#1C7AE9"
                 />
               </div>
-              </div>
-              <div className="">
-                <p className="pt-6 pb-2 text-md font-normal text-metal">
-                  Eliminar marca de agua
-                </p>
-                <div className="relative inline-block">
-                  {!isPro && (
-                    <ProTag
-                      isOpen={isProOpen2}
-                      onChange={(value) => setIsProOpen2(value)}
-                    />
-                  )}
-                  <Toggle
-                    isDisabled={!isPro}
-                    onChange={handleWaterMark}
-                    defaultValue={config.watermark}
+            </div>
+            <div className="">
+              <p className="pt-6 pb-2 text-md font-normal text-metal">
+                Eliminar marca de agua
+              </p>
+              <div className="relative inline-block">
+                {!isPro && (
+                  <ProTag
+                    isOpen={isProOpen2}
+                    onChange={(value) => setIsProOpen2(value)}
                   />
-                </div>
+                )}
+                <Toggle
+                  isDisabled={!isPro}
+                  onChange={handleWaterMark}
+                  defaultValue={config.watermark}
+                />
               </div>
+            </div>
 
-              {/* <div className="flex gap-4 mt-auto sticky w-full bottom-0 z-10 bg-gradient-to-b from-transparent to-clear pb-8 dark:to-space-900">
+            {/* <div className="flex gap-4 mt-auto sticky w-full bottom-0 z-10 bg-gradient-to-b from-transparent to-clear pb-8 dark:to-space-900">
                 <button
                   onClick={() => navigate("/dashboard/formmys/" + params.projectId)}
                   type="button"
@@ -318,11 +327,15 @@ export function FormmyDesignEdition({
                   Continuar
                 </button>
               </div> */}
-            </fetcher.Form>
-
+          </fetcher.Form>
         </div>
       </section>
-      <section className={twMerge("col-span-12 md:col-span-8 h-fit  md:h-full md:min-h-[calc(100vh-300px)] ", config.theme)}>
+      <section
+        className={twMerge(
+          "col-span-12 md:col-span-8 h-fit  md:h-full md:min-h-[calc(100vh-300px)] ",
+          config.theme
+        )}
+      >
         <Visualizer
           projectId={projectId}
           config={config}
