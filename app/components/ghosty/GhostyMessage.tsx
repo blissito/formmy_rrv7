@@ -8,12 +8,14 @@ interface GhostyMessageProps {
   message: GhostyMessage;
   onCopy?: (content: string) => void;
   onRegenerate?: (messageId: string) => void;
+  userImage?: string; // URL de la imagen del usuario
 }
 
 export const GhostyMessageComponent = ({ 
   message, 
   onCopy, 
-  onRegenerate 
+  onRegenerate,
+  userImage 
 }: GhostyMessageProps) => {
   const [showCopied, setShowCopied] = useState(false);
 
@@ -48,7 +50,7 @@ export const GhostyMessageComponent = ({
           "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
           "bg-brand-500 text-clear text-sm font-medium mt-1"
         )}>
-          👻
+          <img src="/home/ghosty-avatar.svg" alt="ghosty" />
         </div>
       )}
 
@@ -59,7 +61,7 @@ export const GhostyMessageComponent = ({
       )}>
         {/* Message Bubble */}
         <div className={cn(
-          "rounded-2xl px-4 py-3 relative",
+          "rounded-xl px-4 py-2 relative",
           isUser ? 
             "bg-brand-500 text-clear" : 
             "bg-[#FCFDFE] border border-outlines text-dark"
@@ -134,8 +136,8 @@ export const GhostyMessageComponent = ({
 
         {/* Actions */}
         <div className={cn(
-          "flex items-center gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-          isUser ? "justify-end" : "justify-start"
+          "flex items-center gap-2 mt-1 opacity-100 transition-opacity duration-200",
+          isUser ? "justify-end hidden" : "justify-start"
         )}>
           {/* Copy button */}
           <button
@@ -177,10 +179,18 @@ export const GhostyMessageComponent = ({
       {/* User Avatar */}
       {isUser && (
         <div className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+          "!w-8 !h-8 min-w-8 min-h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-outlines",
           "bg-irongray text-clear text-sm font-medium mt-1"
         )}>
-          👤
+          {userImage ? (
+            <img 
+              src={userImage} 
+              alt="User" 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span>👤</span>
+          )}
         </div>
       )}
     </div>
