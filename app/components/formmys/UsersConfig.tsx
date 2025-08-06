@@ -1,16 +1,10 @@
 import { Card } from "~/components/chat/common/Card";
 import { Button } from "~/components/Button";
-import { FaUsers } from "react-icons/fa";
 import { twMerge } from "tailwind-merge";
-import {
-  Form,
-  useFetcher,
-  useNavigation,
-  useActionData,
-} from "react-router";
+import { useFetcher, useNavigation, useActionData } from "react-router";
 import { type Permission, type User } from "@prisma/client";
 import { TrashIcon } from "~/components/icons/TrashIcon";
-import { InputModalForm } from "~/components/InputModalForm";
+import { InputModalFormWithRole } from "~/components/InputModalFormWithRole";
 import { useEffect, useState } from "react";
 import Spinner from "~/components/Spinner";
 import { Pluralize } from "~/components/Pluralize";
@@ -24,12 +18,16 @@ interface UsersConfigProps {
   projectId: string;
 }
 
-export default function UsersConfig({ user, permissions, projectName, projectId }: UsersConfigProps) {
+export default function UsersConfig({
+  user,
+  permissions,
+  projectId,
+}: UsersConfigProps) {
   const navigation = useNavigation();
   const fetcher = useFetcher();
   const actionData = useActionData();
   const [showModal, setShowModal] = useState(false);
-  
+
   useEffect(() => {
     if (
       actionData &&
@@ -40,46 +38,44 @@ export default function UsersConfig({ user, permissions, projectName, projectId 
   }, [actionData]);
 
   const isPlural = permissions.length > 1 || permissions.length === 0;
-  
+
   return (
     <section className="grid gap-5 relative">
       <Card title="Usuarios">
-          <p className="text-xs text-gray-600 dark:text-gray-400 tracking-wide mb-8">
-            {permissions.length}
-            {" "}
-            <Pluralize
-              singleWord="usuario"
-              isPlural={isPlural}
-              pluralWord="usuarios"
-            />
-            {" "}
-            <Pluralize
-              singleWord="agregado"
-              isPlural={isPlural}
-              pluralWord="agregados"
-            />
-          </p>
-          <Button
-            variant="primary"
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 absolute top-0 right-6 h-10"
-          >
-            <span>+ Usuario</span>
-          </Button>
-          <UsersTable
-                user={user}
-                permissions={permissions}
-                projectId={projectId}
-                isLoading={fetcher.state === "submitting"}
-              />
-
-    {showModal && (
-        <InputModalForm
-          isLoading={navigation.state !== "idle"}
-          onClose={() => setShowModal(false)}
-          title="Ingresa el correo del usuario"
+        <p className="text-xs text-gray-600 dark:text-gray-400 tracking-wide mb-8">
+          {permissions.length}{" "}
+          <Pluralize
+            singleWord="usuario"
+            isPlural={isPlural}
+            pluralWord="usuarios"
+          />{" "}
+          <Pluralize
+            singleWord="agregado"
+            isPlural={isPlural}
+            pluralWord="agregados"
+          />
+        </p>
+        <Button
+          variant="primary"
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 absolute top-0 right-6 h-10"
+        >
+          <span>+ Usuario</span>
+        </Button>
+        <UsersTable
+          user={user}
+          permissions={permissions}
+          projectId={projectId}
+          isLoading={fetcher.state === "submitting"}
         />
-      )}
+
+        {showModal && (
+          <InputModalFormWithRole
+            isLoading={navigation.state !== "idle"}
+            onClose={() => setShowModal(false)}
+            title="Agregar usuario al proyecto"
+          />
+        )}
       </Card>
     </section>
   );
@@ -108,7 +104,11 @@ const UserTable = ({
 
       {permissions.map((p) => (
         <Row key={p.email}>
-          <UserInfo permission={p} isLoading={isLoading} projectId={projectId} />
+          <UserInfo
+            permission={p}
+            isLoading={isLoading}
+            projectId={projectId}
+          />
         </Row>
       ))}
     </section>
@@ -129,7 +129,7 @@ const UserInfo = ({
   projectId: string;
 }) => {
   const fetcher = useFetcher();
-  
+
   const handleToggleNotifications = (value: boolean) => {
     fetcher.submit(
       {
@@ -143,7 +143,7 @@ const UserInfo = ({
 
   const avatar =
     "https://secure.gravatar.com/avatar/23709cd232fbb194583b2af3fe6889dd?s=256&d=mm&r=g";
-    
+
   return (
     <>
       <div className="flex col-span-3 items-center gap-2">
@@ -157,7 +157,9 @@ const UserInfo = ({
             (isOwner && user ? user.picture : permission?.user?.picture) ??
             avatar
           }
-          alt={isOwner && user ? user.name : permission?.user?.name ?? "avatar"}
+          alt={
+            isOwner && user ? user.name : (permission?.user?.name ?? "avatar")
+          }
         />
         <p className="flex flex-col">
           <span className="font-bold text-xs text-gray-600 dark:text-white">
@@ -190,10 +192,7 @@ const UserInfo = ({
           defaultValue={permission?.id}
         />
         <input type="hidden" name="intent" value="delete_permission" />
-        <button
-          type="submit"
-          className="group-hover:visible invisible"
-        >
+        <button type="submit" className="group-hover:visible invisible">
           {isLoading ? <Spinner /> : <TrashIcon fill="tomato" />}
         </button>
         {permission?.status === "active" && (

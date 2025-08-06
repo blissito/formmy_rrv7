@@ -12,7 +12,7 @@ import {
 } from "react-router";
 import { type Permission, type User } from "@prisma/client";
 import { TrashIcon } from "~/components/icons/TrashIcon";
-import { InputModalForm } from "~/components/InputModalForm";
+import { InputModalFormWithRole } from "~/components/InputModalFormWithRole";
 import { useEffect, useState } from "react";
 import { db } from "~/utils/db.server";
 import Spinner from "~/components/Spinner";

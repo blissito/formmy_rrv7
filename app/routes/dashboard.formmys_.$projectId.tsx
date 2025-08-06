@@ -1,20 +1,16 @@
 import { data as json } from "react-router";
 import { Link, useFetcher, useLoaderData } from "react-router";
-import Nav from "~/components/NavBar";
 import type { AnswerType } from "~/utils/zod";
 import { db } from "~/utils/db.server";
-import { iconBtnClass } from "~/components/Code";
-import { BackGround, ModificameBRENDIPurpleCorner } from "./dash";
+import { ModificameBRENDIPurpleCorner } from "./dash";
 import { AiFillStar } from "react-icons/ai";
-import { FiTrash2, FiEdit3, FiSettings } from "react-icons/fi";
-import { IoReturnUpBackOutline } from "react-icons/io5";
+import { FiEdit3, FiSettings } from "react-icons/fi";
 import { LuClock7 } from "react-icons/lu";
 import { BsCodeSlash, BsSearch } from "react-icons/bs";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAnswerOpener } from "./api.answers";
-import { FaDownload } from "react-icons/fa";
 import { Button } from "~/components/Button";
 import { Avatar } from "~/components/icons/Avatar";
 import EmptyDark from "~/SVGs/EmptyDark";
@@ -37,26 +33,32 @@ import DeleteIcon from "~/components/ui/icons/Delete";
 export const action = async ({ request, params }: Route.ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
-  // validation @TODO check fro permissions
   const user = await getUserOrRedirect(request);
-  const project = await db.project.findUnique({
-    where: { id: params.projectId },
-    select: {
-      userId: true,
-    },
-  });
-  if (!project) throw json(null, { status: 404 });
-  if (user.id !== project.userId) return json(null, { status: 403 });
-  // validation
+  
+  // Import hasPermission helper
+  const { hasPermission } = await import("server/getUserUtils.server");
+  
+  // Check permissions based on intent
   if (intent === "delete") {
     const answerId = (formData.get("answerId") as string) ?? null;
     if (!answerId) return json({ ok: false }, { status: 404 });
+    
+    // Check if user has delete permission
+    const canDelete = await hasPermission(user.id, params.projectId, "delete");
+    if (!canDelete) return json(null, { status: 403 });
+    
     await db.answer.delete({ where: { id: answerId } });
     return { ok: true };
   }
+  
   if (intent === "favorite") {
     const answerId = String(formData.get("answerId"));
     if (!answerId) return json({ ok: false }, { status: 404 });
+    
+    // Check if user has update permission (favoriting is an update action)
+    const canUpdate = await hasPermission(user.id, params.projectId, "update");
+    if (!canUpdate) return json(null, { status: 403 });
+    
     const current = await db.answer.findUnique({ where: { id: answerId } });
     if (!current) {
       return json({ ok: false }, { status: 404 });
@@ -76,26 +78,49 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   const projectId = params.projectId as string;
+  
+  // Import getRolePermissions
+  const { getRolePermissions } = await import("server/getUserUtils.server");
+  
   const project = await getProjectOwner({
     userId: user.id,
     projectId,
   });
   if (!project) {
-    // check if reader
+    // check if user has permission
     const permission = await getPermission({
       projectId: projectId,
       userId: user.id,
     });
     if (!permission || permission.status !== "active" || !permission.project)
       throw json(null, { status: 404 });
+    
+    // Get role-based permissions
+    const rolePermissions = getRolePermissions(permission.role);
+    
     return {
       project: permission.project,
-      user: { ...user, isOwner: permission.project.userId === user.id },
+      user: { 
+        ...user, 
+        isOwner: false,
+        permissions: rolePermissions,
+        role: permission.role
+      },
     };
   }
   return {
     project,
-    user: { ...user, isOwner: true },
+    user: { 
+      ...user, 
+      isOwner: true,
+      permissions: {
+        read: true,
+        write: true,
+        update: true,
+        delete: true
+      },
+      role: "OWNER"
+    },
   };
 };
 
@@ -175,7 +200,7 @@ export default function Detail() {
 
   return (
     <div className="h-full">
-     <article className="max-w-7xl mx-auto p-4 md:px-0 md:py-8 h-full">
+      <article className="max-w-7xl mx-auto p-4 md:px-0 md:py-8 h-full">
         {/* <AnimatePresence>
           {show && (
             <div className="w-full h-20 flex justify-center absolute top-8 z-[999] ">
@@ -193,7 +218,10 @@ export default function Detail() {
         <main>
           <nav className="flex items-center h-fit gap-2 flex-wrap ">
             <div className="flex flex-col items-start ml-8 md:mr-auto mb-0 relative">
-              <Link to="/dashboard/formmys" className="text-4xl absolute -left-10">
+              <Link
+                to="/dashboard/formmys"
+                className="text-4xl absolute -left-10"
+              >
                 <IoIosArrowRoundBack />
               </Link>
               <h2 className="text-2xl md:text-3xl heading text-dark  ">
@@ -201,7 +229,8 @@ export default function Detail() {
               </h2>
               <div className="flex gap-4">
                 <p className="text-metal text-sm  font-light">
-                  💬 {answers.length} mensaje{answers.length === 1 ? null : "s"}{" "}
+                  💬 {answers.length} mensaje
+                  {answers.length === 1 ? null : "s"}{" "}
                 </p>
                 {!user.isOwner && <ModificameBRENDIPurpleCorner />}
               </div>
@@ -211,8 +240,8 @@ export default function Detail() {
                 onSearch={handleSearch}
                 value={search}
                 projectId={project.id}
-                isDisabled={!user.isOwner}
-                // isDisabled
+                isDisabled={!user.permissions?.write}
+                userPermissions={user.permissions}
               />
             </div>
           </nav>
@@ -226,6 +255,7 @@ export default function Detail() {
           {answers.length > 0 && (
             <MessagesViewer
               isOwner={user.isOwner}
+              userPermissions={user.permissions}
               onFav={(answerId) => handleFav(answerId)}
               onClick={() => {
                 setShow(true);
@@ -296,11 +326,13 @@ export const SearchBar = ({
   onSearch,
   projectId,
   value,
+  userPermissions,
 }: {
   isDisabled?: boolean;
   value?: string;
   onSearch: (arg0: string) => void;
   projectId: string;
+  userPermissions?: any;
 }) => {
   const [isLoading, set] = useState(false);
   return (
@@ -334,38 +366,41 @@ export const SearchBar = ({
           <DownloadIcon className="w-7 h-7" />
         </Button>
       </Link>
-      {isDisabled ? (
-        <DisabledButtons />
-      ) : (
-        <div className="flex gap-2">
+      <div className="flex gap-2">
+        {userPermissions?.update ? (
           <Link
             to={`/dashboard/formmys/${projectId}/edition`}
-            className= "text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
+            className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
           >
-            <EditIcon className="w-7 h-7"/>
+            <EditIcon className="w-7 h-7" />
           </Link>
+        ) : (
+          <DisabledButton icon={<FiEdit3 />} />
+        )}
+        
+        {userPermissions?.read ? (
           <Link
-           className= "text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
+            className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
             to={`/dashboard/formmys/${projectId}/code`}
           >
             <CodeIcon className="text-metal w-7 h-7" />
           </Link>
+        ) : (
+          <DisabledButton icon={<BsCodeSlash />} />
+        )}
+        
+        {userPermissions?.delete ? (
           <Link
             prefetch="intent"
             to={`/dashboard/formmys/${projectId}/settings`}
-            className= "text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
+            className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
           >
-            <FiSettings  className="text-metal" />
+            <FiSettings className="text-metal" />
           </Link>
-          {/* <button
-          onClick={() => window.print()}
-          className={iconBtnClass + " px-2 text-2xl"}
-        >
-          <AiOutlineCloudDownload />
-        </button> */}
-     
-        </div>
-      )}
+        ) : (
+          <DisabledButton icon={<FiSettings />} />
+        )}
+      </div>
     </div>
   );
 };
@@ -378,25 +413,18 @@ const DisabledButton = ({ icon }: { icon: ReactNode }) => (
   />
 );
 
-const DisabledButtons = () => {
-  return (
-    <div className="flex gap-2">
-      <DisabledButton icon={<FiEdit3 />} />
-      <DisabledButton icon={<FiSettings />} />
-      <DisabledButton icon={<BsCodeSlash />} />
-    </div>
-  );
-};
 
 const MessagesViewer = ({
   current,
   isOwner,
+  userPermissions,
   answers,
   onFav,
   onChange,
   onClick,
 }: {
   isOwner?: boolean;
+  userPermissions?: any;
   onFav: (arg0: string) => void;
   onClick: () => void;
   onChange: (arg0: string) => void;
@@ -467,9 +495,8 @@ const MessagesViewer = ({
             </span>
           </div>
           <button
-            disabled={!isOwner}
-            // onClick={isOwner ? () => onDelete(current?.id) : undefined}
-            onClick={isOwner ? () => onClick() : null}
+            disabled={!userPermissions?.delete}
+            onClick={userPermissions?.delete ? () => onClick() : null}
             className={twMerge(
               "ml-auto text-red-500 mr-3",
               "disabled:text-gray-500 disabled:cursor-not-allowed"
@@ -478,8 +505,8 @@ const MessagesViewer = ({
             <DeleteIcon />
           </button>
           <button
-            disabled={!isOwner}
-            onClick={isOwner ? () => onFav(current?.id) : undefined}
+            disabled={!userPermissions?.update}
+            onClick={userPermissions?.update ? () => onFav(current?.id) : undefined}
             className={twMerge(
               "text-gray-300 dark:text-gray-300/30 text-lg",
               current?.favorite && "text-yellow-500 dark:text-yellow-500",
@@ -537,33 +564,40 @@ const EmptyProject = ({
   message?: string;
 }) => {
   return (
- <motion.div    className="mx-auto text-center flex flex-col justify-center w-full min-h-[60vh]"
- initial={{ opacity: 0, y: 20, scale: 0.95 }}
- animate={{ opacity: 1, y: 0, scale: 1 }}
- transition={{
-   duration: 0.5,
-   ease: [0.16, 1, 0.3, 1]
- }}>
+    <motion.div
+      className="mx-auto text-center flex flex-col justify-center w-full min-h-[60vh]"
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        duration: 0.5,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+    >
       <div>
-        <motion.div     initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.5 }}>
-        <Empty className="max-w-[400px] w-[80%] mx-auto dark:hidden block"  />
-        <EmptyDark className="max-w-[400px] w-[80%] mx-auto dark:block hidden" />
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+        >
+          <Empty className="max-w-[400px] w-[80%] mx-auto dark:hidden block" />
+          <EmptyDark className="max-w-[400px] w-[80%] mx-auto dark:block hidden" />
         </motion.div>
 
-        <motion.h3    className="font-bold text-dark text-2xl mt-6"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}>
+        <motion.h3
+          className="font-bold text-dark text-2xl mt-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
           {title || "¡Aún no has recibido mensajes!"}
         </motion.h3>
-        <motion.p    className="font-light text-lg mt-4 text-metal"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-      >
-        {message || "Espera un poco, tus usuarios están agarrando confianza."}
+        <motion.p
+          className="font-light text-lg mt-4 text-metal"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          {message || "Espera un poco, tus usuarios están agarrando confianza."}
         </motion.p>
       </div>
     </motion.div>

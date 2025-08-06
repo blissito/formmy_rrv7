@@ -70,10 +70,17 @@ enum Statuses {
   rejected
 }
 
+enum Role {
+  VIEWER
+  EDITOR
+  ADMIN
+}
+
 model Permission {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   email         String
   status        Statuses  @default(pending)
+  role          Role      @default(VIEWER)
   can           Rights?
   notifications Boolean?  @default(true)
   user          User?     @relation("UserPermissions", fields: [userId], references: [id])

@@ -2,7 +2,7 @@ import { PageContainer } from "~/components/chat/PageContainer";
 import { useState } from "react";
 import { useLoaderData } from "react-router";
 import { MiniCardGroup } from "~/components/chat/common/Card";
-import { getUserOrRedirect, getProjectOwner } from "server/getUserUtils.server";
+import { getUserOrRedirect, getProjectWithAccess } from "server/getUserUtils.server";
 import { CodeBlock } from "~/components/chat/common/CodeBlock";
 
 export default function FormmyCodeRoute() {
@@ -100,9 +100,12 @@ const FormmyIframe = ({ urls }: { urls: { iframe: string } }) => {
 // Loader para obtener datos del proyecto y generar URLs dinámicas
 export const loader = async ({ request, params }: any) => {
   const user = await getUserOrRedirect(request);
-  const project = await getProjectOwner({ userId: user.id, projectId: params.projectId! });
+  const projectId = params.projectId!;
   
-  if (!project) {
+  // Use centralized function - requires read permission for code access
+  const access = await getProjectWithAccess(user.id, projectId, "read");
+  
+  if (!access) {
     throw new Response("Project not found", { status: 404 });
   }
 
@@ -111,12 +114,12 @@ export const loader = async ({ request, params }: any) => {
   
   const urls = {
     iframe: isDev
-      ? `<iframe src="http://${url.host}/embed/${project.id}" width="100%" height="600" frameborder="0"></iframe>`
-      : `<iframe src="https://${url.host}/embed/${project.id}" width="100%" height="600" frameborder="0"></iframe>`,
+      ? `<iframe src="http://${url.host}/embed/${access.project.id}" width="100%" height="600" frameborder="0"></iframe>`
+      : `<iframe src="https://${url.host}/embed/${access.project.id}" width="100%" height="600" frameborder="0"></iframe>`,
     link: isDev
-      ? `http://${url.host}/form/${project.id}`
-      : `https://${url.host}/form/${project.id}`,
+      ? `http://${url.host}/form/${access.project.id}`
+      : `https://${url.host}/form/${access.project.id}`,
   };
 
-  return { user, project, urls };
+  return { user, project: access.project, urls };
 };

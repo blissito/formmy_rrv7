@@ -8,7 +8,7 @@ import {
 import { useLoaderData, useSubmit, useNavigation } from "react-router";
 import { ChipTabs, useChipTabs } from "~/components/chat/common/ChipTabs";
 import { db } from "~/utils/db.server";
-import { getUserOrRedirect } from "server/getUserUtils.server";
+import { getUserOrRedirect, getProjectWithAccess, hasPermission } from "server/getUserUtils.server";
 import { PageContainer } from "~/components/chat/PageContainer";
 
 import { configSchema, type ConfigSchema } from "~/components/formmys/FormyV1";
@@ -26,8 +26,15 @@ import toast, { Toaster } from "react-hot-toast";
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const form = Object.fromEntries(formData);
+  const user = await getUserOrRedirect(request);
 
   if (form.intent === "update") {
+    // Check if user has update permission
+    const canUpdate = await hasPermission(user.id, params.projectId!, "update");
+    if (!canUpdate) {
+      return json(null, { status: 403 });
+    }
+
     const validation = configSchema.safeParse(JSON.parse(form.data as string));
     if (!validation.success) {
       return json(null, { status: 400 });
@@ -44,6 +51,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   }
 
   if (form.intent === "next") {
+    // Check if user has update permission
+    const canUpdate = await hasPermission(user.id, params.projectId!, "update");
+    if (!canUpdate) {
+      return json(null, { status: 403 });
+    }
+
     const validation = configSchema.safeParse(JSON.parse(form.data as string));
     if (!validation.success) {
       return json(null, { status: 400 });
@@ -65,16 +78,20 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await getUserOrRedirect(request);
-  const project = await db.project.findUnique({
-    where: { id: params.projectId },
-    select: { id: true, type: true, config: true },
-  });
-  if (!project) throw json(null, { status: 404 });
+  const projectId = params.projectId!;
+  
+  // Use centralized function - requires update permission for edition
+  const access = await getProjectWithAccess(user.id, projectId, "update");
+  
+  if (!access) {
+    throw json(null, { status: 404 });
+  }
+  
   return {
-    configuration: project.config as ConfigSchema,
+    configuration: access.project.config as ConfigSchema,
     isPro: user.plan === "PRO" ? true : false,
-    projectId: project.id,
-    type: project.type || "",
+    projectId: access.project.id,
+    type: access.project.type || "",
   };
 };
 

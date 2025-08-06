@@ -25,10 +25,10 @@ export const UsersTable = ({
     <article>
       <section className="grid grid-cols-10 md:text-sm text-xs px-4 text-dark ">
         <h6 className="col-span-1"></h6>
-        <h6 className="col-span-4 md:col-span-2">Email</h6>
+        <h6 className="col-span-4 md:col-span-3">Email</h6>
         <h6 className="col-span-2 hidden md:block">Rol</h6>
         <h6 className="col-span-2">Estatus</h6>
-        <h6 className="col-span-2">Notificaciones</h6>
+        <h6 className="col-span-1">Notificaciones</h6>
         <h6 className="col-span-1"></h6>
       </section>
       <section>
@@ -140,15 +140,17 @@ export const UserRow = ({
         />
       </div>
 
-      <p className="font-medium text-xs md:text-sm truncate col-span-4 md:col-span-2">
+      <p className="font-medium text-xs md:text-sm truncate col-span-4 md:col-span-3">
         {displayEmail}
       </p>
-      <p className="col-span-2 text-xs md:text-sm text-metal hidden md:block">{isOwner ? "Propietario" : "Invitado"}</p>
+      <p className="col-span-2 text-xs md:text-sm text-metal hidden md:block">
+        {isOwner ? "Propietario" : getRoleLabel(permission?.role)}
+      </p>
       <p className="col-span-2 text-xs md:text-sm">
         <Status status={isOwner ? "active" : permission?.status || "pending"} />
       </p>
       
-      <div className="col-span-2 scale-75">
+      <div className="col-span-1 scale-75">
         {permission?.status === "active" && (
           <Toggle
             onChange={handleToggleNotifications}
@@ -171,6 +173,22 @@ export const UserRow = ({
       {isOwner && <div className="col-span-1"></div>}
     </section>
   );
+};
+
+// Helper function to get role label
+const getRoleLabel = (role?: string): string => {
+  if (!role) return "Invitado";
+  
+  switch (role) {
+    case "VIEWER":
+      return "Viewer";
+    case "EDITOR":
+      return "Editor";
+    case "ADMIN":
+      return "Admin";
+    default:
+      return "Invitado";
+  }
 };
 
 // @TODO: add colors

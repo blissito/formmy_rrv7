@@ -114,7 +114,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   if (intent === "reject_invite") {
     const permissionId = formData.get("permissionId") as string;
-    updatePermission("rejected", permissionId, user.id);
+    await updatePermission("rejected", permissionId, user.id);
     return { close: true };
     // return redirect("/dash");
   }
@@ -199,11 +199,23 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
               onClose={() => setShowInviteModal(false)}
               isOpen={showInviteModal}
               message={
-                <p className="text-base font-normal text-center mb-6  text-gray-600 dark:text-space-400">
-                  Te han invitado al Formmy:{" "}
-                  <strong>{permission?.project.name}</strong> . Acepta la invitación
-                  si quieres ser parte del proyecto.
-                </p>
+                <div className="text-base font-normal text-center mb-6  text-gray-600 dark:text-space-400">
+                  <p>
+                    Te han invitado al Formmy:{" "}
+                    <strong>{permission?.project.name}</strong>
+                  </p>
+                  <p className="mt-2">
+                    Tu rol será: <strong className="text-brand-500">
+                      {permission?.role === "VIEWER" && "Viewer (Solo lectura)"}
+                      {permission?.role === "EDITOR" && "Editor (Lectura y escritura)"}
+                      {permission?.role === "ADMIN" && "Admin (Todos los permisos)"}
+                      {!permission?.role && "Viewer (Solo lectura)"}
+                    </strong>
+                  </p>
+                  <p className="mt-2 text-sm">
+                    Acepta la invitación si quieres ser parte del proyecto.
+                  </p>
+                </div>
               }
               footer={
                 <Form method="post" className="flex gap-6 mb-12">

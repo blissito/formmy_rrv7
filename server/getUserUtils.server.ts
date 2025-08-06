@@ -1,5 +1,5 @@
 import { redirect } from "react-router";
-import { type User } from "@prisma/client";
+import { type User, Role, type Rights } from "@prisma/client";
 import { getSession } from "../app/sessions";
 import { db } from "../app/utils/db.server";
 import { redirectToGoogle } from "../app/lib/google.server";
@@ -124,4 +124,113 @@ export const redirectIfUser = async (request: Request) => {
   if (session.has("userId")) {
     throw redirect("/dashboard");
   }
+};
+
+// Helper function to get permissions based on role
+export const getRolePermissions = (role: Role): Rights => {
+  switch (role) {
+    case Role.VIEWER:
+      return {
+        read: true,
+        write: false,
+        update: false,
+        delete: false,
+      };
+    case Role.EDITOR:
+      return {
+        read: true,
+        write: true,
+        update: true,
+        delete: false,
+      };
+    case Role.ADMIN:
+      return {
+        read: true,
+        write: true,
+        update: true,
+        delete: true,
+      };
+    default:
+      return {
+        read: true,
+        write: false,
+        update: false,
+        delete: false,
+      };
+  }
+};
+
+// Helper function to check if user has specific permission
+export const hasPermission = async (
+  userId: string,
+  projectId: string,
+  action: keyof Rights
+): Promise<boolean> => {
+  // Check if user is owner
+  const project = await db.project.findFirst({
+    where: { id: projectId, userId },
+  });
+  
+  if (project) return true; // Owner has all permissions
+  
+  // Check user's permission for the project
+  const permission = await db.permission.findFirst({
+    where: {
+      userId,
+      projectId,
+      status: "active",
+    },
+  });
+  
+  if (!permission) return false;
+  
+  // Use role-based permissions
+  const rolePermissions = getRolePermissions(permission.role);
+  return rolePermissions[action] === true;
+};
+
+// Centralized function to get project with permissions validation
+export const getProjectWithAccess = async (
+  userId: string,
+  projectId: string,
+  requiredPermission?: keyof Rights
+) => {
+  // Try to get project as owner first
+  let project = await getProjectOwner({ userId, projectId });
+  
+  if (project) {
+    return {
+      project,
+      isOwner: true,
+      userRole: "OWNER" as const,
+      permissions: {
+        read: true,
+        write: true,
+        update: true,
+        delete: true,
+      },
+    };
+  }
+  
+  // If not owner, check if user has permission to access
+  const permission = await getPermission({ projectId, userId });
+  
+  if (!permission || permission.status !== "active" || !permission.project) {
+    return null; // No access
+  }
+  
+  // Get role-based permissions
+  const rolePermissions = getRolePermissions(permission.role);
+  
+  // Check if user has the required permission level
+  if (requiredPermission && !rolePermissions[requiredPermission]) {
+    throw new Response("Forbidden - Insufficient permissions", { status: 403 });
+  }
+  
+  return {
+    project: permission.project,
+    isOwner: false,
+    userRole: permission.role,
+    permissions: rolePermissions,
+  };
 };
