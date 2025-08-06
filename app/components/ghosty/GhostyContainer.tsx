@@ -69,7 +69,11 @@ const SuggestionCard = ({ className, title, description, icon, onClick }: Sugges
   );
 };
 
-export const GhostyContainer = () => {
+interface GhostyContainerProps {
+  userImage?: string;
+}
+
+export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
   const {
     isClient,
     saveToStorage,
@@ -241,7 +245,7 @@ export const GhostyContainer = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="w-full h-full"
+            className="w-full h-full "
           >
             <GhostyChatInterface
               messages={messages}
@@ -252,6 +256,7 @@ export const GhostyContainer = () => {
               onRegenerateResponse={regenerateResponse}
               onExportChat={handleExportChat}
               error={error}
+              userImage={userImage}
             />
           </motion.div>
         )}

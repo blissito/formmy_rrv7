@@ -5,6 +5,7 @@ import { cn } from "~/lib/utils";
 import { GhostyMessageComponent } from "./GhostyMessage";
 import { GhostyThinkingBubble } from "./GhostyTyping";
 import type { GhostyMessage, GhostyState } from './hooks/useGhostyChat';
+import { BsStars } from "react-icons/bs";
 
 interface GhostyChatInterfaceProps {
   messages: GhostyMessage[];
@@ -15,6 +16,7 @@ interface GhostyChatInterfaceProps {
   onRegenerateResponse: (messageId: string) => void;
   onExportChat?: () => void;
   error?: string | null;
+  userImage?: string;
 }
 
 export const GhostyChatInterface = ({
@@ -25,7 +27,8 @@ export const GhostyChatInterface = ({
   onCollapseChat,
   onRegenerateResponse,
   onExportChat,
-  error
+  error,
+  userImage
 }: GhostyChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -71,74 +74,75 @@ export const GhostyChatInterface = ({
       transition={{ duration: 0.3 }}
       className={cn(
         "fixed inset-0 z-50 bg-white flex flex-col",
-        "md:relative md:inset-auto md:bg-transparent md:rounded-2xl md:border md:border-outlines",
-        "md:max-w-4xl md:mx-auto md:h-[calc(100vh-156px)] md:shadow-lg"
+        "md:relative md:inset-auto md:bg-transparent ",
+        "md:min-w-[54rem] md:max-w-[54rem] md:mx-auto md:h-[calc(100vh-156px)]"
       )}
     >
-      {/* Header */}
-      <motion.header 
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className={cn(
-          "flex items-center justify-between p-4 border-b border-outlines",
-          "md:p-6"
-        )}
-      >
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center",
-            "bg-brand-500 text-clear text-lg font-medium"
-          )}>
-            👻
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-dark">Ghosty IA</h2>
-            <p className="text-sm text-irongray">
-              {isLoading ? 'Procesando...' : 'Tu asistente para Formmy'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Export button */}
-          {hasMessages && onExportChat && (
-            <button
-              onClick={onExportChat}
-              className={cn(
-                "text-sm px-3 py-2 rounded-lg text-irongray hover:text-dark",
-                "hover:bg-brand-100/40 transition-all duration-200"
-              )}
-            >
-              Exportar
-            </button>
+      {/* Header - Solo se muestra cuando hay mensajes */}
+      {messages.length > 0 && (
+        <motion.header 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className={cn(
+            "flex items-center justify-between p-4 border-b border-outlines",
+            "md:p-6"
           )}
+        >
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center",
+              "bg-brand-500 text-clear text-lg font-medium"
+            )}>
+              <img src="/home/ghosty-avatar.svg" alt="ghosty" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-dark">Ghosty IA</h2>
+              <p className="text-sm text-irongray">
+                {isLoading ? 'Procesando...' : 'Tu asistente para Formmy'}
+              </p>
+            </div>
+          </div>
 
-          {/* Clear button */}
-          {hasMessages && (
+          <div className="flex items-center gap-2">
+            {/* Export button */}
+            {onExportChat && (
+              <button
+                onClick={onExportChat}
+                className={cn(
+                  "text-sm px-3 py-2 rounded-lg text-irongray hover:text-dark",
+                  "hover:bg-brand-100/40 transition-all duration-200"
+                )}
+              >
+                Exportar
+              </button>
+            )}
+
+            {/* Clear button */}
             <button
               onClick={onClearChat}
               className={cn(
-                "text-sm px-3 py-2 rounded-lg text-irongray hover:text-dark",
-                "hover:bg-brand-100/40 transition-all duration-200"
+                "text-sm px-3 py-2 rounded-full text-irongray  bg-dark text-white flex gap-1 items-center",
+                "hover:bg-dark/80 transition-all duration-200 "
               )}
             >
-              Limpiar
+              <BsStars />
+            Nuevo chat
             </button>
-          )}
 
-          {/* Collapse button */}
-          <button
-            onClick={onCollapseChat}
-            className={cn(
-              "text-lg px-3 py-2 rounded-lg text-irongray hover:text-dark",
-              "hover:bg-brand-100/40 transition-all duration-200 md:hidden"
-            )}
-          >
-            ✕
-          </button>
-        </div>
-      </motion.header>
+            {/* Collapse button */}
+            <button
+              onClick={onCollapseChat}
+              className={cn(
+                "text-lg px-3 py-2 rounded-lg text-irongray hover:text-dark",
+                "hover:bg-brand-100/40 transition-all duration-200 md:hidden"
+              )}
+            >
+              ✕
+            </button>
+          </div>
+        </motion.header>
+      )}
 
       {/* Messages Area */}
       <div className={cn(
@@ -157,9 +161,9 @@ export const GhostyChatInterface = ({
               "w-16 h-16 rounded-full mx-auto mb-4",
               "bg-brand-500 text-clear text-2xl flex items-center justify-center"
             )}>
-              👻
+              <img className="w-full h-full" src="/home/ghosty-avatar.svg" alt="ghosty" />
             </div>
-            <h3 className="text-xl font-semibold text-dark mb-2">
+            <h3 className="text-xl md:text-2xl font-semibold text-dark mb-2">
               ¡Hola! Soy Ghosty IA
             </h3>
             <p className="text-irongray max-w-md mx-auto leading-relaxed">
@@ -182,6 +186,7 @@ export const GhostyChatInterface = ({
                   <GhostyMessageComponent
                     message={message}
                     onRegenerate={onRegenerateResponse}
+                    userImage={userImage}
                   />
                 </motion.div>
               ))}
@@ -213,8 +218,8 @@ export const GhostyChatInterface = ({
                       <p className="text-xs text-red-600 mb-3">{error}</p>
                       <button
                         onClick={() => {
-                          // Get last user message and retry
-                          const lastUserMessage = messages.findLast(m => m.role === 'user');
+                          // Get last user message and retry (using reverse + find for better compatibility)
+                          const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
                           if (lastUserMessage) {
                             onSendMessage(lastUserMessage.content);
                           }
@@ -244,7 +249,7 @@ export const GhostyChatInterface = ({
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
         className={cn(
-          "p-4 border-t border-outlines bg-white",
+          "p-4 bg-white",
           "md:p-6"
         )}
       >
@@ -262,7 +267,7 @@ export const GhostyChatInterface = ({
               disabled={isLoading}
               className={cn(
                 "w-full px-4 py-3 rounded-full border border-outlines",
-                "focus:border-brand-500 focus:ring-brand-500 focus:ring-2 focus:ring-offset-0",
+                "focus:border-brand-500 focus:ring-brand-500 focus:border-brand-500 focus:outline-none",
                 "text-dark placeholder:text-lightgray",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 "transition-all duration-200",
