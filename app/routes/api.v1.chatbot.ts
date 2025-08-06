@@ -31,6 +31,8 @@ import {
   addUrlContext,
   addTextContext,
   addQuestionContext,
+  updateQuestionContext,
+  updateTextContext,
   getChatbotContexts,
 } from "../../server/chatbot/contextManager.server";
 import {
@@ -748,6 +750,24 @@ export async function action({ request }: any) {
           });
         }
       }
+      case "update_text_context": {
+        const chatbotId = formData.get("chatbotId") as string;
+        const contextId = formData.get("contextId") as string;
+        const title = formData.get("title") as string;
+        const content = formData.get("content") as string;
+        
+        try {
+          const chatbot = await updateTextContext(chatbotId, contextId, { title, content });
+          return new Response(JSON.stringify({ success: true, chatbot }), {
+            headers: { "Content-Type": "application/json" },
+          });
+        } catch (error: any) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      }
       case "add_question_context": {
         const chatbotId = formData.get("chatbotId") as string;
         const title = formData.get("title") as string;
@@ -756,6 +776,25 @@ export async function action({ request }: any) {
         
         try {
           const chatbot = await addQuestionContext(chatbotId, { title, questions, answer });
+          return new Response(JSON.stringify({ success: true, chatbot }), {
+            headers: { "Content-Type": "application/json" },
+          });
+        } catch (error: any) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      }
+      case "update_question_context": {
+        const chatbotId = formData.get("chatbotId") as string;
+        const contextId = formData.get("contextId") as string;
+        const title = formData.get("title") as string;
+        const questions = formData.get("questions") as string;
+        const answer = formData.get("answer") as string;
+        
+        try {
+          const chatbot = await updateQuestionContext(chatbotId, contextId, { title, questions, answer });
           return new Response(JSON.stringify({ success: true, chatbot }), {
             headers: { "Content-Type": "application/json" },
           });

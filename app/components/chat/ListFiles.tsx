@@ -218,7 +218,9 @@ export const CardRow = ({
   icon,
   onSelect,
   onRemove,
+  onEdit,
   title,
+  subtitle,
 }: {
   type?: "docx";
   tag?: string;
@@ -226,12 +228,17 @@ export const CardRow = ({
   icon?: ReactNode;
   onSelect?: () => void;
   onRemove?: () => void;
+  onEdit?: () => void;
   title: string;
+  subtitle?: string;
 }) => {
   const handleAction = (action: string) => {
     console.log(`Acción seleccionada: ${action}`);
     if (action === "eliminar" && onRemove) {
       onRemove();
+    }
+    if (action === "editar" && onEdit) {
+      onEdit();
     }
     // Aquí puedes agregar la lógica para cada acción
   };
@@ -242,8 +249,8 @@ export const CardRow = ({
       onClick: () => handleAction("descargar"),
     },
     {
-      label: "Renombrar",
-      onClick: () => handleAction("renombrar"),
+      label: "Editar",
+      onClick: () => handleAction("editar"),
     },
     {
       label: "Eliminar",
@@ -277,6 +284,7 @@ export const CardRow = ({
             <p className="text-lg font-medium">{title}</p>
             {tag && <Tag text={tag} />}
           </div>
+          {subtitle && <p className="text-sm text-gray-600 mb-1">{subtitle}</p>}
           <span className="text-md font-thin text-gray-500">{text}</span>
         </div>
       </div>

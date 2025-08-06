@@ -12,7 +12,10 @@ export const TextForm = ({
   onContentChange,
   onAddContext,
   onRemoveContext,
+  onEditContext,
+  onCancelEdit,
   isAddingText = false,
+  editingContext = null,
 }: {
   title: string;
   content: string;
@@ -21,7 +24,10 @@ export const TextForm = ({
   onContentChange: (content: string) => void;
   onAddContext: () => void;
   onRemoveContext: (index: number, context: any) => void;
+  onEditContext: (index: number, context: any) => void;
+  onCancelEdit?: () => void;
   isAddingText?: boolean;
+  editingContext?: any;
 }) => {
   return (
     <article>
@@ -52,17 +58,35 @@ export const TextForm = ({
           onChange={onContentChange}
           placeholder="Escribe tu mensaje..."
         />
-          <Button 
-            className="w-full md:w-fit h-10 mr-0"
-            onClick={onAddContext}
-            isDisabled={!title.trim() || !content.trim() || isAddingText}
-          >
-            {isAddingText ? "Agregando..." : "Agregar"}
-          </Button>
+          <div className="flex gap-2 justify-end p-2">
+            {editingContext && onCancelEdit && (
+              <Button
+                variant="outline"
+                className="m-0 h-10 min-w-max p-2"
+                onClick={onCancelEdit}
+                isDisabled={isAddingText}
+              >
+                Cancelar
+              </Button>
+            )}
+            <Button 
+              className="m-0 h-10"
+              onClick={onAddContext}
+              isDisabled={!title.trim() || !content.trim() || isAddingText}
+            >
+              {isAddingText 
+                ? editingContext 
+                  ? "Actualizando..." 
+                  : "Agregando..." 
+                : editingContext 
+                  ? "Actualizar" 
+                  : "Agregar"}
+            </Button>
+          </div>
       </Card>
       <hr className="my-3 border-none" />
       {textContexts.length > 0 && (
-        <Card noSearch={false} title="Fuentes de texto">
+        <Card noSearch title="Fuentes de texto">
           <CardHeader
             left={
               <input
@@ -78,6 +102,7 @@ export const TextForm = ({
               key={context.id}
               text={context.sizeKB ? `${context.sizeKB}kb` : "0kb"}
               title={context.title}
+              subtitle={context.content ? context.content.substring(0, 100) + (context.content.length > 100 ? '...' : '') : ''}
               icon={
                 <img
                   className="w-6"
@@ -86,6 +111,7 @@ export const TextForm = ({
                 />
               }
               onRemove={() => onRemoveContext(index, context)}
+              onEdit={() => onEditContext(index, context)}
             />
           ))}
         </Card>

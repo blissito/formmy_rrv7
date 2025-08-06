@@ -7,6 +7,15 @@ import {
 } from "./contextValidator.server";
 import { db } from "~/utils/db.server";
 import { validateTextContext } from "./contextValidator.server";
+import { stripHtmlTagsServer } from "~/utils/textUtils";
+
+/**
+ * Helper function to clean HTML from content
+ * Centralizes HTML cleaning for consistency
+ */
+function cleanHtmlContent(content: string): string {
+  return stripHtmlTagsServer(content);
+}
 
 /**
  * Tipos de archivo permitidos para subir como contexto
@@ -228,6 +237,9 @@ export async function addTextContext(
     content: string;
   }
 ) {
+  // Limpiar HTML del contenido
+  const cleanContent = cleanHtmlContent(content);
+  
   // Obtener el chatbot para validaciones
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
@@ -242,21 +254,21 @@ export async function addTextContext(
   const validation = await validateTextContext(
     chatbot.userId,
     chatbot.contextSizeKB,
-    content
+    cleanContent
   );
 
   if (!validation.isValid) {
     throw new Error(validation.error);
   }
 
-  // Calcular el tamaño del texto en KB
-  const sizeKB = Math.ceil(content.length / 1024);
+  // Calcular el tamaño del texto limpio en KB
+  const sizeKB = Math.ceil(cleanContent.length / 1024);
 
-  // Crear el item de contexto
+  // Crear el item de contexto con contenido limpio
   const contextItem: Omit<ContextItem, "id" | "createdAt"> = {
     type: ContextType.TEXT,
     title,
-    content,
+    content: cleanContent,
     sizeKB,
     routes: [], // Los textos no tienen rutas
     // Añadir campos nulos requeridos por el tipo
@@ -287,6 +299,9 @@ export async function addQuestionContext(
     answer: string;
   }
 ) {
+  // Limpiar HTML de la respuesta (las preguntas generalmente no tienen HTML)
+  const cleanAnswer = cleanHtmlContent(answer);
+  
   // Obtener el chatbot para validaciones
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
@@ -298,7 +313,7 @@ export async function addQuestionContext(
   }
 
   // Validar el contenido y límites de contexto
-  const totalContent = `${title}\n${questions}\n${answer}`;
+  const totalContent = `${title}\n${questions}\n${cleanAnswer}`;
   const validation = await validateTextContext(
     chatbot.userId,
     chatbot.contextSizeKB,
@@ -312,12 +327,12 @@ export async function addQuestionContext(
   // Calcular el tamaño del contenido en KB
   const sizeKB = Math.ceil(totalContent.length / 1024);
 
-  // Crear el item de contexto
+  // Crear el item de contexto con respuesta limpia
   const contextItem: Omit<ContextItem, "id" | "createdAt"> = {
     type: "QUESTION" as ContextType,
     title,
     questions,
-    answer,
+    answer: cleanAnswer,
     content: null, // Para preguntas, usamos campos específicos
     sizeKB,
     routes: [], // Las preguntas no tienen rutas
@@ -330,6 +345,186 @@ export async function addQuestionContext(
 
   // Añadir el contexto al chatbot
   return addContextItem(chatbotId, contextItem);
+}
+
+/**
+ * Actualiza un contexto de preguntas existente
+ */
+export async function updateQuestionContext(
+  chatbotId: string,
+  contextId: string,
+  {
+    title,
+    questions,
+    answer,
+  }: {
+    title: string;
+    questions: string;
+    answer: string;
+  }
+) {
+  // Limpiar HTML de la respuesta
+  const cleanAnswer = cleanHtmlContent(answer);
+  
+  // Obtener el chatbot y verificar que existe
+  const chatbot = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: { 
+      userId: true, 
+      contextSizeKB: true,
+      contexts: true 
+    },
+  });
+
+  if (!chatbot) {
+    throw new Error(`Chatbot with ID ${chatbotId} not found`);
+  }
+
+  // Verificar que el contexto existe y es del tipo QUESTION
+  const existingContext = chatbot.contexts.find((ctx: any) => ctx.id === contextId);
+  
+  if (!existingContext) {
+    throw new Error(`Context with ID ${contextId} not found`);
+  }
+  
+  if (existingContext.type !== "QUESTION") {
+    throw new Error(`Context ${contextId} is not a question context`);
+  }
+
+  // Calcular el nuevo tamaño con respuesta limpia
+  const totalContent = `${title}\n${questions}\n${cleanAnswer}`;
+  const newSizeKB = Math.ceil(totalContent.length / 1024);
+  
+  // Calcular el tamaño total después de la actualización
+  const otherContextsSize = chatbot.contexts
+    .filter((ctx: any) => ctx.id !== contextId)
+    .reduce((sum: number, ctx: any) => sum + (ctx.sizeKB || 0), 0);
+  
+  const totalNewSize = otherContextsSize + newSizeKB;
+  
+  // Validar que no exceda los límites
+  const validation = await validateTextContext(
+    chatbot.userId,
+    otherContextsSize, // Usar el tamaño sin el contexto actual
+    totalContent
+  );
+
+  if (!validation.isValid) {
+    throw new Error(validation.error);
+  }
+
+  // Actualizar el contexto con respuesta limpia
+  const updatedContexts = chatbot.contexts.map((ctx: any) => {
+    if (ctx.id === contextId) {
+      return {
+        ...ctx,
+        title,
+        questions,
+        answer: cleanAnswer,
+        sizeKB: newSizeKB,
+      };
+    }
+    return ctx;
+  });
+
+  // Actualizar el chatbot con los contextos modificados
+  const updatedChatbot = await db.chatbot.update({
+    where: { id: chatbotId },
+    data: { 
+      contexts: updatedContexts,
+      contextSizeKB: totalNewSize
+    },
+  });
+
+  return updatedChatbot;
+}
+
+/**
+ * Actualiza un contexto de texto existente
+ */
+export async function updateTextContext(
+  chatbotId: string,
+  contextId: string,
+  {
+    title,
+    content,
+  }: {
+    title: string;
+    content: string;
+  }
+) {
+  // Limpiar HTML del contenido
+  const cleanContent = cleanHtmlContent(content);
+  
+  // Obtener el chatbot y verificar que existe
+  const chatbot = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: { 
+      userId: true, 
+      contextSizeKB: true,
+      contexts: true 
+    },
+  });
+
+  if (!chatbot) {
+    throw new Error(`Chatbot with ID ${chatbotId} not found`);
+  }
+
+  // Verificar que el contexto existe y es del tipo TEXT
+  const existingContext = chatbot.contexts.find((ctx: any) => ctx.id === contextId);
+  
+  if (!existingContext) {
+    throw new Error(`Context with ID ${contextId} not found`);
+  }
+  
+  if (existingContext.type !== "TEXT") {
+    throw new Error(`Context ${contextId} is not a text context`);
+  }
+
+  // Calcular el nuevo tamaño con contenido limpio
+  const newSizeKB = Math.ceil(cleanContent.length / 1024);
+  
+  // Calcular el tamaño total después de la actualización
+  const otherContextsSize = chatbot.contexts
+    .filter((ctx: any) => ctx.id !== contextId)
+    .reduce((sum: number, ctx: any) => sum + (ctx.sizeKB || 0), 0);
+  
+  const totalNewSize = otherContextsSize + newSizeKB;
+  
+  // Validar que no exceda los límites con el contenido limpio
+  const validation = await validateTextContext(
+    chatbot.userId,
+    otherContextsSize, // Usar el tamaño sin el contexto actual
+    cleanContent
+  );
+
+  if (!validation.isValid) {
+    throw new Error(validation.error);
+  }
+
+  // Actualizar el contexto con contenido limpio
+  const updatedContexts = chatbot.contexts.map((ctx: any) => {
+    if (ctx.id === contextId) {
+      return {
+        ...ctx,
+        title,
+        content: cleanContent,
+        sizeKB: newSizeKB,
+      };
+    }
+    return ctx;
+  });
+
+  // Actualizar el chatbot con los contextos modificados
+  const updatedChatbot = await db.chatbot.update({
+    where: { id: chatbotId },
+    data: { 
+      contexts: updatedContexts,
+      contextSizeKB: totalNewSize
+    },
+  });
+
+  return updatedChatbot;
 }
 
 /**

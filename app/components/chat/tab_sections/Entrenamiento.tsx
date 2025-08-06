@@ -49,6 +49,8 @@ export const Entrenamiento = ({
   const [isAddingText, setIsAddingText] = useState(false);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [editingQuestionContext, setEditingQuestionContext] = useState<any>(null);
+  const [editingTextContext, setEditingTextContext] = useState<any>(null);
 
   useEffect(() => {
     // Extraer archivos del contexto del chatbot
@@ -134,7 +136,16 @@ export const Entrenamiento = ({
     setIsAddingText(true);
     try {
       const formData = new FormData();
-      formData.append("intent", "add_text_context");
+      
+      if (editingTextContext) {
+        // Actualizar contexto existente
+        formData.append("intent", "update_text_context");
+        formData.append("contextId", editingTextContext.id);
+      } else {
+        // Agregar nuevo contexto
+        formData.append("intent", "add_text_context");
+      }
+      
       formData.append("chatbotId", chatbot.id);
       formData.append("title", textTitle.trim());
       formData.append("content", textContent.trim());
@@ -149,12 +160,15 @@ export const Entrenamiento = ({
       });
 
       if (response.ok) {
+        console.log(`Contexto de texto ${editingTextContext ? 'actualizado' : 'agregado'} exitosamente`);
         // Limpiar formulario y recargar datos
         setTextTitle("");
         setTextContent("");
-        submit({});
+        setEditingTextContext(null);
+        // Forzar recarga de datos con un parámetro dummy para evitar cache
+        submit({ _timestamp: Date.now().toString() }, { method: "get" });
       } else {
-        throw new Error("Error agregando contexto de texto");
+        throw new Error(`Error ${editingTextContext ? 'actualizando' : 'agregando'} contexto de texto`);
       }
     } catch (error) {
       throw error;
@@ -164,6 +178,13 @@ export const Entrenamiento = ({
   };
 
   const handleRemoveTextContext = (index: number, context: any) => {
+    // Si estamos editando este contexto, limpiar el formulario
+    if (editingTextContext && editingTextContext.id === context.id) {
+      setEditingTextContext(null);
+      setTextTitle("");
+      setTextContent("");
+    }
+
     // Marcar para eliminar (virtual)
     setTextContextsToRemove(prev => [...prev, context]);
     
@@ -171,6 +192,22 @@ export const Entrenamiento = ({
     const newContexts = [...textContexts];
     newContexts.splice(index, 1);
     setTextContexts(newContexts);
+  };
+
+  const handleEditTextContext = (index: number, context: any) => {
+    // Popular el formulario con los datos del contexto
+    setTextTitle(context.title || "");
+    setTextContent(context.content || "");
+    
+    // Marcar como editando
+    setEditingTextContext(context);
+  };
+
+  const handleCancelEditText = () => {
+    // Limpiar formulario y salir del modo de edición
+    setTextTitle("");
+    setTextContent("");
+    setEditingTextContext(null);
   };
 
   const handleAddQuestionContext = async () => {
@@ -182,7 +219,16 @@ export const Entrenamiento = ({
     setIsAddingQuestion(true);
     try {
       const formData = new FormData();
-      formData.append("intent", "add_question_context");
+      
+      if (editingQuestionContext) {
+        // Actualizar contexto existente
+        formData.append("intent", "update_question_context");
+        formData.append("contextId", editingQuestionContext.id);
+      } else {
+        // Agregar nuevo contexto
+        formData.append("intent", "add_question_context");
+      }
+      
       formData.append("chatbotId", chatbot.id);
       formData.append("title", questionTitle.trim());
       formData.append("questions", validQuestions.join('\n'));
@@ -200,16 +246,19 @@ export const Entrenamiento = ({
       const responseData = await response.json();
 
       if (response.ok) {
+        console.log(`Contexto de pregunta ${editingQuestionContext ? 'actualizado' : 'agregado'} exitosamente`);
         // Limpiar formulario y recargar datos
         setQuestionTitle("");
         setQuestions([""]);
         setAnswer("");
-        submit({});
+        setEditingQuestionContext(null);
+        // Forzar recarga de datos con un parámetro dummy para evitar cache
+        submit({ _timestamp: Date.now().toString() }, { method: "get" });
       } else {
-        throw new Error(responseData.error || "Error agregando contexto de pregunta");
+        throw new Error(responseData.error || `Error ${editingQuestionContext ? 'actualizando' : 'agregando'} contexto de pregunta`);
       }
     } catch (error) {
-      console.error("Error agregando contexto de pregunta:", error);
+      console.error(`Error ${editingQuestionContext ? 'actualizando' : 'agregando'} contexto de pregunta:`, error);
       throw error;
     } finally {
       setIsAddingQuestion(false);
@@ -217,6 +266,14 @@ export const Entrenamiento = ({
   };
 
   const handleRemoveQuestionContext = (index: number, context: any) => {
+    // Si estamos editando este contexto, limpiar el formulario
+    if (editingQuestionContext && editingQuestionContext.id === context.id) {
+      setEditingQuestionContext(null);
+      setQuestionTitle("");
+      setQuestions([""]);
+      setAnswer("");
+    }
+
     // Marcar para eliminar (virtual)
     setQuestionContextsToRemove(prev => [...prev, context]);
     
@@ -224,6 +281,30 @@ export const Entrenamiento = ({
     const newContexts = [...questionContexts];
     newContexts.splice(index, 1);
     setQuestionContexts(newContexts);
+  };
+
+  const handleEditQuestionContext = (index: number, context: any) => {
+    // Popular el formulario con los datos del contexto
+    setQuestionTitle(context.title);
+    
+    // Manejar tanto arrays como strings para las preguntas
+    const contextQuestions = Array.isArray(context.questions) 
+      ? context.questions 
+      : context.questions?.split('\n').filter((q: string) => q.trim()) || [""];
+    
+    setQuestions(contextQuestions.length > 0 ? contextQuestions : [""]);
+    setAnswer(context.answer || "");
+    
+    // Marcar como editando
+    setEditingQuestionContext(context);
+  };
+
+  const handleCancelEditQuestion = () => {
+    // Limpiar formulario y salir del modo de edición
+    setQuestionTitle("");
+    setQuestions([""]);
+    setAnswer("");
+    setEditingQuestionContext(null);
   };
 
   const handleQuestionsChange = (index: number, value: string) => {
@@ -444,7 +525,10 @@ export const Entrenamiento = ({
             onContentChange={setTextContent}
             onAddContext={handleAddTextContext}
             onRemoveContext={handleRemoveTextContext}
+            onEditContext={handleEditTextContext}
+            onCancelEdit={handleCancelEditText}
             isAddingText={isAddingText}
+            editingContext={editingTextContext}
           />
         )}
         {currentTab === "website" && (
@@ -475,9 +559,12 @@ export const Entrenamiento = ({
             onAnswerChange={setAnswer}
             onAddContext={handleAddQuestionContext}
             onRemoveContext={handleRemoveQuestionContext}
+            onEditContext={handleEditQuestionContext}
+            onCancelEdit={handleCancelEditQuestion}
             onAddQuestion={handleAddQuestion}
             onRemoveQuestion={handleRemoveQuestion}
             isAddingQuestion={isAddingQuestion}
+            editingContext={editingQuestionContext}
           />
         )}
 

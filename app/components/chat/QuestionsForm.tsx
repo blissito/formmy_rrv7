@@ -14,9 +14,12 @@ export const QuestionsForm = ({
   onAnswerChange,
   onAddContext,
   onRemoveContext,
+  onEditContext,
+  onCancelEdit,
   onAddQuestion,
   onRemoveQuestion,
   isAddingQuestion = false,
+  editingContext = null,
 }: {
   title: string;
   questions: string[];
@@ -27,9 +30,12 @@ export const QuestionsForm = ({
   onAnswerChange: (answer: string) => void;
   onAddContext: () => void;
   onRemoveContext: (index: number, context: any) => void;
+  onEditContext: (index: number, context: any) => void;
+  onCancelEdit?: () => void;
   onAddQuestion: () => void;
   onRemoveQuestion: (index: number) => void;
   isAddingQuestion?: boolean;
+  editingContext?: any;
 }) => {
   return (
     <article>
@@ -37,8 +43,8 @@ export const QuestionsForm = ({
         title="Preguntas específicas"
         text={
           <p>
-            Agrega pares de preguntas y respuestas específicas para entrenar a tu
-            agente de IA con información precisa y contextual.{" "}
+            Agrega pares de preguntas y respuestas específicas para entrenar a
+            tu agente de IA con información precisa y contextual.{" "}
             <a href="#!" className="underline">
               Más información
             </a>
@@ -93,17 +99,41 @@ export const QuestionsForm = ({
           onChange={onAnswerChange}
           placeholder="Estamos abiertos de lunes a viernes de 9:00 AM a 6:00 PM..."
         />
-          <Button 
-            className="w-full md:w-fit h-10 mr-0"
+        <div className="flex gap-2 justify-end p-2">
+          {editingContext && onCancelEdit && (
+            <Button
+              variant="outline"
+              className="m-0 h-10 min-w-max p-2"
+              onClick={onCancelEdit}
+              isDisabled={isAddingQuestion}
+            >
+              Cancelar
+            </Button>
+          )}
+          <Button
+            className="m-0 h-10 "
             onClick={onAddContext}
-            isDisabled={!title.trim() || questions.some(q => !q.trim()) || questions.length === 0 || !answer.trim() || isAddingQuestion}
+            isDisabled={
+              !title.trim() ||
+              questions.some((q) => !q.trim()) ||
+              questions.length === 0 ||
+              !answer.trim() ||
+              isAddingQuestion
+            }
           >
-            {isAddingQuestion ? "Agregando..." : "Agregar"}
+            {isAddingQuestion
+              ? editingContext
+                ? "Actualizando..."
+                : "Agregando..."
+              : editingContext
+                ? "Actualizar"
+                : "Agregar"}
           </Button>
+        </div>
       </Card>
       <hr className="my-3 border-none" />
       {questionContexts.length > 0 && (
-        <Card noSearch={false} title="Preguntas y respuestas">
+        <Card noSearch title="Preguntas y respuestas">
           <CardHeader
             left={
               <input
@@ -119,7 +149,13 @@ export const QuestionsForm = ({
               key={context.id}
               text={context.sizeKB ? `${context.sizeKB}kb` : "0kb"}
               title={context.title}
-              subtitle={Array.isArray(context.questions) ? context.questions.slice(0, 2).join(', ') + (context.questions.length > 2 ? '...' : '') : context.questions?.split('\n').slice(0, 2).join(', ') + (context.questions?.split('\n').length > 2 ? '...' : '')}
+              subtitle={
+                Array.isArray(context.questions)
+                  ? context.questions.slice(0, 2).join(", ") +
+                    (context.questions.length > 2 ? "..." : "")
+                  : context.questions?.split("\n").slice(0, 2).join(", ") +
+                    (context.questions?.split("\n").length > 2 ? "..." : "")
+              }
               icon={
                 <img
                   className="w-6"
@@ -128,6 +164,7 @@ export const QuestionsForm = ({
                 />
               }
               onRemove={() => onRemoveContext(index, context)}
+              onEdit={() => onEditContext(index, context)}
             />
           ))}
         </Card>
