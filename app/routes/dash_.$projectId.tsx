@@ -23,8 +23,7 @@ import Ghosts from "~/SVGs/Ghosts";
 import GhostsDark from "~/SVGs/GhostsDark";
 import type { Answer } from "@prisma/client";
 import {
-  getPermission,
-  getProjectOwner,
+  getProjectWithAccess,
   getUserOrRedirect,
 } from "server/getUserUtils.server";
 import type { Route } from "./+types/dash_.$projectId";
@@ -71,26 +70,17 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   const projectId = params.projectId as string;
-  const project = await getProjectOwner({
-    userId: user.id,
-    projectId,
-  });
-  if (!project) {
-    // check if reader
-    const permission = await getPermission({
-      projectId: projectId,
-      userId: user.id,
-    });
-    if (!permission || permission.status !== "active" || !permission.project)
-      throw json(null, { status: 404 });
-    return {
-      project: permission.project,
-      user: { ...user, isOwner: permission.project.userId === user.id },
-    };
+  
+  // Use centralized function - requires read permission
+  const access = await getProjectWithAccess(user.id, projectId, "read");
+  
+  if (!access) {
+    throw json(null, { status: 404 });
   }
+  
   return {
-    project,
-    user: { ...user, isOwner: true },
+    project: access.project,
+    user: { ...user, isOwner: access.isOwner, permissions: access.permissions, role: access.userRole },
   };
 };
 

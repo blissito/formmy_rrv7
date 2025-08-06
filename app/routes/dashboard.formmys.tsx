@@ -62,7 +62,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     user,
     invitedProyects: permissions
       .filter((p) => p.status === "active")
-      .map((p) => p.project),
+      .map((p) => ({ ...p.project, userRole: p.role })), // Include user role
     permission: permissions.find((p) => p.status === "pending"),
     projects: await db.project.findMany({
       where: {
@@ -317,6 +317,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
             <ProjectCard
               key={p.id}
               isInvite={p.userId !== user.id}
+              userRole={p.userRole}
               project={p}
               index={index}
               {...p}
@@ -405,6 +406,7 @@ export const ProjectCard = ({
   name,
   id,
   index = 0,
+  userRole,
 }: {
   isInvite?: boolean;
   actionNode?: ReactNode;
@@ -412,6 +414,7 @@ export const ProjectCard = ({
   name: string;
   id: string;
   index?: number;
+  userRole?: string;
 }) => {
   return (
     <motion.div
@@ -446,7 +449,7 @@ export const ProjectCard = ({
             <p className="text-metal font-normal flex gap-1 items-center">
               <BubbleIcon className="mb-[2px]" /> {project.answers?.length || 0} {project.answers?.length === 1 ? 'mensaje' : 'mensajes'}
             </p>
-            {isInvite && <ModificameBRENDIPurpleCorner />}
+            {isInvite && <RoleBadge role={userRole} />}
           </div>
           <div id="actions" className="w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3">
             <DeleteIcon />
@@ -460,6 +463,44 @@ export const ProjectCard = ({
   );
 };
 
+// Role badge component for project cards
+export const RoleBadge = ({ role }: { role?: string }) => {
+  // Admin users don't get a badge (as per requirements)
+  if (!role || role === "ADMIN") {
+    return null;
+  }
+
+  const getRoleInfo = (role: string) => {
+    switch (role) {
+      case "VIEWER":
+        return {
+          text: "Solo lectura",
+          bgColor: "bg-brand-300",
+        };
+      case "EDITOR":
+        return {
+          text: "Editor",
+          bgColor: "bg-green-500",
+        };
+      default:
+        return {
+          text: "Solo lectura",
+          bgColor: "bg-brand-300",
+        };
+    }
+  };
+
+  const { text, bgColor } = getRoleInfo(role);
+
+  return (
+    <p className={`${bgColor} text-clear rounded px-1 flex gap-1 items-center`}>
+      <SiAmazoncloudwatch />
+      <span className="text-clear text-xs">{text}</span>
+    </p>
+  );
+};
+
+// Keep the old component for backward compatibility
 export const ModificameBRENDIPurpleCorner = () => {
   return (
     <p className="bg-brand-300 text-clear rounded px-1 flex gap-1 items-center">

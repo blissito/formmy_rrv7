@@ -8,10 +8,19 @@ import Spinner from "~/components/Spinner";
 // import { useToastV1 } from "~/components/Toast";
 import { TextField } from "~/components/formmys/FormyV1";
 import { db } from "~/utils/db.server";
+import { getUserOrRedirect, getProjectWithAccess } from "server/getUserUtils.server";
 
 export const action = async ({ params, request }: ActionArgs) => {
+  const user = await getUserOrRedirect(request);
   const intent = (await request.formData()).get("intent") as String;
+  
   if (intent === "delete") {
+    // Delete requires admin permissions
+    const access = await getProjectWithAccess(user.id, params.projectId!, "delete");
+    if (!access) {
+      throw json(null, { status: 403 });
+    }
+    
     // @TODO: delete files from firebase
     await db.answer.deleteMany({ where: { projectId: params.projectId } }); // cascade deleting
     await db.project.delete({ where: { id: params.projectId } });
@@ -20,12 +29,18 @@ export const action = async ({ params, request }: ActionArgs) => {
   return null;
 };
 
-export const loader = async ({ params }: LoaderArgs) => {
-  const project = await db.project.findUnique({
-    where: { id: params.projectId },
-  });
-  if (!project) throw json(null, { status: 404 });
-  return { project };
+export const loader = async ({ params, request }: LoaderArgs) => {
+  const user = await getUserOrRedirect(request);
+  const projectId = params.projectId!;
+  
+  // Danger settings require delete permission (admin level)
+  const access = await getProjectWithAccess(user.id, projectId, "delete");
+  
+  if (!access) {
+    throw json(null, { status: 404 });
+  }
+  
+  return { project: access.project };
 };
 
 export default function Page() {

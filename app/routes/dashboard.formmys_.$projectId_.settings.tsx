@@ -1,7 +1,7 @@
 import { data as json, redirect } from "react-router";
 import { useFetcher, useLoaderData } from "react-router";
 import { db } from "~/utils/db.server";
-import { getUserOrNull } from "server/getUserUtils.server";
+import { getUserOrRedirect, getUserOrNull, getProjectWithAccess } from "server/getUserUtils.server";
 import { type Notifications, notificationsSchema } from "~/utils/zod";
 import type { Route } from "./+types/dash_.$projectId_.settings.notifications";
 import { PageContainer, StickyGrid } from "~/components/chat/PageContainer";
@@ -125,9 +125,19 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
 };
 
 export const loader = async ({ params, request }: Route.LoaderArgs) => {
-  const user = await getUserOrNull(request); // why? well, not sure... just don't want to redirect.
-  const project = await db.project.findUnique({
-    where: { id: params.projectId },
+  const user = await getUserOrRedirect(request);
+  const projectId = params.projectId!;
+  
+  // Settings require delete permission (admin level)
+  const access = await getProjectWithAccess(user.id, projectId, "delete");
+  
+  if (!access) {
+    throw json(null, { status: 404 });
+  }
+  
+  // Get project with permissions included
+  const projectWithPermissions = await db.project.findUnique({
+    where: { id: projectId },
     include: {
       permissions: {
         include: {
@@ -136,14 +146,14 @@ export const loader = async ({ params, request }: Route.LoaderArgs) => {
       },
     },
   });
-  if (!project) throw json(null, { status: 404 });
-  const isPro = user?.plan === "PRO" ? true : false;
+  
+  const isPro = user.plan === "PRO" ? true : false;
   return {
     isPro,
-    notifications: project.settings?.notifications,
-    project,
+    notifications: projectWithPermissions?.settings?.notifications,
+    project: projectWithPermissions!,
     user,
-    permissions: project.permissions,
+    permissions: projectWithPermissions!.permissions,
   };
 };
 

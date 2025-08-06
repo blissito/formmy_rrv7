@@ -1,7 +1,7 @@
 import { Button } from "~/components/Button";
 import { FaUsers } from "react-icons/fa";
 import { twMerge } from "tailwind-merge";
-import { getUserOrRedirect } from "server/getUserUtils.server";
+import { getUserOrRedirect, getProjectWithAccess } from "server/getUserUtils.server";
 import { data as json } from "react-router";
 import {
   Form,
@@ -66,13 +66,18 @@ export const action = async ({ request, params }: ActionArgs) => {
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const user = await getUserOrRedirect(request);
-  const project = await db.project.findUnique({
-    where: { id: params.projectId },
-  });
-  if (!project) throw json(null, { status: 404 });
+  const projectId = params.projectId!;
+  
+  // Access settings requires delete permission (admin level)
+  const access = await getProjectWithAccess(user.id, projectId, "delete");
+  
+  if (!access) {
+    throw json(null, { status: 404 });
+  }
+  
   const permissions = await db.permission.findMany({
     where: {
-      projectId: project.id,
+      projectId: access.project.id,
     },
     include: {
       project: true,
@@ -82,7 +87,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   return {
     user,
     permissions,
-    projectName: project.name,
+    projectName: access.project.name,
   };
 };
 
