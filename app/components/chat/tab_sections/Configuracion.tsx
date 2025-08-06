@@ -23,6 +23,63 @@ interface ConfiguracionProps {
 export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
   const { currentTab, setCurrentTab } = useChipTabs("seguridad", `configuracion_${chatbot.id}`);
   const [isCopied, setIsCopied] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Estado para notificaciones
+  const [notifications, setNotifications] = useState({
+    weeklyDigest: chatbot.settings?.notifications?.weeklyDigest ?? true,
+    usageLimit: chatbot.settings?.notifications?.usageLimit ?? true,
+    configChanges: chatbot.settings?.notifications?.configChanges ?? false,
+  });
+  
+  // Estado para seguridad
+  const [security, setSecurity] = useState({
+    allowedDomains: chatbot.settings?.security?.allowedDomains?.join(", ") ?? "",
+    status: chatbot.settings?.security?.status ?? "public",
+    rateLimit: chatbot.settings?.security?.rateLimit ?? 100,
+  });
+  
+  const handleNotificationChange = async (field: string, value: boolean) => {
+    const newNotifications = { ...notifications, [field]: value };
+    setNotifications(newNotifications);
+    
+    const formData = new FormData();
+    formData.append("intent", "update_notifications");
+    formData.append("chatbotId", chatbot.id);
+    formData.append("weeklyDigest", String(newNotifications.weeklyDigest));
+    formData.append("usageLimit", String(newNotifications.usageLimit));
+    formData.append("configChanges", String(newNotifications.configChanges));
+    
+    try {
+      await fetch("/api/v1/chatbot", {
+        method: "POST",
+        body: formData,
+      });
+    } catch (error) {
+      console.error("Error updating notifications:", error);
+    }
+  };
+  
+  const handleSecurityUpdate = async () => {
+    setIsUpdating(true);
+    const formData = new FormData();
+    formData.append("intent", "update_security");
+    formData.append("chatbotId", chatbot.id);
+    formData.append("allowedDomains", security.allowedDomains);
+    formData.append("status", security.status);
+    formData.append("rateLimit", String(security.rateLimit));
+    
+    try {
+      await fetch("/api/v1/chatbot", {
+        method: "POST",
+        body: formData,
+      });
+    } catch (error) {
+      console.error("Error updating security:", error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -128,9 +185,24 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
         <section className="">
           <Card title="Configura tus notificaciones">
             <main className="grid gap-6 mt-4">
-              <Toggler title="Resumen semanal" text="Recibe un correo con un resumen de las conversaciones del día" />
-              <Toggler title="Límite de uso" text="Recibe un correo cuando estes cerca del límite de uso de mensajes" />
-              <Toggler title="Configuración" text="Recibe un correo cuando haya cambios importantes en la configuración de tu chat" />
+              <Toggler 
+                title="Resumen semanal" 
+                text="Recibe un correo con un resumen de las conversaciones del día"
+                value={notifications.weeklyDigest}
+                onChange={() => handleNotificationChange("weeklyDigest", !notifications.weeklyDigest)}
+              />
+              <Toggler 
+                title="Límite de uso" 
+                text="Recibe un correo cuando estes cerca del límite de uso de mensajes"
+                value={notifications.usageLimit}
+                onChange={() => handleNotificationChange("usageLimit", !notifications.usageLimit)}
+              />
+              <Toggler 
+                title="Configuración" 
+                text="Recibe un correo cuando haya cambios importantes en la configuración de tu chat"
+                value={notifications.configChanges}
+                onChange={() => handleNotificationChange("configChanges", !notifications.configChanges)}
+              />
             </main>
           </Card>
         </section>
@@ -151,15 +223,19 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
               <Input
                 label="Limita el acceso a tu agente"
                 placeholder="www.ejemplo.app, www.ejemplo.mx"
+                value={security.allowedDomains}
+                onChange={(value) => setSecurity({...security, allowedDomains: value})}
               />
               <section>
                 <Select
                   options={[
-                    { value: "published", label: "Público" },
-                    { value: "draft", label: "Borrador" },
+                    { value: "public", label: "Público" },
+                    { value: "private", label: "Privado" },
                   ]}
                   label="Estado"
                   placeholder="Selecciona un estado"
+                  value={security.status}
+                  onChange={(value) => setSecurity({...security, status: value})}
                 />
                 <div className="flex gap-1 items-start text-[12px] text-gray-400 mt-px">
                   <span className="mt-[2px]">
@@ -174,7 +250,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
               </section>
               <section>
                 <Select
-                  defaultValue="100"
+                  value={String(security.rateLimit)}
                   options={[
                     { value: "100", label: "100 consultas por minuto" },
                     { value: "50", label: "50 consultas por minuto" },
@@ -182,6 +258,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                   ]}
                   label="Límite de consultas por minuto"
                   placeholder="Selecciona un estado"
+                  onChange={(value) => setSecurity({...security, rateLimit: parseInt(value)})}
                 />
                 <div className="flex gap-1 items-start text-[12px] text-gray-400 mt-px">
                 <span className="mt-[2px]">
@@ -195,7 +272,13 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                 </div>
               </section>
               <div className="flex w-full justify-end">
-              <Button className="w-full md:w-fit h-10 !mr-0">Actualizar</Button>
+              <Button 
+                className="w-full md:w-fit h-10 !mr-0"
+                onClick={handleSecurityUpdate}
+                disabled={isUpdating}
+              >
+                {isUpdating ? "Actualizando..." : "Actualizar"}
+              </Button>
               </div>
             </main>
           </Card>
@@ -208,10 +291,12 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
 export const Toggler = ({
   text,
   title,
+  value,
   onChange,
 }: {
   text: string;
   title?: string;
+  value?: boolean;
   onChange?: () => void;
 }) => {
   return (
@@ -220,7 +305,7 @@ export const Toggler = ({
       <h4 className="dark font-medium">{title}</h4>
       <p className="text-sm text-gray-600">{text}</p>
       </div>
-      <Toggle onChange={onChange} />
+      <Toggle value={value} onChange={onChange} />
     </div>
   );
 };

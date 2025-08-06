@@ -152,6 +152,23 @@ enum ChatbotStatus {
   DELETED
 }
 
+type ChatbotNotifications {
+  weeklyDigest  Boolean @default(true)
+  usageLimit    Boolean @default(true)
+  configChanges Boolean @default(false)
+}
+
+type ChatbotSecurity {
+  allowedDomains String[]
+  rateLimit      Int     @default(100)
+  status         String  @default("public")
+}
+
+type ChatbotSettings {
+  notifications ChatbotNotifications
+  security      ChatbotSecurity
+}
+
 enum ContextType {
   FILE
   LINK
@@ -176,28 +193,29 @@ type ContextItem {
 }
 
 model Chatbot {
-  id                String         @id @default(auto()) @map("_id") @db.ObjectId
-  slug              String         @unique
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  slug              String           @unique
   name              String
   description       String?
   personality       String?
   welcomeMessage    String?
   goodbyeMessage    String?
-  aiModel           String         @default("mistralai/mistral-small-3.2-24b-instruct")
-  temperature       Float          @default(1)
+  aiModel           String           @default("mistralai/mistral-small-3.2-24b-instruct")
+  temperature       Float            @default(1)
   instructions      String?
   contexts          ContextItem[]
   primaryColor      String?
-  theme             String?        @default("light")
-  enableStreaming   Boolean        @default(true)
-  streamingSpeed    Int            @default(50)
-  status            ChatbotStatus  @default(DRAFT)
-  isActive          Boolean        @default(false)
-  conversationCount Int            @default(0)
-  monthlyUsage      Int            @default(0)
-  contextSizeKB     Int            @default(0)
-  userId            String         @db.ObjectId
-  user              User           @relation(fields: [userId], references: [id])
+  theme             String?          @default("light")
+  enableStreaming   Boolean          @default(true)
+  streamingSpeed    Int              @default(50)
+  status            ChatbotStatus    @default(DRAFT)
+  isActive          Boolean          @default(false)
+  conversationCount Int              @default(0)
+  monthlyUsage      Int              @default(0)
+  contextSizeKB     Int              @default(0)
+  settings          ChatbotSettings?
+  userId            String           @db.ObjectId
+  user              User             @relation(fields: [userId], references: [id])
   conversations     Conversation[]
   integrations      Integration[]
   apiKeys           ApiKey[]

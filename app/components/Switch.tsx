@@ -14,6 +14,7 @@ export const Toggle = ({
   isDisabled,
   onChange,
   defaultValue = false,
+  value,
   name,
 }: {
   className?: string;
@@ -21,13 +22,19 @@ export const Toggle = ({
   isDisabled?: boolean;
   onChange?: (arg0: boolean) => void;
   defaultValue?: boolean;
+  value?: boolean;
 }) => {
   const [enabled, setEnabled] = useState(defaultValue);
-  const handleChange = (value: boolean) => {
-    setEnabled(value);
-    onChange?.(value);
+  const isControlled = value !== undefined;
+  const currentValue = isControlled ? value : enabled;
+  
+  const handleChange = (newValue: boolean) => {
+    if (!isControlled) {
+      setEnabled(newValue);
+    }
+    onChange?.(newValue);
   };
-  const isActive = isDisabled ? false : enabled;
+  const isActive = isDisabled ? false : currentValue;
   return (
     <Switch
       checked={isActive}

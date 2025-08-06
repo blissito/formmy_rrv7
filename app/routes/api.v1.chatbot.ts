@@ -923,6 +923,118 @@ export async function action({ request }: any) {
           });
         }
       }
+      case "update_notifications": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "No tienes permiso para modificar este chatbot",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const weeklyDigest = formData.get("weeklyDigest") === "true";
+        const usageLimit = formData.get("usageLimit") === "true";
+        const configChanges = formData.get("configChanges") === "true";
+
+        const updatedChatbot = await db.chatbot.update({
+          where: { id: chatbotId },
+          data: {
+            settings: {
+              notifications: {
+                weeklyDigest,
+                usageLimit,
+                configChanges,
+              },
+              security: chatbot.settings?.security || {
+                allowedDomains: [],
+                rateLimit: 100,
+                status: "public",
+              },
+            },
+          },
+        });
+
+        return new Response(JSON.stringify(updatedChatbot), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      case "update_security": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "No tienes permiso para modificar este chatbot",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const allowedDomains = formData.get("allowedDomains") as string;
+        const status = formData.get("status") as string;
+        const rateLimit = parseInt(formData.get("rateLimit") as string) || 100;
+
+        const domainsArray = allowedDomains 
+          ? allowedDomains.split(",").map(d => d.trim()).filter(d => d)
+          : [];
+
+        const updatedChatbot = await db.chatbot.update({
+          where: { id: chatbotId },
+          data: {
+            settings: {
+              notifications: chatbot.settings?.notifications || {
+                weeklyDigest: true,
+                usageLimit: true,
+                configChanges: false,
+              },
+              security: {
+                allowedDomains: domainsArray,
+                rateLimit,
+                status: status || "public",
+              },
+            },
+          },
+        });
+
+        return new Response(JSON.stringify(updatedChatbot), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       default:
         return new Response(
           JSON.stringify({ error: `Intent no reconocido: ${intent}` }),
