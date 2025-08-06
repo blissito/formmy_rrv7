@@ -452,7 +452,7 @@ export const ProjectCard = ({
             {isInvite && <RoleBadge role={userRole} />}
           </div>
           <div id="actions" className="w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3">
-            <DeleteIcon />
+            <DeleteIcon className="w-5 h-5" />
             <hr className="h-6 w-[1px] border-none bg-outlines"/>
             <CodeIcon />
             <OpenTabIcon />
