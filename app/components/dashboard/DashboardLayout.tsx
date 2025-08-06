@@ -45,9 +45,9 @@ export function DashboardLayout({
   user,
 }: DashboardLayoutProps) {
   return (
-    <div className={cn("mx-auto w-full overflow-hidden h-full min-h-screen bg-surface flex  flex-col-reverse pr-2 pl-2 box-border overflow-y-scroll", "md:flex-row  md:pr-8 md:pl-0")}>
+    <div className={cn("mx-auto w-full overflow-hidden h-full min-h-svh bg-surface flex  flex-col-reverse pr-2 pl-2 box-border overflow-y-scroll", "md:flex-row  md:pr-8 md:pl-0")}>
       <div className={cn("flex flex-row  justify-center  items-center py-0 pb-2 w-full gap-0 rounded-r-3xl  h-auto ",
-                    "md:flex-col md:static md:justify-center  md:py-8 md:w-[120px]  md:gap-8 md:h-screen md:min-h-screen md:fixed md:top-0"
+                    "md:flex-col md:static md:justify-center  md:py-8 md:w-[120px] md:gap-8 md:h-svh md:min-h-svh md:fixed md:top-0"
       )}>
         <Link prefetch="render" to="/dashboard" className=" hidden md:flex">
           <img

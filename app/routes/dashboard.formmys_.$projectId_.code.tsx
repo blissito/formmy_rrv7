@@ -21,7 +21,7 @@ export default function FormmyCodeRoute() {
       <div className="flex flex-col max-w-[600px] mx-auto">
         <img  src="/assets/fantasma-globo.svg" alt="rocket" className="md:w-[246px] md:h-[246px] w-[180px] h-[180px] mx-auto mb-0 md:mb-4" />
         <h3 className="md:text-2xl text-xl font-bold text-center mb-2">¡Tu formmy está listo!</h3>
-        <p className="text-center text-metal mb-4 md:mb-8">
+        <p className="text-center text-metal mb-4 md:mb-6">
           Elige la forma de embebido que más te convenga. {""}
           <a href="#" className="underline">Más información</a>
         </p>

@@ -74,7 +74,7 @@ export const InfoSources = ({
 
   return (
     <article className={cn("min-w-full", className)}>
-      <section className="grid gap-2 border border-outlines rounded-2xl p-4 shadow-standard md:min-w-[280px] min-w-full bg-white ">
+      <section className="grid gap-2 border border-outlines rounded-3xl p-4 shadow-standard md:min-w-[280px] min-w-full bg-white ">
         <div className="flex gap-2 items-center">
           <span className="w-4">
             <img src="/assets/chat/receipt.svg" alt="icon" />
@@ -84,7 +84,7 @@ export const InfoSources = ({
 
         {/* Mostrar archivos según el modo */}
         {mode === "create" && uploadedFiles.length > 0 && (
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-start text-sm">
             <span className="w-4">
               <img src="/assets/chat/document.svg" alt="icon" />
             </span>
@@ -97,7 +97,7 @@ export const InfoSources = ({
         )}
 
         {mode === "edit" && contexts.length > 0 && (
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-start text-sm">
             <span className="w-4">
               <img src="/assets/chat/document.svg" alt="icon" />
             </span>
@@ -109,7 +109,7 @@ export const InfoSources = ({
         )}
 
         {websiteEntries.length > 0 && (
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-start text-sm">
             <span className="w-4">
               <img src="/assets/chat/earth.svg" alt="icon" />
             </span>
@@ -124,7 +124,7 @@ export const InfoSources = ({
         )}
 
         {textContexts.length > 0 && (
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-start text-sm">
             <span className="w-4">
               <img src="/assets/chat/increase.svg" alt="icon" />
             </span>
@@ -177,7 +177,7 @@ export const InfoSources = ({
 
         {mode === "edit" && onCreateChatbot && (
           <Button
-            className="mt-6 "
+            className="mt-6 flex items-center justify-center "
             onClick={onCreateChatbot}
             isDisabled={
               totalWeight > maxWeight || 
@@ -185,7 +185,7 @@ export const InfoSources = ({
               !hasPendingChanges
             }
           >
-            {isCreating ? "Actualizando..." : !hasPendingChanges ? "Sin cambios" : "Actualizar Chatbot"}
+            {isCreating ? "Actualizando..." : !hasPendingChanges ? "Actualizar agente" : "Actualizar agente"}
           </Button>
         )}
       </section>

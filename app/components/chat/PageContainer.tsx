@@ -167,7 +167,7 @@ export const Button = ({
           ? "bg-white border border-gray-300 rounded-lg text-gray-600 px-2 hover:bg-surfaceFour "
           : "bg-brand-500 text-white hover:ring hover:ring-brand-500",
           {
-            'pointer-events-none bg-gray-300':isDisabled
+            'pointer-events-none bg-gray-300 text-gray-400':isDisabled
           },
         className
       )}
@@ -302,12 +302,18 @@ export const ChatCard = ({
 export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
-    <article className="flex  gap-0 md:gap-6">
+    <article className="flex gap-0 md:gap-6">
       <section className="self-start sticky top-4 mr-4 md:mr-0">{nodes[0]}</section>
-       <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-      <section className="grow">{nodes[1]}</section>
-      <section className="self-start sticky top-4 w-full md:w-[280px]">{nodes[2]}</section> 
-        </div>
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full">
+        <section className={`grow w-full ${nodes[2] ? 'max-w-[732px]' : ''}`}>
+          {nodes[1]}
+        </section>
+        {nodes[2] && (
+          <section className="self-start sticky top-4 w-full md:w-[280px]">
+            {nodes[2]}
+          </section>
+        )}
+      </div>
     </article>
   );
 };
