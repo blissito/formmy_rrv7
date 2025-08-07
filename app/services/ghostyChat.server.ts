@@ -1,6 +1,7 @@
 import { WebSearchService } from "~/tools/webSearch.server";
-import { getWebSearchService } from "~/tools/webSearchPlaywright.server";
+import { getPuppeteerWebSearchService } from "~/tools/webSearchPuppeteer.server";
 import type { SearchResponse } from "~/tools/types";
+import { DEFAULT_AI_MODEL } from "~/utils/aiModels";
 
 interface GhostyChatRequest {
   message: string;
@@ -74,13 +75,13 @@ export async function callGhostyOpenRouter(
   if (enableSearch && shouldPerformSearch(message, history)) {
     console.log(`🔍 Realizando búsqueda para: "${message}"`);
     try {
-      // Intentar usar Playwright primero
-      const playwrightService = await getWebSearchService();
-      searchResults = await playwrightService.search(message, 5);
+      // Intentar usar Puppeteer primero
+      const puppeteerService = await getPuppeteerWebSearchService();
+      searchResults = await puppeteerService.search(message, 5);
       
-      // Si Playwright no devuelve resultados, usar búsqueda básica REAL
+      // Si Puppeteer no devuelve resultados, usar búsqueda básica REAL
       if (!searchResults || searchResults.results.length === 0) {
-        console.log("⚠️ Playwright devolvió 0 resultados, intentando búsqueda básica REAL");
+        console.log("⚠️ Puppeteer devolvió 0 resultados, intentando búsqueda básica REAL");
         const searchService = new WebSearchService();
         searchResults = await searchService.search(message, 3);
         if (!searchResults || searchResults.results.length === 0) {
@@ -201,7 +202,7 @@ ${searchContext && searchContext.length === 0 ? '**NOTA**: Se intentó realizar 
   });
 
   const requestBody = {
-    model: "openai/gpt-oss-120b",
+    model: DEFAULT_AI_MODEL,
     messages,
     temperature: 0.7,
     max_tokens: 2000,

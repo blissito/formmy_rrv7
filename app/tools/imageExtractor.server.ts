@@ -7,6 +7,10 @@ export class ImageExtractorService {
   private browser: Browser | null = null;
   private isDebugMode = process.env.NODE_ENV === 'development';
 
+  private async delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   async initialize() {
     if (!this.browser) {
       this.browser = await chromium.launch({
@@ -52,16 +56,50 @@ export class ImageExtractorService {
       });
 
       try {
-        await page.goto(url, {
-          waitUntil: 'domcontentloaded',
-          timeout: 10000
-        });
+        // Si es una URL de redirección de Bing, seguir hasta la URL final
+        if (url.includes('bing.com/ck/a')) {
+          console.log('🔗 Detectada URL de redirección de Bing, siguiendo...');
+          await page.goto(url, {
+            waitUntil: 'networkidle0',
+            timeout: 15000
+          });
+          
+          // Esperar a que termine la redirección
+          await this.delay(2000);
+          
+          // Obtener la URL final después de las redirecciones
+          const finalUrl = page.url();
+          console.log(`🎯 URL final: ${finalUrl}`);
+          
+          // Si sigue siendo una URL de Bing, extraer la URL real del parámetro 'u'
+          if (finalUrl.includes('bing.com')) {
+            const urlMatch = url.match(/&u=([^&]+)/);
+            if (urlMatch) {
+              const decodedUrl = decodeURIComponent(urlMatch[1]);
+              const realUrl = Buffer.from(decodedUrl.replace(/^a1/, ''), 'base64').toString('utf-8');
+              console.log(`🔓 URL decodificada: ${realUrl}`);
+              
+              await page.goto(realUrl, {
+                waitUntil: 'domcontentloaded',
+                timeout: 10000
+              });
+            }
+          }
+        } else {
+          await page.goto(url, {
+            waitUntil: 'domcontentloaded',
+            timeout: 10000
+          });
+        }
       } catch (navigateError) {
         console.warn(`⚠️ No se pudo acceder a ${url}: ${navigateError.message}`);
         return { url, images: [], error: `URL no accesible: ${navigateError.message}` };
       }
 
-      const images = await page.evaluate((maxImages) => {
+      let images: string[] = [];
+      
+      try {
+        images = await page.evaluate((maxImages) => {
         const foundImages: string[] = [];
         
         // Helper para convertir URL relativa a absoluta
@@ -122,6 +160,10 @@ export class ImageExtractorService {
 
         return foundImages;
       }, maxImages);
+      } catch (evalError) {
+        console.warn(`⚠️ Error evaluando página ${url}: ${evalError.message}`);
+        images = [];
+      }
 
       await page.close();
 

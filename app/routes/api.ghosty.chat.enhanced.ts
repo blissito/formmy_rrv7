@@ -50,6 +50,27 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
                   fullContent += chunk;
                 }
               );
+              
+              // Debug: log what we got back
+              console.log('🔍 Enhanced Ghosty result:', {
+                hasContent: !!result.content,
+                contentLength: result.content?.length || 0,
+                contentPreview: result.content?.substring(0, 100) || 'NO CONTENT',
+                toolsUsed: result.toolsUsed,
+                sourcesCount: result.sources?.length || 0
+              });
+              
+              // If no content was streamed but we have result.content, send it now
+              if (!fullContent && result.content) {
+                console.log('⚠️ No chunks were streamed, sending full content now');
+                const data = JSON.stringify({
+                  type: "chunk",
+                  content: result.content,
+                });
+                controller.enqueue(
+                  encoder.encode(`data: ${data}\n\n`)
+                );
+              }
 
               // Send tools used metadata if any tools were used
               if (result.toolsUsed && result.toolsUsed.length > 0) {

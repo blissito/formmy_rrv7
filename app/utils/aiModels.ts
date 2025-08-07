@@ -1,6 +1,16 @@
 // Modelos populares para chatbots centralizados (todos gratuitos)
 export const AI_MODELS = [
   {
+    value: "openai/gpt-5-mini",
+    label: "GPT-5 Mini (OpenAI)",
+    category: "Paid",
+  },
+  {
+    value: "openai/gpt-5-nano",
+    label: "GPT-5 Nano (OpenAI)",
+    category: "Paid",
+  },
+  {
     value: "mistralai/mistral-small-3.2-24b-instruct:free",
     label: "Mistral Small 3.2 (Mistral AI)",
     category: "Free",
@@ -51,7 +61,7 @@ export const MODEL_LABELS: Record<string, string> = Object.fromEntries(
   AI_MODELS.map((m) => [m.value, m.label])
 );
 
-export const DEFAULT_AI_MODEL = "mistralai/mistral-small-3.2-24b-instruct:free";
+export const DEFAULT_AI_MODEL = "openai/gpt-5-mini";
 
 // Sistema de rotación de modelos gratuitos para evitar rate limits
 export const FREE_MODEL_ROTATION = [
