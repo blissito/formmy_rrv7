@@ -15,8 +15,24 @@ export class PlaywrightWebSearchService {
 
   async initialize() {
     if (!this.browser) {
+      // Detectar entorno y configurar executable path apropiado
+      const isProduction = process.env.NODE_ENV === 'production';
+      const systemChromium = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+      
+      let executablePath: string | undefined = undefined;
+      
+      if (isProduction && systemChromium) {
+        // En producción, usar Chromium del sistema
+        executablePath = systemChromium;
+        console.log("🐳 Using system Chromium in production:", executablePath);
+      } else {
+        // En desarrollo, dejar que Playwright use sus propios binaries
+        console.log("💻 Using Playwright bundled Chromium in development");
+      }
+      
       this.browser = await chromium.launch({
         headless: true,
+        executablePath,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -100,6 +116,12 @@ export class PlaywrightWebSearchService {
   }
 
   async search(query: string, numResults: number = 5): Promise<SearchResponse> {
+    // Verificar si el browser está inicializado
+    if (!this.browser) {
+      console.log("⚠️ Browser not initialized - search will fail gracefully");
+      throw new Error("Playwright browser not available - browser binaries might not be installed");
+    }
+    
     const cached = this.cache.get(query);
     if (cached && cached.expires > Date.now()) {
       return cached.data;
@@ -181,18 +203,96 @@ export class PlaywrightWebSearchService {
     let contextWrapper: any = null;
     
     try {
-      if (!this.browser) {
+      // Verificar y reinicializar browser si es necesario
+      if (!this.browser || !this.browser.isConnected()) {
+        console.log("🔄 Browser not available, reinitializing...");
+        this.browser = null;
+        this.contexts = [];
         await this.initialize();
       }
       
-      // Obtener contexto disponible del pool
-      contextWrapper = this.contexts.find(ctx => !ctx.inUse);
-      if (!contextWrapper) {
-        throw new Error('No available contexts in pool');
-      }
+      // En producción, crear context fresh para evitar problemas de lifecycle
+      const isProduction = process.env.NODE_ENV === 'production';
       
-      contextWrapper.inUse = true;
-      page = await contextWrapper.context.newPage();
+      if (isProduction) {
+        console.log("🐳 Creating fresh context for production search...");
+        const context = await this.browser!.newContext({
+          userAgent: this.getRandomUserAgent(),
+          viewport: { width: 1920, height: 1080 },
+          locale: 'es-ES',
+          timezoneId: 'America/Mexico_City',
+          extraHTTPHeaders: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+            'Accept-Encoding': 'gzip, deflate',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+          },
+        });
+        
+        await context.addInitScript(() => {
+          Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined,
+          });
+          Object.defineProperty(navigator, 'plugins', {
+            get: () => [1, 2, 3, 4, 5],
+          });
+          Object.defineProperty(navigator, 'languages', {
+            get: () => ['es-ES', 'es', 'en-US', 'en'],
+          });
+          (window as any).chrome = {
+            runtime: {},
+          };
+        });
+        
+        contextWrapper = { context, inUse: true };
+        page = await context.newPage();
+      } else {
+        // En desarrollo, usar pool de contexts
+        contextWrapper = this.contexts.find(ctx => !ctx.inUse);
+        if (!contextWrapper) {
+          throw new Error('No available contexts in pool');
+        }
+        
+        contextWrapper.inUse = true;
+        
+        // Verificar que el context sigue válido
+        if (contextWrapper.context.isDestroyed()) {
+          console.log("⚠️ Context was destroyed, recreating...");
+          contextWrapper.context = await this.browser!.newContext({
+            userAgent: this.getRandomUserAgent(),
+            viewport: { width: 1920, height: 1080 },
+            locale: 'es-ES',
+            timezoneId: 'America/Mexico_City',
+            extraHTTPHeaders: {
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+              'Accept-Encoding': 'gzip, deflate',
+              'DNT': '1',
+              'Connection': 'keep-alive',
+              'Upgrade-Insecure-Requests': '1',
+            },
+          });
+          
+          await contextWrapper.context.addInitScript(() => {
+            Object.defineProperty(navigator, 'webdriver', {
+              get: () => undefined,
+            });
+            Object.defineProperty(navigator, 'plugins', {
+              get: () => [1, 2, 3, 4, 5],
+            });
+            Object.defineProperty(navigator, 'languages', {
+              get: () => ['es-ES', 'es', 'en-US', 'en'],
+            });
+            (window as any).chrome = {
+              runtime: {},
+            };
+          });
+        }
+        
+        page = await contextWrapper.context.newPage();
+      }
 
       // Anti-detección: remover webdriver properties
       await page.addInitScript(() => {
@@ -428,7 +528,14 @@ export class PlaywrightWebSearchService {
         await page.close().catch(() => {});
       }
       if (contextWrapper) {
-        contextWrapper.inUse = false; // Liberar contexto
+        const isProduction = process.env.NODE_ENV === 'production';
+        if (isProduction) {
+          // En producción, cerrar el context completamente
+          await contextWrapper.context.close().catch(() => {});
+        } else {
+          // En desarrollo, solo liberar el context del pool
+          contextWrapper.inUse = false;
+        }
       }
     }
   }
@@ -686,7 +793,15 @@ let serviceInstance: PlaywrightWebSearchService | null = null;
 export async function getWebSearchService(): Promise<PlaywrightWebSearchService> {
   if (!serviceInstance) {
     serviceInstance = new PlaywrightWebSearchService();
-    await serviceInstance.initialize();
+    try {
+      await serviceInstance.initialize();
+      console.log("✅ Playwright web search service initialized successfully");
+    } catch (error) {
+      console.error("❌ Failed to initialize Playwright web search service:", error);
+      console.log("📋 This might be due to missing browser binaries in production");
+      console.log("💡 Consider running 'npx playwright install --with-deps chromium'");
+      // Don't throw here - let the service handle the error gracefully
+    }
   }
   return serviceInstance;
 }

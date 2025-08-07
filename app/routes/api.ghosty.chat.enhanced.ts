@@ -81,9 +81,27 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
               controller.close();
             } catch (error) {
               console.error("Enhanced Ghosty streaming error:", error);
+              console.error("Error details:", {
+                message: error instanceof Error ? error.message : 'Unknown error',
+                stack: error instanceof Error ? error.stack : undefined,
+                name: error instanceof Error ? error.name : undefined
+              });
+              
+              let errorMessage = "Lo siento, hubo un error procesando tu mensaje.";
+              
+              if (error instanceof Error) {
+                if (error.message.includes('OpenRouter')) {
+                  errorMessage = "El servicio de IA está temporalmente no disponible. Por favor intenta de nuevo en unos momentos.";
+                } else if (error.message.includes('timeout') || error.message.includes('fetch')) {
+                  errorMessage = "La conexión tardó demasiado. Por favor intenta de nuevo.";
+                } else if (error.message.includes('parse')) {
+                  errorMessage = "Hubo un problema procesando la respuesta. Por favor intenta de nuevo.";
+                }
+              }
+              
               const errorData = JSON.stringify({
                 type: "error",
-                content: "Lo siento, hubo un error procesando tu mensaje.",
+                content: errorMessage,
               });
               controller.enqueue(
                 encoder.encode(`data: ${errorData}\n\n`)

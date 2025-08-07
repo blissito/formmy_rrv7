@@ -11,7 +11,9 @@
     "test:run": "vitest run",
     "test:production": "npm run build && cross-env NODE_ENV=production node ./server.js",
     "typecheck": "react-router typegen && tsc",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "dev:setup": "npx playwright install chromium && prisma generate",
+    "playwright:install": "npx playwright install chromium"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.862.0",

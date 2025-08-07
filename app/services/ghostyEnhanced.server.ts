@@ -187,8 +187,12 @@ export async function callGhostyWithTools(
   const apiKey = process.env.OPENROUTER_API_KEY;
   
   if (!apiKey) {
+    console.error("❌ OPENROUTER_API_KEY not found in environment");
     throw new Error("OPENROUTER_API_KEY is required - no simulations allowed");
   }
+  
+  console.log("🔑 API Key found, length:", apiKey.length);
+  console.log("🔑 API Key prefix:", apiKey.substring(0, 10) + "...");
 
   const messages = [
     {
@@ -253,6 +257,21 @@ export async function callGhostyWithTools(
       requestBody.stream = false; // Siempre no-streaming cuando hay tools
     }
 
+    console.log("🚀 Sending request to OpenRouter...");
+    console.log("📊 Request body preview:", JSON.stringify({
+      model: requestBody.model,
+      messagesCount: requestBody.messages.length,
+      hasTools: !!requestBody.tools,
+      stream: requestBody.stream,
+      temperature: requestBody.temperature
+    }));
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log("⏰ Request timeout after 30s");
+      controller.abort();
+    }, 30000);
+    
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -262,7 +281,11 @@ export async function callGhostyWithTools(
         "X-Title": "Formmy Ghosty Assistant Enhanced",
       },
       body: JSON.stringify(requestBody),
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
+    console.log("✅ Response received, status:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -293,10 +316,27 @@ export async function callGhostyWithTools(
     let data;
     try {
       const responseText = await response.text();
+      console.log('📄 Response text length:', responseText.length);
       console.log('📄 Response text preview:', responseText.substring(0, 200));
+      
+      if (!responseText || responseText.trim().length === 0) {
+        console.error('❌ Empty response from OpenRouter');
+        throw new Error('Empty response from OpenRouter API');
+      }
+      
       data = JSON.parse(responseText);
+      console.log('✅ JSON parsed successfully');
+      console.log('📊 Choices available:', data.choices?.length || 0);
+      
+      if (data.error) {
+        console.error('❌ OpenRouter API error:', data.error);
+        throw new Error(`OpenRouter API error: ${JSON.stringify(data.error)}`);
+      }
+      
     } catch (parseError) {
       console.error('❌ Failed to parse JSON response:', parseError);
+      console.error('❌ Response status:', response.status);
+      console.error('❌ Response headers:', Object.fromEntries(response.headers.entries()));
       throw new Error(`Failed to parse OpenRouter response: ${parseError}`);
     }
     
