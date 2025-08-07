@@ -35,12 +35,26 @@ export async function action({ request }: Route.ActionArgs) {
 
     // Construir la URL completa
     const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+    
+    // Validar URL
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(fullUrl);
+    } catch (urlError) {
+      throw new Error(`Invalid URL: ${fullUrl}. Error: ${urlError instanceof Error ? urlError.message : 'Unknown URL parsing error'}`);
+    }
 
     // Hacer fetch del contenido principal
     const response = await fetch(fullUrl, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; WebsiteFetcher/1.0)",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1"
       },
+      signal: AbortSignal.timeout(15000) // 15 second timeout
     });
 
     if (!response.ok) {

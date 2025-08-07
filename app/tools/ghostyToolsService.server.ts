@@ -1,21 +1,14 @@
-import { getImageExtractor } from "./imageExtractor.server";
 import { WebSearchService } from "./webSearch.server";
 import { getUnifiedWebSearchService } from "./webSearchUnified.server";
 
 export interface ToolRequest {
-  intent: 'search' | 'extract-images' | 'analyze-url';
+  intent: 'search' | 'analyze-url';
   data: any;
 }
 
 export interface SearchRequest {
   query: string;
   maxResults?: number;
-  enablePlaywright?: boolean;
-}
-
-export interface ImageExtractionRequest {
-  urls: string[];
-  maxImagesPerUrl?: number;
 }
 
 export interface UrlAnalysisRequest {
@@ -31,14 +24,11 @@ export class GhostyToolsService {
       case 'search':
         return await this.handleSearch(data);
       
-      case 'extract-images':
-        return await this.handleImageExtraction(data);
-      
       case 'analyze-url':
         return await this.handleUrlAnalysis(data);
       
       default:
-        throw new Error(`Unknown intent: ${intent}. Available: search, extract-images, analyze-url`);
+        throw new Error(`Unknown intent: ${intent}. Available: search, analyze-url`);
     }
   }
 
@@ -72,26 +62,6 @@ export class GhostyToolsService {
     };
   }
 
-  private async handleImageExtraction(data: ImageExtractionRequest): Promise<any> {
-    const { urls, maxImagesPerUrl = 4 } = data;
-
-    if (!urls || !Array.isArray(urls) || urls.length === 0) {
-      throw new Error("URLs array is required");
-    }
-
-    // Limitar a máximo 5 URLs para no sobrecargar
-    const limitedUrls = urls.slice(0, 5);
-    
-    const imageExtractor = await getImageExtractor();
-    const imageGalleries = await imageExtractor.extractMultipleImages(limitedUrls, maxImagesPerUrl);
-
-    return {
-      success: true,
-      galleries: imageGalleries,
-      extracted: imageGalleries.length,
-      total: limitedUrls.length
-    };
-  }
 
   private async handleUrlAnalysis(data: UrlAnalysisRequest): Promise<any> {
     const { url, extractContent = true, extractMetadata = true } = data;

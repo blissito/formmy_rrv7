@@ -1,5 +1,6 @@
 import { getUnifiedWebSearchService } from "~/tools/webSearchUnified.server";
 import { DEFAULT_AI_MODEL } from "~/utils/aiModels";
+import { action as fetchWebsiteAction } from "~/routes/api.v1.fetch-website";
 
 interface ToolDefinition {
   type: string;
@@ -46,6 +47,23 @@ const AVAILABLE_TOOLS: ToolDefinition[] = [
           }
         },
         required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "web_fetch",
+      description: "Obtiene el contenido completo de una página web específica. Úsala cuando necesites leer el contenido detallado de un sitio web, artículo, documentación específica, o cualquier URL.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: {
+            type: "string",
+            description: "La URL completa del sitio web a obtener (debe incluir http:// o https://)"
+          }
+        },
+        required: ["url"]
       }
     }
   },
@@ -143,6 +161,59 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
               query: args.query,
               results: [],
               error: "La búsqueda web no está disponible temporalmente. Responderé basándome en mi conocimiento general."
+            })
+          });
+        }
+        break;
+      }
+
+      case "web_fetch": {
+        console.log(`🔧 Modelo solicitó herramientas: [ 'web_fetch' ]`);
+        try {
+          // Llamar directamente a la función en lugar de HTTP request
+          const mockRequest = {
+            method: 'POST',
+            json: async () => ({ url: args.url })
+          } as any;
+
+          const response = await fetchWebsiteAction({ request: mockRequest });
+          
+          if (!response.ok) {
+            throw new Error(`Fetch failed: ${response.status}`);
+          }
+          
+          const fetchData = await response.json();
+          
+          if (fetchData.error) {
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: "tool",
+              name: "web_fetch",
+              content: JSON.stringify({
+                error: fetchData.error,
+                url: args.url
+              })
+            });
+          } else {
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: "tool",
+              name: "web_fetch",
+              content: JSON.stringify({
+                url: args.url,
+                content: fetchData.content,
+                routes: fetchData.routes
+              })
+            });
+          }
+        } catch (error) {
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: "tool", 
+            name: "web_fetch",
+            content: JSON.stringify({
+              error: error instanceof Error ? error.message : 'Unknown error',
+              url: args.url
             })
           });
         }
