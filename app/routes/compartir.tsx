@@ -117,3 +117,10 @@ const CreditsBox = () => {
     </div>
   );
 };
+
+
+
+export const meta = () => [
+  { title: "Comparte con tus amigos" },
+  { name: "description", content: "Comparte con tus amigos y gana créditos para tus chatbots" },
+];

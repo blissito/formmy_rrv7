@@ -28,19 +28,19 @@ export default function Academy() {
       : "https://formmy.app/embed/65230f96c040cf4c55a90b00";
 
   return (
-    <div>
+    <div className="relative">
       <DashboardLayout title="Compartir" user={user}>
-       <section className="py-8 max-w-7xl mx-auto overflow-y-scroll noscroll grid place-content-center h-full relative ">
-        <img src="/assets/ghost-support.png" alt="support" className="absolute bottom-0 right-10 w-20" />
+      <img src="/assets/ghost-support.png" alt="support" className="fixed bottom-24 right-10 w-10 md:w-20 z-10" />
+       <section className="py-12 px-2 md:px-0 max-w-7xl mx-auto overflow-y-scroll noscroll grid place-content-center h-full relative">
          <div className="flex flex-col items-center justify-center h-full max-w-[560px] mx-auto">
-            <h2 className="text-3xl text-dark heading text-center mb-2">Danos tu opinión</h2>
+            <h2 className="text-2xl md:text-3xl text-dark heading text-center mb-2">Danos tu opinión</h2>
          <p className="paragraph text-metal text-center">Cuéntanos ¿cómo te va usando Formmy? ¿Alguna duda con la configuración? ¿Hay algún feature que te gustaría ver?</p>
          <div className="w-full">
             <iframe
               id="formmy-iframe"
               title="formmy"
               width="100%"
-              height="560"
+              height="540"
               src={lightFormmy}
               style={{ margin: "0 auto", display: "block" }}
             ></iframe>
@@ -64,3 +64,8 @@ export default function Academy() {
     </div>
   );
 }
+
+export const meta = () => [
+  { title: "Feedback" },
+  { name: "description", content: "Danos tu opinión sobre Formmy" },
+];

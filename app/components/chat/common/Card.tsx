@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { cn } from "~/lib/utils";
 import { SearchInput } from "./SearchInput";
 import type { Integration as PrismaIntegration } from "@prisma/client";
+import { VscDebugDisconnect } from "react-icons/vsc";
 
 export const Card = ({
   title,
@@ -26,9 +27,9 @@ export const Card = ({
         className
       )}
     >
-      <nav className="flex justify-between gap-3 items-center">
+      <nav className="flex justify-between gap-3 items-center mb-4 md:mb-6">
         <div>
-          <h3 className="text-xl md:text-2xl font-medium min-w-max text-dark mb-2">
+          <h3 className="text-xl md:text-2xl font-medium min-w-max text-dark ">
             {title}
           </h3>
           {text && <p className="text-metal mb-2 text-base">{text}</p>}
@@ -36,7 +37,7 @@ export const Card = ({
         {!noSearch && !action && <SearchInput />}
         {action && <div className="flex-shrink-0">{action}</div>}
       </nav>
-      {!text && <div className="mb-4"></div>}
+      {!text && <div className="mb-0"></div>}
       <section>{children}</section>
     </article>
   );
@@ -96,7 +97,7 @@ export const MiniCardGroup = ({
 }) => {
   return (
     <article>
-      <section className="grid lg:grid-cols-3 grid-cols-2 gap-4">
+      <section className="grid lg:grid-cols-2 grid-cols-2 gap-4">
         {/* <MiniCard
           isSelected={selectedMinicard === "sdk"}
           title="Usar el SDK"
@@ -162,9 +163,9 @@ export const IntegrationCard = ({
   return (
     <div className="grid shadow-standard border border-outlines p-4 rounded-2xl">
       <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
-      <div className="flex items-center justify-between mb-2">
-        <h5 className="font-medium text-md mb-1">{name}</h5>
-        {exists && (
+      <div className="flex items-center justify-between mb-1">
+        <h5 className="font-medium text-md mb-0">{name}</h5>
+        {/* {exists && (
           <div className="">
             <span
               className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -186,7 +187,7 @@ export const IntegrationCard = ({
               </p>
             )}
           </div>
-        )}
+        )} */}
       </div>
       <p className="text-sm mb-4 text-metal">{description}</p>
 
@@ -195,7 +196,7 @@ export const IntegrationCard = ({
       <nav className="flex gap-2">
         <SimpleButton
           className={`grow ${
-            isConnected ? "text-green-600 border-green-300" : "text-metal"
+            isConnected ? "text-success border-success bg-success/10" : "text-metal"
           }`}
           onClick={getButtonAction()}
         >
@@ -204,7 +205,7 @@ export const IntegrationCard = ({
 
         {exists && (
           <SimpleButton
-            className="shrink-0"
+            className="shrink-0 w-[40px] px-0"
             onClick={onEdit}
             title="Configurar"
           >
@@ -214,11 +215,11 @@ export const IntegrationCard = ({
 
         {isConnected && (
           <SimpleButton
-            className="shrink-0 text-red-600 border-red-300"
+            className="shrink-0 text-danger w-[40px] px-0"
             onClick={onDisconnect}
             title="Desconectar"
           >
-            <img src="/assets/chat/recyclebin.svg" alt="Desconectar" />
+          <VscDebugDisconnect className="text-2xl" />
           </SimpleButton>
         )}
       </nav>
@@ -242,10 +243,10 @@ const SimpleButton = ({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "max-h-12 min-h-12",
+        "max-h-10 min-h-10 ",
         "active:scale-95",
-        "hover:bg-gray-50 hover:shadow-sm transition-all",
-        "border-gray-300 border py-2 px-4 rounded-xl min-w-max",
+        "hover:bg-[#F6F6FA] hover:shadow-sm transition-all",
+        "border-gray-300 border py-2 px-4 rounded-lg min-w-max grid place-items-center",
         disabled && "opacity-50 cursor-not-allowed",
         className
       )}
