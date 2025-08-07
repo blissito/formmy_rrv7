@@ -18,17 +18,20 @@ export default function CatchAllRoute() {
 
   // For other unmatched routes, show a 404 page
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-      <h1 className="text-3xl font-bold mb-4">Page Not Found</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center min-h-svh grid place-items-center">
+      <div className="">
+      <img className="mx-auto" src="/dash/404.svg" alt="404" />
+      <h1 className="text-3xl font-bold mb-4">¡Vaya! Esta página no existe</h1>
       <p className="text-gray-600 dark:text-gray-400 mb-8">
-        The page you're looking for doesn't exist.
+        Continua explorando desde la página de inicio o contacta al soporte si crees que esto es un error.
       </p>
       <a
         href="/"
-        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full  text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-0  focus:ring-none"
       >
-        Go Home
+       Ir al Inicio
       </a>
+      </div>
     </div>
   );
 }

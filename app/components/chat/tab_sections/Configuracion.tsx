@@ -326,7 +326,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                   value={security.status}
                   onChange={(value) => setSecurity({...security, status: value})}
                 />
-                <div className="flex gap-1 items-start text-[12px] text-gray-400 mt-px">
+                <div className="flex gap-1 items-start text-[12px] text-irongray mt-px">
                   <span className="mt-[2px]">
                     <IoInformationCircleOutline />
                   </span>
@@ -349,7 +349,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                   placeholder="Selecciona un estado"
                   onChange={(value) => setSecurity({...security, rateLimit: parseInt(value)})}
                 />
-                <div className="flex gap-1 items-start text-[12px] text-gray-400 mt-px">
+                <div className="flex gap-1 items-start text-[12px] text-irongray ">
                 <span className="mt-[2px]">
                     <IoInformationCircleOutline />
                   </span>

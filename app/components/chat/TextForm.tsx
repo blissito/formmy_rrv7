@@ -58,11 +58,11 @@ export const TextForm = ({
           onChange={onContentChange}
           placeholder="Escribe tu mensaje..."
         />
-          <div className="flex gap-2 justify-end p-2">
+          <div className="flex gap-4 justify-end items-center mt-6">
             {editingContext && onCancelEdit && (
               <Button
                 variant="outline"
-                className="m-0 h-10 min-w-max p-2"
+                className="mt-0 mx-0 h-10 px-3 min-w-[120px] rounded-full"
                 onClick={onCancelEdit}
                 isDisabled={isAddingText}
               >
@@ -70,7 +70,7 @@ export const TextForm = ({
               </Button>
             )}
             <Button 
-              className="m-0 h-10"
+              className="mt-0 mx-0 h-10"
               onClick={onAddContext}
               isDisabled={!title.trim() || !content.trim() || isAddingText}
             >
@@ -86,7 +86,7 @@ export const TextForm = ({
       </Card>
       <hr className="my-3 border-none" />
       {textContexts.length > 0 && (
-        <Card noSearch title="Fuentes de texto">
+        <Card noSearch title="Fuentes de texto" navClassName="!mb-4">
           <CardHeader
             left={
               <input

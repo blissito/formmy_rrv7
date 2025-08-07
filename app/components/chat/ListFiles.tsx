@@ -4,6 +4,10 @@ import type { ReactNode } from "react";
 import { Select } from "./common/Select";
 import { cn } from "~/lib/utils";
 import { span } from "effect/Layer";
+import DownloadIcon from "../ui/icons/Download";
+import EditIcon from "../ui/icons/Edit";
+import DeleteIcon from "../ui/icons/Delete";
+import RenameIcon from "../ui/icons/Rename";
 
 export const ListFiles = ({ 
   files = [], 
@@ -60,7 +64,7 @@ export const ListFiles = ({
   };
 
   return (
-    <Card title="Lista de archivos" noSearch={false}>
+    <Card title="Lista de archivos" noSearch={false} navClassName="!mb-4">
       <CardHeader
         left={
           <input
@@ -104,7 +108,7 @@ export const CardHeader = ({
     <header className="flex justify-between items-center mb-2">
       <label className="flex items-center gap-3">
         {left}
-        <h4 className="text-gray-600 select-none text-lg ">{title}</h4>
+        <h4 className="text-gray-600 select-none text-base ">{title}</h4>
       </label>
       <div className="flex items-center gap-2">
         <p className="text-gray-600"> Filtrar por:</p>
@@ -153,15 +157,19 @@ export const FileItem = ({
     {
       label: "Descargar",
       onClick: () => handleAction("descargar"),
+      icon:<DownloadIcon className="w-4 h-4" />,
     },
     {
       label: "Renombrar",
       onClick: () => handleAction("renombrar"),
+      icon:<RenameIcon className="w-4 h-4" />,
+
     },
     {
       label: "Eliminar",
       onClick: () => handleAction("eliminar"),
-      className: "text-red-600 hover:bg-red-50",
+      className: "text-danger hover:bg-red-50",
+      icon:<DeleteIcon className="w-4 h-4" />,
     },
   ];
 
@@ -179,7 +187,7 @@ export const FileItem = ({
           onChange={onSelect}
         />
         <img
-          className="w-16"
+          className="w-10"
           src={
             icon ||
             (type === "docx" ? "/assets/chat/doc.svg" : "/assets/chat/pdf.svg")
@@ -188,10 +196,10 @@ export const FileItem = ({
         />
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-lg font-medium">{fileName}</p>
+            <p className="text-base font-medium">{fileName}</p>
             {tag && <Tag text={tag} />}
           </div>
-          <span className="text-md font-thin text-gray-500">{fileSize}</span>
+          <span className="text-sm font-thin text-gray-500">{fileSize}</span>
         </div>
       </div>
       <FloatingMenu
@@ -247,15 +255,18 @@ export const CardRow = ({
     {
       label: "Descargar",
       onClick: () => handleAction("descargar"),
+      icon: <DownloadIcon className="w-4 h-4" />,
     },
     {
       label: "Editar",
       onClick: () => handleAction("editar"),
+      icon:<EditIcon className="w-4 h-4" />,
     },
     {
       label: "Eliminar",
       onClick: () => handleAction("eliminar"),
-      className: "text-red-600 hover:bg-red-50",
+      className: "text-danger  hover:bg-red-50",
+      icon:<DeleteIcon className="w-4 h-4" />,
     },
   ];
 
@@ -281,11 +292,11 @@ export const CardRow = ({
         )}
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-lg font-medium">{title}</p>
+            <p className="text-base font-medium">{title}</p>
             {tag && <Tag text={tag} />}
           </div>
-          {subtitle && <p className="text-sm text-gray-600 mb-1">{subtitle}</p>}
-          <span className="text-md font-thin text-gray-500">{text}</span>
+          {/* {subtitle && <p className="text-sm text-gray-600 mb-1">{subtitle}</p>} */}
+          <p className="text-sm font-thin text-gray-500">{text}</p>
         </div>
       </div>
       <FloatingMenu

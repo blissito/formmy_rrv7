@@ -5,6 +5,8 @@ import type { WebsiteEntry } from "~/types/website";
 import { BsThreeDots } from "react-icons/bs";
 import { LuPencil, LuTrash2 } from "react-icons/lu";
 import { useState, useRef, useEffect } from "react";
+import DeleteIcon from "~/components/ui/icons/Delete";
+import EditIcon from "~/components/ui/icons/Edit";
 
 export const Table = ({
   noSelect,
@@ -110,13 +112,13 @@ const LinkRow = ({
 
   return (
     <main className="group flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 max-w-[80%]">
         {!noSelect && <Checkbox />}
-        <div>
-          <img alt="world icon" src={`/assets/chat/earth.svg`} />
+        <div className="min-w-10 h-10 bg-irongray/10 rounded-full flex items-center justify-center">
+          <img className="w-7" alt="world icon" src={`/assets/chat/earth.svg`} />
         </div>
-        <div>
-          <h4 className="font-semibold">{displayUrl}</h4>
+        <div className=" overflow-hidden">
+          <h4 className="font-semibold truncate" title={displayUrl}>{displayUrl}</h4>
           <p className="text-gray-600 text-xs">
             Última actualización: {formatLastUpdated(entry.lastUpdated)} |{" "}
             {entry.routes.length} página{entry.routes.length !== 1 ? "s" : ""}{" "}
@@ -217,14 +219,14 @@ const DropdownMenu = ({
             onClick={handleEdit}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            <LuPencil className="w-4 h-4" />
+            <EditIcon className="w-4 h-4" />
             Editar
           </button>
           <button
             onClick={handleRemove}
-            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-danger hover:bg-red-50 transition-colors"
           >
-            <LuTrash2 className="w-4 h-4" />
+            <DeleteIcon className="w-4 h-4" />
             Eliminar
           </button>
         </div>
