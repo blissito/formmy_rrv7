@@ -88,6 +88,7 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
     
     switch (toolCall.function.name) {
       case "web_search": {
+        console.log(`🔧 Modelo solicitó herramientas: [ 'web_search' ]`);
         try {
           const searchService = await getUnifiedWebSearchService();
           const searchResults = await searchService.search(

@@ -25,31 +25,17 @@ export abstract class BaseTool implements Tool {
   abstract execute(params: any): Promise<any>;
 }
 
-export { WebSearchService } from './webSearch.server';
 export { 
   UnifiedWebSearchService,
-  getUnifiedWebSearchService,
-  cleanupUnifiedWebSearchService
+  getUnifiedWebSearchService
 } from './webSearchUnified.server';
 export { 
-  YahooWebSearchService,
-  getYahooWebSearchService,
-  cleanupYahooWebSearchService
-} from './webSearchYahoo.server';
+  WebSearchBetaService,
+  getWebSearchBetaService
+} from './webSearchBeta.server';
 export { 
-  BingWebSearchService,
-  getBingWebSearchService,
-  cleanupBingWebSearchService
-} from './webSearchBing.server';
-export { 
-  PlaywrightWebSearchService, 
-  getWebSearchService, 
-  cleanupWebSearchService 
-} from './webSearchPlaywright.server';
-export { 
-  PuppeteerWebSearchService, 
-  getPuppeteerWebSearchService, 
-  cleanupPuppeteerWebSearchService 
-} from './webSearchPuppeteer.server';
+  GoogleCustomSearchService,
+  getGoogleCustomSearchService
+} from './webSearchGoogle.server';
 
 export * from './types';

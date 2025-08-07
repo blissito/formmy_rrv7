@@ -1,5 +1,4 @@
-import { WebSearchService } from "~/tools/webSearch.server";
-import { getPuppeteerWebSearchService } from "~/tools/webSearchPuppeteer.server";
+import { getWebSearchBetaService } from "~/tools/webSearchBeta.server";
 import type { SearchResponse } from "~/tools/types";
 import { DEFAULT_AI_MODEL } from "~/utils/aiModels";
 
@@ -73,56 +72,20 @@ export async function callGhostyOpenRouter(
   let searchContext = '';
   
   if (enableSearch && shouldPerformSearch(message, history)) {
-    console.log(`🔍 Realizando búsqueda para: "${message}"`);
     try {
-      // Intentar usar Puppeteer primero
-      const puppeteerService = await getPuppeteerWebSearchService();
-      searchResults = await puppeteerService.search(message, 5);
+      const searchService = await getWebSearchBetaService();
+      searchResults = await searchService.search(message, 5);
       
-      // Si Puppeteer no devuelve resultados, usar búsqueda básica REAL
-      if (!searchResults || searchResults.results.length === 0) {
-        console.log("⚠️ Puppeteer devolvió 0 resultados, intentando búsqueda básica REAL");
-        const searchService = new WebSearchService();
-        searchResults = await searchService.search(message, 3);
-        if (!searchResults || searchResults.results.length === 0) {
-          console.log("❌ Búsqueda básica también falló - sin resultados disponibles");
-          searchResults = { query: message, timestamp: new Date(), results: [] };
-          searchContext = '';
-        } else {
-          searchContext = searchService.formatForLLM(searchResults);
-          console.log(`✅ Búsqueda básica exitosa: ${searchResults.results.length} resultados`);
-        }
-      } else {
-        searchContext = playwrightService.formatForLLM(searchResults);
-        console.log(`✅ Playwright exitoso: ${searchResults.results.length} resultados`);
-      }
-      if (searchContext.length > 0) {
-        console.log(`📝 Contexto generado (${searchContext.length} chars): ${searchContext.substring(0, 200)}...`);
-      } else {
-        console.log(`📝 Sin contexto de búsqueda - no hay fuentes disponibles`);
-      }
-    } catch (playwrightError) {
-      console.warn("Playwright search failed, falling back to basic search:", playwrightError);
-      // Fallback a búsqueda básica
-      const searchService = new WebSearchService();
-      searchResults = await searchService.search(message, 3);
-      if (!searchResults || searchResults.results.length === 0) {
-        console.log("❌ Fallback búsqueda básica también falló - sin resultados");
-        searchResults = { query: message, timestamp: new Date(), results: [] };
-        searchContext = '';
-      } else {
+      if (searchResults && searchResults.results.length > 0) {
         searchContext = searchService.formatForLLM(searchResults);
-        console.log(`✅ Fallback búsqueda básica: ${searchResults.results.length} resultados`);
-        if (searchContext.length > 0) {
-        console.log(`📝 Contexto generado (${searchContext.length} chars): ${searchContext.substring(0, 200)}...`);
       } else {
-        console.log(`📝 Sin contexto de búsqueda - no hay fuentes disponibles`);
+        searchResults = { query: message, timestamp: new Date().toISOString(), results: [] };
+        searchContext = '';
       }
-      }
+    } catch (searchError) {
+      searchResults = { query: message, timestamp: new Date().toISOString(), results: [] };
+      searchContext = '';
     }
-  } else {
-    console.log(`❌ No se realizará búsqueda para: "${message}"`);
-    console.log(`   enableSearch: ${enableSearch}, shouldPerformSearch: ${shouldPerformSearch(message, history)}`);
   }
   
   if (!apiKey) {
