@@ -41,38 +41,31 @@ export class PlaywrightWebSearchService {
       
       try {
         this.browser = await chromium.launch({
-          headless: true,
+          headless: false, // Usar headless: false es menos detectable
           executablePath,
-          timeout: 30000, // 30 segundos timeout para launch
-        args: isProduction ? [
-          // Args minimalistas para producción estable
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage', 
-          '--single-process',
-          '--disable-gpu',
-          '--headless',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor'
-        ] : [
-          // Args completos para desarrollo
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-features=TranslateUI',
-          '--disable-ipc-flooding-protection',
-          '--disable-blink-features=AutomationControlled',
-          '--window-size=1920,1080'
-        ]
-      });
+          timeout: 30000,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-blink-features=AutomationControlled',
+            '--disable-features=site-per-process',
+            '--disable-web-security',
+            '--disable-site-isolation-trials',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-popup-blocking',
+            '--disable-prompt-on-repost',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-features=TranslateUI',
+            '--disable-ipc-flooding-protection',
+            '--window-size=1920,1080',
+            '--start-maximized',
+            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          ]
+        });
 
       // Añadir listeners para debug
       this.browser.on('disconnected', () => {
@@ -81,18 +74,18 @@ export class PlaywrightWebSearchService {
         this.contexts = [];
       });
 
-        // Reset counter en inicialización exitosa
-        this.initializationAttempts = 0;
-        
-        if (this.isDebugMode || isProduction) {
-          console.log(`✅ Browser launched successfully (PID: ${this.browser.process()?.pid})`);
+      // Reset counter en inicialización exitosa
+      this.initializationAttempts = 0;
+      
+      if (this.isDebugMode || isProduction) {
+        try {
+          const pid = this.browser.process()?.pid || 'unknown';
+          console.log(`✅ Browser launched successfully (PID: ${pid})`);
+        } catch (e) {
+          console.log("✅ Browser launched successfully");
         }
-      } catch (launchError) {
-        console.error("❌ Failed to launch browser:", launchError);
-        this.browser = null;
-        throw new Error(`Browser launch failed: ${launchError instanceof Error ? launchError.message : 'Unknown error'}`);
       }
-
+      
       // Crear pool de contextos aislados
       for (let i = 0; i < this.maxConcurrentSearches; i++) {
         const context = await this.browser.newContext({
@@ -135,16 +128,23 @@ export class PlaywrightWebSearchService {
 
         this.contexts.push({ context, inUse: false });
       }
+    } catch (launchError) {
+      console.error("❌ Failed to launch browser:", launchError);
+      this.browser = null;
+      throw new Error(`Browser launch failed: ${launchError instanceof Error ? launchError.message : 'Unknown error'}`);
+    }
     }
   }
 
   private getRandomUserAgent(): string {
     const agents = [
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15'
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7.2) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0'
     ];
     return agents[Math.floor(Math.random() * agents.length)];
   }
@@ -157,15 +157,44 @@ export class PlaywrightWebSearchService {
   }
 
   async search(query: string, numResults: number = 5): Promise<SearchResponse> {
-    // Verificar si el browser está inicializado
-    if (!this.browser) {
-      console.log("⚠️ Browser not initialized - search will fail gracefully");
-      throw new Error("Playwright browser not available - browser binaries might not be installed");
-    }
-    
+    // Verificar cache primero
     const cached = this.cache.get(query);
     if (cached && cached.expires > Date.now()) {
       return cached.data;
+    }
+
+    // Intentar inicializar si no hay browser
+    if (!this.browser) {
+      console.log("⚠️ Browser not initialized - attempting lazy initialization...");
+      try {
+        await this.initialize();
+      } catch (initError) {
+        console.error("❌ Failed to initialize browser during search:", initError);
+        
+        // En producción, devolver respuesta vacía en lugar de fallar
+        if (process.env.NODE_ENV === 'production') {
+          console.log("🔄 Returning empty results for production stability");
+          return {
+            query,
+            results: [],
+            timestamp: new Date().toISOString(),
+            error: "Search service temporarily unavailable"
+          };
+        }
+        
+        throw new Error("Playwright browser not available - browser binaries might not be installed");
+      }
+    }
+
+    // Verificar de nuevo después de la inicialización
+    if (!this.browser) {
+      console.log("❌ Browser still not available after initialization attempt");
+      return {
+        query,
+        results: [],
+        timestamp: new Date().toISOString(),
+        error: "Search service initialization failed"
+      };
     }
 
     await this.initialize();
@@ -299,8 +328,12 @@ export class PlaywrightWebSearchService {
         contextWrapper.inUse = true;
         
         // Verificar que el context sigue válido
-        if (contextWrapper.context.isDestroyed()) {
-          console.log("⚠️ Context was destroyed, recreating...");
+        try {
+          // Intentar crear una página para verificar si el context es válido
+          const testPage = await contextWrapper.context.newPage();
+          await testPage.close();
+        } catch (contextError) {
+          console.log("⚠️ Context is invalid, recreating...");
           contextWrapper.context = await this.browser!.newContext({
             userAgent: this.getRandomUserAgent(),
             viewport: { width: 1920, height: 1080 },
@@ -365,7 +398,6 @@ export class PlaywrightWebSearchService {
       });
       
       // Set timeouts más cortos para producción
-      const isProduction = process.env.NODE_ENV === 'production';
       const navTimeout = isProduction ? 8000 : 15000;
       const waitTimeout = isProduction ? 1000 : 2000;
       
@@ -375,8 +407,9 @@ export class PlaywrightWebSearchService {
         timeout: navTimeout
       });
 
-      // Delay más corto en producción
-      await page.waitForTimeout(waitTimeout + Math.random() * waitTimeout);
+      // Delay más humano con variación
+      const humanDelay = 1500 + Math.random() * 2000; // Entre 1.5 y 3.5 segundos
+      await page.waitForTimeout(humanDelay);
 
       // Simular actividad humana - hacer clic en algún elemento si existe
       try {
@@ -393,7 +426,8 @@ export class PlaywrightWebSearchService {
         // Ignorar errores de simulación de mouse
       }
 
-      await page.waitForTimeout(500 + Math.random() * 500);
+      // Delay adicional más humano
+      await page.waitForTimeout(1000 + Math.random() * 1500);
 
       // Luego hacer la búsqueda de forma más gradual con parámetros adicionales
       await page.goto(`https://www.google.com/search?q=${encodeURIComponent(query)}&hl=es&sei=${Math.random().toString(36).substring(2, 15)}`, {
@@ -405,8 +439,8 @@ export class PlaywrightWebSearchService {
         console.log('🌐 Página de Google cargada, buscando resultados...');
       }
 
-      // Esperar un poco más y probar múltiples selectores
-      await page.waitForTimeout(2000);
+      // Esperar con timing más variable y humano
+      await page.waitForTimeout(1500 + Math.random() * 2000);
       
       // Debug: capturar título y URL para verificar que llegamos
       const title = await page.title();
@@ -433,9 +467,11 @@ export class PlaywrightWebSearchService {
       
       if (isBlocked) {
         if (this.isDebugMode) {
-          console.log('🚫 Google detectó bot - página bloqueada');
+          console.log('🚫 Google detectó bot - intentando con DuckDuckGo...');
         }
-        throw new Error('Google blocked request');
+        
+        // Intentar con DuckDuckGo como alternativa
+        return await this.searchWithDuckDuckGo(page, query, numResults);
       }
 
       const results = await page.evaluate((maxResults) => {
@@ -802,6 +838,86 @@ export class PlaywrightWebSearchService {
   }
 
 
+  private async searchWithDuckDuckGo(page: Page, query: string, numResults: number): Promise<SearchResponse> {
+    console.log('🦆 Usando DuckDuckGo como motor de búsqueda alternativo...');
+    
+    try {
+      // Navegar a DuckDuckGo
+      await page.goto('https://duckduckgo.com', {
+        waitUntil: 'domcontentloaded',
+        timeout: 15000
+      });
+      
+      // Esperar un momento
+      await page.waitForTimeout(1000 + Math.random() * 1000);
+      
+      // Buscar el campo de búsqueda y escribir
+      const searchInput = await page.waitForSelector('input[name="q"]', { timeout: 5000 });
+      await searchInput.click();
+      
+      // Escribir la búsqueda de forma más humana
+      for (const char of query) {
+        await page.keyboard.type(char);
+        await page.waitForTimeout(50 + Math.random() * 100);
+      }
+      
+      // Presionar Enter
+      await page.keyboard.press('Enter');
+      
+      // Esperar resultados
+      await page.waitForSelector('.react-results--main', { timeout: 10000 });
+      await page.waitForTimeout(1500 + Math.random() * 1000);
+      
+      // Extraer resultados
+      const results = await page.evaluate((maxResults) => {
+        const searchResults: any[] = [];
+        
+        // Selectores para DuckDuckGo
+        const resultElements = document.querySelectorAll('[data-testid="result"]');
+        
+        for (let i = 0; i < Math.min(resultElements.length, maxResults); i++) {
+          const element = resultElements[i];
+          
+          const titleElement = element.querySelector('h2 a');
+          const snippetElement = element.querySelector('[data-result="snippet"]');
+          
+          if (titleElement) {
+            const title = titleElement.textContent?.trim() || '';
+            const url = (titleElement as HTMLAnchorElement).href;
+            const snippet = snippetElement?.textContent?.trim() || '';
+            
+            searchResults.push({
+              title,
+              url,
+              snippet,
+              content: snippet
+            });
+          }
+        }
+        
+        return searchResults;
+      }, numResults);
+      
+      return {
+        query,
+        results,
+        timestamp: new Date().toISOString(),
+        source: 'DuckDuckGo'
+      };
+      
+    } catch (error) {
+      console.error('❌ Error en búsqueda con DuckDuckGo:', error);
+      
+      // Si DuckDuckGo también falla, devolver resultados vacíos
+      return {
+        query,
+        results: [],
+        timestamp: new Date().toISOString(),
+        error: 'Both Google and DuckDuckGo searches failed'
+      };
+    }
+  }
+
   formatForLLM(searchResponse: SearchResponse): string {
     const sources = searchResponse.results
       .map((result, index) => {
@@ -845,8 +961,15 @@ export async function getWebSearchService(): Promise<PlaywrightWebSearchService>
     } catch (error) {
       console.error("❌ Failed to initialize Playwright web search service:", error);
       console.log("📋 This might be due to missing browser binaries in production");
-      console.log("💡 Consider running 'npx playwright install --with-deps chromium'");
-      // Don't throw here - let the service handle the error gracefully
+      
+      // En producción, intentar con configuración específica de Docker
+      if (process.env.NODE_ENV === 'production') {
+        console.log("🔄 Retrying with Docker-specific configuration...");
+        // Dejar el servicio sin browser - será manejado en el método search
+        serviceInstance.browser = null;
+      } else {
+        console.log("💡 In development, run 'npx playwright install chromium'");
+      }
     }
   }
   return serviceInstance;

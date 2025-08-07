@@ -7,11 +7,21 @@ FROM node:20-alpine AS production-dependencies-env
 COPY . /app/
 # COPY ./package.json package-lock.json /app/
 WORKDIR /app
-# Instalar dependencias del sistema necesarias para Playwright y Prisma
-RUN apk update && apk add openssl chromium
-# Configurar variables de entorno para Playwright
+# Instalar todas las dependencias necesarias para Chromium en Alpine
+RUN apk update && apk add --no-cache \
+    openssl \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto-emoji \
+    && rm -rf /var/cache/apk/*
+# Configurar variables de entorno para Playwright y Puppeteer
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 # Generar Prisma client
 RUN npx prisma generate
 # Instalar dependencias de producción
@@ -24,11 +34,20 @@ WORKDIR /app
 RUN npm run build
 
 FROM node:20-alpine
-# Instalar Chromium en la imagen final también
-RUN apk update && apk add chromium
-# Configurar variables de entorno para Playwright
+# Instalar Chromium y todas las dependencias necesarias en la imagen final
+RUN apk update && apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto-emoji \
+    && rm -rf /var/cache/apk/*
+# Configurar variables de entorno para Playwright y Puppeteer
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 COPY ./package.json package-lock.json /app/
 COPY server.js /app/server.js

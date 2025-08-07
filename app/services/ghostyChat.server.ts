@@ -1,5 +1,5 @@
 import { WebSearchService } from "~/tools/webSearch.server";
-import { getWebSearchService } from "~/tools/webSearchPlaywright.server";
+import { getPuppeteerWebSearchService } from "~/tools/webSearchPuppeteer.server";
 import type { SearchResponse } from "~/tools/types";
 
 interface GhostyChatRequest {
@@ -74,13 +74,13 @@ export async function callGhostyOpenRouter(
   if (enableSearch && shouldPerformSearch(message, history)) {
     console.log(`🔍 Realizando búsqueda para: "${message}"`);
     try {
-      // Intentar usar Playwright primero
-      const playwrightService = await getWebSearchService();
-      searchResults = await playwrightService.search(message, 5);
+      // Intentar usar Puppeteer primero
+      const puppeteerService = await getPuppeteerWebSearchService();
+      searchResults = await puppeteerService.search(message, 5);
       
-      // Si Playwright no devuelve resultados, usar búsqueda básica REAL
+      // Si Puppeteer no devuelve resultados, usar búsqueda básica REAL
       if (!searchResults || searchResults.results.length === 0) {
-        console.log("⚠️ Playwright devolvió 0 resultados, intentando búsqueda básica REAL");
+        console.log("⚠️ Puppeteer devolvió 0 resultados, intentando búsqueda básica REAL");
         const searchService = new WebSearchService();
         searchResults = await searchService.search(message, 3);
         if (!searchResults || searchResults.results.length === 0) {

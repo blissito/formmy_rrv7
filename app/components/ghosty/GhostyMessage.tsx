@@ -3,6 +3,7 @@ import remarkGfm from 'remark-gfm';
 import { cn } from "~/lib/utils";
 import type { GhostyMessage } from './hooks/useGhostyChat';
 import { useState } from 'react';
+import { formatReasoningContent } from '~/utils/formatReasoningContent';
 
 interface GhostyMessageProps {
   message: GhostyMessage;
@@ -95,11 +96,14 @@ export const GhostyMessageComponent = ({
                   code({ node, inline, className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className || '');
                     if (!inline && match) {
+                      // Estilo especial para bloques de pensamiento
+                      const isThinking = match[1] === 'thinking';
                       return (
                         <div className="relative">
                           <pre className={cn(
-                            "bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto",
-                            "border border-gray-700"
+                            isThinking 
+                              ? "bg-gradient-to-r from-purple-50 to-blue-50 text-purple-900 p-4 rounded-lg overflow-x-auto border-2 border-purple-200 italic"
+                              : "bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto border border-gray-700"
                           )}>
                             <code className={className} {...props}>
                               {String(children).replace(/\n$/, '')}
@@ -127,7 +131,7 @@ export const GhostyMessageComponent = ({
                   },
                 }}
               >
-                {message.content}
+                {formatReasoningContent(message.content)}
               </ReactMarkdown>
               
               {/* Streaming cursor */}

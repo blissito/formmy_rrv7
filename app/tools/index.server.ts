@@ -27,9 +27,29 @@ export abstract class BaseTool implements Tool {
 
 export { WebSearchService } from './webSearch.server';
 export { 
+  UnifiedWebSearchService,
+  getUnifiedWebSearchService,
+  cleanupUnifiedWebSearchService
+} from './webSearchUnified.server';
+export { 
+  YahooWebSearchService,
+  getYahooWebSearchService,
+  cleanupYahooWebSearchService
+} from './webSearchYahoo.server';
+export { 
+  BingWebSearchService,
+  getBingWebSearchService,
+  cleanupBingWebSearchService
+} from './webSearchBing.server';
+export { 
   PlaywrightWebSearchService, 
   getWebSearchService, 
   cleanupWebSearchService 
 } from './webSearchPlaywright.server';
+export { 
+  PuppeteerWebSearchService, 
+  getPuppeteerWebSearchService, 
+  cleanupPuppeteerWebSearchService 
+} from './webSearchPuppeteer.server';
 
 export * from './types';

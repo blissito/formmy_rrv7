@@ -1,4 +1,4 @@
-import { getWebSearchService } from "~/tools/webSearchPlaywright.server";
+import { getUnifiedWebSearchService } from "~/tools/webSearchUnified.server";
 
 interface ToolDefinition {
   type: string;
@@ -88,7 +88,7 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
     switch (toolCall.function.name) {
       case "web_search": {
         try {
-          const searchService = await getWebSearchService();
+          const searchService = await getUnifiedWebSearchService();
           const searchResults = await searchService.search(
             args.query, 
             args.num_results || 5
@@ -403,15 +403,21 @@ export async function callGhostyWithTools(
         body: JSON.stringify(finalRequestBody),
       });
 
+      console.log('📊 Final response status:', finalResponse.status);
+
       if (finalResponse.ok) {
         const finalData = await finalResponse.json();
         const finalChoice = finalData.choices?.[0];
         
+        console.log('✅ Final response received, has content:', !!finalChoice?.message?.content);
+        console.log('📝 Content length:', finalChoice?.message?.content?.length || 0);
+        
         if (finalChoice?.message?.content) {
+          const finalContent = finalChoice.message.content;
+          
           // Si necesitamos streaming para la respuesta final
           if (onChunk) {
-            const content = finalChoice.message.content;
-            const words = content.split(' ');
+            const words = finalContent.split(' ');
             
             for (let i = 0; i < words.length; i++) {
               const chunk = words[i] + (i < words.length - 1 ? ' ' : '');
@@ -421,16 +427,28 @@ export async function callGhostyWithTools(
           }
           
           return {
-            content: finalChoice.message.content,
+            content: finalContent,
             toolsUsed,
             sources: allSources.length > 0 ? allSources : undefined
           };
+        } else {
+          console.log('⚠️ No content in final response:', finalData);
         }
+      } else {
+        const errorText = await finalResponse.text();
+        console.error('❌ Final response failed:', finalResponse.status, errorText);
       }
       
       // Fallback si la llamada final falla
+      console.log('⚠️ Using fallback response');
+      const fallbackContent = "Encontré información relacionada con tu consulta, pero no pude procesar la respuesta final.";
+      
+      if (onChunk) {
+        onChunk(fallbackContent);
+      }
+      
       return {
-        content: "Encontré información relacionada con tu consulta, pero no pude procesar la respuesta final.",
+        content: fallbackContent,
         toolsUsed,
         sources: allSources.length > 0 ? allSources : undefined
       };

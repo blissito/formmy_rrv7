@@ -1,1 +1,1 @@
-export const DEFAULT_AI_MODEL = "moonshotai/kimi-k2:free";
+export { DEFAULT_AI_MODEL } from "./aiModels";

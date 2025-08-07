@@ -1,6 +1,6 @@
 import { getImageExtractor } from "./imageExtractor.server";
 import { WebSearchService } from "./webSearch.server";
-import { getWebSearchService } from "./webSearchPlaywright.server";
+import { getUnifiedWebSearchService } from "./webSearchUnified.server";
 
 export interface ToolRequest {
   intent: 'search' | 'extract-images' | 'analyze-url';
@@ -43,7 +43,7 @@ export class GhostyToolsService {
   }
 
   private async handleSearch(data: SearchRequest): Promise<any> {
-    const { query, maxResults = 5, enablePlaywright = true } = data;
+    const { query, maxResults = 5 } = data;
 
     if (!query?.trim()) {
       throw new Error("Query is required");
@@ -51,16 +51,13 @@ export class GhostyToolsService {
 
     let searchResults;
 
-    if (enablePlaywright) {
-      try {
-        const playwrightService = await getWebSearchService();
-        searchResults = await playwrightService.search(query, maxResults);
-      } catch (error) {
-        console.warn("Playwright search failed, falling back to basic search:", error);
-      }
-    }
-
-    if (!searchResults || searchResults.results.length === 0) {
+    try {
+      // Use unified search service (Yahoo → Bing strategy, no Google)
+      const unifiedService = await getUnifiedWebSearchService();
+      searchResults = await unifiedService.search(query, maxResults);
+    } catch (error) {
+      console.warn("Unified search failed, falling back to basic search:", error);
+      // Fallback to basic search service
       const basicSearchService = new WebSearchService();
       searchResults = await basicSearchService.search(query, maxResults);
     }
@@ -70,7 +67,8 @@ export class GhostyToolsService {
       query: searchResults.query,
       results: searchResults.results,
       timestamp: searchResults.timestamp,
-      total: searchResults.results.length
+      total: searchResults.results.length,
+      source: (searchResults as any).source || 'Web'
     };
   }
 
