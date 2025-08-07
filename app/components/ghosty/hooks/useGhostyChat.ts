@@ -1,11 +1,16 @@
 import { useState, useCallback } from 'react';
 
+export type MessageRole = 'user' | 'assistant';
+
 export interface GhostyMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: MessageRole;
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  metadata?: {
+    [key: string]: unknown;
+  };
 }
 
 export type GhostyState = 'idle' | 'thinking' | 'streaming' | 'error';

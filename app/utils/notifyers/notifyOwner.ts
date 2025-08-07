@@ -1,14 +1,8 @@
 import nodemailer from "nodemailer";
+import { getSesRemitent, getSesTransport } from "./ses";
 
 // create transporter
-export const sendgridTransport = nodemailer.createTransport({
-  host: "smtp.sendgrid.net",
-  port: 465,
-  auth: {
-    user: "apikey",
-    pass: process.env.SENDGRID_KEY,
-  },
-});
+export const sendgridTransport = getSesTransport();
 
 export const notifyOwner = async ({
   projectId,
@@ -21,7 +15,7 @@ export const notifyOwner = async ({
 }) =>
   sendgridTransport
     .sendMail({
-      from: "hola@formmy.app",
+      from: getSesRemitent(),
       subject: "👻 Nuevo mensaje en Formmy",
       bcc: emails,
       html: `

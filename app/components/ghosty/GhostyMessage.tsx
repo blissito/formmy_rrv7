@@ -6,9 +6,9 @@ import { useState } from 'react';
 
 interface GhostyMessageProps {
   message: GhostyMessage;
-  onCopy?: (content: string) => void;
-  onRegenerate?: (messageId: string) => void;
-  userImage?: string; // URL de la imagen del usuario
+  onCopy?: (content: string) => void | Promise<void>;
+  onRegenerate?: (messageId: string) => void | Promise<void>;
+  userImage?: string | null; // URL de la imagen del usuario
 }
 
 export const GhostyMessageComponent = ({ 
@@ -40,46 +40,50 @@ export const GhostyMessageComponent = ({
   const isStreaming = message.isStreaming;
 
   return (
-    <div className={cn(
-      "flex w-full gap-3 mb-4",
-      isUser ? "justify-end" : "justify-start"
-    )}>
+    <div 
+      className={cn(
+        "flex w-full gap-3 mb-4 px-2 sm:px-4 py-1",
+        isUser ? "justify-end" : "justify-start"
+      )}
+    >
       {/* Avatar */}
       {!isUser && (
         <div className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
           "bg-brand-500 text-clear text-sm font-medium mt-1"
         )}>
-          <img src="/home/ghosty-avatar.svg" alt="ghosty" />
+          <img src="/home/ghosty-avatar.svg" alt="ghosty" className="w-5 h-5" />
         </div>
       )}
 
       {/* Message Content */}
       <div className={cn(
-        "max-w-[80%] group relative",
+        "max-w-[calc(100%-3rem)] sm:max-w-[80%] group relative",
         isUser && "order-first"
       )}>
         {/* Message Bubble */}
         <div className={cn(
-          "rounded-xl px-4 py-2 relative",
-          isUser ? 
-            "bg-brand-500 text-clear" : 
-            "bg-[#FCFDFE] border border-outlines text-dark"
+          "rounded-xl px-4 py-2 relative shadow-sm",
+          isUser 
+            ? "bg-brand-500 text-clear" 
+            : "bg-[#FCFDFE] border border-outlines text-dark"
         )}>
           {isUser ? (
             // User message - plain text
-            <p className="text-sm md:text-base leading-relaxed">
+            <p className="text-sm md:text-base leading-relaxed break-words">
               {message.content}
             </p>
           ) : (
             // Assistant message - markdown
             <div className={cn(
-              "prose prose-sm md:prose-base max-w-none",
+              "prose prose-sm md:prose-base max-w-none break-words",
               "prose-headings:text-dark prose-p:text-dark prose-strong:text-dark",
-              "prose-code:text-brand-500 prose-code:bg-brand-100/20 prose-code:px-1 prose-code:rounded",
-              "prose-pre:bg-gray-900 prose-pre:border prose-pre:border-outlines",
-              "prose-blockquote:border-l-brand-500 prose-blockquote:text-irongray",
-              "prose-table:border-collapse prose-table:border prose-table:border-outlines prose-table:w-full prose-table:my-4",
+              "prose-code:text-brand-500 prose-code:bg-brand-100/20 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm",
+              "prose-pre:bg-gray-50 prose-pre:border prose-pre:border-outlines prose-pre:rounded-lg prose-pre:overflow-hidden",
+              "prose-pre>code:before:content-none prose-pre>code:after:content-none", // Remove backticks from code blocks
+              "prose-blockquote:border-l-2 prose-blockquote:border-l-brand-500 prose-blockquote:pl-4 prose-blockquote:py-1 prose-blockquote:text-irongray",
+              "prose-ul:pl-4 prose-ol:pl-4 prose-li:my-0.5",
+              "prose-table:border-collapse prose-table:border prose-table:border-outlines prose-table:w-full prose-table:my-4 prose-table:text-sm",
               "prose-th:border prose-th:border-outlines prose-th:bg-brand-100/20 prose-th:p-3 prose-th:text-dark prose-th:font-semibold prose-th:text-left",
               "prose-td:border prose-td:border-outlines prose-td:p-3 prose-td:text-dark prose-td:align-top",
               "prose-tr:even:bg-brand-50/30",
@@ -136,18 +140,25 @@ export const GhostyMessageComponent = ({
 
         {/* Actions */}
         <div className={cn(
-          "flex items-center gap-2 mt-1 opacity-100 transition-opacity duration-200",
+          "flex items-center gap-2 mt-1.5 opacity-100 transition-opacity duration-200",
           isUser ? "justify-end hidden" : "justify-start"
         )}>
           {/* Copy button */}
           <button
             onClick={handleCopy}
             className={cn(
-              "text-xs px-2 py-1 rounded text-irongray hover:text-dark",
-              "hover:bg-brand-100/40 transition-all duration-200"
+              "text-xs px-2.5 py-1 rounded-md text-irongray hover:text-dark",
+              "hover:bg-brand-100/40 transition-all duration-200 flex items-center gap-1",
+              "border border-outlines/50 hover:border-outlines/70"
             )}
+            aria-label={showCopied ? "Copiado" : "Copiar al portapapeles"}
           >
-            {showCopied ? "✓ Copiado" : "Copiar"}
+            {showCopied ? (
+              <span className="text-green-500">✓</span>
+            ) : (
+              <span className="text-xs">📋</span>
+            )}
+            <span>{showCopied ? "Copiado" : "Copiar"}</span>
           </button>
 
           {/* Regenerate button (only for assistant) */}
@@ -155,41 +166,56 @@ export const GhostyMessageComponent = ({
             <button
               onClick={handleRegenerate}
               className={cn(
-                "text-xs px-2 py-1 rounded text-irongray hover:text-dark",
-                "hover:bg-brand-100/40 transition-all duration-200"
+                "text-xs px-2.5 py-1 rounded-md text-irongray hover:text-dark",
+                "hover:bg-brand-100/40 transition-all duration-200 flex items-center gap-1",
+                "border border-outlines/50 hover:border-outlines/70"
               )}
+              aria-label="Regenerar respuesta"
             >
-              ↻ Regenerar
+              <span className="text-xs">🔄</span>
+              <span>Regenerar</span>
             </button>
           )}
         </div>
 
         {/* Timestamp */}
         <div className={cn(
-          "text-xs text-lightgray mt-1",
-          isUser ? "text-right" : "text-left"
+          "text-xs text-lightgray mt-1.5 flex items-center",
+          isUser ? "justify-end" : "justify-start"
         )}>
-          {message.timestamp.toLocaleTimeString('es-ES', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })}
+          <span className="inline-flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-full">
+            <span className="text-xs">
+              {message.timestamp.toLocaleTimeString('es-ES', { 
+                hour: '2-digit', 
+                minute: '2-digit'
+              })}
+            </span>
+          </span>
         </div>
       </div>
 
       {/* User Avatar */}
       {isUser && (
         <div className={cn(
-          "!w-8 !h-8 min-w-8 min-h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-outlines",
-          "bg-irongray text-clear text-sm font-medium mt-1"
+          "w-8 h-8 min-w-8 min-h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden",
+          "border-2 border-white shadow-sm",
+          "bg-gradient-to-br from-brand-400 to-brand-600 text-white"
         )}>
           {userImage ? (
             <img 
               src={userImage} 
               alt="User" 
               className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback to default avatar if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.src = '';
+                target.onerror = null;
+                target.parentElement!.innerHTML = '👤';
+              }}
             />
           ) : (
-            <span>👤</span>
+            <span className="text-sm">👤</span>
           )}
         </div>
       )}

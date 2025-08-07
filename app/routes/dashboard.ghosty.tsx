@@ -17,3 +17,9 @@ export default function DashboardGhosty() {
   
   return <GhostyContainer userImage={user.picture || undefined} />;
 }
+
+
+export const meta = () => [
+  { title: "Ghosty" },
+  { name: "description", content: "Tu asistente IA" },
+];

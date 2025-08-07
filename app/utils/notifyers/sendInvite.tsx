@@ -1,5 +1,6 @@
 import { type Project } from "@prisma/client";
 import nodemailer from "nodemailer";
+import { getSesRemitent, getSesTransport } from "./ses";
 
 type SuccessfulSubmitType = {
   project: Project;
@@ -10,19 +11,13 @@ const host =
     ? "http://localhost:3000"
     : "https://www.formmy.app";
 // create transporter
-export const sendgridTransport = nodemailer.createTransport({
-  host: "smtp.sendgrid.net",
-  port: 465,
-  auth: {
-    user: "apikey",
-    pass: process.env.SENDGRID_KEY,
-  },
-});
+export const sendgridTransport = getSesTransport();
 
 export const sendInvite = async ({ project, email }: SuccessfulSubmitType) => {
   return sendgridTransport
     .sendMail({
-      from: "hola@formmy.app",
+      from: getSesRemitent(),
+      // to: getSesRemitent(), // Required by SES
       subject: "🪪 Te han invitado a Formmy",
       bcc: [email],
       html: `
