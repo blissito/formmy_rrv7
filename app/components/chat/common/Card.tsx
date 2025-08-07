@@ -9,11 +9,13 @@ export const Card = ({
   text,
   children,
   className,
+  navClassName,
   noSearch = true,
   action,
 }: {
   noSearch?: true;
   className?: string;
+  navClassName?: string;
   children?: ReactNode;
   title?: string;
   text?: ReactNode;
@@ -27,7 +29,7 @@ export const Card = ({
         className
       )}
     >
-      <nav className="flex justify-between gap-3 items-center mb-4 md:mb-6">
+      <nav className={cn("flex justify-between gap-3 items-center mb-4 md:mb-6", navClassName)}>
         <div>
           <h3 className="text-xl md:text-2xl font-medium min-w-max text-dark ">
             {title}

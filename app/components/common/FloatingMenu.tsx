@@ -75,8 +75,9 @@ export const FloatingMenu = ({
               className={cn(
                 "rounded-lg h-8",
                 "w-full text-left px-4 py-1 text-xs",
+                  "flex items-center gap-2",
                 { "text-gray-700 hover:bg-gray-50": !item.className },
-                "flex items-center gap-2"
+                item.className
               )}
             >
               <span>{item.icon}</span>

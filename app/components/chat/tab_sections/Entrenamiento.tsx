@@ -504,9 +504,7 @@ export const Entrenamiento = ({
             {/* Mostrar contextos existentes */}
             {fileContexts.length > 0 && (
               <div>
-                <h3 className="text-lg font-medium mb-2">
-                  Archivos en el contexto
-                </h3>
+             
                 <ListFiles
                   files={fileContexts}
                   onRemoveFile={handleRemoveContext}

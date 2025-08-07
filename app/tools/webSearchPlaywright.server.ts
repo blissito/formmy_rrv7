@@ -365,7 +365,7 @@ export class PlaywrightWebSearchService {
       });
       
       // Set timeouts más cortos para producción
-      const isProduction = process.env.NODE_ENV === 'production';
+      // const isProduction = process.env.NODE_ENV === 'production';
       const navTimeout = isProduction ? 8000 : 15000;
       const waitTimeout = isProduction ? 1000 : 2000;
       

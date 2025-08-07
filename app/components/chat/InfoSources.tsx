@@ -135,7 +135,7 @@ export const InfoSources = ({
         )}
 
         {questionContexts.length > 0 && (
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center text-sm">
             <span className="w-4">
               <img src="/assets/chat/message.svg" alt="icon" />
             </span>
@@ -149,7 +149,7 @@ export const InfoSources = ({
 
         <div className="flex justify-between">
           <p>Peso total:</p>
-          <div className="grid">
+          <div className="grid text-sm">
             <span className={totalWeight > maxWeight ? "text-red-500" : ""}>
               {formatBytes(totalWeight)}
             </span>
