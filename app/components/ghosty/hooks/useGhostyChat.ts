@@ -37,10 +37,11 @@ export interface SearchSource {
   url: string;
   snippet: string;
 }
+export type MessageRole = 'user' | 'assistant';
 
 export interface GhostyMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: MessageRole;
   content: string;
   timestamp: Date;
   isStreaming?: boolean;

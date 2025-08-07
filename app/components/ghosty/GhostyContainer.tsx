@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "~/lib/utils";
 import { useGhostyChat, type GhostyMessage } from "./hooks/useGhostyChat";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { GhostyCompactInput } from "./GhostyCompactInput";
 import { GhostyChatInterface } from "./GhostyChatInterface";
+import DiagramIcon from "../ui/icons/Diagram";
+import PartyIcon from "../ui/icons/Party";
+import BookIcon from "../ui/icons/Book";
+import PresentationIcon from "../ui/icons/Presentation";
 
 // Suggestion cards data
 const suggestionCards = [
@@ -12,25 +16,25 @@ const suggestionCards = [
     className: "bg-bird",
     title: "Genera un reporte de...",
     description: "Interacciones, mensajes, etc.",
-    icon: "📊"
+    icon: <DiagramIcon className="w-10 h-10 ml-1 mt-1"/>
   },
   {
     className: "bg-salmon", 
     title: "Lo nuevo en Formmy ✨",
     description: "features, noticias, estrenos.",
-    icon: "🎉"
+    icon: <PartyIcon className="w-10 h-10 ml-1 mt-1"/>
   },
   {
     className: "bg-grass",
     title: "Explícame...",
     description: "como funcionan los agentes.",
-    icon: "📖"
+    icon: <BookIcon className="w-10 h-10 ml-1 mt-1"/>
   },
   {
     className: "bg-cloud",
     title: "Haz un resumen de...",
     description: "las preguntas más comunes.",
-    icon: "📈"
+    icon: <PresentationIcon className="w-10 h-10 ml-1 mt-1"/>
   }
 ];
 
@@ -38,7 +42,7 @@ interface SuggestionCardProps {
   className?: string;
   title: string;
   description: string;
-  icon: string;
+  icon: ReactNode;
   onClick: () => void;
 }
 
@@ -233,7 +237,7 @@ export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
               className="text-center mt-6"
             >
               <span className="text-xs text-lightgray">
-                Presiona <kbd className="px-1 py-0.5 bg-brand-100/40 rounded text-brand-500">Cmd+K</kbd> para abrir chat
+                Presiona <kbd className="px-1 py-0.5 bg-brand-100/40 rounded text-metal font-bold">Cmd+K</kbd> para abrir chat
               </span>
             </motion.div>
           </motion.div>

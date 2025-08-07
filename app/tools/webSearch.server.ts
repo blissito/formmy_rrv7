@@ -1,15 +1,4 @@
-interface SearchResult {
-  title: string;
-  url: string;
-  snippet: string;
-  content?: string;
-}
-
-interface SearchResponse {
-  results: SearchResult[];
-  query: string;
-  timestamp: Date;
-}
+import type { SearchResult, SearchResponse } from './types';
 
 export class WebSearchService {
   private cache = new Map<string, { data: SearchResponse; expires: number }>();
@@ -42,8 +31,12 @@ export class WebSearchService {
       });
       
       if (!response.ok) {
-        console.log('Búsqueda falló, usando mock data');
-        return this.getMockSearchResults(query);
+        console.log('Búsqueda falló, devolviendo resultados vacíos');
+        return {
+          query,
+          timestamp: new Date(),
+          results: []
+        };
       }
 
       const html = await response.text();
@@ -53,11 +46,19 @@ export class WebSearchService {
         return results;
       }
       
-      // Si no hay resultados, usar mock
-      return this.getMockSearchResults(query);
+      // Si no hay resultados, devolver vacío
+      return {
+        query,
+        timestamp: new Date(),
+        results: []
+      };
     } catch (error) {
       console.error('Error en búsqueda:', error);
-      return this.getMockSearchResults(query);
+      return {
+        query,
+        timestamp: new Date(),
+        results: []
+      };
     }
   }
 

@@ -1,30 +1,63 @@
 import { chromium, type Browser, type Page } from 'playwright';
-
-interface SearchResult {
-  title: string;
-  url: string;
-  snippet: string;
-  content?: string;
-}
-
-interface SearchResponse {
-  results: SearchResult[];
-  query: string;
-  timestamp: Date;
-}
+import type { SearchResult, SearchResponse } from './types';
 
 export class PlaywrightWebSearchService {
   private cache = new Map<string, { data: SearchResponse; expires: number }>();
   private cacheTimeout = 15 * 60 * 1000;
   private browser: Browser | null = null;
+  private contexts: any[] = [];
+  private maxConcurrentSearches = 3;
+  private searchQueue: Array<{resolve: Function, reject: Function, query: string, numResults: number}> = [];
+  private activeSearch = 0;
+  private lastRequestTime = 0;
+  private minRequestInterval = 2000; // 2 segundos entre requests
+  private isDebugMode = process.env.NODE_ENV === 'development';
 
   async initialize() {
     if (!this.browser) {
       this.browser = await chromium.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-gpu',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-features=TranslateUI',
+          '--disable-ipc-flooding-protection',
+          '--disable-blink-features=AutomationControlled',
+          '--window-size=1920,1080'
+        ]
       });
+
+      // Crear pool de contextos aislados
+      for (let i = 0; i < this.maxConcurrentSearches; i++) {
+        const context = await this.browser.newContext({
+          userAgent: this.getRandomUserAgent(),
+          viewport: { width: 1920, height: 1080 },
+          locale: 'es-ES',
+          timezoneId: 'America/Mexico_City'
+        });
+        this.contexts.push({ context, inUse: false });
+      }
     }
+  }
+
+  private getRandomUserAgent(): string {
+    const agents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15'
+    ];
+    return agents[Math.floor(Math.random() * agents.length)];
   }
 
   async close() {
@@ -41,65 +74,276 @@ export class PlaywrightWebSearchService {
     }
 
     await this.initialize();
-    const searchResponse = await this.performSearch(query, numResults);
-    
-    this.cache.set(query, {
-      data: searchResponse,
-      expires: Date.now() + this.cacheTimeout,
-    });
 
-    return searchResponse;
+    // Rate limiting
+    await this.rateLimit();
+
+    // Queue management
+    return new Promise((resolve, reject) => {
+      this.searchQueue.push({ resolve, reject, query, numResults });
+      this.processQueue();
+    });
+  }
+
+  private async rateLimit(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    
+    if (timeSinceLastRequest < this.minRequestInterval) {
+      const waitTime = this.minRequestInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.lastRequestTime = Date.now();
+  }
+
+  private async processQueue(): Promise<void> {
+    if (this.searchQueue.length === 0 || this.activeSearch >= this.maxConcurrentSearches) {
+      return;
+    }
+
+    const { resolve, reject, query, numResults } = this.searchQueue.shift()!;
+    this.activeSearch++;
+
+    try {
+      const result = await this.performSearchWithRetry(query, numResults);
+      this.cache.set(query, {
+        data: result,
+        expires: Date.now() + this.cacheTimeout,
+      });
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    } finally {
+      this.activeSearch--;
+      // Process next in queue
+      setTimeout(() => this.processQueue(), 100);
+    }
+  }
+
+  private async performSearchWithRetry(query: string, numResults: number, retries: number = 2): Promise<SearchResponse> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const result = await this.performSearch(query, numResults);
+        if (result.results.length > 0) {
+          return result;
+        }
+        if (attempt < retries) {
+          const backoffTime = Math.pow(2, attempt) * 1000; // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
+        }
+      } catch (error) {
+        if (attempt === retries) {
+          throw error;
+        }
+        const backoffTime = Math.pow(2, attempt) * 1000;
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+      }
+    }
+    
+    return { query, timestamp: new Date(), results: [] };
   }
 
   private async performSearch(query: string, numResults: number): Promise<SearchResponse> {
     let page: Page | null = null;
+    let contextWrapper: any = null;
     
     try {
       if (!this.browser) {
         await this.initialize();
       }
       
-      page = await this.browser!.newPage({
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      // Obtener contexto disponible del pool
+      contextWrapper = this.contexts.find(ctx => !ctx.inUse);
+      if (!contextWrapper) {
+        throw new Error('No available contexts in pool');
+      }
+      
+      contextWrapper.inUse = true;
+      page = await contextWrapper.context.newPage();
+
+      // Anti-detección: remover webdriver properties
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined,
+        });
+        
+        // Mock chrome object
+        (window as any).chrome = {
+          runtime: {},
+        };
+        
+        // Mock permissions
+        Object.defineProperty(navigator, 'permissions', {
+          get: () => ({
+            query: () => Promise.resolve({ state: 'granted' }),
+          }),
+        });
+        
+        // Mock plugins
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => [1, 2, 3, 4, 5],
+        });
+        
+        // Mock languages
+        Object.defineProperty(navigator, 'languages', {
+          get: () => ['en-US', 'en'],
+        });
       });
       
+      // Primero ir a Google.com para establecer cookies
+      await page.goto('https://www.google.com', {
+        waitUntil: 'domcontentloaded',
+        timeout: 10000
+      });
+
+      // Pequeña pausa para parecer más humano
+      await page.waitForTimeout(1000 + Math.random() * 1000);
+
+      // Luego hacer la búsqueda
       await page.goto(`https://www.google.com/search?q=${encodeURIComponent(query)}&hl=es`, {
         waitUntil: 'domcontentloaded',
         timeout: 15000
       });
 
-      console.log('🌐 Página de Google cargada, buscando resultados...');
+      if (this.isDebugMode) {
+        console.log('🌐 Página de Google cargada, buscando resultados...');
+      }
 
-      await page.waitForSelector('#search', { timeout: 5000 }).catch(() => {});
+      // Esperar un poco más y probar múltiples selectores
+      await page.waitForTimeout(2000);
+      
+      // Debug: capturar título y URL para verificar que llegamos
+      const title = await page.title();
+      const url = page.url();
+      
+      if (this.isDebugMode) {
+        console.log(`📄 Título: ${title}`);
+        console.log(`🔗 URL: ${url}`);
+      }
+      
+      // Verificar si Google nos está bloqueando
+      const isBlocked = await page.evaluate(() => {
+        return document.body.innerHTML.includes('captcha') || 
+               document.body.innerHTML.includes('blocked') ||
+               document.title.includes('blocked');
+      });
+      
+      if (isBlocked) {
+        if (this.isDebugMode) {
+          console.log('🚫 Google detectó bot - página bloqueada');
+        }
+        throw new Error('Google blocked request');
+      }
 
       const results = await page.evaluate((maxResults) => {
         const searchResults: any[] = [];
-        const resultElements = document.querySelectorAll('#search .g');
         
-        console.log(`📊 Elementos encontrados: ${resultElements.length}`);
+        // Debug: mostrar algunos elementos del DOM para entender la estructura
+        console.log('🔍 Analizando DOM...');
+        const bodyClasses = document.body.className;
+        const searchContainer = document.querySelector('#search');
+        console.log(`📦 Body classes: ${bodyClasses}`);
+        console.log(`📦 #search existe: ${!!searchContainer}`);
         
-        for (let i = 0; i < Math.min(resultElements.length, maxResults); i++) {
-          const element = resultElements[i];
+        // Selectores actualizados 2025
+        const selectors = [
+          'div[data-ved] h3',     // Títulos con data-ved
+          '.g h3',                // Tradicional
+          '.tF2Cxc h3',          // Nuevo formato
+          '.MjjYud h3',          // Otro formato reciente
+          'div[jscontroller] h3', // Con JS controller
+          '[role="heading"]',     // Semantic heading
+          'h3 a',                // Cualquier h3 con link
+        ];
+        
+        // Buscar títulos primero
+        let titleElements: NodeListOf<Element> = document.querySelectorAll('h3');
+        let selectorUsed = 'h3 (fallback)';
+        
+        for (const selector of selectors) {
+          const elements = document.querySelectorAll(selector);
+          if (elements.length >= 3) { // Al menos 3 resultados
+            titleElements = elements;
+            selectorUsed = selector;
+            break;
+          }
+        }
+        
+        console.log(`📊 Selector usado: ${selectorUsed}`);
+        console.log(`📊 Títulos encontrados: ${titleElements.length}`);
+        
+        // Debug: mostrar primeros títulos encontrados
+        if (titleElements.length > 0) {
+          Array.from(titleElements).slice(0, 3).forEach((el, i) => {
+            console.log(`📝 Título ${i+1}: ${el.textContent?.substring(0, 50)}...`);
+          });
+        } else {
+          // Si no hay títulos, mostrar estructura general
+          const allH3 = document.querySelectorAll('h3');
+          const allDivs = document.querySelectorAll('div[data-ved]');
+          console.log(`🔍 H3 totales: ${allH3.length}`);
+          console.log(`🔍 Divs con data-ved: ${allDivs.length}`);
           
-          const linkElement = element.querySelector('a');
-          const titleElement = element.querySelector('h3');
-          const snippetElement = element.querySelector('.VwiC3b, .IsZvec, .s3v9rd');
+          // Mostrar muestra del HTML
+          const sample = document.querySelector('#search')?.innerHTML?.substring(0, 1000) || 
+                        document.body.innerHTML.substring(0, 1000);
+          console.log('🔍 HTML muestra:', sample);
+        }
+        
+        // Procesar los títulos encontrados
+        for (let i = 0; i < Math.min(titleElements.length, maxResults); i++) {
+          const titleElement = titleElements[i];
           
-          if (linkElement && titleElement) {
-            const url = linkElement.href;
-            const title = titleElement.textContent || '';
-            const snippet = snippetElement?.textContent || '';
+          // Buscar el enlace desde el título hacia arriba y abajo
+          const linkElement = titleElement.querySelector('a') ||
+                             titleElement.closest('a') ||
+                             titleElement.parentElement?.querySelector('a') ||
+                             titleElement.parentElement?.parentElement?.querySelector('a');
+          
+          if (!linkElement) continue;
+          
+          const url = linkElement.getAttribute('href') || linkElement.href;
+          const title = titleElement.textContent || linkElement.textContent || '';
+          
+          // Buscar snippet cerca del título
+          const container = titleElement.closest('div[data-ved]') || 
+                          titleElement.closest('.g') || 
+                          titleElement.closest('.tF2Cxc') ||
+                          titleElement.parentElement?.parentElement;
+          
+          const snippetElement = container?.querySelector('.VwiC3b, .IsZvec, .s3v9rd, .X5LH0c, .lEBKkf, span[data-ved]') ||
+                                container?.querySelector('span:not([class])') ||
+                                container?.querySelector('div:last-child span');
+          
+          const snippet = snippetElement?.textContent || '';
+          
+          console.log(`🔗 Procesando: "${title?.substring(0, 30)}..." -> ${url?.substring(0, 50)}...`);
+          
+          // Validar URL
+          if (url && !url.includes('google.com') && !url.includes('googleusercontent.com')) {
+            let finalUrl = url;
             
-            if (url && !url.includes('google.com') && !url.includes('googleusercontent.com')) {
+            // Limpiar URL de Google redirect
+            if (url.startsWith('/url?q=')) {
+              const urlMatch = url.match(/[?&]q=([^&]+)/);
+              if (urlMatch) {
+                finalUrl = decodeURIComponent(urlMatch[1]);
+              }
+            }
+            
+            if (finalUrl.startsWith('http') && title.trim()) {
               searchResults.push({
                 title: title.trim(),
-                url: url,
+                url: finalUrl,
                 snippet: snippet.trim()
               });
+              console.log(`✅ Agregado: ${title.trim().substring(0, 30)}...`);
             }
           }
         }
         
+        console.log(`✅ Resultados válidos: ${searchResults.length}`);
         return searchResults;
       }, numResults);
 
@@ -123,6 +367,9 @@ export class PlaywrightWebSearchService {
       if (page) {
         await page.close().catch(() => {});
       }
+      if (contextWrapper) {
+        contextWrapper.inUse = false; // Liberar contexto
+      }
     }
   }
 
@@ -134,41 +381,242 @@ export class PlaywrightWebSearchService {
     
     for (const result of results) {
       try {
-        const page = await this.browser!.newPage();
-        
-        await page.goto(result.url, {
-          waitUntil: 'domcontentloaded',
-          timeout: 8000
-        });
+        // Obtener contexto disponible
+        const contextWrapper = this.contexts.find(ctx => !ctx.inUse);
+        if (!contextWrapper) {
+          enhanced.push(result);
+          continue;
+        }
 
-        const content = await page.evaluate(() => {
-          const scripts = document.querySelectorAll('script, style, noscript');
-          scripts.forEach(el => el.remove());
-          
-          const mainContent = 
-            document.querySelector('main')?.textContent ||
-            document.querySelector('article')?.textContent ||
-            document.querySelector('[role="main"]')?.textContent ||
-            document.querySelector('.content')?.textContent ||
-            document.querySelector('#content')?.textContent ||
-            '';
-          
-          return mainContent
-            .replace(/\s+/g, ' ')
-            .trim()
-            .substring(0, 800);
-        });
-
-        await page.close();
+        contextWrapper.inUse = true;
+        const page = await contextWrapper.context.newPage();
         
-        enhanced.push({
-          ...result,
-          content: content || result.snippet
-        });
+        try {
+          await page.goto(result.url, {
+            waitUntil: 'domcontentloaded',
+            timeout: 8000
+          });
+
+          const metadata = await page.evaluate(() => {
+            const scripts = document.querySelectorAll('script, style, noscript');
+            scripts.forEach(el => el.remove());
+            
+            // Extraer contenido principal
+            const mainContent = 
+              document.querySelector('main')?.textContent ||
+              document.querySelector('article')?.textContent ||
+              document.querySelector('[role="main"]')?.textContent ||
+              document.querySelector('.content')?.textContent ||
+              document.querySelector('#content')?.textContent ||
+              '';
+            
+            // Helper para convertir URL relativa a absoluta
+            const toAbsoluteURL = (url: string): string => {
+              if (!url) return '';
+              try {
+                return new URL(url, window.location.origin).href;
+              } catch {
+                return '';
+              }
+            };
+            
+            // Extraer Open Graph image (múltiples fuentes)
+            let ogImage = '';
+            const ogImageSelectors = [
+              'meta[property="og:image"]',
+              'meta[property="og:image:url"]', 
+              'meta[name="twitter:image"]',
+              'meta[name="twitter:image:src"]',
+              'meta[property="twitter:image"]',
+              'meta[name="image"]'
+            ];
+            
+            for (const selector of ogImageSelectors) {
+              const element = document.querySelector(selector);
+              if (element) {
+                const content = element.getAttribute('content');
+                if (content && content.length > 10) { // Filtrar URLs muy cortas
+                  ogImage = toAbsoluteURL(content);
+                  if (ogImage) break;
+                }
+              }
+            }
+            
+            // Extraer múltiples imágenes para la galería
+            const relatedImages: string[] = [];
+            const imageSelectors = [
+              'article img', // Imágenes en artículo
+              '.content img', // Imágenes en contenido
+              'main img', // Imágenes en main
+              'img[src*="blog"]', // Imágenes de blog
+              'img[src*="post"]', // Imágenes de post
+              'img[alt*="thumbnail"]', // Thumbnails específicos
+              'img[class*="featured"]', // Imágenes destacadas
+              'img[class*="banner"]', // Banners
+              'img' // Cualquier imagen
+            ];
+            
+            for (const selector of imageSelectors) {
+              const images = Array.from(document.querySelectorAll(selector)).filter(img => {
+                const src = img.src || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || img.getAttribute('data-srcset');
+                if (!src) return false;
+                
+                // Filtrar imágenes muy pequeñas o de UI
+                const isLargeEnough = img.offsetWidth > 120 && img.offsetHeight > 80;
+                const isNotUIElement = !src.includes('icon') && !src.includes('logo') && !src.includes('avatar') && !src.includes('profile') && !src.includes('button');
+                const isNotSocial = !src.includes('facebook') && !src.includes('twitter') && !src.includes('linkedin');
+                
+                return isLargeEnough && isNotUIElement && isNotSocial;
+              }).slice(0, 6); // Máximo 6 imágenes
+              
+              for (const img of images) {
+                const src = img.src || img.getAttribute('data-src') || img.getAttribute('data-lazy-src');
+                const absoluteUrl = toAbsoluteURL(src);
+                
+                if (absoluteUrl && !relatedImages.includes(absoluteUrl)) {
+                  relatedImages.push(absoluteUrl);
+                  
+                  // Si no tenemos OG image, usar la primera como principal
+                  if (!ogImage) {
+                    ogImage = absoluteUrl;
+                  }
+                  
+                  if (relatedImages.length >= 6) break;
+                }
+              }
+              
+              if (relatedImages.length >= 6) break;
+            }
+            
+            // Extraer site name
+            const siteName = document.querySelector('meta[property="og:site_name"]')?.getAttribute('content') ||
+                            document.querySelector('meta[name="application-name"]')?.getAttribute('content') ||
+                            document.title.split(' | ')[0]?.split(' - ')[0] ||
+                            window.location.hostname;
+            
+            // Extraer fecha de publicación
+            const publishedTime = document.querySelector('meta[property="article:published_time"]')?.getAttribute('content') ||
+                                 document.querySelector('meta[property="article:modified_time"]')?.getAttribute('content') ||
+                                 document.querySelector('meta[name="date"]')?.getAttribute('content') ||
+                                 document.querySelector('meta[name="publish_date"]')?.getAttribute('content') ||
+                                 document.querySelector('time[datetime]')?.getAttribute('datetime') ||
+                                 document.querySelector('time[pubdate]')?.getAttribute('datetime');
+            
+            // Buscar favicon (múltiples fuentes)
+            let favicon = '';
+            const faviconSelectors = [
+              'link[rel="icon"][sizes*="32"]',
+              'link[rel="icon"][sizes*="48"]', 
+              'link[rel="shortcut icon"]',
+              'link[rel="icon"]',
+              'link[rel="apple-touch-icon"]',
+              'link[rel="apple-touch-icon-precomposed"]'
+            ];
+            
+            for (const selector of faviconSelectors) {
+              const element = document.querySelector(selector);
+              if (element) {
+                const href = element.getAttribute('href');
+                if (href) {
+                  favicon = toAbsoluteURL(href);
+                  if (favicon) break;
+                }
+              }
+            }
+            
+            // Fallback para favicon
+            if (!favicon) {
+              const domain = window.location.origin;
+              favicon = `${domain}/favicon.ico`;
+            }
+            
+            // Debug info
+            if (window.location.hostname.includes('fixtergeek') || true) { // Debug para fixtergeek específicamente
+              console.log('🔍 Metadata extracted for', window.location.href);
+              console.log('  📸 OG Image:', ogImage || 'NONE');
+              console.log('  🎯 Favicon:', favicon || 'NONE');
+              console.log('  🏢 Site name:', siteName);
+              console.log('  🗓️ Published:', publishedTime || 'NONE');
+            }
+            
+            return {
+              content: mainContent.replace(/\s+/g, ' ').trim().substring(0, 800),
+              image: ogImage,
+              images: relatedImages.length > 1 ? relatedImages.slice(1) : [], // Excluir la principal
+              siteName,
+              publishedTime,
+              favicon
+            };
+          });
+
+          await page.close();
+          contextWrapper.inUse = false;
+          
+          // Fallback para favicon usando Google's service
+          let finalFavicon = metadata.favicon;
+          if (!finalFavicon || finalFavicon.endsWith('/favicon.ico')) {
+            try {
+              const domain = new URL(result.url).hostname;
+              finalFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+            } catch {
+              finalFavicon = metadata.favicon;
+            }
+          }
+
+          enhanced.push({
+            ...result,
+            content: metadata.content || result.snippet,
+            image: metadata.image,
+            images: metadata.images,
+            siteName: metadata.siteName,
+            publishedTime: metadata.publishedTime,
+            favicon: finalFavicon
+          });
+
+          if (this.isDebugMode) {
+            console.log(`✅ Metadata para ${result.url}:`, {
+              image: !!metadata.image,
+              favicon: !!finalFavicon,
+              siteName: metadata.siteName
+            });
+          }
+          
+        } catch (pageError) {
+          await page.close();
+          contextWrapper.inUse = false;
+          if (this.isDebugMode) {
+            console.log(`No se pudo obtener metadata para: ${result.url}`);
+          }
+          
+          // Agregar favicon básico incluso si falla la extracción
+          try {
+            const domain = new URL(result.url).hostname;
+            enhanced.push({
+              ...result,
+              favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=32`,
+              siteName: domain
+            });
+          } catch {
+            enhanced.push(result);
+          }
+        }
         
       } catch (error) {
-        console.log(`No se pudo obtener contenido adicional para: ${result.url}`);
-        enhanced.push(result);
+        if (this.isDebugMode) {
+          console.log(`Error procesando: ${result.url}`);
+        }
+        
+        // Agregar favicon básico incluso con errores
+        try {
+          const domain = new URL(result.url).hostname;
+          enhanced.push({
+            ...result,
+            favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=32`,
+            siteName: domain
+          });
+        } catch {
+          enhanced.push(result);
+        }
       }
     }
     

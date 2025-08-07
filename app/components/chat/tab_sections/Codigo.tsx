@@ -375,7 +375,7 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
         </ConfigMenu>
       </section>
       {currentTab === "embed" && (
-        <section>
+        <section className="w-full">
           <Card
             title="Embebe tu chatbot en tu sitio web"
             text={
@@ -391,7 +391,7 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
           >
             <section>
               <MiniCardGroup selectedMinicard={miniCard} onSelect={setMiniCard}>
-                {miniCard === "sdk" && <SDK chatbot={chatbot} />}
+                {/* {miniCard === "sdk" && <SDK chatbot={chatbot} />} */}
                 {miniCard === "iframe" && <Iframe chatbot={chatbot} />}
                 {miniCard === "link" && <LinkBlock chatbot={chatbot} />}
               </MiniCardGroup>
@@ -488,7 +488,7 @@ const LinkBlock = ({ chatbot }: LinkBlockProps) => {
 
   return (
     <CodeBlock
-      title="Enlace directo"
+      title="Instrucciones de configuración"
       language="html"
       code={codeToCopy}
       instructions={instructions}
@@ -538,7 +538,7 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
 
   return (
     <CodeBlock
-      title="Iframe embebido"
+      title="Instrucciones de configuración"
       language="html"
       code={codeToCopy}
       instructions={instructions}

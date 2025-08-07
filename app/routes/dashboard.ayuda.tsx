@@ -60,3 +60,9 @@ export const HelpCard=({title,image,className,index = 0}: {title: string, image:
     </motion.section>
   )
 }
+
+
+export const meta = () => [
+  { title: "Ayuda" },
+  { name: "description", content: "Resuelve tus dudas" },
+];

@@ -178,10 +178,10 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
       </ConfigMenu>
 
       {currentTab === "general" && (
-        <section className="grid gap-5">
+        <section className="grid gap-5 w-full">
           <Card title="General">
-            <div className="mb-6 mt-2 md:mt-4">
-              <span className="text-sm text-gray-600 block mb-2">
+            <div className="mb-4">
+              <span className="text-sm text-gray-600 block mb-1">
                 Id de tu chatbot
               </span>
               <nav className="flex gap-2 items-center">
@@ -216,12 +216,12 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                 </button>
               </nav>
             </div>
-            <div className="mb-6">
-              <span className="text-sm text-gray-600 block mb-2">Tamaño</span>
+            <div className="mb-4">
+              <span className="text-sm text-gray-600 block mb-1">Tamaño</span>
               <p>{chatbot.contextSizeKB || 400} KB</p>
             </div>
             <div className="mb-0">
-              <span className="text-sm text-gray-600 block mb-2">
+              <span className="text-sm text-gray-600 block mb-1">
                 Historial del chat
               </span>
               <p>7 días</p>
@@ -247,7 +247,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
       {currentTab === "notificaciones" && (
         <section className="">
           <Card title="Configura tus notificaciones">
-            <main className="grid gap-6 mt-4">
+            <main className="grid gap-6">
               <Toggler 
                 title="Resumen semanal" 
                 text="Recibe un correo con un resumen de las conversaciones del día"
@@ -279,9 +279,9 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
             action={
               <Button 
                 onClick={() => setShowAddUserModal(true)}
-                className="h-9"
+                className="h-10 mt-0"
               >
-                Agregar usuario
+               + Usuario
               </Button>
             }
           >
@@ -310,7 +310,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
           <Card title="Configura tu seguridad" text="Aumenta la seguridad de tu chatbot permitiendo la conexión desde dominios específicos y estableciendo un límite de mensajes por minuto.">
             <main className="flex flex-col gap-4">
               <Input
-                label="Limita el acceso a tu agente"
+                label="Ingresa el o los dominios separados por coma"
                 placeholder="www.ejemplo.app, www.ejemplo.mx"
                 value={security.allowedDomains}
                 onChange={(value) => setSecurity({...security, allowedDomains: value})}

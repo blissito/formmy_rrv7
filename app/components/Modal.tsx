@@ -48,9 +48,9 @@ export default function Modal({
             <Dialog.Panel
               className={twMerge(
                 size === "xs" ? "max-w-[400px]" : "",
-                size === "md" ? "max-w-[90%] mx-auto md:max-w-[600px]" : "",
+                size === "md" ? "max-w-[98%] mx-auto md:max-w-[600px]" : "",
                 size === "lg" ? "max-w-[800px]" : "",
-                "flex flex-col"
+                "flex flex-col overflow-hidden"
               )}
             >
               <Dialog.Title className="bg-clear pt-8 dark:bg-space-900 flex justify-between items-center rounded-t-3xl relative">

@@ -143,26 +143,41 @@ async function callGhostyOpenRouter(
         console.log("⚠️ Playwright devolvió 0 resultados, intentando búsqueda básica REAL");
         const searchService = new WebSearchService();
         searchResults = await searchService.search(message, 3);
-        // Solo usar mocks si la búsqueda real también falla
         if (!searchResults || searchResults.results.length === 0) {
-          console.log("⚠️ Búsqueda básica también falló, usando mocks");
-          searchResults = playwrightService.getFallbackResults(message);
+          console.log("❌ Búsqueda básica también falló - sin resultados disponibles");
+          searchResults = { query: message, timestamp: new Date(), results: [] };
+          searchContext = '';
+        } else {
+          searchContext = searchService.formatForLLM(searchResults);
+          console.log(`✅ Búsqueda básica exitosa: ${searchResults.results.length} resultados`);
         }
-        searchContext = searchService.formatForLLM(searchResults);
       } else {
         searchContext = playwrightService.formatForLLM(searchResults);
+        console.log(`✅ Playwright exitoso: ${searchResults.results.length} resultados`);
       }
-      
-      console.log(`✅ Playwright búsqueda: ${searchResults.results.length} resultados`);
-      console.log(`📝 Contexto generado (primeros 200 chars): ${searchContext.substring(0, 200)}...`);
+      if (searchContext.length > 0) {
+        console.log(`📝 Contexto generado (${searchContext.length} chars): ${searchContext.substring(0, 200)}...`);
+      } else {
+        console.log(`📝 Sin contexto de búsqueda - no hay fuentes disponibles`);
+      }
     } catch (playwrightError) {
       console.warn("Playwright search failed, falling back to basic search:", playwrightError);
       // Fallback a búsqueda básica
       const searchService = new WebSearchService();
       searchResults = await searchService.search(message, 3);
-      searchContext = searchService.formatForLLM(searchResults);
-      console.log(`✅ Basic búsqueda exitosa: ${searchResults.results.length} resultados`);
-      console.log(`📝 Contexto generado (primeros 200 chars): ${searchContext.substring(0, 200)}...`);
+      if (!searchResults || searchResults.results.length === 0) {
+        console.log("❌ Fallback búsqueda básica también falló - sin resultados");
+        searchResults = { query: message, timestamp: new Date(), results: [] };
+        searchContext = '';
+      } else {
+        searchContext = searchService.formatForLLM(searchResults);
+        console.log(`✅ Fallback búsqueda básica: ${searchResults.results.length} resultados`);
+        if (searchContext.length > 0) {
+        console.log(`📝 Contexto generado (${searchContext.length} chars): ${searchContext.substring(0, 200)}...`);
+      } else {
+        console.log(`📝 Sin contexto de búsqueda - no hay fuentes disponibles`);
+      }
+      }
     }
   } else {
     console.log(`❌ No se realizará búsqueda para: "${message}"`);
@@ -178,7 +193,7 @@ async function callGhostyOpenRouter(
     return { ...response, sources: searchResults };
   }
 
-  const systemPrompt = searchContext 
+  const systemPrompt = searchContext && searchContext.length > 0
     ? `Eres Ghosty 👻, asistente de Formmy con capacidad de búsqueda web.
 
 **CONTEXTO DE BÚSQUEDA WEB REALIZADA**:
@@ -205,6 +220,8 @@ ${searchContext}
     : `Eres Ghosty 👻, asistente de Formmy. 
 
 **REGLA DE ORO**: Nunca inventes datos específicos del usuario. SÉ HONESTO sobre qué tienes y qué no.
+
+${searchContext && searchContext.length === 0 ? '**NOTA**: Se intentó realizar una búsqueda web pero no se encontraron resultados relevantes.' : ''}
 
 **AYUDAS CON**:
 - 🤖 Configuración de chatbots

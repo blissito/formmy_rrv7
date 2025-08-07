@@ -82,7 +82,7 @@ export default function ProjectSlug() {
 
   if (searchParams.get("success")) {
     return (
-      <section className="min-h-screen text-center flex flex-col justify-center">
+      <section className="min-h-svh text-center flex flex-col justify-center">
         <h2 className="text-3xl">¡Muchas gracias!</h2>
         <p className="text-xl">Pronto me comunicare contigo 🌀</p>
         <div>

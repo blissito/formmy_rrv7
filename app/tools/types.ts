@@ -3,6 +3,11 @@ export interface SearchResult {
   url: string;
   snippet: string;
   content?: string;
+  favicon?: string;
+  image?: string; // Open Graph image principal
+  images?: string[]; // Galería de imágenes relacionadas
+  siteName?: string;
+  publishedTime?: string;
 }
 
 export interface SearchResponse {
