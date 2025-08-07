@@ -75,41 +75,81 @@ const AVAILABLE_TOOLS: ToolDefinition[] = [
 /**
  * Ejecuta las herramientas llamadas por el modelo
  */
-async function executeToolCalls(toolCalls: ToolCall[]): Promise<any[]> {
-  const results = [];
+async function executeToolCalls(toolCalls: ToolCall[]): Promise<{ 
+  toolResults: any[], 
+  searchSources?: any[] 
+}> {
+  const toolResults = [];
+  let searchSources: any[] | undefined;
   
   for (const toolCall of toolCalls) {
     const args = JSON.parse(toolCall.function.arguments);
     
     switch (toolCall.function.name) {
       case "web_search": {
-        const searchService = await getWebSearchService();
-        const searchResults = await searchService.search(
-          args.query, 
-          args.num_results || 5
-        );
-        
-        results.push({
-          tool_call_id: toolCall.id,
-          role: "tool",
-          name: "web_search",
-          content: JSON.stringify({
-            query: searchResults.query,
-            results: searchResults.results.map((r, i) => ({
-              index: i + 1,
+        try {
+          const searchService = await getWebSearchService();
+          const searchResults = await searchService.search(
+            args.query, 
+            args.num_results || 5
+          );
+          
+          // Solo proceder si hay resultados
+          if (searchResults && searchResults.results && searchResults.results.length > 0) {
+            // Guardar las fuentes para el frontend
+            searchSources = searchResults.results.map(r => ({
               title: r.title,
               url: r.url,
               snippet: r.snippet,
-              content: r.content
-            }))
-          })
-        });
+            }));
+            
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: "tool",
+              name: "web_search",
+              content: JSON.stringify({
+                query: searchResults.query,
+                results: searchResults.results.map((r, i) => ({
+                  index: i + 1,
+                  title: r.title,
+                  url: r.url,
+                  snippet: r.snippet,
+                  content: r.content
+                }))
+              })
+            });
+          } else {
+            // No hay resultados - devolver mensaje informativo
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: "tool",
+              name: "web_search",
+              content: JSON.stringify({
+                query: args.query,
+                results: [],
+                error: "No se pudieron obtener resultados de búsqueda en este momento. El servicio podría estar temporalmente limitado."
+              })
+            });
+          }
+        } catch (searchError) {
+          console.error("Error en web_search:", searchError);
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: "tool",
+            name: "web_search",
+            content: JSON.stringify({
+              query: args.query,
+              results: [],
+              error: "La búsqueda web no está disponible temporalmente. Responderé basándome en mi conocimiento general."
+            })
+          });
+        }
         break;
       }
       
       case "get_user_data": {
         // Aquí iría la lógica real para obtener datos del usuario
-        results.push({
+        toolResults.push({
           tool_call_id: toolCall.id,
           role: "tool",
           name: "get_user_data",
@@ -122,7 +162,7 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<any[]> {
       }
       
       default:
-        results.push({
+        toolResults.push({
           tool_call_id: toolCall.id,
           role: "tool",
           name: toolCall.function.name,
@@ -133,7 +173,7 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<any[]> {
     }
   }
   
-  return results;
+  return { toolResults, searchSources };
 }
 
 /**
@@ -141,8 +181,9 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<any[]> {
  */
 export async function callGhostyWithTools(
   message: string,
-  enableTools: boolean = true
-): Promise<{ content: string; toolsUsed?: string[] }> {
+  enableTools: boolean = true,
+  onChunk?: (chunk: string) => void
+): Promise<{ content: string; toolsUsed?: string[]; sources?: any[] }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   
   if (!apiKey) {
@@ -159,10 +200,19 @@ export async function callGhostyWithTools(
 - Puedes buscar información actualizada en la web
 - Puedes acceder a datos del usuario (cuando estén disponibles)
 
-**IMPORTANTE**:
+**PATRÓN DE USO DE HERRAMIENTAS**:
+1. Cuando necesites información actualizada, usa las herramientas disponibles
+2. Después de usar herramientas, SIEMPRE proporciona una respuesta final completa
+3. En tu respuesta final:
+   - Incorpora los resultados de forma natural en español
+   - Cita las fuentes como [1], [2], etc.
+   - Usa markdown para mejor legibilidad
+   - Sé conciso pero completo (máximo 300 palabras)
+
+**REGLAS**:
 - USA las herramientas cuando sea necesario, no adivines
-- Si buscas información, SIEMPRE cita las fuentes como [1], [2], etc.
-- Sé transparente sobre qué herramientas usaste
+- Sé transparente y narra tus acciones
+- Mantén un tono conversacional
 
 **FORMATO**:
 - Respuestas concisas y útiles
@@ -178,22 +228,29 @@ export async function callGhostyWithTools(
   const toolsUsed: string[] = [];
   let currentMessages = [...messages];
   let attempts = 0;
-  const maxAttempts = 3; // Máximo 3 llamadas (inicial + 2 tool calls)
+  const maxAttempts = 2; // Solo 2 llamadas: inicial con tools + final sin tools
+  let allSources: any[] = [];
 
   while (attempts < maxAttempts) {
     attempts++;
+    
+    // Solo usar streaming en la ÚLTIMA llamada (cuando no esperamos más tool calls)
+    const shouldStream = !!onChunk && attempts > 1;
     
     const requestBody: any = {
       model: "openai/gpt-oss-120b",
       messages: currentMessages,
       temperature: 0.7,
       max_tokens: 2000,
+      stream: shouldStream,
     };
 
-    // Solo incluir herramientas en la primera llamada
-    if (enableTools && attempts === 1) {
+    // Incluir herramientas solo si están habilitadas
+    if (enableTools) {
       requestBody.tools = AVAILABLE_TOOLS;
       requestBody.tool_choice = "auto"; // Dejar que el modelo decida
+      // OpenRouter no puede hacer streaming Y tool calls simultáneamente
+      requestBody.stream = false; // Siempre no-streaming cuando hay tools
     }
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -208,10 +265,41 @@ export async function callGhostyWithTools(
     });
 
     if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`OpenRouter API error ${response.status}:`, errorText);
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    // Verificar el Content-Type para determinar si es streaming o JSON
+    const contentType = response.headers.get('content-type');
+    console.log(`🔍 Response content-type: ${contentType}, attempt: ${attempts}, stream requested: ${requestBody.stream}`);
+    
+    const isStreamingResponse = contentType?.includes('text/event-stream') || 
+                                (requestBody.stream && attempts > 1);
+    
+    if (isStreamingResponse) {
+      console.log('📡 Processing streaming response...');
+      // Procesar respuesta streaming (segunda llamada después de tools)
+      const streamResult = await handleStreamingResponse(response, onChunk, toolsUsed, allSources);
+      // Devolver el resultado final con las fuentes acumuladas
+      return {
+        ...streamResult,
+        sources: allSources.length > 0 ? allSources : streamResult.sources
+      };
+    }
+
+    // Procesar respuesta JSON (primera llamada con tools o sin streaming)
+    console.log('📦 Processing JSON response...');
+    let data;
+    try {
+      const responseText = await response.text();
+      console.log('📄 Response text preview:', responseText.substring(0, 200));
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ Failed to parse JSON response:', parseError);
+      throw new Error(`Failed to parse OpenRouter response: ${parseError}`);
+    }
+    
     const choice = data.choices?.[0];
     
     if (!choice) {
@@ -219,7 +307,7 @@ export async function callGhostyWithTools(
     }
 
     // Si el modelo llamó herramientas
-    if (choice.message?.tool_calls) {
+    if (choice?.message?.tool_calls && attempts === 1) {
       console.log("🔧 Modelo solicitó herramientas:", 
         choice.message.tool_calls.map((tc: ToolCall) => tc.function.name)
       );
@@ -229,28 +317,181 @@ export async function callGhostyWithTools(
         toolsUsed.push(tc.function.name);
       });
 
+      // Notificar que estamos ejecutando herramientas (si tenemos callback)
+      if (onChunk) {
+        onChunk("🔍 Buscando información actualizada en la web...\n\n");
+      }
+      
       // Ejecutar las herramientas
-      const toolResults = await executeToolCalls(choice.message.tool_calls);
+      console.log("🔨 Ejecutando herramientas...");
+      const { toolResults, searchSources } = await executeToolCalls(choice.message.tool_calls);
+      console.log(`✅ Herramientas ejecutadas. Resultados: ${toolResults.length}, Fuentes: ${searchSources?.length || 0}`);
+      
+      // Guardar fuentes si hay búsquedas
+      if (searchSources) {
+        allSources = [...allSources, ...searchSources];
+      }
       
       // Agregar la respuesta del modelo y los resultados de las herramientas
       currentMessages.push(choice.message);
       currentMessages.push(...toolResults);
       
-      // Continuar el loop para que el modelo procese los resultados
-      continue;
+      // Forzar al modelo a dar una respuesta final sin herramientas
+      console.log(`🎯 Forzando respuesta final sin herramientas...`);
+      const finalRequestBody = {
+        model: "openai/gpt-oss-120b",
+        messages: [
+          ...currentMessages,
+          {
+            role: "user",
+            content: "Basándote en la información obtenida de las herramientas, proporciona una respuesta final completa y útil en español. No uses más herramientas."
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+        stream: false,
+      };
+
+      const finalResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://formmy.app",
+          "X-Title": "Formmy Ghosty Assistant Enhanced",
+        },
+        body: JSON.stringify(finalRequestBody),
+      });
+
+      if (finalResponse.ok) {
+        const finalData = await finalResponse.json();
+        const finalChoice = finalData.choices?.[0];
+        
+        if (finalChoice?.message?.content) {
+          // Si necesitamos streaming para la respuesta final
+          if (onChunk) {
+            const content = finalChoice.message.content;
+            const words = content.split(' ');
+            
+            for (let i = 0; i < words.length; i++) {
+              const chunk = words[i] + (i < words.length - 1 ? ' ' : '');
+              onChunk(chunk);
+              await new Promise(resolve => setTimeout(resolve, 15));
+            }
+          }
+          
+          return {
+            content: finalChoice.message.content,
+            toolsUsed,
+            sources: allSources.length > 0 ? allSources : undefined
+          };
+        }
+      }
+      
+      // Fallback si la llamada final falla
+      return {
+        content: "Encontré información relacionada con tu consulta, pero no pude procesar la respuesta final.",
+        toolsUsed,
+        sources: allSources.length > 0 ? allSources : undefined
+      };
     }
 
-    // Si el modelo dio una respuesta final
+    // Si el modelo dio una respuesta final (sin más tool calls)
     if (choice.message?.content) {
+      // Si necesitamos streaming para la respuesta final
+      if (onChunk && toolsUsed.length > 0) {
+        // Simular streaming de la respuesta ya generada
+        const content = choice.message.content;
+        const words = content.split(' ');
+        
+        for (let i = 0; i < words.length; i++) {
+          const chunk = words[i] + (i < words.length - 1 ? ' ' : '');
+          onChunk(chunk);
+          // Small delay to simulate natural streaming
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+      }
+      
       return {
         content: choice.message.content,
-        toolsUsed
+        toolsUsed,
+        sources: allSources.length > 0 ? allSources : undefined
       };
     }
   }
 
   return {
     content: "Lo siento, no pude procesar tu solicitud después de varios intentos.",
-    toolsUsed
+    toolsUsed,
+    sources: allSources.length > 0 ? allSources : undefined
   };
+}
+
+/**
+ * Handle streaming response from OpenRouter
+ */
+async function handleStreamingResponse(
+  response: Response,
+  onChunk: (chunk: string) => void,
+  toolsUsed: string[],
+  allSources: any[]
+): Promise<{ content: string; toolsUsed?: string[]; sources?: any[] }> {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error("No response body stream");
+  }
+
+  const decoder = new TextDecoder();
+  let fullContent = "";
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      buffer += chunk;
+
+      // Process complete lines
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6); // Remove "data: "
+
+          if (data === "[DONE]") {
+            return { 
+              content: fullContent, 
+              toolsUsed,
+              sources: allSources.length > 0 ? allSources : undefined
+            };
+          }
+
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content;
+
+            if (content) {
+              fullContent += content;
+              onChunk(content);
+            }
+          } catch (parseError) {
+            // Ignore invalid JSON lines
+            console.warn("Enhanced Ghosty: Invalid SSE line:", line);
+          }
+        }
+      }
+    }
+
+    return { 
+      content: fullContent, 
+      toolsUsed,
+      sources: allSources.length > 0 ? allSources : undefined
+    };
+  } finally {
+    reader.releaseLock();
+  }
 }

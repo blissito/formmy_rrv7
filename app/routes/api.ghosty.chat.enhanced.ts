@@ -7,7 +7,7 @@ import { callGhostyWithTools } from "~/services/ghostyEnhanced.server";
 export const action = async ({ request }: Route.ActionArgs): Promise<Response> => {
   try {
     const body = await request.json();
-    const { message } = body;
+    const { message, stream = true } = body;
 
     if (!message?.trim()) {
       return new Response(
@@ -16,22 +16,109 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
       );
     }
 
-    const result = await callGhostyWithTools(message, true);
-    
-    return new Response(
-      JSON.stringify({
-        type: "message",
-        content: result.content,
-        metadata: {
-          toolsUsed: result.toolsUsed,
-          enhanced: true,
-          model: "gpt-oss-120b"
+    if (stream) {
+      // Streaming response for real-time UI
+      const encoder = new TextEncoder();
+
+      return new Response(
+        new ReadableStream({
+          async start(controller) {
+            try {
+              // Enviar estado inicial indicando que está pensando
+              const thinkingData = JSON.stringify({
+                type: "status",
+                status: "thinking",
+                message: "🤔 Analizando tu pregunta..."
+              });
+              controller.enqueue(
+                encoder.encode(`data: ${thinkingData}\n\n`)
+              );
+              
+              let fullContent = '';
+              const result = await callGhostyWithTools(
+                message, 
+                true,
+                (chunk: string) => {
+                  // Send each chunk as SSE
+                  const data = JSON.stringify({
+                    type: "chunk",
+                    content: chunk,
+                  });
+                  controller.enqueue(
+                    encoder.encode(`data: ${data}\n\n`)
+                  );
+                  fullContent += chunk;
+                }
+              );
+
+              // Send tools used metadata if any tools were used
+              if (result.toolsUsed && result.toolsUsed.length > 0) {
+                const toolsData = JSON.stringify({
+                  type: "metadata",
+                  toolsUsed: result.toolsUsed
+                });
+                controller.enqueue(
+                  encoder.encode(`data: ${toolsData}\n\n`)
+                );
+              }
+
+              // Send sources if available
+              if (result.sources && result.sources.length > 0) {
+                const sourcesData = JSON.stringify({
+                  type: "sources",
+                  sources: result.sources
+                });
+                controller.enqueue(
+                  encoder.encode(`data: ${sourcesData}\n\n`)
+                );
+              }
+
+              // Send completion signal
+              const doneData = JSON.stringify({ type: "done" });
+              controller.enqueue(
+                encoder.encode(`data: ${doneData}\n\n`)
+              );
+              controller.close();
+            } catch (error) {
+              console.error("Enhanced Ghosty streaming error:", error);
+              const errorData = JSON.stringify({
+                type: "error",
+                content: "Lo siento, hubo un error procesando tu mensaje.",
+              });
+              controller.enqueue(
+                encoder.encode(`data: ${errorData}\n\n`)
+              );
+              controller.close();
+            }
+          },
+        }),
+        {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+          },
         }
-      }),
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+      );
+    } else {
+      // Regular JSON response
+      const result = await callGhostyWithTools(message, true);
+      
+      return new Response(
+        JSON.stringify({
+          type: "message",
+          content: result.content,
+          metadata: {
+            toolsUsed: result.toolsUsed,
+            enhanced: true,
+            model: "gpt-oss-120b"
+          }
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
   } catch (error) {
     console.error("Enhanced Ghosty error:", error);
     return new Response(

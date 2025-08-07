@@ -10,7 +10,7 @@ export class PlaywrightWebSearchService {
   private searchQueue: Array<{resolve: Function, reject: Function, query: string, numResults: number}> = [];
   private activeSearch = 0;
   private lastRequestTime = 0;
-  private minRequestInterval = 2000; // 2 segundos entre requests
+  private minRequestInterval = 5000; // 5 segundos entre requests para evitar rate limiting
   private isDebugMode = process.env.NODE_ENV === 'development';
 
   async initialize() {
@@ -42,8 +42,40 @@ export class PlaywrightWebSearchService {
           userAgent: this.getRandomUserAgent(),
           viewport: { width: 1920, height: 1080 },
           locale: 'es-ES',
-          timezoneId: 'America/Mexico_City'
+          timezoneId: 'America/Mexico_City',
+          extraHTTPHeaders: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+            'Accept-Encoding': 'gzip, deflate',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+          },
         });
+
+        // Configurar para parecer más humano
+        await context.addInitScript(() => {
+          // Override navigator.webdriver
+          Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined,
+          });
+          
+          // Override plugins array
+          Object.defineProperty(navigator, 'plugins', {
+            get: () => [1, 2, 3, 4, 5],
+          });
+          
+          // Override languages
+          Object.defineProperty(navigator, 'languages', {
+            get: () => ['es-ES', 'es', 'en-US', 'en'],
+          });
+          
+          // Override chrome object
+          (window as any).chrome = {
+            runtime: {},
+          };
+        });
+
         this.contexts.push({ context, inUse: false });
       }
     }
@@ -197,11 +229,28 @@ export class PlaywrightWebSearchService {
         timeout: 10000
       });
 
-      // Pequeña pausa para parecer más humano
+      // Delay más largo para establecer sesión y parecer más humano
+      await page.waitForTimeout(2000 + Math.random() * 2000);
+
+      // Simular actividad humana - hacer clic en algún elemento si existe
+      try {
+        await page.evaluate(() => {
+          // Mover el mouse aleatoriamente
+          const event = new MouseEvent('mousemove', {
+            clientX: Math.random() * 1000,
+            clientY: Math.random() * 600,
+            bubbles: true
+          });
+          document.dispatchEvent(event);
+        });
+      } catch (e) {
+        // Ignorar errores de simulación de mouse
+      }
+
       await page.waitForTimeout(1000 + Math.random() * 1000);
 
-      // Luego hacer la búsqueda
-      await page.goto(`https://www.google.com/search?q=${encodeURIComponent(query)}&hl=es`, {
+      // Luego hacer la búsqueda de forma más gradual con parámetros adicionales
+      await page.goto(`https://www.google.com/search?q=${encodeURIComponent(query)}&hl=es&sei=${Math.random().toString(36).substring(2, 15)}`, {
         waitUntil: 'domcontentloaded',
         timeout: 15000
       });
@@ -224,9 +273,16 @@ export class PlaywrightWebSearchService {
       
       // Verificar si Google nos está bloqueando
       const isBlocked = await page.evaluate(() => {
-        return document.body.innerHTML.includes('captcha') || 
-               document.body.innerHTML.includes('blocked') ||
-               document.title.includes('blocked');
+        const html = document.body.innerHTML.toLowerCase();
+        const title = document.title.toLowerCase();
+        const url = window.location.href.toLowerCase();
+        
+        return html.includes('captcha') || 
+               html.includes('blocked') ||
+               title.includes('blocked') ||
+               url.includes('/sorry/') ||
+               html.includes('unusual traffic') ||
+               html.includes('not a robot');
       });
       
       if (isBlocked) {

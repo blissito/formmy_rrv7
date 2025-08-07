@@ -1,36 +1,5 @@
 import { useState, useCallback } from 'react';
 
-/**
- * Determina si una pregunta probablemente necesitará búsqueda web
- */
-function shouldLikelySearch(message: string, history: GhostyMessage[] = []): boolean {
-  const searchKeywords = [
-    'busca', 'búsqueda', 'encuentra', 'información sobre',
-    'qué es', 'cómo', 'cuál', 'cuáles', 'dónde',
-    'últimas', 'reciente', 'actual', 'novedades',
-    'documentación', 'docs', 'guía', 'tutorial',
-    'precio', 'costo', 'plan', 'comparar'
-  ];
-  
-  const lowerMessage = message.toLowerCase();
-  const hasSearchKeywords = searchKeywords.some(keyword => lowerMessage.includes(keyword));
-  
-  // También detectar preguntas de seguimiento
-  const followUpIndicators = [
-    'y el precio', 'y el costo', 'cuánto cuesta', 'qué tal',
-    'y sobre', 'y qué', 'también', 'además'
-  ];
-  
-  const isFollowUp = followUpIndicators.some(indicator => lowerMessage.includes(indicator));
-  
-  if (isFollowUp && history.length > 0) {
-    const recentMessages = history.slice(-4).map(h => h.content.toLowerCase()).join(' ');
-    const hasSearchableContext = searchKeywords.some(keyword => recentMessages.includes(keyword));
-    return hasSearchableContext;
-  }
-  
-  return hasSearchKeywords;
-}
 
 export interface SearchSource {
   title: string;
@@ -132,11 +101,8 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
       setIsExpanded(true);
     }
 
-    // Determine if likely to need search
-    const mightNeedSearch = shouldLikelySearch(content.trim(), messages);
-    
-    // Set appropriate initial state
-    setCurrentState(mightNeedSearch ? 'searching' : 'thinking');
+    // Set initial state - let the LLM decide if it needs tools
+    setCurrentState('thinking');
     setError(null);
 
     // Add assistant message placeholder
@@ -153,15 +119,13 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
       
-      const response = await fetch('/api/ghosty/chat', {
+      const response = await fetch('/api/ghosty/chat/enhanced', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           message: content.trim(),
-          history: messages, // ✅ Enviar historial completo
-          stream: true,
         }),
         signal: controller.signal,
       });
@@ -198,7 +162,14 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
             try {
               const parsed = JSON.parse(data);
               
-              if (parsed.type === 'chunk') {
+              if (parsed.type === 'status') {
+                // Handle status updates (thinking, searching, etc.)
+                if (parsed.status === 'thinking') {
+                  setCurrentState('thinking');
+                } else if (parsed.status === 'searching') {
+                  setCurrentState('searching');
+                }
+              } else if (parsed.type === 'chunk') {
                 currentContent += parsed.content;
                 updateMessage(assistantMessage.id, {
                   content: currentContent,
@@ -209,6 +180,12 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
                 updateMessage(assistantMessage.id, {
                   sources: sources,
                 });
+              } else if (parsed.type === 'metadata') {
+                // Handle tools used metadata - could show in UI
+                console.log('🔧 Tools used:', parsed.toolsUsed);
+                if (parsed.toolsUsed?.includes('web_search')) {
+                  setCurrentState('searching');
+                }
               } else if (parsed.type === 'done') {
                 updateMessage(assistantMessage.id, {
                   content: currentContent,
