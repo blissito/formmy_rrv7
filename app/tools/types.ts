@@ -5,9 +5,14 @@ export interface SearchResult {
   content?: string;
   favicon?: string;
   image?: string; // Open Graph image principal
-  images?: string[]; // Galería de imágenes relacionadas
   siteName?: string;
   publishedTime?: string;
+}
+
+export interface ImageGallery {
+  url: string;
+  images: string[];
+  extractedAt: Date;
 }
 
 export interface SearchResponse {

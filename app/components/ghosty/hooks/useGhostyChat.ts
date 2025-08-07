@@ -36,6 +36,11 @@ export interface SearchSource {
   title: string;
   url: string;
   snippet: string;
+  favicon?: string;
+  image?: string;
+  siteName?: string;
+  publishedTime?: string;
+  images?: string[]; // Galería que se carga después
 }
 export type MessageRole = 'user' | 'assistant';
 
@@ -74,6 +79,44 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
       )
     );
   }, []);
+
+  const loadImagesForSources = useCallback(async (messageId: string, sources: SearchSource[]) => {
+    try {
+      const urls = sources.map(s => s.url);
+      
+      const response = await fetch('/api/ghosty/tools', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          intent: 'extract-images',
+          data: {
+            urls,
+            maxImagesPerUrl: 4
+          }
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.galleries) {
+          // Mapear las galerías a las fuentes
+          const updatedSources = sources.map(source => {
+            const gallery = data.galleries.find((g: any) => g.url === source.url);
+            return {
+              ...source,
+              images: gallery?.images || []
+            };
+          });
+
+          updateMessage(messageId, { sources: updatedSources });
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load images for sources:', error);
+    }
+  }, [updateMessage]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -173,6 +216,14 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
                   sources: sources,
                 });
                 setCurrentState('idle');
+                
+                // Cargar imágenes en background después de completar la respuesta
+                if (sources && sources.length > 0) {
+                  setTimeout(() => {
+                    loadImagesForSources(assistantMessage.id, sources);
+                  }, 100);
+                }
+                
                 return;
               } else if (parsed.type === 'error') {
                 throw new Error(parsed.content);
@@ -252,5 +303,6 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
     // Utils
     addMessage,
     updateMessage,
+    loadImagesForSources,
   };
 };

@@ -442,50 +442,17 @@ export class PlaywrightWebSearchService {
               }
             }
             
-            // Extraer múltiples imágenes para la galería
-            const relatedImages: string[] = [];
-            const imageSelectors = [
-              'article img', // Imágenes en artículo
-              '.content img', // Imágenes en contenido
-              'main img', // Imágenes en main
-              'img[src*="blog"]', // Imágenes de blog
-              'img[src*="post"]', // Imágenes de post
-              'img[alt*="thumbnail"]', // Thumbnails específicos
-              'img[class*="featured"]', // Imágenes destacadas
-              'img[class*="banner"]', // Banners
-              'img' // Cualquier imagen
-            ];
-            
-            for (const selector of imageSelectors) {
-              const images = Array.from(document.querySelectorAll(selector)).filter(img => {
-                const src = img.src || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || img.getAttribute('data-srcset');
-                if (!src) return false;
-                
-                // Filtrar imágenes muy pequeñas o de UI
-                const isLargeEnough = img.offsetWidth > 120 && img.offsetHeight > 80;
-                const isNotUIElement = !src.includes('icon') && !src.includes('logo') && !src.includes('avatar') && !src.includes('profile') && !src.includes('button');
-                const isNotSocial = !src.includes('facebook') && !src.includes('twitter') && !src.includes('linkedin');
-                
-                return isLargeEnough && isNotUIElement && isNotSocial;
-              }).slice(0, 6); // Máximo 6 imágenes
+            // Si no hay OG image, buscar una imagen principal simple
+            if (!ogImage) {
+              const images = Array.from(document.querySelectorAll('article img, .content img, main img')).filter(img => {
+                const src = img.src || img.getAttribute('data-src');
+                return src && img.offsetWidth > 150 && img.offsetHeight > 100;
+              });
               
-              for (const img of images) {
-                const src = img.src || img.getAttribute('data-src') || img.getAttribute('data-lazy-src');
-                const absoluteUrl = toAbsoluteURL(src);
-                
-                if (absoluteUrl && !relatedImages.includes(absoluteUrl)) {
-                  relatedImages.push(absoluteUrl);
-                  
-                  // Si no tenemos OG image, usar la primera como principal
-                  if (!ogImage) {
-                    ogImage = absoluteUrl;
-                  }
-                  
-                  if (relatedImages.length >= 6) break;
-                }
+              if (images.length > 0) {
+                const src = images[0].src || images[0].getAttribute('data-src');
+                ogImage = toAbsoluteURL(src);
               }
-              
-              if (relatedImages.length >= 6) break;
             }
             
             // Extraer site name
@@ -542,7 +509,6 @@ export class PlaywrightWebSearchService {
             return {
               content: mainContent.replace(/\s+/g, ' ').trim().substring(0, 800),
               image: ogImage,
-              images: relatedImages.length > 1 ? relatedImages.slice(1) : [], // Excluir la principal
               siteName,
               publishedTime,
               favicon
@@ -567,7 +533,6 @@ export class PlaywrightWebSearchService {
             ...result,
             content: metadata.content || result.snippet,
             image: metadata.image,
-            images: metadata.images,
             siteName: metadata.siteName,
             publishedTime: metadata.publishedTime,
             favicon: finalFavicon
