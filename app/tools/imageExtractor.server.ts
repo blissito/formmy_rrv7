@@ -51,10 +51,15 @@ export class ImageExtractorService {
         });
       });
 
-      await page.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: 10000
-      });
+      try {
+        await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 10000
+        });
+      } catch (navigateError) {
+        console.warn(`⚠️ No se pudo acceder a ${url}: ${navigateError.message}`);
+        return { url, images: [], error: `URL no accesible: ${navigateError.message}` };
+      }
 
       const images = await page.evaluate((maxImages) => {
         const foundImages: string[] = [];

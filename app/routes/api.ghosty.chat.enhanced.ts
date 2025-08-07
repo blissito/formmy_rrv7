@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
+import type { Route } from "./+types/api.ghosty.chat.enhanced";
 import { getWebSearchService } from "~/tools/webSearchPlaywright.server";
 
 /**
@@ -267,7 +267,7 @@ export async function callGhostyWithTools(
 /**
  * Endpoint mejorado que aprovecha capacidades nativas del modelo
  */
-export const action = async ({ request }: ActionFunctionArgs): Promise<Response> => {
+export const action = async ({ request }: Route.ActionArgs): Promise<Response> => {
   try {
     const body = await request.json();
     const { message } = body;

@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
+import type { Route } from "./+types/api.ghosty.chat";
 import { WebSearchService } from "~/tools/webSearch.server";
 import { getWebSearchService, cleanupWebSearchService } from "~/tools/webSearchPlaywright.server";
 import type { SearchResponse } from "~/tools/types";
@@ -20,64 +20,6 @@ interface GhostyChatRequest {
   enableSearch?: boolean;
 }
 
-/**
- * Simulate Ghosty response for development when API key is not available
- */
-async function simulateGhostyResponse(
-  message: string,
-  stream: boolean = false,
-  onChunk?: (chunk: string) => void
-): Promise<{ content: string }> {
-  const responses = [
-    `¡Hola! 👋 Soy **Ghosty**, tu asistente de Formmy.
-
-| Área | Qué puedo hacer | Cómo te ayudo |
-|------|----------------|---------------|
-| 🤖 Chatbots | Configurar respuestas automáticas | Guías paso a paso, plantillas |
-| 📄 Formularios | Optimizar conversión y UX | Análisis de campos, mejoras |  
-| 📊 Métricas | Generar reportes y análisis | Dashboards, alertas, insights |
-| 🛠️ Problemas | Resolver errores técnicos | Diagnóstico rápido, soluciones |
-
-¿En qué necesitas ayuda específicamente?`,
-
-    `Sobre **"${message}"** te puedo ayudar con:
-
-### 🎯 Opciones rápidas:
-- **Configuración**: Te guío paso a paso
-- **Métricas**: Explico cómo interpretarlas  
-- **Técnico**: Doy soluciones directas
-
-### ⚡ Siguiente paso:
-Dame más contexto de tu proyecto y te doy una respuesta específica.
-
-*Modo demo activo - pronto acceso a datos reales.*`,
-
-    `Para **"${message}"**, no tengo tus datos reales, pero puedo ayudarte:
-
-| Escenario Típico | Lo que suele pasar | Qué hacer |
-|------------------|-------------------|-----------|
-| 📊 Sin métricas | No hay tracking | Configuremos analytics |
-| 🤖 Bot nuevo | Pocas interacciones | Necesitas más tiempo |
-| 📋 Forms complejos | Abandono alto | Simplificar campos |
-
-**¿Te identificas con alguno?** Dame más contexto de tu situación específica.
-
-*Nota: Para análisis precisos necesito acceso a tus datos reales.*`
-  ];
-
-  const response = responses[Math.floor(Math.random() * responses.length)];
-
-  if (stream && onChunk) {
-    // Simulate streaming
-    for (let i = 0; i < response.length; i += 3) {
-      const chunk = response.slice(i, i + 3);
-      onChunk(chunk);
-      await new Promise(resolve => setTimeout(resolve, 30));
-    }
-  }
-
-  return { content: response };
-}
 
 /**
  * Determina si el mensaje requiere búsqueda web basándose en el contexto del chat
@@ -185,12 +127,7 @@ async function callGhostyOpenRouter(
   }
   
   if (!apiKey) {
-    // Fallback simulado para desarrollo con búsqueda
-    console.warn("OPENROUTER_API_KEY not configured, using simulated response");
-    const response = await simulateGhostyResponse(message, stream, onChunk);
-    
-    
-    return { ...response, sources: searchResults };
+    throw new Error("OPENROUTER_API_KEY is required - no simulations allowed");
   }
 
   const systemPrompt = searchContext && searchContext.length > 0
@@ -373,7 +310,7 @@ async function handleStreamingResponse(
 /**
  * Ghosty chat endpoint
  */
-export const action = async ({ request }: ActionFunctionArgs): Promise<Response> => {
+export const action = async ({ request }: Route.ActionArgs): Promise<Response> => {
   try {
     // Parse request
     const body: GhostyChatRequest = await request.json();

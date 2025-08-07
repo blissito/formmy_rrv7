@@ -46,7 +46,7 @@ export class WebSearchService {
         return results;
       }
       
-      // Si no hay resultados, devolver vacío
+      // Si no hay resultados, devolver vacío sin mocks
       return {
         query,
         timestamp: new Date(),
@@ -160,107 +160,6 @@ export class WebSearchService {
     }
   }
 
-  private getMockSearchResults(query: string): SearchResponse {
-    const mockData: Record<string, SearchResult[]> = {
-      default: [
-        {
-          title: "Documentación de Formmy - Chatbots",
-          url: "https://docs.formmy.app/chatbots",
-          snippet: "Aprende a configurar y personalizar tu chatbot con Formmy. Guía completa de configuración.",
-          content: "Los chatbots de Formmy te permiten automatizar la atención al cliente 24/7..."
-        },
-        {
-          title: "Mejores prácticas para chatbots",
-          url: "https://blog.formmy.app/mejores-practicas",
-          snippet: "Cómo mejorar la experiencia con chatbots más naturales y efectivos.",
-          content: "Un chatbot efectivo debe sentirse natural. Usa un tono conversacional..."
-        },
-        {
-          title: "Análisis de métricas en chatbots",
-          url: "https://formmy.app/features/analytics",
-          snippet: "Mide el rendimiento con métricas detalladas.",
-          content: "Métricas clave: tasa de resolución >60%, tiempo de respuesta <2s..."
-        }
-      ],
-      whatsapp: [
-        {
-          title: "Integración WhatsApp Business - Formmy",
-          url: "https://docs.formmy.app/whatsapp",
-          snippet: "Conecta tu chatbot con WhatsApp Business API paso a paso.",
-          content: "La integración con WhatsApp te permite atender clientes donde más tiempo pasan..."
-        },
-        {
-          title: "Precios WhatsApp Business API",
-          url: "https://formmy.app/pricing/whatsapp",
-          snippet: "Costos y planes para WhatsApp Business con Formmy.",
-          content: "WhatsApp cobra por conversación iniciada. Primeras 1000 conversaciones gratis..."
-        },
-        {
-          title: "Automatización en WhatsApp",
-          url: "https://blog.formmy.app/whatsapp-automation",
-          snippet: "Casos de uso y ejemplos de automatización en WhatsApp.",
-          content: "Automatiza: confirmaciones de pedidos, soporte básico, agendamiento..."
-        }
-      ],
-      formularios: [
-        {
-          title: "Constructor de formularios - Formmy",
-          url: "https://formmy.app/form-builder",
-          snippet: "Crea formularios conversacionales que convierten más.",
-          content: "Los formularios conversacionales tienen 3x más conversión que los tradicionales..."
-        },
-        {
-          title: "Plantillas de formularios",
-          url: "https://formmy.app/templates",
-          snippet: "Más de 50 plantillas listas para usar.",
-          content: "Plantillas para: contacto, encuestas, registro, cotizaciones, reservas..."
-        },
-        {
-          title: "Validación y lógica condicional",
-          url: "https://docs.formmy.app/forms/logic",
-          snippet: "Crea formularios inteligentes con lógica avanzada.",
-          content: "Muestra campos según respuestas previas, valida en tiempo real..."
-        }
-      ],
-      metricas: [
-        {
-          title: "Dashboard de métricas - Formmy",
-          url: "https://formmy.app/features/dashboard",
-          snippet: "Visualiza el rendimiento de tus chatbots y formularios.",
-          content: "KPIs principales: tasa de conversión, abandono, tiempo promedio, satisfacción..."
-        },
-        {
-          title: "Reportes automáticos",
-          url: "https://docs.formmy.app/reports",
-          snippet: "Configura reportes semanales y mensuales automáticos.",
-          content: "Recibe reportes por email con: conversaciones totales, resolución, tendencias..."
-        },
-        {
-          title: "Análisis de embudos",
-          url: "https://blog.formmy.app/funnel-analysis",
-          snippet: "Identifica dónde pierdes usuarios en tu flujo.",
-          content: "El análisis de embudos te muestra exactamente dónde abandonan los usuarios..."
-        }
-      ]
-    };
-
-    const lowerQuery = query.toLowerCase();
-    let results = mockData.default;
-
-    if (lowerQuery.includes('whatsapp')) {
-      results = mockData.whatsapp;
-    } else if (lowerQuery.includes('formulario') || lowerQuery.includes('form')) {
-      results = mockData.formularios;
-    } else if (lowerQuery.includes('metrica') || lowerQuery.includes('metric') || lowerQuery.includes('analytic')) {
-      results = mockData.metricas;
-    }
-
-    return {
-      query,
-      timestamp: new Date(),
-      results,
-    };
-  }
 
   formatForLLM(searchResponse: SearchResponse): string {
     const sources = searchResponse.results
