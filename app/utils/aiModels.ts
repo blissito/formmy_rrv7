@@ -61,7 +61,7 @@ export const MODEL_LABELS: Record<string, string> = Object.fromEntries(
   AI_MODELS.map((m) => [m.value, m.label])
 );
 
-export const DEFAULT_AI_MODEL = "openai/gpt-5-nano";
+export const DEFAULT_AI_MODEL = "openai/gpt-5-mini";
 
 // Sistema de rotación de modelos gratuitos para evitar rate limits
 export const FREE_MODEL_ROTATION = [

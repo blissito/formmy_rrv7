@@ -16,7 +16,13 @@ export class BingWebSearchService {
   }
 
   private async simulateHumanBehavior(page: Page) {
-    // Simulate random mouse movements
+    // Versión más rápida para producción
+    if (process.env.NODE_ENV === 'production') {
+      await this.delay(100);
+      return;
+    }
+    
+    // Simulación completa solo en desarrollo
     for (let i = 0; i < 2; i++) {
       const x = 100 + Math.random() * 1600;
       const y = 100 + Math.random() * 600;
@@ -24,7 +30,6 @@ export class BingWebSearchService {
       await this.delay(100 + Math.random() * 200);
     }
 
-    // Simulate random scroll
     await page.evaluate(() => {
       window.scrollTo({
         top: Math.random() * 200,
@@ -59,27 +64,60 @@ export class BingWebSearchService {
         console.log('💻 Development: Using bundled Puppeteer Chromium');
       }
       
-      // Launch browser with stealth (always headless to avoid interrupting user)
+      // Launch browser with container-optimized settings
+      const browserArgs = [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-web-security',
+        '--no-first-run',
+        '--disable-gpu',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+        '--window-size=1920,1080'
+      ];
+      
+      // Configuración adicional para contenedores en producción
+      if (isProduction) {
+        browserArgs.push(
+          '--single-process',
+          '--no-zygote',
+          '--disable-extensions',
+          '--disable-default-apps',
+          '--disable-background-networking',
+          '--disable-sync',
+          '--disable-translate',
+          '--hide-scrollbars',
+          '--mute-audio',
+          '--disable-client-side-phishing-detection',
+          '--disable-hang-monitor',
+          '--disable-popup-blocking',
+          '--disable-prompt-on-repost',
+          '--disable-domain-reliability',
+          '--disable-features=VizDisplayCompositor',
+          '--run-all-compositor-stages-before-draw',
+          '--disable-threaded-animation',
+          '--disable-threaded-scrolling',
+          '--disable-checker-imaging',
+          '--disable-image-animation-resync',
+          '--disable-partial-raster',
+          '--use-gl=swiftshader'
+        );
+      }
+      
       browser = await puppeteer.launch({
-        headless: 'new', // Always headless
+        headless: 'new',
         executablePath,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-blink-features=AutomationControlled',
-          '--disable-features=site-per-process',
-          '--disable-web-security',
-          '--no-first-run',
-          '--disable-gpu',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-features=TranslateUI',
-          '--disable-ipc-flooding-protection',
-          '--window-size=1920,1080'
-        ],
-        defaultViewport: null
+        args: browserArgs,
+        defaultViewport: null,
+        timeout: 30000, // Timeout más largo para contenedores
+        handleSIGINT: false,
+        handleSIGTERM: false,
+        handleSIGHUP: false
       });
 
       page = await browser.newPage();
@@ -123,13 +161,13 @@ export class BingWebSearchService {
       // Navigate to Bing Search
       console.log('📍 Navigating to Bing Search...');
       await page.goto('https://www.bing.com', {
-        waitUntil: 'networkidle2',
-        timeout: 30000
+        waitUntil: 'domcontentloaded', // Más rápido que networkidle2
+        timeout: 10000
       });
 
-      // Simulate human behavior
+      // Simulate human behavior (rápido en producción)
       await this.simulateHumanBehavior(page);
-      await this.delay(1000 + Math.random() * 2000);
+      await this.delay(process.env.NODE_ENV === 'production' ? 200 : 1000 + Math.random() * 2000);
 
       // Find search box
       console.log('🔍 Looking for Bing search box...');
@@ -158,34 +196,38 @@ export class BingWebSearchService {
       await page.keyboard.up('Control');
       await this.delay(100);
 
-      // Type search query with human-like behavior
+      // Type search query (rápido en producción)
       console.log('⌨️ Typing search query...');
-      for (let i = 0; i < query.length; i++) {
-        const char = query[i];
-        await page.keyboard.type(char);
-        
-        // Variable typing speed
-        let delay = 60 + Math.random() * 120; // 60-180ms per character
-        
-        // Occasionally pause longer (like thinking)
-        if (Math.random() < 0.1) {
-          delay += 200 + Math.random() * 400;
+      if (process.env.NODE_ENV === 'production') {
+        // En producción, escribir todo de una vez
+        await page.keyboard.type(query, { delay: 20 });
+      } else {
+        // En desarrollo, simular comportamiento humano
+        for (let i = 0; i < query.length; i++) {
+          const char = query[i];
+          await page.keyboard.type(char);
+          
+          let delay = 60 + Math.random() * 120;
+          
+          if (Math.random() < 0.1) {
+            delay += 200 + Math.random() * 400;
+          }
+          
+          await this.delay(delay);
         }
-        
-        await this.delay(delay);
       }
 
-      // Pause before submitting
-      await this.delay(500 + Math.random() * 1000);
+      // Pause before submitting (más corto en producción)
+      await this.delay(process.env.NODE_ENV === 'production' ? 100 : 500 + Math.random() * 1000);
 
       // Submit the search
       console.log('🔍 Submitting Bing search...');
       await page.keyboard.press('Enter');
 
-      // Wait for results
+      // Wait for results (optimizado)
       console.log('⏳ Waiting for Bing search results...');
-      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 20000 });
-      await this.delay(2000);
+      await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 });
+      await this.delay(process.env.NODE_ENV === 'production' ? 500 : 2000);
 
       // Check URL and extract results
       const url = page.url();

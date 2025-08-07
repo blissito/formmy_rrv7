@@ -44,10 +44,32 @@ RUN apk update && apk add --no-cache \
     ca-certificates \
     ttf-freefont \
     font-noto-emoji \
+    # Dependencias adicionales para Puppeteer en Alpine
+    libx11 \
+    libxcomposite \
+    libxcursor \
+    libxdamage \
+    libxi \
+    libxtst \
+    libxrandr \
+    libxscrnsaver \
+    alsa-lib \
+    pango \
+    at-spi2-core \
+    gtk+3.0 \
     && rm -rf /var/cache/apk/*
 # Configurar variables de entorno para Playwright y Puppeteer
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+# Configuración adicional para evitar sandbox en contenedor
+ENV CHROME_BIN=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/lib/chromium/
+# Variables críticas para contenedores
+ENV CHROMIUM_FLAGS="--no-sandbox --disable-dev-shm-usage --disable-gpu"
+ENV DISPLAY=:99
+# Configuración de memoria compartida
+RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
 
 COPY ./package.json package-lock.json /app/
 COPY server.js /app/server.js

@@ -1,6 +1,7 @@
 import { WebSearchService } from "~/tools/webSearch.server";
 import { getPuppeteerWebSearchService } from "~/tools/webSearchPuppeteer.server";
 import type { SearchResponse } from "~/tools/types";
+import { DEFAULT_AI_MODEL } from "~/utils/aiModels";
 
 interface GhostyChatRequest {
   message: string;
@@ -201,7 +202,7 @@ ${searchContext && searchContext.length === 0 ? '**NOTA**: Se intentó realizar 
   });
 
   const requestBody = {
-    model: "openai/gpt-oss-120b",
+    model: DEFAULT_AI_MODEL,
     messages,
     temperature: 0.7,
     max_tokens: 2000,

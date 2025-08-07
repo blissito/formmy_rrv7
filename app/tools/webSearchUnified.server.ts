@@ -1,6 +1,7 @@
 import type { SearchResult, SearchResponse } from './types';
 import { getYahooWebSearchService } from './webSearchYahoo.server';
 import { getBingWebSearchService } from './webSearchBing.server';
+import { getDuckDuckGoWebSearchService } from './webSearchDuckDuckGo.server';
 
 export class UnifiedWebSearchService {
   private cache = new Map<string, { data: SearchResponse; expires: number }>();
@@ -16,7 +17,7 @@ export class UnifiedWebSearchService {
     }
 
     console.log('🎯 Starting unified search strategy for:', query);
-    console.log('📋 Strategy: Bing → Yahoo (no Google)');
+    console.log('📋 Strategy: Bing → Yahoo → DuckDuckGo');
 
     // Step 1: Try Bing first (primary engine - works better!)
     let results: SearchResponse | null = null;
@@ -78,14 +79,39 @@ export class UnifiedWebSearchService {
       }
     } catch (yahooError) {
       console.log('❌ Yahoo search failed:', yahooError instanceof Error ? yahooError.message : yahooError);
+      console.log('🔄 Falling back to DuckDuckGo...');
     }
 
-    // Step 3: All search engines failed
+    // Step 3: Try DuckDuckGo as final fallback (no Puppeteer needed!)
+    try {
+      console.log('🦆 Attempt 3: DuckDuckGo Search...');
+      const duckService = await getDuckDuckGoWebSearchService();
+      results = await duckService.search(query, numResults);
+      
+      // DuckDuckGo search successful if we have results  
+      if (results && results.results.length > 0) {
+        console.log(`✅ DuckDuckGo search successful: ${results.results.length} results`);
+        
+        // Cache and return DuckDuckGo results
+        this.cache.set(query, {
+          data: { ...results, source: 'DuckDuckGo' } as any,
+          expires: Date.now() + this.cacheTimeout
+        });
+        
+        return { ...results, source: 'DuckDuckGo' } as any;
+      } else {
+        console.log('⚠️ DuckDuckGo search returned 0 results');
+      }
+    } catch (duckError) {
+      console.log('❌ DuckDuckGo search failed:', duckError instanceof Error ? duckError.message : duckError);
+    }
+
+    // Step 4: All search engines failed
     console.log('❌ All search engines failed');
     const emptyResponse: SearchResponse = {
       query,
       results: [],
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     };
 
     return emptyResponse;

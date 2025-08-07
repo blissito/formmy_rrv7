@@ -1,4 +1,5 @@
 import { getUnifiedWebSearchService } from "~/tools/webSearchUnified.server";
+import { DEFAULT_AI_MODEL } from "~/utils/aiModels";
 
 interface ToolDefinition {
   type: string;
@@ -242,7 +243,7 @@ export async function callGhostyWithTools(
     const shouldStream = !!onChunk && attempts > 1;
     
     const requestBody: any = {
-      model: "openai/gpt-oss-120b",
+      model: DEFAULT_AI_MODEL,
       messages: currentMessages,
       temperature: 0.7,
       max_tokens: 2000,
@@ -379,7 +380,7 @@ export async function callGhostyWithTools(
       // Forzar al modelo a dar una respuesta final sin herramientas
       console.log(`🎯 Forzando respuesta final sin herramientas...`);
       const finalRequestBody = {
-        model: "openai/gpt-oss-120b",
+        model: DEFAULT_AI_MODEL,
         messages: [
           ...currentMessages,
           {
