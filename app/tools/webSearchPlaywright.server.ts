@@ -12,9 +12,18 @@ export class PlaywrightWebSearchService {
   private lastRequestTime = 0;
   private minRequestInterval = 5000; // 5 segundos entre requests para evitar rate limiting
   private isDebugMode = process.env.NODE_ENV === 'development';
+  private initializationAttempts = 0;
+  private maxInitAttempts = 3;
 
   async initialize() {
     if (!this.browser) {
+      this.initializationAttempts++;
+      if (this.initializationAttempts > this.maxInitAttempts) {
+        throw new Error(`Failed to initialize browser after ${this.maxInitAttempts} attempts`);
+      }
+      
+      console.log(`🔄 Browser initialization attempt ${this.initializationAttempts}/${this.maxInitAttempts}`);
+      
       // Detectar entorno y configurar executable path apropiado
       const isProduction = process.env.NODE_ENV === 'production';
       const systemChromium = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
@@ -30,10 +39,23 @@ export class PlaywrightWebSearchService {
         console.log("💻 Using Playwright bundled Chromium in development");
       }
       
-      this.browser = await chromium.launch({
-        headless: true,
-        executablePath,
-        args: [
+      try {
+        this.browser = await chromium.launch({
+          headless: true,
+          executablePath,
+          timeout: 30000, // 30 segundos timeout para launch
+        args: isProduction ? [
+          // Args minimalistas para producción estable
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage', 
+          '--single-process',
+          '--disable-gpu',
+          '--headless',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor'
+        ] : [
+          // Args completos para desarrollo
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
@@ -51,6 +73,25 @@ export class PlaywrightWebSearchService {
           '--window-size=1920,1080'
         ]
       });
+
+      // Añadir listeners para debug
+      this.browser.on('disconnected', () => {
+        console.log("❌ Browser disconnected unexpectedly!");
+        this.browser = null;
+        this.contexts = [];
+      });
+
+        // Reset counter en inicialización exitosa
+        this.initializationAttempts = 0;
+        
+        if (this.isDebugMode || isProduction) {
+          console.log(`✅ Browser launched successfully (PID: ${this.browser.process()?.pid})`);
+        }
+      } catch (launchError) {
+        console.error("❌ Failed to launch browser:", launchError);
+        this.browser = null;
+        throw new Error(`Browser launch failed: ${launchError instanceof Error ? launchError.message : 'Unknown error'}`);
+      }
 
       // Crear pool de contextos aislados
       for (let i = 0; i < this.maxConcurrentSearches; i++) {
@@ -323,14 +364,19 @@ export class PlaywrightWebSearchService {
         });
       });
       
+      // Set timeouts más cortos para producción
+      const isProduction = process.env.NODE_ENV === 'production';
+      const navTimeout = isProduction ? 8000 : 15000;
+      const waitTimeout = isProduction ? 1000 : 2000;
+      
       // Primero ir a Google.com para establecer cookies
       await page.goto('https://www.google.com', {
         waitUntil: 'domcontentloaded',
-        timeout: 10000
+        timeout: navTimeout
       });
 
-      // Delay más largo para establecer sesión y parecer más humano
-      await page.waitForTimeout(2000 + Math.random() * 2000);
+      // Delay más corto en producción
+      await page.waitForTimeout(waitTimeout + Math.random() * waitTimeout);
 
       // Simular actividad humana - hacer clic en algún elemento si existe
       try {
@@ -347,12 +393,12 @@ export class PlaywrightWebSearchService {
         // Ignorar errores de simulación de mouse
       }
 
-      await page.waitForTimeout(1000 + Math.random() * 1000);
+      await page.waitForTimeout(500 + Math.random() * 500);
 
       // Luego hacer la búsqueda de forma más gradual con parámetros adicionales
       await page.goto(`https://www.google.com/search?q=${encodeURIComponent(query)}&hl=es&sei=${Math.random().toString(36).substring(2, 15)}`, {
         waitUntil: 'domcontentloaded',
-        timeout: 15000
+        timeout: navTimeout
       });
 
       if (this.isDebugMode) {
