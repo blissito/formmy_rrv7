@@ -198,7 +198,7 @@ export const IntegrationCard = ({
       <nav className="flex gap-2">
         <SimpleButton
           className={`grow ${
-            isConnected ? "text-success border-success bg-success/10" : "text-metal"
+            isConnected ? "text-success border-success bg-success/20 hover:bg-success/30" : "text-metal"
           }`}
           onClick={getButtonAction()}
         >
