@@ -87,7 +87,7 @@ export const QuestionsForm = ({
           <button
             type="button"
             onClick={onAddQuestion}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            className="text-metal hover:text-metal/80 text-sm font-medium"
           >
             + Agregar pregunta
           </button>
@@ -99,11 +99,11 @@ export const QuestionsForm = ({
           onChange={onAnswerChange}
           placeholder="Estamos abiertos de lunes a viernes de 9:00 AM a 6:00 PM..."
         />
-        <div className="flex gap-2 justify-end p-2">
+         <div className="flex gap-4 justify-end items-center mt-6">
           {editingContext && onCancelEdit && (
             <Button
               variant="outline"
-              className="m-0 h-10 min-w-max p-2"
+              className="mt-0 mx-0 h-10 px-3 min-w-[120px] rounded-full"
               onClick={onCancelEdit}
               isDisabled={isAddingQuestion}
             >
@@ -111,7 +111,7 @@ export const QuestionsForm = ({
             </Button>
           )}
           <Button
-            className="m-0 h-10 "
+              className="mt-0 mx-0 h-10"
             onClick={onAddContext}
             isDisabled={
               !title.trim() ||
@@ -133,7 +133,7 @@ export const QuestionsForm = ({
       </Card>
       <hr className="my-3 border-none" />
       {questionContexts.length > 0 && (
-        <Card noSearch title="Preguntas y respuestas">
+        <Card noSearch title="Preguntas y respuestas" navClassName="!mb-4">
           <CardHeader
             left={
               <input

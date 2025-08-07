@@ -7,6 +7,7 @@ import { useFetchWebsite } from "../../hooks/useFetchWebsite";
 import { Table } from "./common/Table";
 import type { WebsiteEntry } from "../../types/website";
 import toast from "react-hot-toast";
+import { IoInformationCircleOutline } from "react-icons/io5";
 
 export const Website = ({
   websiteEntries = [],
@@ -140,8 +141,8 @@ export const Website = ({
         }
       >
         <Input
-          label="Sitio web"
-          className="mb-6"
+          label="URL del sitio web"
+          className="mb-1"
           left={
             <span className="border-r pr-3 min-h-full flex items-center">
               https://
@@ -152,6 +153,14 @@ export const Website = ({
           value={formData.url}
           onChange={(value) => handleInputChange("url", value)}
         />
+           <div className="flex gap-1 items-start text-[12px] text-irongray mb-6">
+            <span className="mt-[2px]">
+              <IoInformationCircleOutline />
+            </span>
+            <p>
+              Considera que en el caso de las Single Page Applications (SPAs) solo se indexa la URL principal.
+            </p>
+          </div>
         <div className="flex justify-between w-full gap-4 flex-wrap md:grid-cols-3">
           <Input
             label="Incluye solo rutas"
