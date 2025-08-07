@@ -132,6 +132,26 @@ export const GhostyMessageComponent = ({
               )}
             </div>
           )}
+          
+          {/* Sources */}
+          {!isUser && message.sources && message.sources.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-outlines/50">
+              <p className="text-xs font-semibold text-irongray mb-2">📚 Fuentes consultadas:</p>
+              <div className="space-y-1">
+                {message.sources.map((source, index) => (
+                  <a
+                    key={index}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-xs text-brand-500 hover:text-brand-600 hover:underline"
+                  >
+                    [{index + 1}] {source.title}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Actions */}

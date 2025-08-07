@@ -47,7 +47,7 @@ export const GhostyChatInterface = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim() && currentState !== 'thinking' && currentState !== 'streaming') {
+    if (inputValue.trim() && currentState !== 'thinking' && currentState !== 'searching' && currentState !== 'streaming') {
       onSendMessage(inputValue.trim());
       setInputValue("");
     }
@@ -63,7 +63,7 @@ export const GhostyChatInterface = ({
     }
   };
 
-  const isLoading = currentState === 'thinking' || currentState === 'streaming';
+  const isLoading = currentState === 'thinking' || currentState === 'searching' || currentState === 'streaming';
   const hasMessages = messages.length > 0;
 
   return (
@@ -99,7 +99,7 @@ export const GhostyChatInterface = ({
             <div>
               <h2 className="text-xl font-semibold text-dark">Ghosty IA</h2>
               <p className="text-sm text-irongray">
-                {isLoading ? 'Procesando...' : 'Tu asistente para Formmy'}
+                {currentState === 'searching' ? 'Buscando...' : isLoading ? 'Procesando...' : 'Tu asistente para Formmy'}
               </p>
             </div>
           </div>
@@ -194,7 +194,7 @@ export const GhostyChatInterface = ({
 
             {/* Thinking bubble */}
             <AnimatePresence>
-              {(currentState === 'thinking' || currentState === 'streaming') && (
+              {(currentState === 'thinking' || currentState === 'searching' || currentState === 'streaming') && (
                 <GhostyThinkingBubble />
               )}
             </AnimatePresence>

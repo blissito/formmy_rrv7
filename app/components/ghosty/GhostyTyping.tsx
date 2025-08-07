@@ -18,6 +18,12 @@ export const GhostyTyping = ({ state, className }: GhostyTypingProps) => {
           icon: "🤔",
           color: "text-brand-500"
         };
+      case 'searching':
+        return {
+          text: "Buscando en línea...",
+          icon: "🔍",
+          color: "text-brand-500"
+        };
       case 'streaming':
         return {
           text: "Ghosty está escribiendo...",
@@ -70,7 +76,7 @@ export const GhostyTyping = ({ state, className }: GhostyTypingProps) => {
         </span>
         
         {/* Animated dots */}
-        {(state === 'thinking' || state === 'streaming') && (
+        {(state === 'thinking' || state === 'searching' || state === 'streaming') && (
           <div className="flex gap-1 ml-1">
             {[0, 1, 2].map((i) => (
               <motion.div

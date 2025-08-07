@@ -1,8 +1,23 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
+import { WebSearchService } from "~/tools/webSearch.server";
+import { getWebSearchService, cleanupWebSearchService } from "~/tools/webSearchPlaywright.server";
+import type { SearchResponse } from "~/tools/types";
 
 interface GhostyChatRequest {
   message: string;
+  history?: Array<{
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+    sources?: Array<{
+      title: string;
+      url: string;
+      snippet: string;
+    }>;
+  }>;
   stream?: boolean;
+  enableSearch?: boolean;
 }
 
 /**
@@ -65,33 +80,131 @@ Dame más contexto de tu proyecto y te doy una respuesta específica.
 }
 
 /**
+ * Determina si el mensaje requiere búsqueda web basándose en el contexto del chat
+ */
+function shouldPerformSearch(
+  message: string, 
+  history: GhostyChatRequest['history'] = []
+): boolean {
+  const searchKeywords = [
+    'busca', 'búsqueda', 'encuentra', 'información sobre',
+    'qué es', 'cómo', 'cuál', 'cuáles', 'dónde',
+    'últimas', 'reciente', 'actual', 'novedades',
+    'documentación', 'docs', 'guía', 'tutorial',
+    'precio', 'costo', 'plan', 'comparar'
+  ];
+  
+  const lowerMessage = message.toLowerCase();
+  const hasSearchKeywords = searchKeywords.some(keyword => lowerMessage.includes(keyword));
+  
+  // También buscar si es una pregunta de seguimiento que requiere información actualizada
+  const followUpIndicators = [
+    'y el precio', 'y el costo', 'cuánto cuesta', 'qué tal',
+    'y sobre', 'y qué', 'también', 'además'
+  ];
+  
+  const isFollowUp = followUpIndicators.some(indicator => lowerMessage.includes(indicator));
+  
+  // Si es seguimiento, revisar si la conversación previa mencionó temas que requieren búsqueda
+  if (isFollowUp && history.length > 0) {
+    const recentMessages = history.slice(-4).map(h => h.content.toLowerCase()).join(' ');
+    const hasSearchableContext = searchKeywords.some(keyword => recentMessages.includes(keyword));
+    return hasSearchableContext;
+  }
+  
+  return hasSearchKeywords;
+}
+
+/**
  * OpenRouter API call specifically for Ghosty with openai/gpt-oss-120b
  */
 async function callGhostyOpenRouter(
   message: string,
+  history: GhostyChatRequest['history'] = [],
   stream: boolean = false,
-  onChunk?: (chunk: string) => void
-): Promise<{ content: string }> {
+  onChunk?: (chunk: string) => void,
+  enableSearch: boolean = true
+): Promise<{ content: string; sources?: SearchResponse }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
+  
+  // Realizar búsqueda web si es necesario
+  let searchResults: SearchResponse | undefined;
+  let searchContext = '';
+  
+  if (enableSearch && shouldPerformSearch(message, history)) {
+    console.log(`🔍 Realizando búsqueda para: "${message}"`);
+    try {
+      // Intentar usar Playwright primero
+      const playwrightService = await getWebSearchService();
+      searchResults = await playwrightService.search(message, 5);
+      
+      // Si Playwright no devuelve resultados, usar búsqueda básica REAL
+      if (!searchResults || searchResults.results.length === 0) {
+        console.log("⚠️ Playwright devolvió 0 resultados, intentando búsqueda básica REAL");
+        const searchService = new WebSearchService();
+        searchResults = await searchService.search(message, 3);
+        // Solo usar mocks si la búsqueda real también falla
+        if (!searchResults || searchResults.results.length === 0) {
+          console.log("⚠️ Búsqueda básica también falló, usando mocks");
+          searchResults = playwrightService.getFallbackResults(message);
+        }
+        searchContext = searchService.formatForLLM(searchResults);
+      } else {
+        searchContext = playwrightService.formatForLLM(searchResults);
+      }
+      
+      console.log(`✅ Playwright búsqueda: ${searchResults.results.length} resultados`);
+      console.log(`📝 Contexto generado (primeros 200 chars): ${searchContext.substring(0, 200)}...`);
+    } catch (playwrightError) {
+      console.warn("Playwright search failed, falling back to basic search:", playwrightError);
+      // Fallback a búsqueda básica
+      const searchService = new WebSearchService();
+      searchResults = await searchService.search(message, 3);
+      searchContext = searchService.formatForLLM(searchResults);
+      console.log(`✅ Basic búsqueda exitosa: ${searchResults.results.length} resultados`);
+      console.log(`📝 Contexto generado (primeros 200 chars): ${searchContext.substring(0, 200)}...`);
+    }
+  } else {
+    console.log(`❌ No se realizará búsqueda para: "${message}"`);
+    console.log(`   enableSearch: ${enableSearch}, shouldPerformSearch: ${shouldPerformSearch(message, history)}`);
+  }
+  
   if (!apiKey) {
-    // Fallback simulado para desarrollo
+    // Fallback simulado para desarrollo con búsqueda
     console.warn("OPENROUTER_API_KEY not configured, using simulated response");
-    return simulateGhostyResponse(message, stream, onChunk);
+    const response = await simulateGhostyResponse(message, stream, onChunk);
+    
+    
+    return { ...response, sources: searchResults };
   }
 
-  const requestBody = {
-    model: "openai/gpt-oss-120b", // Modelo específico para Ghosty
-    messages: [
-      {
-        role: "system",
-        content: `Eres Ghosty 👻, asistente de Formmy. 
+  const systemPrompt = searchContext 
+    ? `Eres Ghosty 👻, asistente de Formmy con capacidad de búsqueda web.
+
+**CONTEXTO DE BÚSQUEDA WEB REALIZADA**:
+${searchContext}
+
+**MUY IMPORTANTE**: 
+- YA SE REALIZÓ LA BÚSQUEDA WEB - no necesitas simular browsing
+- Las fuentes anteriores son REALES y están disponibles para usar
+- Cuando uses información de las fuentes, SIEMPRE cítalas con [1], [2], [3]
+- Prioriza información de las fuentes sobre conocimiento general
+- Si las fuentes contradicen tu conocimiento, usa las fuentes
+
+**REGLAS**:
+- Nunca digas "no puedo browsear" - ya tienes los resultados de búsqueda
+- Nunca inventes datos del usuario
+- Sé honesto sobre qué tienes y qué no
+- Usa las fuentes web para dar información actualizada
+- Máximo 200 palabras + referencias
+
+**FORMATO**:
+- Usa markdown
+- Cita fuentes como [1], [2], [3] en el texto
+- NO listes las fuentes al final - se mostrarán automáticamente`
+    : `Eres Ghosty 👻, asistente de Formmy. 
 
 **REGLA DE ORO**: Nunca inventes datos específicos del usuario. SÉ HONESTO sobre qué tienes y qué no.
-
-**CUANDO NO TIENES DATOS REALES**:
-- ✅ "No tengo acceso a tus datos, PERO basado en chatbots similares..."
-- ✅ "Sin datos reales no puedo ser preciso, pero típicamente..."  
-- ❌ NUNCA inventes números, métricas o análisis específicos
 
 **AYUDAS CON**:
 - 🤖 Configuración de chatbots
@@ -104,15 +217,40 @@ async function callGhostyOpenRouter(
 - Usa markdown (tablas, listas, **bold**)
 - Máximo 200 palabras por respuesta
 - Ejemplos concretos cuando sea apropiado
-- Disclaimer claro cuando des ejemplos generales
 
-**TONO**: Honesto, útil, conciso. Emojis moderados.`
-      },
-      {
-        role: "user", 
-        content: message
-      }
-    ],
+**TONO**: Honesto, útil, conciso. Emojis moderados.`;
+
+  console.log(`📋 System prompt incluye búsqueda: ${!!searchContext}`);
+  if (searchContext) {
+    console.log(`📝 Contexto de búsqueda length: ${searchContext.length} caracteres`);
+  }
+
+  // Construir historial de mensajes para el contexto
+  const messages = [
+    {
+      role: "system" as const,
+      content: systemPrompt
+    }
+  ];
+
+  // Agregar historial previo (últimos 10 mensajes para no saturar el contexto)
+  const recentHistory = (history || []).slice(-10);
+  for (const historyMessage of recentHistory) {
+    messages.push({
+      role: historyMessage.role as "user" | "assistant",
+      content: historyMessage.content
+    });
+  }
+
+  // Agregar el mensaje actual
+  messages.push({
+    role: "user" as const,
+    content: message
+  });
+
+  const requestBody = {
+    model: "openai/gpt-oss-120b",
+    messages,
     temperature: 0.7,
     max_tokens: 2000,
     stream: stream,
@@ -137,12 +275,19 @@ async function callGhostyOpenRouter(
 
   if (stream) {
     // Handle streaming response
-    return await handleStreamingResponse(response, onChunk);
+    const result = await handleStreamingResponse(response, onChunk);
+    
+    
+    return { ...result, sources: searchResults };
   } else {
     // Handle regular response
     const data = await response.json();
+    let content = data.choices?.[0]?.message?.content || "Lo siento, no pude generar una respuesta.";
+    
+    
     return {
-      content: data.choices?.[0]?.message?.content || "Lo siento, no pude generar una respuesta.",
+      content,
+      sources: searchResults
     };
   }
 }
@@ -215,7 +360,7 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<Response>
   try {
     // Parse request
     const body: GhostyChatRequest = await request.json();
-    const { message, stream = false } = body;
+    const { message, history = [], stream = false, enableSearch = true } = body;
 
     if (!message?.trim()) {
       return new Response(
@@ -235,8 +380,9 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<Response>
         new ReadableStream({
           async start(controller) {
             try {
-              await callGhostyOpenRouter(
+              const result = await callGhostyOpenRouter(
                 message,
+                history,
                 true,
                 (chunk: string) => {
                   // Send each chunk as SSE
@@ -247,8 +393,20 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<Response>
                   controller.enqueue(
                     encoder.encode(`data: ${data}\n\n`)
                   );
-                }
+                },
+                enableSearch
               );
+
+              // Send sources if available
+              if (result.sources) {
+                const sourcesData = JSON.stringify({
+                  type: "sources",
+                  sources: result.sources.results
+                });
+                controller.enqueue(
+                  encoder.encode(`data: ${sourcesData}\n\n`)
+                );
+              }
 
               // Send completion signal
               const doneData = JSON.stringify({ type: "done" });
@@ -280,11 +438,12 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<Response>
     } else {
       // Regular JSON response
       try {
-        const response = await callGhostyOpenRouter(message, false);
+        const response = await callGhostyOpenRouter(message, history, false, undefined, enableSearch);
         return new Response(
           JSON.stringify({
             type: "message",
             content: response.content,
+            sources: response.sources?.results
           }),
           {
             headers: { "Content-Type": "application/json" },
@@ -328,3 +487,16 @@ export const loader = async () => {
     }
   );
 };
+
+// Cleanup en shutdown
+if (typeof process !== 'undefined') {
+  process.on('SIGINT', async () => {
+    await cleanupWebSearchService();
+    process.exit();
+  });
+  
+  process.on('SIGTERM', async () => {
+    await cleanupWebSearchService();
+    process.exit();
+  });
+}

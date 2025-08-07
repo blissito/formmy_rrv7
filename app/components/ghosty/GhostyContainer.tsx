@@ -199,7 +199,7 @@ export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
               <GhostyCompactInput
                 onSubmit={sendMessage}
                 onExpand={expandChat}
-                isLoading={currentState === 'thinking' || currentState === 'streaming'}
+                isLoading={currentState === 'thinking' || currentState === 'searching' || currentState === 'streaming'}
               />
             </motion.div>
 

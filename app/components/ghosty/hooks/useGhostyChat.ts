@@ -1,14 +1,53 @@
 import { useState, useCallback } from 'react';
 
+/**
+ * Determina si una pregunta probablemente necesitará búsqueda web
+ */
+function shouldLikelySearch(message: string, history: GhostyMessage[] = []): boolean {
+  const searchKeywords = [
+    'busca', 'búsqueda', 'encuentra', 'información sobre',
+    'qué es', 'cómo', 'cuál', 'cuáles', 'dónde',
+    'últimas', 'reciente', 'actual', 'novedades',
+    'documentación', 'docs', 'guía', 'tutorial',
+    'precio', 'costo', 'plan', 'comparar'
+  ];
+  
+  const lowerMessage = message.toLowerCase();
+  const hasSearchKeywords = searchKeywords.some(keyword => lowerMessage.includes(keyword));
+  
+  // También detectar preguntas de seguimiento
+  const followUpIndicators = [
+    'y el precio', 'y el costo', 'cuánto cuesta', 'qué tal',
+    'y sobre', 'y qué', 'también', 'además'
+  ];
+  
+  const isFollowUp = followUpIndicators.some(indicator => lowerMessage.includes(indicator));
+  
+  if (isFollowUp && history.length > 0) {
+    const recentMessages = history.slice(-4).map(h => h.content.toLowerCase()).join(' ');
+    const hasSearchableContext = searchKeywords.some(keyword => recentMessages.includes(keyword));
+    return hasSearchableContext;
+  }
+  
+  return hasSearchKeywords;
+}
+
+export interface SearchSource {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
 export interface GhostyMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  sources?: SearchSource[];
 }
 
-export type GhostyState = 'idle' | 'thinking' | 'streaming' | 'error';
+export type GhostyState = 'idle' | 'thinking' | 'searching' | 'streaming' | 'error';
 
 export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
   const [messages, setMessages] = useState<GhostyMessage[]>(initialMessages);
@@ -49,8 +88,11 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
       setIsExpanded(true);
     }
 
-    // Set thinking state
-    setCurrentState('thinking');
+    // Determine if likely to need search
+    const mightNeedSearch = shouldLikelySearch(content.trim(), messages);
+    
+    // Set appropriate initial state
+    setCurrentState(mightNeedSearch ? 'searching' : 'thinking');
     setError(null);
 
     // Add assistant message placeholder
@@ -74,6 +116,7 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
         },
         body: JSON.stringify({
           message: content.trim(),
+          history: messages, // ✅ Enviar historial completo
           stream: true,
         }),
         signal: controller.signal,
@@ -93,6 +136,7 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
       const decoder = new TextDecoder();
       let buffer = '';
       let currentContent = '';
+      let sources: SearchSource[] | undefined;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -116,10 +160,16 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
                   content: currentContent,
                   isStreaming: true,
                 });
+              } else if (parsed.type === 'sources') {
+                sources = parsed.sources;
+                updateMessage(assistantMessage.id, {
+                  sources: sources,
+                });
               } else if (parsed.type === 'done') {
                 updateMessage(assistantMessage.id, {
                   content: currentContent,
                   isStreaming: false,
+                  sources: sources,
                 });
                 setCurrentState('idle');
                 return;

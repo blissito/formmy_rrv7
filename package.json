@@ -49,6 +49,7 @@
     "motion": "^12.23.12",
     "nanoid": "^5.1.5",
     "nodemailer": "^6.10.0",
+    "playwright": "^1.54.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.1",
