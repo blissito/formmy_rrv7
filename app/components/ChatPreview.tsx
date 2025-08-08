@@ -260,6 +260,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         <ChatHeader
           primaryColor={chatbot.primaryColor || "#63CFDE"}
           name={chatbot.name}
+          avatarUrl={chatbot.avatarUrl}
         />
 
         <section
@@ -274,6 +275,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
                 key={idx}
                 message={msg}
                 primaryColor={chatbot.primaryColor || "#63CFDE"}
+                avatarUrl={chatbot.avatarUrl}
               />
             ))}
           <div ref={messagesEndRef} />
@@ -288,6 +290,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
             <MessageBubble
               role="assistant"
               primaryColor={chatbot.primaryColor || "#63CFDE"}
+              avatarUrl={chatbot.avatarUrl}
             >
               <LoadingIndicator />
             </MessageBubble>

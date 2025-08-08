@@ -11,13 +11,9 @@ export const Avatar = ({
 }) => {
   return (
     <img
-  
       className={cn(
-        "border rounded-full border-outlines object-cover p-0",
-        {
-          "aspect-square": !!src,
-          "w-6": !!src,
-        },
+        "border rounded-full border-outlines object-cover",
+        "w-10 h-10",
         className
       )}
       src={src || "/assets/chat/ghosty.svg"}

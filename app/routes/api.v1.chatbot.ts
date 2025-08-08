@@ -260,6 +260,10 @@ export async function action({ request }: any) {
         }
         const primaryColor = formData.get("primaryColor") as string;
         if (primaryColor) updateData.primaryColor = primaryColor;
+        const avatarUrl = formData.get("avatarUrl") as string;
+        if (avatarUrl && avatarUrl !== "null" && avatarUrl !== "undefined") {
+          updateData.avatarUrl = avatarUrl;
+        }
         const theme = formData.get("theme") as string;
         if (theme) updateData.theme = theme;
         const temperature = formData.get("temperature");

@@ -218,6 +218,7 @@ model Chatbot {
   instructions      String?
   contexts          ContextItem[]
   primaryColor      String?
+  avatarUrl         String?
   theme             String?          @default("light")
   enableStreaming   Boolean          @default(true)
   streamingSpeed    Int              @default(50)

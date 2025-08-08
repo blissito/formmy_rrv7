@@ -11,12 +11,14 @@ interface MessageBubbleProps {
   role?: "user" | "assistant";
   children?: ReactNode;
   primaryColor?: string;
+  avatarUrl?: string;
 }
 
 export const MessageBubble = ({
   message = { role: "assistant", content: "..." },
   children: nodes,
   primaryColor,
+  avatarUrl,
 }: MessageBubbleProps) => {
   if (message.role === "user" && message.content) {
     return (
@@ -47,7 +49,7 @@ export const MessageBubble = ({
   }
   return (
     <main className="px-4 flex items-start gap-3 max-w-[90%] ">
-      <Avatar className="w-8 h-8"  />
+      <Avatar className="w-8 h-8" src={avatarUrl} />
       <div className="bg-white border border-outlines rounded-tr-lg rounded-xl  p-3 max-w-md ">
         <div
           className="prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-li:text-sm prose-code:bg-gray-100 prose-code:dark:bg-gray-600 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-pre:bg-gray-100 prose-pre:dark:bg-gray-600 prose-pre:p-1 prose-pre:rounded prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-1 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:dark:border-gray-500 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:dark:text-gray-400 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:dark:text-blue-400 prose-a:hover:underline prose-table:overflow-x-auto prose-table:w-full prose-th:px-2 prose-th:py-0.5 prose-th:text-xs prose-th:font-semibold prose-td:px-2 prose-td:py-0.5 prose-td:text-xs"

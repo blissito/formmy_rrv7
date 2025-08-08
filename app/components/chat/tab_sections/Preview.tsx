@@ -40,6 +40,7 @@ export const PreviewForm = ({
     chatbot.goodbyeMessage ||
       "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte."
   );
+  const [avatarUrl, setAvatarUrl] = useState(chatbot.avatarUrl || "");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleModelChange = (value: string) => {
@@ -76,6 +77,10 @@ export const PreviewForm = ({
     setGoodbyeMessage(value);
   };
 
+  const handleAvatarChange = (value: string) => {
+    setAvatarUrl(value);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
 
@@ -90,6 +95,9 @@ export const PreviewForm = ({
     formData.append("primaryColor", primaryColor);
     formData.append("welcomeMessage", welcomeMessage);
     formData.append("goodbyeMessage", goodbyeMessage);
+    if (avatarUrl) {
+      formData.append("avatarUrl", avatarUrl);
+    }
     // No necesitamos enviar userId, el endpoint lo obtiene del request
 
     try {
@@ -102,7 +110,7 @@ export const PreviewForm = ({
 
       if (result.success) {
         toast.success("Cambios guardados correctamente");
-submit({})
+        submit({})
       } else {
         toast.error(result.error || "Error al actualizar chatbot");
         console.error("Error al actualizar chatbot:", result.error);
@@ -136,10 +144,13 @@ submit({})
           primaryColor={primaryColor}
           welcomeMessage={welcomeMessage}
           goodbyeMessage={goodbyeMessage}
+          avatarUrl={avatarUrl}
+          chatbotSlug={chatbot.slug}
           onNameChange={handleNameChange}
           onPrimaryColorChange={handlePrimaryColorChange}
           onWelcomeMessageChange={handleWelcomeMessageChange}
           onGoodbyeMessageChange={handleGoodbyeMessageChange}
+          onAvatarChange={handleAvatarChange}
         />
       )}
       {activeTab === "Agente" && (
