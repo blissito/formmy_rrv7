@@ -48,6 +48,7 @@ const MenuButton = ({
   src,
   icon,
   to,
+  isDisabled,
 }: {
   onClick?: () => void;
   hidden?: boolean;
@@ -56,30 +57,33 @@ const MenuButton = ({
   src?: string;
   icon?: ReactNode;
   children: ReactNode;
+  isDisabled?: boolean;
 }) => {
   if (typeof onClick === "function") {
     return (
       <button
-        onClick={onClick}
+        onClick={isDisabled ? undefined : onClick}
+        disabled={isDisabled}
         className={cn(
           "flex gap-2",
           "rounded-xl py-3 px-2 w-fit md:min-w-[200px]",
           "mb-1",
           {
-            "bg-brand-500/10": isActive,
-            "hover:bg-brand-500/10 hover:shadow-sm": true,
+            "bg-brand-500/10": isActive && !isDisabled,
+            "hover:bg-brand-500/10 hover:shadow-sm": !isDisabled,
+            "opacity-50 cursor-not-allowed": isDisabled,
             hidden,
           }
         )}
       >
-        <span className="flex items-center">
+        <span className={cn("flex items-center", { "opacity-50": isDisabled })}>
           {icon ? (
             <span className="text-lg">{icon}</span>
           ) : (
             <img className="min-w-6" alt="files-icon" src={src} />
           )}
         </span>
-        <span className="block min-w-max hidden md:block">{children}</span>
+        <span className={cn("block min-w-max hidden md:block", { "text-gray-400": isDisabled })}>{children}</span>
       </button>
     );
   }
@@ -303,8 +307,9 @@ export const GoogleDriveButton = ({
       onClick={onClick}
       isActive={current?.includes("google_drive")}
       src={"/assets/chat/google_drive.svg"}
+      isDisabled={true}
     >
-      Google drive
+      Google drive (Próximamente)
     </MenuButton>
   );
 };
@@ -322,8 +327,9 @@ export const NotionButton = ({
       isActive={current?.includes("notion")}
       to="/chat/nuevo"
       src={"/assets/chat/notion.svg"}
+      isDisabled={true}
     >
-      Notion
+      Notion (Próximamente)
     </MenuButton>
   );
 };

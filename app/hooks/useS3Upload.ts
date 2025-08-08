@@ -26,6 +26,17 @@ export function useS3Upload() {
     setUploadState({ isUploading: true, progress: 0, error: null });
 
     try {
+      // Step 0: Delete old avatars if this is a chatbot avatar upload
+      if (prefix === "chatbot-avatars" && slug) {
+        const deleteFormData = new FormData();
+        deleteFormData.append("slug", slug);
+        
+        await fetch("/api/s3/delete-old-avatars", {
+          method: "POST",
+          body: deleteFormData,
+        });
+      }
+
       // Step 1: Get presigned URL
       const formData = new FormData();
       formData.append("filename", file.name);

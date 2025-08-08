@@ -2,6 +2,7 @@ import { Input } from "../common/Input";
 import { useS3Upload } from "~/hooks/useS3Upload";
 import { useState, useRef, useEffect } from "react";
 import toast from "react-hot-toast";
+import { ColorPicker } from "../common/ColorPicker";
 
 interface ChatFormProps {
   name: string;
@@ -10,11 +11,13 @@ interface ChatFormProps {
   goodbyeMessage: string;
   avatarUrl?: string;
   chatbotSlug?: string;
+  isSaving?: boolean;
   onNameChange: (name: string) => void;
   onPrimaryColorChange: (color: string) => void;
   onWelcomeMessageChange: (message: string) => void;
   onGoodbyeMessageChange: (message: string) => void;
   onAvatarChange: (url: string) => void;
+  onAvatarFileChange?: (file: File | null) => void;
 }
 
 export const ChatForm = ({
@@ -23,23 +26,17 @@ export const ChatForm = ({
   welcomeMessage,
   goodbyeMessage,
   avatarUrl,
-  chatbotSlug,
   onNameChange,
   onPrimaryColorChange,
   onWelcomeMessageChange,
   onGoodbyeMessageChange,
-  onAvatarChange,
+  onAvatarFileChange,
 }: ChatFormProps) => {
-  const { uploadFile, uploadState } = useS3Upload();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>(avatarUrl || "");
-  
-  // Actualizar previewUrl cuando avatarUrl cambie
-  useEffect(() => {
-    setPreviewUrl(avatarUrl || "");
-  }, [avatarUrl]);
+  const [imageToShow, setImageToShow] = useState<string>(avatarUrl);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -55,29 +52,32 @@ export const ChatForm = ({
       return;
     }
 
-    // Mostrar preview local
-    const localPreview = URL.createObjectURL(file);
-    setPreviewUrl(localPreview);
+    // Crear preview y mostrarlo inmediatamente
+    const preview = URL.createObjectURL(file);
+    setImageToShow(preview);
 
-    // Subir a S3
-    const result = await uploadFile(file, "chatbot-avatars", chatbotSlug);
-    if (result) {
-      onAvatarChange(result.publicUrl);
-      setPreviewUrl(result.publicUrl);
-      toast.success("Imagen actualizada correctamente");
-    } else {
-      // Revertir al avatar anterior si falla
-      setPreviewUrl(avatarUrl || "");
-      toast.error("Error al subir la imagen");
-    }
-
-    // Limpiar preview local
-    URL.revokeObjectURL(localPreview);
+    onAvatarFileChange?.(file);
   };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
+
+  // Cerrar con tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showColorPicker) {
+        setShowColorPicker(false);
+      }
+    };
+
+    if (showColorPicker) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showColorPicker]);
+
   return (
     <div className="grid gap-4">
       <h2 className="text-lg font-medium">Estilo de tu chat</h2>
@@ -94,12 +94,12 @@ export const ChatForm = ({
           <button
             type="button"
             onClick={handleAvatarClick}
-            disabled={uploadState.isUploading}
+            disabled={false}
             className="relative w-full h-[164px] border rounded-3xl border-outlines overflow-hidden group hover:border-primary transition-colors"
           >
-            {previewUrl && previewUrl !== "" ? (
+            {imageToShow ? (
               <img
-                src={previewUrl}
+                src={imageToShow}
                 alt="Avatar del chatbot"
                 className="object-cover w-full h-full"
               />
@@ -115,11 +115,6 @@ export const ChatForm = ({
                 className="object-cover p-4 w-full h-full"
               />
             )}
-            {uploadState.isUploading && (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="text-white">Subiendo...</div>
-              </div>
-            )}
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">
               <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity">
                 Cambiar imagen
@@ -133,21 +128,40 @@ export const ChatForm = ({
           value={name}
           onChange={onNameChange}
         />
-        <Input
-          left={
+        <div className="relative" style={{ zIndex: 1000 }}>
+          <Input
+            left={
+              <button
+                type="button"
+                onClick={() => setShowColorPicker(!showColorPicker)}
+                style={{
+                  background: primaryColor,
+                }}
+                className="w-10 h-6 bg-red-500 mt-3 rounded cursor-pointer hover:scale-105 transition-transform"
+              />
+            }
+            label="Color"
+            name="color"
+            type="text"
+            value={primaryColor}
+            onChange={onPrimaryColorChange}
+          />
+          {showColorPicker && (
             <div
-              style={{
-                background: primaryColor,
-              }}
-              className="w-10 h-6 bg-red-500 mt-3 rounded"
-            />
-          }
-          label="Color"
-          name="color"
-          type="text"
-          value={primaryColor}
-          onChange={onPrimaryColorChange}
-        />
+              className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center"
+              style={{ zIndex: 999999 }}
+              onClick={() => setShowColorPicker(false)}
+            >
+              <div onClick={(e) => e.stopPropagation()}>
+                <ColorPicker
+                  color={primaryColor}
+                  onChange={onPrimaryColorChange}
+                  onClose={() => setShowColorPicker(false)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Saludo inicial */}
@@ -157,8 +171,11 @@ export const ChatForm = ({
         placeholder="¡Hola! ¿Cómo puedo ayudarte hoy? (Puedes usar markdown para formatear el texto)."
         onChange={onWelcomeMessageChange}
         value={welcomeMessage}
-        label={<div className="flex flex-col gap-1"><span>Saludo inicial</span>
-        </div>}
+        label={
+          <div className="flex flex-col gap-1">
+            <span>Saludo inicial</span>
+          </div>
+        }
       />
       {/* Despedida */}
       <Input
@@ -167,9 +184,11 @@ export const ChatForm = ({
         placeholder="Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte. (Puedes usar markdown para formatear el texto)."
         onChange={onGoodbyeMessageChange}
         value={goodbyeMessage}
-        label={<div className="flex flex-col gap-1"><span>Mensaje de despedida</span>
-        
-          </div>}
+        label={
+          <div className="flex flex-col gap-1">
+            <span>Mensaje de despedida</span>
+          </div>
+        }
       />
     </div>
   );

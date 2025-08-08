@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { AgentForm } from "../forms/AgentForm";
 import { ChatForm } from "../forms/ChatForm";
 import { useSubmit } from "react-router";
+import { useS3Upload } from "~/hooks/useS3Upload";
 
 // Componente para el tab de Preview
 export const PreviewForm = ({
@@ -17,6 +18,7 @@ export const PreviewForm = ({
   user: User;
 }) => {
   const submit = useSubmit();
+  const { uploadFile } = useS3Upload();
   const [activeTab, setActiveTab] = useState("Chat");
   const [selectedModel, setSelectedModel] = useState(
     chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free"
@@ -41,6 +43,7 @@ export const PreviewForm = ({
       "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte."
   );
   const [avatarUrl, setAvatarUrl] = useState(chatbot.avatarUrl || "");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleModelChange = (value: string) => {
@@ -81,25 +84,42 @@ export const PreviewForm = ({
     setAvatarUrl(value);
   };
 
+  const handleAvatarFileChange = (file: File | null) => {
+    setAvatarFile(file);
+  };
   const handleSave = async () => {
     setIsSaving(true);
 
+    // Si hay un archivo seleccionado, subirlo primero
+    let imageResult;
+    if (avatarFile) {
+      try {
+        imageResult = await uploadFile(
+          avatarFile,
+          "chatbot-avatars",
+          chatbot.slug
+        );
+        if (!imageResult?.publicUrl) {
+          toast.error("Error al subir la imagen");
+        }
+      } catch (error) {
+        toast.error("Error al subir la imagen");
+      }
+    }
+
     const formData = new FormData();
     formData.append("intent", "update_chatbot");
+    formData.append("name", name);
     formData.append("chatbotId", chatbot.id);
     formData.append("aiModel", selectedModel);
     formData.append("temperature", temperature.toString());
     formData.append("instructions", instructions);
     formData.append("personality", selectedAgent); // Guardamos el tipo de agente en personality
-    formData.append("name", name);
     formData.append("primaryColor", primaryColor);
     formData.append("welcomeMessage", welcomeMessage);
     formData.append("goodbyeMessage", goodbyeMessage);
-    if (avatarUrl) {
-      formData.append("avatarUrl", avatarUrl);
-    }
-    // No necesitamos enviar userId, el endpoint lo obtiene del request
-
+    imageResult?.publicUrl &&
+      formData.append("avatarUrl", imageResult.publicUrl);
     try {
       const response = await fetch("/api/v1/chatbot", {
         method: "POST",
@@ -110,15 +130,15 @@ export const PreviewForm = ({
 
       if (result.success) {
         toast.success("Cambios guardados correctamente");
-        submit({})
+        // Actualizar avatarUrl con la URL final y limpiar archivo
+        setAvatarFile(null);
       } else {
         toast.error(result.error || "Error al actualizar chatbot");
-        console.error("Error al actualizar chatbot:", result.error);
       }
     } catch (error) {
       toast.error("Error al guardar los cambios");
-      console.error("Error al guardar:", error);
     } finally {
+      submit({}); // @todo level up state
       setIsSaving(false);
     }
   };
@@ -127,7 +147,12 @@ export const PreviewForm = ({
     <article className="w-full h-full overflow-y-scroll">
       <header className="flex items-center justify-between w-full mb-6 ">
         <ChipTabs activeTab={activeTab} onTabChange={setActiveTab} />
-        <Button className="h-10" mode="ghost" onClick={handleSave} isLoading={isSaving}>
+        <Button
+          className="h-10"
+          mode="ghost"
+          onClick={handleSave}
+          isLoading={isSaving}
+        >
           <div className="flex gap-2 items-center">
             <img
               src="/assets/chat/diskette.svg"
@@ -146,11 +171,13 @@ export const PreviewForm = ({
           goodbyeMessage={goodbyeMessage}
           avatarUrl={avatarUrl}
           chatbotSlug={chatbot.slug}
+          isSaving={isSaving}
           onNameChange={handleNameChange}
           onPrimaryColorChange={handlePrimaryColorChange}
           onWelcomeMessageChange={handleWelcomeMessageChange}
           onGoodbyeMessageChange={handleGoodbyeMessageChange}
           onAvatarChange={handleAvatarChange}
+          onAvatarFileChange={handleAvatarFileChange}
         />
       )}
       {activeTab === "Agente" && (

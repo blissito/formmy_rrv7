@@ -153,7 +153,7 @@ export const Conversations = ({
         />
       </article>
       <section className="col-span-9">
-        <ConversationsPreview conversation={conversation} />
+        <ConversationsPreview conversation={conversation} chatbot={chatbot} />
       </section>
     </main>
   );
@@ -305,15 +305,17 @@ const SimpleButton = ({
 export const ConversationsPreview = ({
   conversation,
   primaryColor,
+  chatbot,
 }: {
-  conversation: Conversation;
+  conversation: Conversation | undefined;
   primaryColor?: string;
+  chatbot?: Chatbot;
 }) => {
   return (
     <article className="flex items-end flex-col ">
       <ActionButtons />
       <hr className="my-3" />
-      <ChatHeader conversation={conversation} />
+      {conversation && <ChatHeader conversation={conversation} />}
       <section
         style={{ borderColor: primaryColor || "brand-500" }}
         className={cn(
@@ -324,19 +326,19 @@ export const ConversationsPreview = ({
           "w-full p-3 shadow-standard"
         )}
       >
-        {conversation.messages.map((message) => (
-          <SingleMessage message={message} />
-        ))}
+        {conversation?.messages?.map((message) => (
+          <SingleMessage message={message} chatbotAvatarUrl={chatbot?.avatarUrl} />
+        )) || <div className="text-center text-gray-500 p-4">Selecciona una conversación para ver los mensajes</div>}
       </section>
     </article>
   );
 };
 
-export const SingleMessage = ({ message }: { message: Message }) => {
+export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: Message; chatbotAvatarUrl?: string }) => {
   return message.role === "USER" ? (
     <UserMessage message={message} />
   ) : (
-    <AssistantMessage message={message} />
+    <AssistantMessage message={message} avatarUrl={chatbotAvatarUrl} />
   );
 };
 
@@ -357,10 +359,10 @@ const UserMessage = ({ message }: { message: Message }) => {
  * puede guardarse como "SHOT" (Ejemplo) para este agente.
  * Pueden existir ejemplos positivos y negativos 👎🏼
  */
-const AssistantMessage = ({ message }: { message: Message }) => {
+const AssistantMessage = ({ message, avatarUrl }: { message: Message; avatarUrl?: string }) => {
   return (
     <main className="justify-start p-2  flex items-start gap-2">
-      <Avatar className="w-6" />
+      <Avatar className="w-8 h-8" src={avatarUrl} />
       <div className="text-base p-2 bg-white border border-outlines rounded-xl relative">
         {message.content}
         <MicroLikeButton />

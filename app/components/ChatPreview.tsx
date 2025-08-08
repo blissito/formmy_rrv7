@@ -9,7 +9,6 @@ import { MessageBubble } from "./chat/MessageBubble";
 import { ChatHeader } from "./chat/ChatHeader";
 import { StreamToggle } from "./chat/StreamToggle";
 import { LoadingIndicator } from "./chat/LoadingIndicator";
-import type { Chatbot } from "@prisma/client";
 
 export interface ChatPreviewProps {
   chatbot: ChatbotWithApiKeys;
@@ -17,6 +16,7 @@ export interface ChatPreviewProps {
 }
 
 export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
+  console.log("CHSATT", chatbot);
   const [chatMessages, setChatMessages] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
   >([
@@ -37,18 +37,17 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [isConversationEnded, setIsConversationEnded] = useState(false);
   const inactivityTimerRef = useRef<number | null>(null);
 
-  // Update welcome message when chatbot.welcomeMessage changes
   useEffect(() => {
-    if (chatMessages.length > 0 && chatMessages[0].role === "assistant") {
-      setChatMessages((prevMessages) => [
-        {
-          ...prevMessages[0],
-          content: chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?",
-        },
-        ...prevMessages.slice(1),
-      ]);
-    }
-  }, [chatbot.welcomeMessage]);
+    console.log("WTF!");
+    setChatMessages((m) => {
+      const update = [...m];
+      update[0] = {
+        role: "assistant",
+        content: chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?",
+      };
+      return update;
+    });
+  }, [chatbot]);
 
   // Auto-scroll logic
   const scrollToBottom = () => {
@@ -99,9 +98,12 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
 
     // Establecer un nuevo temporizador (5 minutos de inactividad)
     // @ts-ignore - setTimeout returns a number in the browser
-    inactivityTimerRef.current = window.setTimeout(() => {
-      showGoodbyeMessage();
-    }, 5 * 60 * 1000); // 5 minutos
+    inactivityTimerRef.current = window.setTimeout(
+      () => {
+        showGoodbyeMessage();
+      },
+      5 * 60 * 1000
+    ); // 5 minutos
   }, [showGoodbyeMessage]);
 
   // Configurar el temporizador de inactividad

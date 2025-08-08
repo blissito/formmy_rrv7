@@ -65,14 +65,26 @@ export const Title = ({
   [x: string]: unknown;
 }) => {
   return (
-    <nav className={cn("flex justify-between items-center mb-6 md:mb-8", className)}>
+    <nav
+      className={cn(
+        "flex justify-between items-center mb-6 md:mb-8",
+        className
+      )}
+    >
       <div className="flex items-end gap-4 relative">
         {back && (
           <Link to={back} className="text-4xl absolute -left-2 md:-left-10">
             <IoIosArrowRoundBack />
           </Link>
         )}
-        <h2 className={cn("text-2xl md:text-3xl font-bold ml-0 text-dark", back && "ml-8 md:ml-0")}>{children}</h2>
+        <h2
+          className={cn(
+            "text-2xl md:text-3xl font-bold ml-0 text-dark",
+            back && "ml-8 md:ml-0"
+          )}
+        >
+          {children}
+        </h2>
       </div>
       {cta}
     </nav>
@@ -137,7 +149,7 @@ export const Button = ({
   onClick?: () => void;
   children: ReactNode;
   [x: string]: unknown;
-  isDisabled?:boolean;
+  isDisabled?: boolean;
 }) => {
   if (to) {
     return (
@@ -166,9 +178,9 @@ export const Button = ({
         mode === "ghost"
           ? "bg-white border border-gray-300 rounded-lg text-gray-600 px-2 hover:bg-surfaceFour "
           : "bg-brand-500 text-white hover:ring hover:ring-brand-500",
-          {
-            'pointer-events-none bg-gray-300 text-gray-400':isDisabled
-          },
+        {
+          "pointer-events-none bg-gray-300 text-gray-400": isDisabled,
+        },
         className
       )}
       disabled={isDisabled}
@@ -260,7 +272,7 @@ export const ChatCard = ({
             {isInvited && userRole && (
               <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                 {userRole === "VIEWER" && "Viewer"}
-                {userRole === "EDITOR" && "Editor"} 
+                {userRole === "EDITOR" && "Editor"}
                 {userRole === "ADMIN" && "Admin"}
               </span>
             )}
@@ -303,9 +315,11 @@ export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
     <article className="flex gap-0 md:gap-6">
-      <section className="self-start sticky top-4 mr-4 md:mr-0">{nodes[0]}</section>
+      <section className="self-start sticky top-4 mr-4 md:mr-0">
+        {nodes[0]}
+      </section>
       <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full">
-        <section className={`grow w-full ${nodes[2] ? 'max-w-[732px]' : ''}`}>
+        <section className={`grow w-full ${nodes[2] ? "max-w-[732px]" : ""}`}>
           {nodes[1]}
         </section>
         {nodes[2] && (
@@ -330,26 +344,37 @@ export const EditionPair = ({
   let content;
   let preview;
 
+  if (currentTab === "Preview") {
+    return (
+      <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
+        <section className="col-span-12 md:col-span-4">
+          <PreviewForm chatbot={chatbot} user={user} />
+        </section>
+        <section className="col-span-12 md:col-span-8">
+          <ChatPreview chatbot={chatbot} />
+        </section>
+      </article>
+    );
+  }
+
   switch (currentTab) {
-    case "Preview":
-      content = <PreviewForm chatbot={chatbot} user={user} />;
-      preview = <ChatPreview chatbot={chatbot} />;
-      break;
     case "Conversaciones":
       content = <Conversations chatbot={chatbot} user={user} />;
-      preview = <ConversationsPreview conversation={undefined} />; // No preview for conversations tab
-      break;
+      preview = (
+        <ConversationsPreview conversation={undefined} chatbot={chatbot} />
+      ); // No preview for conversations tab
+      return (
+        <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
+          <section className="col-span-12 md:col-span-4">{content}</section>
+          {preview && (
+            <section className="col-span-12 md:col-span-8">{preview}</section>
+          )}
+        </article>
+      );
     default:
       content = null;
       preview = null;
   }
-
-  return (
-    <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
-      <section className="col-span-12 md:col-span-4">{content}</section>
-      {preview && <section className="col-span-12 md:col-span-8">{preview}</section>}
-    </article>
-  );
 };
 
 export const TabSelector = ({
@@ -409,7 +434,10 @@ export const TabSelector = ({
         scrollbarWidth: "none",
       }}
     >
-      <div ref={containerRef} className="relative flex border-b border-outlines/50 ">
+      <div
+        ref={containerRef}
+        className="relative flex border-b border-outlines/50 "
+      >
         {tabs.map((tab, index) => (
           <TabButton
             key={tab}
