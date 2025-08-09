@@ -4,6 +4,7 @@ import Modal from "./Modal";
 import { useState, type ChangeEvent } from "react";
 import { z } from "zod";
 import type { Role } from "@prisma/client";
+import { Button } from "./Button";
 
 export const InputModalFormWithRole = ({
   isLoading,
@@ -29,18 +30,14 @@ export const InputModalFormWithRole = ({
   };
 
   return (
-    <Modal onClose={onClose}>
+    <Modal onClose={onClose}   title="Agregar usuario" size="md" className="px-4 pb-4 md:pt-0 md:pb-8 md:px-8 box-border overflow-hidden  ">
       <Form
         method="post"
-        className="md:px-6 px-4 py-4 md:py-10 gap-2 bg-clear dark:bg-space-900 rounded-3xl dark:text-white text-space-900"
+
       >
-        <h2 className="font-bold mb-6 text-2xl text-center mt-6 md:mt-0">
-          {title}
-        </h2>
-        
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">
-            Correo electrónico
+    <div className=" w-full mt-6 md:mt-8">
+    <label className="block text-sm font-medium mb-1 text-metal">
+           Email
           </label>
           <input
             onChange={handleChange}
@@ -48,19 +45,19 @@ export const InputModalFormWithRole = ({
             name="email"
             required
             placeholder={placeholder}
-            className="h-10 input font-normal w-full border-[1px] border-gray-100 dark:border-clear/30 dark:bg-transparent focus:outline-none focus:ring-0 bg-transparent focus:border-brand-500 rounded-lg placeholder:text-space-300 px-3"
+            className="h-12 input font-normal w-full md:w-[416px] border-[1px] border-outlines focus:outline-none focus:ring-0  focus:border-brand-500 rounded-xl placeholder:text-lightgray text-dark"
           />
         </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">
+        <div className="mb-4 mt-4 md:mt-6">
+        <label className="block text-sm font-medium mb-1 text-metal">
             Rol del usuario
           </label>
           <select
             name="role"
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="h-10 w-full border-[1px] border-gray-100 dark:border-clear/30 dark:bg-transparent focus:outline-none focus:ring-0 bg-transparent focus:border-brand-500 rounded-lg px-3"
+            className="h-12 w-full border-[1px] border-gray-100 dark:border-clear/30 dark:bg-transparent focus:outline-none focus:ring-0 bg-transparent focus:border-brand-500 rounded-lg px-3"
           >
             <option value="VIEWER" className="dark:bg-space-900">
               Viewer - Solo lectura
@@ -79,26 +76,20 @@ export const InputModalFormWithRole = ({
           </p>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
-          >
-            Cancelar
-          </button>
-          <button
-            disabled={!validEmail || isLoading}
-            name="intent"
-            value="send_invite_with_role"
-            type="submit"
-            className="bg-brand-500 h-10 text-clear py-2 px-6 rounded-lg disabled:bg-gray-400 cursor-pointer disabled:cursor-not-allowed"
-          >
-            <div className="min-w-[60px] flex justify-center">
-              {isLoading ? <Spinner color="brand" /> : cta}
-            </div>
-          </button>
-        </div>
+    
+             <div className="flex justify-end gap-3">
+                    <Button
+                      disabled={!validEmail || isLoading}
+                      name="intent"
+                      value="send_invite_with_role"
+                      type="submit"
+                    >
+                      <div className="min-w-[60px] flex justify-center">
+                        {isLoading ? <Spinner color="brand-500" /> : cta}
+                      </div>
+                    </Button>
+                  </div>
+
       </Form>
     </Modal>
   );

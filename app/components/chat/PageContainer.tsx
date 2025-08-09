@@ -347,10 +347,10 @@ export const EditionPair = ({
   if (currentTab === "Preview") {
     return (
       <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
-        <section className="col-span-12 md:col-span-4">
+        <section className="col-span-12 md:col-span-6 xl:col-span-4">
           <PreviewForm chatbot={chatbot} user={user} />
         </section>
-        <section className="col-span-12 md:col-span-8">
+        <section className="col-span-12 md:col-span-6 xl:col-span-8">
           <ChatPreview chatbot={chatbot} />
         </section>
       </article>

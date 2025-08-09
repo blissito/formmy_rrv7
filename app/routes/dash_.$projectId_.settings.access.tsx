@@ -149,7 +149,7 @@ export default function Route() {
         isLoading={navigation.state !== "idle"}
       />
       {showModal && (
-        <InputModalForm
+        <InputModalFormWithRole
           isLoading={navigation.state !== "idle"}
           onClose={() => setShowModal(false)}
           title="Ingresa el correo del usuario"
