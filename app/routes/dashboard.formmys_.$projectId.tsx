@@ -246,15 +246,8 @@ export default function Detail() {
     }
   };
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Verificar si el foco se movió al botón de cerrar
-    const relatedTarget = e.relatedTarget as HTMLElement;
-    if (relatedTarget?.closest('button[aria-label="Cancel editing"]')) {
-      // Si se está haciendo clic en el botón de cancelar, no hacer nada aquí
-      // porque el manejador del botón se encargará de restaurar el nombre
-      return;
-    }
-    // Si el foco se movió a otro lugar, guardar los cambios
+  const handleBlur = () => {
+    // Here you would typically save the project name to your backend
     setIsEditing(false);
   };
 
