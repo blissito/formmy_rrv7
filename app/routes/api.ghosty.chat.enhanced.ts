@@ -7,7 +7,7 @@ import { callGhostyWithTools } from "~/services/ghostyEnhanced.server";
 export const action = async ({ request }: Route.ActionArgs): Promise<Response> => {
   try {
     const body = await request.json();
-    const { message, stream = true } = body;
+    const { message, stream = true, history = [] } = body;
 
     if (!message?.trim()) {
       return new Response(
@@ -48,7 +48,8 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
                     encoder.encode(`data: ${data}\n\n`)
                   );
                   fullContent += chunk;
-                }
+                },
+                history // Pasar el historial de conversación
               );
               
               // Debug: log what we got back
@@ -141,7 +142,7 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
       );
     } else {
       // Regular JSON response
-      const result = await callGhostyWithTools(message, true);
+      const result = await callGhostyWithTools(message, true, undefined, history);
       
       return new Response(
         JSON.stringify({

@@ -1,7 +1,10 @@
 import { twMerge } from "tailwind-merge";
 import { type ChangeEvent, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ScrollRevealLeft, ScrollRevealRight } from "~/routes/_index";
+import {
+  ScrollRevealLeft,
+  ScrollRevealRight,
+} from "~/components/ScrollReveals";
 
 export const FormmysTypes = () => {
   return (

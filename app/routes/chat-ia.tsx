@@ -1,21 +1,14 @@
-import React from "react";
 import HomeHeader from "./home/HomeHeader";
 import { CompaniesScroll } from "~/components/home/CompaniesScroll";
-import {
-  FaReact,
-} from "react-icons/fa";
-import { Steper, type Step } from "../components/Steper";
+import { Steper } from "../components/Steper";
 import { GeneralCallToAction } from "./home/HomeCallToAction";
 import HomeFooter from "./home/HomeFooter";
-import { cn } from "~/lib/utils";
 import { AiBanner } from "./home/FullBanner";
-import { BenefitCard } from "./home/HomeBenefits";
 import { ChatHero } from "./chat/ChatHero";
 import { ChatBenefits } from "./chat/ChatBenefits";
 import { ChatTypes } from "./chat/ChatTypes";
 import { FullComment } from "~/components/common/FullComment";
 import { ChatIntegrations } from "./chat/ChatIntegrations";
-
 
 const stepsWithImages = [
   {
@@ -45,7 +38,6 @@ const stepsWithImages = [
   },
 ];
 
-
 export default function ChatIA() {
   return (
     <section className="bg-clear pt-40 md:pt-52 overflow-hidden">
@@ -56,7 +48,7 @@ export default function ChatIA() {
       <section className="max-w-7xl w-full mx-auto   px-4 md:px-[5%] xl:px-0">
         <AiBanner />
       </section>
-      <ChatTypes/>
+      <ChatTypes />
       <ChatIntegrations />
       <section className="grid-cols-2 max-w-7xl mx-auto px-4 ">
         <FullComment
@@ -91,7 +83,3 @@ export default function ChatIA() {
     </section>
   );
 }
-
-
-
-

@@ -1,5 +1,5 @@
 import type { Chatbot, User } from "@prisma/client";
-import { useState, type ReactNode, useEffect, Children, useRef } from "react";
+import { useState, type ReactNode, useEffect, Children, useRef, createContext, useContext } from "react";
 import { cn } from "~/lib/utils";
 import Spinner from "../Spinner";
 import { Effect, pipe } from "effect";
@@ -17,6 +17,42 @@ import OpenTabIcon from "../ui/icons/OpenTab";
 import UsersIcon from "../ui/icons/Users";
 import { motion } from "framer-motion";
 import EditIcon from "../ui/icons/Edit";
+import { type AgentType } from "./common/AgentDropdown";
+
+// Context para compartir estado entre PreviewForm y ChatPreview
+interface PreviewContextType {
+  selectedModel: string;
+  setSelectedModel: (model: string) => void;
+  selectedAgent: AgentType;
+  setSelectedAgent: (agent: AgentType) => void;
+  temperature: number;
+  setTemperature: (temp: number) => void;
+  instructions: string;
+  setInstructions: (instructions: string) => void;
+  name: string;
+  setName: (name: string) => void;
+  primaryColor: string;
+  setPrimaryColor: (color: string) => void;
+  welcomeMessage: string;
+  setWelcomeMessage: (message: string) => void;
+  goodbyeMessage: string;
+  setGoodbyeMessage: (message: string) => void;
+  avatarUrl: string;
+  setAvatarUrl: (url: string) => void;
+  avatarFile: File | null;
+  setAvatarFile: (file: File | null) => void;
+}
+
+const PreviewContext = createContext<PreviewContextType | undefined>(undefined);
+
+export const usePreviewContext = () => {
+  const context = useContext(PreviewContext);
+  if (!context) {
+    throw new Error("usePreviewContext must be used within PreviewProvider");
+  }
+  return context;
+};
+
 const MAX_WIDTH = "max-w-7xl";
 
 export const PageContainer = ({
@@ -278,7 +314,7 @@ export const ChatCard = ({
             )}
           </div>
           <p className="text-sm text-metal flex-grow">
-            {chatbot.summary ||
+            {chatbot.description ||
               "Pronto podrás saber que es lo que más preguntan tus clientes"}
           </p>
           <div className="flex text-sm gap-4 mt-4 justify-between items-end">
@@ -341,19 +377,96 @@ export const EditionPair = ({
   user: User;
   currentTab?: string;
 }) => {
+  // Estado compartido para el tab Preview
+  const [selectedModel, setSelectedModel] = useState(
+    chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free"
+  );
+  const [selectedAgent, setSelectedAgent] = useState<AgentType>(
+    (chatbot.personality as AgentType) || "customer_service"
+  );
+  const [temperature, setTemperature] = useState(chatbot.temperature || 1);
+  const [instructions, setInstructions] = useState(
+    chatbot.instructions ||
+      "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios."
+  );
+  const [name, setName] = useState(chatbot.name || "Geeki");
+  const [primaryColor, setPrimaryColor] = useState(
+    chatbot.primaryColor || "#63CFDE"
+  );
+  const [welcomeMessage, setWelcomeMessage] = useState(
+    chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?"
+  );
+  const [goodbyeMessage, setGoodbyeMessage] = useState(
+    chatbot.goodbyeMessage ||
+      "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte."
+  );
+  const [avatarUrl, setAvatarUrl] = useState(chatbot.avatarUrl || "");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
+  // Sincronizar el estado del contexto cuando cambien los datos del loader
+  useEffect(() => {
+    setSelectedModel(chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free");
+    setSelectedAgent((chatbot.personality as AgentType) || "customer_service");
+    setTemperature(chatbot.temperature || 1);
+    setInstructions(chatbot.instructions || "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios.");
+    setName(chatbot.name || "Geeki");
+    setPrimaryColor(chatbot.primaryColor || "#63CFDE");
+    setWelcomeMessage(chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?");
+    setGoodbyeMessage(chatbot.goodbyeMessage || "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte.");
+    setAvatarUrl(chatbot.avatarUrl || "");
+  }, [chatbot]);
+
+  const contextValue: PreviewContextType = {
+    selectedModel,
+    setSelectedModel,
+    selectedAgent,
+    setSelectedAgent,
+    temperature,
+    setTemperature,
+    instructions,
+    setInstructions,
+    name,
+    setName,
+    primaryColor,
+    setPrimaryColor,
+    welcomeMessage,
+    setWelcomeMessage,
+    goodbyeMessage,
+    setGoodbyeMessage,
+    avatarUrl,
+    setAvatarUrl,
+    avatarFile,
+    setAvatarFile,
+  };
+
   let content;
   let preview;
 
   if (currentTab === "Preview") {
     return (
-      <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
-        <section className="col-span-12 md:col-span-4">
-          <PreviewForm chatbot={chatbot} user={user} />
-        </section>
-        <section className="col-span-12 md:col-span-8">
-          <ChatPreview chatbot={chatbot} />
-        </section>
-      </article>
+      <PreviewContext.Provider value={contextValue}>
+        <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
+          <section className="col-span-12 md:col-span-4">
+            <PreviewForm chatbot={chatbot} user={user} />
+          </section>
+          <section className="col-span-12 md:col-span-8">
+            <ChatPreview 
+              chatbot={{
+                ...chatbot,
+                name,
+                primaryColor,
+                welcomeMessage,
+                goodbyeMessage,
+                avatarUrl,
+                aiModel: selectedModel,
+                temperature,
+                instructions,
+                personality: selectedAgent,
+              }} 
+            />
+          </section>
+        </article>
+      </PreviewContext.Provider>
     );
   }
 
