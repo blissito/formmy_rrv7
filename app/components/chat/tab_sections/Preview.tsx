@@ -144,7 +144,7 @@ export const PreviewForm = ({
   };
 
   return (
-    <article className="w-full h-full overflow-y-scroll">
+    <article className="w-full h-full ">
       <header className="flex items-center justify-between w-full mb-6 ">
         <ChipTabs activeTab={activeTab} onTabChange={setActiveTab} />
         <Button

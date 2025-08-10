@@ -23,6 +23,7 @@ export const AddUserModal = ({
   const [validEmail, setValidEmail] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("VIEWER");
 
+  
   const handleChange = (ev: ChangeEvent<HTMLInputElement>) => {
     const emailValue = ev.target.value;
     setEmail(emailValue);

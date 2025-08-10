@@ -43,12 +43,92 @@ const dev_conversations = [
         role: "USER",
         content: "ps ahí dos ods",
       },
+      {
+        picture:
+          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        role: "USER",
+        content: "Paso por ella mañana, ahorita no importa mucho realmente",
+      },
+      {
+        picture:
+          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        role: "ASSISTANT",
+        content: "Hola, ¿en qué puedo ayudarte?",
+      },
+      {
+        picture:
+          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        role: "USER",
+        content: "Hola",
+      },
+      {
+        picture:
+          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        role: "ASSISTANT",
+        content: "PErro! cómo andas?",
+      },
+      {
+        picture:
+          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        role: "USER",
+        content: "Hola",
+      },
+      {
+        picture:
+          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        role: "USER",
+        content: "ps ahí dos ods",
+      },
     ],
     isFavorite: true,
     id: 1,
     userName: "Nombre",
     userEmail: "email@example.com",
     lastMessage: "Con gusto. Actualmente tenemos 5 mensajes",
+    time: "Ayer",
+    date: "21 de mayo de 2025",
+    unread: 0,
+    avatar: "/assets/chat/ghosty.svg",
+    tel: "+52 776 762 78 90",
+  },
+  {
+    messages: [
+      {
+        picture:
+          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        role: "USER",
+        content: "Hemos confiscado tu bodega por falta de pago",
+      },
+      {
+        picture:
+          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        role: "ASSISTANT",
+        content: "Ayudame con esto que necesito hacer",
+      },
+      {
+        picture:
+          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        role: "USER",
+        content: "Me cuesta 100 dolares",
+      },
+      {
+        picture:
+          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        role: "ASSISTANT",
+        content: "ta re caro mano",
+      },
+      {
+        picture:
+          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        role: "USER",
+        content: "si vdd! chale",
+      },
+    ],
+    isFavorite: false,
+    id: 2,
+    userName: "Nombre",
+    userEmail: "email@example.com",
+    lastMessage: "Ultimo mensaje",
     time: "Ayer",
     date: "21 de mayo de 2025",
     unread: 0,
@@ -135,8 +215,8 @@ export const Conversations = ({
   );
 
   return (
-    <main className="grid grid-cols-12 gap-6">
-      <article className={cn("col-span-3 overflow-hidden", "flex flex-col gap-6")}>
+    <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
+      <article className={cn("col-span-12 md:col-span-3 overflow-y-scroll", "flex flex-col h-full gap-4 md:gap-6")}>
         <ChipTabs
           names={["Todos", "Favoritos"]}
           onTabChange={setCurrentTab}
@@ -152,7 +232,7 @@ export const Conversations = ({
           currentConversation={conversation}
         />
       </article>
-      <section className="col-span-9">
+      <section className="col-span-12 md:col-span-9 pb-4 ">
         <ConversationsPreview conversation={conversation} chatbot={chatbot} />
       </section>
     </main>
@@ -169,7 +249,7 @@ const ConversationsList = ({
   currentConversation: Conversation;
 }) => {
   return (
-    <section className="flex flex-col gap-1">
+    <section className="flex flex-col gap-1 max-h-[264px] md:max-h-[616px] overflow-y-scroll ">
       {conversations.map((conversation) => (
         <Conversation
           key={conversation.id}
@@ -201,7 +281,6 @@ const Conversation = ({
     <section
       onClick={onClick}
       className={cn(
-        "overflow-hidden",
         "px-2 py-3 rounded-2xl transition-colors",
         "hover:bg-brand-500/10",
         "cursor-pointer",
@@ -323,7 +402,7 @@ export const ConversationsPreview = ({
           "flex-col",
           "border",
           "rounded-b-3xl",
-          "w-full p-3 shadow-standard"
+          "w-full p-3 shadow-standard max-h-[420px] md:max-h-[554px] overflow-y-scroll"
         )}
       >
         {conversation?.messages?.map((message) => (

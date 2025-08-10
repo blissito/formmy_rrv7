@@ -48,7 +48,7 @@ export default function Modal({
             <Dialog.Panel
               className={twMerge(
                 size === "xs" ? "max-w-[400px]" : "",
-                size === "md" ? "max-w-[98%] mx-auto md:max-w-[600px]" : "",
+                size === "md" ? "max-w-[98%] mx-auto md:min-w-[480px] md:max-w-[600px]" : "",
                 size === "lg" ? "max-w-[800px]" : "",
                 "flex flex-col overflow-hidden"
               )}

@@ -27,6 +27,7 @@ import type { Route } from "./+types/dash_.$projectId";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import DownloadIcon from "~/components/ui/icons/Download";
 import EditIcon from "~/components/ui/icons/Edit";
+import { FiX } from "react-icons/fi";
 import CodeIcon from "~/components/ui/icons/Code";
 import DeleteIcon from "~/components/ui/icons/Delete";
 
@@ -71,6 +72,33 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
     });
 
     return { ok: true };
+  }
+  
+  if (intent === "update_project_name") {
+    const name = formData.get("name") as string;
+    const projectId = params.projectId as string;
+    
+    if (!name || !projectId) {
+      return new Response(JSON.stringify({ ok: false, error: "Nombre de proyecto inválido" }), { status: 400 });
+    }
+    
+    // Verificar permisos de actualización
+    const canUpdate = await hasPermission(user.id, projectId, "update");
+    if (!canUpdate) {
+      return json({ ok: false, error: "No tienes permiso para actualizar este proyecto" }, { status: 403 });
+    }
+    
+    try {
+      await db.project.update({
+        where: { id: projectId },
+        data: { name }
+      });
+      
+      return json({ ok: true });
+    } catch (error) {
+      console.error("Error updating project name:", error);
+      return json({ ok: false, error: "Error al actualizar el nombre del proyecto" }, { status: 500 });
+    }
   }
   return null;
 };
@@ -131,6 +159,10 @@ export default function Detail() {
   const [answers, setAnswers] = useState<AnswerType[]>(project.answers ?? []);
   const [currentIndex, setCurrent] = useState(0);
   const [search, setSearch] = useState<string>("");
+  const [show, setShow] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [projectName, setProjectName] = useState(project.name);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setAnswers(project.answers ?? []);
@@ -196,7 +228,34 @@ export default function Detail() {
     setCurrent(index);
   };
 
-  const [show, setShow] = useState(false);
+
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setProjectName(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // saving to db
+      fetcher.submit({ intent: "update_project_name", name: projectName }, { method: "post" });
+      setIsEditing(false);
+    } else if (e.key === 'Escape') {
+      setProjectName(project.name);
+      setIsEditing(false);
+    }
+  };
+
+  const handleBlur = () => {
+    // Here you would typically save the project name to your backend
+    setIsEditing(false);
+  };
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditing]);
 
   return (
     <div className="h-full">
@@ -224,9 +283,73 @@ export default function Detail() {
               >
                 <IoIosArrowRoundBack />
               </Link>
-              <h2 className="text-2xl md:text-3xl heading text-dark  ">
-                {project.name}{" "}
-              </h2>
+              <div className="flex items-center gap-2">
+                <AnimatePresence mode="wait">
+                  {isEditing ? (
+                    <motion.div
+                      key="input"
+                      initial={{ opacity: 0, x: -10, scale: 0.98 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: 10, scale: 0.98 }}
+                      transition={{
+                        duration: 0.25,
+                        ease: [0.16, 1, 0.3, 1], // Custom cubic-bezier for smoothness
+                        opacity: { duration: 0.2 },
+                        x: { duration: 0.25 }
+                      }}
+                      className="origin-left"
+                    >
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={projectName}
+                        onChange={handleNameChange}
+                        onKeyDown={handleKeyDown}
+                        onBlur={handleBlur}
+                        className="text-lg rounded-lg max-h-9 md:text-3xl font-bold text-dark border border-outlines focus:border-brand-500 focus:outline-none focus:ring-0 w-fit"
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.h2 
+                    onClick={() => setIsEditing(true)}
+                    onKeyDown={handleKeyDown}
+                      key="title"
+                      initial={{ opacity: 1, x: 0 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      transition={{
+                        duration: 0.2,
+                        ease: [0.16, 1, 0.3, 1],
+                        opacity: { duration: 0.15 },
+                        x: { duration: 0.2 }
+                      }}
+                      className="text-2xl md:text-3xl heading text-dark cursor-pointer"
+                    >
+                      {projectName}
+                    </motion.h2>
+                  )}
+                </AnimatePresence>
+                {isEditing ? (
+                  <button 
+                    onClick={() => {
+                      setIsEditing(false);
+                      setProjectName(project.name); // Reset to original name
+                    }}
+                    className="p-1 hover:bg-irongray/10 rounded transition-colors"
+                    aria-label="Cancel editing"
+                  >
+                    <FiX className="w-5 h-5 text-metal" />
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="p-1 hover:bg-irongray/10 rounded transition-colors"
+                    aria-label="Edit project name"
+                  >
+                    <EditIcon className="w-5 h-5 text-metal" />
+                  </button>
+                )}
+              </div>
               <div className="flex gap-4">
                 <p className="text-metal text-sm  font-light">
                   💬 {answers.length} mensaje

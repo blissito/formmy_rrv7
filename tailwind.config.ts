@@ -38,6 +38,7 @@ export default {
         success:"#5FA46F",
         iman: "#EFEFEF",
         bird:"#EDC75A",
+        pro:"#F2C94C",
         cloud:"#8AD7C9",
         grass:"#7FBE60",
         salmon:"#E4AE8E",

@@ -69,8 +69,7 @@ export const IconDropdown = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-2 w-full px-4 h-12 text-base text-left border border-outlines rounded-xl bg-white",
-          "focus:outline-none focus:ring-2 focus:ring-blue-500",
+          "flex items-center gap-2 w-full px-4 h-12 text-base text-left border border-outlines rounded-xl bg-white focus:border-brand-500 focus:ring-transparent focus:outline-none",
           buttonClassName
         )}
       >
