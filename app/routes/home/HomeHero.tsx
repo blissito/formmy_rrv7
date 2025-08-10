@@ -1,9 +1,7 @@
 import { Form } from "react-router";
 import { BigCTA } from "~/components/BigCTA";
-const imgWrite = "/img.png";
 import { Button } from "~/components/Button";
 import { ContainerScroll } from "~/components/home/ContainerScroll";
-
 
 export default function HomeHero() {
   return (
@@ -13,10 +11,16 @@ export default function HomeHero() {
           {"Formularios y chat AI".split(" ").map((word, idx) => (
             <span key={idx}>{word}</span>
           ))}
-          <img alt="write" className="mx-2 w-10 md:w-16 lg:w-auto" src="/home/write.svg"/>
-          {"para tu sitio web. Sin complicaciones.".split(" ").map((word, idx) => (
-            <span key={idx + 100}>{word}</span>
-          ))}
+          <img
+            alt="write"
+            className="mx-2 w-10 md:w-16 lg:w-auto"
+            src="/home/write.svg"
+          />
+          {"para tu sitio web. Sin complicaciones."
+            .split(" ")
+            .map((word, idx) => (
+              <span key={idx + 100}>{word}</span>
+            ))}
         </div>
       </span>
       <p className="paragraph text-gray-600 font-light text-xl md:text-2xl text-center mt-4 ">
@@ -24,14 +28,13 @@ export default function HomeHero() {
       </p>
       <div className="flex gap-4 mt-10">
         <Form method="post">
-            <BigCTA type="submit" name="intent" value="google-login"  />
-          </Form>
+          <BigCTA type="submit" name="intent" value="google-login" />
+        </Form>
         <Button variant="secondary" className="mt-0">
           Ver planes
         </Button>
       </div>
-      <ContainerScroll
-      >
+      <ContainerScroll>
         <img
           src="/home/home.png"
           alt="hero"
@@ -43,4 +46,4 @@ export default function HomeHero() {
       </ContainerScroll>
     </section>
   );
-} 
+}

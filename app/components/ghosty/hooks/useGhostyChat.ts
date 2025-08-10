@@ -90,6 +90,14 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
     
+    // Capturar el historial ANTES de agregar los nuevos mensajes
+    const conversationHistory = messages
+      .map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }))
+      .filter(msg => msg.content && msg.content.trim()); // Filtrar mensajes vacíos
+    
     // Add user message
     const userMessage = addMessage({
       role: 'user',
@@ -118,7 +126,7 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
       // Call Ghosty API with streaming (with timeout)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-      
+
       const response = await fetch('/api/ghosty/chat/enhanced', {
         method: 'POST',
         headers: {
@@ -126,6 +134,7 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
         },
         body: JSON.stringify({
           message: content.trim(),
+          history: conversationHistory,
         }),
         signal: controller.signal,
       });
@@ -181,8 +190,7 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
                   sources: sources,
                 });
               } else if (parsed.type === 'metadata') {
-                // Handle tools used metadata - could show in UI
-                console.log('🔧 Tools used:', parsed.toolsUsed);
+                // Handle tools used metadata
                 if (parsed.toolsUsed?.includes('web_search')) {
                   setCurrentState('searching');
                 }
@@ -234,7 +242,7 @@ export const useGhostyChat = (initialMessages: GhostyMessage[] = []) => {
         isStreaming: false,
       });
     }
-  }, [addMessage, updateMessage, isExpanded]);
+  }, [messages, addMessage, updateMessage, isExpanded]);
 
   const regenerateResponse = useCallback((messageId: string) => {
     const message = messages.find(m => m.id === messageId);

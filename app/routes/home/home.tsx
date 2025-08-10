@@ -11,8 +11,10 @@ import HomeCallToAction from "./HomeCallToAction";
 import HomeFooter from "./HomeFooter";
 import HomeHero from "./HomeHero";
 
-
-export function SectionFadeIn({ children, delay = 0 }: React.PropsWithChildren<{ delay?: number }>) {
+export function SectionFadeIn({
+  children,
+  delay = 0,
+}: React.PropsWithChildren<{ delay?: number }>) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -27,8 +29,12 @@ export function SectionFadeIn({ children, delay = 0 }: React.PropsWithChildren<{
 
 export function Home() {
   return (
-    <div className="bg-[#ffffff] relative size-full " data-name="Landingpage" id="node-1488_1172">
-        <HomeHeader />
+    <div
+      className="bg-[#ffffff] relative size-full "
+      data-name="Landingpage"
+      id="node-1488_1172"
+    >
+      <HomeHeader />
       <SectionFadeIn delay={0.1}>
         <HomeHero />
       </SectionFadeIn>

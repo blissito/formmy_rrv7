@@ -255,7 +255,8 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
 export async function callGhostyWithTools(
   message: string,
   enableTools: boolean = true,
-  onChunk?: (chunk: string) => void
+  onChunk?: (chunk: string) => void,
+  conversationHistory?: Array<{ role: string; content: string }>
 ): Promise<{ content: string; toolsUsed?: string[]; sources?: any[] }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   
@@ -267,10 +268,10 @@ export async function callGhostyWithTools(
   console.log("🔑 API Key found, length:", apiKey.length);
   console.log("🔑 API Key prefix:", apiKey.substring(0, 10) + "...");
 
-  const messages = [
-    {
-      role: "system",
-      content: `Eres Ghosty 👻, asistente inteligente de Formmy.
+  // Construir el array de mensajes con el historial de conversación
+  const systemMessage = {
+    role: "system",
+    content: `Eres Ghosty 👻, asistente inteligente de Formmy.
 
 **CAPACIDADES ESPECIALES**:
 - Tienes acceso a herramientas que puedes usar automáticamente
@@ -295,12 +296,12 @@ export async function callGhostyWithTools(
 - Respuestas concisas y útiles
 - Usa markdown para mejor legibilidad
 - Máximo 300 palabras por respuesta`
-    },
-    {
-      role: "user",
-      content: message
-    }
-  ];
+  };
+
+  // Si hay historial de conversación, usarlo; si no, crear array nuevo
+  const messages = conversationHistory && conversationHistory.length > 0
+    ? [systemMessage, ...conversationHistory, { role: "user", content: message }]
+    : [systemMessage, { role: "user", content: message }];
 
   const toolsUsed: string[] = [];
   let currentMessages = [...messages];
@@ -453,13 +454,7 @@ export async function callGhostyWithTools(
       console.log(`🎯 Forzando respuesta final sin herramientas...`);
       const finalRequestBody = {
         model: DEFAULT_AI_MODEL,
-        messages: [
-          ...currentMessages,
-          {
-            role: "user",
-            content: "Basándote en la información obtenida de las herramientas, proporciona una respuesta final completa y útil en español. No uses más herramientas."
-          }
-        ],
+        messages: currentMessages,
         temperature: 0.7,
         max_tokens: 2000,
         stream: false,

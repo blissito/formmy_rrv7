@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { nanoid } from "nanoid";
 
 let s3Client: S3Client | null = null;
 
@@ -39,22 +40,20 @@ export async function generatePresignedUrl(
 }
 
 export function generateKey(filename: string, prefix: string = "chatbot-avatars", slug?: string) {
-  const timestamp = Date.now();
   const extension = filename.split(".").pop();
-  const nameWithoutExt = filename.split(".").slice(0, -1).join(".");
+  const shortId = nanoid(3); // Genera un ID corto de 3 caracteres
   
   if (slug && prefix === "chatbot-avatars") {
-    // Para avatares de chatbot, usar slug con timestamp y nombre original
-    return `${prefix}/${slug}/${timestamp}-${nameWithoutExt}.${extension}`;
+    // Para avatares de chatbot, usar slug con nanoid corto
+    return `${prefix}/${slug}/${shortId}.${extension}`;
   }
   
   if (slug) {
-    // Para otros tipos de archivos, mantener ID único
-    return `${prefix}/${slug}-${timestamp}.${extension}`;
+    // Para otros tipos de archivos, mantener ID único con nanoid
+    return `${prefix}/${slug}-${shortId}.${extension}`;
   }
   
-  const randomStr = Math.random().toString(36).substring(2, 8);
-  return `${prefix}/${timestamp}-${randomStr}.${extension}`;
+  return `${prefix}/${shortId}.${extension}`;
 }
 
 export async function deleteOldAvatars(slug: string) {

@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Button } from "../PageContainer";
+import { Button, usePreviewContext } from "../PageContainer";
 import { ChipTabs } from "../common/ChipTabs";
 import type { Chatbot, User } from "@prisma/client";
-import { type AgentType } from "../common/AgentDropdown";
 import toast from "react-hot-toast";
 import { AgentForm } from "../forms/AgentForm";
 import { ChatForm } from "../forms/ChatForm";
@@ -20,37 +19,37 @@ export const PreviewForm = ({
   const submit = useSubmit();
   const { uploadFile } = useS3Upload();
   const [activeTab, setActiveTab] = useState("Chat");
-  const [selectedModel, setSelectedModel] = useState(
-    chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free"
-  );
-  const [selectedAgent, setSelectedAgent] = useState<AgentType>(
-    (chatbot.personality as AgentType) || "customer_service"
-  );
-  const [temperature, setTemperature] = useState(chatbot.temperature || 1);
-  const [instructions, setInstructions] = useState(
-    chatbot.instructions ||
-      "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios."
-  );
-  const [name, setName] = useState(chatbot.name || "Geeki");
-  const [primaryColor, setPrimaryColor] = useState(
-    chatbot.primaryColor || "#63CFDE"
-  );
-  const [welcomeMessage, setWelcomeMessage] = useState(
-    chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?"
-  );
-  const [goodbyeMessage, setGoodbyeMessage] = useState(
-    chatbot.goodbyeMessage ||
-      "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte."
-  );
-  const [avatarUrl, setAvatarUrl] = useState(chatbot.avatarUrl || "");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Usar el contexto para obtener y actualizar el estado
+  const {
+    selectedModel,
+    setSelectedModel,
+    selectedAgent,
+    setSelectedAgent,
+    temperature,
+    setTemperature,
+    instructions,
+    setInstructions,
+    name,
+    setName,
+    primaryColor,
+    setPrimaryColor,
+    welcomeMessage,
+    setWelcomeMessage,
+    goodbyeMessage,
+    setGoodbyeMessage,
+    avatarUrl,
+    setAvatarUrl,
+    avatarFile,
+    setAvatarFile,
+  } = usePreviewContext();
 
   const handleModelChange = (value: string) => {
     setSelectedModel(value);
   };
 
-  const handleAgentChange = (value: AgentType) => {
+  const handleAgentChange = (value: any) => {
     setSelectedAgent(value);
   };
 
@@ -130,15 +129,16 @@ export const PreviewForm = ({
 
       if (result.success) {
         toast.success("Cambios guardados correctamente");
-        // Actualizar avatarUrl con la URL final y limpiar archivo
+        // Limpiar archivo temporal
         setAvatarFile(null);
+        // Recargar datos del loader para sincronizar con la BD
+        submit({});
       } else {
         toast.error(result.error || "Error al actualizar chatbot");
       }
     } catch (error) {
       toast.error("Error al guardar los cambios");
     } finally {
-      submit({}); // @todo level up state
       setIsSaving(false);
     }
   };

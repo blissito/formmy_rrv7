@@ -3,7 +3,7 @@ import { sendOpenRouterMessageEffect } from "../lib/openrouter.client";
 import { Effect } from "effect";
 import { DEFAULT_AI_MODEL } from "../utils/constants";
 import { cn } from "~/lib/utils";
-import type { ChatbotWithApiKeys } from "~/types/chatbot";
+import type { Chatbot } from "@prisma/client";
 import { ChatInput, type ChatInputRef } from "./chat/ChatInput";
 import { MessageBubble } from "./chat/MessageBubble";
 import { ChatHeader } from "./chat/ChatHeader";
@@ -11,12 +11,11 @@ import { StreamToggle } from "./chat/StreamToggle";
 import { LoadingIndicator } from "./chat/LoadingIndicator";
 
 export interface ChatPreviewProps {
-  chatbot: ChatbotWithApiKeys;
+  chatbot: Chatbot;
   production?: boolean;
 }
 
 export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
-  console.log("CHSATT", chatbot);
   const [chatMessages, setChatMessages] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
   >([
@@ -38,7 +37,6 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const inactivityTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    console.log("WTF!");
     setChatMessages((m) => {
       const update = [...m];
       update[0] = {
@@ -162,17 +160,11 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
 
     if (stream) {
       setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
-      if (!chatbot.apiKeys || chatbot.apiKeys.length === 0) {
-        setChatError(
-          "No se encontraron claves API configuradas para este chatbot"
-        );
-        setChatLoading(false);
-        return;
-      }
+      // Usar una apiKey mock ya que el SDK está deprecado
       Effect.runPromise(
         sendOpenRouterMessageEffect({
           chatbotId: chatbot.id,
-          apiKey: chatbot.apiKeys[0].key, // Ahora sabemos que existe al menos una clave
+          apiKey: "preview-key",
           model: chatbot.aiModel || DEFAULT_AI_MODEL,
           instructions: chatbot.instructions || "",
           temperature: chatbot.temperature,
@@ -208,7 +200,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     } else {
       Effect.runPromise(
         sendOpenRouterMessageEffect({
-          apiKey: chatbot.apiKeys[0].key,
+          apiKey: "preview-key",
           model: chatbot.aiModel || DEFAULT_AI_MODEL,
           instructions: chatbot.instructions || "",
           temperature: chatbot.temperature,
