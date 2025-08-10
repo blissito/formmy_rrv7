@@ -198,7 +198,7 @@ export const TopMenu = ({ user }: { user: User }) => {
                 <Menu.Item>
                   {({ active }) => (
                     <Link
-                      to="/profile"
+                      to="/dashboard/plan"
                       className={`${
                         active
                           ? "bg-[#F5F5FC] dark:bg-gray-900/40 text-space-800 dark:text-space-300"
@@ -206,7 +206,7 @@ export const TopMenu = ({ user }: { user: User }) => {
                       } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-sm`}
                     >
                       <RiUserSettingsLine size="18px" />
-                      Suscripción
+                      Plan
                     </Link>
                   )}
                 </Menu.Item>
