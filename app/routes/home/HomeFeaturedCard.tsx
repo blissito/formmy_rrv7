@@ -105,7 +105,7 @@ export default function HomeFeaturedCards() {
         className="bg-[#EDC75A] text-white col-span-4 md:col-span-2 relative"
         title="Síguenos en redes sociales y entérate de las próximas actualizaciones"
         subtitle="Destacado"
-        button={<Button className="bg-white ml-0 text-[#23244a] px-6 py-2" variant="secondary">&bull; Explorar</Button>}
+        button={<a href="https://www.linkedin.com/company/formmyapp" target="_blank"><Button className="bg-white ml-0 text-[#23244a] px-6 py-2" variant="secondary">&bull; Visitar</Button></a>}
         icon={<span>♥️</span>}
         pattern={false}
       >

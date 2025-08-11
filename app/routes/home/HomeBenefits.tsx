@@ -46,7 +46,7 @@ export default function HomeBenefits() {
       color: "bg-[#c4b9f9]",
       icon: <MdOutlineIntegrationInstructions />,
       title: "Súper fácil de integrar",
-      desc: "Olvídate de instalaciones complicadas. Solo copia y pega un código en tu web y listo, el formulario y el chat AI empiezan a trabajar por ti.",
+      desc: "Olvídate de instalaciones complicadas. Solo copia y pega el código en tu web y listo, el formulario y el chat IA estarán listos para atender a tus clientes.",
     },
     {
       color: "bg-[#f4b9e7]",
@@ -70,7 +70,7 @@ export default function HomeBenefits() {
       color: "bg-[#bbf0ff]",
       icon: <LuRocket />,
       title: "Todo en un solo lugar",
-      desc: "Gestiona tus formularios y chat desde el mismo panel. Ve tus mensajes, edita tus formularios y ajusta tu chat AI en minutos.",
+      desc: "Gestiona tus formularios y chat desde el mismo panel. Ve tus mensajes, edita tus formularios y ajusta tu chat IA en minutos.",
     },
   ];
   return (
