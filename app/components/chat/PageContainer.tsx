@@ -326,7 +326,7 @@ export const ChatCard = ({
           {!isInvited && (
             <div
               id="actions"
-              className="w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3"
+              className=" hidden md:flex w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all  items-center justify-end px-3"
             >
               <button
                 className="hover:bg-gray-300 w-6 rounded-full"
