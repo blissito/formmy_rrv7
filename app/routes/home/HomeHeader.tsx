@@ -72,16 +72,24 @@ export default function HomeHeader() {
                 >
                   <span>Planes</span>
                 </a>
-                <a
-                  className="flex items-center justify-between px-2 py-3 text-gray-800 hover:bg-gray-50 rounded-2xl text-lg font-medium"
-                  href="#"
-                  onClick={() => setMobileMenu(false)}
-                >
-                  <span>Iniciar sesión</span>
-                </a>
-                <Form method="post" className="mt-4">
-                  <BigCTA type="submit" name="intent" value="google-login" />
+                <Form method="post" action="/api/login">
+                  <button
+                    className="text-dark text-lg font-regular mb-2  px-2 py-3"
+                    type="submit"
+                    name="intent"
+                    value="google-login"
+                  >
+                    Iniciar sesión
+                  </button>
                 </Form>
+                <Form method="post" action="/api/login">
+               <BigCTA
+                  type="submit"
+                  name="intent"
+                  value="google-login"
+                  className="hidden md:block"
+                />
+              </Form>
               </div>
             </motion.div>
           )}
