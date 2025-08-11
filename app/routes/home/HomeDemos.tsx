@@ -28,23 +28,23 @@ function DemoCard({ label, backgroundImage, imageClassName,companybrand }: { lab
 
 export default function HomeDemos() {
   const cards = [
-    { label: "Landing page", imageClassName:"bg-bottom-left", companybrand:"bg-[#8BB236]", backgroundImage:"/home/ejemplos/pros.png" },
-    { label: "Portafolio", imageClassName:"bg-bottom-right", companybrand:"bg-[#9346ED]", backgroundImage:"/home/ejemplos/brendi.png" },
-    { label: "Waitinglist",  companybrand:"bg-[#9346ED]", backgroundImage:"/home/ejemplos/ui.png" },
-    { label: "Soporte",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
-    { label: "Integraciones",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
-    { label: "Personalización",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
-    { label: "Landing page",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
-    { label: "Registro",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
-    { label: "Dashboard",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
-    { label: "Soporte",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
-    { label: "Integraciones",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
-    { label: "Personalización",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
+    { label: "Contacto | E4Pros", imageClassName:"bg-bottom-left", companybrand:"bg-[#8BB236]", backgroundImage:"/home/ejemplos/pros.png" },
+    { label: "Contacto | Brenda GO", imageClassName:"bg-bottom-right", companybrand:"bg-[#9346ED]", backgroundImage:"/home/ejemplos/brendi.png" },
+    { label: "Waitinglist | Fixtergeek",  companybrand:"bg-[#9346ED]", backgroundImage:"/home/ejemplos/ui.png" },
+    { label: "Newsletter | Natoure",  companybrand:"bg-[#ff9365]", backgroundImage:"/home/ejemplos/natoure.png" },
+    { label: "Waitinglist | DenÍk",   companybrand:"bg-[#5158f6]",  backgroundImage:"/home/ejemplos/denik.png" },
+    { label: "Contacto | Raul",  companybrand:"bg-[#f79c08]", backgroundImage:"/home/ejemplos/raul.png"  },
+    { label: "Contacto | FixterOrg",    companybrand:"bg-[#85dbcb]", backgroundImage:"/home/ejemplos/org.png" },
+    // { label: "Registro",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
+    // { label: "Dashboard",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
+    // { label: "Soporte",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
+    // { label: "Integraciones",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
+    // { label: "Personalización",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
   ];
   return (
     <section className="relative w-full flex flex-col items-center my-20 md:my-40 overflow-hidden">
       <h2 className="font-bold text-[#080923] text-3xl md:text-4xl lg:text-6xl text-center mb-10 md:mb-16 leading-tight px-4">
-        Formmy se adapta a lo que necesites
+        Formmy se adapta a lo que necesitas
       </h2>
       <Carrusel items={cards} direction="right" speed="slow" />
     </section>

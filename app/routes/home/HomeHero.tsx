@@ -8,7 +8,7 @@ export default function HomeHero() {
     <section className="relative  flex flex-col items-center justify-center min-h-[700px] pt-40 md:pt-[240px] max-w-7xl px-4 md:px-[5%]  lg:px-0 mx-auto">
       <span>
         <div className="heading flex justify-center font-bold text-dark text-4xl md:text-5xl lg:text-[72px] text-center leading-none md:leading-tight flex-wrap gap-2">
-          {"Formularios y chat AI".split(" ").map((word, idx) => (
+          {"Formularios y chat IA".split(" ").map((word, idx) => (
             <span key={idx}>{word}</span>
           ))}
           <img
@@ -30,7 +30,7 @@ export default function HomeHero() {
         <Form method="post">
           <BigCTA type="submit" name="intent" value="google-login" />
         </Form>
-        <Button variant="secondary" className="mt-0">
+        <Button variant="secondary" className="mt-0 h-14">
           Ver planes
         </Button>
       </div>
@@ -40,7 +40,15 @@ export default function HomeHero() {
           alt="hero"
           height={400}
           width={1400}
-          className="mx-auto rounded-2xl object-cover h-full object-left-top"
+          className="mx-auto rounded-2xl object-cover h-full object-left-top hidden md:block"
+          draggable={false}
+        />
+            <img
+          src="/home/home-xs.png"
+          alt="hero"
+          height={400}
+          width={400}
+          className="mx-auto rounded-2xl object-cover h-full object-left-top md:hidden"
           draggable={false}
         />
       </ContainerScroll>
