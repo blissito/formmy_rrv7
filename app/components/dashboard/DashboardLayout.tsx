@@ -56,7 +56,7 @@ export function DashboardLayout({
             alt="Formmy Logo"
           />
         </Link>
-        <nav className="flex flex-row md:flex-col items-center justify-center md:gap-8 gap-0 w-fit md:w-full px-0 md:px-2">
+        <nav className="flex pt-2 flex-row md:flex-col items-center justify-center md:gap-8 gap-0 w-fit md:w-full px-0 md:px-2">
           <IconButtonLink
             to="/dashboard/ghosty"
             icon={<AiIcon className="w-8 h-8 md:w-10 h-10 text-dark" />}

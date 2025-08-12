@@ -295,7 +295,7 @@ export const ChatCard = ({
     >
       <Link
         to={`/dashboard/chat/${chatbot.slug}`}
-        className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)]  border border-outlines bg-white rounded-2xl  w-full h-full block"
+        className="group relative overflow-hidden hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)]  border border-outlines bg-white rounded-2xl  w-full h-full block"
       >
         <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
           <img src="/dash/chat.png" alt="chatbot" />
