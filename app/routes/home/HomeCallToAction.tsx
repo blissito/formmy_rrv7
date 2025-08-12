@@ -33,7 +33,7 @@ export default function HomeCallToAction() {
             <br />
             Házlo fáil, rápido y sin código con <span className="text-brand-500">Formmy</span>.
           </h2>
-          <Button className="ml-0 h-14 bg-white text-dark font-semibold rounded-full px-8 text-lg flex items-center gap-2 shadow hover:scale-105 transition">
+          <Button className="ml-0 h-14 bg-white text-dark font-semibold rounded-full px-8 text-base md:text-lg flex items-center gap-2 shadow hover:scale-105 transition">
             Empezar gratis
             <span className="ml-2">→</span>
           </Button>

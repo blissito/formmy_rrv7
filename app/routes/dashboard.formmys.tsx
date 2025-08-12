@@ -329,7 +329,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
           ))}
           {filtered.length === 0 && (
             <motion.div 
-              className="mx-auto text-center flex flex-col justify-center w-full min-h-[60vh]"
+              className="mx-auto text-center flex flex-col justify-start md:justify-center w-full min-h-fit md:min-h-[60vh]"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{
