@@ -6,6 +6,7 @@ export const BigCTA = ({
   onClick,
   isLoading,
   className,
+  textClassName,
   containerClassName,
   children,
   value,
@@ -16,8 +17,9 @@ export const BigCTA = ({
   type?: "button" | "submit";
   onClick?: () => void;
   className?: string;
-  children?: ReactNode;
+  textClassName?: string;
   containerClassName?: string;
+  children?: ReactNode;
   value?: string;
 }) => {
   return (
@@ -25,7 +27,7 @@ export const BigCTA = ({
       isLoading={isLoading}
       className={cn(
         (className =
-          "group bg-brand-500 hover:bg-brand-700 transition-all transition-all text-clear  dark:text-white border-neutral-200 dark:border-white/10"),
+          "group bg-brand-500 hover:bg-brand-600 transition-all transition-all text-clear  dark:text-white border-neutral-200 dark:border-white/10"),
         containerClassName
       )}
       value={value}
@@ -34,7 +36,7 @@ export const BigCTA = ({
       {...props}
     >
       {children ?? (
-        <p className="text-base heading ">
+        <p className={cn("text-base heading ", textClassName)}>
           Comenzar gratis <span className="group-hover:rotate-45"> &rarr;</span>
         </p>
       )}

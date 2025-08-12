@@ -484,7 +484,7 @@ export const Entrenamiento = ({
           </ConfigMenu>
         </section>
         {currentTab === "files" && (
-          <section className="grid gap-6">
+          <section className="grid gap-4 md:gap-6">
             <UploadFiles onChange={handleFilesChange} />
 
             {/* Mostrar archivos pendientes de subir */}
@@ -566,7 +566,7 @@ export const Entrenamiento = ({
           />
         )}
 
-        <section className="hidden lg:block">
+        <section >
           <InfoSources
             contexts={fileContexts}
             uploadedFiles={uploadedFiles}

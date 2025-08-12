@@ -91,7 +91,7 @@ export default function HomeFeaturedCards() {
         title="Visita nuestro Blog"
         pattern={true}
         subtitle="Recursos"
-        button={<Button className="bg-brand-500 text-clear ml-0 px-6 py-2" variant="secondary">&bull; Explorar</Button>}
+        button={<Button className="bg-brand-500 ml-0 px-6 py-2 relative z-10" >&bull; Explorar</Button>}
       >
      <div className=" relative w-full h-full -top-24">
      <div className="w-64 h-80  bg-blue-400 -rotate-[8deg] rounded-lg absolute right-20 top-5 z-10 overflow-hidden "> 
@@ -105,7 +105,7 @@ export default function HomeFeaturedCards() {
         className="bg-[#EDC75A] text-white col-span-4 md:col-span-2 relative"
         title="Síguenos en redes sociales y entérate de las próximas actualizaciones"
         subtitle="Destacado"
-        button={<Button className="bg-white ml-0 text-[#23244a] px-6 py-2" variant="secondary">&bull; Explorar</Button>}
+        button={<a href="https://www.linkedin.com/company/formmyapp" target="_blank"><Button className="bg-white ml-0 text-[#23244a] px-6 py-2" variant="secondary">&bull; Seguir</Button></a>}
         icon={<span>♥️</span>}
         pattern={false}
       >

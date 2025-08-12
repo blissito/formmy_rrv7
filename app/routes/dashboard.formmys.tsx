@@ -329,7 +329,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
           ))}
           {filtered.length === 0 && (
             <motion.div 
-              className="mx-auto text-center flex flex-col justify-center w-full min-h-[60vh]"
+              className="mx-auto text-center flex flex-col justify-start md:justify-center w-full min-h-fit md:min-h-[60vh]"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{
@@ -343,12 +343,12 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                 transition={{ delay: 0.1, duration: 0.5 }}
               >
                 <img
-                  className="flex dark:hidden w-[320px] mx-auto"
+                  className="flex dark:hidden w-[240px] md:w-[320px] mx-auto"
                   src="/assets/empty_ghost.svg"
                   alt="empty ghost"
                 />
                 <img
-                  className="hidden dark:flex w-[320px] mx-auto"
+                  className="hidden dark:flex w-[240px] md:w-[320px] mx-auto"
                   src="/assets/empty-ghost-dark.svg"
                   alt="empty ghost"
                 />
@@ -368,7 +368,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                 transition={{ delay: 0.3, duration: 0.5 }}
               >
                 {!isSearch
-                  ? "Empieza a recibir mensajes creando tu primer Formmy."
+                  ? "Crea tu primer Formmy y empieza a recibir mensajes."
                   : "No encontramos ningún Formmy con ese nombre. Intenta con otro."}
               </motion.p>
             </motion.div>
@@ -433,7 +433,7 @@ export const ProjectCard = ({
     >
       <Link
         to={id ?? ""}
-        className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl w-full h-full block"
+        className="group relative overflow-hidden hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl w-full h-full block"
       >
         <section className="bg-gradient-to-r from-[#51B8BF] to-bird w-full h-24 flex items-end justify-center border-b border-outlines">
           <img src="/dash/chat.png" alt="chatbot" />
@@ -455,7 +455,7 @@ export const ProjectCard = ({
             </p>
             {isInvite && <RoleBadge role={userRole} />}
           </div>
-          <div id="actions" className="w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3">
+          <div id="actions" className="hidden md:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3">
             <DeleteIcon className="w-5 h-5" />
             <hr className="h-6 w-[1px] border-none bg-outlines"/>
             <CodeIcon />

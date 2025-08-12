@@ -167,7 +167,7 @@ export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
 
   return (
     <div className={cn(
-      "grid place-content-center min-h-[calc(100vh-156px)] p-4",
+      "grid place-content-start md:place-content-center min-h-[calc(100vh-156px)] p-4",
       "md:p-2 md:h-full"
     )}>
       <AnimatePresence mode="wait">
@@ -234,7 +234,7 @@ export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="text-center mt-6"
+              className="text-center mt-6 hidden md:block"
             >
               <span className="text-xs text-lightgray">
                 Presiona <kbd className="px-1 py-0.5 bg-brand-100/40 rounded text-metal font-bold">Cmd+K</kbd> para abrir chat

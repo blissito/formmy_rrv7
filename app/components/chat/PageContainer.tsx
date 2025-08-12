@@ -295,7 +295,7 @@ export const ChatCard = ({
     >
       <Link
         to={`/dashboard/chat/${chatbot.slug}`}
-        className="group relative overflow-hidden hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)]  border border-outlines bg-white rounded-2xl  w-full h-full block"
+        className="group relative overflow-hidden hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)]  border border-outlines bg-white rounded-2xl  w-full h-full block"
       >
         <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
           <img src="/dash/chat.png" alt="chatbot" />
@@ -326,7 +326,7 @@ export const ChatCard = ({
           {!isInvited && (
             <div
               id="actions"
-              className="w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all flex items-center justify-end px-3"
+              className=" hidden md:flex w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all  items-center justify-end px-3"
             >
               <button
                 className="hover:bg-gray-300 w-6 rounded-full"
@@ -350,11 +350,11 @@ export const ChatCard = ({
 export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
-    <article className="flex gap-0 md:gap-6">
-      <section className="self-start sticky top-4 mr-4 md:mr-0">
+    <article className="flex gap-2 md:gap-6 w-full pb-8 ">
+      <section className="self-start sticky top-4  md:mr-0">
         {nodes[0]}
       </section>
-      <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 grow  ">
         <section className={`grow w-full ${nodes[2] ? "max-w-[732px]" : ""}`}>
           {nodes[1]}
         </section>

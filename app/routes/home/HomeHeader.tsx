@@ -24,13 +24,13 @@ export default function HomeHeader() {
 
   return (
     <>
-      {/* Header mobile: estático, sin animación */}
-      <header className="md:hidden fixed bg-[#ffffff] !h-16 md:!h-20 top-6 left-1/2 translate-x-[-45vw] z-30 flex justify-between items-center pl-6 pr-4 w-[90vw] rounded-[99px] shadow-[0px_2px_32px_0px_rgba(33,22,76,0.08)]">
+      {/* Header mobile: oculto en desktop */}
+      <header className="md:hidden fixed bg-[#ffffff] h-16 w-[90vw] left-1/2 -translate-x-1/2 top-4 z-50 flex justify-between items-center px-4 rounded-[99px] shadow-[0px_2px_32px_0px_rgba(33,22,76,0.08)]">
         <Link to="/">
-          <img className="w-20 md:auto" src={imgVector} alt="logo" />
+          <img className="w-20" src={imgVector} alt="logo" />
         </Link>
         <button
-          className="md:hidden text-2xl text-dark focus:outline-none border border-gray-200 rounded-full w-12 h-12 flex items-center justify-center"
+          className="text-2xl text-dark focus:outline-none border border-gray-200 rounded-full w-12 h-12 flex items-center justify-center"
           aria-label="Abrir menú"
           onClick={() => setMobileMenu((v) => !v)}
         >
@@ -39,11 +39,11 @@ export default function HomeHeader() {
         <AnimatePresence>
           {mobileMenu && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.18, ease: "easeInOut" }}
-              className="absolute left-0 top-full w-full bg-clear shadow-2xl rounded-3xl z-40 flex flex-col gap-2 py-8 px-6 mt-4"
+              initial={{ opacity: 0, y: -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 8, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: "easeInOut" }}
+              className="fixed left-4 right-4 top-20 bg-white shadow-2xl rounded-2xl z-50 flex flex-col gap-2 py-4 px-4"
             >
               <div className="flex flex-col gap-1 mt-2">
                 <div className="text-dark text-lg font-medium mb-1 pl-2">
@@ -72,22 +72,30 @@ export default function HomeHeader() {
                 >
                   <span>Planes</span>
                 </a>
-                <a
-                  className="flex items-center justify-between px-2 py-3 text-gray-800 hover:bg-gray-50 rounded-2xl text-lg font-medium"
-                  href="#"
-                  onClick={() => setMobileMenu(false)}
-                >
-                  <span>Iniciar sesión</span>
-                </a>
-                <Form method="post" className="mt-4">
-                  <BigCTA type="submit" name="intent" value="google-login" />
+                <Form method="post" action="/api/login">
+                  <button
+                    className="text-dark text-lg font-regular mb-2  px-2 py-3"
+                    type="submit"
+                    name="intent"
+                    value="google-login"
+                  >
+                    Iniciar sesión
+                  </button>
                 </Form>
+                <Form method="post" action="/api/login">
+               <BigCTA
+                  type="submit"
+                  name="intent"
+                  value="google-login"
+                  className="hidden md:block"
+                />
+              </Form>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </header>
-      {/* Header desktop: animado con motion */}
+      {/* Header desktop: oculto en móvil */}
       <motion.header
         initial={false}
         animate={expanded ? "expanded" : "default"}
@@ -102,7 +110,7 @@ export default function HomeHeader() {
           },
         }}
         transition={{ duration: 0.04, ease: "linear" }}
-        className="md:flex fixed bg-[#ffffff] !h-20 top-6 left-1/2 rounded-[99px] translate-x-[-50%] z-30 flex justify-between items-center pl-8 pr-4 w-[810px]"
+        className="hidden md:flex fixed bg-[#ffffff] !h-20 top-6 left-1/2 rounded-[99px] -translate-x-1/2 z-30 items-center pl-8 pr-4 w-[810px]"
         style={{
           transition: "width 0.3s, box-shadow 0.3s",
         }}
@@ -171,7 +179,7 @@ export default function HomeHeader() {
               type="submit"
               name="intent"
               value="google-login"
-              className="hidden md:block"
+              className="hidden md:block text-lg"
             />
           </Form>
         </nav>

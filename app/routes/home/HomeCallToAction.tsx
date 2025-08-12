@@ -29,11 +29,11 @@ export default function HomeCallToAction() {
       <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-start  justify-between z-10">
         <div className="flex-1 flex flex-col items-start justify-center mt-16">
           <h2 className="text-white text-4xl md:text-6xl font-bold !leading-[1.3] mb-4 md:mb-8">
-            Da el siguiente paso.
+         Transforma tu web.
             <br />
-            Descubre el poder de <span className="text-brand-500">Formmy</span>.
+            Házlo fáil, rápido y sin código con <span className="text-brand-500">Formmy</span>.
           </h2>
-          <Button className="ml-0 bg-white text-dark font-semibold rounded-full px-8 py-4 text-lg flex items-center gap-2 shadow hover:scale-105 transition">
+          <Button className="ml-0 h-14 bg-white text-dark font-semibold rounded-full px-8 text-base md:text-lg flex items-center gap-2 shadow hover:scale-105 transition">
             Empezar gratis
             <span className="ml-2">→</span>
           </Button>

@@ -38,7 +38,7 @@ export const QuestionsForm = ({
   editingContext?: any;
 }) => {
   return (
-    <article>
+    <article className="flex flex-col gap-4 md:gap-6">
       <Card
         title="Preguntas específicas"
         text={
@@ -58,10 +58,11 @@ export const QuestionsForm = ({
           name="title"
           value={title}
           onChange={onTitleChange}
+          className="mb-4 md:mb-6"
         />
-        <hr className="my-3 border-none" />
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+   
+        <div className="mb-4 md:mb-6">
+          <label className="block text-sm  text-metal mb-2">
             Preguntas
           </label>
           {questions.map((question, index) => (
@@ -92,7 +93,7 @@ export const QuestionsForm = ({
             + Agregar pregunta
           </button>
         </div>
-        <hr className="my-3 border-none" />
+
         <InputRich
           label="Respuesta"
           value={answer}
@@ -131,7 +132,7 @@ export const QuestionsForm = ({
           </Button>
         </div>
       </Card>
-      <hr className="my-3 border-none" />
+
       {questionContexts.length > 0 && (
         <Card noSearch title="Preguntas y respuestas" navClassName="!mb-4">
           <CardHeader

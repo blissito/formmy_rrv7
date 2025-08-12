@@ -31,10 +31,10 @@ export const Card = ({
     >
       <nav className={cn("flex justify-between gap-3 items-center mb-4 md:mb-6", navClassName)}>
         <div>
-          <h3 className="text-xl md:text-2xl font-medium min-w-max text-dark ">
+          <h3 className="text-lg md:text-2xl font-medium min-w-none md:min-w-max text-dark ">
             {title}
           </h3>
-          {text && <p className="text-metal mb-2 text-base">{text}</p>}
+          {text && <p className="text-metal mb-2 text-sm md:text-base">{text}</p>}
         </div>
         {!noSearch && !action && <SearchInput />}
         {action && <div className="flex-shrink-0">{action}</div>}
