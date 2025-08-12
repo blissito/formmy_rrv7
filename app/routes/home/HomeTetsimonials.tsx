@@ -39,7 +39,7 @@ export default function HomeTestimonials() {
       img: "/home/rocio.png",
     },
     {
-      name: "María Castillo",
+      name: "Eduardo Castillo",
       company: "Estudio Creativo Revolve",
       comment: "Los formularios personalizables me han ahorrado incontables horas de desarrollo. Ahora puedo ofrecer a mis clientes soluciones profesionales sin necesidad de programar una sola línea de código.",
       img: "/home/client.svg",

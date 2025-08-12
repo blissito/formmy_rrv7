@@ -179,7 +179,7 @@ export default function HomeHeader() {
               type="submit"
               name="intent"
               value="google-login"
-              className="hidden md:block"
+              className="hidden md:block text-lg"
             />
           </Form>
         </nav>
