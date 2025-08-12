@@ -343,12 +343,12 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                 transition={{ delay: 0.1, duration: 0.5 }}
               >
                 <img
-                  className="flex dark:hidden w-[240px] mx-auto"
+                  className="flex dark:hidden w-[240px] md:w-[320px] mx-auto"
                   src="/assets/empty_ghost.svg"
                   alt="empty ghost"
                 />
                 <img
-                  className="hidden dark:flex w-[240px] mx-auto"
+                  className="hidden dark:flex w-[240px] md:w-[320px] mx-auto"
                   src="/assets/empty-ghost-dark.svg"
                   alt="empty ghost"
                 />

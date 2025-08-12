@@ -108,13 +108,13 @@ export const CardHeader = ({
     <header className="flex justify-between items-center mb-2">
       <label className="flex items-center gap-3">
         {left}
-        <h4 className="text-gray-600 select-none text-base ">{title}</h4>
+        <h4 className="text-gray-600 select-none md:text-base text-sm ">{title}</h4>
       </label>
       <div className="flex items-center gap-2">
-        <p className="text-gray-600"> Filtrar por:</p>
+        <p className="text-gray-600 text-sm md:text-base"> Filtrar por:</p>
         <Select
           mode="ghost"
-          className="min-w-min"
+          className="min-w-min text-sm md:text-base"
           options={[
             { label: "Todos", value: "all" },
             {
@@ -196,8 +196,8 @@ export const FileItem = ({
         />
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-base font-medium">{fileName}</p>
-            {tag && <Tag text={tag} />}
+            <p className="text-sm md:text-base font-medium">{fileName}</p>
+            {tag && <Tag  className="hidden md:block" text={tag} />}
           </div>
           <span className="text-sm font-thin text-gray-500">{fileSize}</span>
         </div>
@@ -211,9 +211,9 @@ export const FileItem = ({
   );
 };
 
-const Tag = ({ text }: { text: string }) => {
+const Tag = ({ text, className }: { text: string; className?: string }) => {
   return (
-    <span className="text-xs text-green-600 bg-green-100 rounded-full py-px px-2">
+    <span className={cn("text-xs text-green-600 bg-green-100 rounded-full py-px px-2", className) }>
       {text}
     </span>
   );

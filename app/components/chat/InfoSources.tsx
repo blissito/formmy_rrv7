@@ -79,7 +79,7 @@ export const InfoSources = ({
           <span className="w-4">
             <img src="/assets/chat/receipt.svg" alt="icon" />
           </span>
-          <h4 className="font-medium text-dark">Fuentes de información</h4>
+          <h4 className="text-lg md:text-base font-medium text-dark">Fuentes de información</h4>
         </div>
 
         {/* Mostrar archivos según el modo */}

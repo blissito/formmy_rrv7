@@ -29,12 +29,12 @@ export const Table = ({
     <article>
       <main
         className={cn(
-          "rounded-3xl border border-gray-300 p-6 shadow-standard",
+          "rounded-3xl border border-gray-300 md:p-6 p-4 shadow-standard  ",
           className
         )}
       >
         <section className="flex justify-between items-center">
-          <h3 className="font-medium text-2xl">{title}</h3>
+          <h3 className="font-medium text-lg md:text-2xl">{title}</h3>
           {!noSearch && (
             <Input
               containerClassName="rounded-full"
@@ -111,13 +111,13 @@ const LinkRow = ({
     : `https://${entry.url}`;
 
   return (
-    <main className="group flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2">
-      <div className="flex items-center gap-4 max-w-[80%]">
+    <main className="group w-full flex items-center justify-between md:py-2 py-1 hover:bg-gray-50 rounded-lg px-0 md:px-2">
+      <div className="flex items-center md:gap-4 gap-2 max-w-[80%]">
         {!noSelect && <Checkbox />}
         <div className="min-w-10 h-10 bg-irongray/10 rounded-full flex items-center justify-center">
           <img className="w-7" alt="world icon" src={`/assets/chat/earth.svg`} />
         </div>
-        <div className=" overflow-hidden">
+        <div className=" overflow-hidden  max-w-[200px] lg:max-w-[400px]">
           <h4 className="font-semibold truncate" title={displayUrl}>{displayUrl}</h4>
           <p className="text-gray-600 text-xs">
             Última actualización: {formatLastUpdated(entry.lastUpdated)} |{" "}
@@ -137,8 +137,8 @@ const LinkRow = ({
           )}
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+      <div className="flex items-center gap-2 ">
+        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full hidden md:block">
           {entry.updateFrequency === "monthly" ? "Mensual" : "Anual"}
         </span>
         <DropdownMenu onEdit={onEdit} onRemove={onRemove} />
