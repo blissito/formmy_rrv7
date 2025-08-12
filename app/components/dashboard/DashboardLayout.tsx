@@ -95,7 +95,7 @@ export function DashboardLayout({
       </div>
       <div className="flex flex-col grow w-full md:pb-8 pb-0 ml-0 md:ml-[120px]">
         <TopMenu user={user} />
-        <div className="bg-red-500 relative w-full h-full rounded-3xl md:rounded-[40px] min-h-[calc(100svh-244px)] max-h-[calc(100svh-244px)] overflow-y-scroll md:overflow-y-auto md:max-h-none noscroll">
+        <div className="bg-white relative w-full h-full rounded-3xl md:rounded-[40px] min-h-[calc(100svh-144px)] max-h-[calc(100svh-144px)] overflow-y-scroll md:overflow-y-auto md:max-h-none noscroll">
           {children}
         </div>
       </div>

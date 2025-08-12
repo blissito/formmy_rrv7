@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  server: { port: 3000 , allowedHosts:['987f7d58d5d1.ngrok-free.app']},
+  server: { port: 3000 , allowedHosts:['localhost']},
   
   css: {
     postcss: {
