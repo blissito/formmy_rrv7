@@ -56,7 +56,7 @@ export function DashboardLayout({
             alt="Formmy Logo"
           />
         </Link>
-        <nav className="flex pt-2 flex-row md:flex-col items-center justify-center md:gap-8 gap-0 w-fit md:w-full px-0 md:px-2">
+        <nav className="relative z-10 flex pt-2 flex-row md:flex-col items-center justify-center md:gap-8 gap-0 w-fit md:w-full px-0 md:px-2">
           <IconButtonLink
             to="/dashboard/ghosty"
             icon={<AiIcon className="w-8 h-8 md:w-10 h-10 text-dark" />}
@@ -95,7 +95,7 @@ export function DashboardLayout({
       </div>
       <div className="flex flex-col grow w-full md:pb-8 pb-0 ml-0 md:ml-[120px]">
         <TopMenu user={user} />
-        <div className="bg-white relative w-full h-full rounded-3xl md:rounded-[40px] min-h-[calc(100vh-156px)] overflow-y-scroll md:overflow-y-auto max-h-[calc(100vh-156px)] md:max-h-none noscroll">
+        <div className="bg-white relative w-full h-full rounded-3xl md:rounded-[40px] min-h-[calc(100svh-156px)] overflow-y-scroll md:overflow-y-auto max-h-[calc(100vh-156px)] md:max-h-none noscroll">
           {children}
         </div>
       </div>
