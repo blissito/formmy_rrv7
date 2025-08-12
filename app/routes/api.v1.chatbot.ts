@@ -21,6 +21,7 @@ import {
   validateUserAIModelAccess,
   getUserPlanFeatures,
 } from "../../server/chatbot/userModel.server";
+import { validateChatbotCreationAccess } from "../../server/chatbot/chatbotAccess.server";
 import { getChatbotBrandingConfigById } from "../../server/chatbot/brandingConfig.server";
 import {
   getChatbotUsageStats,
@@ -162,16 +163,19 @@ export async function action({ request }: any) {
           (formData.get("instructions") as string) ||
           DEFAULT_CHATBOT_CONFIG.instructions;
 
-        const validation = await validateUserChatbotCreation(user);
+        // Validate if user can create more chatbots (FREE users limited to 1 chatbot)
+        const validation = await validateChatbotCreationAccess(user.id);
         if (!validation.canCreate) {
           return new Response(
             JSON.stringify({
-              error: `Haz alcanzado el límite de ${validation.maxAllowed} chatbots para tu plan actual.`,
-              currentCount: validation.currentCount,
+              success: false,
+              error: `Has alcanzado el límite de ${validation.maxAllowed} chatbot${validation.maxAllowed > 1 ? 's' : ''} para tu plan ${validation.plan.toLowerCase()}.`,
+              currentCount: validation.currentOwnedCount,
               maxAllowed: validation.maxAllowed,
               isPro: validation.isPro,
+              plan: validation.plan,
             }),
-            { status: 403, headers: { "Content-Type": "application/json" } }
+            { status: 402, headers: { "Content-Type": "application/json" } }
           );
         }
 

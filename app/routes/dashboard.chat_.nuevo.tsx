@@ -5,11 +5,12 @@ import { UploadFiles } from "~/components/chat/UploadFiles";
 import { useState } from "react";
 import { Website } from "~/components/chat/Website";
 import type { WebsiteEntry } from "~/types/website";
-import { useNavigate } from "react-router";
+import { useNavigate, redirect } from "react-router";
 import toast from "react-hot-toast";
 import type { Route } from "./+types/dashboard.chat_.nuevo";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { ListFiles } from "~/components/chat/ListFiles";
+import { validateChatbotCreationAccess } from "server/chatbot/chatbotAccess.server";
 
 export default function ChatbotConfigRoute(
   {
@@ -206,7 +207,16 @@ export default function ChatbotConfigRoute(
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
-  return { user };
+  
+  // Validate if user can create more chatbots
+  const accessInfo = await validateChatbotCreationAccess(user.id);
+  
+  // If user can't create more chatbots, redirect to plans page
+  if (!accessInfo.canCreate) {
+    throw redirect("/dashboard/plan?reason=chatbot_limit");
+  }
+  
+  return { user, accessInfo };
 };
 
 export const meta = ({ data }: { data: any }) => {

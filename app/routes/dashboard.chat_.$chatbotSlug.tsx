@@ -7,6 +7,7 @@ import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
 import { useChipTabs } from "~/components/chat/common/ChipTabs";
 import { db } from "../utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
+import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -36,26 +37,13 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     throw new Response("Chatbot not found", { status: 404 });
   }
 
-  // Verificar si el usuario es propietario o tiene permisos
-  const isOwner = chatbot.userId === user.id;
-  let hasPermission = false;
+  // Validate chatbot access using the new validation system
+  const accessValidation = await validateChatbotAccess(user.id, chatbot.id);
   
-  if (!isOwner) {
-    const permission = await db.permission.findFirst({
-      where: {
-        email: user.email,
-        chatbotId: chatbot.id,
-        resourceType: "CHATBOT",
-        status: "active",
-      },
-    });
-    hasPermission = !!permission;
-  }
-
-  if (!isOwner && !hasPermission) {
-    throw new Response("You don't have access to this chatbot", {
-      status: 403,
-    });
+  if (!accessValidation.canAccess) {
+    const errorMessage = accessValidation.restrictionReason || "No tienes acceso a este chatbot";
+    const status = accessValidation.restrictionReason?.includes("límite") ? 402 : 403;
+    throw new Response(errorMessage, { status });
   }
 
   const integrations = await db.integration.findMany({
@@ -64,13 +52,18 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     },
   });
 
-  return { user, chatbot, integrations };
+  return { 
+    user, 
+    chatbot, 
+    integrations,
+    accessInfo: accessValidation 
+  };
 };
 
 export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
-  const { user, chatbot, integrations } = loaderData;
+  const { user, chatbot, integrations, accessInfo } = loaderData;
   const { currentTab, setCurrentTab } = useChipTabs("Entrenamiento", `main_${chatbot.id}`);
 
   const handleTabChange = (tab: string) => {

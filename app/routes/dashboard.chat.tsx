@@ -9,6 +9,8 @@ import { useState } from "react";
 import ConfirmModal from "~/components/ConfirmModal";
 import { effect } from "../utils/effect";
 import { db } from "~/utils/db.server";
+import { getChatbotAccessInfo } from "server/chatbot/chatbotAccess.server";
+import { ChatbotCreateButton } from "~/components/chat/ChatbotCreateButton";
 
 const findActiveChatbotPermissions = async (email: string): Promise<Permission[]> => {
   const permissions = await db.permission.findMany({
@@ -51,6 +53,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   // Get chatbot permissions for invitations
   const permissions = await findActiveChatbotPermissions(user.email);
   
+  // Get access info for chatbot creation limits
+  const accessInfo = await getChatbotAccessInfo(user.id);
+  
   return {
     user,
     plan: chatbotsWithPlanInfo.plan,
@@ -61,6 +66,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       .filter((p) => p.status === "active")
       .map((p) => ({ ...p.chatbot, userRole: p.role })),
     permission: permissions.find((p) => p.status === "pending"), // Key: finds first pending invitation
+    accessInfo,
   };
 };
 
@@ -119,6 +125,7 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
     user,
     permission,
     invitedChatbots = [],
+    accessInfo,
   } = loaderData;
   
 
@@ -171,9 +178,16 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
       <PageContainer>
         <PageContainer.Title
           cta={
-            <PageContainer.Button isLoading={isLoading} to="/dashboard/chat/nuevo">
+            <ChatbotCreateButton
+              canCreate={accessInfo.creation.canCreate}
+              showProTag={accessInfo.showProTag}
+              currentCount={accessInfo.creation.currentOwnedCount}
+              maxAllowed={accessInfo.creation.maxAllowed}
+              proTagMessage={accessInfo.proTagMessage}
+              isLoading={isLoading}
+            >
               + Chatbot 
-            </PageContainer.Button>
+            </ChatbotCreateButton>
           }
         >
           Mis Chats IA
