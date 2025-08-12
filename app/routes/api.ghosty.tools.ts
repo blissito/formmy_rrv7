@@ -40,7 +40,7 @@ export const loader = async () => {
   return new Response(
     JSON.stringify({ 
       error: "This endpoint only supports POST requests",
-      availableIntents: ['search', 'extract-images', 'analyze-url']
+      availableIntents: ['search', 'analyze-url', 'get-metrics', 'get-seo-insights']
     }),
     {
       status: 405,
