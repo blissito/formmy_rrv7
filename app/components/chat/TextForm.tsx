@@ -30,7 +30,7 @@ export const TextForm = ({
   editingContext?: any;
 }) => {
   return (
-    <article>
+    <article className="flex flex-col gap-4 md:gap-6">
       <Card
         title="Texto"
         text={
@@ -50,8 +50,9 @@ export const TextForm = ({
           name="title"
           value={title}
           onChange={onTitleChange}
+          className="mb-4 md:mb-6"
         />
-        <hr className="my-3 border-none" />
+
         <InputRich
           label="Información"
           value={content}
@@ -84,7 +85,7 @@ export const TextForm = ({
             </Button>
           </div>
       </Card>
-      <hr className="my-3 border-none" />
+
       {textContexts.length > 0 && (
         <Card noSearch title="Fuentes de texto" navClassName="!mb-4">
           <CardHeader

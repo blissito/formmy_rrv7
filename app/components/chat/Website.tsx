@@ -153,7 +153,7 @@ export const Website = ({
           value={formData.url}
           onChange={(value) => handleInputChange("url", value)}
         />
-           <div className="flex gap-1 items-start text-[12px] text-irongray mb-6">
+           <div className="flex gap-1 items-start text-[12px] text-irongray mb-4 md:mb-6">
             <span className="mt-[2px]">
               <IoInformationCircleOutline />
             </span>
@@ -177,6 +177,7 @@ export const Website = ({
             onChange={(value) => handleInputChange("excludeRoutes", value)}
           />
           <Select
+className="min-w-full md:min-w-[220px]"
             label="Actualiza cada"
             value={formData.updateFrequency}
             onChange={(value) => handleInputChange("updateFrequency", value)}

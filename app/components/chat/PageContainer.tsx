@@ -350,11 +350,11 @@ export const ChatCard = ({
 export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
-    <article className="flex gap-0 md:gap-6">
-      <section className="self-start sticky top-4 mr-4 md:mr-0">
+    <article className="flex gap-2 md:gap-6 w-full pb-8 ">
+      <section className="self-start sticky top-4  md:mr-0">
         {nodes[0]}
       </section>
-      <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 grow  ">
         <section className={`grow w-full ${nodes[2] ? "max-w-[732px]" : ""}`}>
           {nodes[1]}
         </section>
