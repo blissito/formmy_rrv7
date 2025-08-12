@@ -368,7 +368,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                 transition={{ delay: 0.3, duration: 0.5 }}
               >
                 {!isSearch
-                  ? "Empieza a recibir mensajes creando tu primer Formmy."
+                  ? "Crea tu primer Formmy y empieza a recibir mensajes."
                   : "No encontramos ningún Formmy con ese nombre. Intenta con otro."}
               </motion.p>
             </motion.div>
