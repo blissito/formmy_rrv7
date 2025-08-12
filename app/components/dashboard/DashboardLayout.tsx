@@ -45,7 +45,7 @@ export function DashboardLayout({
   user,
 }: DashboardLayoutProps) {
   return (
-    <div className={cn("mx-auto w-full overflow-hidden h-full max-h-svh bg-surface flex  flex-col-reverse pr-2 pl-2 box-border overflow-y-scroll", "md:flex-row  md:pr-8 md:pl-0")}>
+    <div className={cn("mx-auto w-full overflow-hidden h-full min-h-svh max-h-svh bg-surface flex  flex-col-reverse pr-2 pl-2 box-border overflow-y-scroll", "md:flex-row  md:pr-8 md:pl-0")}>
       <div className={cn("flex flex-row  justify-center  items-center py-0 pb-2 w-full gap-0 rounded-r-3xl  h-auto ",
                     "md:flex-col md:static md:justify-center  md:py-8 md:w-[120px] md:gap-8 md:h-svh md:min-h-svh md:fixed md:top-0"
       )}>
@@ -95,7 +95,7 @@ export function DashboardLayout({
       </div>
       <div className="flex flex-col grow w-full md:pb-8 pb-0 ml-0 md:ml-[120px]">
         <TopMenu user={user} />
-        <div className="bg-white relative w-full h-full rounded-3xl md:rounded-[40px] min-h-[calc(100svh-144px)] max-h-[calc(100svh-144px)] overflow-y-scroll md:overflow-y-auto max-h-[calc(100vh-156px)] md:max-h-none noscroll">
+        <div className="bg-red-500 relative w-full h-full rounded-3xl md:rounded-[40px] min-h-[calc(100svh-244px)] max-h-[calc(100svh-244px)] overflow-y-scroll md:overflow-y-auto md:max-h-none noscroll">
           {children}
         </div>
       </div>
