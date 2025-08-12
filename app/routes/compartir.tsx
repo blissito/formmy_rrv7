@@ -60,7 +60,7 @@ export default function Compartir({ loaderData }: Route.ComponentProps) {
                 alt="compartir"
                 className="mx-auto mb-8"
               />
-              <CreditsBox />
+              {/* <CreditsBox /> */}
             </div>
             <h2 className="text-3xl text-dark heading text-center mb-2">
               Comparte con tus amigos y{" "}
