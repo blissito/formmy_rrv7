@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { TbCopy, TbCheck } from "react-icons/tb";
+import { Form } from "react-router";
+import { BigCTA } from "~/components/BigCTA";
 import { Button } from "~/components/Button";
 
 function DecorativeStarsBackground() {
@@ -107,7 +109,9 @@ export const AiBanner = () => {
         <h2 className="text-2xl md:text-4xl max-w-2xl mt-4 font-bold">
           Crea una cuenta y prueba Formmy Chat por 30 días
         </h2>
-        <Button className="ml-0">Probar por 30 días</Button>
+        <Form method="post" className="mt-10 mx-auto md:mx-0">
+          <BigCTA type="submit" name="intent" value="google-login" ><p className="!text-base heading">Probar por 30 días</p></BigCTA>
+        </Form>
       </div>
       <div className="absolute -bottom-10 md:bottom-0 right-0 z-10 flex gap-2 md:gap-4 w-auto h-auto">
         <img className="h-[240px] md:h-[400px]" src="/home/figures.svg" />

@@ -145,7 +145,7 @@ export const Faq = () => (
               <>
                 <p>
                   El Chatbot IA de Formmy utiliza modelos avanzados de lenguaje
-                  natural, como GPT-4, Gemini y Mistral para comprender y
+                  natural, como GPT-4, Gemini, Mistral y Ollama en el plan Grow y hasta Claude en el plan Pro para comprender y
                   responder a las preguntas de tus usuarios de manera
                   conversacional y precisa. Siempre buscamos integrar la mejor
                   tecnología disponible para ofrecer respuestas útiles,

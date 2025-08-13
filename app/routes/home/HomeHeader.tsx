@@ -138,18 +138,18 @@ export default function HomeHeader() {
                   className="absolute left-0 top-full mt-2 w-56 bg-clear rounded-xl shadow-lg border border-gray-100 py-2 z-50"
                 >
                   <Link
-                    to="/formularios"
-                    className="flex items-center gap-3 px-4 py-2 text-dark hover:bg-gray-50 transition"
-                  >
-                    <MdOutlineDynamicForm className="text-dark text-xl" />
-                    Formularios
-                  </Link>
-                  <Link
                     to="/chat-ia"
                     className="flex items-center gap-3 px-4 py-2 text-dark hover:bg-gray-50 transition"
                   >
                     <RiRobot3Line className="text-dark text-xl" />
                     Chat IA
+                  </Link>
+                  <Link
+                    to="/formularios"
+                    className="flex items-center gap-3 px-4 py-2 text-dark hover:bg-gray-50 transition"
+                  >
+                    <MdOutlineDynamicForm className="text-dark text-xl" />
+                    Formularios
                   </Link>
                 </motion.div>
               )}

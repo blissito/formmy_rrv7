@@ -128,7 +128,7 @@ export const ChatHero = () => {
       </div>
       <div className="w-full md:w-1/2 flex justify-center items-center pl-0 md:pl-16">
         <div className=" border border-gray-300 rounded-3xl p-4 md:p-8 w-full h-[480px] md:min-h-[550px] flex flex-col justify-end shadow-lg relative overflow-hidden ">
-          <div className="absolute z-10 border-b border-outlines left-0 top-0 w-full h-16 bg-brand-100 flex gap-3 items-center px-6 text-xl font-medium">
+          <div className="absolute z-10 border-b border-outlines left-0 top-0 w-full h-16 bg-dark text-white flex gap-3 items-center px-6 text-xl font-medium">
             <img src="/home/ghosty-avatar.svg" />
             Ghosty
           </div>

@@ -10,7 +10,7 @@ export const ChatIntegrations = () => {
         <h2 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 leading-tight">
         Desbloquea el poder de los agentes IA
         </h2>
-        <p className="paragraph text-gray-600 font-light text-lg md:text-xl xl:text-2xl text-center mb-10 md:mb-16">
+        <p className="paragraph text-metal font-light text-lg md:text-xl xl:text-2xl text-center mb-10 md:mb-16">
           Más simple, más rápido y sin complicaciones técnicas.
         </p>
         <div className="w-full grid grid-cols-12 gap-4 md:gap-12">

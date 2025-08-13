@@ -4,7 +4,7 @@ import { Form } from "react-router";
 import { BigCTA } from "~/components/BigCTA";
 
 const imgCapturaDePantalla20250708ALaS35003PM1 =
-  "http://localhost:3845/assets/61f9c15ca6085ed886c86c9fdea3d733854f886e.png";
+  "/home/demo.png";
 
 export default function HomeCallToAction() {
   return (
@@ -40,11 +40,11 @@ export default function HomeCallToAction() {
         </div>
         <div className="flex-1 flex items-center justify-center mt-12 md:mt-0 relative">
           {/* Mockup móvil */}
-          <div className="w-[320px] h-[400px] md:h-[600px] bg-white rounded-[40px] shadow-2xl border-8 border-dark overflow-hidden flex items-end justify-center relative">
+          <div className="w-[200px] md:w-[320px] h-[400px] md:h-[660px] bg-white rounded-[40px] shadow-2xl border-8 border-dark overflow-hidden flex items-end justify-center relative">
             <img
               src={imgCapturaDePantalla20250708ALaS35003PM1}
               alt="App preview"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           </div>
         </div>
