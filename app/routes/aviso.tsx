@@ -1,15 +1,18 @@
 import Nav from "~/components/NavBar";
 import { Link } from "react-router";
+import HomeHeader from "./home/HomeHeader";
+import HomeFooter from "./home/HomeFooter";
 
 export default function Aviso() {
   return (
-    <div className="bg-clear dark:bg-space-900">
-      <Nav />
+    <section >
+      <HomeHeader/>
       <section className="py-40 lg:max-w-6xl max-w-3xl mx-auto text-gray-600 px-4 md:px-0 ">
         <h2 className="text-dark dark:text-white text-4xl heading">
           Aviso de privacidad
         </h2>
-    
+        <p className="mb-4 text-sm text-gray-500">Última actualización: 13 de Agosto de 2025</p>
+
         <div className="mt-10 ">
         <p>
           FormmyApp, en cumplimiento con lo dispuesto por la Ley Federal de
@@ -37,7 +40,9 @@ export default function Aviso() {
         <ul className="mt-4">
           <li>&bull; Nombre completo</li>
           <li>&bull; Dirección de correo electrónico</li>
-          <li>&bull; Empresa u organización</li>
+          <li>&bull; Historial de conversaciones en el chat</li>
+          <li>&bull; Preferencias de interacción con la IA</li>
+          <li>&bull; Datos de comportamiento en la plataforma</li>
         </ul>
         <h3 className="font-title font-bold text-2xl text-dark mt-6">
           3. Finalidades del tratamiento
@@ -71,6 +76,10 @@ export default function Aviso() {
             &bull; Realización de encuestas de satisfacción y estudios de
             mercado.
           </li>
+  
+          <li>
+            &bull; Análisis de interacciones para mejorar la precisión y relevancia de las respuestas de la IA.
+          </li>
         </ul>
         <p className="mt-4">
           Si no desea que sus datos se utilicen para finalidades secundarias,
@@ -86,7 +95,24 @@ export default function Aviso() {
           su sesión abierta en el navegador.
         </p>
         <h3 className="font-title font-bold text-2xl text-dark mt-6">
-          5. Transferencias de datos
+          5. Procesamiento de Datos por IA
+        </h3>
+        <p className="my-4">
+          Sus interacciones con nuestros asistentes de IA pueden implicar el procesamiento de sus datos personales por parte de modelos de inteligencia artificial de terceros. Estos datos se utilizan únicamente para:
+        </p>
+        <ul className="mt-4">
+          <li>&bull; Generar respuestas a sus consultas</li>
+          <li>&bull; Mejorar la precisión y relevancia de las interacciones</li>
+        </ul>
+        <p className="mt-4">
+          Tomamos medidas para anonimizar los datos siempre que sea posible y no utilizamos su información para entrenar modelos de IA de terceros sin su consentimiento explícito.
+        </p>
+        <p className="mt-4 font-semibold">
+          Importante: No nos hacemos responsables por el uso de datos realizado por los modelos de IA de terceros que usted seleccione para su chatbot. Cada proveedor de IA tiene sus propias políticas de privacidad y términos de servicio que rigen el manejo de datos. Le recomendamos revisar las políticas de privacidad de los modelos de IA que elija utilizar a través de nuestra plataforma.
+        </p>
+
+        <h3 className="font-title font-bold text-2xl text-dark mt-6">
+          6. Transferencias de datos
         </h3>
         <p className="my-4">
           Sus datos personales no serán transferidos a terceros sin su
@@ -95,7 +121,7 @@ export default function Aviso() {
           confidencialidad.
         </p>
         <h3 className="font-title font-bold text-2xl text-dark mt-6">
-          6. Derechos ARCO
+          7. Derechos ARCO
         </h3>
         <p className="my-4">Usted tiene derecho a:</p>
         <ul className="mt-4">
@@ -116,7 +142,22 @@ export default function Aviso() {
           clara de su solicitud.
         </p>
         <h3 className="font-title font-bold text-2xl text-dark mt-6">
-          7. Cambios al Aviso de Privacidad
+          8. Seguridad de los Datos
+        </h3>
+        <p className="my-4">
+          Implementamos medidas de seguridad técnicas, administrativas y físicas para proteger sus datos personales, incluyendo:
+        </p>
+        <ul className="mt-4">
+          <li>&bull; Cifrado de extremo a extremo para las conversaciones</li>
+          <li>&bull; Control de acceso basado en roles</li>
+          <li>&bull; Monitoreo continuo de seguridad</li>
+        </ul>
+        <p className="mt-4">
+          A pesar de estas medidas, ninguna transmisión por Internet o almacenamiento electrónico es 100% segura. Le recomendamos no compartir información sensible a través del chat.
+        </p>
+
+        <h3 className="font-title font-bold text-2xl text-dark mt-6">
+          9. Cambios al Aviso de Privacidad
         </h3>
         <p className="my-4">
           Nos reservamos el derecho de modificar este Aviso de Privacidad en
@@ -124,7 +165,7 @@ export default function Aviso() {
           en la sección correspondiente. Se recomienda revisarlo periódicamente.
         </p>
         <h3 className="font-title font-bold text-2xl text-dark mt-6">
-          8. Contacto
+          10. Contacto
         </h3>
         <p className="my-4">
           Para cualquier duda, comentario o solicitud relacionada con el
@@ -136,7 +177,7 @@ export default function Aviso() {
             href="mailto:hola@formmy.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-brand-500 transition-all underline"
+            className="text-brand-600 transition-all underline"
           >
          hola@formmy.app
           </a>
@@ -147,7 +188,7 @@ export default function Aviso() {
             href="www.formmy.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-brand-500 transition-all underline"
+            className="text-brand-600 transition-all underline"
           >
             https://www.formmy.app
           </a>
@@ -155,6 +196,7 @@ export default function Aviso() {
         <p></p>
       </div>
 </section>
-    </div>
+<HomeFooter/>
+    </section>
   );
 }

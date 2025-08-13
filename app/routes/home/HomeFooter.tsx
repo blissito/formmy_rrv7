@@ -165,7 +165,7 @@ export default function HomeFooter() {
             <GrProductHunt /> ProductHunt
           </span>
           <a
-            href="/aviso-de-privacidad"
+            href="/aviso"
             className="text-xs text-lightGray hover:underline"
           >
             Aviso de Privacidad

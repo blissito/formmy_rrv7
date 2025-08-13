@@ -7,8 +7,8 @@ export default function Terms() {
     <section >
       <HomeHeader/>
       <div className="max-w-3xl mx-auto pb-20 pt-40 md:pt-52 px-4">
-      <h1 className="text-3xl font-bold mb-6">Términos y Condiciones de Servicio de Formmy</h1>
-      <p className="mb-4 text-sm text-gray-500">Última actualización: 25 de julio de 2025</p>
+      <h2 className="text-3xl font-bold mb-6">Términos y Condiciones de Servicio de Formmy</h2>
+      <p className="mb-4 text-sm text-gray-500">Última actualización: 13 de Agosto de 2025</p>
       <p className="mb-4">
         Este Acuerdo regula el acceso y uso de los servicios ofrecidos por Formmy (“Formmy”, “nosotros” o “nuestro”) por parte de sus clientes o usuarios (“Cliente” o “Usuario”), a través del sitio web y plataformas asociadas. Al utilizar cualquier Servicio de Formmy, usted acepta estos Términos y declara contar con capacidad legal conforme a la legislación de los Estados Unidos Mexicanos.
       </p>
@@ -57,25 +57,58 @@ export default function Terms() {
       <h2 className="text-xl font-semibold mt-8 mb-2">8. Integraciones con Terceros</h2>
       <p className="mb-4">El Servicio puede integrarse con herramientas de terceros (como WhatsApp, CRMs, servicios de correo, etc.). El uso de estos servicios se rige por los términos y condiciones de dichos proveedores. Formmy no se responsabiliza del funcionamiento, disponibilidad ni seguridad de servicios ajenos.</p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-2">9. Pagos y Facturación</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-2">9. Uso de Inteligencia Artificial</h2>
+      <p className="mb-2 font-semibold">a) Modelos de IA</p>
+      <p className="mb-4">El Servicio utiliza modelos de inteligencia artificial de terceros (incluyendo pero no limitado a GPT-4, Gemini, Claude, Kim y Mistral) para generar respuestas. La precisión y calidad de las respuestas pueden variar y no están garantizadas.</p>
+      
+      <p className="mb-2 font-semibold">b) Limitaciones de la IA</p>
+      <ul className="list-disc pl-6 mb-4">
+        <li>Las respuestas generadas por la IA son automáticas y podrían contener inexactitudes o sesgos.</li>
+        <li>No se debe confiar en la IA para asesoramiento legal, médico, financiero o profesional.</li>
+        <li>El Cliente es responsable de revisar y validar la precisión de las respuestas generadas.</li>
+      </ul>
+
+      <p className="mb-2 font-semibold">c) Uso Apropiado</p>
+      <p className="mb-4">Queda estrictamente prohibido utilizar el servicio para:</p>
+      <ul className="list-disc pl-6 mb-4">
+        <li>Generar contenido ilegal, difamatorio, discriminatorio o dañino.</li>
+        <li>Suplantar identidades o engañar a los usuarios sobre la naturaleza de la interacción.</li>
+        <li>Realizar actividades que violen derechos de propiedad intelectual.</li>
+        <li>Recopilar datos personales sin el consentimiento adecuado.</li>
+      </ul>
+
+      <p className="mb-2 font-semibold">d) Privacidad y Datos</p>
+      <ul className="list-disc pl-6 mb-4">
+        <li>Las conversaciones pueden ser procesadas para mejorar la calidad del servicio.</li>
+        <li>Se pueden implementar medidas para monitorear y prevenir usos inapropiados.</li>
+        <li>Los datos sensibles no deben ser compartidos a través del chat.</li>
+      </ul>
+
+      <p className="mb-2 font-semibold">e) Modificaciones del Servicio</p>
+      <p className="mb-4">Nos reservamos el derecho de modificar o actualizar los modelos de IA en cualquier momento, lo que podría afectar el comportamiento de los chatbots existentes. Se notificarán los cambios significativos con antelación cuando sea posible.</p>
+
+      <p className="mb-2 font-semibold">f) Limitación de Responsabilidad</p>
+      <p className="mb-4">En la máxima medida permitida por la ley, Formmy no será responsable por daños directos, indirectos, incidentales o consecuentes resultantes del uso o la imposibilidad de usar el servicio de IA, incluyendo pero no limitado a pérdida de datos, ingresos o beneficios.</p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-2">10. Pagos y Facturación</h2>
       <p className="mb-4">El Cliente se obliga a pagar los montos correspondientes según el plan contratado, mediante los métodos habilitados. Los pagos no son reembolsables, salvo lo dispuesto por la legislación mexicana. La falta de pago podrá dar lugar a la suspensión o terminación del acceso al Servicio.</p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-2">10. Protección de Datos y Privacidad</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-2">11. Protección de Datos y Privacidad</h2>
       <p className="mb-4">Formmy cumple con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares y demás normatividad aplicable en México. El Cliente es responsable de garantizar que cuenta con el consentimiento de sus usuarios finales para el tratamiento de datos personales mediante el Servicio. El tratamiento de datos por parte de Formmy se detalla en el Aviso de Privacidad disponible en nuestro sitio web.</p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-2">11. Confidencialidad</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-2">12. Confidencialidad</h2>
       <p className="mb-4">Ambas partes se comprometen a mantener la confidencialidad de la información no pública a la que tengan acceso con motivo del presente Acuerdo. Esta obligación subsistirá incluso después de la terminación de la relación comercial, salvo disposición legal en contrario.</p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-2">12. Garantías y Limitación de Responsabilidad</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-2">13. Garantías y Limitación de Responsabilidad</h2>
       <p className="mb-4">El Servicio se proporciona “tal cual” y sin garantías de disponibilidad, continuidad ni resultados específicos. Formmy no será responsable por daños indirectos, punitivos, especiales o consecuenciales derivados del uso del Servicio, salvo lo expresamente previsto por la ley mexicana.</p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-2">13. Modificaciones</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-2">14. Modificaciones</h2>
       <p className="mb-4">Formmy se reserva el derecho de modificar estos Términos en cualquier momento. Los cambios serán notificados por correo electrónico o mediante el sitio web, y entrarán en vigor 30 días después de su publicación. El uso continuo del Servicio implicará su aceptación.</p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-2">14. Terminación</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-2">15. Terminación</h2>
       <p className="mb-4">El Cliente podrá cancelar su cuenta en cualquier momento desde el panel de control. Formmy podrá suspender o terminar el acceso al Servicio por incumplimiento de estos Términos. Las cláusulas relativas a propiedad intelectual, confidencialidad, datos personales y limitación de responsabilidad continuarán vigentes tras la terminación.</p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-2">15. Ley Aplicable y Jurisdicción</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-2">16. Ley Aplicable y Jurisdicción</h2>
       <p className="mb-4">Este Acuerdo se regirá por las leyes de los Estados Unidos Mexicanos. Para cualquier controversia derivada del mismo, las partes se someten a la jurisdicción exclusiva de los tribunales competentes de la Ciudad de México, renunciando expresamente a cualquier otro fuero.</p>
    </div>
    <HomeFooter/>
