@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1270.77 801.49" id="developer-working-on-laptop">
+  <g id="Layer_2">
+    <g id="outline_II">
+      <g id="developer">
+        <path id="chair" d="M109.36 798V452.1a139 139 0 0 1 139-139h185.28" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+        <g id="body">
+          <path id="hoodie" d="M503.15 291c-104.49 19-113 65.58-90.42 110.37-32.12 16.1-84.43 48.95-136.48 110.07" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+          <path id="hoodie-2" d="M859.12 519.63c-30.29-46.91-72-95.07-129.22-140.23h0c.16-27.94-5.59-64.1-46.39-84.08" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+          <path id="hoodie-3" d="M260.33 794.11a70.14 70.14 0 0 0 22.8 4.38" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+          <path id="hoodie-4" d="M201.17 634.07a176.21 176.21 0 0 0-9.38 48.78" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+          <path id="t-shirt" d="M658.41 676.14c-7-62.07-12-137.78 0-172.67 22.12-64.41 6.92-129.52-8-141.23-7.5-7.5 4 31-52 92-60-70-119.25-104.29-119.25-104.29l-21.59 22.2s102.78 78.17 136.22 266.53q2.44 13.79 4.42 25.75" style="fill:#111"></path>
+          <path id="neck" d="m503.85 292.94-2.05 35.41-20.39 23.42h0s60.29 37.27 118 103c0 0 31.07-32.8 47.22-86.87" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+          <g id="hand">
+            <path id="hand-2" d="M598.48 665c18.2 3.33 41.31 7.77 60.06 12.08" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+            <path id="hand-3" d="M658.54 677c16.34 3.76 29.37 7.4 33 10.12 11.72 8.85 60.36 56.5 62.14 64.27s-12.48 12.09-24.25.12l-34.69-33.08s35.34 40.22 38.07 46.37-11.06 17-31.48-8.86-23.67-26.1-23.67-26.1 23.35 32.54 26.45 39.91-16.6 14.35-34.65-19.75l-75.66-3.32" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+            <path id="sleeve" d="M378.6 798s173.06-11.74 192.46-16.72 12.21-19.17 26.26-24.58 18.55-9.75 18.55-9.75c-18.22-29.06 0-77.2 0-77.2s-4.77-1.3-19.52-4.34-10-18.22-29.93-20-191.28 17.78-191.28 17.78" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+            <path id="line" d="M386.86 611.58s32.49 3.17 40.75 45.83" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+            <path id="welt" d="M599.7 758.67c15.21-5.72 20.07-10.32 20.07-10.32-19.71-30.77 0-81.74 0-81.74s-5.16-1.38-21.12-4.6c-6.42-1.29-9.78-4.57-12.48-8.27-32.68 37.07-12.71 102.09-4 125.69 7.68-6.73 6-16.43 17.53-20.76Z" style="fill:#111"></path>
+          </g>
+          <path id="shadow" d="m729.9 379.4-3-2c0 9.35-.76 17.78-1 24.38-2 46.14-21.33 72.63-30.15 91 29.47-18.2 56.48-57.36 69.81-83.19q-16.77-15.24-35.66-30.19Z" style="fill:#111"></path>
+          <path id="shadow_II" d="M513.29 502.93c-15.85-7.29-74.58-56.51-98.9-104.69-15.83 7.94-38.2 23.07-61.38 40.51 17.13 9.82 115.45 65.06 160.58 64.7Z" style="fill:#111"></path>
+          <path id="string_II" d="M524.78 488.83s33.18 69.06 37.74 116" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:8px"></path>
+          <path id="string" d="M678.6 491.85s-15.26 66.08-10.25 112.94" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:8px"></path>
+        </g>
+        <g id="code_lines">
+          <rect width="16.67" height="22.84" x="983.71" y="314.73" rx="5" style="fill:#6d6d6d"></rect>
+          <rect width="114.64" height="22.84" x="862.66" y="314.73" rx="5" style="fill:#111"></rect>
+          <rect width="125.02" height="22.84" x="862.66" y="420.81" rx="5" style="fill:#111"></rect>
+          <rect width="193.9" height="22.84" x="894.27" y="385.5" rx="5" style="fill:#6d6d6d"></rect>
+          <rect width="104.73" height="22.84" x="1099.02" y="385.5" rx="5" style="fill:#6d6d6d"></rect>
+          <rect width="16.67" height="22.84" x="1222.52" y="350.18" rx="5" style="fill:#111"></rect>
+          <rect width="200.5" height="22.84" x="862.66" y="350.11" rx="5" style="fill:#111"></rect>
+          <rect width="114.64" height="22.84" x="1007.73" y="314.73" rx="5" style="fill:#111"></rect>
+          <rect width="141.43" height="22.98" x="1072.13" y="350.04" rx="5" style="fill:#6d6d6d"></rect>
+        </g>
+        <path d="M1119.8 519.36H731a11 11 0 0 0-10.71 8.47l-54 228.81h-141S517.48 797 563 797h496.38a11 11 0 0 0 10.71-8.47l60.38-255.62a11 11 0 0 0-10.67-13.55ZM916.23 628.88s-14.26 5.72-19-11.12c-.02 0 17.85-4.34 19 11.12Zm14.27 64.35c-11.3 12-29.89 15.61-41.52 8s-11.91-23.57-.61-35.61a38.64 38.64 0 0 1 18.93-11 11.15 11.15 0 0 1-1.53-5.68c0-6.69 5-13.05 11.18-14.18h.34c1.6-4.9 4.89-14.14 8.06-17.88a3 3 0 1 1 4.58 3.88c-2.19 2.58-4.94 9.9-6.64 15a10.14 10.14 0 0 1 5 9.12 14.9 14.9 0 0 1-4.12 10.11 23.89 23.89 0 0 1 5.74 2.68c11.61 7.58 11.88 23.53.59 35.56Z" style="fill:#111"></path>
+        <g id="hot_coffie">
+          <circle id="handle" cx="164.16" cy="716.14" r="26.5" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></circle>
+          <path id="mug" d="M171.05 680.17V766a30 30 0 0 0 30 30h50.6a30 30 0 0 0 30-30v-85.8ZM215.79 743a2.06 2.06 0 0 1 1 1.76 2 2 0 0 1-2 2 2.13 2.13 0 0 1-1-.25l-20-12a2 2 0 0 1 0-3.62l20-12a2.13 2.13 0 0 1 1-.25 2 2 0 0 1 2 2 2.06 2.06 0 0 1-1 1.76l-17.21 10.31Zm25-29.58-16.1 40.25a2.11 2.11 0 0 1-1.83 1.16 2 2 0 0 1-2-2 2.06 2.06 0 0 1 .14-.83l16.1-40.25a2.23 2.23 0 0 1 .43-.58 1.92 1.92 0 0 1 1.4-.58 2 2 0 0 1 2 2 2.06 2.06 0 0 1-.14.82ZM268 734.49l-20 12a2.13 2.13 0 0 1-1 .25 2 2 0 0 1-2-2 2.06 2.06 0 0 1 1-1.76l17.21-10.31-17.21-10.3a2.06 2.06 0 0 1-1-1.76 2 2 0 0 1 2-2 2.13 2.13 0 0 1 1 .25l20 12a2 2 0 0 1 0 3.62Z" style="fill:#111"></path>
+          <path id="steam" d="M227 649.66c2.79 30.24-51.61-40-44-80.62s36.78-39 49-61.87c7.37-13.75 6.81-22.78 5.19-27.79a1.88 1.88 0 0 1 2.68-2.25c14.26 7.76 51.72 33.19 39.29 81.27-20.46 71.48-57.86 29.78-52.16 91.26Z" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+        </g>
+        <g id="head">
+          <path id="ear" d="M489.93 209.29s-38.43.74-31.55 35.14c4.55 22.77 24.69 21.75 37.8 18.46" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+          <path id="face" d="M537.64 276.88s41.91-14.42 101.94-15.3c0 0 32.74.68 45.79 4.63 0 0-.17 3.61-.8 9.51 4.57-32.94 7.63-79.21 2-122.17-7.59-57.9-77-53.54-87.14-52.7C490.61 109.89 498 217.31 498 217.31v.22l12.18-1c6.39 6.41 23.32 43.2 27.46 60.35Z" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+          <path id="beard" d="M510.26 216.56c6.31 6.38 23.24 43.17 27.38 60.32 0 0 41.91-14.42 101.94-15.3 0 0 32.74.68 45.79 4.63 0 0-2.83 60.74-29.37 92.18s-82.66 22.61-109 3.74-30.65-27.93-36.74-48.13-22.19-95.65-22.19-95.65Z" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+          <path id="hair" d="M488.39 227.24s-13.16-25.65-20.13-54.7c-6.55-27.31 6.15-55.93 31.43-68.17 21.16-10.24 36.85-2.21 36.85-2.21s-22.46-38.23 11.23-72a61.39 61.39 0 0 1 45.09-18c41.14 1.21 53.85 36 53.85 36s44-80.91 134.34-33c9.11 4.83 19.37 18.3 24.28 27.37 29.83 55-68.46 120-119.63 125.2-56.18 5.65-89.08-3.66-107.17-17.4 13.47 8.07-6.53 89.85-90.14 76.91Z" style="fill:#111"></path>
+          <path id="mouth" d="M602.54 303.63s2.56 16 17.31 13.44" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:8px"></path>
+          <path id="nose" d="m643.84 238.2 6.08 52.92-18.66-4.77" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:8px"></path>
+          <ellipse id="eye_II" cx="664.37" cy="239.12" rx="5.42" ry="8.39" style="fill:#111"></ellipse>
+          <ellipse id="eye" cx="612.18" cy="238.2" rx="5.42" ry="8.39" style="fill:#111"></ellipse>
+          <path id="brow_II" d="M587.67 199.4a24.86 24.86 0 0 1 23.53-9.26" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:8px"></path>
+          <path id="brow" d="M661 189.27s15-3.91 18.79 8.38" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:8px"></path>
+        </g>
+        <path id="line-2" d="M3 798.49h1264.77" style="fill:none;stroke:#111;stroke-linecap:round;stroke-linejoin:round;stroke-width:6px"></path>
+      </g>
+    </g>
+  </g>
+</svg>

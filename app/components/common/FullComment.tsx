@@ -3,6 +3,7 @@ import { cn } from "~/lib/utils";
 
 export const FullComment = ({
     className,
+    ImageClassName,
     image,
     comment,
     client,
@@ -10,8 +11,9 @@ export const FullComment = ({
     logo,
   }: {
     className: string;
+    ImageClassName?: string;
     image: string;
-    comment: string;
+    comment: React.ReactNode;
     client: string;
     clientCompany: string;
     logo?: string;
@@ -19,12 +21,12 @@ export const FullComment = ({
     return (
       <div
         className={cn(
-          "rounded-[40px] overflow-hidden flex flex-wrap md:flex-nowrap p-6 md:p-12 bg-[#B2E7CA] flex gap-10 my-20 md:my-40",
+          "rounded-[40px] overflow-hidden flex flex-wrap md:flex-nowrap p-6 md:p-12 bg-[#76D3CB] flex gap-10 my-20 md:my-40",
           className
         )}
       >
         <img
-          className="w-full md:w-[46%] rounded-3xl md:rounded-[40px] "
+          className={cn("w-full md:w-[46%]  object-cover rounded-3xl md:rounded-[40px] ", ImageClassName)}
           src={
             image
               ? image

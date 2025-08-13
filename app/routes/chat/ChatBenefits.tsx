@@ -68,58 +68,19 @@ export const ChatBenefits = () => {
             <div className="flex items-center justify-center gap-4 mt-[78px] relative z-20">
               <div className="rounded-xl bg-white shadow p-3 flex items-center justify-center w-14 h-14">
                 {/* AI Placeholder */}
-                <span className="font-bold text-2xl">AI</span>
+                <img className="w-10 h-10" src="/home/tropic.svg" alt="llama" />
               </div>
               <div className="rounded-xl bg-white shadow p-3 flex items-center justify-center w-14 h-14">
                 {/* Google Icon */}
-                <svg width="32" height="32" viewBox="0 0 48 48">
-                  <g>
-                    <path
-                      fill="#4285F4"
-                      d="M43.611 20.083H42V20H24v8h11.303C34.89 32.062 30.153 35 24 35c-6.627 0-12-5.373-12-12s5.373-12 12-12c2.93 0 5.607 1.044 7.712 2.758l6.465-6.465C34.583 5.099 29.627 3 24 3c-7.732 0-14.41 4.41-17.694 10.691z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M6.306 14.691l6.571 4.819C14.655 16.072 19.001 13 24 13c2.93 0 5.607 1.044 7.712 2.758l6.465-6.465C34.583 5.099 29.627 3 24 3c-7.732 0-14.41 4.41-17.694 10.691z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M24 43c5.997 0 10.97-1.977 14.627-5.377l-6.752-5.522C30.153 35 25.89 37 24 37c-6.13 0-11.303-3.938-13.303-9.083l-6.57 5.081C7.59 39.59 15.268 43 24 43z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M43.611 20.083H42V20H24v8h11.303c-1.13 3.062-4.303 7-11.303 7-6.13 0-11.303-3.938-13.303-9.083l-6.57 5.081C7.59 39.59 15.268 43 24 43c7.617 0 15.824-5.969 15.824-19.824 0-1.326-.138-2.34-.213-3.093z"
-                    />
-                  </g>
-                </svg>
+                <img className="w-10 h-10" src="/home/gemini.svg" alt="llama" />
               </div>
               <div className="rounded-xl bg-white shadow p-3 flex items-center justify-center w-14 h-14">
                 {/* OpenAI Icon */}
-                <svg width="32" height="32" viewBox="0 0 40 40">
-                  <g>
-                    <circle
-                      cx="20"
-                      cy="20"
-                      r="18"
-                      stroke="#000"
-                      strokeWidth="2"
-                      fill="none"
-                    />
-                    <path d="M20 10v20M10 20h20" stroke="#000" strokeWidth="2" />
-                  </g>
-                </svg>
+                <img className="w-10 h-10" src="/home/chatgpt.svg" alt="llama" />
               </div>
               <div className="rounded-xl bg-white shadow p-3 flex items-center justify-center w-14 h-14">
                 {/* Figma Icon */}
-                <svg width="32" height="32" viewBox="0 0 32 32">
-                  <g>
-                    <circle cx="16" cy="8" r="5" fill="#0ACF83" />
-                    <circle cx="16" cy="16" r="5" fill="#A259FF" />
-                    <circle cx="16" cy="24" r="5" fill="#F24E1E" />
-                    <circle cx="24" cy="16" r="5" fill="#FF7262" />
-                    <circle cx="8" cy="16" r="5" fill="#1ABCFE" />
-                  </g>
-                </svg>
+                <img className="w-10 h-10" src="/home/llama.svg" alt="llama" />
               </div>
             </div>
             <div>

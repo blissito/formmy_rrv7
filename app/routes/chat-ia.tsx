@@ -6,9 +6,11 @@ import HomeFooter from "./home/HomeFooter";
 import { AiBanner } from "./home/FullBanner";
 import { ChatHero } from "./chat/ChatHero";
 import { ChatBenefits } from "./chat/ChatBenefits";
-import { ChatTypes } from "./chat/ChatTypes";
 import { FullComment } from "~/components/common/FullComment";
 import { ChatIntegrations } from "./chat/ChatIntegrations";
+import { IAModels } from "./chat/IAModels";
+import { AIMotivation } from "./chat/AIMotivation";
+import ChatTypes from "./chat/ChatTypes";
 
 const stepsWithImages = [
   {
@@ -45,20 +47,24 @@ export default function ChatIA() {
       <ChatHero />
       <CompaniesScroll />
       <ChatBenefits />
-      <section className="max-w-7xl w-full mx-auto   px-4 md:px-[5%] xl:px-0">
+      <AIMotivation />
+      <section className="max-w-7xl w-full mx-auto px-4 md:px-[5%] xl:px-0">
         <AiBanner />
       </section>
       <ChatTypes />
       <ChatIntegrations />
+      <IAModels/>
       <section className="grid-cols-2 max-w-7xl mx-auto px-4 ">
         <FullComment
+        ImageClassName="h-[400px]"
           className=""
-          image=""
+          image="https://i.imgur.com/RAiyJBc.jpg"
           client="Rosalba Flores"
-          comment="Implementé Formmy en mi plataforma de encuestas y es increíble cómo resuelve las dudas de los usuarios. El chatbot explica perfectamente cómo repsonder encuestas y hasta ayuda con el análisis de resultados. Antes me escribían constantemente preguntas repetitivas, ahora el 80% de las consultas se resuelven automáticamente. ¡Los usuarios están más satisfechos y yo tengo más tiempo para mejorar la plataforma!"
-          clientCompany="Collectum"
+          comment="Como agencia de investigación, el chat de Formmy ha cambiado la interacción con los panelistas. Antes, nuestro tiempo se destinaba a resolver dudas sobre cómo completar encuestas. Ahora, hemos reducido ese tiempo en un 70%. Nuestros panelistas están más satisfechos y las tasas de finalización de encuestas han aumentado significativamente."
+          clientCompany="Collectum Datos"
         />
       </section>
+
       <section
         id="steper"
         className="w-full md:min-h-fit max-w-7xl mx-auto my-20 md:my-40 px-4 md:px-[5%] xl:px-0 min-h-[800px]"
@@ -83,3 +89,5 @@ export default function ChatIA() {
     </section>
   );
 }
+
+

@@ -6,6 +6,7 @@ import { WitoutFormmy } from "~/components/home/WithoutFormmy";
 import { FullBanner } from "./home/FullBanner";
 import { Registration, Suscription } from "~/components/home/FormmysTypes";
 import { Steper } from "~/components/Steper";
+import { FullComment } from "~/components/common/FullComment";
 
 function CardDemoIA({
   gradient,
@@ -134,8 +135,19 @@ export default function Formularios() {
         </div>
       </section>
       <WitoutFormmy />
-      <section className="max-w-7xl mx-auto my-20 md:my-40 grid grid-cols-4 gap-8 px-4 md:px-[5%] xl:px-0">
-        <FullBanner />
+        <section className="grid-cols-2 max-w-7xl mx-auto px-4 ">
+             <FullComment
+               className="bg-[#FBE05D]"
+               image="https://i.imgur.com/FwjZ8X2.jpg"
+               client="Mariana López"
+               comment={<div className="flex flex-col gap-2">
+               <p>Como desarrolladora, he implementado Formmy en varios sitios de clientes y la experiencia siempre ha sido excelente. La configuración es rápida, la integración es limpia y no requiere ningún grado de complejidad, lo cual es ideal para proyectos donde se busca eficiencia sin sacrificar funcionalidad.
+               </p>
+               <p>Mis clientes han quedado encantados con la facilidad de uso y la fiabilidad del servicio. Además, el diseño del dashboard es intuitivo y profesional.</p>
+              <p>Formmy destaca por su simplicidad bien pensada. Lo recomiendo totalmente para quienes buscan una solución sólida y rápida para formularios.</p>
+               </div>}
+               clientCompany="Pithaya Agency"
+             />
       </section>
       <section
         id="steper"
