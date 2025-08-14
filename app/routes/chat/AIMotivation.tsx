@@ -13,7 +13,7 @@ export const AIMotivation = ({ className }: AIMotivationProps) => {
   
   return (
     <section className={cn("w-full my-20 md:my-40 bg-white", className)}>
-        <p className="text-xl text-center uppercase text-metal"> Fácil y rápido</p>
+        <p className="text-sm mb-4 md:text-xl text-center uppercase text-metal"> Fácil y rápido</p>
       <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-2 items-center">
         {/* First part - before Dev */}
         {words.map((word, index) => (
@@ -65,7 +65,7 @@ export const AIMotivation = ({ className }: AIMotivationProps) => {
 
 const Dev = () => {
   return (
-    <div className="w-[100px] h-16 md:w-[148px] md:h-[100px] bg-brand-500 rounded-2xl px-3 flex items-end overflow-hidden">
+    <div className="w-[100px] h-10 md:w-[148px] md:h-[100px] bg-brand-500 rounded-2xl px-3 flex items-end overflow-hidden">
    <img className="scale-[1.5]" src="/home/dev.svg" alt="ghosty" />
     </div>
   );
@@ -73,7 +73,7 @@ const Dev = () => {
 
 const Asistente = () => {
     return (
-      <div className="w-16 h-16 md:w-[100px] md:h-[100px] bg-bird rounded-full overflow-hidden">
+      <div className="w-16 h-10 md:w-[100px] md:h-[100px] bg-bird rounded-full overflow-hidden">
             <img className="w-[90%] mx-auto mt-4" src="/home/ghosty-outline.svg" alt="ghosty" />
       </div>
     );
@@ -81,7 +81,7 @@ const Asistente = () => {
 
   const Easy = () => {
     return (
-      <div className="w-[100px] h-16 md:w-[148px] md:h-[100px] bg-cloud rounded-full flex items-end pb-2 overflow-hidden">
+      <div className="w-[100px] h-10 md:w-[148px] md:h-[100px] bg-cloud rounded-full flex items-end pb-2 overflow-hidden">
         <img className="scale-[1.9]" src="/home/girl.svg" alt="ghosty" />
       </div>
     );

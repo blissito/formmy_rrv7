@@ -457,8 +457,8 @@ export const ProjectCard = ({
           </div>
           <div id="actions" className="hidden md:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all items-center justify-end px-3">
             <button 
-              className="hover:bg-gray-300 w-6 rounded-full flex items-center justify-center"
-              onClick={(e) => {
+                className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
+                onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 // Add delete handler here
@@ -469,16 +469,16 @@ export const ProjectCard = ({
             <hr className="h-6 w-[1px] border-none bg-outlines" />
             <Link 
               to={`/dashboard/formmys/${project.id}/code`}
-              className="hover:bg-gray-300 w-6 h-6 rounded-full flex items-center justify-center"
+              className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
               onClick={(e) => e.stopPropagation()}
             >
               <CodeIcon />
             </Link>
             <a 
-              href={`/chat/embed?slug=${project.slug}`}
+              href={`/preview/${project.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:bg-gray-300 w-6 h-6 rounded-full flex items-center justify-center"
+              className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
               onClick={(e) => e.stopPropagation()}
             >
               <OpenTabIcon />

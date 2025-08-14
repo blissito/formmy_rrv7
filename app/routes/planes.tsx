@@ -1,5 +1,6 @@
 import HomeHeader from "./home/HomeHeader";
 import { PricingCards } from "~/components/PricingCards";
+import { PricingComparisonTable } from "~/components/PricingComparisonTable";
 import { Faq } from "~/components/home/Faq";
 import HomeFooter from "./home/HomeFooter";
 import { GeneralCallToAction } from "./home/HomeCallToAction";
@@ -18,10 +19,12 @@ export default function Planes() {
           necesites.
         </p>
         <PricingCards />
+      
       </section>
       <section className="max-w-7xl w-full mx-auto  my-20 md:my-40 px-4 md:px-[5%] xl:px-0">
         <DemoBanner />
       </section>
+      <PricingComparisonTable />
       <Faq />
       <GeneralCallToAction />
       <HomeFooter />

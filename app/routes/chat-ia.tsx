@@ -78,7 +78,7 @@ export default function ChatIA() {
             <img
               src={stepsWithImages[selectedStep].image}
               alt={stepsWithImages[selectedStep].title}
-              className=" max-h-fit md:max-h-[400px] max-w-full object-contain rounded-2xl shadow-lg"
+              className=" max-h-fit md:max-h-[400px] max-w-full object-contain rounded-2xl shadow-lg"           
             />
           )}
           autoAdvanceMs={10000}

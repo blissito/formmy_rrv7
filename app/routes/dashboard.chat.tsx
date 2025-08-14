@@ -11,6 +11,7 @@ import { effect } from "../utils/effect";
 import { db } from "~/utils/db.server";
 import { getChatbotAccessInfo } from "server/chatbot/chatbotAccess.server";
 import { ChatbotCreateButton } from "~/components/chat/ChatbotCreateButton";
+import { Button } from "~/components/Button";
 
 const findActiveChatbotPermissions = async (email: string): Promise<Permission[]> => {
   const permissions = await db.permission.findMany({
@@ -219,25 +220,26 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
         <ConfirmModal
           isOpen={!!shouldDelete}
           onClose={() => setShouldDelete("")}
-          title="Esta acción no se puede revertir"
-          message={`¿Estas segur@ de borrar?`}
-          emojis="⛔️🤖"
+          title="¿Estás segur@ de eliminar este chatbot?"
+          message={`Si lo eliminas, toda la información y todas las conversaciones serán eliminadas de forma permanente.`}
+          emojis="✋🏻⛔️🤖"
           footer={
-            <div className="flex gap-6 mb-6">
+            <div className="flex justify-center gap-4 md:gap-6 ">
               <button
                 onClick={handleDelete}
-                className="bg-gray-100 text-gray-600 mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6"
+                className="bg-danger text-white block  cursor-pointer rounded-full py-3 px-6"
               >
-                Sí, quiero destruirlo
+                Sí, quiero eliminarlo
               </button>
-              <button
+              <Button
                 onClick={() => {
                   setShouldDelete("");
                 }}
-                className="bg-brand-500 text-white mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6"
+                variant="secondary"
+                className="ml-0"
               >
                 Cancelar
-              </button>
+              </Button>
             </div>
           }
         />

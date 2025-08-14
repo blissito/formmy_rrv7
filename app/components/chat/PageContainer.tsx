@@ -329,7 +329,7 @@ export const ChatCard = ({
               className=" hidden md:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute z-20 -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all  items-center justify-end px-3"
             >
               <button
-                className="hover:bg-gray-300 w-6 rounded-full"
+                className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -343,7 +343,7 @@ export const ChatCard = ({
                 href={`/chat/embed?slug=${chatbot.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:bg-gray-300 w-6 h-6 rounded-full flex items-center justify-center"
+                className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
                 onClick={(e) => e.stopPropagation()}
               >
                 <OpenTabIcon />
@@ -351,7 +351,7 @@ export const ChatCard = ({
               <Link 
                 to={`/dashboard/chat/${chatbot.slug}`}
                 onClick={(e) => e.stopPropagation()}
-                className="hover:bg-gray-300 w-6 rounded-full flex items-center justify-center"
+                className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
               >
                 <EditIcon />
               </Link>

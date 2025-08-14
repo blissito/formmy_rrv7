@@ -49,14 +49,7 @@ export default function HomeHeader() {
                 <div className="text-dark text-lg font-medium mb-1 pl-2">
                   Productos
                 </div>
-                <Link
-                  to="/formularios"
-                  className="flex items-center gap-2 px-2 py-3 pl-4 text-gray-800 hover:bg-gray-50 rounded-2xl text-lg font-medium"
-                  onClick={() => setMobileMenu(false)}
-                >
-                  <MdOutlineDynamicForm className="text-dark text-lg" />
-                  Formularios
-                </Link>
+          
                 <Link
                   to="/chat-ia"
                   className="flex items-center gap-2 px-2 py-3 pl-4 text-gray-800 hover:bg-gray-50 rounded-2xl text-lg font-medium"
@@ -64,6 +57,14 @@ export default function HomeHeader() {
                 >
                   <RiRobot3Line className="text-dark text-lg" />
                   Chat IA
+                </Link>
+                <Link
+                  to="/formularios"
+                  className="flex items-center gap-2 px-2 py-3 pl-4 text-gray-800 hover:bg-gray-50 rounded-2xl text-lg font-medium"
+                  onClick={() => setMobileMenu(false)}
+                >
+                  <MdOutlineDynamicForm className="text-dark text-lg" />
+                  Formularios
                 </Link>
                 <a
                   className="flex items-center justify-between px-2 py-3 text-gray-800 hover:bg-gray-50 rounded-2xl text-lg font-medium"
