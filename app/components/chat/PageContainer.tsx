@@ -326,17 +326,33 @@ export const ChatCard = ({
           {!isInvited && (
             <div
               id="actions"
-              className=" hidden md:flex w-[120px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all  items-center justify-end px-3"
+              className=" hidden md:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute z-20 -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all  items-center justify-end px-3"
             >
               <button
                 className="hover:bg-gray-300 w-6 rounded-full"
-                onClick={onDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onDelete?.();
+                }}
               >
-                <DeleteIcon />
+                 <DeleteIcon className="w-5 h-5" />
               </button>
               <hr className="h-6 w-[1px] border-none bg-outlines" />
-              <CodeIcon />
-              <Link to={`/dashboard/chat/${chatbot.slug}`}>
+              <a 
+                href={`/chat/embed?slug=${chatbot.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:bg-gray-300 w-6 h-6 rounded-full flex items-center justify-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <OpenTabIcon />
+              </a>
+              <Link 
+                to={`/dashboard/chat/${chatbot.slug}`}
+                onClick={(e) => e.stopPropagation()}
+                className="hover:bg-gray-300 w-6 rounded-full flex items-center justify-center"
+              >
                 <EditIcon />
               </Link>
             </div>
