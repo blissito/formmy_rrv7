@@ -11,6 +11,7 @@ export const BigCTA = ({
   children,
   value,
   type,
+  name,
   ...props
 }: {
   isLoading?: boolean;
@@ -21,6 +22,7 @@ export const BigCTA = ({
   containerClassName?: string;
   children?: ReactNode;
   value?: string;
+  name?: string;
 }) => {
   return (
     <GradientButton

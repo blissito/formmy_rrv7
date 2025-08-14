@@ -8,7 +8,7 @@ export const AIMotivation = ({ className }: AIMotivationProps) => {
   const words = "No necesitas ser programador".split(' ');
   const wordsAfterDev = "para tener un asistente virtual.".split(' ');
   const beforeEasy = "Configurarlo".split(' ');
-  const afterEasy = "es tan fácil con un par de clics, y una vez activo".split(' ');
+  const afterEasy = "es muy fácil con un par de clics, y una vez activo".split(' ');
   const wordsAfterAsistente = "no se detiene nunca.".split(' ');
   
   return (

@@ -161,7 +161,7 @@ export const ChatBenefits = () => {
             </h2>
             <img
               className=" h-auto md:h-[148px] w-full object-contain bg-top"
-              src="/home/data.png"
+              src="/home/data.webp"
               alt="empresas ia"
             />
           </BentoCard>

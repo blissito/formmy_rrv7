@@ -41,27 +41,27 @@ export default function Formularios() {
     {
       title: "Crea un proyecto",
       desc: "Ve a tu Dashboard y da clic en la pestaña de «Formmys».",
-      image: "/home/form-steper-1.png",
+      image: "/home/form-steper-1.webp",
     },
     {
       title: "Selecciona el tipo de Formmy",
       desc: " Da clic en «+ Formmy», bautiza tu primer Formmy y elige el tipo de Formmy que necesitas: formulario de contacto y de suscripción.",
-      image: "/home/form-steper-2.png",
+      image: "/home/form-steper-2.webp",
     },
     {
       title: "Personaliza tus campos, colores y estilos",
       desc: "Activa o agrega los campos para tu Formmy, personaliza el tema, el color principal y el estilo de tus inputs.",
-      image: "/home/form-steper-3.png",
+      image: "/home/form-steper-3.webp",
     },
     {
       title: "Escribe el mensaje final",
       desc: "Ponle tu estilo al mensaje que verán tus usuarios al completar el formulario.",
-      image: "/home/form-steper-4.png",
+      image: "/home/form-steper-4.webp",
     },
     {
       title: "Copia y pega en tu HTML o JSX",
       desc: "Formmy es compatible con cualquier lenguaje, así que solo tienes que copiar una línea de código y pegarla en tu proyecto. ¡Y listo! ¡Empieza a recibir mensajes de tus clientes!",
-      image: "/home/form-steper-5.png",
+      image: "/home/form-steper-5.webp",
     },
   ];
 
@@ -106,7 +106,7 @@ export default function Formularios() {
             gradient="bg-[#FBE05D]"
             content={
               <div className=" h-full place-content-center">
-                <img className=" w-fit max-h-full" src="/home/bento1.png" />
+                <img className=" w-fit max-h-full" src="/home/bento1.webp" />
               </div>
             }
             title="Compatible con cualquier framework"
@@ -116,7 +116,7 @@ export default function Formularios() {
             gradient="bg-[#76D3CB]"
             content={
               <div className="w-full h-full grid place-content-center">
-                <img className="h-full" src="/home/bento2.png" />
+                <img className="h-full" src="/home/bento2.webp" />
               </div>
             }
             title="Fácil y rápido de configurar"
@@ -126,7 +126,7 @@ export default function Formularios() {
             gradient="bg-[#DF7CB0]"
             content={
               <div className="w-full h-full absolute left-10 top-0 grid place-content-center">
-                <img className="!w-[180%]" src="/home/bento3.png" />
+                <img className="!w-[180%]" src="/home/bento3.webp" />
               </div>
             }
             title="Personlizable"

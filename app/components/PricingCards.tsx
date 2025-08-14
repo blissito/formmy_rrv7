@@ -78,7 +78,7 @@ export const PricingCards = () => {
             plan.highlight && "scale-105 z-10 shadow-2xl"
           )}
         >
-          <h3 className={cn("text-3xl font-bold mb-2", plan.highlight ? "text-white" : "text-black")}>{plan.name}ww</h3>
+          <h3 className={cn("text-3xl font-bold mb-2", plan.highlight ? "text-white" : "text-black")}>{plan.name}</h3>
           <p className={cn("mb-4 text-lg", plan.highlight ? "text-white/90" : "text-gray-700")}>{plan.description}</p>
           <div className="flex items-end gap-2 mb-4">
             <span className={cn("text-4xl font-bold", plan.highlight ? "text-white" : "text-black")}>{plan.price}</span>
