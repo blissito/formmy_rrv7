@@ -119,7 +119,7 @@ export const ChatHero = () => {
           web. Responde preguntas, guía a tus visitantes y capta leads
           automáticamente, 24/7.
         </p>
-        <Form method="post" className="mt-10 mx-auto md:mx-0">
+        <Form method="post" className="mt-10 mx-auto md:mx-0" action="/api/login">
           <BigCTA type="submit" name="intent" value="google-login" />
         </Form>
         <div className="flex items-center gap-2 text-irongray text-base mt-2 mx-auto md:mx-0">

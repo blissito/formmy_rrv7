@@ -106,7 +106,7 @@ export default function Formularios() {
             gradient="bg-[#FBE05D]"
             content={
               <div className=" h-full place-content-center">
-                <img className=" w-fit max-h-full" src="/home/bento1.webp" />
+                <img className=" object-contain h-full" src="/home/bento1.webp" />
               </div>
             }
             title="Compatible con cualquier framework"

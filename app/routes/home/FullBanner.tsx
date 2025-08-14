@@ -109,7 +109,7 @@ export const AiBanner = () => {
         <h2 className="text-2xl md:text-4xl max-w-2xl mt-4 font-bold">
           Crea una cuenta y prueba Formmy Chat por 30 días
         </h2>
-        <Form method="post" className="mt-10 mx-auto md:mx-0">
+        <Form method="post" className="mt-10 mx-auto md:mx-0" action="/api/login">
           <BigCTA type="submit" name="intent" value="google-login" ><p className="!text-base heading">Probar por 30 días</p></BigCTA>
         </Form>
       </div>

@@ -1,10 +1,11 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { ConfigMenu } from "../ConfigMenu";
 import { StickyGrid } from "../PageContainer";
 import { GeneralButton } from "../ConfigMenu";
 import { NotificacionesButton } from "../ConfigMenu";
 import { UsuariosButton } from "../ConfigMenu";
 import { SeguridadButton } from "../ConfigMenu";
-import { useState, useEffect } from "react";
 import { useChipTabs } from "../common/ChipTabs";
 import { Card } from "../common/Card";
 import type { Chatbot, Permission, User } from "@prisma/client";
@@ -15,6 +16,7 @@ import { IoInformationCircleOutline } from "react-icons/io5";
 import { Button } from "~/components/Button";
 import { ChatbotUsersTable } from "~/components/chat/tab_sections/ChatbotUsersTable";
 import { AddUserModal } from "~/components/chat/common/AddUserModal";
+import ConfirmModal from "~/components/ConfirmModal";
 
 interface ConfiguracionProps {
   chatbot: Chatbot;
@@ -29,6 +31,9 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
   const [permissions, setPermissions] = useState<(Permission & { user?: User | null })[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isAddingUser, setIsAddingUser] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
   
   // Estado para notificaciones
   const [notifications, setNotifications] = useState({
@@ -144,6 +149,32 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     }
   };
 
+  const handleDeleteChatbot = async () => {
+    try {
+      setIsDeleting(true);
+      const formData = new FormData();
+      formData.append('intent', 'delete_chatbot');
+      formData.append('chatbotId', chatbot.id);
+      
+      const response = await fetch('/api/v1/chatbot', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        // Redirect to chat dashboard after successful deletion
+        navigate('/dashboard/chat');
+      } else {
+        console.error('Failed to delete chatbot');
+      }
+    } catch (error) {
+      console.error('Error deleting chatbot:', error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -234,11 +265,39 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
            <div className="flex flex-col md:flex-row gap-6">
             <p className="text-metal max-w-[700px]">Una vez que elimines tu chatbot, tu agente será eliminado al igual que toda la información que subiste. Está acción es irreversible, así que asegúrate de que está es la acción que quieres tomar.</p>
             <button
-              disabled
-              className="block max-w-full md:max-w-[220px] ml-auto disabled:opacity-50 disabled:cursor-not-allowed w-full bg-red-500 text-white py-2 px-4 h-10 rounded-full"
+              onClick={() => setShowDeleteModal(true)}
+              className="block max-w-full md:max-w-[220px] ml-auto w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 h-10 rounded-full transition-colors"
             >
               Eliminar
             </button>
+            {showDeleteModal && (
+              <ConfirmModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                title="¿Estás segur@ de eliminar este chatbot?"
+                message="Si lo eliminas, toda la información y todas las conversaciones serán eliminadas de forma permanente."
+                emojis="✋🏻⛔️🤖"
+                footer={
+                  <div className="flex justify-center gap-4 md:gap-6">
+                    <button
+                      onClick={handleDeleteChatbot}
+                      disabled={isDeleting}
+                      className="bg-danger text-white block cursor-pointer rounded-full py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isDeleting ? 'Eliminando...' : 'Sí, quiero eliminarlo'}
+                    </button>
+                    <Button
+                      onClick={() => setShowDeleteModal(false)}
+                      variant="secondary"
+                      className="ml-0"
+                      disabled={isDeleting}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                }
+              />
+            )}
            </div>        
           </Card>
         </section>

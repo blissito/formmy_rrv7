@@ -126,7 +126,7 @@ export const GeneralCallToAction = () => {
             Y reduce costos.
           </h2>
         </div>
-        <Form method="post">
+        <Form method="post" action="/api/login">
           <BigCTA
             className="mx-auto w-[180px]"
             type="submit"

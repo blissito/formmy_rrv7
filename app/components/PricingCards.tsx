@@ -1,13 +1,29 @@
+import { Form } from "react-router";
 import { Button } from "./Button";
 import { cn } from "~/lib/utils";
 
-const plans = [
+export interface Plan {
+  name: string;
+  description: string;
+  price: string;
+  priceNote: string;
+  button: React.ReactNode;
+  arr?: string;
+  arrClass?: string;
+  includes: string[];
+  extra?: string[];
+  cardClass?: string;
+  arrBoxClass?: string;
+  highlight?: boolean;
+}
+
+export const plans: Plan[] = [
   {
     name: "Free",
-    description: "Perfecto para empezar con tu website",
+    description: "Perfecto para empezar",
     price: "$0",
     priceNote: "/mes",
-    button: <Button className="w-full bg-clear text-[#7574D6] font-bold rounded-full py-3 text-lg mt-6">¡Empieza gratis!</Button>,
+    button: <Form method="post" action="/api/login"><Button type="submit" name="intent" value="google-login" action="/api/login" className="w-full bg-white hover:bg-white/90 text-[#7574D6] font-bold rounded-full py-3  mt-6">¡Empieza gratis!</Button></Form>,
     arrClass: "text-white underline underline-offset-4 decoration-2 decoration-white",
     includes: [
       "📋 Hasta 3 formularios con respuestas ilimitadas",
@@ -24,14 +40,14 @@ const plans = [
     description: "Ideal si eres freelancer",
     price: "$140",
     priceNote: "/mes",
-    button: <Button className="w-full bg-brand-500 hover:bg-brand-600 text-clear font-bold rounded-full py-3 text-lg mt-6">¡Haz despegar tu proyecto!</Button>,
+    button: <Button className="w-full bg-brand-500 hover:bg-brand-600 text-clear font-bold rounded-full py-3  mt-6">¡Impulsa tu proyecto!</Button>,
     arr: "Ahorra 10% al pagar anualmente",
     arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-brand-600",
     includes: [
       "📋 Formularios ilimitados con respuestas ilimitadas",
       "👨‍👩‍👦‍👦 Administración de usuarios",
       "🎨 Personalización avanzada de formularios",
-      "🤖 3 Chatbots",
+      "🤖 2 Chatbots",
       "👩🏻‍🏫 Acceso a modelos como Gpt, Ollama y Gemini",
       "🪪 100 conversaciones de chat por mes",
     ],
@@ -46,17 +62,16 @@ const plans = [
     description: "Perfecto para negocios",
     price: "$490",
     priceNote: "/mes",
-    button: <Button className="w-full bg-bird text-dark hover:bg-brand-600 font-bold rounded-full py-3 text-lg mt-6">¡Hazte imparable con Pro!</Button>,
+    button: <Button className="w-full bg-bird hover:bg-[#E5C059] text-dark font-bold rounded-full py-3  mt-6">¡Hazte imparable con Pro!</Button>,
     arr: "Ahorra 10% al pagar anualmente",
     arrClass: "text-[#DAB23F] underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
     includes: [
         "📋 Todo lo que incluye el plan Grow",
-        "🤖 Chatbots ilimitados",
-        "🪄 Mayor capacidad de entrenamiento para tu agente",
+        "🤖 10 chatbots",
+        "🪄 Mayor capacidad (5mb) de entrenamiento para tu agente",
         "🚀 Integraciones de Calendario, Weebhook, WhatsApp y más ",
         "👩🏻‍🏫 Acceso a los top Models IA como Claude",
         "🪪 250 conversaciones de chat por mes",
-     
     ],
     extra: [
       "$ 99 mxn por cada 100 conversaciones extra",
@@ -64,11 +79,33 @@ const plans = [
     cardClass: "bg-clear text-black border border-outlines",
     arrBoxClass: "bg-bird/10 text-[#DAB23F] border-bird",
   },
+  {
+    name: "Enterprise 🤖",
+    description: "La opción de las empresas",
+    price: "$1,490",
+    priceNote: "/mes",
+    button: <Button className="w-full bg-cloud hover:bg-[#5FAFA8] text-dark font-bold rounded-full py-3  mt-6">¡Hazte imparable con Pro!</Button>,
+    arr: "Ahorra 10% al pagar anualmente",
+    arrClass: "text-[#5FAFA8] underline underline-offset-4 decoration-2 decoration-[#5FAFA8]",
+    includes: [
+        "📋 Todo lo que incluye el plan Grow",
+        "🤖 Chatbots ilimitados",
+        "🪄 Mayor capacidad (10mb) de entrenamiento para tu agente",
+        "🚀 Integraciones de Calendario, Weebhook, WhatsApp y más ",
+        "👩🏻‍🏫 Acceso a los top Models IA como Claude",
+        "🪪 1,000 conversaciones de chat por mes",
+    ],
+    extra: [
+      "$ 69 mxn por cada 100 conversaciones extra",
+    ],
+    cardClass: "bg-clear text-black border border-outlines",
+    arrBoxClass: "bg-cloud/10 text-[#5FAFA8] border-cloud",
+  },
 ];
 
 export const PricingCards = () => {
   return (
-    <div className="w-full flex flex-col md:flex-row gap-8 justify-center items-stretch">
+    <div className="w-full flex flex-col md:flex-row gap-4 justify-center items-stretch">
       {plans.map((plan, idx) => (
         <div
           key={plan.name}

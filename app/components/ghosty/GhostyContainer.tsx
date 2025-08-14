@@ -167,7 +167,7 @@ export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
 
   return (
     <div className={cn(
-      "grid place-content-start md:place-content-center min-h-[calc(100vh-156px)] p-4",
+      "grid place-content-center min-h-[calc(100vh-156px)] p-4",
       "md:p-2 md:h-full"
     )}>
       <AnimatePresence mode="wait">
