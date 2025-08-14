@@ -28,13 +28,13 @@ function DemoCard({ label, backgroundImage, imageClassName,companybrand }: { lab
 
 export default function HomeDemos() {
   const cards = [
-    { label: "Contacto | E4Pros", imageClassName:"bg-bottom-left", companybrand:"bg-[#8BB236]", backgroundImage:"/home/ejemplos/pros.png" },
-    { label: "Contacto | Brenda GO", imageClassName:"bg-bottom-right", companybrand:"bg-[#9346ED]", backgroundImage:"/home/ejemplos/brendi.png" },
-    { label: "Waitinglist | Fixtergeek",  companybrand:"bg-[#9346ED]", backgroundImage:"/home/ejemplos/ui.png" },
-    { label: "Newsletter | Natoure",  companybrand:"bg-[#ff9365]", backgroundImage:"/home/ejemplos/natoure.png" },
-    { label: "Waitinglist | DenÍk",   companybrand:"bg-[#5158f6]",  backgroundImage:"/home/ejemplos/denik.png" },
-    { label: "Contacto | Raul",  companybrand:"bg-[#f79c08]", backgroundImage:"/home/ejemplos/raul.png"  },
-    { label: "Contacto | FixterOrg",    companybrand:"bg-[#85dbcb]", backgroundImage:"/home/ejemplos/org.png" },
+    { label: "Contacto | E4Pros", imageClassName:"bg-bottom-left", companybrand:"bg-[#8BB236]", backgroundImage:"/home/ejemplos/pros.webp" },
+    { label: "Contacto | Brenda GO", imageClassName:"bg-bottom-right", companybrand:"bg-[#9346ED]", backgroundImage:"/home/ejemplos/brendi.webp" },
+    { label: "Waitinglist | Fixtergeek",  companybrand:"bg-[#9346ED]", backgroundImage:"/home/ejemplos/ui.webp" },
+    { label: "Newsletter | Natoure",  companybrand:"bg-[#ff9365]", backgroundImage:"/home/ejemplos/natoure.webp" },
+    { label: "Waitinglist | DenÍk",   companybrand:"bg-[#5158f6]",  backgroundImage:"/home/ejemplos/denik.webp" },
+    { label: "Contacto | Raul",  companybrand:"bg-[#f79c08]", backgroundImage:"/home/ejemplos/raul.webp"  },
+    { label: "Contacto | FixterOrg",    companybrand:"bg-[#85dbcb]", backgroundImage:"/home/ejemplos/org.webp" },
     // { label: "Registro",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
     // { label: "Dashboard",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },
     // { label: "Soporte",  backgroundImage:"https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg" },

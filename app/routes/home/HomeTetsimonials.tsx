@@ -31,12 +31,12 @@ export default function HomeTestimonials() {
       name: "José Olmedo",
       company: "TiendaOnlinePro",
       comment: "La facilidad para crear formularios de suscripción y contacto ha superado mis expectativas. Lo que antes tomaba horas ahora lo hago en minutos.",
-      img: "/home/jose.png",    },
+      img: "/home/jose.webp",    },
     {
       name: "Rocío Ortega",
       company: "Banquetería Rossy ",
       comment: "Desde que empece a usar Formmy en mi sitio web, las ventas aumentaron en un 45% y mis clientes están encantados, reciben respuestas rápidas y eficientes 24/7.",
-      img: "/home/rocio.png",
+      img: "/home/rocio.webp",
     },
     {
       name: "Eduardo Castillo",
@@ -66,7 +66,7 @@ export default function HomeTestimonials() {
       name: "Abraham González",
       company: "Diseñador gráfico",
       comment: "Agregar Formmy a mi website personal fue rápido y fácil. Me encantaron los formularios y el chat IA. .",
-      img: "/home/abraham.png",
+      img: "/home/abraham.webp",
     },
   ];
   return (

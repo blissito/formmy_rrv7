@@ -8,7 +8,7 @@ const imgImage2 = "/home/video2.gif";
 const imgImage3 = "/home/video3.gif";
 const imgGroup = "http://localhost:3845/assets/ce66d90ade7e8f78c3d31e2a40faa4298fd1fe82.svg";
 
-function ProductCard({ bg, title, desc, img, icon, link, svgPattern, patternClassName, className }: { bg: string; link: string; title: string; desc: string; img: string; icon: string; svgPattern?:string, patternClassName: string, className?: string }) {
+function ProductCard({ bg, title, desc, img, link, svgPattern, patternClassName, className }: { bg: string; link: string; title: string; desc: string; img: string; svgPattern?:string, patternClassName: string, className?: string }) {
   return (
     <div className={`relative w-full h-[380px] lg:h-[580px] mb-6 mt-0 md:mt-16 rounded-[40px] flex flex-wrap md:fles-nowrap items-center ${bg} overflow-hidden sticky top-20 z-10`}>
       <img className={cn("absolute right-0 bottom-0 z-0 w-[50%] md:w-[auto] ", patternClassName)} src={svgPattern} alt="pattern"/>
@@ -32,7 +32,6 @@ export default function HomeProducts() {
   const products = [
     {
       svgPattern:"/home/ribbon-1.png",
-      icon:"/icon-2.svg",
       bg: "bg-[#edc75a]",
       title: "Formularios de contacto",
       desc: "Recibe mensajes de tus clientes sin perder ni uno solo. Personaliza campos, colores, tema y estilo con un par de clics.",
@@ -42,7 +41,6 @@ export default function HomeProducts() {
     {
       patternClassName:"!top-0",
       svgPattern:"/home/ribbon-2.svg",
-      icon:"/icon-1.svg",
       bg: "bg-[#79bc97]",
       title: "Formularios de suscripción",
       desc: "Convierte visitantes en suscriptores con formularios atractivos y fáciles de usar. Conecta con tu newsletter y haz crecer tu comunidad automáticamente.",
@@ -52,7 +50,6 @@ export default function HomeProducts() {
     },
     {
       svgPattern:"/home/ribbon-3.svg",
-      icon:"/icon-3.svg",
       bg: "bg-[#9a99ea]",
       title: "Chat IA para tu negocio",
       desc: "Automatiza la atención y soporte con agentes inteligentes que responden 24/7. Mejora la experiencia de tus usuarios y dedica tu tiempo a lo que realmente importa.",

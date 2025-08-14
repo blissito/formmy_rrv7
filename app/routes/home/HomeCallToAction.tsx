@@ -4,7 +4,7 @@ import { Form } from "react-router";
 import { BigCTA } from "~/components/BigCTA";
 
 const imgCapturaDePantalla20250708ALaS35003PM1 =
-  "/home/demo.png";
+  "/home/demo.webp";
 
 export default function HomeCallToAction() {
   return (
@@ -31,12 +31,17 @@ export default function HomeCallToAction() {
           <h2 className="text-white text-4xl md:text-6xl font-bold !leading-[1.3] mb-4 md:mb-8">
          Transforma tu web.
             <br />
-            Házlo fáil, rápido y sin código con <span className="text-brand-500">Formmy</span>.
+            Házlo fácil, rápido y sin código con <span className="text-brand-500">Formmy</span>.
           </h2>
+          <Form method="post" action="/api/login">
+          <BigCTA type="submit" name="intent" value="google-login"  containerClassName="bg-white hover:bg-[#E1E3E7] heading text-dark text-lg">Empezar gratis <span className="ml-2">→</span></BigCTA>
+        </Form>
+          {/* <Form method="post" action="/api/login">
           <Button className="ml-0 h-14 bg-white text-dark font-semibold rounded-full px-8 text-base md:text-lg flex items-center gap-2 shadow hover:scale-105 transition">
             Empezar gratis
             <span className="ml-2">→</span>
           </Button>
+          </Form> */}
         </div>
         <div className="flex-1 flex items-center justify-center mt-12 md:mt-0 relative">
           {/* Mockup móvil */}

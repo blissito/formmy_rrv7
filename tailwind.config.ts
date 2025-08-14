@@ -76,9 +76,9 @@ export default {
       backgroundImage: {
         pattern: "url('/assets/pattern.svg')",
         patternwhite: "url('/assets/pattern-w.svg')",
-        steperCover: "url('/home/steper-cover.png')",
+        steperCover: "url('/home/steper-cover.webp')",
         actionsBack: "url('/dash/actions-back.svg')",
-        chatPattern:"url('/dash/chat-pattern.svg')"
+        chatPattern:"url('/dash/chat-pattern.webp')"
       },
       boxShadow: {
         standard: "8px 16px 14px #F8F8FB",

@@ -16,27 +16,27 @@ const stepsWithImages = [
   {
     title: "Crea un Chat",
     desc: "Ve a tu Dashboard y da clic en la pestaña de Chatbots.",
-    image: "/home/chat-steper-1.png",
+    image: "/home/chat-steper-1.webp",
   },
   {
     title: "Entrena a tu Agente",
     desc: "Comparte información, documentos o links sobre tu negocio con tu agente.",
-    image: "/home/chat-steper-2.png",
+    image: "/home/chat-steper-2.webp",
   },
   {
     title: "Personaliza los colores y estilos de tu chat",
     desc: "Personaliza el avatar, el color y el saludo de tu chat, además de la personalidad de tu agente.",
-    image: "/home/chat-steper-3.png",
+    image: "/home/chat-steper-3.webp",
   },
   {
     title: "Copia y pega en tu HTML o JSX",
     desc: "Copia el SDK o el iframe de chat y pegala en tu proyecto. ¡Tu agente está listo para atender a tus clientes!",
-    image: "/home/chat-steper-4.png",
+    image: "/home/chat-steper-4.webp",
   },
   {
     title: "Observa y mejora tu agente",
     desc: "Visualiza cómo interactúa con los usuarios, detecta patrones y encuentra puntos de mejora. Desde el panel de control puedes ajustar respuestas o afinar el tono del chatbot. Porque un buen agente no solo se lanza, se entrena constantemente.",
-    image: "/home/chat-steper-5.png",
+    image: "/home/chat-steper-5.webp",
   },
 ];
 

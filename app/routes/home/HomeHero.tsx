@@ -27,7 +27,7 @@ export default function HomeHero() {
         Integra en minutos y sin dolores de cabeza.
       </p>
       <div className="flex gap-4 mt-10">
-        <Form method="post">
+        <Form method="post" action="/api/login">
           <BigCTA type="submit" name="intent" value="google-login" textClassName="text-base md:text-lg" />
         </Form>
         <Button variant="secondary" className="mt-0 h-14 text-base md:text-lg">
@@ -36,7 +36,7 @@ export default function HomeHero() {
       </div>
       <ContainerScroll>
         <img
-          src="/home/home.png"
+          src="/home/home.webp"
           alt="hero"
           height={400}
           width={1400}
@@ -44,7 +44,7 @@ export default function HomeHero() {
           draggable={false}
         />
             <img
-          src="/home/home-xs.png"
+          src="/home/home-xs.webp"
           alt="hero"
           height={400}
           width={400}

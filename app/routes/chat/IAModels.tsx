@@ -23,15 +23,15 @@ export const IAModels = () => {
             initialRotation={{ x: 25, y: 35, z: 2 }}
           />
           <IAModelCard 
-            img="/home/gpt.png"
+            img="/home/gpt.webp"
             initialRotation={{ x: 25, y: -35, z: 2 }}
           />
           <IAModelCard 
-            img="/home/claude.png"
+            img="/home/claude.webp"
             initialRotation={{ x: 0, y: 0, z: 0 }}
           />
           <IAModelCard 
-            img="/home/gmeini.png"
+            img="/home/gmeini.webp"
             initialRotation={{ x: 25, y: 35, z: 2 }}
           />
           <IAModelCard 
@@ -106,7 +106,7 @@ const IAModelCard = ({className, img, style, initialRotation = { x: 0, y: 0, z: 
       <div className="w-full h-full transform-style-preserve-3d group grid place-items-center">
         <img 
           className="w-full h-auto grayscale group-hover:grayscale-0 transition-all duration-300" 
-          src={img ? img : "/home/anthropic.png"} 
+          src={img ? img : "/home/anthropic.webp"} 
           alt="AI Model" 
           style={{
             transform: 'translateZ(20px)',
