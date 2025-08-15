@@ -13,7 +13,7 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendPlanCancellation = async ({ email }: ProEmail) => {
+export const sendProEmail = async ({ email }: ProEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
