@@ -1,6 +1,15 @@
 import React from "react";
 import HomeHeader from "./home/HomeHeader";
 import HomeFooter from "./home/HomeFooter";
+import getBasicMetaTags from "~/utils/getBasicMetaTags";
+
+
+export const meta = () =>
+  getBasicMetaTags({
+    title: "Términos y Condiciones | Formmy",
+    description:
+      "Consulta los Términos y Condiciones de Servicio de Formmy.",
+  });
 
 export default function Terms() {
   return (
