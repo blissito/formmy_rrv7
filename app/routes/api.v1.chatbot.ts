@@ -1,6 +1,5 @@
-import { nanoid } from "nanoid";
-import * as mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
+import * as mammoth from "mammoth";
+import * as XLSX from "xlsx";
 import {
   createChatbot,
   updateChatbot,
@@ -16,11 +15,6 @@ import {
   markChatbotAsDeleted,
   getChatbotState,
 } from "../../server/chatbot/chatbotStateManager.server";
-import {
-  validateUserChatbotCreation,
-  validateUserAIModelAccess,
-  getUserPlanFeatures,
-} from "../../server/chatbot/userModel.server";
 import { validateChatbotCreationAccess } from "../../server/chatbot/chatbotAccess.server";
 import { getChatbotBrandingConfigById } from "../../server/chatbot/brandingConfig.server";
 import {
@@ -43,83 +37,14 @@ import {
   toggleIntegrationStatus,
   deleteIntegration,
 } from "../../server/chatbot/integrationModel.server";
+import {
+  validateUserAIModelAccess,
+  getUserPlanFeatures,
+  DEFAULT_CHATBOT_CONFIG,
+  generateRandomChatbotName,
+} from "~/utils/chatbot.server";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
-
-// Arrays para generar nombres aleatorios
-const ANIMALS = [
-  "leon",
-  "tigre",
-  "oso",
-  "lobo",
-  "aguila",
-  "halcon",
-  "delfin",
-  "ballena",
-  "elefante",
-  "jirafa",
-  "panda",
-  "koala",
-  "zorro",
-  "conejo",
-  "gato",
-  "perro",
-  "caballo",
-  "unicornio",
-  "dragon",
-  "fenix",
-  "buho",
-  "colibri",
-  "mariposa",
-  "abeja",
-];
-
-const ADJECTIVES = [
-  "valiente",
-  "potente",
-  "bernaculo",
-  "fuerte",
-  "inteligente",
-  "amigable",
-  "entrañable",
-  "brillante",
-  "audaz",
-  "gentil",
-  "noble",
-  "magico",
-  "poderoso",
-  "elegante",
-  "gracioso",
-  "curioso",
-  "satírico",
-  "pacifico",
-  "energico",
-  "luminoso",
-  "fluorecente",
-];
-
-// Configuración por defecto para nuevos chatbots
-const DEFAULT_CHATBOT_CONFIG = {
-  description: "Un asistente virtual inteligente y amigable",
-  personality:
-    "Eres un asistente virtual amigable, profesional y servicial. Respondes de manera clara y concisa, siempre tratando de ser útil.",
-  welcomeMessage:
-    "¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?",
-  aiModel: "google/gemini-2.0-flash-exp:free",
-  primaryColor: "#3B82F6",
-  theme: "light",
-  temperature: 0.7,
-  instructions:
-    "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios.",
-};
-
-// Función para generar nombre aleatorio
-function generateRandomChatbotName(): string {
-  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
-  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const id = nanoid(3);
-  return `${animal}-${adjective}-${id}`;
-}
 
 export async function loader({ request }: any) {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {
@@ -169,7 +94,7 @@ export async function action({ request }: any) {
           return new Response(
             JSON.stringify({
               success: false,
-              error: `Has alcanzado el límite de ${validation.maxAllowed} chatbot${validation.maxAllowed > 1 ? 's' : ''} para tu plan ${validation.plan.toLowerCase()}.`,
+              error: `Has alcanzado el límite de ${validation.maxAllowed} chatbot${validation.maxAllowed > 1 ? "s" : ""} para tu plan ${validation.plan.toLowerCase()}.`,
               currentCount: validation.currentOwnedCount,
               maxAllowed: validation.maxAllowed,
               isPro: validation.isPro,
@@ -265,7 +190,12 @@ export async function action({ request }: any) {
         const primaryColor = formData.get("primaryColor") as string;
         if (primaryColor) updateData.primaryColor = primaryColor;
         const avatarUrl = formData.get("avatarUrl") as string;
-        if (avatarUrl && avatarUrl !== "null" && avatarUrl !== "undefined" && avatarUrl.trim() !== "") {
+        if (
+          avatarUrl &&
+          avatarUrl !== "null" &&
+          avatarUrl !== "undefined" &&
+          avatarUrl.trim() !== ""
+        ) {
           updateData.avatarUrl = avatarUrl;
         }
         const theme = formData.get("theme") as string;
@@ -600,80 +530,90 @@ export async function action({ request }: any) {
         const fileUrl = formData.get("fileUrl") as string;
         const sizeKB = Number(formData.get("sizeKB"));
         const file = formData.get("file") as File | null;
-        
+
         let content: string | undefined;
-        
+
         if (file) {
           try {
             // Extraer contenido basado en el tipo de archivo
-            if (fileType === "application/pdf" || fileName.toLowerCase().endsWith('.pdf')) {
+            if (
+              fileType === "application/pdf" ||
+              fileName.toLowerCase().endsWith(".pdf")
+            ) {
               // Procesar PDF con unpdf
               const arrayBuffer = await file.arrayBuffer();
-              
+
               try {
-                const { extractText } = await import('unpdf');
-                
+                const { extractText } = await import("unpdf");
+
                 // unpdf es muy simple: solo necesita el arrayBuffer
                 const result = await extractText(arrayBuffer);
-                
-                
+
                 // Manejar diferentes posibles estructuras
-                if (typeof result === 'string') {
+                if (typeof result === "string") {
                   content = result.trim();
-                } else if (result && typeof result.text === 'string') {
+                } else if (result && typeof result.text === "string") {
                   content = result.text.trim();
-                } else if (result && Array.isArray(result.text) && result.text.length > 0) {
+                } else if (
+                  result &&
+                  Array.isArray(result.text) &&
+                  result.text.length > 0
+                ) {
                   // unpdf devuelve { totalPages: N, text: ["página1", "página2", ...] }
                   // Unir todas las páginas con doble salto de línea para separarlas claramente
                   content = result.text
-                    .map((page: string, index: number) => `=== PÁGINA ${index + 1} ===\n${page.trim()}`)
-                    .join('\n\n')
+                    .map(
+                      (page: string, index: number) =>
+                        `=== PÁGINA ${index + 1} ===\n${page.trim()}`
+                    )
+                    .join("\n\n")
                     .trim();
-                  
                 } else if (result && Array.isArray(result)) {
-                  content = result.join('\n\n').trim();
-                } else if (result && typeof result === 'object') {
+                  content = result.join("\n\n").trim();
+                } else if (result && typeof result === "object") {
                   // Si es un objeto, intentar encontrar el texto
                   content = JSON.stringify(result);
                 } else {
-                  content = String(result || '').trim();
+                  content = String(result || "").trim();
                 }
-                
               } catch (pdfError) {
-                
                 // No hay fallback necesario con pdf2json
-                content = `[ERROR_PDF: ${pdfError instanceof Error ? pdfError.message : 'Error desconocido'} - archivo: ${fileName}]`;
+                content = `[ERROR_PDF: ${pdfError instanceof Error ? pdfError.message : "Error desconocido"} - archivo: ${fileName}]`;
               }
-            } else if (fileName.toLowerCase().endsWith('.docx')) {
+            } else if (fileName.toLowerCase().endsWith(".docx")) {
               // Procesar DOCX con mammoth
               const arrayBuffer = await file.arrayBuffer();
               const buffer = Buffer.from(arrayBuffer);
-              
+
               try {
                 const result = await mammoth.extractRawText({ buffer });
                 content = result.value;
               } catch (docxError) {
                 content = `[ERROR_DOCX: No se pudo extraer texto del archivo ${fileName}]`;
               }
-            } else if (fileName.toLowerCase().endsWith('.xlsx')) {
+            } else if (fileName.toLowerCase().endsWith(".xlsx")) {
               // Procesar XLSX con xlsx
               const arrayBuffer = await file.arrayBuffer();
-              
+
               try {
-                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                let allText = '';
-                
-                workbook.SheetNames.forEach(sheetName => {
+                const workbook = XLSX.read(arrayBuffer, { type: "array" });
+                let allText = "";
+
+                workbook.SheetNames.forEach((sheetName) => {
                   const worksheet = workbook.Sheets[sheetName];
                   const csvData = XLSX.utils.sheet_to_csv(worksheet);
                   allText += `\n--- Hoja: ${sheetName} ---\n${csvData}\n`;
                 });
-                
+
                 content = allText.trim();
               } catch (xlsxError) {
                 content = `[ERROR_XLSX: No se pudo extraer datos del archivo ${fileName}]`;
               }
-            } else if (fileType.includes("text") || fileName.toLowerCase().endsWith('.txt') || fileName.toLowerCase().endsWith('.csv')) {
+            } else if (
+              fileType.includes("text") ||
+              fileName.toLowerCase().endsWith(".txt") ||
+              fileName.toLowerCase().endsWith(".csv")
+            ) {
               // Archivos de texto plano
               content = await file.text();
             } else {
@@ -691,9 +631,8 @@ export async function action({ request }: any) {
           // Fallback al contenido enviado directamente (compatibilidad)
           content = formData.get("content") as string | undefined;
         }
-        
+
         try {
-          
           const chatbot = await addFileContext(chatbotId, {
             fileName,
             fileType,
@@ -701,8 +640,7 @@ export async function action({ request }: any) {
             sizeKB,
             content,
           });
-          
-          
+
           return new Response(JSON.stringify({ success: true, chatbot }), {
             headers: { "Content-Type": "application/json" },
           });
@@ -723,7 +661,7 @@ export async function action({ request }: any) {
           : undefined;
         const routesData = formData.get("routes") as string | undefined;
         const routes = routesData ? JSON.parse(routesData) : undefined;
-        
+
         try {
           const chatbot = await addUrlContext(chatbotId, {
             url,
@@ -763,9 +701,12 @@ export async function action({ request }: any) {
         const contextId = formData.get("contextId") as string;
         const title = formData.get("title") as string;
         const content = formData.get("content") as string;
-        
+
         try {
-          const chatbot = await updateTextContext(chatbotId, contextId, { title, content });
+          const chatbot = await updateTextContext(chatbotId, contextId, {
+            title,
+            content,
+          });
           return new Response(JSON.stringify({ success: true, chatbot }), {
             headers: { "Content-Type": "application/json" },
           });
@@ -781,9 +722,13 @@ export async function action({ request }: any) {
         const title = formData.get("title") as string;
         const questions = formData.get("questions") as string;
         const answer = formData.get("answer") as string;
-        
+
         try {
-          const chatbot = await addQuestionContext(chatbotId, { title, questions, answer });
+          const chatbot = await addQuestionContext(chatbotId, {
+            title,
+            questions,
+            answer,
+          });
           return new Response(JSON.stringify({ success: true, chatbot }), {
             headers: { "Content-Type": "application/json" },
           });
@@ -800,9 +745,13 @@ export async function action({ request }: any) {
         const title = formData.get("title") as string;
         const questions = formData.get("questions") as string;
         const answer = formData.get("answer") as string;
-        
+
         try {
-          const chatbot = await updateQuestionContext(chatbotId, contextId, { title, questions, answer });
+          const chatbot = await updateQuestionContext(chatbotId, contextId, {
+            title,
+            questions,
+            answer,
+          });
           return new Response(JSON.stringify({ success: true, chatbot }), {
             headers: { "Content-Type": "application/json" },
           });
@@ -939,7 +888,7 @@ export async function action({ request }: any) {
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         const chatbot = await getChatbotById(chatbotId);
         if (!chatbot) {
           return new Response(
@@ -947,7 +896,7 @@ export async function action({ request }: any) {
             { status: 404, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         if (chatbot.userId !== userId) {
           return new Response(
             JSON.stringify({
@@ -989,14 +938,14 @@ export async function action({ request }: any) {
         const chatbotId = formData.get("chatbotId") as string;
         const email = formData.get("email") as string;
         const role = formData.get("role") as string;
-        
+
         if (!chatbotId || !email || !role) {
           return new Response(
             JSON.stringify({ error: "Faltan parámetros requeridos" }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         const chatbot = await getChatbotById(chatbotId);
         if (!chatbot) {
           return new Response(
@@ -1004,7 +953,7 @@ export async function action({ request }: any) {
             { status: 404, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         if (chatbot.userId !== userId) {
           return new Response(
             JSON.stringify({
@@ -1025,7 +974,9 @@ export async function action({ request }: any) {
 
         if (existingPermission) {
           return new Response(
-            JSON.stringify({ error: "El usuario ya tiene acceso a este chatbot" }),
+            JSON.stringify({
+              error: "El usuario ya tiene acceso a este chatbot",
+            }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
@@ -1050,26 +1001,26 @@ export async function action({ request }: any) {
 
       case "remove_chatbot_user": {
         const permissionId = formData.get("permissionId") as string;
-        
+
         if (!permissionId) {
           return new Response(
             JSON.stringify({ error: "ID de permiso no proporcionado" }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         const permission = await db.permission.findUnique({
           where: { id: permissionId },
           include: { chatbot: true },
         });
-        
+
         if (!permission || !permission.chatbot) {
           return new Response(
             JSON.stringify({ error: "Permiso no encontrado" }),
             { status: 404, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         if (permission.chatbot.userId !== userId) {
           return new Response(
             JSON.stringify({
@@ -1092,26 +1043,26 @@ export async function action({ request }: any) {
       case "toggle_chatbot_user_notifications": {
         const permissionId = formData.get("permissionId") as string;
         const value = formData.get("value") === "true";
-        
+
         if (!permissionId) {
           return new Response(
             JSON.stringify({ error: "ID de permiso no proporcionado" }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         const permission = await db.permission.findUnique({
           where: { id: permissionId },
           include: { chatbot: true },
         });
-        
+
         if (!permission || !permission.chatbot) {
           return new Response(
             JSON.stringify({ error: "Permiso no encontrado" }),
             { status: 404, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         if (permission.chatbot.userId !== userId) {
           return new Response(
             JSON.stringify({
@@ -1134,14 +1085,14 @@ export async function action({ request }: any) {
 
       case "get_chatbot_users": {
         const chatbotId = formData.get("chatbotId") as string;
-        
+
         if (!chatbotId) {
           return new Response(
             JSON.stringify({ error: "ID de chatbot no proporcionado" }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         const chatbot = await getChatbotById(chatbotId);
         if (!chatbot) {
           return new Response(
@@ -1149,7 +1100,7 @@ export async function action({ request }: any) {
             { status: 404, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         if (chatbot.userId !== userId) {
           return new Response(
             JSON.stringify({
@@ -1190,7 +1141,7 @@ export async function action({ request }: any) {
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         const chatbot = await getChatbotById(chatbotId);
         if (!chatbot) {
           return new Response(
@@ -1198,7 +1149,7 @@ export async function action({ request }: any) {
             { status: 404, headers: { "Content-Type": "application/json" } }
           );
         }
-        
+
         if (chatbot.userId !== userId) {
           return new Response(
             JSON.stringify({
@@ -1212,8 +1163,11 @@ export async function action({ request }: any) {
         const status = formData.get("status") as string;
         const rateLimit = parseInt(formData.get("rateLimit") as string) || 100;
 
-        const domainsArray = allowedDomains 
-          ? allowedDomains.split(",").map(d => d.trim()).filter(d => d)
+        const domainsArray = allowedDomains
+          ? allowedDomains
+              .split(",")
+              .map((d) => d.trim())
+              .filter((d) => d)
           : [];
 
         const updatedChatbot = await db.chatbot.update({
