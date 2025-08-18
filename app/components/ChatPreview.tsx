@@ -213,6 +213,8 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
             const decoder = new TextDecoder();
             let fullContent = "";
 
+            let hasReceivedFirstChunk = false;
+            
             while (true) {
               const { done, value } = await reader.read();
               if (done) break;
@@ -235,6 +237,12 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
                   try {
                     const data = JSON.parse(dataStr);
                     if (data.content) {
+                      // ✅ Ocultar loading indicator en el primer chunk
+                      if (!hasReceivedFirstChunk) {
+                        setChatLoading(false);
+                        hasReceivedFirstChunk = true;
+                      }
+                      
                       fullContent += data.content;
                       setChatMessages((msgs) => {
                         const updated = [...msgs];
@@ -351,11 +359,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         </section>
 
         <section>
-          {/* {true && ( */}
-          {chatLoading && stream && (
-            // <LoadingIndicator
-            //   primaryColor={chatbot.primaryColor || "#63CFDE"}
-            // />
+          {chatLoading && (
             <MessageBubble
               role="assistant"
               primaryColor={chatbot.primaryColor || "#63CFDE"}

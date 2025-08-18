@@ -4,6 +4,9 @@ import { Avatar } from "./Avatar";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
+// Estilos unificados para el contenido markdown con bloques de código mejorados
+const PROSE_STYLES = "prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-li:text-sm prose-code:bg-slate-800 prose-code:text-green-400 prose-code:dark:bg-slate-900 prose-code:dark:text-green-300 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-xs prose-pre:bg-slate-800 prose-pre:text-green-400 prose-pre:dark:bg-slate-900 prose-pre:dark:text-green-300 prose-pre:p-3 prose-pre:rounded-lg prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-2 prose-pre:border prose-pre:border-slate-600 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:dark:border-gray-500 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:dark:text-gray-400 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:dark:text-blue-400 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0";
+
 interface MessageBubbleProps {
   message?: {
     role: "user" | "assistant";
@@ -79,7 +82,7 @@ export const MessageBubble = ({
         {/* <Avatar primaryColor={primaryColor} /> */}
         <div className="bg-white border dark:bg-space-700 rounded-xl p-3 max-w-md">
           <div
-            className="prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-li:text-sm prose-code:bg-gray-100 prose-code:dark:bg-gray-600 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-pre:bg-gray-100 prose-pre:dark:bg-gray-600 prose-pre:p-1 prose-pre:rounded prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-1 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:dark:border-gray-500 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:dark:text-gray-400 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:dark:text-blue-400 prose-a:hover:underline prose-table:my-0 prose-thead:bg-transparent prose-tbody:bg-transparent prose-tr:border-0 prose-th:border-0 prose-th:p-0 prose-td:border-0 prose-td:p-0"
+            className={PROSE_STYLES}
             style={{ whiteSpace: "pre-line", lineHeight: "1" }}
           >
             {nodes}
@@ -93,7 +96,7 @@ export const MessageBubble = ({
       <Avatar className="w-8 h-8" src={avatarUrl} />
       <div className="bg-white border border-outlines rounded-tr-lg rounded-xl  p-3 max-w-md ">
         <div
-          className="prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-li:text-sm prose-code:bg-gray-100 prose-code:dark:bg-gray-600 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-pre:bg-gray-100 prose-pre:dark:bg-gray-600 prose-pre:p-1 prose-pre:rounded prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-1 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:dark:border-gray-500 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:dark:text-gray-400 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:dark:text-blue-400 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0"
+          className={PROSE_STYLES}
           style={{ whiteSpace: "pre-line", lineHeight: "1" }}
         >
 {(() => {
