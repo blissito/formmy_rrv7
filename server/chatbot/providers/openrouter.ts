@@ -42,7 +42,7 @@ export class OpenRouterProvider extends AIProvider {
       model: request.model,
       messages: this.formatMessages(request.messages),
       temperature: request.temperature || 0.7, // OpenRouter acepta rango más amplio
-      max_tokens: request.maxTokens || 1000,
+      max_tokens: request.maxTokens || 150, // EMERGENCIA: Reducir de 1000 a 150
     };
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -77,7 +77,7 @@ export class OpenRouterProvider extends AIProvider {
       model: request.model,
       messages: this.formatMessages(request.messages),
       temperature: request.temperature || 0.7,
-      max_tokens: request.maxTokens || 1000,
+      max_tokens: request.maxTokens || 150, // EMERGENCIA: Reducir de 1000 a 150
       stream: true,
     };
 

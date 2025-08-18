@@ -46,6 +46,12 @@ import {
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
 import { generateFallbackModels, isAnthropicDirectModel } from "~/utils/aiModels";
+import { 
+  truncateConversationHistory, 
+  createProviderManager, 
+  buildEnrichedSystemPrompt, 
+  estimateTokens 
+} from "./api.v1.chatbot.server";
 
 export async function loader({ request }: any) {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {
@@ -57,7 +63,6 @@ export async function action({ request }: any) {
   try {
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
-    console.log('🎯 API ENDPOINT RECEIVED INTENT:', intent);
     const user = await getUserOrRedirect(request);
     const userId = user.id;
     switch (intent) {
@@ -1200,20 +1205,65 @@ export async function action({ request }: any) {
         });
       }
 
+      case "update_streaming": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "No tienes permiso para modificar este chatbot",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const enableStreaming = formData.get("enableStreaming") === "true";
+        const streamingSpeed = parseInt(formData.get("streamingSpeed") as string) || 50;
+
+        const updatedChatbot = await db.chatbot.update({
+          where: { id: chatbotId },
+          data: {
+            enableStreaming,
+            streamingSpeed,
+          },
+        });
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            chatbot: updatedChatbot,
+            message: "Configuración de streaming actualizada" 
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
       case "preview_chat": {
-        console.log('🎯🎯🎯 PREVIEW_CHAT CASE REACHED! 🎯🎯🎯');
         
         // Chat de preview para el dashboard (no requiere API key del SDK)
         const chatbotId = formData.get("chatbotId") as string;
         const message = formData.get("message") as string;
         const sessionId = formData.get("sessionId") as string;
         const conversationHistoryStr = formData.get("conversationHistory") as string;
-        const stream = formData.get("stream") === "true";
+        const requestedStream = formData.get("stream") === "true";
         
-        console.log('📝 PREVIEW_CHAT PARAMS:');
-        console.log('- chatbotId:', chatbotId);
-        console.log('- message:', message?.substring(0, 50));
-        console.log('- stream:', stream);
         
         // Parsear el historial conversacional
         let conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
@@ -1225,32 +1275,7 @@ export async function action({ request }: any) {
           }
         }
         
-        // Función para estimar tokens aproximadamente (4 caracteres = 1 token)
-        const estimateTokens = (text: string): number => Math.ceil(text.length / 4);
-        
-        // Función para truncar historial manteniendo contexto importante
-        const truncateConversationHistory = (
-          history: Array<{ role: "user" | "assistant"; content: string }>,
-          maxTokens: number = 2000
-        ): Array<{ role: "user" | "assistant"; content: string }> => {
-          if (history.length === 0) return history;
-          
-          // Siempre mantener los últimos 6 mensajes (3 intercambios)
-          const minMessagesToKeep = Math.min(6, history.length);
-          let truncatedHistory = history.slice(-minMessagesToKeep);
-          
-          // Calcular tokens del historial truncado
-          let totalTokens = truncatedHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
-          
-          // Si aún excede el límite, remover mensajes más antiguos de a pares (user + assistant)
-          while (totalTokens > maxTokens && truncatedHistory.length > 2) {
-            // Remover los 2 mensajes más antiguos (un intercambio completo)
-            const removedMessages = truncatedHistory.splice(0, 2);
-            totalTokens -= removedMessages.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
-          }
-          
-          return truncatedHistory;
-        };
+        // Usar funciones de utilidad del archivo server correspondiente
         
         if (!chatbotId || !message) {
           return new Response(
@@ -1275,6 +1300,9 @@ export async function action({ request }: any) {
           );
         }
 
+        // RESPETAR configuración del chatbot, no solo la request
+        const stream = requestedStream && (chatbot.enableStreaming !== false);
+
         // Obtener las API keys necesarias
         const openRouterApiKey = process.env.OPENROUTER_API_KEY;
         const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -1286,68 +1314,11 @@ export async function action({ request }: any) {
           );
         }
 
-        // Construir system prompt enriquecido con contextos (con gestión de tokens)
-        let enrichedSystemPrompt = chatbot.instructions || "Eres un asistente útil.";
-        
-        // Agregar instrucciones personalizadas si existen
-        if (chatbot.customInstructions && chatbot.customInstructions.trim()) {
-          enrichedSystemPrompt += "\n\n=== INSTRUCCIONES ESPECÍFICAS ===\n";
-          enrichedSystemPrompt += chatbot.customInstructions;
-          enrichedSystemPrompt += "\n=== FIN INSTRUCCIONES ESPECÍFICAS ===\n";
-        }
-        
-        const basePromptTokens = estimateTokens(enrichedSystemPrompt);
-        
-        // Agregar contextos del chatbot si existen (con límite de tokens)
-        if (chatbot.contexts && chatbot.contexts.length > 0) {
-          const maxContextTokens = 3000; // Reservar 3000 tokens para contextos
-          let contextTokensUsed = 0;
-          let contextContent = "\n\n=== CONTEXTO Y CONOCIMIENTO ===\n";
-          contextContent += "Usa la siguiente información para responder de manera más precisa y útil:\n\n";
-          
-          // Priorizar contextos por tipo (FAQ > text > file > url)
-          const prioritizedContexts = [...chatbot.contexts].sort((a, b) => {
-            const priority = { question: 0, text: 1, file: 2, url: 3 };
-            return priority[a.type] - priority[b.type];
-          });
-          
-          for (const [index, context] of prioritizedContexts.entries()) {
-            let contextText = "";
-            switch (context.type) {
-              case "text":
-                contextText = `**Información ${index + 1}**:\n${context.content}\n\n`;
-                break;
-              case "file":
-                contextText = `**Documento ${index + 1}** (${context.fileName}):\n${context.content}\n\n`;
-                break;
-              case "url":
-                contextText = `**Contenido Web ${index + 1}** (${context.url}):\n${context.content}\n\n`;
-                break;
-              case "question":
-                contextText = `**FAQ ${index + 1}**:\nPregunta: ${context.question}\nRespuesta: ${context.content}\n\n`;
-                break;
-            }
-            
-            const contextTokens = estimateTokens(contextText);
-            if (contextTokensUsed + contextTokens <= maxContextTokens) {
-              contextContent += contextText;
-              contextTokensUsed += contextTokens;
-            } else {
-              // Si el contexto es demasiado largo, truncarlo pero mantener la información clave
-              const remainingTokens = maxContextTokens - contextTokensUsed;
-              if (remainingTokens > 100) { // Solo agregar si hay espacio mínimo
-                const truncatedContent = context.content.substring(0, remainingTokens * 4 * 0.8);
-                contextContent += `**${context.type === 'question' ? 'FAQ' : 'Información'} ${index + 1}** (truncado):\n${truncatedContent}...\n\n`;
-              }
-              break; // No agregar más contextos
-            }
-          }
-          
-          contextContent += "=== FIN DEL CONTEXTO ===\n\n";
-          contextContent += "IMPORTANTE: Usa esta información para dar respuestas precisas, específicas y útiles. Si la pregunta se relaciona con el contexto proporcionado, prioriza esa información.";
-          
-          enrichedSystemPrompt += contextContent;
-        }
+        // Usar función unificada para construir prompt optimizado
+        const enrichedSystemPrompt = buildEnrichedSystemPrompt(chatbot, message, {
+          maxContextTokens: 800, // Límite de emergencia
+          enableLogging: true
+        });
         
         const systemMessage = {
           role: "system",
@@ -1365,11 +1336,6 @@ export async function action({ request }: any) {
           const rawTemperature = chatbot.temperature || 0.7;
           const validTemperature = Math.max(0, Math.min(1, rawTemperature));
           
-          console.log('🌡️ TEMPERATURA DEBUG:', {
-            raw: rawTemperature,
-            adjusted: validTemperature,
-            wasAdjusted: rawTemperature !== validTemperature
-          });
           
           const requestBody = {
             model: chatbot.aiModel,
@@ -1381,12 +1347,6 @@ export async function action({ request }: any) {
           };
           
           // DEBUG: Log de la request
-          console.log('🔍 ANTHROPIC REQUEST DEBUG:');
-          console.log('Model:', chatbot.aiModel);
-          console.log('Messages count:', anthropicMessages.length);
-          console.log('System prompt length:', enrichedSystemPrompt.length);
-          console.log('Stream:', stream);
-          console.log('Request body:', JSON.stringify(requestBody, null, 2));
           
           const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
@@ -1399,31 +1359,14 @@ export async function action({ request }: any) {
           });
           
           // DEBUG: Log de la response
-          console.log('🔍 ANTHROPIC RESPONSE DEBUG:');
-          console.log('Status:', response.status);
-          console.log('Headers:', Object.fromEntries(response.headers.entries()));
           
           return response;
         };
 
         // ✅ NUEVO SISTEMA MODULAR DE PROVEEDORES
-        const { AIProviderManager } = await import('server/chatbot/providers');
-        
-        // Configurar proveedores disponibles
-        const providerManager = new AIProviderManager({
-          ...(anthropicApiKey && { 
-            anthropic: { apiKey: anthropicApiKey } 
-          }),
-          ...(openRouterApiKey && { 
-            openrouter: { apiKey: openRouterApiKey } 
-          })
-        });
-        
-        console.log(`🎯 MODELO PREFERIDO DEL USUARIO: ${chatbot.aiModel}`);
-        console.log(`🏗️ PROVEEDORES DISPONIBLES:`, providerManager.getAvailableProviders());
+        const providerManager = createProviderManager(anthropicApiKey, openRouterApiKey);
         
         const fallbackModels = generateFallbackModels(chatbot.aiModel);
-        console.log(`📋 MODELOS FALLBACK:`, fallbackModels);
 
         // Preparar request para el sistema modular
         const chatRequest = {
@@ -1456,7 +1399,6 @@ export async function action({ request }: any) {
             providerUsed = result.providerUsed;
             usedFallback = result.usedFallback;
             
-            console.log(`🚀 STREAMING: ${providerUsed} - ${modelUsed}${usedFallback ? ' (fallback)' : ' (preferred)'}`);
             
             // Convertir el stream modular al formato esperado por el frontend
             const compatibleStream = new ReadableStream({
@@ -1470,8 +1412,8 @@ export async function action({ request }: any) {
                     const { done, value } = await reader.read();
                     
                     if (done) {
-                      console.log(`🔚 Stream completed. Content chunks: ${contentChunks}, Total chars: ${accumulatedContent.length}`);
-                      controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+                      const doneMessage = 'data: [DONE]\n\n';
+                      controller.enqueue(new TextEncoder().encode(doneMessage));
                       controller.close();
                       break;
                     }
@@ -1486,12 +1428,10 @@ export async function action({ request }: any) {
                       };
                       
                       const chunkData = `data: ${JSON.stringify(chunk)}\n\n`;
-                      console.log(`📤 Sending chunk ${contentChunks}: ${chunkData.substring(0, 100)}`);
                       controller.enqueue(new TextEncoder().encode(chunkData));
                     }
                     
                     if (value.finishReason) {
-                      console.log(`✅ Stream finished with reason: ${value.finishReason}`);
                     }
                   }
                 } catch (error) {
@@ -1522,7 +1462,6 @@ export async function action({ request }: any) {
             providerUsed = result.providerUsed;
             usedFallback = result.usedFallback;
             
-            console.log(`✅ SUCCESS: ${providerUsed} - ${modelUsed}${usedFallback ? ' (fallback)' : ' (preferred)'}`);
             
             return new Response(
               JSON.stringify({
@@ -1558,161 +1497,6 @@ export async function action({ request }: any) {
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
-
-        // Si es streaming, procesar el stream de OpenRouter
-        if (stream) {
-          console.log(`🚀 Iniciando stream con modelo: ${modelUsed}`);
-          const decoder = new TextDecoder();
-          let accumulatedContent = "";
-          let chunkCount = 0;
-          let contentChunks = 0;
-          
-          // Crear un TransformStream para procesar el stream de OpenRouter
-          const transformStream = new TransformStream({
-            async transform(chunk, controller) {
-              chunkCount++;
-              const text = decoder.decode(chunk, { stream: true });
-              console.log(`📦 Chunk ${chunkCount}: ${text.substring(0, 100)}...`);
-              
-              const lines = text.split('\n');
-              
-              for (const line of lines) {
-                if (line.trim() === '') continue; // Saltar líneas vacías
-                
-                // ANTHROPIC: También maneja líneas "event:" y data sin "data:"
-                if (line.startsWith('event: ')) {
-                  console.log(`❓ Non-data line: ${line}`);
-                  continue; // Saltar eventos, solo procesar data
-                }
-                
-                let data;
-                if (line.startsWith('data: ')) {
-                  data = line.slice(6).trim();
-                } else if (line.startsWith('{')) {
-                  // Anthropic a veces envía JSON directo sin "data:"
-                  data = line.trim();
-                } else {
-                  console.log(`❓ Unknown line format: ${line}`);
-                  continue;
-                }
-                
-                console.log(`📝 Data line: ${data.substring(0, 100)}...`);
-                
-                if (data === '[DONE]') {
-                  console.log(`✅ Stream terminado. Total content chunks: ${contentChunks}, Total accumulated: ${accumulatedContent.length} chars`);
-                  controller.enqueue('data: [DONE]\n\n');
-                  continue;
-                }
-                
-                if (data === '') {
-                  console.log('⚠️ Línea de data vacía, saltando...');
-                  continue;
-                }
-                
-                try {
-                    const parsed = JSON.parse(data);
-                    let content = "";
-                    
-                    // ANTHROPIC FORMAT: Detectar formato de Anthropic
-                    if (parsed.type === "content_block_delta" && parsed.delta?.text) {
-                      content = parsed.delta.text;
-                      console.log(`🤖 ANTHROPIC DELTA: "${content}"`);
-                    }
-                    // OPENROUTER FORMAT: Formato estándar OpenAI/OpenRouter
-                    else if (parsed.choices?.[0]?.delta) {
-                      const delta = parsed.choices[0].delta;
-                      content = delta?.content || delta?.reasoning || "";
-                      
-                      // Para modelos de razonamiento, también revisar reasoning_details
-                      if (!content && delta?.reasoning_details?.length > 0) {
-                        content = delta.reasoning_details[0]?.text || "";
-                      }
-                      console.log(`🌐 OPENROUTER DELTA: "${content}"`);
-                    }
-                    
-                    if (content && content.trim()) {
-                      contentChunks++;
-                      console.log(`💬 Contenido ${contentChunks}: "${content}"`);
-                      
-                      // Acumular contenido para validar
-                      accumulatedContent += content;
-                      
-                      // Validar contenido acumulado cada cierto número de caracteres
-                      if (accumulatedContent.length > 50 && accumulatedContent.length % 50 === 0) {
-                        if (!isValidResponse(accumulatedContent)) {
-                          console.log("🚨 Contenido corrupto detectado en streaming, cerrando...");
-                          controller.enqueue('data: {"error": "Respuesta corrupta detectada"}\n\n');
-                          controller.enqueue('data: [DONE]\n\n');
-                          return;
-                        }
-                      }
-                      
-                      // Enviar en el formato que espera el cliente
-                      const encoder = new TextEncoder();
-                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
-                    } else if (parsed.choices?.[0]?.finish_reason) {
-                      console.log(`🏁 Stream finished with reason: ${parsed.choices[0].finish_reason}`);
-                    } else {
-                      console.log(`📄 Parsed but no content:`, JSON.stringify(parsed, null, 2));
-                    }
-                } catch (e) {
-                  console.log(`❌ Error parsing JSON: ${e.message}, data: ${data.substring(0, 100)}`);
-                }
-              }
-            },
-            
-            flush(controller) {
-              console.log(`🔚 Stream flush called. Final stats: ${chunkCount} chunks, ${contentChunks} content chunks, ${accumulatedContent.length} total chars`);
-              if (contentChunks === 0) {
-                console.log('⚠️ No content was sent! Stream was empty.');
-              }
-            }
-          });
-          
-          // Manejar streaming según el provider
-          let transformedStream;
-          if (isAnthropicDirectModel(modelUsed) && anthropicApiKey) {
-            // Anthropic maneja streaming diferente
-            transformedStream = apiResponse.body?.pipeThrough(transformStream);
-          } else {
-            // OpenRouter maneja streaming estándar
-            transformedStream = apiResponse.body?.pipeThrough(transformStream);
-          }
-          
-          return new Response(transformedStream, {
-            headers: {
-              "Content-Type": "text/event-stream",
-              "Cache-Control": "no-cache",
-              "Connection": "keep-alive"
-            }
-          });
-        }
-
-        // Si no es streaming, devolver la respuesta JSON según el provider
-        const result = await apiResponse.json();
-        let responseContent = "";
-        
-        // Diferentes formatos según el provider del modelo usado
-        if (isAnthropicDirectModel(modelUsed) && anthropicApiKey) {
-          responseContent = result.content?.[0]?.text || "No se pudo generar respuesta";
-        } else {
-          responseContent = result.choices?.[0]?.message?.content || "No se pudo generar respuesta";
-        }
-        
-        return new Response(
-          JSON.stringify({
-            success: true,
-            response: responseContent,
-            // TRANSPARENCY: Incluir información del modelo usado
-            modelInfo: {
-              used: modelUsed,
-              preferred: userPreferredModel,
-              wasFromFallback: usedFallback,
-              fallbackReason: usedFallback ? "Modelo preferido no disponible" : null
-            }
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
-        );
 
       default:
         return new Response(

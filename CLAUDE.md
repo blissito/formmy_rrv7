@@ -42,8 +42,9 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 
 ## Convenciones de código
 
-- TypeScript estricto, nunca imports dinámicos
-- no colocar utilidades en el mismo modulo de ruta, siempre preferir colocar herramientas en archivos .server.tsx
+- TypeScript estricto, **NUNCA imports dinámicos** - usar solo imports estáticos
+- **NUNCA colocar utilidades en el mismo módulo de ruta** - siempre crear archivos `.server.tsx` correspondientes para utilidades
+- No agregar funciones de utilidad directamente en archivos de rutas - moverlas a archivos server separados
 - Server Components por defecto
 - Prisma para ORM
 - Tailwind CSS para estilos

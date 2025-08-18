@@ -209,7 +209,6 @@ export const IntegrationCard = ({
           <SimpleButton
             className="shrink-0 w-[40px] px-0"
             onClick={onEdit}
-            title="Configurar"
           >
             <img src="/assets/chat/notebook.svg" alt="Configurar" />
           </SimpleButton>
@@ -219,7 +218,6 @@ export const IntegrationCard = ({
           <SimpleButton
             className="shrink-0 text-danger w-[40px] px-0"
             onClick={onDisconnect}
-            title="Desconectar"
           >
           <VscDebugDisconnect className="text-2xl" />
           </SimpleButton>

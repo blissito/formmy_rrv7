@@ -50,7 +50,7 @@ export class AnthropicProvider extends AIProvider {
     
     const body = {
       model: request.model,
-      max_tokens: request.maxTokens || 1000,
+      max_tokens: request.maxTokens || 150, // EMERGENCIA: Reducir de 1000 a 150
       temperature: this.normalizeTemperature(request.temperature || 0.7),
       ...(system && { system }),
       messages,
@@ -87,7 +87,7 @@ export class AnthropicProvider extends AIProvider {
     
     const body = {
       model: request.model,
-      max_tokens: request.maxTokens || 1000,
+      max_tokens: request.maxTokens || 150, // EMERGENCIA: Reducir de 1000 a 150
       temperature: this.normalizeTemperature(request.temperature || 0.7),
       stream: true,
       ...(system && { system }),
@@ -152,7 +152,6 @@ export class AnthropicProvider extends AIProvider {
                 
                 // Manejar eventos de contenido
                 if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                  console.log(`🤖 Anthropic chunk: "${parsed.delta.text}"`);
                   controller.enqueue({
                     content: parsed.delta.text,
                   });

@@ -114,15 +114,9 @@ export const MessageBubble = ({
                 .join('\n\n---\n\n');
             }
             
-            console.log('🔍 MessageBubble DEBUG:');
-            console.log('- Original content (first 200 chars):', content.substring(0, 200));
-            console.log('- Reasoning blocks found:', reasoningMatches?.length || 0);
-            console.log('- Main content (first 100 chars):', mainContent.substring(0, 100));
-            console.log('- Has reasoning to show:', !!allReasoning);
             
             // Si el main content está vacío pero tenemos reasoning, mostrar mensaje por defecto
             if (!mainContent.trim() && allReasoning) {
-              console.log('⚠️ WARNING: Main content is empty but reasoning exists! Using fallback.');
               mainContent = 'Procesando respuesta...';
             }
             

@@ -15,74 +15,19 @@ export interface ChatPreviewProps {
   production?: boolean;
 }
 
-// Helper function to estimate tokens (4 chars ≈ 1 token)
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
-
-// Helper function to build enriched system prompt with contexts and token management
-function buildEnrichedSystemPrompt(chatbot: Chatbot): string {
-  let enrichedSystemPrompt = chatbot.instructions || "Eres un asistente útil.";
+// Función unificada para prompts optimizados (versión cliente)
+// La lógica se mantiene en el servidor - aquí solo básico para producción
+function buildBasicSystemPrompt(chatbot: Chatbot): string {
+  let prompt = chatbot.instructions || "Eres un asistente útil.";
   
-  // Agregar instrucciones personalizadas si existen
   if (chatbot.customInstructions && chatbot.customInstructions.trim()) {
-    enrichedSystemPrompt += "\n\n=== INSTRUCCIONES ESPECÍFICAS ===\n";
-    enrichedSystemPrompt += chatbot.customInstructions;
-    enrichedSystemPrompt += "\n=== FIN INSTRUCCIONES ESPECÍFICAS ===\n";
+    prompt += "\n\n=== INSTRUCCIONES ESPECÍFICAS ===\n";
+    prompt += chatbot.customInstructions;
+    prompt += "\n=== FIN INSTRUCCIONES ESPECÍFICAS ===\n";
   }
   
-  // Agregar contextos del chatbot si existen (con gestión de tokens)
-  if (chatbot.contexts && chatbot.contexts.length > 0) {
-    const maxContextTokens = 3000; // Reservar 3000 tokens para contextos
-    let contextTokensUsed = 0;
-    let contextContent = "\n\n=== CONTEXTO Y CONOCIMIENTO ===\n";
-    contextContent += "Usa la siguiente información para responder de manera más precisa y útil:\n\n";
-    
-    // Priorizar contextos por tipo (FAQ > text > file > url)
-    const prioritizedContexts = [...chatbot.contexts].sort((a, b) => {
-      const priority = { question: 0, text: 1, file: 2, url: 3 };
-      return (priority[a.type as keyof typeof priority] || 4) - (priority[b.type as keyof typeof priority] || 4);
-    });
-    
-    for (const [index, context] of prioritizedContexts.entries()) {
-      let contextText = "";
-      switch (context.type) {
-        case "text":
-          contextText = `**Información ${index + 1}**:\n${context.content}\n\n`;
-          break;
-        case "file":
-          contextText = `**Documento ${index + 1}** (${context.fileName}):\n${context.content}\n\n`;
-          break;
-        case "url":
-          contextText = `**Contenido Web ${index + 1}** (${context.url}):\n${context.content}\n\n`;
-          break;
-        case "question":
-          contextText = `**FAQ ${index + 1}**:\nPregunta: ${context.question}\nRespuesta: ${context.content}\n\n`;
-          break;
-      }
-      
-      const contextTokens = estimateTokens(contextText);
-      if (contextTokensUsed + contextTokens <= maxContextTokens) {
-        contextContent += contextText;
-        contextTokensUsed += contextTokens;
-      } else {
-        // Si el contexto es demasiado largo, truncarlo pero mantener la información clave
-        const remainingTokens = maxContextTokens - contextTokensUsed;
-        if (remainingTokens > 100) { // Solo agregar si hay espacio mínimo
-          const truncatedContent = context.content.substring(0, remainingTokens * 4 * 0.8);
-          contextContent += `**${context.type === 'question' ? 'FAQ' : 'Información'} ${index + 1}** (truncado):\n${truncatedContent}...\n\n`;
-        }
-        break; // No agregar más contextos
-      }
-    }
-    
-    contextContent += "=== FIN DEL CONTEXTO ===\n\n";
-    contextContent += "IMPORTANTE: Usa esta información para dar respuestas precisas, específicas y útiles. Si la pregunta se relaciona con el contexto proporcionado, prioriza esa información.";
-    
-    enrichedSystemPrompt += contextContent;
-  }
   
-  return enrichedSystemPrompt;
+  return prompt;
 }
 
 export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
@@ -97,8 +42,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [stream, setStream] = useState(true);
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [stream, setStream] = useState(chatbot.enableStreaming !== false); // Respetar configuración de BD
   const inputRef = useRef<ChatInputRef>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -109,20 +53,6 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   // SessionId persistente para mantener contexto conversacional
   const sessionIdRef = useRef<string>(`${production ? 'prod' : 'preview'}-${chatbot.id}-${Date.now()}`);
 
-  // En producción, obtener la API key del chatbot
-  useEffect(() => {
-    if (production) {
-      // Obtener la API key pública del chatbot
-      fetch(`/api/v1/apikey?chatbotId=${chatbot.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.key) {
-            setApiKey(data.key);
-          }
-        })
-        .catch(console.error);
-    }
-  }, [production, chatbot.id]);
 
   useEffect(() => {
     setChatMessages((m) => {
@@ -133,6 +63,8 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
       };
       return update;
     });
+    // Actualizar configuración de streaming cuando cambie el chatbot
+    setStream(chatbot.enableStreaming !== false);
   }, [chatbot]);
 
   // Auto-scroll logic
@@ -234,9 +166,6 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     if (!chatInput.trim()) return;
     
     // DEBUG CRÍTICO: Verificar qué modelo tiene el chatbot
-    console.log('🔥 CHATPREVIEW DEBUG:');
-    console.log('chatbot.aiModel:', chatbot.aiModel);
-    console.log('isAnthropicDirectModel:', isAnthropicDirectModel(chatbot.aiModel));
 
     const currentInput = chatInput.trim();
     setChatLoading(true);
@@ -254,53 +183,21 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     if (stream) {
       setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
       
-      // Determinar qué endpoint usar según el modo
-      if (production && apiKey) {
-        // En producción, usar el SDK con la API key del chatbot
-        Effect.runPromise(
-          sendOpenRouterMessageEffect({
-            chatbotId: chatbot.id,
-            apiKey: apiKey,
-            model: chatbot.aiModel || DEFAULT_AI_MODEL,
-            instructions: chatbot.instructions || "",
-            temperature: chatbot.temperature,
-            messages: [
-              { role: "system", content: buildEnrichedSystemPrompt(chatbot) },
-              ...updatedMessages,
-            ],
-            stream: true,
-            onStreamChunk: (partial) => {
-              setChatMessages((msgs) => {
-                const updated = [...msgs];
-                let lastIdx = updated.length - 1;
-                while (lastIdx >= 0 && updated[lastIdx].role !== "assistant")
-                  lastIdx--;
-                if (lastIdx >= 0)
-                  updated[lastIdx] = { ...updated[lastIdx], content: partial };
-                return updated;
-              });
-            },
-          })
-        )
-          .then(() => {
-            setChatLoading(false);
-            inputRef.current?.focus();
-          })
-          .catch((err: unknown) => {
-            setChatError(err instanceof Error ? err.message : String(err));
-            setChatLoading(false);
-            inputRef.current?.focus();
-          });
-      } else {
-        // En preview (dashboard), usar el endpoint interno
+      // Usar siempre el endpoint interno unificado (tanto para preview como producción)
+      {
         const formData = new FormData();
         formData.append("intent", "preview_chat");
-        console.log('📤 SENDING REQUEST: intent=preview_chat');
         formData.append("chatbotId", chatbot.id);
         formData.append("message", currentInput);
         formData.append("sessionId", sessionIdRef.current);
         formData.append("conversationHistory", JSON.stringify(updatedMessages));
         formData.append("stream", "true");
+
+        // Timeout de seguridad para evitar loading infinito
+        const timeoutId = setTimeout(() => {
+          setChatLoading(false);
+          inputRef.current?.focus();
+        }, 30000);
 
         fetch("/api/v1/chatbot", {
           method: "POST",
@@ -325,8 +222,18 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
               
               for (const line of lines) {
                 if (line.startsWith('data: ')) {
+                  const dataStr = line.slice(6);
+                  
+                  // Manejar [DONE] explícitamente
+                  if (dataStr === '[DONE]' || dataStr.trim() === '[DONE]') {
+                    clearTimeout(timeoutId);
+                    setChatLoading(false);
+                    inputRef.current?.focus();
+                    return; // Salir completamente de toda la función fetch
+                  }
+                  
                   try {
-                    const data = JSON.parse(line.slice(6));
+                    const data = JSON.parse(dataStr);
                     if (data.content) {
                       fullContent += data.content;
                       setChatMessages((msgs) => {
@@ -340,60 +247,30 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
                       });
                     }
                   } catch (e) {
-                    // Ignorar líneas que no son JSON válido
+                    console.warn('Failed to parse chunk:', dataStr);
                   }
                 }
               }
             }
           }
           
+          // Si llegamos aquí sin [DONE], limpiar loading
+          clearTimeout(timeoutId);
           setChatLoading(false);
           inputRef.current?.focus();
         })
         .catch((err: unknown) => {
+          clearTimeout(timeoutId);
           setChatError(err instanceof Error ? err.message : String(err));
           setChatLoading(false);
           inputRef.current?.focus();
         });
       }
     } else {
-      // Sin streaming
-      if (production && apiKey) {
-        // En producción, usar el SDK con la API key del chatbot
-        Effect.runPromise(
-          sendOpenRouterMessageEffect({
-            chatbotId: chatbot.id,
-            apiKey: apiKey,
-            model: chatbot.aiModel || DEFAULT_AI_MODEL,
-            instructions: chatbot.instructions || "",
-            temperature: chatbot.temperature,
-            messages: [
-              { role: "system", content: buildEnrichedSystemPrompt(chatbot) },
-              ...updatedMessages,
-            ],
-            stream: false,
-          })
-        )
-          .then((result: any) => {
-            const botContent =
-              result.choices?.[0]?.message?.content || "Respuesta vacía";
-            setChatMessages((msgs) => [
-              ...msgs,
-              { role: "assistant", content: botContent },
-            ]);
-            setChatLoading(false);
-            inputRef.current?.focus();
-          })
-          .catch((err: unknown) => {
-            setChatError(err instanceof Error ? err.message : String(err));
-            setChatLoading(false);
-            inputRef.current?.focus();
-          });
-      } else {
-        // En preview (dashboard), usar el endpoint interno
+      // Sin streaming - usar siempre el endpoint interno unificado
+      {
         const formData = new FormData();
         formData.append("intent", "preview_chat");
-        console.log('📤 SENDING REQUEST: intent=preview_chat');
         formData.append("chatbotId", chatbot.id);
         formData.append("message", currentInput);
         formData.append("sessionId", sessionIdRef.current);
