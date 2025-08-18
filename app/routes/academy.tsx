@@ -5,6 +5,8 @@ import { Fragment, useState } from "react";
 import { useLoaderData } from "react-router";
 import { getUserOrNull } from "server/getUserUtils.server";
 import type { Route } from "./+types/academy";
+import HomeHeader from "./home/HomeHeader";
+import HomeFooter from "./home/HomeFooter";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrNull(request);
@@ -16,23 +18,15 @@ export default function academy() {
   const { user } = useLoaderData<typeof loader>();
   return (
     <>
-      <Nav user={user} />
-      <section className="dark:bg-space-900">
-        <section className="pt-32 md:pt-40 pb-20 px-4 md:px-0 lg:max-w-6xl max-w-3xl mx-auto text-space-500 dark:text-space-300">
+      <HomeHeader />
+        <section className="pb-20 md:pb-40 pt-40 md:pt-64 px-4 md:px-0 lg:max-w-6xl max-w-3xl mx-auto text-space-500 dark:text-space-300">
           <h2 className="text-3xl md:text-5xl text-space-800 dark:text-white font-semibold">
             Formmy Academy
           </h2>
-          <p className="text-lg md:text-2xl text-gray-600 dark:text-space-400 font-light w-full md:w-[700px] mt-4">
+          <p className="text-lg md:text-2xl text-metal font-light w-full md:w-[700px] mt-4">
             Empieza a utilizar Formmy en tu sitio web. Agregalo fácilmente a tu
             HTML o a tu proyecto de React, Wordpress, Angular, o más.{" "}
           </p>
-          {/* <button
-            className={twMerge(
-              "mt-8 bg-brand-500 text-lg font-normal h-[48px] rounded-full text-[#fff]  px-8 hover:scale-105 transition-all mb-1 block  "
-            )}
-          >
-            Próximamente &rarr;
-          </button> */}
           <div className="flex flex-col gap-10 md:gap-8 mt-16">
             <Card
               title="Crea tu primer Formmy"
@@ -63,8 +57,8 @@ export default function academy() {
               video="https://www.youtube.com/embed/F9muTF0fg-8?si=q1LN-0KWkd4-LzxI"
             />
           </div>
-        </section>
       </section>
+      <HomeFooter/>
     </>
   );
 }

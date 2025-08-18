@@ -1,7 +1,14 @@
-import Nav from "~/components/NavBar";
-import { Link } from "react-router";
+
 import HomeHeader from "./home/HomeHeader";
 import HomeFooter from "./home/HomeFooter";
+import getBasicMetaTags from "~/utils/getBasicMetaTags";
+
+export const meta = () =>
+  getBasicMetaTags({
+    title: "Aviso de privacidad | Formmy",
+    description:
+      "Consulta el Aviso de Privacidad de Formmy.",
+  });
 
 export default function Aviso() {
   return (

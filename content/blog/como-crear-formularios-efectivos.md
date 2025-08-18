@@ -5,6 +5,7 @@ date: "2025-01-12"
 tags: ["tutorial", "ux", "conversiones", "formularios"]
 author: "María González"
 image: "/home/blog.webp"
+category: "blog"
 ---
 
 # 5 Claves para Crear Formularios Más Efectivos

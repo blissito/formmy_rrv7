@@ -1,6 +1,67 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { FaArrowRight } from 'react-icons/fa';
 import type { MetaFunction, LoaderFunctionArgs } from 'react-router';
 import { useLoaderData, Link } from 'react-router';
 import { getBlogPosts, type BlogPost } from 'server/blog.server';
+import { cn } from '~/lib/utils';
+import HomeHeader from '~/routes/home/HomeHeader';
+import HomeFooter from './home/HomeFooter';
+
+// Componente para las etiquetas de los posts
+const BlogTag = ({ tag }: { tag: string }) => (
+  <span className="bg-white/10 text-white px-3 py-2 rounded-full text-xs">
+    {tag}
+  </span>
+);
+
+// Componente para la tarjeta de blog básica
+const BlogCardBasic = ({ image, title, excerpt, className, slug }: { image?: string; title: string; excerpt?: string, className?: string, slug: string }) => (
+  <div className={cn('col-span-1 md:col-span-2 rounded-3xl overflow-hidden h-[400px] relative group', className)}>
+    <img className='w-full h-full object-cover group-hover:scale-110 transition-all' src={image} alt={title} />
+    <span className="absolute top-6 left-6 text-white z-20 flex gap-2 items-center">
+      <div className="w-2 h-2 bg-white rounded-full"></div> Blog
+    </span>
+    <div className='w-full h-full absolute top-0 left-0 flex flex-col justify-end z-10 items-start p-6 bg-black/40'>
+      <h2 className='text-white text-4xl mb-8'>{title}</h2>
+      <div className="flex justify-between w-full items-center gap-2 h-10">
+        <div className="flex gap-2">
+          <BlogTag tag="AI" />
+          <BlogTag tag="Lanzamiento" />
+          <BlogTag tag="Nuevo" />
+        </div>
+        <Link className="w-10 h-10 grid place-items-center" to={`/blog/${slug}`}>
+          <div className='w-10 h-10 group-hover:w-9 group-hover:h-9 transition-all flex items-center justify-center rounded-full bg-white text-brand-500'>
+            <FaArrowRight />
+          </div>
+        </Link>
+      </div>
+    </div>
+  </div>
+);
+
+// Componente para la tarjeta de blog sólida
+const BlogCardSolid = ({ image, title, excerpt, slug, variant = 'useCase' }: { image: string; title: string; excerpt?: string, slug: string, variant?: 'useCase' | 'tutorial' }) => (
+  <div className={cn('col-span-1 md:col-span-2 rounded-3xl overflow-hidden h-[400px] relative group ', variant === 'useCase' ? 'bg-dark' : 'bg-brand-500')}>
+    <span className="absolute top-6 left-6 text-white z-20 flex gap-2 items-center">
+      <div className="w-2 h-2 bg-white rounded-full"></div> {variant === 'useCase' ? 'Caso de Uso' : 'Tutorial'}
+    </span>
+    <div className='w-full h-full absolute top-0 left-0 flex flex-col justify-end z-10 items-start p-6 '>
+      <h2 className={cn('text-white text-4xl mb-8', variant === 'useCase' ? 'text-white' : 'text-white')}>{title}</h2>
+      <div className="flex justify-between w-full items-center gap-2 h-10">
+        <div className="flex gap-2">
+          <BlogTag tag="AI" />
+          <BlogTag tag="Lanzamiento" />
+          <BlogTag tag="Nuevo" />
+        </div>
+        <Link className="w-10 h-10 grid place-items-center" to={`/blog/${slug}`}>
+          <div className='w-10 h-10 group-hover:w-9 group-hover:h-9 transition-all flex items-center justify-center rounded-full bg-white text-brand-500'>
+            <FaArrowRight />
+          </div>
+        </Link>
+      </div>
+    </div>
+  </div>
+);
 
 export const meta: MetaFunction = () => {
   return [
@@ -14,94 +75,179 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return { posts };
 };
 
+type FilterType = 'todos' | 'ai' | 'lanzamiento' | 'tutoriales' | 'noticias' | 'casos-uso';
+
 export default function BlogIndex() {
   const { posts } = useLoaderData<{ posts: BlogPost[] }>();
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('todos');
+  const lastScrollY = useRef(0);
+  const viewportTrigger = useRef(0);
+  
+  const filteredPosts = React.useMemo(() => {
+    if (activeFilter === 'todos') return posts;
+    if (activeFilter === 'casos-uso') {
+      return posts.filter(post => post.category === 'useCase');
+    }
+    return posts.filter(post => 
+      post.tags?.some(tag => tag.toLowerCase() === activeFilter)
+    );
+  }, [posts, activeFilter]);
+  
+  const handleFilterClick = (filter: FilterType) => {
+    setActiveFilter(filter);
+    // Scroll suave a la sección de posts
+    document.getElementById('posts')?.scrollIntoView({ behavior: 'smooth' });
+  };
+  
+  useEffect(() => {
+    viewportTrigger.current = window.innerHeight / 3; // 1/3 del viewport
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScroll = window.scrollY;
+      const scrollingDown = currentScroll > lastScrollY.current;
+      
+      if (scrollingDown && currentScroll > viewportTrigger.current) {
+        // Al bajar, mostrar overlay después de 1/3 del viewport
+        setShowOverlay(true);
+      } else if (!scrollingDown && currentScroll < viewportTrigger.current) {
+        // Al subir, ocultar antes de llegar a 1/3 del viewport
+        setShowOverlay(false);
+      }
+      
+      lastScrollY.current = currentScroll;
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <Link to="/" className="inline-flex items-center text-brand-600 hover:text-brand-700 mb-4">
-            ← Volver a inicio
-          </Link>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Blog</h1>
-          <p className="text-xl text-gray-600">
-            Últimas noticias, tutoriales y artículos sobre formularios inteligentes
+    <div className="min-h-screen bg-white">
+      {!showOverlay && <HomeHeader />}
+      <div 
+        className={`sticky -top-96 w-full  transition-all duration-300 ${
+          showOverlay ? 'bg-black/40' : 'bg-transparent'
+        }`}
+      >
+        <div className="pt-40 md:pt-64 pb-16 max-w-7xl mx-auto ">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Blog</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Tips, noticias, tutoriales y casos de uso de formularios inteligentes y chatbots IA.
           </p>
         </div>
-      </div>
-
+        <div id="sticky-header" className="grid grid-cols-1 md:grid-cols-5 gap-8 px-4 md:px-[5%] lg:px--'">
+        <BlogCardBasic  
+        className='col-span-1 md:col-span-3'
+          image="https://images.pexels.com/photos/17514176/pexels-photo-17514176.jpeg" 
+          title="Lanzamiento de Formmy"
+          excerpt="Descubre cómo Formmy puede revolucionar la forma en que manejas los formularios en tu negocio con nuestra plataforma todo en uno."
+          slug="lanzamiento-de-formmy"
+        />
+        <BlogCardSolid  
+          image="https://images.pexels.com/photos/17514176/pexels-photo-17514176.jpeg" 
+          title="Lanzamiento de Formmy"
+          excerpt="Descubre cómo Formmy puede revolucionar la forma en que manejas los formularios en tu negocio con nuestra plataforma todo en uno."
+          slug="lanzamiento-de-formmy-caso-uso"
+        />
+        </div>
+        </div>
+    </div>
       {/* Posts List */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        {posts.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📝</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">No hay artículos aún</h2>
-            <p className="text-gray-600">Próximamente publicaremos contenido interesante.</p>
-          </div>
-        ) : (
-          <div className="grid gap-8">
-            {posts.map((post) => (
-              <article
-                key={post.slug}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
+      <div className="relative bg-white pb-20 md:pb-40">
+        <div className="sticky top-0 z-50 bg-white border-b border-outlines ">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div id="filters" className="flex flex-wrap gap-3  py-8 justify-center">
+              <button 
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  activeFilter === 'todos' 
+                    ? 'bg-brand-600 text-white hover:bg-brand-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => handleFilterClick('todos')}
               >
-                {post.image && (
-                  <div className="aspect-video bg-gray-100">
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="p-6">
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                    <time dateTime={post.date}>
-                      {new Date(post.date).toLocaleDateString('es-ES', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </time>
-                    {post.tags && post.tags.length > 0 && (
-                      <>
-                        <span>•</span>
-                        <div className="flex gap-2">
-                          {post.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full text-xs"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-3 hover:text-brand-600 transition-colors">
-                    <Link to={`/blog/${post.slug}`}>{post.title}</Link>
-                  </h2>
-                  {post.excerpt && (
-                    <p className="text-gray-600 mb-4 leading-relaxed">{post.excerpt}</p>
-                  )}
-                  <Link
-                    to={`/blog/${post.slug}`}
-                    className="inline-flex items-center text-brand-600 hover:text-brand-700 font-medium"
-                  >
-                    Leer artículo
-                    <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-              </article>
-            ))}
+                Todos
+              </button>
+          
+              <button 
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  activeFilter === 'tutoriales' 
+                    ? 'bg-brand-600 text-white hover:bg-brand-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => handleFilterClick('tutoriales')}
+              >
+                Tutoriales
+              </button>
+              <button 
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  activeFilter === 'casos-uso' 
+                    ? 'bg-brand-600 text-white hover:bg-brand-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => handleFilterClick('casos-uso')}
+              >
+                Casos de Uso
+              </button>
+              <button 
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  activeFilter === 'noticias' 
+                    ? 'bg-brand-600 text-white hover:bg-brand-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => handleFilterClick('noticias')}
+              >
+                Noticias
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="posts">
+          {filteredPosts.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📝</div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">No hay artículos aún</h2>
+              <p className="text-gray-600">Próximamente publicaremos contenido interesante.</p>
+            </div>
+          ) : (
+            <div className="grid gap-y-6 gap-x-0 md:gap-8 grid-cols-1 md:grid-cols-6">
+              {filteredPosts.map((post) => {
+                const isUseCase = post.category === 'useCase';
+                const isTutorial = post.category === 'tutorial';
+                
+                if (isUseCase || isTutorial) {
+                  return (
+                    <BlogCardSolid
+                      key={post.slug}
+                      image={post.image || '/default-blog-image.jpg'}
+                      title={post.title}
+                      excerpt={post.excerpt}
+                      slug={post.slug}
+                      variant={isTutorial ? 'tutorial' : 'useCase'}
+                    />
+                  );
+                }
+                
+                return (
+                  <BlogCardBasic
+                    className="col-span-2"
+                    key={post.slug}
+                    image={post.image || '/default-blog-image.jpg'}
+                    title={post.title}
+                    excerpt={post.excerpt}
+                    slug={post.slug}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
+      <div className="relative z-10">
+      <HomeFooter /></div>
     </div>
   );
 }

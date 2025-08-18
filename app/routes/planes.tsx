@@ -5,6 +5,15 @@ import { Faq } from "~/components/home/Faq";
 import HomeFooter from "./home/HomeFooter";
 import { GeneralCallToAction } from "./home/HomeCallToAction";
 import { DemoBanner } from "./home/FullBanner";
+import getBasicMetaTags from "~/utils/getBasicMetaTags";
+
+
+export const meta = () =>
+  getBasicMetaTags({
+    title: "Planes y Precios | Formmy",
+    description:
+      "Elige el plan que mejor se adapte a ti.",
+  });
 
 export default function Planes() {
   return (

@@ -36,7 +36,7 @@ export const plans: Plan[] = [
     arrBoxClass: "bg-[#7574D6] text-white",
   },
   {
-    name: "Grow",
+    name: "Starter",
     description: "Ideal si eres freelancer",
     price: "$140",
     priceNote: "/mes",
@@ -66,7 +66,7 @@ export const plans: Plan[] = [
     arr: "Ahorra 10% al pagar anualmente",
     arrClass: "text-[#DAB23F] underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
     includes: [
-        "📋 Todo lo que incluye el plan Grow",
+        "📋 Todo lo que incluye el plan Starter",
         "🤖 10 chatbots",
         "🪄 Mayor capacidad (5mb) de entrenamiento para tu agente",
         "🚀 Integraciones de Calendario, Weebhook, WhatsApp y más ",
@@ -88,7 +88,7 @@ export const plans: Plan[] = [
     arr: "Ahorra 10% al pagar anualmente",
     arrClass: "text-[#5FAFA8] underline underline-offset-4 decoration-2 decoration-[#5FAFA8]",
     includes: [
-        "📋 Todo lo que incluye el plan Grow",
+        "📋 Todo lo que incluye el plan Starter",
         "🤖 Chatbots ilimitados",
         "🪄 Mayor capacidad (10mb) de entrenamiento para tu agente",
         "🚀 Integraciones de Calendario, Weebhook, WhatsApp y más ",

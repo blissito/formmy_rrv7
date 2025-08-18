@@ -61,7 +61,7 @@ export default function HomeFooter() {
           <div>
             <div className="font-semibold mb-3 text-base">Empieza ya</div>
             <ul className="space-y-2 text-gray-500 text-sm text-lightGray">
-              <Form method="post">
+              <Form method="post" action="/api/login">
                 <button
                   type="submit"
                   name="intent"
@@ -94,6 +94,11 @@ export default function HomeFooter() {
               <li>
                 <a href="/academy" className="hover:underline">
                   Formmy Academy
+                </a>
+              </li>
+              <li>
+                <a href="/blog" className="hover:underline">
+                  Blog
                 </a>
               </li>
               {/* <li><a href="#" className="hover:underline">Blog</a></li> */}

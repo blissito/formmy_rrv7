@@ -7,6 +7,14 @@ import { FullBanner } from "./home/FullBanner";
 import { Registration, Suscription } from "~/components/home/FormmysTypes";
 import { Steper } from "~/components/Steper";
 import { FullComment } from "~/components/common/FullComment";
+import getBasicMetaTags from "~/utils/getBasicMetaTags";
+
+export const meta = () =>
+  getBasicMetaTags({
+    title: "Crea formularios para tu sitio web sin código | Formmy",
+    description:
+      "Genera formularios de contacto, registro o listas de espera y agrégalos fácilmente a tu sitio web sin programar",
+  });
 
 function CardDemoIA({
   gradient,

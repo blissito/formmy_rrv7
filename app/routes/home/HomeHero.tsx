@@ -1,4 +1,4 @@
-import { Form } from "react-router";
+import { Form, Link } from "react-router";
 import { BigCTA } from "~/components/BigCTA";
 import { Button } from "~/components/Button";
 import { ContainerScroll } from "~/components/home/ContainerScroll";
@@ -30,9 +30,11 @@ export default function HomeHero() {
         <Form method="post" action="/api/login">
           <BigCTA type="submit" name="intent" value="google-login" textClassName="text-base md:text-lg" />
         </Form>
+        <Link to="/planes">
         <Button variant="secondary" className="mt-0 h-14 text-base md:text-lg">
           Ver planes
         </Button>
+        </Link>
       </div>
       <ContainerScroll>
         <img
