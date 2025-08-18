@@ -3,6 +3,7 @@ import { getSesRemitent, getSesTransport } from "./ses";
 
 type FreeTrialEmail = {
   email: string;
+  name?: string;
 };
 
 const host =
@@ -13,7 +14,7 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendFreeTrialEmail = async ({ email }: FreeTrialEmail) => {
+export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
@@ -58,7 +59,7 @@ export const sendFreeTrialEmail = async ({ email }: FreeTrialEmail) => {
                     text-align: left;
                     "
                 >
-                    ¡Hola Luis! Tu chatbot IA está por desconectarse
+                    ¡Hola ${name || 'amigo'}! Tu chatbot IA está por desconectarse
                 </h2>
                 <p
                     style="

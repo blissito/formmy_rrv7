@@ -17,6 +17,7 @@ export interface StripeSubscription {
   id: string;
   customer: string;
   status: SubscriptionStatus;
+  current_period_end?: number; // Unix timestamp
   // Otros campos de Stripe que podamos necesitar
 }
 
@@ -66,7 +67,7 @@ export async function handleSubscriptionCreated(
 
   // Send PRO upgrade email
   try {
-    await sendProEmail({ email: user.email });
+    await sendProEmail({ email: user.email, name: user.name });
   } catch (error) {
     console.error('Error sending PRO upgrade email:', error);
   }
@@ -146,7 +147,19 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
 
   // Send cancellation email
   try {
-    await sendPlanCancellation({ email: user.email });
+    // Format end date from Unix timestamp to Spanish date format
+    const endDate = subscription.current_period_end 
+      ? new Date(subscription.current_period_end * 1000).toLocaleDateString("es-MX", {
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        })
+      : "31 de diciembre de 2025"; // Fallback date
+    
+    await sendPlanCancellation({ 
+      email: user.email,
+      endDate 
+    });
   } catch (error) {
     console.error('Error sending plan cancellation email:', error);
   }

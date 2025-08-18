@@ -83,7 +83,7 @@ export const sendPlanCancellation = async ({ email, endDate }: PlanCancellationT
                 >
                     Tu acceso a las funciones del Plan Pro estará disponible hasta el
                     final del período de facturación actual, el
-                    <strong>20 de Noviembre de 2025</strong>.
+                    <strong>${endDate}</strong>.
                 </p>
                 <p
                     style="
@@ -111,7 +111,7 @@ export const sendPlanCancellation = async ({ email, endDate }: PlanCancellationT
                     sugerencia para mejorar, nos encantaría escucharte. Tu opinión es
                     muy valiosa para nosotros. Escríbenos a
                     <a
-                    href="mailto:hola@easybits.cloud"
+                    href="mailto:hola@formmy.app"
                     target="blank"
                     rel="noreferrer"
                     >

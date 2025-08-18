@@ -3,6 +3,7 @@ import { getSesRemitent, getSesTransport } from "./ses";
 
 type NoUsageEmail = {
   email: string;
+  name?: string;
 };
 
 const host =
@@ -13,7 +14,7 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendNoUsageEmail = async ({ email }: NoUsageEmail) => {
+export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
@@ -58,7 +59,7 @@ export const sendNoUsageEmail = async ({ email }: NoUsageEmail) => {
                     text-align: left;
                     "
                 >
-                    ¡Hey Luis! Tu cuenta ya está lista… pero tu Formmy aún no.
+                    ¡Hey ${name || 'amigo'}! Tu cuenta ya está lista… pero tu Formmy aún no.
                 </h2>
                 <p
                     style="

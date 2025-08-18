@@ -3,6 +3,8 @@ import { getSesRemitent, getSesTransport } from "./ses";
 
 type WeekSummaryEmail = {
   email: string;
+  name?: string;
+  chatbotName?: string;
 };
 
 const host =
@@ -13,12 +15,12 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendWeekSummaryEmail = async ({ email }: WeekSummaryEmail) => {
+export const sendWeekSummaryEmail = async ({ email, name, chatbotName }: WeekSummaryEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
       to: email,
-      subject: "¡Tu Formmy aún no está en acción!",
+      subject: "📊 Esta semana en Formmy",
       html: `
         <html>
         <head>
@@ -58,8 +60,8 @@ export const sendWeekSummaryEmail = async ({ email }: WeekSummaryEmail) => {
                     text-align: left;
                     "
                 >
-                    ¡Hola Luis! aquí está tu resumen semanal de tu chatbot
-                    <span style="color: #7271cc"> Fulanito 🤖</span>
+                    ¡Hola ${name || 'amigo'}! aquí está tu resumen semanal de tu chatbot
+                    <span style="color: #7271cc"> ${chatbotName || 'Ghosty'} 🤖</span>
                 </h2>
                 <p
                     style="
@@ -133,7 +135,7 @@ export const sendWeekSummaryEmail = async ({ email }: WeekSummaryEmail) => {
                     font-size: 16px;
                     "
                 >
-                    Consulta el detalle completo en tu dashbaord.
+                    Consulta el detalle completo en tu dashboard.
                 </p>
                 <p
                     style="

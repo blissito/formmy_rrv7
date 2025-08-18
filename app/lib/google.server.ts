@@ -156,7 +156,7 @@ export const createSession = async (code: string, request: Request, state?: stri
       
       // Send welcome email to new user
       try {
-        await sendWelcomeEmail({ email: extra.email });
+        await sendWelcomeEmail({ email: extra.email, name: extra.name });
       } catch (error) {
         console.error('Error sending welcome email:', error);
         // Don't fail registration if welcome email fails

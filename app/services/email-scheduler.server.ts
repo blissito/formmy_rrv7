@@ -49,7 +49,7 @@ export class EmailScheduler {
 
       for (const user of usersWithoutProjects) {
         try {
-          await sendNoUsageEmail({ email: user.email });
+          await sendNoUsageEmail({ email: user.email, name: user.name });
           
           // Optionally update user record to track when we sent this email
           // await db.user.update({
@@ -122,7 +122,7 @@ export class EmailScheduler {
 
       for (const user of usersNearTrialEnd) {
         try {
-          await sendFreeTrialEmail({ email: user.email });
+          await sendFreeTrialEmail({ email: user.email, name: user.name });
           console.log(`[EmailScheduler] Sent trial expiry email to ${user.email}`);
         } catch (error) {
           console.error(
@@ -175,7 +175,7 @@ export class EmailScheduler {
 
       for (const user of proUsersWithActivity) {
         try {
-          await sendWeekSummaryEmail({ email: user.email });
+          await sendWeekSummaryEmail({ email: user.email, name: user.name, chatbotName: user.chatbots?.[0]?.name });
           console.log(`[EmailScheduler] Sent weekly summary email to ${user.email}`);
         } catch (error) {
           console.error(
