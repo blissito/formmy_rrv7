@@ -4,7 +4,7 @@ import { cn } from "~/lib/utils";
 
 function TestimonialCard({ className, name, company, img, comment }: { name: string; company: string; comment: string; img: string, className?:string } ) {
   return (
-    <div className={cn("bg-clear w-full md:w-[281px] h-fit rounded-3xl border border-outlines shadow p-6 flex flex-col justify-between", className)}>
+    <div className={cn("bg-clear w-full md:w-[281px] h-fit rounded-3xl border border-outlines shadow p-6 flex flex-col justify-between transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1 hover:border-primary/20", className)}>
       <div>
         <p className="paragraph text-metal text-[18px] mb-4">{comment}</p>
       </div>

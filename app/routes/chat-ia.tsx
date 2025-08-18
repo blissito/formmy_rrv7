@@ -11,6 +11,18 @@ import { ChatIntegrations } from "./chat/ChatIntegrations";
 import { IAModels } from "./chat/IAModels";
 import { AIMotivation } from "./chat/AIMotivation";
 import ChatTypes from "./chat/ChatTypes";
+import { SectionFadeIn } from "./home/home";
+import getBasicMetaTags from "~/utils/getBasicMetaTags";
+
+
+
+export const meta = () =>
+  getBasicMetaTags({
+    title: "Chatbot IA para tu sitio web | Formmy",
+    description:
+      "Activa un chatbot con inteligencia artificial en tu sitio web en minutos. Sin código, personalizable y disponible 24/7.",
+  });
+
 
 const stepsWithImages = [
   {
@@ -40,6 +52,8 @@ const stepsWithImages = [
   },
 ];
 
+
+
 export default function ChatIA() {
   return (
     <section className="bg-clear pt-40 md:pt-52 overflow-hidden">
@@ -54,6 +68,7 @@ export default function ChatIA() {
       <ChatTypes />
       <ChatIntegrations />
       <IAModels/>
+        <SectionFadeIn delay={0.4}>
       <section className="grid-cols-2 max-w-7xl mx-auto px-4 ">
         <FullComment
         ImageClassName="h-[400px]"
@@ -64,7 +79,7 @@ export default function ChatIA() {
           clientCompany="Collectum Datos"
         />
       </section>
-
+      </SectionFadeIn>
       <section
         id="steper"
         className="w-full md:min-h-fit max-w-7xl mx-auto my-20 md:my-40 px-4 md:px-[5%] xl:px-0 min-h-[800px]"

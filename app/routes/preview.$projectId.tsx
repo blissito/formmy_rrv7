@@ -5,6 +5,7 @@ import { twMerge } from "tailwind-merge";
 import Formmy, { type ConfigSchema } from "~/components/formmys/FormyV1";
 import Message from "~/components/formmys/MessageV1";
 import { db } from "~/utils/db.server";
+import getBasicMetaTags from "~/utils/getBasicMetaTags";
 
 export const loader = async ({ params }: LoaderArgs) => {
   const project = await db.project.findUnique({
@@ -126,3 +127,10 @@ export const NakedFormmy = ({
     </>
   );
 };
+
+export const meta = () =>
+  getBasicMetaTags({
+    title: "Completa el formulario",
+    description:
+      "Completa el formulario",
+  });
