@@ -1,20 +1,19 @@
 ---
-title: "Cómo un Chatbot IA está Transformando la Experiencia en Plataformas de Cursos Online"
+title: "Cómo los Chatbots IA están transformando la experiencia en plataformas de Cursos"
 excerpt: "Descubre cómo implementar un asistente virtual puede aumentar las inscripciones y mejorar la experiencia de aprendizaje en tu plataforma educativa."
 date: "2025-08-17"
-tags: ["ia", "educación", "chatbot", "cursos-online", "automatización"]
+tags: ["ia", "Novedades", "Chatbot", "cursos online", "Educación"]
 author: "Equipo Formmy"
-image: "/home/chatbot-educacion-online.jpg"
+author: "Equipo Formmy"
+image: "/blogposts/cursos.webp"
 category: "useCase"
 ---
-
-# Cómo un Chatbot IA está Transformando la Experiencia en Plataformas de Cursos Online
 
 En el competitivo mercado de la educación en línea, ofrecer una experiencia personalizada y atención inmediata puede marcar la diferencia. Este caso de éxito muestra cómo una plataforma de cursos online incrementó sus conversiones en un 45% e incrementó la retención de estudiantes en un 30% con la implementación de un chatbot IA.
 
 ## 🎓 El Reto del Cliente
 
-**Plataforma:** EducaTech Pro  
+**Plataforma:** EducaTech  
 **Sector:** Educación en línea  
 **Necesidad:** Mejorar la atención al estudiante y reducir la carga del equipo de soporte
 
@@ -131,6 +130,6 @@ const chatbotConfig = {
 
 ## Conclusión
 
-La implementación de un chatbot IA en plataformas educativas no es solo una ventaja competitiva, sino una necesidad en la era digital. Los resultados de EducaTech Pro demuestran que la combinación de tecnología y educación puede crear experiencias de aprendizaje más efectivas y accesibles para todos.
+La implementación de un chatbot IA en plataformas educativas no es solo una ventaja competitiva, sino una necesidad en la era digital. Los resultados de EducaTech demuestran que la combinación de tecnología y educación puede crear experiencias de aprendizaje más efectivas y accesibles para todos.
 
-¿Listo para transformar la experiencia de aprendizaje en tu plataforma? [Solicita una demostración] y descubre cómo podemos ayudarte a implementar esta solución personalizada para tu negocio educativo.
+¿Listo para transformar la experiencia de aprendizaje en tu plataforma? Solicita una demostración y descubre cómo podemos ayudarte a implementar esta solución personalizada para tu negocio educativo.

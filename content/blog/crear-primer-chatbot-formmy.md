@@ -1,83 +1,64 @@
 ---
-title: "Guía Paso a Paso: Crea tu Primer Chatbot IA con Formmy"
+title: "Guía paso a paso: crea tu primer Chatbot IA con Formmy"
 excerpt: "Aprende a crear tu primer asistente de IA conversacional en minutos con esta guía práctica para principiantes."
-date: "2025-08-17"
-tags: ["tutorial", "chatbot", "ia", "asistente-virtual", "formmy"]
+date: "2025-08-16"
+tags: ["tutorial", "chatbot", "IA", "asistente-virtual"]
 author: "Equipo Formmy"
 image: "/home/crear-chatbot-guia.jpg"
 category: "tutorial"
 ---
 
-# Guía Paso a Paso: Crea tu Primer Chatbot IA con Formmy
+¡Bienvenid@ al emocionante mundo de los chatbots de IA! En esta guía práctica, te mostraremos cómo crear tu primer asistente virtual en Formmy sin necesidad de conocimientos técnicos avanzados.
 
-¡Bienvenido al emocionante mundo de los chatbots de IA! En esta guía práctica, te mostraremos cómo crear tu primer asistente virtual en Formmy sin necesidad de conocimientos técnicos avanzados.
+## 🚀 Empecemos
 
-## 🚀 Empecemos: Configuración Inicial
+### 1. Crea una cuenta en Formmy
+   - Visita [www.formmy.app](https://www.formmy.app)
+   - Crea una cuenta con Gmail
 
-1. **Crea una cuenta en Formmy**
-   - Visita [app.formmy.com/registro](https://app.formmy.com/registro)
-   - Completa el formulario con tus datos
-   - Verifica tu correo electrónico
-
-2. **Accede al Panel de Control**
-   - Inicia sesión en tu cuenta
-   - Haz clic en "Nuevo Chatbot"
-   - Selecciona "Comenzar desde cero"
+### 2. Accede al Dashboard
+   - Ve a la sección "Mis Chatbots" 
+   - Haz clic en "+ Chatbot" 
 
 ## 🛠️ Configuración Básica
 
-### 1. Nombre y Descripción
-```
-Nombre: Mi Primer Asistente
-Descripción: Asistente virtual para responder preguntas frecuentes
-```
+### 1. Entrenamiento inicial
+- Adjunta archivos de contexto para tu agente, pueden ser pdf, docx, txt, csv, excel
+- O pega el link de tu website para que el agente obtengan información de tus productos o servicios
 
-### 2. Personalización
-- Sube tu logo
+### 2. Personalización del chat
+- Sube tu logo y ponle nombre a tu chatbot
 - Selecciona colores que coincidan con tu marca
 - Elige un saludo inicial atractivo
 
-### 3. Configuración de Respuestas
-
-**Ejemplo de configuración básica:**
-```yaml
+```
 saludo_inicial: "¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?"
-fuera_de_alcance: "Lo siento, no tengo información sobre eso. ¿Te gustaría hablar con un agente humano?"
 tono: "amigable y profesional"
 ```
 
-## 💬 Añade tus Primeras Intenciones
+### 3. Configuración de tu agente
+- Selecciona el modelo IA que quieres utilizar
+- Selecciona el tipo de agente que deseas crear
+- Define el nivel de creatividad del agente
+- Agrega específicaciones de comportamiento del agente
 
-Las intenciones son los diferentes propósitos que puede tener una conversación con tu chatbot. Vamos a crear algunas básicas:
 
-1. **Saludo**
-   - Frases de ejemplo: "Hola", "Buenos días", "¿Cómo estás?"
-   - Respuesta: "¡Hola! Soy [nombre del chatbot], tu asistente virtual. ¿En qué puedo ayudarte hoy?"
+### 4. Ciclo de entrenamiento 
+- Agrega más contexto para que el agente pueda aprender y ofrecer una mejor experiencia a tus clientes
+- Adjunta más archivos, establece preguntas y respuestas espacíficas, o agrega texto con más información 
 
-2. **Horario de Atención**
-   - Frases: "¿Cuál es su horario?", "¿A qué hora abren?", "¿Están disponibles los fines de semana?"
-   - Respuesta: "Nuestro horario de atención es de lunes a viernes de 9:00 am a 6:00 pm. ¿Necesitas ayuda con algo más?"
-
-3. **Contacto**
-   - Frases: "¿Cómo los contacto?", "Necesito hablar con alguien", "Datos de contacto"
-   - Respuesta: "Puedes contactarnos al teléfono [número], por correo a [email] o a través de nuestro formulario web."
 
 ## 🔄 Conecta con tus Canales
 
-1. **Sitio Web**
-   - Copia el código de inserción
-   - Pégalo en el `<head>` de tu sitio web
-   - Personaliza la posición y el estilo del botón
+### 1. Sitio Web
+   - Copia el código del iframe o el link directo
+   - Pégalo en tu sitio web
 
-2. **WhatsApp Business**
-   - Conecta tu número de WhatsApp Business
-   - Configura los mensajes automáticos
-   - Personaliza las plantillas de respuesta
+### 2. WhatsApp Business
+   - Conecta tu número de WhatsApp Business desde la sección de "Integraciones"
 
-3. **Facebook Messenger**
-   - Conecta tu página de Facebook
-   - Configura el saludo y las respuestas rápidas
-   - Prueba la integración
+### 3. Facebook Messenger
+   - Conecta tu página de Facebook desde la sección de "Integraciones"
 
 ## 🧪 Prueba tu Chatbot
 
@@ -109,4 +90,4 @@ Una vez en vivo, monitorea el rendimiento:
 
 ¡Felicidades! Has creado tu primer chatbot en Formmy. Recuerda que un buen chatbot es como un buen vino: mejora con el tiempo. Sigue ajustando y mejorando basándote en las interacciones con tus usuarios.
 
-¿Listo para llevar tu chatbot al siguiente nivel? [Explora nuestras plantillas avanzadas] o [aprende a entrenar a tu agente con datos personalizados].
+¿Listo para llevar tu chatbot al siguiente nivel? Aprende a entrenar a tu agente para que ofrezca la experiencia que tus clientes necesitan.
