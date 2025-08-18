@@ -103,7 +103,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return { posts };
 };
 
-type FilterType = 'todos' | 'ai' | 'lanzamiento' | 'tutoriales' | 'noticias' | 'casos-uso';
+type FilterType = 'todos' | 'ai' | 'tutoriales' | 'noticias' | 'casos-uso' | 'articulos';
 
 export default function BlogIndex() {
   const { posts } = useLoaderData<{ posts: BlogPost[] }>();
@@ -119,6 +119,12 @@ export default function BlogIndex() {
     if (activeFilter === 'todos') return regularPosts;
     if (activeFilter === 'casos-uso') {
       return regularPosts.filter(post => post.category === 'useCase');
+    }
+    if (activeFilter === 'articulos') {
+      return regularPosts.filter(post => post.category === 'article');
+    }
+    if (activeFilter === 'tutoriales') {
+      return regularPosts.filter(post => post.category === 'tutorial');
     }
     return regularPosts.filter(post => 
       post.tags?.some(tag => tag.toLowerCase() === activeFilter.toLowerCase())
@@ -270,6 +276,16 @@ export default function BlogIndex() {
                 onClick={() => handleFilterClick('noticias')}
               >
                 Noticias
+              </button>
+              <button 
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  activeFilter === 'articulos' 
+                    ? 'bg-dark text-white hover:bg-brand-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => handleFilterClick('articulos')}
+              >
+                Artículos
               </button>
             </div>
           </div>
