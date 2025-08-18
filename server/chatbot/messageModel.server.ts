@@ -15,6 +15,7 @@ interface CreateMessageParams {
   tokens?: number;
   responseTime?: number;
   firstTokenLatency?: number; // Tiempo hasta el primer chunk en ms
+  aiModel?: string; // Modelo de IA usado para generar la respuesta (solo para ASSISTANT messages)
   visitorIp?: string; // Added for rate limiting
   channel?: string; // 'web', 'whatsapp', 'telegram'
   externalMessageId?: string; // WhatsApp message ID, etc.
@@ -40,6 +41,7 @@ export async function createMessage({
   tokens,
   responseTime,
   firstTokenLatency,
+  aiModel,
   visitorIp,
   channel,
   externalMessageId,
@@ -73,6 +75,7 @@ export async function createMessage({
       tokens,
       responseTime,
       firstTokenLatency,
+      aiModel,
       channel,
       externalMessageId,
     },
@@ -192,6 +195,7 @@ export async function addAssistantMessage(
   tokens?: number,
   responseTime?: number,
   firstTokenLatency?: number,
+  aiModel?: string,
   channel?: string,
   externalMessageId?: string
 ): Promise<Message> {
@@ -202,6 +206,7 @@ export async function addAssistantMessage(
     tokens,
     responseTime,
     firstTokenLatency,
+    aiModel,
     channel,
     externalMessageId,
   });
@@ -247,7 +252,8 @@ export async function addWhatsAppAssistantMessage(
   whatsappMessageId?: string,
   tokens?: number,
   responseTime?: number,
-  firstTokenLatency?: number
+  firstTokenLatency?: number,
+  aiModel?: string
 ): Promise<Message> {
   return createMessage({
     conversationId,
@@ -258,6 +264,7 @@ export async function addWhatsAppAssistantMessage(
     tokens,
     responseTime,
     firstTokenLatency,
+    aiModel,
   });
 }
 

@@ -45,7 +45,7 @@ import {
 } from "~/utils/chatbot.server";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
-import { generateFallbackModels } from "~/utils/aiModels";
+import { generateFallbackModels, isAnthropicDirectModel } from "~/utils/aiModels";
 
 export async function loader({ request }: any) {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {
@@ -57,6 +57,7 @@ export async function action({ request }: any) {
   try {
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
+    console.log('🎯 API ENDPOINT RECEIVED INTENT:', intent);
     const user = await getUserOrRedirect(request);
     const userId = user.id;
     switch (intent) {
@@ -211,6 +212,10 @@ export async function action({ request }: any) {
         }
         const instructions = formData.get("instructions") as string;
         if (instructions) updateData.instructions = instructions;
+        const customInstructions = formData.get("customInstructions") as string;
+        if (customInstructions !== null && customInstructions !== undefined) {
+          updateData.customInstructions = customInstructions;
+        }
         const isActive = formData.get("isActive");
         if (isActive !== null && isActive !== undefined && isActive !== "") {
           updateData.isActive = isActive === "true" || isActive === true;
@@ -1196,11 +1201,56 @@ export async function action({ request }: any) {
       }
 
       case "preview_chat": {
+        console.log('🎯🎯🎯 PREVIEW_CHAT CASE REACHED! 🎯🎯🎯');
+        
         // Chat de preview para el dashboard (no requiere API key del SDK)
         const chatbotId = formData.get("chatbotId") as string;
         const message = formData.get("message") as string;
         const sessionId = formData.get("sessionId") as string;
+        const conversationHistoryStr = formData.get("conversationHistory") as string;
         const stream = formData.get("stream") === "true";
+        
+        console.log('📝 PREVIEW_CHAT PARAMS:');
+        console.log('- chatbotId:', chatbotId);
+        console.log('- message:', message?.substring(0, 50));
+        console.log('- stream:', stream);
+        
+        // Parsear el historial conversacional
+        let conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
+        if (conversationHistoryStr) {
+          try {
+            conversationHistory = JSON.parse(conversationHistoryStr);
+          } catch (e) {
+            console.warn("Error parsing conversation history:", e);
+          }
+        }
+        
+        // Función para estimar tokens aproximadamente (4 caracteres = 1 token)
+        const estimateTokens = (text: string): number => Math.ceil(text.length / 4);
+        
+        // Función para truncar historial manteniendo contexto importante
+        const truncateConversationHistory = (
+          history: Array<{ role: "user" | "assistant"; content: string }>,
+          maxTokens: number = 2000
+        ): Array<{ role: "user" | "assistant"; content: string }> => {
+          if (history.length === 0) return history;
+          
+          // Siempre mantener los últimos 6 mensajes (3 intercambios)
+          const minMessagesToKeep = Math.min(6, history.length);
+          let truncatedHistory = history.slice(-minMessagesToKeep);
+          
+          // Calcular tokens del historial truncado
+          let totalTokens = truncatedHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
+          
+          // Si aún excede el límite, remover mensajes más antiguos de a pares (user + assistant)
+          while (totalTokens > maxTokens && truncatedHistory.length > 2) {
+            // Remover los 2 mensajes más antiguos (un intercambio completo)
+            const removedMessages = truncatedHistory.splice(0, 2);
+            totalTokens -= removedMessages.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
+          }
+          
+          return truncatedHistory;
+        };
         
         if (!chatbotId || !message) {
           return new Response(
@@ -1225,172 +1275,285 @@ export async function action({ request }: any) {
           );
         }
 
-        // Obtener la API key de OpenRouter del servidor
+        // Obtener las API keys necesarias
         const openRouterApiKey = process.env.OPENROUTER_API_KEY;
-        if (!openRouterApiKey) {
+        const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+        
+        if (!openRouterApiKey && !anthropicApiKey) {
           return new Response(
-            JSON.stringify({ error: "API key de OpenRouter no configurada" }),
+            JSON.stringify({ error: "No se encontraron API keys configuradas" }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
 
-        // Preparar los mensajes con el contexto del chatbot
+        // Construir system prompt enriquecido con contextos (con gestión de tokens)
+        let enrichedSystemPrompt = chatbot.instructions || "Eres un asistente útil.";
+        
+        // Agregar instrucciones personalizadas si existen
+        if (chatbot.customInstructions && chatbot.customInstructions.trim()) {
+          enrichedSystemPrompt += "\n\n=== INSTRUCCIONES ESPECÍFICAS ===\n";
+          enrichedSystemPrompt += chatbot.customInstructions;
+          enrichedSystemPrompt += "\n=== FIN INSTRUCCIONES ESPECÍFICAS ===\n";
+        }
+        
+        const basePromptTokens = estimateTokens(enrichedSystemPrompt);
+        
+        // Agregar contextos del chatbot si existen (con límite de tokens)
+        if (chatbot.contexts && chatbot.contexts.length > 0) {
+          const maxContextTokens = 3000; // Reservar 3000 tokens para contextos
+          let contextTokensUsed = 0;
+          let contextContent = "\n\n=== CONTEXTO Y CONOCIMIENTO ===\n";
+          contextContent += "Usa la siguiente información para responder de manera más precisa y útil:\n\n";
+          
+          // Priorizar contextos por tipo (FAQ > text > file > url)
+          const prioritizedContexts = [...chatbot.contexts].sort((a, b) => {
+            const priority = { question: 0, text: 1, file: 2, url: 3 };
+            return priority[a.type] - priority[b.type];
+          });
+          
+          for (const [index, context] of prioritizedContexts.entries()) {
+            let contextText = "";
+            switch (context.type) {
+              case "text":
+                contextText = `**Información ${index + 1}**:\n${context.content}\n\n`;
+                break;
+              case "file":
+                contextText = `**Documento ${index + 1}** (${context.fileName}):\n${context.content}\n\n`;
+                break;
+              case "url":
+                contextText = `**Contenido Web ${index + 1}** (${context.url}):\n${context.content}\n\n`;
+                break;
+              case "question":
+                contextText = `**FAQ ${index + 1}**:\nPregunta: ${context.question}\nRespuesta: ${context.content}\n\n`;
+                break;
+            }
+            
+            const contextTokens = estimateTokens(contextText);
+            if (contextTokensUsed + contextTokens <= maxContextTokens) {
+              contextContent += contextText;
+              contextTokensUsed += contextTokens;
+            } else {
+              // Si el contexto es demasiado largo, truncarlo pero mantener la información clave
+              const remainingTokens = maxContextTokens - contextTokensUsed;
+              if (remainingTokens > 100) { // Solo agregar si hay espacio mínimo
+                const truncatedContent = context.content.substring(0, remainingTokens * 4 * 0.8);
+                contextContent += `**${context.type === 'question' ? 'FAQ' : 'Información'} ${index + 1}** (truncado):\n${truncatedContent}...\n\n`;
+              }
+              break; // No agregar más contextos
+            }
+          }
+          
+          contextContent += "=== FIN DEL CONTEXTO ===\n\n";
+          contextContent += "IMPORTANTE: Usa esta información para dar respuestas precisas, específicas y útiles. Si la pregunta se relaciona con el contexto proporcionado, prioriza esa información.";
+          
+          enrichedSystemPrompt += contextContent;
+        }
+        
         const systemMessage = {
           role: "system",
-          content: chatbot.instructions || "Eres un asistente útil."
+          content: enrichedSystemPrompt
+        };
+        
+        // Función para llamar directamente a Anthropic
+        const callAnthropicDirect = async (messages: Array<{role: string, content: string}>) => {
+          const anthropicMessages = messages.filter(m => m.role !== 'system').map(m => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.content
+          }));
+          
+          // Validar y ajustar temperatura para Anthropic (debe estar entre 0-1)
+          const rawTemperature = chatbot.temperature || 0.7;
+          const validTemperature = Math.max(0, Math.min(1, rawTemperature));
+          
+          console.log('🌡️ TEMPERATURA DEBUG:', {
+            raw: rawTemperature,
+            adjusted: validTemperature,
+            wasAdjusted: rawTemperature !== validTemperature
+          });
+          
+          const requestBody = {
+            model: chatbot.aiModel,
+            max_tokens: 1000,
+            temperature: validTemperature,
+            system: enrichedSystemPrompt.substring(0, 4000), // Limitar system prompt para debug
+            messages: anthropicMessages,
+            ...(stream ? { stream: true } : {}) // Solo agregar stream si es true
+          };
+          
+          // DEBUG: Log de la request
+          console.log('🔍 ANTHROPIC REQUEST DEBUG:');
+          console.log('Model:', chatbot.aiModel);
+          console.log('Messages count:', anthropicMessages.length);
+          console.log('System prompt length:', enrichedSystemPrompt.length);
+          console.log('Stream:', stream);
+          console.log('Request body:', JSON.stringify(requestBody, null, 2));
+          
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': anthropicApiKey!,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify(requestBody)
+          });
+          
+          // DEBUG: Log de la response
+          console.log('🔍 ANTHROPIC RESPONSE DEBUG:');
+          console.log('Status:', response.status);
+          console.log('Headers:', Object.fromEntries(response.headers.entries()));
+          
+          return response;
         };
 
-        // Lista de modelos fallback generada automáticamente desde la configuración central
+        // ✅ NUEVO SISTEMA MODULAR DE PROVEEDORES
+        const { AIProviderManager } = await import('server/chatbot/providers');
+        
+        // Configurar proveedores disponibles
+        const providerManager = new AIProviderManager({
+          ...(anthropicApiKey && { 
+            anthropic: { apiKey: anthropicApiKey } 
+          }),
+          ...(openRouterApiKey && { 
+            openrouter: { apiKey: openRouterApiKey } 
+          })
+        });
+        
+        console.log(`🎯 MODELO PREFERIDO DEL USUARIO: ${chatbot.aiModel}`);
+        console.log(`🏗️ PROVEEDORES DISPONIBLES:`, providerManager.getAvailableProviders());
+        
         const fallbackModels = generateFallbackModels(chatbot.aiModel);
+        console.log(`📋 MODELOS FALLBACK:`, fallbackModels);
 
-        let openRouterResponse;
+        // Preparar request para el sistema modular
+        const chatRequest = {
+          model: chatbot.aiModel,
+          messages: [
+            systemMessage,
+            ...truncateConversationHistory(conversationHistory),
+            { role: "user" as const, content: message }
+          ],
+          temperature: chatbot.temperature || 0.7,
+          maxTokens: 1000,
+          stream: stream
+        };
+        
+        let apiResponse;
+        let modelUsed = chatbot.aiModel;
+        let providerUsed = 'unknown';
+        let usedFallback = false;
         let lastError;
         
-        // Función para validar si una respuesta es válida (no corrupta)
-        const isValidResponse = (content: string): boolean => {
-          if (!content || content.length < 5) return false;
-          
-          // Detectar respuestas corruptas por patrones más específicos
-          const corruptPatterns = [
-            // Mezcla de scripts diferentes en distancias cortas
-            /[\u0900-\u097F][\u0041-\u005A\u0061-\u007A]{1,10}[\u0600-\u06FF]/g, // Hindi + Latino + Árabe mezclados
-            /[\u4E00-\u9FFF][\u0041-\u005A\u0061-\u007A]{1,5}[\u0900-\u097F]/g, // Chino + Latino + Hindi mezclados  
-            /[\u0400-\u04FF][\u0041-\u005A\u0061-\u007A]{1,5}[\u0600-\u06FF]/g, // Cirílico + Latino + Árabe
-            /[\u0A80-\u0AFF][\u0041-\u005A\u0061-\u007A]{1,5}[\u30A0-\u30FF]/g, // Gujarati + Latino + Katakana
+        try {
+          if (stream) {
+            // STREAMING con sistema modular
+            const result = await providerManager.chatCompletionStreamWithFallback(
+              chatRequest,
+              fallbackModels.filter(m => !m.includes("deepseek"))
+            );
             
-            // Patrones específicos del nuevo ejemplo corrupto
-            /[\u0600-\u06FF]{2,}.*[a-zA-Z]{2,}.*[\u4E00-\u9FFF]/g, // Árabe + Latino + Chino (como "۱۰ مرکز...Rand")
-            /\(\w*\d+\w*[=＝]+.*\)/g, // Paréntesis con números y símbolos extraños como "(»,68τεί＝"
-            /\w+‑\w+/g, // Guiones Unicode extraños como "Quick‑burn"
-            /\|\w*\|/g, // Pipe symbols con contenido extraño
-            /\<\|\w+\|/g, // Tokens especiales como "<|reserved_200369|>"
-            /reserved_\d+/g, // Tokens reserved específicos
+            modelUsed = result.modelUsed;
+            providerUsed = result.providerUsed;
+            usedFallback = result.usedFallback;
             
-            // Palabras truncadas con caracteres especiales pegados
-            /\w+ิ+\w+/g, // Caracteres Thai mezclados
-            /\w+ック+\w+/g, // Katakana mezclado
-            /\w+्या+\w+/g, // Devanagari mezclado
+            console.log(`🚀 STREAMING: ${providerUsed} - ${modelUsed}${usedFallback ? ' (fallback)' : ' (preferred)'}`);
             
-            // Patrones específicos del primer ejemplo
-            /flickित्र्याक/g, // Mezcla específica del ejemplo anterior
-            /[a-zA-Z]+्[a-zA-Z]+/g, // Latino con diacríticos Devanagari
-            /\w+ष्\w+/g, // Letras con caracteres Devanagari específicos
-            
-            // Strings muy largos sin espacios ni puntuación
-            /[a-zA-Z]{40,}/g, // Strings de letras muy largos sin espacios
-            /\w{50,}/g, // Cualquier carácter de palabra muy largo
-            
-            // Código mezclado con texto
-            /\}\s*\{\s*\w+/g, // Patrones de código mezclado
-            /\w+\.\w+\(\w+/g, // Llamadas de función mezcladas con texto normal
-            /\w+_[A-Z]{3,}/g, // Variables como "_SHOWN", "_BAL" mezcladas
-            
-            // Emojis mezclados extrañamente
-            /[a-zA-Z]+[😉🚀][a-zA-Z]+/g, // Emojis pegados a texto
-            
-            // Múltiples signos de interrogación seguidos
-            /\?\?\?\?+/g, // 4 o más signos de interrogación seguidos
-            
-            // Paréntesis con contenido muy extraño
-            /\([^)]{50,}\)/g, // Paréntesis con más de 50 caracteres dentro
-          ];
-          
-          // Ratio de caracteres no-ASCII más estricto
-          const nonAsciiChars = (content.match(/[^\x00-\x7F]/g) || []).length;
-          const suspiciousRatio = nonAsciiChars / content.length;
-          if (suspiciousRatio > 0.4) return false; // Más de 40% caracteres no ASCII
-          
-          // Detectar demasiadas palabras muy cortas mezcladas (como "y乐ش", "मुद्द")
-          const shortMixedWords = (content.match(/\s[\w\u0080-\uFFFF]{1,3}\s/g) || []).length;
-          if (shortMixedWords > 10) return false; // Más de 10 palabras muy cortas mezcladas
-          
-          // Detectar tokens especiales de modelos (muy sospechoso)
-          if (/\<\|.*\|\>/g.test(content)) return false; // Tokens como <|reserved_200369|>
-          if (/reserved_\d{6}/g.test(content)) return false; // Números reserved específicos
-          
-          // Detectar demasiados emojis mezclados en texto técnico
-          const emojiCount = (content.match(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu) || []).length;
-          if (emojiCount > 5) return false; // Más de 5 emojis es sospechoso para respuestas normales
-          
-          // Detectar demasiados caracteres especiales Unicode mezclados
-          const specialUnicodeCount = (content.match(/[‑–—""''…]/g) || []).length;
-          if (specialUnicodeCount > 10) return false; // Más de 10 caracteres especiales Unicode
-          
-          // Detectar si hay demasiados scripts diferentes
-          const hasDevanagari = /[\u0900-\u097F]/.test(content);
-          const hasArabic = /[\u0600-\u06FF]/.test(content);
-          const hasChinese = /[\u4E00-\u9FFF]/.test(content);
-          const hasCyrillic = /[\u0400-\u04FF]/.test(content);
-          const hasJapanese = /[\u30A0-\u30FF\u3040-\u309F]/.test(content);
-          const hasThai = /[\u0E00-\u0E7F]/.test(content);
-          const hasKorean = /[\uAC00-\uD7AF]/.test(content);
-          const hasGreek = /[\u0370-\u03FF]/.test(content);
-          
-          const scriptCount = [hasDevanagari, hasArabic, hasChinese, hasCyrillic, hasJapanese, hasThai, hasKorean, hasGreek].filter(Boolean).length;
-          if (scriptCount > 3) return false; // Más de 3 scripts diferentes es sospechoso
-          
-          // Detectar múltiples signos de interrogación o patrones repetitivos extraños
-          if (/\?\?\?\?+/.test(content)) return false; // 4+ signos de interrogación seguidos
-          if (/\.\.\.\.\.\.\.\.\.\.\.\./g.test(content)) return false; // Muchos puntos seguidos
-          
-          // Detectar tablas o estructuras de datos corruptas
-          if (/\|.*\|.*\|.*\|.*\|/g.test(content) && !/\n/.test(content)) return false; // Pipes sin saltos de línea (tabla corrupta)
-          
-          return !corruptPatterns.some(pattern => pattern.test(content));
-        };
-
-        // Intentar con cada modelo hasta que uno funcione
-        for (const model of fallbackModels) {
-          // Saltar deepseek si aparece
-          if (model.includes("deepseek")) continue;
-          
-          try {
-            openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${openRouterApiKey}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": request.headers.get("origin") || "https://formmy.app",
-                "X-Title": "Formmy Chat Preview"
-              },
-              body: JSON.stringify({
-                model: model,
-                messages: [systemMessage, { role: "user", content: message }],
-                temperature: chatbot.temperature || 0.7,
-                stream: stream,
-                max_tokens: 1000 // Limitar tokens para evitar respuestas muy largas
-              })
-            });
-            
-            if (openRouterResponse.ok) {
-              // Si no es streaming, validar la respuesta
-              if (!stream) {
-                const testResult = await openRouterResponse.clone().json();
-                const testContent = testResult.choices?.[0]?.message?.content || "";
-                if (!isValidResponse(testContent)) {
-                  lastError = `Modelo ${model} generó respuesta corrupta`;
-                  console.log(`🚨 RESPUESTA CORRUPTA DETECTADA - Modelo: ${model}`);
-                  console.log(`📝 Contenido corrupto (primeros 200 chars): ${testContent.substring(0, 200)}...`);
-                  console.log(`📊 Longitud total: ${testContent.length} caracteres`);
-                  continue;
+            // Convertir el stream modular al formato esperado por el frontend
+            const compatibleStream = new ReadableStream({
+              async start(controller) {
+                const reader = result.stream.getReader();
+                let contentChunks = 0;
+                let accumulatedContent = "";
+                
+                try {
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) {
+                      console.log(`🔚 Stream completed. Content chunks: ${contentChunks}, Total chars: ${accumulatedContent.length}`);
+                      controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+                      controller.close();
+                      break;
+                    }
+                    
+                    if (value.content && value.content.trim()) {
+                      contentChunks++;
+                      accumulatedContent += value.content;
+                      
+                      // Enviar chunk al frontend en el formato que espera
+                      const chunk = {
+                        content: value.content  // Frontend espera content directamente
+                      };
+                      
+                      const chunkData = `data: ${JSON.stringify(chunk)}\n\n`;
+                      console.log(`📤 Sending chunk ${contentChunks}: ${chunkData.substring(0, 100)}`);
+                      controller.enqueue(new TextEncoder().encode(chunkData));
+                    }
+                    
+                    if (value.finishReason) {
+                      console.log(`✅ Stream finished with reason: ${value.finishReason}`);
+                    }
+                  }
+                } catch (error) {
+                  console.error('❌ Stream error:', error);
+                  controller.error(error);
+                } finally {
+                  reader.releaseLock();
                 }
               }
-              break; // Si funciona, salir del loop
-            } else {
-              lastError = await openRouterResponse.text();
-              console.log(`Modelo ${model} falló, intentando con siguiente...`);
-            }
-          } catch (error) {
-            lastError = error;
-            console.log(`Error con modelo ${model}, intentando con siguiente...`);
+            });
+            
+            return new Response(compatibleStream, {
+              headers: {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive"
+              }
+            });
+            
+          } else {
+            // NON-STREAMING con sistema modular
+            const result = await providerManager.chatCompletionWithFallback(
+              chatRequest,
+              fallbackModels.filter(m => !m.includes("deepseek"))
+            );
+            
+            modelUsed = result.modelUsed;
+            providerUsed = result.providerUsed;
+            usedFallback = result.usedFallback;
+            
+            console.log(`✅ SUCCESS: ${providerUsed} - ${modelUsed}${usedFallback ? ' (fallback)' : ' (preferred)'}`);
+            
+            return new Response(
+              JSON.stringify({
+                success: true,
+                response: result.response.content,
+                // TRANSPARENCY: Incluir información del modelo usado
+                modelInfo: {
+                  used: modelUsed,
+                  preferred: chatbot.aiModel,
+                  provider: providerUsed,
+                  wasFromFallback: usedFallback,
+                  fallbackReason: usedFallback ? "Modelo preferido no disponible" : null,
+                  usage: result.response.usage
+                }
+              }),
+              { status: 200, headers: { "Content-Type": "application/json" } }
+            );
           }
+          
+        } catch (error) {
+          lastError = error;
+          console.error('❌ All providers failed:', error);
         }
 
-        if (!openRouterResponse || !openRouterResponse.ok) {
-          return new Response(
-            JSON.stringify({ 
-              error: `Error de OpenRouter: ${lastError || 'Todos los modelos fallaron'}`,
-              triedModels: fallbackModels.filter(m => !m.includes("deepseek"))
+        // Si llegamos aquí, todos los proveedores fallaron
+        return new Response(
+          JSON.stringify({ 
+            error: `All providers failed: ${lastError?.message || 'Unknown error'}`,
+            triedModels: fallbackModels.filter(m => !m.includes("deepseek")),
+            preferredModel: chatbot.aiModel,
+            availableProviders: providerManager.getAvailableProviders()
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
@@ -1398,7 +1561,7 @@ export async function action({ request }: any) {
 
         // Si es streaming, procesar el stream de OpenRouter
         if (stream) {
-          console.log(`🚀 Iniciando stream con modelo: ${fallbackModels[0]}`);
+          console.log(`🚀 Iniciando stream con modelo: ${modelUsed}`);
           const decoder = new TextDecoder();
           let accumulatedContent = "";
           let chunkCount = 0;
@@ -1416,31 +1579,55 @@ export async function action({ request }: any) {
               for (const line of lines) {
                 if (line.trim() === '') continue; // Saltar líneas vacías
                 
+                // ANTHROPIC: También maneja líneas "event:" y data sin "data:"
+                if (line.startsWith('event: ')) {
+                  console.log(`❓ Non-data line: ${line}`);
+                  continue; // Saltar eventos, solo procesar data
+                }
+                
+                let data;
                 if (line.startsWith('data: ')) {
-                  const data = line.slice(6).trim();
-                  console.log(`📝 Data line: ${data.substring(0, 100)}...`);
-                  
-                  if (data === '[DONE]') {
-                    console.log(`✅ Stream terminado. Total content chunks: ${contentChunks}, Total accumulated: ${accumulatedContent.length} chars`);
-                    controller.enqueue('data: [DONE]\n\n');
-                    continue;
-                  }
-                  
-                  if (data === '') {
-                    console.log('⚠️ Línea de data vacía, saltando...');
-                    continue;
-                  }
-                  
-                  try {
+                  data = line.slice(6).trim();
+                } else if (line.startsWith('{')) {
+                  // Anthropic a veces envía JSON directo sin "data:"
+                  data = line.trim();
+                } else {
+                  console.log(`❓ Unknown line format: ${line}`);
+                  continue;
+                }
+                
+                console.log(`📝 Data line: ${data.substring(0, 100)}...`);
+                
+                if (data === '[DONE]') {
+                  console.log(`✅ Stream terminado. Total content chunks: ${contentChunks}, Total accumulated: ${accumulatedContent.length} chars`);
+                  controller.enqueue('data: [DONE]\n\n');
+                  continue;
+                }
+                
+                if (data === '') {
+                  console.log('⚠️ Línea de data vacía, saltando...');
+                  continue;
+                }
+                
+                try {
                     const parsed = JSON.parse(data);
-                    const delta = parsed.choices?.[0]?.delta;
+                    let content = "";
                     
-                    // Intentar obtener contenido de diferentes campos según el tipo de modelo
-                    let content = delta?.content || delta?.reasoning || "";
-                    
-                    // Para modelos de razonamiento, también revisar reasoning_details
-                    if (!content && delta?.reasoning_details?.length > 0) {
-                      content = delta.reasoning_details[0]?.text || "";
+                    // ANTHROPIC FORMAT: Detectar formato de Anthropic
+                    if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+                      content = parsed.delta.text;
+                      console.log(`🤖 ANTHROPIC DELTA: "${content}"`);
+                    }
+                    // OPENROUTER FORMAT: Formato estándar OpenAI/OpenRouter
+                    else if (parsed.choices?.[0]?.delta) {
+                      const delta = parsed.choices[0].delta;
+                      content = delta?.content || delta?.reasoning || "";
+                      
+                      // Para modelos de razonamiento, también revisar reasoning_details
+                      if (!content && delta?.reasoning_details?.length > 0) {
+                        content = delta.reasoning_details[0]?.text || "";
+                      }
+                      console.log(`🌐 OPENROUTER DELTA: "${content}"`);
                     }
                     
                     if (content && content.trim()) {
@@ -1468,11 +1655,8 @@ export async function action({ request }: any) {
                     } else {
                       console.log(`📄 Parsed but no content:`, JSON.stringify(parsed, null, 2));
                     }
-                  } catch (e) {
-                    console.log(`❌ Error parsing JSON: ${e.message}, data: ${data.substring(0, 100)}`);
-                  }
-                } else if (line.trim()) {
-                  console.log(`❓ Non-data line: ${line}`);
+                } catch (e) {
+                  console.log(`❌ Error parsing JSON: ${e.message}, data: ${data.substring(0, 100)}`);
                 }
               }
             },
@@ -1485,8 +1669,15 @@ export async function action({ request }: any) {
             }
           });
           
-          // Pipe el stream original a través del transformador
-          const transformedStream = openRouterResponse.body?.pipeThrough(transformStream);
+          // Manejar streaming según el provider
+          let transformedStream;
+          if (isAnthropicDirectModel(modelUsed) && anthropicApiKey) {
+            // Anthropic maneja streaming diferente
+            transformedStream = apiResponse.body?.pipeThrough(transformStream);
+          } else {
+            // OpenRouter maneja streaming estándar
+            transformedStream = apiResponse.body?.pipeThrough(transformStream);
+          }
           
           return new Response(transformedStream, {
             headers: {
@@ -1497,16 +1688,31 @@ export async function action({ request }: any) {
           });
         }
 
-        // Si no es streaming, devolver la respuesta JSON
-        const result = await openRouterResponse.json();
+        // Si no es streaming, devolver la respuesta JSON según el provider
+        const result = await apiResponse.json();
+        let responseContent = "";
+        
+        // Diferentes formatos según el provider del modelo usado
+        if (isAnthropicDirectModel(modelUsed) && anthropicApiKey) {
+          responseContent = result.content?.[0]?.text || "No se pudo generar respuesta";
+        } else {
+          responseContent = result.choices?.[0]?.message?.content || "No se pudo generar respuesta";
+        }
+        
         return new Response(
           JSON.stringify({
             success: true,
-            response: result.choices?.[0]?.message?.content || "No se pudo generar respuesta"
+            response: responseContent,
+            // TRANSPARENCY: Incluir información del modelo usado
+            modelInfo: {
+              used: modelUsed,
+              preferred: userPreferredModel,
+              wasFromFallback: usedFallback,
+              fallbackReason: usedFallback ? "Modelo preferido no disponible" : null
+            }
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         );
-      }
 
       default:
         return new Response(

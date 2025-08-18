@@ -8,7 +8,7 @@ export const PLAN_LIMITS = {
     maxChatbots: 1,
     maxContextSizeKB: 1000, // 1MB
     maxConversationsPerMonth: 100,
-    availableModels: PLAN_MODELS.FREE,
+    availableModels: PLAN_MODELS.PRO, // TEMPORAL: Acceso a modelos PRO para testing
     showBranding: true,
   },
   [Plans.PRO]: {

@@ -29,6 +29,8 @@ interface PreviewContextType {
   setTemperature: (temp: number) => void;
   instructions: string;
   setInstructions: (instructions: string) => void;
+  customInstructions: string;
+  setCustomInstructions: (customInstructions: string) => void;
   name: string;
   setName: (name: string) => void;
   primaryColor: string;
@@ -418,6 +420,9 @@ export const EditionPair = ({
   );
   const [avatarUrl, setAvatarUrl] = useState(chatbot.avatarUrl || "");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [customInstructions, setCustomInstructions] = useState(
+    chatbot.customInstructions || ""
+  );
 
   // Sincronizar el estado del contexto cuando cambien los datos del loader
   useEffect(() => {
@@ -430,6 +435,7 @@ export const EditionPair = ({
     setWelcomeMessage(chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?");
     setGoodbyeMessage(chatbot.goodbyeMessage || "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte.");
     setAvatarUrl(chatbot.avatarUrl || "");
+    setCustomInstructions(chatbot.customInstructions || "");
   }, [chatbot]);
 
   const contextValue: PreviewContextType = {
@@ -441,6 +447,8 @@ export const EditionPair = ({
     setTemperature,
     instructions,
     setInstructions,
+    customInstructions,
+    setCustomInstructions,
     name,
     setName,
     primaryColor,

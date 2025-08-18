@@ -18,7 +18,8 @@ export const ModelDropdown = ({
   label = "Selecciona el modelo IA",
 }: ModelDropdownProps) => {
   // Determinar qué modelos están disponibles según el plan del usuario
-  const availableModels = PLAN_MODELS[user.plan] || PLAN_MODELS.FREE;
+  // TEMPORAL: Permitir modelos PRO para usuarios FREE (testing)
+  const availableModels = PLAN_MODELS.PRO;
 
   // Función para obtener el logo según el proveedor del modelo
   const getModelLogo = (modelValue: string) => {

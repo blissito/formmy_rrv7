@@ -87,7 +87,7 @@ export async function createChatbot({
  */
 export async function updateChatbot(
   id: string,
-  data: Partial<Omit<Chatbot, "id" | "userId" | "createdAt" | "updatedAt">>
+  data: Partial<Omit<Chatbot, "id" | "slug" | "userId" | "createdAt" | "updatedAt">>
 ): Promise<Chatbot> {
   // Si se está actualizando el modelo de IA, validar que esté disponible para el plan
   if (data.aiModel) {
