@@ -1,6 +1,8 @@
 import { db } from "~/utils/db.server";
 import { Effect } from "effect";
 import { referralService } from "~/services/referral.service";
+import { sendProEmail } from "~/utils/notifyers/pro";
+import { sendPlanCancellation } from "~/utils/notifyers/planCancellation";
 
 type SubscriptionStatus =
   | "active"
@@ -61,6 +63,13 @@ export async function handleSubscriptionCreated(
   console.log(
     `[Webhook] Suscripción PRO creada para el usuario: ${user.email}`
   );
+
+  // Send PRO upgrade email
+  try {
+    await sendProEmail({ email: user.email });
+  } catch (error) {
+    console.error('Error sending PRO upgrade email:', error);
+  }
 
   // Si el usuario fue referido, registrar la conversión
   if (user.referrals && user.referrals.length > 0) {
@@ -134,4 +143,11 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
   });
 
   console.log(`[Webhook] Suscripción eliminada para: ${user.email}`);
+
+  // Send cancellation email
+  try {
+    await sendPlanCancellation({ email: user.email });
+  } catch (error) {
+    console.error('Error sending plan cancellation email:', error);
+  }
 }
