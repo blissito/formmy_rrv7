@@ -398,7 +398,7 @@ export const EditionPair = ({
     chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free"
   );
   const [selectedAgent, setSelectedAgent] = useState<AgentType>(
-    (chatbot.personality as AgentType) || "customer_service"
+    (chatbot.personality as AgentType) || "sales"
   );
   const [temperature, setTemperature] = useState(chatbot.temperature || 1);
   const [instructions, setInstructions] = useState(
@@ -422,7 +422,7 @@ export const EditionPair = ({
   // Sincronizar el estado del contexto cuando cambien los datos del loader
   useEffect(() => {
     setSelectedModel(chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free");
-    setSelectedAgent((chatbot.personality as AgentType) || "customer_service");
+    setSelectedAgent((chatbot.personality as AgentType) || "sales");
     setTemperature(chatbot.temperature || 1);
     setInstructions(chatbot.instructions || "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios.");
     setName(chatbot.name || "Geeki");

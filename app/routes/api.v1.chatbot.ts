@@ -45,6 +45,7 @@ import {
 } from "~/utils/chatbot.server";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
+import { generateFallbackModels } from "~/utils/aiModels";
 
 export async function loader({ request }: any) {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {
@@ -1192,6 +1193,319 @@ export async function action({ request }: any) {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
+      }
+
+      case "preview_chat": {
+        // Chat de preview para el dashboard (no requiere API key del SDK)
+        const chatbotId = formData.get("chatbotId") as string;
+        const message = formData.get("message") as string;
+        const sessionId = formData.get("sessionId") as string;
+        const stream = formData.get("stream") === "true";
+        
+        if (!chatbotId || !message) {
+          return new Response(
+            JSON.stringify({ error: "Faltan parámetros requeridos" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Verificar que el chatbot pertenece al usuario
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso para usar este chatbot" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Obtener la API key de OpenRouter del servidor
+        const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+        if (!openRouterApiKey) {
+          return new Response(
+            JSON.stringify({ error: "API key de OpenRouter no configurada" }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Preparar los mensajes con el contexto del chatbot
+        const systemMessage = {
+          role: "system",
+          content: chatbot.instructions || "Eres un asistente útil."
+        };
+
+        // Lista de modelos fallback generada automáticamente desde la configuración central
+        const fallbackModels = generateFallbackModels(chatbot.aiModel);
+
+        let openRouterResponse;
+        let lastError;
+        
+        // Función para validar si una respuesta es válida (no corrupta)
+        const isValidResponse = (content: string): boolean => {
+          if (!content || content.length < 5) return false;
+          
+          // Detectar respuestas corruptas por patrones más específicos
+          const corruptPatterns = [
+            // Mezcla de scripts diferentes en distancias cortas
+            /[\u0900-\u097F][\u0041-\u005A\u0061-\u007A]{1,10}[\u0600-\u06FF]/g, // Hindi + Latino + Árabe mezclados
+            /[\u4E00-\u9FFF][\u0041-\u005A\u0061-\u007A]{1,5}[\u0900-\u097F]/g, // Chino + Latino + Hindi mezclados  
+            /[\u0400-\u04FF][\u0041-\u005A\u0061-\u007A]{1,5}[\u0600-\u06FF]/g, // Cirílico + Latino + Árabe
+            /[\u0A80-\u0AFF][\u0041-\u005A\u0061-\u007A]{1,5}[\u30A0-\u30FF]/g, // Gujarati + Latino + Katakana
+            
+            // Patrones específicos del nuevo ejemplo corrupto
+            /[\u0600-\u06FF]{2,}.*[a-zA-Z]{2,}.*[\u4E00-\u9FFF]/g, // Árabe + Latino + Chino (como "۱۰ مرکز...Rand")
+            /\(\w*\d+\w*[=＝]+.*\)/g, // Paréntesis con números y símbolos extraños como "(»,68τεί＝"
+            /\w+‑\w+/g, // Guiones Unicode extraños como "Quick‑burn"
+            /\|\w*\|/g, // Pipe symbols con contenido extraño
+            /\<\|\w+\|/g, // Tokens especiales como "<|reserved_200369|>"
+            /reserved_\d+/g, // Tokens reserved específicos
+            
+            // Palabras truncadas con caracteres especiales pegados
+            /\w+ิ+\w+/g, // Caracteres Thai mezclados
+            /\w+ック+\w+/g, // Katakana mezclado
+            /\w+्या+\w+/g, // Devanagari mezclado
+            
+            // Patrones específicos del primer ejemplo
+            /flickित्र्याक/g, // Mezcla específica del ejemplo anterior
+            /[a-zA-Z]+्[a-zA-Z]+/g, // Latino con diacríticos Devanagari
+            /\w+ष्\w+/g, // Letras con caracteres Devanagari específicos
+            
+            // Strings muy largos sin espacios ni puntuación
+            /[a-zA-Z]{40,}/g, // Strings de letras muy largos sin espacios
+            /\w{50,}/g, // Cualquier carácter de palabra muy largo
+            
+            // Código mezclado con texto
+            /\}\s*\{\s*\w+/g, // Patrones de código mezclado
+            /\w+\.\w+\(\w+/g, // Llamadas de función mezcladas con texto normal
+            /\w+_[A-Z]{3,}/g, // Variables como "_SHOWN", "_BAL" mezcladas
+            
+            // Emojis mezclados extrañamente
+            /[a-zA-Z]+[😉🚀][a-zA-Z]+/g, // Emojis pegados a texto
+            
+            // Múltiples signos de interrogación seguidos
+            /\?\?\?\?+/g, // 4 o más signos de interrogación seguidos
+            
+            // Paréntesis con contenido muy extraño
+            /\([^)]{50,}\)/g, // Paréntesis con más de 50 caracteres dentro
+          ];
+          
+          // Ratio de caracteres no-ASCII más estricto
+          const nonAsciiChars = (content.match(/[^\x00-\x7F]/g) || []).length;
+          const suspiciousRatio = nonAsciiChars / content.length;
+          if (suspiciousRatio > 0.4) return false; // Más de 40% caracteres no ASCII
+          
+          // Detectar demasiadas palabras muy cortas mezcladas (como "y乐ش", "मुद्द")
+          const shortMixedWords = (content.match(/\s[\w\u0080-\uFFFF]{1,3}\s/g) || []).length;
+          if (shortMixedWords > 10) return false; // Más de 10 palabras muy cortas mezcladas
+          
+          // Detectar tokens especiales de modelos (muy sospechoso)
+          if (/\<\|.*\|\>/g.test(content)) return false; // Tokens como <|reserved_200369|>
+          if (/reserved_\d{6}/g.test(content)) return false; // Números reserved específicos
+          
+          // Detectar demasiados emojis mezclados en texto técnico
+          const emojiCount = (content.match(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu) || []).length;
+          if (emojiCount > 5) return false; // Más de 5 emojis es sospechoso para respuestas normales
+          
+          // Detectar demasiados caracteres especiales Unicode mezclados
+          const specialUnicodeCount = (content.match(/[‑–—""''…]/g) || []).length;
+          if (specialUnicodeCount > 10) return false; // Más de 10 caracteres especiales Unicode
+          
+          // Detectar si hay demasiados scripts diferentes
+          const hasDevanagari = /[\u0900-\u097F]/.test(content);
+          const hasArabic = /[\u0600-\u06FF]/.test(content);
+          const hasChinese = /[\u4E00-\u9FFF]/.test(content);
+          const hasCyrillic = /[\u0400-\u04FF]/.test(content);
+          const hasJapanese = /[\u30A0-\u30FF\u3040-\u309F]/.test(content);
+          const hasThai = /[\u0E00-\u0E7F]/.test(content);
+          const hasKorean = /[\uAC00-\uD7AF]/.test(content);
+          const hasGreek = /[\u0370-\u03FF]/.test(content);
+          
+          const scriptCount = [hasDevanagari, hasArabic, hasChinese, hasCyrillic, hasJapanese, hasThai, hasKorean, hasGreek].filter(Boolean).length;
+          if (scriptCount > 3) return false; // Más de 3 scripts diferentes es sospechoso
+          
+          // Detectar múltiples signos de interrogación o patrones repetitivos extraños
+          if (/\?\?\?\?+/.test(content)) return false; // 4+ signos de interrogación seguidos
+          if (/\.\.\.\.\.\.\.\.\.\.\.\./g.test(content)) return false; // Muchos puntos seguidos
+          
+          // Detectar tablas o estructuras de datos corruptas
+          if (/\|.*\|.*\|.*\|.*\|/g.test(content) && !/\n/.test(content)) return false; // Pipes sin saltos de línea (tabla corrupta)
+          
+          return !corruptPatterns.some(pattern => pattern.test(content));
+        };
+
+        // Intentar con cada modelo hasta que uno funcione
+        for (const model of fallbackModels) {
+          // Saltar deepseek si aparece
+          if (model.includes("deepseek")) continue;
+          
+          try {
+            openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${openRouterApiKey}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": request.headers.get("origin") || "https://formmy.app",
+                "X-Title": "Formmy Chat Preview"
+              },
+              body: JSON.stringify({
+                model: model,
+                messages: [systemMessage, { role: "user", content: message }],
+                temperature: chatbot.temperature || 0.7,
+                stream: stream,
+                max_tokens: 1000 // Limitar tokens para evitar respuestas muy largas
+              })
+            });
+            
+            if (openRouterResponse.ok) {
+              // Si no es streaming, validar la respuesta
+              if (!stream) {
+                const testResult = await openRouterResponse.clone().json();
+                const testContent = testResult.choices?.[0]?.message?.content || "";
+                if (!isValidResponse(testContent)) {
+                  lastError = `Modelo ${model} generó respuesta corrupta`;
+                  console.log(`🚨 RESPUESTA CORRUPTA DETECTADA - Modelo: ${model}`);
+                  console.log(`📝 Contenido corrupto (primeros 200 chars): ${testContent.substring(0, 200)}...`);
+                  console.log(`📊 Longitud total: ${testContent.length} caracteres`);
+                  continue;
+                }
+              }
+              break; // Si funciona, salir del loop
+            } else {
+              lastError = await openRouterResponse.text();
+              console.log(`Modelo ${model} falló, intentando con siguiente...`);
+            }
+          } catch (error) {
+            lastError = error;
+            console.log(`Error con modelo ${model}, intentando con siguiente...`);
+          }
+        }
+
+        if (!openRouterResponse || !openRouterResponse.ok) {
+          return new Response(
+            JSON.stringify({ 
+              error: `Error de OpenRouter: ${lastError || 'Todos los modelos fallaron'}`,
+              triedModels: fallbackModels.filter(m => !m.includes("deepseek"))
+            }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Si es streaming, procesar el stream de OpenRouter
+        if (stream) {
+          console.log(`🚀 Iniciando stream con modelo: ${fallbackModels[0]}`);
+          const decoder = new TextDecoder();
+          let accumulatedContent = "";
+          let chunkCount = 0;
+          let contentChunks = 0;
+          
+          // Crear un TransformStream para procesar el stream de OpenRouter
+          const transformStream = new TransformStream({
+            async transform(chunk, controller) {
+              chunkCount++;
+              const text = decoder.decode(chunk, { stream: true });
+              console.log(`📦 Chunk ${chunkCount}: ${text.substring(0, 100)}...`);
+              
+              const lines = text.split('\n');
+              
+              for (const line of lines) {
+                if (line.trim() === '') continue; // Saltar líneas vacías
+                
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6).trim();
+                  console.log(`📝 Data line: ${data.substring(0, 100)}...`);
+                  
+                  if (data === '[DONE]') {
+                    console.log(`✅ Stream terminado. Total content chunks: ${contentChunks}, Total accumulated: ${accumulatedContent.length} chars`);
+                    controller.enqueue('data: [DONE]\n\n');
+                    continue;
+                  }
+                  
+                  if (data === '') {
+                    console.log('⚠️ Línea de data vacía, saltando...');
+                    continue;
+                  }
+                  
+                  try {
+                    const parsed = JSON.parse(data);
+                    const delta = parsed.choices?.[0]?.delta;
+                    
+                    // Intentar obtener contenido de diferentes campos según el tipo de modelo
+                    let content = delta?.content || delta?.reasoning || "";
+                    
+                    // Para modelos de razonamiento, también revisar reasoning_details
+                    if (!content && delta?.reasoning_details?.length > 0) {
+                      content = delta.reasoning_details[0]?.text || "";
+                    }
+                    
+                    if (content && content.trim()) {
+                      contentChunks++;
+                      console.log(`💬 Contenido ${contentChunks}: "${content}"`);
+                      
+                      // Acumular contenido para validar
+                      accumulatedContent += content;
+                      
+                      // Validar contenido acumulado cada cierto número de caracteres
+                      if (accumulatedContent.length > 50 && accumulatedContent.length % 50 === 0) {
+                        if (!isValidResponse(accumulatedContent)) {
+                          console.log("🚨 Contenido corrupto detectado en streaming, cerrando...");
+                          controller.enqueue('data: {"error": "Respuesta corrupta detectada"}\n\n');
+                          controller.enqueue('data: [DONE]\n\n');
+                          return;
+                        }
+                      }
+                      
+                      // Enviar en el formato que espera el cliente
+                      const encoder = new TextEncoder();
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+                    } else if (parsed.choices?.[0]?.finish_reason) {
+                      console.log(`🏁 Stream finished with reason: ${parsed.choices[0].finish_reason}`);
+                    } else {
+                      console.log(`📄 Parsed but no content:`, JSON.stringify(parsed, null, 2));
+                    }
+                  } catch (e) {
+                    console.log(`❌ Error parsing JSON: ${e.message}, data: ${data.substring(0, 100)}`);
+                  }
+                } else if (line.trim()) {
+                  console.log(`❓ Non-data line: ${line}`);
+                }
+              }
+            },
+            
+            flush(controller) {
+              console.log(`🔚 Stream flush called. Final stats: ${chunkCount} chunks, ${contentChunks} content chunks, ${accumulatedContent.length} total chars`);
+              if (contentChunks === 0) {
+                console.log('⚠️ No content was sent! Stream was empty.');
+              }
+            }
+          });
+          
+          // Pipe el stream original a través del transformador
+          const transformedStream = openRouterResponse.body?.pipeThrough(transformStream);
+          
+          return new Response(transformedStream, {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              "Connection": "keep-alive"
+            }
+          });
+        }
+
+        // Si no es streaming, devolver la respuesta JSON
+        const result = await openRouterResponse.json();
+        return new Response(
+          JSON.stringify({
+            success: true,
+            response: result.choices?.[0]?.message?.content || "No se pudo generar respuesta"
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
       }
 
       default:

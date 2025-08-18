@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Button, usePreviewContext } from "../PageContainer";
-import { ChipTabs } from "../common/ChipTabs";
+import { ChipTabs, useChipTabs } from "../common/ChipTabs";
 import type { Chatbot, User } from "@prisma/client";
 import toast from "react-hot-toast";
 import { AgentForm } from "../forms/AgentForm";
 import { ChatForm } from "../forms/ChatForm";
 import { useSubmit } from "react-router";
 import { useS3Upload } from "~/hooks/useS3Upload";
+import { getAgentWelcomeMessage, getAgentGoodbyeMessage, getAgentColor } from "~/utils/agents/agentPrompts";
+import type { AgentType } from "../common/AgentDropdown";
 
 // Componente para el tab de Preview
 export const PreviewForm = ({
@@ -18,7 +20,8 @@ export const PreviewForm = ({
 }) => {
   const submit = useSubmit();
   const { uploadFile } = useS3Upload();
-  const [activeTab, setActiveTab] = useState("Chat");
+  // Usar el hook con persistencia en localStorage, usando el chatbot.id como contexto único
+  const { currentTab: activeTab, setCurrentTab: setActiveTab } = useChipTabs("Chat", `preview_${chatbot.id}`);
   const [isSaving, setIsSaving] = useState(false);
   
   // Usar el contexto para obtener y actualizar el estado
@@ -49,8 +52,12 @@ export const PreviewForm = ({
     setSelectedModel(value);
   };
 
-  const handleAgentChange = (value: any) => {
+  const handleAgentChange = (value: AgentType) => {
     setSelectedAgent(value);
+    // Actualizar automáticamente los mensajes y el color cuando cambie el agente
+    setWelcomeMessage(getAgentWelcomeMessage(value));
+    setGoodbyeMessage(getAgentGoodbyeMessage(value));
+    setPrimaryColor(getAgentColor(value));
   };
 
   const handleTemperatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {

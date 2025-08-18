@@ -2,36 +2,50 @@ import { IconDropdown, type DropdownOption } from "./IconDropdown";
 
 // Tipos de agentes disponibles
 export type AgentType =
-  | "customer_service"
   | "sales"
-  | "technical_support"
-  | "general";
+  | "customer_support"
+  | "content_seo"
+  | "data_analyst"
+  | "automation_ai"
+  | "growth_hacker";
 
 // Opciones de agentes predefinidas
 const AGENT_OPTIONS: DropdownOption[] = [
   {
-    value: "customer_service",
-    label: "Agente de servicio al cliente",
-    description: "Especializado en atención y soporte",
-    iconSrc: "/assets/chat/agents/customer-service.svg",
-  },
-  {
     value: "sales",
-    label: "Agente de ventas",
-    description: "Especializado en conversión y ventas",
+    label: "Agente de Ventas",
+    description: "Experto en ventas consultivas B2B/B2C",
     iconSrc: "/assets/chat/agents/sales.svg",
   },
   {
-    value: "technical_support",
-    label: "Soporte técnico",
-    description: "Especializado en resolver problemas técnicos",
-    iconSrc: "/assets/chat/agents/technical.svg",
+    value: "customer_support",
+    label: "Soporte al Cliente",
+    description: "Customer success y resolución rápida",
+    iconSrc: "/assets/chat/agents/customer-service.svg",
   },
   {
-    value: "general",
-    label: "Asistente general",
-    description: "Responde a todo tipo de consultas",
-    iconSrc: "/assets/chat/agents/general.svg",
+    value: "content_seo",
+    label: "Contenido y SEO",
+    description: "Estratega de contenido y posicionamiento",
+    iconSrc: "/assets/chat/agents/content.svg",
+  },
+  {
+    value: "data_analyst",
+    label: "Analista de Datos",
+    description: "Insights y visualización de métricas",
+    iconSrc: "/assets/chat/agents/analytics.svg",
+  },
+  {
+    value: "automation_ai",
+    label: "Automatización e IA",
+    description: "Workflows inteligentes y procesos RPA",
+    iconSrc: "/assets/chat/agents/automation.svg",
+  },
+  {
+    value: "growth_hacker",
+    label: "Growth Hacker",
+    description: "Crecimiento viral y experimentación",
+    iconSrc: "/assets/chat/agents/growth.svg",
   },
 ];
 

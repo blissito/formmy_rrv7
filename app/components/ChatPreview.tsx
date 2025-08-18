@@ -28,6 +28,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [stream, setStream] = useState(true);
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const inputRef = useRef<ChatInputRef>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,21 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [isConversationEnded, setIsConversationEnded] = useState(false);
   const inactivityTimerRef = useRef<number | null>(null);
+
+  // En producción, obtener la API key del chatbot
+  useEffect(() => {
+    if (production) {
+      // Obtener la API key pública del chatbot
+      fetch(`/api/v1/apikey?chatbotId=${chatbot.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.key) {
+            setApiKey(data.key);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [production, chatbot.id]);
 
   useEffect(() => {
     setChatMessages((m) => {
@@ -160,35 +176,98 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
 
     if (stream) {
       setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
-      // Usar una apiKey mock ya que el SDK está deprecado
-      Effect.runPromise(
-        sendOpenRouterMessageEffect({
-          chatbotId: chatbot.id,
-          apiKey: "preview-key",
-          model: chatbot.aiModel || DEFAULT_AI_MODEL,
-          instructions: chatbot.instructions || "",
-          temperature: chatbot.temperature,
-          messages: [
-            { role: "system", content: chatbot.instructions || "" },
-            ...updatedMessages,
-          ],
-          stream: true,
-          onStreamChunk: (partial) => {
-            // updating state
-            setChatMessages((msgs) => {
-              // Actualiza solo el último mensaje assistant
-              const updated = [...msgs];
-              let lastIdx = updated.length - 1;
-              while (lastIdx >= 0 && updated[lastIdx].role !== "assistant")
-                lastIdx--;
-              if (lastIdx >= 0)
-                updated[lastIdx] = { ...updated[lastIdx], content: partial };
-              return updated;
-            });
-          },
+      
+      // Determinar qué endpoint usar según el modo
+      if (production && apiKey) {
+        // En producción, usar el SDK con la API key del chatbot
+        Effect.runPromise(
+          sendOpenRouterMessageEffect({
+            chatbotId: chatbot.id,
+            apiKey: apiKey,
+            model: chatbot.aiModel || DEFAULT_AI_MODEL,
+            instructions: chatbot.instructions || "",
+            temperature: chatbot.temperature,
+            messages: [
+              { role: "system", content: chatbot.instructions || "" },
+              ...updatedMessages,
+            ],
+            stream: true,
+            onStreamChunk: (partial) => {
+              setChatMessages((msgs) => {
+                const updated = [...msgs];
+                let lastIdx = updated.length - 1;
+                while (lastIdx >= 0 && updated[lastIdx].role !== "assistant")
+                  lastIdx--;
+                if (lastIdx >= 0)
+                  updated[lastIdx] = { ...updated[lastIdx], content: partial };
+                return updated;
+              });
+            },
+          })
+        )
+          .then(() => {
+            setChatLoading(false);
+            inputRef.current?.focus();
+          })
+          .catch((err: unknown) => {
+            setChatError(err instanceof Error ? err.message : String(err));
+            setChatLoading(false);
+            inputRef.current?.focus();
+          });
+      } else {
+        // En preview (dashboard), usar el endpoint interno
+        const formData = new FormData();
+        formData.append("intent", "preview_chat");
+        formData.append("chatbotId", chatbot.id);
+        formData.append("message", currentInput);
+        formData.append("sessionId", `preview-${chatbot.id}-${Date.now()}`);
+        formData.append("stream", "true");
+
+        fetch("/api/v1/chatbot", {
+          method: "POST",
+          body: formData,
         })
-      )
-        .then(() => {
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+          }
+          
+          if (response.body) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullContent = "";
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              const chunk = decoder.decode(value);
+              const lines = chunk.split('\n');
+              
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    if (data.content) {
+                      fullContent += data.content;
+                      setChatMessages((msgs) => {
+                        const updated = [...msgs];
+                        let lastIdx = updated.length - 1;
+                        while (lastIdx >= 0 && updated[lastIdx].role !== "assistant")
+                          lastIdx--;
+                        if (lastIdx >= 0)
+                          updated[lastIdx] = { ...updated[lastIdx], content: fullContent };
+                        return updated;
+                      });
+                    }
+                  } catch (e) {
+                    // Ignorar líneas que no son JSON válido
+                  }
+                }
+              }
+            }
+          }
+          
           setChatLoading(false);
           inputRef.current?.focus();
         })
@@ -197,22 +276,59 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           setChatLoading(false);
           inputRef.current?.focus();
         });
+      }
     } else {
-      Effect.runPromise(
-        sendOpenRouterMessageEffect({
-          apiKey: "preview-key",
-          model: chatbot.aiModel || DEFAULT_AI_MODEL,
-          instructions: chatbot.instructions || "",
-          temperature: chatbot.temperature,
-          messages: [
-            { role: "system", content: chatbot.instructions || "" },
-            ...updatedMessages,
-          ],
+      // Sin streaming
+      if (production && apiKey) {
+        // En producción, usar el SDK con la API key del chatbot
+        Effect.runPromise(
+          sendOpenRouterMessageEffect({
+            chatbotId: chatbot.id,
+            apiKey: apiKey,
+            model: chatbot.aiModel || DEFAULT_AI_MODEL,
+            instructions: chatbot.instructions || "",
+            temperature: chatbot.temperature,
+            messages: [
+              { role: "system", content: chatbot.instructions || "" },
+              ...updatedMessages,
+            ],
+            stream: false,
+          })
+        )
+          .then((result: any) => {
+            const botContent =
+              result.choices?.[0]?.message?.content || "Respuesta vacía";
+            setChatMessages((msgs) => [
+              ...msgs,
+              { role: "assistant", content: botContent },
+            ]);
+            setChatLoading(false);
+            inputRef.current?.focus();
+          })
+          .catch((err: unknown) => {
+            setChatError(err instanceof Error ? err.message : String(err));
+            setChatLoading(false);
+            inputRef.current?.focus();
+          });
+      } else {
+        // En preview (dashboard), usar el endpoint interno
+        const formData = new FormData();
+        formData.append("intent", "preview_chat");
+        formData.append("chatbotId", chatbot.id);
+        formData.append("message", currentInput);
+        formData.append("sessionId", `preview-${chatbot.id}-${Date.now()}`);
+        formData.append("stream", "false");
+
+        fetch("/api/v1/chatbot", {
+          method: "POST",
+          body: formData,
         })
-      )
-        .then((result: any) => {
-          const botContent =
-            result.choices?.[0]?.message?.content || "Respuesta vacía";
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+          }
+          const result = await response.json();
+          const botContent = result.response || result.content || "Respuesta vacía";
           setChatMessages((msgs) => [
             ...msgs,
             { role: "assistant", content: botContent },
@@ -225,6 +341,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           setChatLoading(false);
           inputRef.current?.focus();
         });
+      }
     }
   };
 
