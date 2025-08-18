@@ -50,6 +50,15 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - Tailwind CSS para estilos
 - Para importar archivos desde `/server` en archivos dentro de `/app`, usar la ruta `server/...` sin prefijo ni alias
 
+## AI Models Architecture Rules
+
+- **Anthropic models**: SIEMPRE usar conexión directa API, NUNCA a través de OpenRouter
+- **OpenRouter models**: Usar para OpenAI, Google, Meta y otros proveedores
+- **Separación de proveedores**: Mantener Anthropic directo vs OpenRouter completamente separados
+- **No mezclar**: Nunca usar prefijo `anthropic/` con proveedor OpenRouter
+- **Modelos "Free"**: Solo rotan entre sí, NUNCA hacen fallback a modelos pagados
+- **Modelos "Paid"**: Sin fallback - si fallan, reportar error al usuario
+
 ## Email System
 
 ### Email Templates disponibles:

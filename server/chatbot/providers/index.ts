@@ -7,6 +7,7 @@
 export * from './types';
 export * from './anthropic';
 export * from './openrouter';
+export * from './openai';
 export * from './manager';
 
 // Re-export para facilidad de uso

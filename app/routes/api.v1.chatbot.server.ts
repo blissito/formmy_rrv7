@@ -30,13 +30,16 @@ export const truncateConversationHistory = (
 /**
  * Crear y configurar el provider manager con las API keys disponibles
  */
-export const createProviderManager = (anthropicApiKey?: string, openRouterApiKey?: string) => {
+export const createProviderManager = (anthropicApiKey?: string, openRouterApiKey?: string, openaiApiKey?: string) => {
   return new AIProviderManager({
     ...(anthropicApiKey && { 
       anthropic: { apiKey: anthropicApiKey } 
     }),
     ...(openRouterApiKey && { 
       openrouter: { apiKey: openRouterApiKey } 
+    }),
+    ...(openaiApiKey && { 
+      openai: { apiKey: openaiApiKey } 
     })
   });
 };

@@ -1306,8 +1306,9 @@ export async function action({ request }: any) {
         // Obtener las API keys necesarias
         const openRouterApiKey = process.env.OPENROUTER_API_KEY;
         const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+        const openaiApiKey = process.env.CHATGPT_API_KEY;
         
-        if (!openRouterApiKey && !anthropicApiKey) {
+        if (!openRouterApiKey && !anthropicApiKey && !openaiApiKey) {
           return new Response(
             JSON.stringify({ error: "No se encontraron API keys configuradas" }),
             { status: 500, headers: { "Content-Type": "application/json" } }
@@ -1364,7 +1365,7 @@ export async function action({ request }: any) {
         };
 
         // ✅ NUEVO SISTEMA MODULAR DE PROVEEDORES
-        const providerManager = createProviderManager(anthropicApiKey, openRouterApiKey);
+        const providerManager = createProviderManager(anthropicApiKey, openRouterApiKey, openaiApiKey);
         
         const fallbackModels = generateFallbackModels(chatbot.aiModel);
 

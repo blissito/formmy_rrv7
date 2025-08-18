@@ -1,6 +1,7 @@
 import { AIProvider, ProviderConfig, ChatRequest, ChatResponse, StreamChunk } from './types';
 import { AnthropicProvider } from './anthropic';
 import { OpenRouterProvider } from './openrouter';
+import { OpenAIProvider } from './openai';
 
 /**
  * Manager central para todos los proveedores de IA
@@ -25,13 +26,9 @@ export class AIProviderManager {
       this.providers.set('openrouter', new OpenRouterProvider('openrouter', configs.openrouter));
     }
 
-    // TODO: Agregar más proveedores aquí
-    // if (configs.openai) {
-    //   this.providers.set('openai', new OpenAIProvider('openai', configs.openai));
-    // }
-    // if (configs.chinese) {
-    //   this.providers.set('chinese', new ChineseProvider('chinese', configs.chinese));
-    // }
+    if (configs.openai) {
+      this.providers.set('openai', new OpenAIProvider('openai', configs.openai));
+    }
   }
 
   /**
