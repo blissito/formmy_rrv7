@@ -96,6 +96,11 @@ export default function HomeFooter() {
                   Formmy Academy
                 </a>
               </li>
+              <li>
+                <a href="/blog" className="hover:underline">
+                  Blog
+                </a>
+              </li>
               {/* <li><a href="#" className="hover:underline">Blog</a></li> */}
             </ul>
             <div className="block md:hidden mt-7">

@@ -4,6 +4,7 @@ excerpt: "Descubre las últimas novedades, tutoriales y mejores prácticas para 
 date: "2025-01-15"
 tags: ["anuncio", "formmy", "ai"]
 author: "Equipo Formmy"
+category: "blog"
 ---
 
 # ¡Bienvenido al Blog de Formmy! 🎉
