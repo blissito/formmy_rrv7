@@ -3,6 +3,7 @@ import { useLoaderData, Link } from 'react-router';
 import { getBlogPost, type BlogPost } from 'server/blog.server';
 import { BlogMarkdown } from '~/components/blog/BlogMarkdown';
 import invariant from 'tiny-invariant';
+import HomeFooter from './home/HomeFooter';
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   if (!data?.post) {
@@ -37,78 +38,87 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 export default function BlogPost() {
   const { post } = useLoaderData<{ post: BlogPost }>();
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <Link to="/blog" className="inline-flex items-center text-brand-600 hover:text-brand-700 mb-6">
-            ← Volver al blog
-          </Link>
-          
-          {post.image && (
-            <div className="aspect-video bg-gray-100 rounded-xl overflow-hidden mb-8">
-              <img
-                src={post.image}
-                alt={post.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+  // Calculate reading time (assuming 200 words per minute)
+  const wordCount = post.content.split(/\s+/).length;
+  const readingTime = Math.ceil(wordCount / 200);
 
-          <div className="mb-6">
-            <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-              <time dateTime={post.date}>
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Back button */}
+      <div className="bg-white o sticky top-0 z-50 h-16  ">
+        <div className="max-w-5xl mx-auto  flex justify-start items-center h-full px-4 md:px-[5%] xl:px-0"> 
+          <Link 
+            to="/blog" 
+            className="grid place-items-center text-metal  transition-colors text-sm font-medium"
+          >
+            <div className="px-4 h-10 rounded-xl  w-fit border border-outlines hover:bg-brand-100 flex gap-1 items-center">
+
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver
+            </div>
+          </Link>
+        
+        </div>
+      </div>
+
+      {/* Header */}
+      <div>
+        <div className="max-w-4xl mx-auto px-4 py-8 md:py-16">
+          <div className="max-w-3xl mx-auto text-left">
+          <h1 className="text-4xl md:text-5xl font-bold text-dark  mb-6 leading-tight">
+              {post.title}
+            </h1>
+            <div className="inline-flex items-center gap-2 mb-6">
+              {post.tags && post.tags.map((tag, index) => (
+                <span 
+                  key={index}
+                  className="bg-outlines/30 text-metal px-3 py-1 rounded-full text-xs font-medium"
+                >
+                  {tag}
+                </span>
+              ))}
+              <span className="text-sm text-gray-500">•</span>
+              <time 
+                dateTime={post.date} 
+                className="text-sm text-gray-500"
+              >
                 {new Date(post.date).toLocaleDateString('es-ES', {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric',
                 })}
               </time>
-              {post.tags && post.tags.length > 0 && (
-                <>
-                  <span>•</span>
-                  <div className="flex gap-2">
-                    {post.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </>
-              )}
+              <span className="text-sm text-gray-500">•</span>
+              <span className="text-sm text-gray-500">
+                {readingTime} min de lectura
+              </span>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-              {post.title}
-            </h1>
-            {post.excerpt && (
-              <p className="text-xl text-gray-600 leading-relaxed">
-                {post.excerpt}
-              </p>
-            )}
           </div>
         </div>
       </div>
 
+      {/* Featured Image */}
+      {post.image && (
+        <div className="max-w-5xl mx-auto px-4 -mt-12 mb-12 ">
+          <div className="rounded-2xl overflow-hidden shadow-lg">
+            <img
+              src={post.image}
+              alt={post.title}
+              className="w-full max-h-[500px] object-cover"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <article className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div className="max-w-3xl mx-auto px-4 pb-16">
+        <article className="prose prose-lg max-w-none">
           <BlogMarkdown content={post.content} />
         </article>
-
-        {/* Navigation */}
-        <div className="mt-12 flex justify-center">
-          <Link
-            to="/blog"
-            className="inline-flex items-center px-6 py-3 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors"
-          >
-            Ver más artículos
-          </Link>
-        </div>
       </div>
+      <HomeFooter />
     </div>
   );
 }
