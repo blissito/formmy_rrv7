@@ -1705,6 +1705,11 @@ export async function action({ request }: any) {
             // Procesar la respuesta para detectar solicitudes de pago o tool calls
             let finalResponse = result.response.content;
             
+            // Si el modelo solo hizo tool calls sin contenido, generar respuesta contextual
+            if (finalResponse === 'Sin respuesta' && result.response.toolCalls && result.response.toolCalls.length > 0) {
+              finalResponse = "Perfecto, procesando tu solicitud...";
+            }
+            
             // Agregar warning si las herramientas no están disponibles
             if (toolsDisabledWarning) {
               finalResponse = `⚠️ ${toolsDisabledWarning}\n\n${finalResponse}`;
