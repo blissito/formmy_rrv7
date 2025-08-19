@@ -1401,6 +1401,9 @@ export async function action({ request }: any) {
           });
         })();
         
+        console.log('🔍 DEBUG: basicRequiresTools:', basicRequiresTools);
+        console.log('🔍 DEBUG: mensaje analizado:', message);
+        
         // Obtener información de Stripe ANTES de todo para poder loggear correctamente
         let stripeIntegration = null;
         try {
@@ -1450,19 +1453,24 @@ export async function action({ request }: any) {
         });
         
         // Agregar capacidades de Stripe si está disponible
-        // Solo agregar capacidades de Stripe para planes PRO en adelante
-        const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE";
-        const allowToolsForTesting = false; // Herramientas funcionando correctamente - Restaurando restricciones de plan
+        // Solo agregar capacidades de Stripe para planes TRIAL, PRO y ENTERPRISE
+        const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE" || user.plan === "TRIAL";
+        const allowToolsForTesting = true; // DEBUG: Temporalmente reactivando para diagnosticar
           
         if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
-          console.log('🔧 Agregando capacidades de Stripe al prompt - Usuario PRO/ENTERPRISE con Stripe activo');
+          console.log('🔧 Agregando capacidades de Stripe al prompt - Usuario TRIAL/PRO/ENTERPRISE con Stripe activo');
           // Agregar capacidades de pago al prompt
           enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES DE PAGO ===\n";
+          enrichedSystemPrompt += "🔥 PRIORIDAD MÁXIMA: Cuando detectes solicitud de pago, USA INMEDIATAMENTE la herramienta create_payment_link.\n";
           enrichedSystemPrompt += "CRÍTICO: Tienes acceso a generar links de pago de Stripe.\n\n";
           
           // Si detectamos que requiere herramientas, ser más directivo
           if (basicRequiresTools) {
-            enrichedSystemPrompt += "🚨 MODO HERRAMIENTAS ACTIVO - El usuario quiere generar un pago. Usa la herramienta create_payment_link.\n\n";
+            enrichedSystemPrompt += "🚨 MODO HERRAMIENTAS ACTIVO - El usuario quiere generar un pago.\n";
+            enrichedSystemPrompt += "⚡ INSTRUCCIÓN CRÍTICA: USA INMEDIATAMENTE la herramienta create_payment_link SIN PEDIR MÁS INFORMACIÓN.\n";
+            enrichedSystemPrompt += "🎯 Si no hay descripción específica, usa 'Servicios profesionales' como descripción.\n";
+            enrichedSystemPrompt += "🚫 PROHIBIDO: NO preguntes por más detalles, NO pidas confirmación, actúa INMEDIATAMENTE.\n";
+            enrichedSystemPrompt += "💰 OPTIMIZACIÓN: Responde de forma CONCISA (máximo 2 párrafos) para minimizar costos.\n\n";
           }
             
           enrichedSystemPrompt += "**CONTEXTO IMPORTANTE DE ROLES:**\n";
@@ -1476,14 +1484,16 @@ export async function action({ request }: any) {
           enrichedSystemPrompt += "- Para frases como: 'quiero pagar', 'genera un link', 'cómo puedo pagar'\n\n";
           enrichedSystemPrompt += "**Cómo responder correctamente:**\n";
           enrichedSystemPrompt += "1. Identifica qué servicio nuestro quiere contratar el cliente\n";
-          enrichedSystemPrompt += "2. Determina el precio correspondiente\n";
-          enrichedSystemPrompt += "3. Genera el link para que nos pague\n";
-          enrichedSystemPrompt += "4. Explica que puede proceder con el pago\n\n";
-          enrichedSystemPrompt += "**Ejemplos CORRECTOS:**\n";
-          enrichedSystemPrompt += "Cliente: 'Quiero contratar servicios de SEO por $1000'\n";
-          enrichedSystemPrompt += "Tu respuesta: 'Perfecto, genero el link de pago por $1,000 MXN para nuestros servicios de SEO.'\n";
-          enrichedSystemPrompt += "Cliente: 'Cómo puedo pagar la consultoría de $500?'\n";
-          enrichedSystemPrompt += "Tu respuesta: 'Te genero el link de pago por $500 MXN para la consultoría.'\n\n";
+          enrichedSystemPrompt += "2. Determina el precio correspondiente (SIEMPRE en pesos mexicanos)\n";
+          enrichedSystemPrompt += "3. Usa format de México: números con PUNTO decimal (ej: 1500.50, NO 1500,50)\n";
+          enrichedSystemPrompt += "4. Genera el link con currency: 'mxn' (peso mexicano)\n";
+          enrichedSystemPrompt += "5. Explica que puede proceder con el pago\n\n";
+          enrichedSystemPrompt += "**Ejemplos CORRECTOS (USA LA HERRAMIENTA INMEDIATAMENTE):**\n";
+          enrichedSystemPrompt += "Cliente: 'Genera un link de pago por $3400'\n";
+          enrichedSystemPrompt += "Tu acción: [USA create_payment_link con amount: 3400, description: 'Servicios profesionales', currency: 'mxn']\n";
+          enrichedSystemPrompt += "Cliente: 'Quiero pagar servicios de SEO por $1000'\n";
+          enrichedSystemPrompt += "Tu acción: [USA create_payment_link con amount: 1000, description: 'Servicios de SEO', currency: 'mxn']\n";
+          enrichedSystemPrompt += "🚫 INCORRECTO: Preguntar '¿qué servicio específico?' - ¡USA LA HERRAMIENTA DIRECTAMENTE!\n\n";
           enrichedSystemPrompt += "**Frases correctas a usar:**\n";
           enrichedSystemPrompt += "- 'nuestros servicios'\n";
           enrichedSystemPrompt += "- 'puedes proceder con el pago'\n";
@@ -1551,12 +1561,13 @@ export async function action({ request }: any) {
         let selectedModel = chatbot.aiModel;
         
         if (stripeToolsDetected) {
-          // Usar Haiku para tools de Stripe (más económico, igual de efectivo para tools simples)
-          selectedModel = "claude-3-5-haiku-20241022";
-          console.log('💰 COST OPTIMIZATION: Usando Haiku para tools de Stripe');
+          // IMPORTANTE: Solo Sonnet maneja herramientas correctamente
+          // Pero optimizamos usando tokens mínimos y respuestas concisas
+          selectedModel = "claude-3-5-sonnet-20241022";
+          console.log('🔧 TOOL REQUIRED: Usando Sonnet para tools de Stripe (único modelo confiable para tools)');
           console.log('   - Modelo original:', chatbot.aiModel);
-          console.log('   - Modelo optimizado:', selectedModel);
-          console.log('   - Razón: Tools de Stripe (Haiku = ~1/10 del costo de Sonnet)');
+          console.log('   - Modelo para tools:', selectedModel);
+          console.log('   - OPTIMIZACIÓN: Usar maxTokens bajos para minimizar costos');
         } else if (user.plan === "PRO" && chatbot.aiModel === "gpt-5-nano") {
           const hasActiveIntegrations = stripeIntegration?.stripeApiKey ? true : false;
           const isComplexQuery = basicRequiresTools || message.length > 200; // Queries largas o que requieren herramientas
@@ -1577,11 +1588,9 @@ export async function action({ request }: any) {
         // Solo usuarios PRO y ENTERPRISE tienen acceso a herramientas de pago
         if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
           console.log('🔧 Agregando tool de Stripe a la request');
-          console.log('🔍 DEBUG: Verificando configuración Stripe:');
-          console.log('   - stripeIntegration existe:', !!stripeIntegration);
-          console.log('   - stripeApiKey existe:', !!stripeIntegration?.stripeApiKey);
-          console.log('   - hasProPlan:', hasProPlan);
-          console.log('   - allowToolsForTesting:', allowToolsForTesting);
+          console.log('🔍 DEBUG: stripeIntegration activa:', !!stripeIntegration);
+          console.log('🔍 DEBUG: hasProPlan:', hasProPlan);
+          console.log('🔍 DEBUG: user.plan:', user.plan);
           
           tools = [{
             name: "create_payment_link",
@@ -1600,10 +1609,10 @@ export async function action({ request }: any) {
                 currency: {
                   type: "string",
                   enum: ["mxn", "usd"],
-                  description: "Moneda del pago, típicamente 'mxn' para pesos mexicanos"
+                  description: "Moneda del pago (default: 'mxn' para pesos mexicanos)"
                 }
               },
-              required: ["amount", "description", "currency"]
+              required: ["amount", "description"]
             }
           }];
           
@@ -1621,8 +1630,8 @@ export async function action({ request }: any) {
             ...truncateConversationHistory(conversationHistory),
             { role: "user" as const, content: message }
           ],
-          temperature: chatbot.temperature || 0.7,
-          maxTokens: 1000,
+          temperature: stripeToolsDetected ? 0.1 : (chatbot.temperature || 0.7), // Baja temperatura para herramientas = más obediente
+          maxTokens: stripeToolsDetected ? 300 : 1000, // Reducir tokens para herramientas = menor costo
           stream: stream,
           ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
@@ -1631,10 +1640,10 @@ export async function action({ request }: any) {
         console.log('   - Mensajes count:', chatRequest.messages.length);
         console.log('   - Tiene tools:', !!chatRequest.tools);
         console.log('   - Tools count:', chatRequest.tools?.length || 0);
-        console.log('   - Stream:', chatRequest.stream);
         if (chatRequest.tools && chatRequest.tools.length > 0) {
-          console.log('🔍 Tools que se envían:', JSON.stringify(chatRequest.tools, null, 2));
+          console.log('🔍 DEBUG: Tools siendo enviadas:', JSON.stringify(chatRequest.tools, null, 2));
         }
+        console.log('   - Stream:', chatRequest.stream);
         
         let apiResponse;
         let modelUsed = selectedModel;
@@ -1713,25 +1722,12 @@ export async function action({ request }: any) {
             
           } else {
             // NON-STREAMING con sistema modular
-            console.log('🔄 DEBUGGING: Entrando en flujo NON-STREAMING');
-            console.log('🔍 DEBUGGING: Llamando chatCompletionWithFallback con:', {
-              model: chatRequest.model,
-              hasTools: !!chatRequest.tools,
-              toolsCount: chatRequest.tools?.length || 0
-            });
             
             const result = await providerManager.chatCompletionWithFallback(
               chatRequest,
               fallbackModels.filter(m => !m.includes("deepseek"))
             );
             
-            console.log('✅ DEBUGGING: chatCompletionWithFallback completado:', {
-              hasResult: !!result,
-              modelUsed: result?.modelUsed,
-              providerUsed: result?.providerUsed,
-              hasContent: !!result?.response?.content,
-              contentLength: result?.response?.content?.length || 0
-            });
             
             modelUsed = result.modelUsed;
             providerUsed = result.providerUsed;
@@ -1743,6 +1739,13 @@ export async function action({ request }: any) {
             console.log('   - Contenido:', finalResponse?.substring(0, 200) + '...');
             console.log('   - Tool calls:', result.response.toolCalls?.length || 0);
             console.log('   - Finish reason:', result.response.finishReason);
+            
+            if (!result.response.toolCalls || result.response.toolCalls.length === 0) {
+              console.log('🚨 DEBUG: Modelo NO usó herramientas. Contenido:');
+              console.log('   - Respuesta:', finalResponse?.substring(0, 300) + '...');
+            } else {
+              console.log('✅ DEBUG: Modelo SÍ usó herramientas:', result.response.toolCalls);
+            }
             
             // Si la respuesta contiene tool calls, procesarlos
             if (result.response.toolCalls && result.response.toolCalls.length > 0) {
@@ -1763,8 +1766,16 @@ export async function action({ request }: any) {
                         currency || "mxn"
                       );
                       
+                      // Formatear el monto en pesos mexicanos con formato correcto
+                      const formattedAmount = new Intl.NumberFormat('es-MX', {
+                        style: 'currency',
+                        currency: (currency || 'mxn').toUpperCase(),
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
+                      }).format(amount);
+                      
                       // Agregar el link real a la respuesta
-                      finalResponse += `\n\n✅ Link de pago generado:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`;
+                      finalResponse += `\n\n✅ Link de pago generado por ${formattedAmount}:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`;
                     } else {
                       finalResponse += "\n\n⚠️ No se pudo generar el link: Stripe no está configurado correctamente.";
                     }
@@ -1798,10 +1809,18 @@ export async function action({ request }: any) {
                       paymentData.currency || "mxn"
                     );
                     
+                    // Formatear el monto con formato mexicano correcto
+                    const formattedAmount = new Intl.NumberFormat('es-MX', {
+                      style: 'currency',
+                      currency: (paymentData.currency || 'mxn').toUpperCase(),
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 2
+                    }).format(paymentData.amount);
+                    
                     // Reemplazar el marcador con el link real
                     finalResponse = finalResponse.replace(
                       paymentRequestMatch[0],
-                      `\n\n✅ Link de pago generado:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`
+                      `\n\n✅ Link de pago generado por ${formattedAmount}:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`
                     );
                   } else {
                     finalResponse = finalResponse.replace(
@@ -1820,12 +1839,6 @@ export async function action({ request }: any) {
               }
             }
             
-            console.log('🎯 FINAL: Enviando respuesta exitosa:', {
-              responseLength: finalResponse?.length || 0,
-              hasContent: !!finalResponse,
-              modelUsed,
-              providerUsed
-            });
             
             return new Response(
               JSON.stringify({
