@@ -817,11 +817,9 @@ export async function action({ request }: any) {
             stripePublishableKey: formData.get("stripePublishableKey") as string,
             stripeWebhookSecret: formData.get("stripeWebhookSecret") as string,
           };
-          console.log("🔍 Debug API - Stripe data:", stripeData);
         }
         
         try {
-          console.log("🔄 Debug API - Usando upsertIntegration para evitar duplicados");
           const integration = await upsertIntegration(
             chatbotId,
             platform,
@@ -833,19 +831,10 @@ export async function action({ request }: any) {
           
           // Si es Stripe y tiene API key, activarla inmediatamente
           let finalIntegration = integration;
-          console.log("🔍 Debug API - Integration creada:", integration);
-          console.log("🔍 Debug API - Platform:", platform);
-          console.log("🔍 Debug API - StripeData ApiKey:", stripeData?.stripeApiKey ? "EXISTS" : "NO_EXISTS");
           
           if (platform === "STRIPE" && stripeData?.stripeApiKey) {
-            console.log("🔄 Debug API - Activando integración de Stripe...");
             finalIntegration = await updateIntegration(integration.id, { isActive: true });
-            console.log("✅ Debug API - Integración activada:", finalIntegration);
-          } else {
-            console.log("⚠️ Debug API - No se cumplieron las condiciones para activar Stripe");
           }
-          
-          console.log("✅ Integración final:", finalIntegration);
           return new Response(JSON.stringify({ success: true, integration: finalIntegration }), {
             headers: { "Content-Type": "application/json" },
           });
@@ -897,9 +886,7 @@ export async function action({ request }: any) {
           
           // Si es Stripe y se proporciona API key, activar automáticamente
           if (platform === "STRIPE" && updateData.stripeApiKey) {
-            console.log("🔄 Debug API Update - Activando integración de Stripe actualizada...");
             integration = await updateIntegration(integrationId, { isActive: true });
-            console.log("✅ Debug API Update - Integración activada:", integration);
           }
           
           return new Response(JSON.stringify({ success: true, integration }), {
@@ -1401,8 +1388,6 @@ export async function action({ request }: any) {
           });
         })();
         
-        console.log('🔍 DEBUG: basicRequiresTools:', basicRequiresTools);
-        console.log('🔍 DEBUG: mensaje analizado:', message);
         
         // Obtener información de Stripe ANTES de todo para poder loggear correctamente
         let stripeIntegration = null;
@@ -1425,11 +1410,6 @@ export async function action({ request }: any) {
         const stream = requestedStream && (chatbot.enableStreaming !== false) && !basicRequiresTools;
         
         if (basicRequiresTools) {
-          console.log('🔧 Herramientas detectadas - Forzando modo non-streaming para garantizar funcionamiento');
-          console.log('🔧 Mensaje original:', message);
-          console.log('🔧 Tiene Stripe activo:', stripeIntegration?.stripeApiKey ? 'SÍ' : 'NO');
-          console.log('🔧 Plan del usuario:', user.plan);
-          console.log('🔧 MODO TESTING: Tools de Stripe detectadas');
         }
 
         // Obtener las API keys necesarias
@@ -1449,16 +1429,15 @@ export async function action({ request }: any) {
         // Usar función unificada para construir prompt optimizado
         let enrichedSystemPrompt = buildEnrichedSystemPrompt(chatbot, message, {
           maxContextTokens: 800, // Límite de emergencia
-          enableLogging: true
+          enableLogging: false
         });
         
         // Agregar capacidades de Stripe si está disponible
         // Solo agregar capacidades de Stripe para planes TRIAL, PRO y ENTERPRISE
         const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE" || user.plan === "TRIAL";
-        const allowToolsForTesting = true; // DEBUG: Temporalmente reactivando para diagnosticar
+        const allowToolsForTesting = false; // PRODUCTION: Restricciones de plan activas
           
         if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
-          console.log('🔧 Agregando capacidades de Stripe al prompt - Usuario TRIAL/PRO/ENTERPRISE con Stripe activo');
           // Agregar capacidades de pago al prompt
           enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES DE PAGO ===\n";
           enrichedSystemPrompt += "🔥 PRIORIDAD MÁXIMA: Cuando detectes solicitud de pago, USA INMEDIATAMENTE la herramienta create_payment_link.\n";
@@ -1564,21 +1543,11 @@ export async function action({ request }: any) {
           // CONFIRMADO: Solo Sonnet maneja herramientas correctamente vía Anthropic API
           // Gemini vía OpenRouter no pasa herramientas correctamente
           selectedModel = "claude-3-5-sonnet-20241022";
-          console.log('✅ TOOL CONFIRMED: Usando Sonnet para tools de Stripe (único modelo 100% confiable)');
-          console.log('   - Modelo original:', chatbot.aiModel);
-          console.log('   - Modelo confiable:', selectedModel);
-          console.log('   - NOTA: Gemini falló - OpenRouter no pasa tools correctamente');
         } else if (user.plan === "PRO" && chatbot.aiModel === "gpt-5-nano") {
           const hasActiveIntegrations = stripeIntegration?.stripeApiKey ? true : false;
           const isComplexQuery = basicRequiresTools || message.length > 200; // Queries largas o que requieren herramientas
           selectedModel = getSmartModelForPro(hasActiveIntegrations, isComplexQuery);
           
-          console.log('🎯 Smart routing PRO:');
-          console.log('   - Modelo original:', chatbot.aiModel);
-          console.log('   - Modelo seleccionado:', selectedModel);
-          console.log('   - Tiene integraciones:', hasActiveIntegrations);
-          console.log('   - Es query compleja:', isComplexQuery);
-          console.log('   - Requiere herramientas:', basicRequiresTools);
         }
 
         const fallbackModels = generateFallbackModels(selectedModel);
@@ -1587,10 +1556,6 @@ export async function action({ request }: any) {
         let tools = [];
         // Solo usuarios PRO y ENTERPRISE tienen acceso a herramientas de pago
         if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
-          console.log('🔧 Agregando tool de Stripe a la request');
-          console.log('🔍 DEBUG: stripeIntegration activa:', !!stripeIntegration);
-          console.log('🔍 DEBUG: hasProPlan:', hasProPlan);
-          console.log('🔍 DEBUG: user.plan:', user.plan);
           
           tools = [{
             name: "create_payment_link",
@@ -1617,9 +1582,6 @@ export async function action({ request }: any) {
           }];
           
         } else {
-          console.log('   - Stripe integration:', !!stripeIntegration);
-          console.log('   - Stripe API key:', !!stripeIntegration?.stripeApiKey);
-          console.log('   - Plan PRO:', hasProPlan);
         }
 
         // Preparar request para el sistema modular
@@ -1636,14 +1598,6 @@ export async function action({ request }: any) {
           ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
         
-        console.log('   - Modelo:', chatRequest.model);
-        console.log('   - Mensajes count:', chatRequest.messages.length);
-        console.log('   - Tiene tools:', !!chatRequest.tools);
-        console.log('   - Tools count:', chatRequest.tools?.length || 0);
-        if (chatRequest.tools && chatRequest.tools.length > 0) {
-          console.log('🔍 DEBUG: Tools siendo enviadas:', JSON.stringify(chatRequest.tools, null, 2));
-        }
-        console.log('   - Stream:', chatRequest.stream);
         
         let apiResponse;
         let modelUsed = selectedModel;
@@ -1736,20 +1690,9 @@ export async function action({ request }: any) {
             // Procesar la respuesta para detectar solicitudes de pago o tool calls
             let finalResponse = result.response.content;
             
-            console.log('   - Contenido:', finalResponse?.substring(0, 200) + '...');
-            console.log('   - Tool calls:', result.response.toolCalls?.length || 0);
-            console.log('   - Finish reason:', result.response.finishReason);
-            
-            if (!result.response.toolCalls || result.response.toolCalls.length === 0) {
-              console.log('🚨 DEBUG: Modelo NO usó herramientas. Contenido:');
-              console.log('   - Respuesta:', finalResponse?.substring(0, 300) + '...');
-            } else {
-              console.log('✅ DEBUG: Modelo SÍ usó herramientas:', result.response.toolCalls);
-            }
             
             // Si la respuesta contiene tool calls, procesarlos
             if (result.response.toolCalls && result.response.toolCalls.length > 0) {
-              console.log('🔧 Tool calls detectados:', result.response.toolCalls);
               
               for (const toolCall of result.response.toolCalls) {
                 if (toolCall.name === 'create_payment_link') {
@@ -1786,11 +1729,6 @@ export async function action({ request }: any) {
                 }
               }
             } else {
-              console.log('🚨 DEBUG: El modelo NO usó tools. Analizando respuesta:');
-              console.log('   - Contenido completo:', finalResponse);
-              console.log('   - Modelo usado:', selectedModel);
-              console.log('   - Tools disponibles:', tools.length);
-              console.log('   - FinishReason:', result.response.finishReason);
               
               // Fallback: Detectar si hay un payment request en la respuesta (sistema anterior)
               const paymentRequestMatch = finalResponse.match(/\[STRIPE_PAYMENT_REQUEST:({.*?})\]/);
