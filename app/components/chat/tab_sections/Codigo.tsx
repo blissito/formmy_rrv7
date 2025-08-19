@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConfigMenu, EmbebidoButton, IntegracionesButton } from "../ConfigMenu";
 import { StickyGrid } from "../PageContainer";
 import {
@@ -12,9 +12,17 @@ import { CodeBlock } from "../common/CodeBlock";
 import type { Chatbot, Integration as PrismaIntegration } from "@prisma/client";
 import WhatsAppIntegrationModal from "../../integrations/WhatsAppIntegrationModal";
 import GoogleCalendarIntegrationModal from "../../integrations/GoogleCalendarIntegrationCard";
+import StripeIntegrationModal from "../../integrations/StripeIntegrationModal";
 
 // Integraciones disponibles con sus configuraciones
 const availableIntegrations = [
+  {
+    id: "STRIPE",
+    name: "Stripe",
+    logo: "/assets/chat/stripe.png",
+    description:
+      "Permite que tu agente genere links de pago automáticamente para cobrar productos y servicios.",
+  },
   {
     id: "GOOGLE_CALENDAR",
     name: "Google Calendar",
@@ -95,9 +103,8 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
     null
   );
   // Estado para el estado de conexión de las integraciones
-  const [integrationStatus, setIntegrationStatus] = useState<
-    Record<string, IntegrationStatus>
-  >(() => {
+  // Función para inicializar el estado de integraciones
+  const initializeIntegrationStatus = (integrations: Integration[]) => {
     const status: Record<string, IntegrationStatus> = {};
 
     // Debug: Verificar qué integraciones están llegando
@@ -145,10 +152,49 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
 
     console.log("🔍 Debug - Estado final de integraciones:", status);
     return status;
-  });
+  };
+
+  const [integrationStatus, setIntegrationStatus] = useState<
+    Record<string, IntegrationStatus>
+  >(() => initializeIntegrationStatus(integrations));
+
+  // Sincronizar estado cuando cambien las props de integrations
+  // pero preservar estados "connected" del estado local
+  useEffect(() => {
+    console.log("🔄 Debug - Props de integrations cambiaron, sincronizando estado inteligentemente");
+    
+    setIntegrationStatus(prevStatus => {
+      const newStatus = initializeIntegrationStatus(integrations);
+      
+      // Preservar cualquier estado "connected" del estado local si no hay contradición en BD
+      const mergedStatus = { ...newStatus };
+      Object.keys(prevStatus).forEach(key => {
+        if (prevStatus[key] === "connected") {
+          const integration = integrations.find(i => i.platform.toLowerCase() === key);
+          
+          // Preservar estado conectado si:
+          // 1. No hay integración en BD (estado local temporal)
+          // 2. La integración en BD está activa
+          if (!integration || integration.isActive) {
+            mergedStatus[key] = "connected";
+            console.log(`🔄 Debug - Preservando estado conectado para ${key}`);
+          } else {
+            console.log(`🔄 Debug - Integración ${key} existe pero está inactiva, respetando BD`);
+          }
+        }
+      });
+      
+      console.log("🔄 Debug - Estado anterior:", prevStatus);
+      console.log("🔄 Debug - Estado de BD:", newStatus);
+      console.log("🔄 Debug - Estado merged:", mergedStatus);
+      
+      return mergedStatus;
+    });
+  }, [integrations]);
   // Estados para controlar los modales de integración
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
   const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false);
+  const [stripeModalOpen, setStripeModalOpen] = useState(false);
 
   const handleConnect = (integrationId: string) => {
     console.log("🔍 Debug - Conectando integración:", integrationId);
@@ -166,6 +212,8 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
     } else if (integrationId === "GOOGLE_CALENDAR") {
       console.log("🔍 Starting Google Calendar OAuth2 flow");
       handleGoogleCalendarOAuth();
+    } else if (integrationId === "STRIPE") {
+      setStripeModalOpen(true);
     } else {
       // Para otras integraciones, simular conexión
       setTimeout(() => {
@@ -177,12 +225,56 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
     }
   };
 
-  const handleDisconnect = (integrationId: string) => {
+  const handleDisconnect = async (integrationId: string) => {
     console.log("🔍 Debug - Desconectando integración:", integrationId);
+    
+    // Actualizar estado local inmediatamente para UI responsiva
     setIntegrationStatus((prev) => ({
       ...prev,
       [integrationId.toLowerCase()]: "disconnected",
     }));
+
+    try {
+      // Buscar la integración real para obtener su ID
+      const existingIntegration = integrations.find(
+        (i) => i.platform === integrationId
+      );
+
+      if (existingIntegration) {
+        // Hacer llamada al API para desactivar la integración
+        const response = await fetch("/api/v1/chatbot", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            intent: "toggle_integration_status",
+            integrationId: existingIntegration.id,
+            isActive: "false",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error al desconectar: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("✅ Debug - Integración desconectada exitosamente:", data);
+      } else {
+        console.log("⚠️ Debug - No se encontró integración para desconectar");
+      }
+    } catch (error) {
+      console.error("❌ Error al desconectar integración:", error);
+      
+      // Revertir estado local en caso de error
+      setIntegrationStatus((prev) => ({
+        ...prev,
+        [integrationId.toLowerCase()]: "connected",
+      }));
+      
+      // Mostrar error al usuario
+      alert("Error al desconectar la integración. Inténtalo de nuevo.");
+    }
   };
 
   const handleEdit = (integrationId: string) => {
@@ -193,6 +285,8 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
       setWhatsAppModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
       setGoogleCalendarModalOpen(true);
+    } else if (integrationId === "STRIPE") {
+      setStripeModalOpen(true);
     }
   };
 
@@ -243,6 +337,27 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
       // lo hacemos simple con una recarga
       window.location.reload();
     }
+  };
+
+  // Manejador de éxito para la integración de Stripe
+  const handleStripeSuccess = (integration: any) => {
+    console.log("🔍 Debug - Stripe integración exitosa:", integration);
+    console.log("🔍 Debug - Estado anterior:", integrationStatus);
+
+    // Actualizar el estado local para mostrar como conectado
+    setIntegrationStatus((prev) => {
+      const newStatus = {
+        ...prev,
+        stripe: "connected" as const,
+      };
+      console.log("🔍 Debug - Nuevo estado:", newStatus);
+      return newStatus;
+    });
+
+    setStripeModalOpen(false);
+    setSelectedIntegration(null);
+
+    console.log("✅ Debug - Stripe conectado sin recargar página");
   };
 
   // Función para manejar OAuth2 de Google Calendar
@@ -411,6 +526,7 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
                 name={availableIntegration.name}
                 logo={availableIntegration.logo}
                 description={availableIntegration.description}
+                status={integrationStatus[availableIntegration.id.toLowerCase()]}
                 lastActivity={
                   integrationStatus[availableIntegration.id.toLowerCase()] ===
                   "connected"
@@ -443,6 +559,29 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
                     whatsappIntegration.businessAccountId || "",
                   webhookVerifyToken:
                     whatsappIntegration.webhookVerifyToken || undefined,
+                };
+              })()}
+            />
+          )}
+
+          {selectedIntegration === "STRIPE" && (
+            <StripeIntegrationModal
+              isOpen={stripeModalOpen}
+              onClose={() => setStripeModalOpen(false)}
+              onSuccess={handleStripeSuccess}
+              chatbotId={chatbot.id}
+              existingIntegration={(() => {
+                const stripeIntegration = integrations.find(
+                  (integration) => integration.platform === "STRIPE"
+                );
+                if (!stripeIntegration) return null;
+
+                return {
+                  id: stripeIntegration.id,
+                  stripeApiKey: stripeIntegration.stripeApiKey || "",
+                  stripePublishableKey: stripeIntegration.stripePublishableKey || "",
+                  stripeWebhookSecret: stripeIntegration.stripeWebhookSecret || "",
+                  isActive: stripeIntegration.isActive,
                 };
               })()}
             />

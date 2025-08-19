@@ -22,7 +22,6 @@ import AiIconActive from "../ui/icons/AiIconActive";
 import Usage from "../ui/icons/Usage";
 import HelpIcon from "../ui/icons/Help";
 import HelpIconActive from "../ui/icons/HelpActive";
-import { HiOutlineGiftTop } from "react-icons/hi2";
 import { BiGhost } from "react-icons/bi";
 import { IoGiftOutline } from "react-icons/io5";
 import { cn } from "~/lib/utils";

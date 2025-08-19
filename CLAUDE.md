@@ -40,6 +40,33 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 /server - Server utilities and configurations
 ```
 
+## Estrategia de Pricing y Monetización
+
+### Planes y Precios (Optimizados para mercado mexicano)
+- **Free**: $0 - Solo 3 formmys, 0 chatbots, trial 60 días
+- **Starter**: $189 MXN/mes - 2 chatbots, 50 conversaciones, modelos básicos
+- **Pro**: $499 MXN/mes - 10 chatbots, 250 conversaciones, Claude incluido
+- **Enterprise**: $899 MXN/mes - Ilimitado, 1000 conversaciones, todos los modelos
+
+### Proyección Año 1 (150 clientes)
+- **60% Starter** (90 clientes): $189K MXN profit
+- **33% Pro** (50 clientes): $310K MXN profit  
+- **7% Enterprise** (10 clientes): $116K MXN profit
+- **Total**: $615K MXN profit anual (~$34K USD)
+
+### Revenue Streams Adicionales
+- **Conversaciones extra**: $59-179 MXN/100 según plan
+- **WhatsApp Integration**: $99 MXN/mes
+- **Setup Service**: $1,500 MXN one-time
+- **White Label**: $299 MXN/mes
+- **API Access**: $199 MXN/mes
+
+### Optimizaciones de Costo
+- **Smart Model Routing**: Haiku para queries simples, Sonnet para complejos
+- **Context Compression**: Reducir tokens manteniendo calidad
+- **Response Caching**: 30% reducción en llamadas API
+- **Pricing psicológico**: Precios bajo barreras ($189, $499, $899)
+
 ## Convenciones de código
 
 - TypeScript estricto, **NUNCA imports dinámicos** - usar solo imports estáticos
@@ -53,11 +80,19 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 ## AI Models Architecture Rules
 
 - **Anthropic models**: SIEMPRE usar conexión directa API, NUNCA a través de OpenRouter
-- **OpenRouter models**: Usar para OpenAI, Google, Meta y otros proveedores
-- **Separación de proveedores**: Mantener Anthropic directo vs OpenRouter completamente separados
-- **No mezclar**: Nunca usar prefijo `anthropic/` con proveedor OpenRouter
-- **Modelos "Free"**: Solo rotan entre sí, NUNCA hacen fallback a modelos pagados
-- **Modelos "Paid"**: Sin fallback - si fallan, reportar error al usuario
+- **OpenAI models**: SIEMPRE usar conexión directa API con CHATGPT_API_KEY, NUNCA a través de OpenRouter
+- **OpenRouter models**: Solo para Google, Meta, Mistral y otros proveedores terceros
+- **Separación de proveedores**: Mantener Anthropic y OpenAI directos vs OpenRouter completamente separados
+- **No mezclar**: Nunca usar prefijos `anthropic/` o `openai/` con proveedor OpenRouter
+- **Modelos PRO**: Todos los modelos requieren plan PRO o trial activo de 60 días
+- **Usuarios FREE**: Acceso completo durante 60 días desde registro, luego sin acceso a modelos
+- **Sin fallback entre planes**: Usuarios sin acceso reciben error, no degradación de modelo
+
+### Streaming Implementation
+- **TextDecoderStream**: Usar streams nativos para evitar corrupción de caracteres UTF-8
+- **Buffer Management**: TransformStream con buffer persistente para manejar líneas incompletas
+- **Token Limits**: Sistema inteligente de tokens según contexto (200-600 tokens)
+- **Error Handling**: Manejo robusto de finishReason y cierre correcto de streams
 
 ## Email System
 

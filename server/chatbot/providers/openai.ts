@@ -15,6 +15,44 @@ export class OpenAIProvider extends AIProvider {
     return OpenAIProvider.SUPPORTED_MODELS.includes(model);
   }
 
+  /**
+   * Calcula tokens inteligentemente según el contexto de la conversación
+   */
+  private calculateSmartTokens(messages: ChatMessage[]): number {
+    const lastMessage = messages[messages.length - 1]?.content || '';
+    const messageLength = lastMessage.length;
+    
+    // Calcular el contexto total usado en tokens aproximados
+    const totalContextTokens = messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0);
+    
+    // Detectar tipo de consulta
+    const isShortQuery = messageLength < 50;
+    const isCodeRequest = /código|code|program|script|función|class|method/i.test(lastMessage);
+    const isListRequest = /lista|enumera|list|opciones|pasos|steps/i.test(lastMessage);
+    const isExplanationRequest = /explica|explain|cómo|how|por qué|why|describe/i.test(lastMessage);
+    
+    // Base tokens según tipo de consulta
+    let baseTokens: number;
+    if (isShortQuery) {
+      baseTokens = 400; // Respuestas cortas pero con espacio
+    } else if (isCodeRequest) {
+      baseTokens = 800; // Código necesita más espacio
+    } else if (isListRequest) {
+      baseTokens = 600; // Listas pueden ser largas
+    } else if (isExplanationRequest) {
+      baseTokens = 700; // Explicaciones detalladas
+    } else {
+      baseTokens = 500; // Respuestas generales
+    }
+    
+    // Ajustar según contexto disponible (máximo 4096 tokens para GPT-4o mini)
+    const maxContextWindow = 4096;
+    const availableTokens = maxContextWindow - totalContextTokens - 100; // 100 tokens de margen
+    
+    // Retornar el menor entre baseTokens y tokens disponibles, pero mínimo 200
+    return Math.max(200, Math.min(baseTokens, availableTokens));
+  }
+
   protected getHeaders(): Record<string, string> {
     return {
       ...super.getHeaders(),
@@ -33,7 +71,10 @@ export class OpenAIProvider extends AIProvider {
   }
 
   async chatCompletion(request: ChatRequest): Promise<ChatResponse> {
-    const { model, messages, temperature = 0.7, maxTokens = 150 } = request;
+    const { model, messages, temperature = 0.7, maxTokens } = request;
+    
+    // Cálculo inteligente de tokens según contexto
+    const smartMaxTokens = maxTokens || this.calculateSmartTokens(messages);
 
     if (!this.supportsModel(model)) {
       throw new Error(`Modelo ${model} no soportado por OpenAI provider`);
@@ -47,7 +88,7 @@ export class OpenAIProvider extends AIProvider {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
       temperature: Math.max(0, Math.min(2, temperature)),
-      max_tokens: maxTokens,
+      max_tokens: smartMaxTokens,
     };
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -75,7 +116,10 @@ export class OpenAIProvider extends AIProvider {
   }
 
   async chatCompletionStream(request: ChatRequest): Promise<ReadableStream<StreamChunk>> {
-    const { model, messages, temperature = 0.7, maxTokens = 150 } = request;
+    const { model, messages, temperature = 0.7, maxTokens } = request;
+    
+    // Cálculo inteligente de tokens según contexto
+    const smartMaxTokens = maxTokens || this.calculateSmartTokens(messages);
 
     if (!this.supportsModel(model)) {
       throw new Error(`Modelo ${model} no soportado por OpenAI provider`);
@@ -89,7 +133,7 @@ export class OpenAIProvider extends AIProvider {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
       temperature: Math.max(0, Math.min(2, temperature)),
-      max_tokens: maxTokens,
+      max_tokens: smartMaxTokens,
       stream: true,
     };
 
@@ -107,29 +151,26 @@ export class OpenAIProvider extends AIProvider {
     return new ReadableStream<StreamChunk>({
       async start(controller) {
         const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-
         if (!reader) {
-          controller.error(new Error('No se pudo obtener el stream'));
+          controller.error(new Error('No response body'));
           return;
         }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
 
         try {
           while (true) {
             const { done, value } = await reader.read();
-            
-            if (done) {
-              controller.close();
-              break;
-            }
+            if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
               if (line.startsWith('data: ')) {
-                const data = line.slice(6).trim();
-                
+                const data = line.slice(6);
                 if (data === '[DONE]') {
                   controller.close();
                   return;
@@ -137,24 +178,18 @@ export class OpenAIProvider extends AIProvider {
 
                 try {
                   const parsed = JSON.parse(data);
-                  const content = parsed.choices?.[0]?.delta?.content || '';
-                  const finishReason = parsed.choices?.[0]?.finish_reason;
-
+                  const content = parsed.choices?.[0]?.delta?.content;
+                  
                   if (content) {
-                    controller.enqueue({
-                      content,
-                      finishReason: null,
-                    });
+                    controller.enqueue({ content });
                   }
-
-                  if (finishReason) {
-                    controller.enqueue({
-                      content: '',
-                      finishReason,
-                    });
+                  
+                  if (parsed.choices?.[0]?.finish_reason) {
+                    controller.close();
+                    return;
                   }
-                } catch (e) {
-                  // Ignorar errores de parsing de chunks individuales
+                } catch {
+                  // Skip malformed JSON
                 }
               }
             }

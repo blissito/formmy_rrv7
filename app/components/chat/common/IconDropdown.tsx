@@ -23,6 +23,18 @@ type IconDropdownProps = {
   label?: string;
 };
 
+// Función para obtener el color de fondo según el proveedor
+const getProviderBg = (modelValue: string) => {
+  if (modelValue.includes("anthropic") || modelValue.includes("claude")) {
+    return "bg-orange-50";
+  } else if (modelValue.includes("openai") || modelValue.includes("gpt")) {
+    return "bg-green-50";
+  } else if (modelValue.includes("google") || modelValue.includes("gemini")) {
+    return "bg-blue-50";
+  }
+  return "bg-gray-50";
+};
+
 export const IconDropdown = ({
   options,
   selectedValue,
@@ -115,7 +127,7 @@ export const IconDropdown = ({
       {isOpen && (
         <div
           className={cn(
-            "absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto",
+            "absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-auto",
             dropdownClassName
           )}
         >
@@ -132,7 +144,7 @@ export const IconDropdown = ({
               className={cn(
                 "flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-50",
                 "border-b border-gray-100 last:border-b-0",
-                selectedValue === option.value && "bg-blue-50",
+                selectedValue === option.value && getProviderBg(option.value),
                 option.disabled && "opacity-50 cursor-not-allowed",
                 optionClassName
               )}

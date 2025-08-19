@@ -1,51 +1,51 @@
 // Modelos disponibles - priorizando calidad y estabilidad
 export const AI_MODELS = [
-  // Modelos pagos - mayor calidad y estabilidad
-  // Anthropic Direct (más confiables)
+  // Modelos Enterprise - solo Sonnet
   {
     value: "claude-3-5-sonnet-20241022",
     label: "Claude 3.5 Sonnet (Anthropic)",
-    category: "Paid",
+    category: "ENTERPRISE",
     provider: "anthropic-direct",
+    tier: "enterprise",
   },
+  
+  // Modelos Pro - Anthropic models 
   {
     value: "claude-3-5-haiku-20241022", 
     label: "Claude 3.5 Haiku (Anthropic)",
-    category: "Paid",
+    category: "PRO",
     provider: "anthropic-direct",
+    tier: "pro",
   },
   {
     value: "claude-3-haiku-20240307",
     label: "Claude 3 Haiku (Anthropic)",
-    category: "Paid", 
+    category: "PRO", 
     provider: "anthropic-direct",
+    tier: "pro",
   },
   
-  // OpenRouter Models
+  // Modelos Starter - más económicos
   {
-    value: "openai/gpt-3.5-turbo",
+    value: "gpt-3.5-turbo",
     label: "GPT-3.5 Turbo (OpenAI)",
-    category: "Paid",
-    provider: "openrouter",
-  },
-  {
-    value: "openai/gpt-4o-mini",
-    label: "GPT-4o Mini (OpenAI)",
-    category: "Paid",
-    provider: "openrouter",
+    category: "STARTER",
+    provider: "openai-direct",
+    tier: "starter",
   },
   {
     value: "google/gemini-flash-1.5",
     label: "Gemini Flash 1.5 (Google)",
-    category: "Paid",
+    category: "STARTER",
     provider: "openrouter",
+    tier: "starter",
   },
-  
   {
-    value: "gpt-4o-mini",
-    label: "GPT-4o Mini (OpenAI Direct)",
-    category: "Free",
-    provider: "openai-direct",
+    value: "mistralai/mistral-small",
+    label: "Mistral Small (Mistral AI)",
+    category: "STARTER",
+    provider: "openrouter",
+    tier: "starter",
   },
   
   // Nota: Llama 3.3 70B y Nemotron Ultra 253B removidos por generar respuestas problemáticas
@@ -57,17 +57,22 @@ export const MODEL_LABELS: Record<string, string> = Object.fromEntries(
 
 export const DEFAULT_AI_MODEL = "claude-3-5-haiku-20241022";
 
-export const FREE_MODEL_ROTATION = [
-  "gpt-4o-mini",
+// Todos los modelos requieren PRO o trial activo
+export const ALL_MODELS = AI_MODELS.map((m) => m.value);
+
+export const DEFAULT_MODEL_ROTATION = [
+  "claude-3-haiku-20240307", // Más económico como predeterminado
+  "claude-3-5-haiku-20241022",
+  "gpt-3.5-turbo",
 ];
 
 export const FALLBACK_MODELS = {
-  "gpt-4o-mini": "gpt-4o-mini",
-};
-
-export const PLAN_MODELS = {
-  FREE: AI_MODELS.filter((m) => m.category === "Free").map((m) => m.value),
-  PRO: AI_MODELS.map((m) => m.value),
+  "claude-3-5-sonnet-20241022": "claude-3-5-haiku-20241022",
+  "claude-3-5-haiku-20241022": "claude-3-haiku-20240307", 
+  "claude-3-haiku-20240307": "gpt-3.5-turbo",
+  "gpt-3.5-turbo": "claude-3-haiku-20240307",
+  "google/gemini-flash-1.5": "claude-3-haiku-20240307",
+  "mistralai/mistral-small": "claude-3-haiku-20240307",
 };
 
 /**
@@ -84,13 +89,37 @@ export function isAnthropicDirectModel(modelValue: string): boolean {
 }
 
 export function generateFallbackModels(currentModel?: string): string[] {
-  if (!currentModel) return [];
+  if (!currentModel) return DEFAULT_MODEL_ROTATION;
   
-  const modelInfo = AI_MODELS.find(m => m.value === currentModel);
+  // Obtener el modelo de fallback específico o usar rotación por defecto
+  const fallbackModel = FALLBACK_MODELS[currentModel];
   
-  if (modelInfo?.category === "Free") {
-    return FREE_MODEL_ROTATION;
-  } else {
-    return [currentModel];
+  return fallbackModel ? [fallbackModel] : DEFAULT_MODEL_ROTATION;
+}
+
+/**
+ * Obtiene los modelos disponibles para un plan específico
+ */
+export function getModelsForPlan(plan: string): string[] {
+  switch (plan) {
+    case "FREE":
+      return []; // Sin acceso después del trial
+    case "TRIAL":
+      return AI_MODELS.filter(m => m.tier === "starter" || m.tier === "pro").map(m => m.value); // Mismos modelos que PRO
+    case "STARTER":
+      return AI_MODELS.filter(m => m.tier === "starter").map(m => m.value);
+    case "PRO":
+      return AI_MODELS.filter(m => m.tier === "starter" || m.tier === "pro").map(m => m.value);
+    case "ENTERPRISE":
+      return AI_MODELS.map(m => m.value); // Acceso a todos
+    default:
+      return [];
   }
+}
+
+/**
+ * Obtiene los modelos con categoría específica
+ */
+export function getModelsByCategory(category: string): typeof AI_MODELS {
+  return AI_MODELS.filter(m => m.category === category);
 }

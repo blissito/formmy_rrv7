@@ -129,7 +129,10 @@ model Project {
 
 enum Plans {
   FREE
+  TRIAL
+  STARTER
   PRO
+  ENTERPRISE
 }
 
 enum ApiKeyType {
@@ -146,6 +149,7 @@ model User {
   provider        String?
   refresh_token   String?
   plan            Plans        @default(FREE)
+  trialStartedAt  DateTime?    // Fecha específica de inicio del trial (para marketing/promociones)
   customerId      String?      @unique
   subscriptionIds String[]
   projects        Project[]
@@ -292,6 +296,7 @@ model Message {
 enum IntegrationType {
   WHATSAPP
   GOOGLE_CALENDAR
+  STRIPE
 }
 
 model Integration {
@@ -312,6 +317,11 @@ model Integration {
   clientSecret       String?         // Client Secret de OAuth 2.0
   redirectUri        String?         // URI de redirección para OAuth
   
+  // Campos específicos de Stripe
+  stripeApiKey       String?         // API Key de Stripe (secret key)
+  stripePublishableKey String?       // Publishable Key de Stripe
+  stripeWebhookSecret String?        // Secret para validar webhooks de Stripe
+  
   // Campos de auditoría
   lastActivity       DateTime?       // Última actividad registrada
   errorMessage       String?         // Último mensaje de error
@@ -323,6 +333,9 @@ model Integration {
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Constraint único: una integración por plataforma por chatbot
+  @@unique([platform, chatbotId])
 }
 
 model ApiKey {

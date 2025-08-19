@@ -34,9 +34,6 @@ COPY ./package.json package-lock.json /app/
 COPY server.js /app/server.js
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
-# Create SDK directory and copy script from build directory
-RUN mkdir -p /app/public/sdk
-COPY --from=build-env /app/build/client/sdk/sdk-script.js /app/public/sdk/sdk-script.js
 # Copy blog content directory for runtime access
 COPY content/ /app/content/
 WORKDIR /app

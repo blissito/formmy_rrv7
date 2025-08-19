@@ -1,57 +1,5 @@
-import * as mammoth from "mammoth";
-import * as XLSX from "xlsx";
-import {
-  createChatbot,
-  updateChatbot,
-  getChatbotById,
-  getChatbotBySlug,
-  getChatbotsByUserId,
-  removeContextItem,
-} from "../../server/chatbot/chatbotModel.server";
-import {
-  activateChatbot,
-  deactivateChatbot,
-  setToDraftMode,
-  markChatbotAsDeleted,
-  getChatbotState,
-} from "../../server/chatbot/chatbotStateManager.server";
-import { validateChatbotCreationAccess } from "../../server/chatbot/chatbotAccess.server";
-import { getChatbotBrandingConfigById } from "../../server/chatbot/brandingConfig.server";
-import {
-  getChatbotUsageStats,
-  checkMonthlyUsageLimit,
-} from "../../server/chatbot/usageTracking.server";
-import {
-  addFileContext,
-  addUrlContext,
-  addTextContext,
-  addQuestionContext,
-  updateQuestionContext,
-  updateTextContext,
-  getChatbotContexts,
-} from "../../server/chatbot/contextManager.server";
-import {
-  createIntegration,
-  getIntegrationsByChatbotId,
-  updateIntegration,
-  toggleIntegrationStatus,
-  deleteIntegration,
-} from "../../server/chatbot/integrationModel.server";
-import {
-  validateUserAIModelAccess,
-  getUserPlanFeatures,
-  DEFAULT_CHATBOT_CONFIG,
-  generateRandomChatbotName,
-} from "~/utils/chatbot.server";
-import { getUserOrRedirect } from "server/getUserUtils.server";
-import { db } from "~/utils/db.server";
-import { generateFallbackModels, isAnthropicDirectModel } from "~/utils/aiModels";
-import { 
-  truncateConversationHistory, 
-  createProviderManager, 
-  buildEnrichedSystemPrompt, 
-  estimateTokens 
-} from "./api.v1.chatbot.server";
+// This file will only export the loader and action functions
+
 
 export async function loader({ request }: any) {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {
@@ -61,6 +9,57 @@ export async function loader({ request }: any) {
 
 export async function action({ request }: any) {
   try {
+    // Import server utilities dynamically
+    const {
+      mammoth,
+      XLSX,
+      IntegrationType,
+      createChatbot,
+      updateChatbot,
+      getChatbotById,
+      getChatbotBySlug,
+      getChatbotsByUserId,
+      removeContextItem,
+      activateChatbot,
+      deactivateChatbot,
+      setToDraftMode,
+      markChatbotAsDeleted,
+      getChatbotState,
+      validateChatbotCreationAccess,
+      getChatbotBrandingConfigById,
+      getChatbotUsageStats,
+      checkMonthlyUsageLimit,
+      addFileContext,
+      addUrlContext,
+      addTextContext,
+      addQuestionContext,
+      updateQuestionContext,
+      updateTextContext,
+      getChatbotContexts,
+      createIntegration,
+      upsertIntegration,
+      getIntegrationsByChatbotId,
+      updateIntegration,
+      toggleIntegrationStatus,
+      deleteIntegration,
+      getActiveStripeIntegration,
+      createQuickPaymentLink,
+      validateUserAIModelAccess,
+      getUserPlanFeatures,
+      DEFAULT_CHATBOT_CONFIG,
+      generateRandomChatbotName,
+      getDefaultAIModelForUser,
+      getUserOrRedirect,
+      db,
+      generateFallbackModels,
+      isAnthropicDirectModel,
+      buildEnrichedSystemPrompt,
+      estimateTokens,
+      AIProviderManager,
+      truncateConversationHistory,
+      createProviderManager
+    } = await import("~/utils/chatbot-api.server");
+
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
     const user = await getUserOrRedirect(request);
@@ -82,7 +81,7 @@ export async function action({ request }: any) {
           (formData.get("welcomeMessage") as string) ||
           DEFAULT_CHATBOT_CONFIG.welcomeMessage;
         const aiModel =
-          (formData.get("aiModel") as string) || DEFAULT_CHATBOT_CONFIG.aiModel;
+          (formData.get("aiModel") as string) || await getDefaultAIModelForUser(user.id);
         const primaryColor =
           (formData.get("primaryColor") as string) ||
           DEFAULT_CHATBOT_CONFIG.primaryColor;
@@ -101,7 +100,7 @@ export async function action({ request }: any) {
           return new Response(
             JSON.stringify({
               success: false,
-              error: `Has alcanzado el límite de ${validation.maxAllowed} chatbot${validation.maxAllowed > 1 ? "s" : ""} para tu plan ${validation.plan.toLowerCase()}.`,
+              error: `Has alcanzado el límite de ${validation.maxAllowed} chatbot${validation.maxAllowed > 1 ? "s" : ""} para tu plan ${validation.plan?.toLowerCase() || 'actual'}.`,
               currentCount: validation.currentOwnedCount,
               maxAllowed: validation.maxAllowed,
               isPro: validation.isPro,
@@ -111,8 +110,8 @@ export async function action({ request }: any) {
           );
         }
 
-        // Validar modelo de IA si se especifica uno diferente al por defecto
-        if (aiModel !== DEFAULT_CHATBOT_CONFIG.aiModel) {
+        // Validar modelo de IA si no es null
+        if (aiModel) {
           const modelAccess = await validateUserAIModelAccess(user.id);
           if (!modelAccess.availableModels.includes(aiModel)) {
             return new Response(
@@ -549,7 +548,7 @@ export async function action({ request }: any) {
             // Extraer contenido basado en el tipo de archivo
             if (
               fileType === "application/pdf" ||
-              fileName.toLowerCase().endsWith(".pdf")
+              (fileName && fileName.toLowerCase().endsWith(".pdf"))
             ) {
               // Procesar PDF con unpdf
               const arrayBuffer = await file.arrayBuffer();
@@ -591,7 +590,7 @@ export async function action({ request }: any) {
                 // No hay fallback necesario con pdf2json
                 content = `[ERROR_PDF: ${pdfError instanceof Error ? pdfError.message : "Error desconocido"} - archivo: ${fileName}]`;
               }
-            } else if (fileName.toLowerCase().endsWith(".docx")) {
+            } else if (fileName && fileName.toLowerCase().endsWith(".docx")) {
               // Procesar DOCX con mammoth
               const arrayBuffer = await file.arrayBuffer();
               const buffer = Buffer.from(arrayBuffer);
@@ -602,7 +601,7 @@ export async function action({ request }: any) {
               } catch (docxError) {
                 content = `[ERROR_DOCX: No se pudo extraer texto del archivo ${fileName}]`;
               }
-            } else if (fileName.toLowerCase().endsWith(".xlsx")) {
+            } else if (fileName && fileName.toLowerCase().endsWith(".xlsx")) {
               // Procesar XLSX con xlsx
               const arrayBuffer = await file.arrayBuffer();
 
@@ -622,8 +621,8 @@ export async function action({ request }: any) {
               }
             } else if (
               fileType.includes("text") ||
-              fileName.toLowerCase().endsWith(".txt") ||
-              fileName.toLowerCase().endsWith(".csv")
+              (fileName && fileName.toLowerCase().endsWith(".txt")) ||
+              (fileName && fileName.toLowerCase().endsWith(".csv"))
             ) {
               // Archivos de texto plano
               content = await file.text();
@@ -805,15 +804,48 @@ export async function action({ request }: any) {
       // Integraciones
       case "create_integration": {
         const chatbotId = formData.get("chatbotId") as string;
-        const platform = formData.get("platform") as any;
+        const platform = formData.get("platform") as IntegrationType;
         const token = formData.get("token") as string | undefined;
+        
+        // Manejar datos específicos según la plataforma
+        let whatsappData, googleCalendarData, stripeData;
+        
+        if (platform === "STRIPE") {
+          stripeData = {
+            stripeApiKey: formData.get("stripeApiKey") as string,
+            stripePublishableKey: formData.get("stripePublishableKey") as string,
+            stripeWebhookSecret: formData.get("stripeWebhookSecret") as string,
+          };
+          console.log("🔍 Debug API - Stripe data:", stripeData);
+        }
+        
         try {
-          const integration = await createIntegration(
+          console.log("🔄 Debug API - Usando upsertIntegration para evitar duplicados");
+          const integration = await upsertIntegration(
             chatbotId,
             platform,
-            token
+            token,
+            whatsappData,
+            googleCalendarData,
+            stripeData
           );
-          return new Response(JSON.stringify({ success: true, integration }), {
+          
+          // Si es Stripe y tiene API key, activarla inmediatamente
+          let finalIntegration = integration;
+          console.log("🔍 Debug API - Integration creada:", integration);
+          console.log("🔍 Debug API - Platform:", platform);
+          console.log("🔍 Debug API - StripeData ApiKey:", stripeData?.stripeApiKey ? "EXISTS" : "NO_EXISTS");
+          
+          if (platform === "STRIPE" && stripeData?.stripeApiKey) {
+            console.log("🔄 Debug API - Activando integración de Stripe...");
+            finalIntegration = await updateIntegration(integration.id, { isActive: true });
+            console.log("✅ Debug API - Integración activada:", finalIntegration);
+          } else {
+            console.log("⚠️ Debug API - No se cumplieron las condiciones para activar Stripe");
+          }
+          
+          console.log("✅ Integración final:", finalIntegration);
+          return new Response(JSON.stringify({ success: true, integration: finalIntegration }), {
             headers: { "Content-Type": "application/json" },
           });
         } catch (error: any) {
@@ -840,15 +872,35 @@ export async function action({ request }: any) {
       case "update_integration": {
         const integrationId = formData.get("integrationId") as string;
         const token = formData.get("token") as string | undefined;
+        const platform = formData.get("platform") as IntegrationType;
         const isActive =
           formData.get("isActive") !== undefined
             ? formData.get("isActive") === "true"
             : undefined;
+        
+        // Manejar campos específicos de Stripe
+        const updateData: any = { token, isActive };
+        
+        if (formData.get("stripeApiKey")) {
+          updateData.stripeApiKey = formData.get("stripeApiKey") as string;
+        }
+        if (formData.get("stripePublishableKey")) {
+          updateData.stripePublishableKey = formData.get("stripePublishableKey") as string;
+        }
+        if (formData.get("stripeWebhookSecret")) {
+          updateData.stripeWebhookSecret = formData.get("stripeWebhookSecret") as string;
+        }
+        
         try {
-          const integration = await updateIntegration(integrationId, {
-            token,
-            isActive,
-          });
+          let integration = await updateIntegration(integrationId, updateData);
+          
+          // Si es Stripe y se proporciona API key, activar automáticamente
+          if (platform === "STRIPE" && updateData.stripeApiKey) {
+            console.log("🔄 Debug API Update - Activando integración de Stripe actualizada...");
+            integration = await updateIntegration(integrationId, { isActive: true });
+            console.log("✅ Debug API Update - Integración activada:", integration);
+          }
+          
           return new Response(JSON.stringify({ success: true, integration }), {
             headers: { "Content-Type": "application/json" },
           });
@@ -1300,8 +1352,43 @@ export async function action({ request }: any) {
           );
         }
 
-        // RESPETAR configuración del chatbot, no solo la request
-        const stream = requestedStream && (chatbot.enableStreaming !== false);
+        // Detectar si el mensaje requiere herramientas
+        const requiresTools = (() => {
+          const messageLC = message.toLowerCase();
+          const toolIndicators = [
+            // Indicadores de pago
+            'link de pago',
+            'cobrar',
+            'factura',
+            'payment link',
+            'generar pago',
+            'crear cobro',
+            'enviar factura',
+            // Podemos agregar más herramientas aquí en el futuro
+            'agendar cita',
+            'calendario',
+            'schedule',
+            // Indicadores de cantidad de dinero con intención de cobro
+            /\$\d+/,
+            /\d+\s*(pesos|dolares|usd|mxn)/i,
+          ];
+          
+          return toolIndicators.some(indicator => {
+            if (typeof indicator === 'string') {
+              return messageLC.includes(indicator);
+            } else if (indicator instanceof RegExp) {
+              return indicator.test(message);
+            }
+            return false;
+          });
+        })();
+        
+        // Si requiere herramientas, FORZAR non-streaming para garantizar funcionamiento correcto
+        const stream = requestedStream && (chatbot.enableStreaming !== false) && !requiresTools;
+        
+        if (requiresTools) {
+          console.log('🔧 Herramientas detectadas - Forzando modo non-streaming para garantizar funcionamiento');
+        }
 
         // Obtener las API keys necesarias
         const openRouterApiKey = process.env.OPENROUTER_API_KEY;
@@ -1316,10 +1403,51 @@ export async function action({ request }: any) {
         }
 
         // Usar función unificada para construir prompt optimizado
-        const enrichedSystemPrompt = buildEnrichedSystemPrompt(chatbot, message, {
+        let enrichedSystemPrompt = buildEnrichedSystemPrompt(chatbot, message, {
           maxContextTokens: 800, // Límite de emergencia
           enableLogging: true
         });
+        
+        // Verificar si tiene integración de Stripe activa y agregar capacidades
+        try {
+          const stripeIntegration = await db.integration.findFirst({
+            where: {
+              chatbotId: chatbot.id,
+              platform: "STRIPE",
+              isActive: true,
+              stripeApiKey: {
+                not: null
+              }
+            },
+          });
+          
+          if (stripeIntegration && stripeIntegration.stripeApiKey) {
+            // Agregar capacidades de pago al prompt
+            enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES DE PAGO ===\n";
+            enrichedSystemPrompt += "IMPORTANTE: Tienes acceso a generar links de pago de Stripe.\n\n";
+            
+            // Si detectamos que requiere herramientas, ser más directivo
+            if (requiresTools) {
+              enrichedSystemPrompt += "⚠️ MODO HERRAMIENTAS ACTIVO - El usuario parece querer generar un pago.\n\n";
+            }
+            
+            enrichedSystemPrompt += "**Cuándo generar un link de pago:**\n";
+            enrichedSystemPrompt += "- Cuando el usuario solicite crear un cobro, factura, o link de pago\n";
+            enrichedSystemPrompt += "- Si mencionan cantidades específicas de dinero y quieren cobrar\n";
+            enrichedSystemPrompt += "- Frases como: 'genera un link de pago', 'cobrar $X', 'enviar factura'\n\n";
+            enrichedSystemPrompt += "**Formato de respuesta OBLIGATORIO:**\n";
+            enrichedSystemPrompt += "Cuando identifiques que se debe generar un link, incluye EXACTAMENTE este formato en tu respuesta:\n";
+            enrichedSystemPrompt += "[STRIPE_PAYMENT_REQUEST:{\"amount\":[numero],\"description\":\"[descripción]\",\"currency\":\"[mxn/usd]\"}]\n\n";
+            enrichedSystemPrompt += "**Ejemplos:**\n";
+            enrichedSystemPrompt += "Usuario: 'Genera un link de pago por 500 pesos para consultoría'\n";
+            enrichedSystemPrompt += "Tu respuesta: 'Claro, voy a generar tu link de pago por $500 MXN para consultoría.\n[STRIPE_PAYMENT_REQUEST:{\"amount\":500,\"description\":\"Consultoría\",\"currency\":\"mxn\"}]'\n\n";
+            enrichedSystemPrompt += "Usuario: 'Necesito cobrar 1000 pesos'\n";
+            enrichedSystemPrompt += "Tu respuesta: '¿Para qué concepto es el cobro de $1000 MXN? Te generaré el link de pago.\n[STRIPE_PAYMENT_REQUEST:{\"amount\":1000,\"description\":\"Pago de servicio\",\"currency\":\"mxn\"}]'\n";
+            enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
+          }
+        } catch (error) {
+          console.warn("⚠️ Error checking Stripe integration:", error);
+        }
         
         const systemMessage = {
           role: "system",
@@ -1433,6 +1561,11 @@ export async function action({ request }: any) {
                     }
                     
                     if (value.finishReason) {
+                      // Stream completado por el modelo
+                      const doneMessage = 'data: [DONE]\n\n';
+                      controller.enqueue(new TextEncoder().encode(doneMessage));
+                      controller.close();
+                      break;
                     }
                   }
                 } catch (error) {
@@ -1463,11 +1596,52 @@ export async function action({ request }: any) {
             providerUsed = result.providerUsed;
             usedFallback = result.usedFallback;
             
+            // Procesar la respuesta para detectar solicitudes de pago
+            let finalResponse = result.response.content;
+            
+            // Detectar si hay un payment request en la respuesta
+            const paymentRequestMatch = finalResponse.match(/\[STRIPE_PAYMENT_REQUEST:({.*?})\]/);
+            
+            if (paymentRequestMatch) {
+              try {
+                const paymentData = JSON.parse(paymentRequestMatch[1]);
+                
+                // Obtener la integración de Stripe activa
+                const stripeIntegration = await getActiveStripeIntegration(chatbotId);
+                
+                if (stripeIntegration && stripeIntegration.stripeApiKey) {
+                  // Generar el link de pago real
+                  const paymentUrl = await createQuickPaymentLink(
+                    stripeIntegration.stripeApiKey,
+                    paymentData.amount,
+                    paymentData.description || "Pago",
+                    paymentData.currency || "mxn"
+                  );
+                  
+                  // Reemplazar el marcador con el link real
+                  finalResponse = finalResponse.replace(
+                    paymentRequestMatch[0],
+                    `\n\n✅ Link de pago generado:\n${paymentUrl}\n\n💳 Tu cliente puede pagar de forma segura con este link.`
+                  );
+                } else {
+                  finalResponse = finalResponse.replace(
+                    paymentRequestMatch[0],
+                    "\n\n⚠️ No se pudo generar el link: Stripe no está configurado correctamente."
+                  );
+                }
+              } catch (error) {
+                console.error("Error generando link de pago:", error);
+                finalResponse = finalResponse.replace(
+                  paymentRequestMatch[0],
+                  "\n\n❌ Error al generar el link de pago. Verifica tu configuración de Stripe."
+                );
+              }
+            }
             
             return new Response(
               JSON.stringify({
                 success: true,
-                response: result.response.content,
+                response: finalResponse,
                 // TRANSPARENCY: Incluir información del modelo usado
                 modelInfo: {
                   used: modelUsed,

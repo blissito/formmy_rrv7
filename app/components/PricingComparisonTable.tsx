@@ -45,7 +45,7 @@ export function PricingComparisonTable() {
       slack: false,
       shopify: false,
     },
-    "Grow": {
+    "Starter": {
       calendar: false,
       whatsapp: false,
       messenger: false,
@@ -250,20 +250,20 @@ export function PricingComparisonTable() {
       advancedModels: "-",
       integrations: "-"
     },
-    "Grow": {
-      price: "$140",
+    "Starter": {
+      price: "$189",
       priceNote: "/mes",
       forms: "Ilimitados",
       chatbots: "2",
       training: "2MB ",
-      conversations: "100",
+      conversations: "50",
       analytics: "-",
-      basicModels: "Gpt 4, Mistral, Gemini, Claude Sonet",
+      basicModels: "GPT-3.5, Gemini, Mistral",
       advancedModels: "-",
       integrations: "-"
     },
     "Pro ✨": {
-      price: "$490",
+      price: "$499",
       priceNote: "/mes",
       forms: "Ilimitados",
       chatbots: "5 ",
@@ -275,7 +275,7 @@ export function PricingComparisonTable() {
       integrations: "Calendario, Webhooks, WhatsApp, Instagram, Messenger"
     },
     "Enterprise 🤖": {
-      price: "$1,490",
+      price: "$899",
       priceNote: "/mes",
       forms: "Ilimitados",
       chatbots: "Ilimitados",
@@ -331,7 +331,7 @@ export function PricingComparisonTable() {
       mistral_large: true,
       llama3: false,
     },
-    "Grow": {
+    "Starter": {
       gpt4: true,
       gpt4o: true,
       claude_sonnet: true,

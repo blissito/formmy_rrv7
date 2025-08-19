@@ -88,6 +88,36 @@ const AVAILABLE_TOOLS: ToolDefinition[] = [
         required: ["data_type"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_payment_link",
+      description: "Genera un link de pago de Stripe. Úsala cuando el usuario solicite crear un cobro, factura, o link de pago para productos/servicios.",
+      parameters: {
+        type: "object",
+        properties: {
+          amount: {
+            type: "number",
+            description: "Monto a cobrar en la moneda especificada (ej: 100 para $100 MXN)"
+          },
+          description: {
+            type: "string", 
+            description: "Descripción del producto o servicio a cobrar"
+          },
+          currency: {
+            type: "string",
+            description: "Código de moneda (mxn, usd, etc)",
+            default: "mxn"
+          },
+          stripe_api_key: {
+            type: "string",
+            description: "API key de Stripe del usuario (necesaria para generar el link)"
+          }
+        },
+        required: ["amount", "description", "stripe_api_key"]
+      }
+    }
   }
 ];
 
@@ -233,6 +263,68 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
         });
         break;
       }
+
+      case "generate_payment_link": {
+        console.log(`🔧 Modelo solicitó herramientas: [ 'generate_payment_link' ]`);
+        try {
+          const { amount, description, currency = 'mxn', stripe_api_key } = args;
+          
+          // Validar que se proporcione API key
+          if (!stripe_api_key) {
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: "tool",
+              name: "generate_payment_link",
+              content: JSON.stringify({
+                success: false,
+                error: "No se proporcionó API key de Stripe",
+                suggestion: "Necesitas configurar tu integración de Stripe primero"
+              })
+            });
+            break;
+          }
+          
+          // Importar la función de pagos
+          const { createQuickPaymentLink } = await import("server/integrations/stripe-payments");
+          
+          const paymentUrl = await createQuickPaymentLink(
+            stripe_api_key,
+            amount,
+            description,
+            currency
+          );
+
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: "tool",
+            name: "generate_payment_link",
+            content: JSON.stringify({
+              success: true,
+              payment_url: paymentUrl,
+              amount: amount,
+              currency: currency.toUpperCase(),
+              description: description,
+              formatted_amount: new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: currency.toUpperCase(),
+              }).format(amount)
+            })
+          });
+        } catch (error) {
+          console.error("Error generating payment link:", error);
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: "tool",
+            name: "generate_payment_link",
+            content: JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : 'Error generating payment link',
+              suggestion: "Verifica que la API key de Stripe sea válida y que los parámetros estén correctos"
+            })
+          });
+        }
+        break;
+      }
       
       default:
         toolResults.push({
@@ -277,6 +369,7 @@ export async function callGhostyWithTools(
 - Tienes acceso a herramientas que puedes usar automáticamente
 - Puedes buscar información actualizada en la web
 - Puedes acceder a datos del usuario (cuando estén disponibles)
+- Puedes generar links de pago de Stripe cuando el usuario lo solicite
 
 **PATRÓN DE USO DE HERRAMIENTAS**:
 1. Cuando necesites información actualizada, usa las herramientas disponibles

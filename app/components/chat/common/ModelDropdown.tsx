@@ -1,5 +1,5 @@
 import type { User } from "@prisma/client";
-import { AI_MODELS, PLAN_MODELS } from "~/utils/aiModels";
+import { AI_MODELS, getModelsForPlan } from "~/utils/aiModels";
 import { IconDropdown, type DropdownOption } from "./IconDropdown";
 
 type ModelDropdownProps = {
@@ -17,9 +17,8 @@ export const ModelDropdown = ({
   className,
   label = "Selecciona el modelo IA",
 }: ModelDropdownProps) => {
-  // Determinar qué modelos están disponibles según el plan del usuario
-  // TEMPORAL: Permitir modelos PRO para usuarios FREE (testing)
-  const availableModels = PLAN_MODELS.PRO;
+  // Obtener modelos disponibles según el plan del usuario
+  const availableModels = getModelsForPlan(user.plan);
 
   // Función para obtener el logo según el proveedor del modelo
   const getModelLogo = (modelValue: string) => {
@@ -57,17 +56,33 @@ export const ModelDropdown = ({
     iconSrc: getModelLogo(model.value),
     disabled: !availableModels.includes(model.value),
     disabledReason: !availableModels.includes(model.value)
-      ? "Requiere PRO"
+      ? `Requiere plan ${model.category}`
       : undefined,
   }));
+
+  // Si no hay modelos disponibles (FREE sin trial), no debe haber selección
+  const effectiveSelectedValue = availableModels.length === 0 ? "" : (selectedModel || "");
+
+  // Manejo de onChange: solo permitir selección de modelos disponibles
+  const handleChange = (value: string) => {
+    if (availableModels.length === 0) {
+      // Para usuarios FREE sin acceso, no permitir cambios
+      return;
+    }
+    
+    if (availableModels.includes(value)) {
+      onChange(value);
+    }
+  };
 
   return (
     <IconDropdown
       options={modelOptions}
-      selectedValue={selectedModel}
-      onChange={onChange}
+      selectedValue={effectiveSelectedValue}
+      onChange={handleChange}
       className={className}
       label={label}
+      placeholder={availableModels.length === 0 ? "Sin acceso a modelos IA - Actualiza tu plan" : undefined}
     />
   );
 };

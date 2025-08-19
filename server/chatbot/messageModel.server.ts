@@ -54,7 +54,7 @@ export async function createMessage({
 
   if (conversation.status !== ConversationStatus.ACTIVE) {
     throw new Error(
-      `Cannot add message to a ${conversation.status.toLowerCase()} conversation`
+      `Cannot add message to a ${conversation.status?.toLowerCase() || 'unknown'} conversation`
     );
   }
 

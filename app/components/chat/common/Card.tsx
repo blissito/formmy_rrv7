@@ -132,6 +132,7 @@ export const IntegrationCard = ({
   integration,
   description,
   lastActivity,
+  status,
   onConnect,
   onDisconnect,
   onEdit,
@@ -141,14 +142,22 @@ export const IntegrationCard = ({
   integration?: PrismaIntegration;
   description: string;
   lastActivity?: string;
+  status?: IntegrationStatus;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onEdit?: () => void;
 }) => {
-  const isActive = integration?.isActive;
+  // Debug log para ver qué está recibiendo el componente - solo para Stripe y Google Calendar
+  if (name === "Stripe" || name === "Google Calendar") {
+    console.log(`🔍 ${name} Card - status: ${status}, exists: ${!!integration}, active: ${integration?.isActive}`);
+  }
+
+  // Usar el status pasado como prop, o fallback a integration?.isActive
+  const isActive = status === "connected" || (status === undefined && integration?.isActive);
   const exists = !!integration;
 
   const getButtonText = () => {
+    if (status === "connecting") return "Conectando...";
     if (!exists) return "Conectar";
     if (isActive) return "Conectado";
     return "Desconectado";
@@ -163,8 +172,8 @@ export const IntegrationCard = ({
   const isConnected = exists && isActive;
 
   return (
-    <div className="grid shadow-standard border border-outlines p-4 rounded-2xl">
-      <img className="w-8 aspect-square mb-3" src={logo} alt="logo" />
+    <div className="grid shadow-standard border border-outlines p-3 rounded-2xl">
+      <img className="w-8 aspect-square mb-2" src={logo} alt="logo" />
       <div className="flex items-center justify-between mb-1">
         <h5 className="font-medium text-md mb-0">{name}</h5>
         {/* {exists && (
@@ -191,7 +200,7 @@ export const IntegrationCard = ({
           </div>
         )} */}
       </div>
-      <p className="text-sm mb-4 text-metal">{description}</p>
+      <p className="text-sm mb-2 text-metal leading-tight">{description}</p>
 
       {/* Status indicator */}
 

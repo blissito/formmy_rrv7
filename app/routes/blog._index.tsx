@@ -9,7 +9,7 @@ import HomeFooter from './home/HomeFooter';
 
 // Componente para las etiquetas de los posts
 const BlogTag = ({ tag }: { tag: string }) => {
-  const formattedTag = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase();
+  const formattedTag = tag ? tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase() : '';
   return (
     <span className="bg-white/10 text-white px-3 py-2 rounded-full text-xs">
       {formattedTag}
@@ -127,7 +127,7 @@ export default function BlogIndex() {
       return regularPosts.filter(post => post.category === 'tutorial');
     }
     return regularPosts.filter(post => 
-      post.tags?.some(tag => tag.toLowerCase() === activeFilter.toLowerCase())
+      post.tags?.some(tag => tag && tag.toLowerCase() === activeFilter.toLowerCase())
     );
   }, [posts, activeFilter]);
   

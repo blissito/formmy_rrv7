@@ -16,6 +16,33 @@ export class AnthropicProvider extends AIProvider {
     return AnthropicProvider.SUPPORTED_MODELS.includes(model);
   }
 
+  /**
+   * Calcula tokens inteligentemente según el contexto (optimizado para Anthropic)
+   */
+  private calculateSmartTokens(messages: ChatMessage[]): number {
+    const lastMessage = messages[messages.length - 1]?.content || '';
+    const messageLength = lastMessage.length;
+    
+    // Detectar tipo de consulta (Anthropic es muy eficiente)
+    const isShortQuery = messageLength < 50;
+    const isCodeRequest = /código|code|program|script|función|class|method/i.test(lastMessage);
+    const isListRequest = /lista|enumera|list|opciones|pasos|steps/i.test(lastMessage);
+    const isExplanationRequest = /explica|explain|cómo|how|por qué|why|describe/i.test(lastMessage);
+    
+    // Anthropic es más eficiente en tokens, puede permitir más
+    if (isShortQuery) {
+      return 300; // Respuestas cortas con margen generoso
+    } else if (isCodeRequest) {
+      return 700; // Código con espacio amplio
+    } else if (isListRequest) {
+      return 450; // Listas detalladas
+    } else if (isExplanationRequest) {
+      return 500; // Explicaciones completas
+    } else {
+      return 400; // Respuestas generales amplias
+    }
+  }
+
   protected getHeaders(): Record<string, string> {
     return {
       ...super.getHeaders(),
@@ -48,9 +75,12 @@ export class AnthropicProvider extends AIProvider {
   async chatCompletion(request: ChatRequest): Promise<ChatResponse> {
     const { system, messages } = this.formatMessages(request.messages);
     
+    // Cálculo inteligente de tokens según contexto
+    const smartMaxTokens = request.maxTokens || this.calculateSmartTokens(request.messages);
+    
     const body = {
       model: request.model,
-      max_tokens: request.maxTokens || 150, // EMERGENCIA: Reducir de 1000 a 150
+      max_tokens: smartMaxTokens,
       temperature: this.normalizeTemperature(request.temperature || 0.7),
       ...(system && { system }),
       messages,
@@ -85,9 +115,12 @@ export class AnthropicProvider extends AIProvider {
   async chatCompletionStream(request: ChatRequest): Promise<ReadableStream<StreamChunk>> {
     const { system, messages } = this.formatMessages(request.messages);
     
+    // Cálculo inteligente de tokens según contexto
+    const smartMaxTokens = request.maxTokens || this.calculateSmartTokens(request.messages);
+    
     const body = {
       model: request.model,
-      max_tokens: request.maxTokens || 150, // EMERGENCIA: Reducir de 1000 a 150
+      max_tokens: smartMaxTokens,
       temperature: this.normalizeTemperature(request.temperature || 0.7),
       stream: true,
       ...(system && { system }),
@@ -107,71 +140,94 @@ export class AnthropicProvider extends AIProvider {
 
     return new ReadableStream<StreamChunk>({
       async start(controller) {
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-
-        if (!reader) {
+        if (!response.body) {
           controller.error(new Error('No response body'));
           return;
         }
 
-        let buffer = '';
+        // Usar TransformStream con TextDecoderStream para manejo correcto de UTF-8
+        const textStream = response.body
+          .pipeThrough(new TextDecoderStream())
+          .pipeThrough(
+            new TransformStream({
+              start() {
+                this.buffer = '';
+              },
+              transform(chunk, controller) {
+                this.buffer += chunk;
+                const events = this.buffer.split('\n\n'); // Anthropic usa doble salto para separar eventos
+                this.buffer = events.pop() || '';
+
+                for (const event of events) {
+                  if (event.trim()) {
+                    controller.enqueue(event.trim());
+                  }
+                }
+              },
+              flush(controller) {
+                if (this.buffer.trim()) {
+                  controller.enqueue(this.buffer.trim());
+                }
+              }
+            })
+          );
+
+        const reader = textStream.getReader();
         
         try {
           while (true) {
             const { done, value } = await reader.read();
             
-            if (done) break;
+            if (done) {
+              controller.close();
+              break;
+            }
 
-            const chunk = decoder.decode(value, { stream: true });
-            buffer += chunk;
+            // Procesar eventos de Server-Sent Events (formato de Anthropic)
+            const lines = value.split('\n');
+            let eventData = '';
             
-            // Procesar líneas completas del buffer
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // Guardar línea incompleta para el próximo chunk
-
             for (const line of lines) {
-              if (line.trim() === '' || line.startsWith('event:')) continue;
-
-              let data: string;
               if (line.startsWith('data: ')) {
-                data = line.slice(6).trim();
-              } else if (line.startsWith('{')) {
-                data = line.trim();
-              } else {
-                continue;
+                eventData = line.slice(6).trim();
+                break;
               }
+            }
 
-              if (data === '[DONE]') {
+            if (!eventData) continue;
+
+            if (eventData === '[DONE]') {
+              controller.close();
+              return;
+            }
+
+            try {
+              const parsed = JSON.parse(eventData);
+              
+              // Anthropic envía diferentes tipos de eventos en su streaming
+              if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                controller.enqueue({
+                  content: parsed.delta.text,
+                });
+              }
+              
+              // Manejar fin del stream
+              else if (parsed.type === 'message_delta' && parsed.delta?.stop_reason) {
+                console.log(`🏁 Anthropic stream finished with reason: ${parsed.delta.stop_reason}`);
+                controller.enqueue({
+                  content: '',
+                  finishReason: parsed.delta.stop_reason,
+                  usage: parsed.usage ? {
+                    inputTokens: parsed.usage.input_tokens || 0,
+                    outputTokens: parsed.usage.output_tokens || 0,
+                    totalTokens: (parsed.usage.input_tokens || 0) + (parsed.usage.output_tokens || 0),
+                  } : undefined,
+                });
                 controller.close();
                 return;
               }
-
-              try {
-                const parsed = JSON.parse(data);
-                
-                // Manejar eventos de contenido
-                if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                  controller.enqueue({
-                    content: parsed.delta.text,
-                  });
-                }
-                
-                // Manejar fin del mensaje
-                else if (parsed.type === 'message_delta' && parsed.delta?.stop_reason) {
-                  controller.enqueue({
-                    content: '',
-                    finishReason: parsed.delta.stop_reason,
-                    usage: parsed.usage ? {
-                      inputTokens: parsed.usage.input_tokens || 0,
-                      outputTokens: parsed.usage.output_tokens || 0,
-                      totalTokens: (parsed.usage.input_tokens || 0) + (parsed.usage.output_tokens || 0),
-                    } : undefined,
-                  });
-                }
-              } catch (parseError) {
-                console.warn('Failed to parse Anthropic stream chunk:', parseError);
-              }
+            } catch (parseError) {
+              console.warn('Failed to parse Anthropic stream chunk:', eventData, parseError);
             }
           }
         } catch (error) {

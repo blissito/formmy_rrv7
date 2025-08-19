@@ -4,18 +4,50 @@ import { AIProvider, ChatRequest, ChatResponse, StreamChunk, ChatMessage } from 
  * Proveedor para OpenRouter (múltiples modelos)
  */
 export class OpenRouterProvider extends AIProvider {
-  // OpenRouter soporta muchos modelos, mejor validar por exclusión
+  // OpenRouter soporta muchos modelos, pero excluimos Anthropic y OpenAI directo
   private static readonly UNSUPPORTED_MODELS = [
+    // Anthropic models (usar API directa)
     'claude-3-5-sonnet-20241022',
     'claude-3-5-haiku-20241022', 
     'claude-3-haiku-20240307',
     'claude-3-sonnet-20240229',
-    'claude-3-opus-20240229'
+    // OpenAI models (usar API directa) - GPT-4o/4o-mini removidos (caro/corrupto)
+    'gpt-4o-mini',
+    'gpt-4o',
+    'gpt-4',
+    'gpt-3.5-turbo'
   ];
 
   supportsModel(model: string): boolean {
     // OpenRouter soporta casi todos los modelos excepto los de Anthropic directo
     return !OpenRouterProvider.UNSUPPORTED_MODELS.includes(model);
+  }
+
+  /**
+   * Calcula tokens inteligentemente según el contexto (versión conservadora para OpenRouter)
+   */
+  private calculateSmartTokens(messages: ChatMessage[]): number {
+    const lastMessage = messages[messages.length - 1]?.content || '';
+    const messageLength = lastMessage.length;
+    
+    // Detectar tipo de consulta (más conservador para modelos de terceros)
+    const isShortQuery = messageLength < 50;
+    const isCodeRequest = /código|code|program|script|función|class|method/i.test(lastMessage);
+    const isListRequest = /lista|enumera|list|opciones|pasos|steps/i.test(lastMessage);
+    const isExplanationRequest = /explica|explain|cómo|how|por qué|why|describe/i.test(lastMessage);
+    
+    // Cálculo más conservador para OpenRouter
+    if (isShortQuery) {
+      return 150; // Respuestas cortas
+    } else if (isCodeRequest) {
+      return 400; // Código controlado
+    } else if (isListRequest) {
+      return 250; // Listas concisas
+    } else if (isExplanationRequest) {
+      return 300; // Explicaciones breves
+    } else {
+      return 200; // Respuestas generales más cortas
+    }
   }
 
   protected getHeaders(): Record<string, string> {
@@ -38,11 +70,14 @@ export class OpenRouterProvider extends AIProvider {
   }
 
   async chatCompletion(request: ChatRequest): Promise<ChatResponse> {
+    // Cálculo inteligente de tokens
+    const smartMaxTokens = request.maxTokens || this.calculateSmartTokens(request.messages);
+    
     const body = {
       model: request.model,
       messages: this.formatMessages(request.messages),
       temperature: request.temperature || 0.7, // OpenRouter acepta rango más amplio
-      max_tokens: request.maxTokens || 150, // EMERGENCIA: Reducir de 1000 a 150
+      max_tokens: smartMaxTokens,
     };
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -73,11 +108,14 @@ export class OpenRouterProvider extends AIProvider {
   }
 
   async chatCompletionStream(request: ChatRequest): Promise<ReadableStream<StreamChunk>> {
+    // Cálculo inteligente de tokens
+    const smartMaxTokens = request.maxTokens || this.calculateSmartTokens(request.messages);
+    
     const body = {
       model: request.model,
       messages: this.formatMessages(request.messages),
       temperature: request.temperature || 0.7,
-      max_tokens: request.maxTokens || 150, // EMERGENCIA: Reducir de 1000 a 150
+      max_tokens: smartMaxTokens,
       stream: true,
     };
 
@@ -94,64 +132,83 @@ export class OpenRouterProvider extends AIProvider {
 
     return new ReadableStream<StreamChunk>({
       async start(controller) {
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-
-        if (!reader) {
+        if (!response.body) {
           controller.error(new Error('No response body'));
           return;
         }
 
-        let buffer = '';
+        // Usar TransformStream con TextDecoderStream para manejo correcto de UTF-8
+        const textStream = response.body
+          .pipeThrough(new TextDecoderStream())
+          .pipeThrough(
+            new TransformStream({
+              start() {
+                this.buffer = '';
+              },
+              transform(chunk, controller) {
+                this.buffer += chunk;
+                const lines = this.buffer.split('\n');
+                this.buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                  if (line.trim() && line.startsWith('data: ')) {
+                    controller.enqueue(line);
+                  }
+                }
+              },
+              flush(controller) {
+                if (this.buffer.trim()) {
+                  controller.enqueue(this.buffer);
+                }
+              }
+            })
+          );
+
+        const reader = textStream.getReader();
         
         try {
           while (true) {
             const { done, value } = await reader.read();
             
-            if (done) break;
+            if (done) {
+              controller.close();
+              break;
+            }
 
-            const chunk = decoder.decode(value, { stream: true });
-            buffer += chunk;
+            const data = value.slice(6).trim(); // Remove 'data: '
             
-            // Procesar líneas completas del buffer
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // Guardar línea incompleta para el próximo chunk
+            if (data === '[DONE]') {
+              controller.close();
+              return;
+            }
 
-            for (const line of lines) {
-              if (line.trim() === '' || !line.startsWith('data: ')) continue;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta;
 
-              const data = line.slice(6).trim();
-              
-              if (data === '[DONE]') {
+              if (delta?.content) {
+                controller.enqueue({
+                  content: delta.content,
+                });
+              }
+
+              // Manejar fin del stream
+              if (parsed.choices?.[0]?.finish_reason) {
+                console.log(`🏁 OpenRouter stream finished with reason: ${parsed.choices[0].finish_reason}`);
+                controller.enqueue({
+                  content: '',
+                  finishReason: parsed.choices[0].finish_reason,
+                  usage: parsed.usage ? {
+                    inputTokens: parsed.usage.prompt_tokens || 0,
+                    outputTokens: parsed.usage.completion_tokens || 0,
+                    totalTokens: parsed.usage.total_tokens || 0,
+                  } : undefined,
+                });
                 controller.close();
                 return;
               }
-
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta;
-
-                if (delta?.content) {
-                  controller.enqueue({
-                    content: delta.content,
-                  });
-                }
-
-                // Manejar fin del stream
-                if (parsed.choices?.[0]?.finish_reason) {
-                  controller.enqueue({
-                    content: '',
-                    finishReason: parsed.choices[0].finish_reason,
-                    usage: parsed.usage ? {
-                      inputTokens: parsed.usage.prompt_tokens || 0,
-                      outputTokens: parsed.usage.completion_tokens || 0,
-                      totalTokens: parsed.usage.total_tokens || 0,
-                    } : undefined,
-                  });
-                }
-              } catch (parseError) {
-                console.warn('Failed to parse OpenRouter stream chunk:', parseError);
-              }
+            } catch (parseError) {
+              console.warn('Failed to parse OpenRouter stream chunk:', data, parseError);
             }
           }
         } catch (error) {

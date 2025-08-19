@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { FaSearch } from "react-icons/fa";
 import { cn } from "~/lib/utils";
 
 export const Input = ({

@@ -1,5 +1,5 @@
-import { buildEnrichedSystemPrompt, estimateTokens } from "server/chatbot/promptBuilder.server";
-import { AIProviderManager } from "server/chatbot/providers";
+import { buildEnrichedSystemPrompt, estimateTokens } from "./promptBuilder.server";
+import { AIProviderManager } from "./providers";
 
 /**
  * Función para truncar historial manteniendo contexto importante
@@ -45,6 +45,6 @@ export const createProviderManager = (anthropicApiKey?: string, openRouterApiKey
 };
 
 /**
- * Construir prompt enriquecido para chat
+ * Re-export utilities from promptBuilder
  */
 export { buildEnrichedSystemPrompt, estimateTokens };

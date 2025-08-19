@@ -1,4 +1,5 @@
-import type { Chatbot } from "@prisma/client";
+import type { Chatbot, Integration } from "@prisma/client";
+import { getActiveStripeIntegration } from "./integrationModel.server";
 
 /**
  * Función para estimar tokens aproximadamente (4 caracteres = 1 token)
@@ -27,6 +28,10 @@ export function buildEnrichedSystemPrompt(
   let enrichedSystemPrompt = chatbot.instructions || "Eres un asistente útil.";
   
   if (enableLogging) {
+    console.log("📝 [DEBUG] buildEnrichedSystemPrompt - Datos del chatbot:");
+    console.log("   - instructions:", chatbot.instructions?.substring(0, 100) + "...");
+    console.log("   - customInstructions:", chatbot.customInstructions?.substring(0, 100) + "...");
+    console.log("   - customInstructions length:", chatbot.customInstructions?.length || 0);
   }
   
   // Agregar instrucciones personalizadas si existen
@@ -34,6 +39,15 @@ export function buildEnrichedSystemPrompt(
     enrichedSystemPrompt += "\n\n=== INSTRUCCIONES ESPECÍFICAS ===\n";
     enrichedSystemPrompt += chatbot.customInstructions;
     enrichedSystemPrompt += "\n=== FIN INSTRUCCIONES ESPECÍFICAS ===\n";
+    
+    if (enableLogging) {
+      console.log("✅ [DEBUG] customInstructions agregadas al prompt");
+    }
+  } else {
+    if (enableLogging) {
+      console.log("❌ [DEBUG] NO se agregaron customInstructions al prompt");
+      console.log("   - customInstructions valor:", JSON.stringify(chatbot.customInstructions));
+    }
   }
   
   // CONTEXTO INTELIGENTE: Solo incluir contexto relevante según el mensaje del usuario
@@ -50,8 +64,8 @@ export function buildEnrichedSystemPrompt(
           return ctx.question.toLowerCase().includes(userLower) || 
                  userLower.includes(ctx.question.toLowerCase().substring(0, 20));
         }
-        return ctx.content.toLowerCase().includes(userLower) || 
-               userLower.includes(ctx.content.toLowerCase().substring(0, 30));
+        return (ctx.content && ctx.content.toLowerCase().includes(userLower)) || 
+               (ctx.content && userLower.includes(ctx.content.toLowerCase().substring(0, 30)));
       });
       
       // Si no hay contextos relevantes, tomar solo los primeros 2 más importantes
@@ -114,6 +128,60 @@ export function buildEnrichedSystemPrompt(
   if (enableLogging) {
     if (finalTokens > 1500) {
       console.warn(`ALERTA COSTOS: Enviando ${finalTokens} tokens = ~$${(finalTokens * 0.015 / 1000).toFixed(3)} USD solo en INPUT`);
+    }
+    console.log("🎯 [DEBUG] Prompt final generado (primeros 200 chars):");
+    console.log(enrichedSystemPrompt.substring(0, 200) + "...");
+  }
+  
+  return enrichedSystemPrompt;
+}
+
+/**
+ * Función mejorada que incluye capacidades de integración (como Stripe)
+ */
+export async function buildEnrichedSystemPromptWithIntegrations(
+  chatbot: Chatbot, 
+  userMessage?: string,
+  options: {
+    maxContextTokens?: number;
+    enableLogging?: boolean;
+  } = {}
+): Promise<string> {
+  // Obtener el prompt base
+  let enrichedSystemPrompt = buildEnrichedSystemPrompt(chatbot, userMessage, options);
+  
+  // Verificar si tiene integración de Stripe activa
+  try {
+    const stripeIntegration = await getActiveStripeIntegration(chatbot.id);
+    
+    if (stripeIntegration && stripeIntegration.stripeApiKey) {
+      // Agregar capacidades de pago al prompt
+      enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES ===\n";
+      enrichedSystemPrompt += "IMPORTANTE: Tienes acceso a generar links de pago de Stripe.\n\n";
+      enrichedSystemPrompt += "**Cuándo usar la generación de pagos:**\n";
+      enrichedSystemPrompt += "- Cuando el usuario solicite crear un cobro, factura, o link de pago\n";
+      enrichedSystemPrompt += "- Si mencionan cantidades de dinero y quieren cobrar\n";
+      enrichedSystemPrompt += "- Cuando pidan ayuda para recibir pagos\n\n";
+      enrichedSystemPrompt += "**Cómo proceder:**\n";
+      enrichedSystemPrompt += "1. Pregunta el monto y descripción del producto/servicio\n";
+      enrichedSystemPrompt += "2. Usa la función generate_payment_link con estos parámetros:\n";
+      enrichedSystemPrompt += `   - stripe_api_key: "${stripeIntegration.stripeApiKey}"\n`;
+      enrichedSystemPrompt += "   - amount: [monto en la moneda especificada]\n";
+      enrichedSystemPrompt += "   - description: [descripción del producto/servicio]\n";
+      enrichedSystemPrompt += "   - currency: [mxn, usd, etc.]\n\n";
+      enrichedSystemPrompt += "**Ejemplo de respuesta:**\n";
+      enrichedSystemPrompt += "✅ He generado tu link de pago para [descripción] por $[monto]:\n";
+      enrichedSystemPrompt += "[LINK_DE_PAGO]\n\n";
+      enrichedSystemPrompt += "Puedes compartir este link directamente con tu cliente.\n";
+      enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
+      
+      if (options.enableLogging) {
+        console.log("✅ Stripe integration found - payment capabilities added to prompt");
+      }
+    }
+  } catch (error) {
+    if (options.enableLogging) {
+      console.warn("⚠️ Error checking Stripe integration:", error);
     }
   }
   
