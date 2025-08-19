@@ -3,7 +3,121 @@ import { sendNoUsageEmail } from "~/utils/notifyers/noUsage";
 import { sendFreeTrialEmail } from "~/utils/notifyers/freeTrial";
 import { sendWeekSummaryEmail } from "~/utils/notifyers/weekSummary";
 
+type WeeklyMetrics = {
+  totalConversations: number;
+  totalMessages: number;
+  averageMessagesPerConversation: number;
+  averageResponseTime?: number;
+};
+
 export class EmailScheduler {
+  private emailsPerBatch = 50; // AWS SES rate limit friendly
+  private delayBetweenBatches = 1000; // 1 second delay between batches
+
+  /**
+   * Processes emails in batches with rate limiting
+   */
+  private async processBatched<T>(
+    items: T[],
+    processor: (item: T) => Promise<void>,
+    context: string
+  ): Promise<number> {
+    let sent = 0;
+    
+    for (let i = 0; i < items.length; i += this.emailsPerBatch) {
+      const batch = items.slice(i, i + this.emailsPerBatch);
+      console.log(`[EmailScheduler] Processing ${context} batch ${Math.floor(i / this.emailsPerBatch) + 1} of ${Math.ceil(items.length / this.emailsPerBatch)} (${batch.length} items)`);
+      
+      const batchResults = await Promise.allSettled(
+        batch.map(item => processor(item))
+      );
+      
+      const batchSuccesses = batchResults.filter(result => result.status === 'fulfilled').length;
+      sent += batchSuccesses;
+      
+      console.log(`[EmailScheduler] Batch completed: ${batchSuccesses}/${batch.length} emails sent`);
+      
+      // Rate limiting delay between batches (except for the last batch)
+      if (i + this.emailsPerBatch < items.length) {
+        console.log(`[EmailScheduler] Rate limiting: waiting ${this.delayBetweenBatches}ms before next batch...`);
+        await new Promise(resolve => setTimeout(resolve, this.delayBetweenBatches));
+      }
+    }
+    
+    return sent;
+  }
+  /**
+   * Calculates weekly metrics for a user's chatbots
+   */
+  private async calculateWeeklyMetrics(userId: string): Promise<WeeklyMetrics> {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    try {
+      // Get user's chatbots
+      const userChatbots = await db.chatbot.findMany({
+        where: { userId },
+        select: { id: true }
+      });
+
+      const chatbotIds = userChatbots.map(cb => cb.id);
+
+      if (chatbotIds.length === 0) {
+        return {
+          totalConversations: 0,
+          totalMessages: 0,
+          averageMessagesPerConversation: 0,
+        };
+      }
+
+      // Get conversations from last week
+      const weeklyConversations = await db.conversation.findMany({
+        where: {
+          chatbotId: { in: chatbotIds },
+          startedAt: { gte: oneWeekAgo }
+        },
+        select: {
+          id: true,
+          messageCount: true,
+          messages: {
+            select: {
+              responseTime: true
+            },
+            where: {
+              role: 'assistant',
+              responseTime: { not: null }
+            }
+          }
+        }
+      });
+
+      const totalConversations = weeklyConversations.length;
+      const totalMessages = weeklyConversations.reduce((sum, conv) => sum + conv.messageCount, 0);
+      const averageMessagesPerConversation = totalConversations > 0 ? Math.round(totalMessages / totalConversations) : 0;
+
+      // Calculate average response time
+      const responseTimes = weeklyConversations.flatMap(conv => 
+        conv.messages.map(msg => msg.responseTime).filter(rt => rt !== null)
+      );
+      const averageResponseTime = responseTimes.length > 0 
+        ? Math.round(responseTimes.reduce((sum, rt) => sum + rt!, 0) / responseTimes.length)
+        : undefined;
+
+      return {
+        totalConversations,
+        totalMessages,
+        averageMessagesPerConversation,
+        averageResponseTime
+      };
+    } catch (error) {
+      console.error(`[EmailScheduler] Error calculating metrics for user ${userId}:`, error);
+      return {
+        totalConversations: 0,
+        totalMessages: 0,
+        averageMessagesPerConversation: 0,
+      };
+    }
+  }
   /**
    * Sends "no usage" emails to users who haven't created any projects
    * after 3+ days of registration
@@ -28,13 +142,6 @@ export class EmailScheduler {
           chatbots: {
             none: {},
           },
-          // Optionally check if we already sent this email recently
-          // lastNoUsageEmailSent: {
-          //   OR: [
-          //     { equals: null },
-          //     { lt: sevenDaysAgo }
-          //   ]
-          // }
         },
         select: {
           id: true,
@@ -47,26 +154,16 @@ export class EmailScheduler {
         `[EmailScheduler] Found ${usersWithoutProjects.length} users for no-usage emails`
       );
 
-      for (const user of usersWithoutProjects) {
-        try {
+      const sent = await this.processBatched(
+        usersWithoutProjects,
+        async (user) => {
           await sendNoUsageEmail({ email: user.email, name: user.name });
-          
-          // Optionally update user record to track when we sent this email
-          // await db.user.update({
-          //   where: { id: user.id },
-          //   data: { lastNoUsageEmailSent: new Date() }
-          // });
-          
           console.log(`[EmailScheduler] Sent no-usage email to ${user.email}`);
-        } catch (error) {
-          console.error(
-            `[EmailScheduler] Failed to send no-usage email to ${user.email}:`,
-            error
-          );
-        }
-      }
+        },
+        "no-usage emails"
+      );
 
-      return { sent: usersWithoutProjects.length };
+      return { sent };
     } catch (error) {
       console.error("[EmailScheduler] Error in sendNoUsageEmails:", error);
       return { sent: 0, error };
@@ -120,19 +217,16 @@ export class EmailScheduler {
         `[EmailScheduler] Found ${usersNearTrialEnd.length} users for free trial expiry emails`
       );
 
-      for (const user of usersNearTrialEnd) {
-        try {
+      const sent = await this.processBatched(
+        usersNearTrialEnd,
+        async (user) => {
           await sendFreeTrialEmail({ email: user.email, name: user.name });
           console.log(`[EmailScheduler] Sent trial expiry email to ${user.email}`);
-        } catch (error) {
-          console.error(
-            `[EmailScheduler] Failed to send trial expiry email to ${user.email}:`,
-            error
-          );
-        }
-      }
+        },
+        "trial expiry emails"
+      );
 
-      return { sent: usersNearTrialEnd.length };
+      return { sent };
     } catch (error) {
       console.error("[EmailScheduler] Error in sendFreeTrialExpiryEmails:", error);
       return { sent: 0, error };
@@ -166,6 +260,12 @@ export class EmailScheduler {
           id: true,
           email: true,
           name: true,
+          chatbots: {
+            select: {
+              name: true,
+              conversationCount: true,
+            }
+          },
         },
       });
 
@@ -173,19 +273,22 @@ export class EmailScheduler {
         `[EmailScheduler] Found ${proUsersWithActivity.length} PRO users for weekly summary emails`
       );
 
-      for (const user of proUsersWithActivity) {
-        try {
-          await sendWeekSummaryEmail({ email: user.email, name: user.name, chatbotName: user.chatbots?.[0]?.name });
+      const sent = await this.processBatched(
+        proUsersWithActivity,
+        async (user) => {
+          const metrics = await this.calculateWeeklyMetrics(user.id);
+          await sendWeekSummaryEmail({ 
+            email: user.email, 
+            name: user.name, 
+            chatbotName: user.chatbots?.[0]?.name,
+            metrics
+          });
           console.log(`[EmailScheduler] Sent weekly summary email to ${user.email}`);
-        } catch (error) {
-          console.error(
-            `[EmailScheduler] Failed to send weekly summary email to ${user.email}:`,
-            error
-          );
-        }
-      }
+        },
+        "weekly summary emails"
+      );
 
-      return { sent: proUsersWithActivity.length };
+      return { sent };
     } catch (error) {
       console.error("[EmailScheduler] Error in sendWeeklySummaryEmails:", error);
       return { sent: 0, error };

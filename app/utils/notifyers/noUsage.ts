@@ -255,6 +255,12 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     <p style="color: #81838e; font-size: 8px">
                         Derechos Reservados 2025 ®
                     </p>
+                    <p style="color: #81838e; font-size: 10px; text-align: center; margin-top: 8px;">
+                        <a href="https://www.formmy.app/unsubscribe?email=${encodeURIComponent(email)}&type=marketing" 
+                           style="color: #81838e; text-decoration: underline;">
+                           ¿No deseas recibir estos correos? Darse de baja
+                        </a>
+                    </p>
                     </div>
                 </div>
                 </div>
