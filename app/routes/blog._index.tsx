@@ -6,6 +6,7 @@ import { getBlogPosts, type BlogPost } from 'server/blog.server';
 import { cn } from '~/lib/utils';
 import HomeHeader from '~/routes/home/HomeHeader';
 import HomeFooter from './home/HomeFooter';
+import { motion, type Variants } from 'framer-motion';
 
 // Componente para las etiquetas de los posts
 const BlogTag = ({ tag }: { tag: string }) => {
@@ -17,38 +18,87 @@ const BlogTag = ({ tag }: { tag: string }) => {
   );
 };
 
+// Animation variants for the cards
+const cardVariants: Variants = {
+  offscreen: {
+    y: 50,
+    opacity: 0,
+    transition: {
+      type: "tween",
+      duration: 0.3
+    }
+  },
+  onscreen: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "tween",
+      duration: 0.6,
+      ease: "easeOut"
+    }
+  }
+};
+
 // Componente para la tarjeta de blog básica
-const BlogCardBasic = ({ image, title, excerpt, className, slug, tags = [] }: { 
+const BlogCardBasic = ({ 
+  image, 
+  title, 
+  excerpt, 
+  className = '', 
+  slug, 
+  tags = [], 
+  index = 0 
+}: { 
   image?: string; 
   title: string; 
   excerpt?: string; 
   className?: string; 
   slug: string;
   tags?: string[];
+  index?: number;
 }) => (
-  <Link className={cn('col-span-1 md:col-span-2', className)} to={`/blog/${slug}`}>
-  <div className={cn(' rounded-3xl overflow-hidden h-[400px] relative group')}>
-    <img className='w-full h-full object-cover group-hover:scale-110 transition-all' src={image} alt={title} />
-    <span className="absolute top-6 left-6 text-white z-20 flex gap-2 items-center">
-      <div className="w-2 h-2 bg-white rounded-full"></div> Artículo
-    </span>
-    <div className='w-full h-full absolute top-0 left-0 flex flex-col justify-end z-10 items-start p-6 bg-black/50'>
-      <h2 className='text-white text-4xl mb-8'>{title}</h2>
-      <div className="flex justify-between w-full items-center gap-2 h-10">
-        <div className="flex gap-2 flex-wrap">
-          {tags && tags.slice(0, 3).map((tag, index) => (
-            <BlogTag key={index} tag={tag} />
-          ))}
-        </div>
-        <div className="w-10 h-10 grid place-items-center" >
-          <div className='w-10 h-10 group-hover:w-9 group-hover:h-9 transition-all flex items-center justify-center rounded-full bg-white text-brand-500'>
-            <FaArrowRight />
+  <motion.div
+    initial="offscreen"
+    whileInView="onscreen"
+    viewport={{ once: true, amount: 0.2 }}
+    variants={cardVariants}
+    transition={{ delay: index * 0.1 }}
+    className={cn('w-full h-full col-span-1 md:col-span-2 rounded-3xl overflow-hidden ', className)}
+  >
+    <Link to={`/blog/${slug}`} className="block h-full">
+      <div className="h-full min-h-[400px] relative group">
+        <motion.img 
+          className='w-full h-full object-cover group-hover:scale-110 transition-all' 
+          src={image} 
+          alt={title}
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.3 }}
+        />
+        <span className="absolute top-6 left-6 text-white z-20 flex gap-2 items-center">
+          <div className="w-2 h-2 bg-white rounded-full"></div> Artículo
+        </span>
+        <div className='w-full h-full absolute top-0 left-0 flex flex-col justify-end z-10 items-start p-6 bg-black/50'>
+          <h2 className='text-white text-4xl mb-8'>{title}</h2>
+          <div className="flex justify-between w-full items-center gap-2 h-10">
+            <div className="flex gap-2 flex-wrap">
+              {tags && tags.slice(0, 3).map((tag, index) => (
+                <BlogTag key={index} tag={tag} />
+              ))}
+            </div>
+            <motion.div 
+              className="w-10 h-10 grid place-items-center"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className='w-10 h-10 group-hover:w-9 group-hover:h-9 transition-all flex items-center justify-center rounded-full bg-white text-brand-500'>
+                <FaArrowRight />
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</Link>
+    </Link>
+  </motion.div>
 );
 
 // Componente para la tarjeta de blog sólida
@@ -58,7 +108,9 @@ const BlogCardSolid = ({
   excerpt, 
   slug, 
   variant = 'useCase',
-  tags = [] 
+  tags = [],
+  index = 0,
+  className = ''
 }: { 
   image: string; 
   title: string; 
@@ -66,29 +118,48 @@ const BlogCardSolid = ({
   slug: string; 
   variant?: 'useCase' | 'tutorial';
   tags?: string[];
+  index?: number;
+  className?: string;
 }) => (
-  <Link className="col-span-1 md:col-span-2" to={`/blog/${slug}`}>
-  <div className={cn('w-full rounded-3xl overflow-hidden h-[400px] relative group', variant === 'useCase' ? 'bg-dark' : 'bg-brand-500')}>
-    <span className="absolute top-6 left-6 text-white z-20 flex gap-2 items-center">
-      <div className="w-2 h-2 bg-white rounded-full"></div> {variant === 'useCase' ? 'Caso de Uso' : 'Tutorial'}
-    </span>
-    <div className='w-full h-full absolute top-0 left-0 flex flex-col justify-end z-10 items-start p-6 '>
-      <h2 className='text-white text-4xl mb-8'>{title}</h2>
-      <div className="flex justify-between w-full items-center gap-2 h-10">
-        <div className="flex gap-2 flex-wrap">
-          {tags && tags.slice(0, 3).map((tag, index) => (
-            <BlogTag key={index} tag={tag} />
-          ))}
-        </div>
-        <div className="w-10 h-10 grid place-items-center">
-          <div className='w-10 h-10 group-hover:w-9 group-hover:h-9 transition-all flex items-center justify-center rounded-full bg-white text-brand-500'>
-            <FaArrowRight />
+  <motion.div
+    initial="offscreen"
+    whileInView="onscreen"
+    viewport={{ once: true, amount: 0.2 }}
+    variants={cardVariants}
+    transition={{ delay: index * 0.1 }}
+    className={cn(
+      'w-full h-full col-span-1 md:col-span-2 rounded-3xl overflow-hidden ',
+      variant === 'useCase' ? 'bg-dark' : 'bg-brand-500',
+      className
+    )}
+  >
+    <Link to={`/blog/${slug}`} className="block h-full">
+      <div className="rounded-3xl overflow-hidden h-full min-h-[400px] relative group">
+        <span className="absolute top-6 left-6 text-white z-20 flex gap-2 items-center">
+          <div className="w-2 h-2 bg-white rounded-full"></div> {variant === 'useCase' ? 'Caso de Uso' : 'Tutorial'}
+        </span>
+        <div className='w-full h-full absolute top-0 left-0 flex flex-col justify-end z-10 items-start p-6 '>
+          <h2 className='text-white text-4xl mb-8'>{title}</h2>
+          <div className="flex justify-between w-full items-center gap-2 h-10">
+            <div className="flex gap-2 flex-wrap">
+              {tags && tags.slice(0, 3).map((tag, index) => (
+                <BlogTag key={index} tag={tag} />
+              ))}
+            </div>
+            <motion.div 
+              className="w-10 h-10 grid place-items-center"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className='w-10 h-10 group-hover:w-9 group-hover:h-9 transition-all flex items-center justify-center rounded-full bg-white text-brand-500'>
+                <FaArrowRight />
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</Link>
+    </Link>
+  </motion.div>
 );
 
 export const meta: MetaFunction = () => {
