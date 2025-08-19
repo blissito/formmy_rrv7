@@ -1,10 +1,10 @@
 ---
-title: "Guía avanzada: cómo entrenar a tu Agente de IA en Formmy"
+title: "Cómo entrenar a tu Agente de IA en Formmy"
 excerpt: "Aprende técnicas avanzadas para entrenar a tu asistente de IA y mejorar significativamente sus respuestas y precisión."
 date: "2025-08-17"
 tags: ["Tutorial", "IA", "Entrenamiento", "Chatbot", "Agentes"]
 author: "Equipo Formmy"
-image: "/home/entrenamiento-ia-avanzado.jpg"
+image: "/blogposts/training.webp"
 category: "tutorial"
 ---
 
