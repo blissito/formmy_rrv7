@@ -146,73 +146,41 @@ export function PricingComparisonTable() {
       isIntegration: false
     },
     { 
-      name: "GPT-4", 
-      key: "ai_model_gpt4",
-      description: "Modelo avanzado de OpenAI",
+      name: "Gemini 2.5 Flash-Lite", 
+      key: "ai_model_gemini_flashlite",
+      description: "Modelo económico Google",
       isModel: true,
       isSectionHeader: false,
       isIntegration: false
     },
     { 
-      name: "GPT-4o", 
-      key: "ai_model_gpt4o",
-      description: "",
+      name: "GPT-5 Nano", 
+      key: "ai_model_gpt5_nano",
+      description: "Modelo económico de última generación",
       isModel: true,
       isSectionHeader: false,
       isIntegration: false
     },
     { 
-      name: "Claude 3.5 Sonnet", 
-      key: "ai_model_claude",
-      description: "Modelo avanzado de Anthropic",
+      name: "GPT-5 Mini", 
+      key: "ai_model_gpt5_mini",
+      description: "Modelo premium OpenAI",
+      isModel: true,
+      isSectionHeader: false,
+      isIntegration: false
+    },
+    { 
+      name: "Claude 3 Haiku", 
+      key: "ai_model_claude3_haiku",
+      description: "Modelo económico Anthropic",
       isModel: true,
       isSectionHeader: false,
       isIntegration: false
     },
     { 
       name: "Claude 3.5 Haiku", 
-      key: "ai_model_claude_haiku",
-      description: "",
-      isModel: true,
-      isSectionHeader: false,
-      isIntegration: false
-    },
-    { 
-      name: "Claude 3 Opus", 
-      key: "ai_model_claude_opus",
-      description: "",
-      isModel: true,
-      isSectionHeader: false,
-      isIntegration: false
-    },
-    { 
-      name: "Gemini 1.5 Pro", 
-      key: "ai_model_gemini",
-      description: "Modelo avanzado de Google",
-      isModel: true,
-      isSectionHeader: false,
-      isIntegration: false
-    },
-    { 
-      name: "Mixtral 8x7B", 
-      key: "ai_model_mixtral",
-      description: "Modelo de código abierto",
-      isModel: true,
-      isSectionHeader: false,
-      isIntegration: false
-    },
-    { 
-      name: "Mistral Large", 
-      key: "ai_model_mistral_large",
-      description: "",
-      isModel: true,
-      isSectionHeader: false,
-      isIntegration: false
-    },
-    { 
-      name: "Llama 3", 
-      key: "ai_model_llama3",
-      description: "Modelo de código abierto de Meta",
+      key: "ai_model_claude35_haiku",
+      description: "Modelo avanzado Anthropic",
       isModel: true,
       isSectionHeader: false,
       isIntegration: false
@@ -241,12 +209,12 @@ export function PricingComparisonTable() {
     "Free": {
       price: "$0",
       priceNote: "/mes",
-      forms: "3 ",
-      chatbots: "1 chat por 30 días",
-      training: "1MB ",
-      conversations: "50",
+      forms: "3",
+      chatbots: "0 (trial 60 días)",
+      training: "1MB",
+      conversations: "0 (trial 60 días)",
       analytics: "-",
-      basicModels: "Gpt 4, Mistral, Gemini",
+      basicModels: "-",
       advancedModels: "-",
       integrations: "-"
     },
@@ -307,59 +275,44 @@ export function PricingComparisonTable() {
     };
   });
 
-  // AI Models data
+  // AI Models data - modelos actuales 2025 agrupados por proveedor
   const aiModels = [
-    { name: "GPT-4", key: "gpt4" },
-    { name: "GPT-4o", key: "gpt4o" },
-    { name: "Claude 3.5 Sonnet", key: "claude_sonnet" },
-    { name: "Claude 3.5 Haiku", key: "claude_haiku" },
-    { name: "Claude 3 Opus", key: "claude_opus" },
-    { name: "Gemini 1.5 Pro", key: "gemini" },
-    { name: "Mistral Large", key: "mistral_large" },
-    { name: "Llama 3", key: "llama3" },
+    { name: "Gemini 2.5 Flash-Lite", key: "gemini_flashlite" },
+    { name: "GPT-5 Nano", key: "gpt5_nano" },
+    { name: "GPT-5 Mini", key: "gpt5_mini" },
+    { name: "Claude 3 Haiku", key: "claude3_haiku" },
+    { name: "Claude 3.5 Haiku", key: "claude35_haiku" },
   ];
 
-  // Which plans include which AI models
+  // Which plans include which AI models - configuración actual
   const planModelsIncluded: Record<string, Record<string, boolean>> = {
     "Free": {
-      gpt4: true,
-      gpt4o: false,
-      claude_sonnet: false,
-      claude_haiku: false,
-      claude_opus: false,
-      gemini: true,
-      mistral_large: true,
-      llama3: false,
+      gemini_flashlite: false,
+      gpt5_nano: false,
+      gpt5_mini: false,
+      claude3_haiku: false,
+      claude35_haiku: false,
     },
     "Starter": {
-      gpt4: true,
-      gpt4o: true,
-      claude_sonnet: true,
-      claude_haiku: false,
-      claude_opus: false,
-      gemini: true,
-      mistral_large: true,
-      llama3: true,
+      gemini_flashlite: true,
+      gpt5_nano: true,
+      gpt5_mini: false,
+      claude3_haiku: false,
+      claude35_haiku: false,
     },
     "Pro ✨": {
-      gpt4: true,
-      gpt4o: true,
-      claude_sonnet: true,
-      claude_haiku: true,
-      claude_opus: false,
-      gemini: true,
-      mistral_large: true,
-      llama3: true,
+      gemini_flashlite: true,
+      gpt5_nano: true,
+      gpt5_mini: false,
+      claude3_haiku: true,
+      claude35_haiku: false,
     },
     "Enterprise 🤖": {
-      gpt4: true,
-      gpt4o: true,
-      claude_sonnet: true,
-      claude_haiku: true,
-      claude_opus: true,
-      gemini: true,
-      mistral_large: true,
-      llama3: true,
+      gemini_flashlite: true,
+      gpt5_nano: true,
+      gpt5_mini: true,
+      claude3_haiku: true,
+      claude35_haiku: true,
     },
   };
 

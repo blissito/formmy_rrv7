@@ -9,6 +9,8 @@ export const PLAN_LIMITS = {
     maxFormmys: 3, // Solo 3 formmys permitidos
     maxContextSizeKB: 1000, // 1MB
     maxConversationsPerMonth: 0, // Sin conversaciones
+    maxTokensPerQuery: 0, // Sin contexto
+    maxContextQueriesPerDay: 0, // Sin queries con contexto
     availableModels: [], // Sin acceso a modelos
     showBranding: true,
     trialDays: 0, // FREE no tiene trial propio
@@ -18,6 +20,8 @@ export const PLAN_LIMITS = {
     maxFormmys: Infinity, // Sin límite como PRO
     maxContextSizeKB: 5000, // 5MB como PRO
     maxConversationsPerMonth: 50, // 50 conversaciones específicas para trial
+    maxTokensPerQuery: 8000, // Como PRO
+    maxContextQueriesPerDay: 100, // Como PRO
     availableModels: [
       "gpt-3.5-turbo",
       "google/gemini-flash-1.5", 
@@ -33,6 +37,8 @@ export const PLAN_LIMITS = {
     maxFormmys: Infinity, // Formmys ilimitados desde STARTER
     maxContextSizeKB: 2000, // 2MB
     maxConversationsPerMonth: 50,
+    maxTokensPerQuery: 4000, // Protección básica
+    maxContextQueriesPerDay: 20, // Limite diario bajo
     availableModels: [
       "gpt-3.5-turbo",
       "google/gemini-flash-1.5", 
@@ -46,6 +52,8 @@ export const PLAN_LIMITS = {
     maxFormmys: Infinity, // Sin límite en formmys
     maxContextSizeKB: 5000, // 5MB
     maxConversationsPerMonth: 250,
+    maxTokensPerQuery: 8000, // Moderada protección
+    maxContextQueriesPerDay: 100, // Límite generoso
     availableModels: [
       "gpt-3.5-turbo",
       "google/gemini-flash-1.5", 
@@ -61,6 +69,8 @@ export const PLAN_LIMITS = {
     maxFormmys: Infinity, // Sin límite en formmys
     maxContextSizeKB: 10000, // 10MB
     maxConversationsPerMonth: 1000,
+    maxTokensPerQuery: 16000, // Límite alto pero protegido
+    maxContextQueriesPerDay: 500, // Límite empresarial
     availableModels: ALL_MODELS, // Acceso a todos los modelos incluyendo Sonnet
     showBranding: false,
     trialDays: 0,

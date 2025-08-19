@@ -65,7 +65,24 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - **Smart Model Routing**: Haiku para queries simples, Sonnet para complejos
 - **Context Compression**: Reducir tokens manteniendo calidad
 - **Response Caching**: 30% reducción en llamadas API
-- **Pricing psicológico**: Precios bajo barreras ($189, $499, $899)
+- **Pricing psicológico**: Precios bajo barreras ($149, $499, $1,499)
+- **Límites de protección**: Máximo tokens por consulta según plan
+- **RAG futuro**: Vector embeddings para contexto masivo sin explosión de costos
+
+## Próximos pasos técnicos
+
+### RAG Implementation (Prioridad alta - 4-6 semanas)
+- **Objetivo**: Permitir contexto de 50MB+ sin explosión de costos
+- **Stack**: ChromaDB + OpenAI Embeddings + LangChain
+- **ROI**: Diferenciador clave para Enterprise $1,499
+- **Costos operativos**: <1% del revenue
+- **Implementación**: Vector DB + chunking + búsqueda semántica
+
+### Límites de protección inmediatos (Esta semana)
+- **Tokens máximos por consulta**: Starter 4K, Pro 8K, Enterprise 16K
+- **Límites diarios**: Starter 20, Pro 100, Enterprise 500 consultas con contexto
+- **Truncamiento inteligente**: Primeras páginas + palabras clave de consulta
+- **UI warnings**: Notificar cuando se trunca contenido
 
 ## Convenciones de código
 
