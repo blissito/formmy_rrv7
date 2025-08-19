@@ -61,9 +61,14 @@ export const truncateConversationHistory = (
 ): Array<{ role: "user" | "assistant"; content: string }> => {
   if (history.length === 0) return history;
   
+  // Filtrar mensajes vacíos que causan errores en Anthropic
+  const validHistory = history.filter(msg => msg.content && msg.content.trim().length > 0);
+  
+  if (validHistory.length === 0) return validHistory;
+  
   // Siempre mantener los últimos 6 mensajes (3 intercambios)
-  const minMessagesToKeep = Math.min(6, history.length);
-  let truncatedHistory = history.slice(-minMessagesToKeep);
+  const minMessagesToKeep = Math.min(6, validHistory.length);
+  let truncatedHistory = validHistory.slice(-minMessagesToKeep);
   
   // Calcular tokens del historial truncado
   let totalTokens = truncatedHistory.reduce((sum, msg) => sum + estimateTokens(msg.content), 0);
