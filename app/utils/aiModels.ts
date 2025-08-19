@@ -112,6 +112,7 @@ export const FALLBACK_MODELS = {
   "claude-3-5-haiku-20241022": "claude-3-haiku-20240307", 
   "claude-3-haiku-20240307": "gpt-3.5-turbo",
   "gpt-3.5-turbo": "claude-3-haiku-20240307",
+  "gpt-5-nano": "claude-3-haiku-20240307", // Fallback para GPT-5-nano
   "google/gemini-flash-1.5": "claude-3-haiku-20240307",
   "mistralai/mistral-small": "claude-3-haiku-20240307",
 };

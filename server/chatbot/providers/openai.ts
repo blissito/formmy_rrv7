@@ -74,7 +74,7 @@ export class OpenAIProvider extends AIProvider {
   }
 
   async chatCompletion(request: ChatRequest): Promise<ChatResponse> {
-    const { model, messages, temperature = 0.7, maxTokens } = request;
+    const { model, messages, temperature = 0.7, maxTokens, tools } = request;
     
     // Cálculo inteligente de tokens según contexto
     const smartMaxTokens = maxTokens || this.calculateSmartTokens(messages);
@@ -90,8 +90,18 @@ export class OpenAIProvider extends AIProvider {
     const requestBody = {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
-      temperature: Math.max(0, Math.min(2, temperature)),
+      temperature: model === 'gpt-5-nano' ? Math.max(0, Math.min(1, temperature)) : Math.max(0, Math.min(2, temperature)),
       ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
+      ...(tools && tools.length > 0 ? { 
+        tools: tools.map(tool => ({
+          type: "function",
+          function: {
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.input_schema
+          }
+        }))
+      } : {})
     };
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -107,14 +117,24 @@ export class OpenAIProvider extends AIProvider {
 
     const result = await response.json();
     
+    const message = result.choices?.[0]?.message;
+    
+    // Extraer tool calls si existen
+    const toolCalls = message?.tool_calls?.map((call: any) => ({
+      id: call.id,
+      name: call.function?.name,
+      input: JSON.parse(call.function?.arguments || '{}')
+    })) || [];
+
     return {
-      content: result.choices?.[0]?.message?.content || 'Sin respuesta',
+      content: message?.content || 'Sin respuesta',
       usage: {
         promptTokens: result.usage?.prompt_tokens || 0,
         completionTokens: result.usage?.completion_tokens || 0,
         totalTokens: result.usage?.total_tokens || 0,
       },
       finishReason: result.choices?.[0]?.finish_reason || 'unknown',
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
   }
 
@@ -135,7 +155,7 @@ export class OpenAIProvider extends AIProvider {
     const requestBody = {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
-      temperature: Math.max(0, Math.min(2, temperature)),
+      temperature: model === 'gpt-5-nano' ? Math.max(0, Math.min(1, temperature)) : Math.max(0, Math.min(2, temperature)),
       ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
       stream: true,
     };

@@ -1409,11 +1409,6 @@ export async function action({ request }: any) {
         // Si requiere herramientas, FORZAR non-streaming para garantizar funcionamiento correcto
         const stream = requestedStream && (chatbot.enableStreaming !== false) && !basicRequiresTools;
         
-        if (basicRequiresTools) {
-          console.log('🔧 DEBUG: basicRequiresTools activado');
-          console.log('   - Mensaje:', message);
-          console.log('   - stream calculado:', stream);
-        }
 
         // Obtener las API keys necesarias
         const openRouterApiKey = process.env.OPENROUTER_API_KEY;
@@ -1601,12 +1596,6 @@ export async function action({ request }: any) {
           ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
         
-        console.log('🔍 DEBUG: Request final preparado:');
-        console.log('   - stream en request:', chatRequest.stream);
-        console.log('   - tools count:', chatRequest.tools?.length || 0);
-        if (chatRequest.tools?.length > 0) {
-          console.log('   - tool names:', chatRequest.tools.map(t => t.name));
-        }
         
         
         let apiResponse;
@@ -1617,7 +1606,6 @@ export async function action({ request }: any) {
         
         try {
           if (chatRequest.stream) {
-            console.log('📡 DEBUG: Entrando en flujo STREAMING');
             // STREAMING con sistema modular
             const result = await providerManager.chatCompletionStreamWithFallback(
               chatRequest,
@@ -1686,7 +1674,6 @@ export async function action({ request }: any) {
             });
             
           } else {
-            console.log('📦 DEBUG: Entrando en flujo NON-STREAMING (correcto para herramientas)');
             // NON-STREAMING con sistema modular
             
             const result = await providerManager.chatCompletionWithFallback(
