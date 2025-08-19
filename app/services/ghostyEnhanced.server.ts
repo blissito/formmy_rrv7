@@ -93,7 +93,7 @@ const AVAILABLE_TOOLS: ToolDefinition[] = [
     type: "function",
     function: {
       name: "generate_payment_link",
-      description: "Genera un link de pago de Stripe. Úsala cuando el usuario solicite crear un cobro, factura, o link de pago para productos/servicios.",
+      description: "Genera un link de pago de Stripe usando la integración configurada del chatbot. Úsala cuando el usuario solicite crear un cobro, factura, o link de pago para productos/servicios.",
       parameters: {
         type: "object",
         properties: {
@@ -109,13 +109,9 @@ const AVAILABLE_TOOLS: ToolDefinition[] = [
             type: "string",
             description: "Código de moneda (mxn, usd, etc)",
             default: "mxn"
-          },
-          stripe_api_key: {
-            type: "string",
-            description: "API key de Stripe del usuario (necesaria para generar el link)"
           }
         },
-        required: ["amount", "description", "stripe_api_key"]
+        required: ["amount", "description"]
       }
     }
   }
@@ -267,18 +263,21 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
       case "generate_payment_link": {
         console.log(`🔧 Modelo solicitó herramientas: [ 'generate_payment_link' ]`);
         try {
-          const { amount, description, currency = 'mxn', stripe_api_key } = args;
+          const { amount, description, currency = 'mxn' } = args;
           
-          // Validar que se proporcione API key
-          if (!stripe_api_key) {
+          // Obtener la integración de Stripe activa para este chatbot
+          const { getActiveStripeIntegration } = await import("server/chatbot/integrationModel.server");
+          const stripeIntegration = await getActiveStripeIntegration(chatbotId);
+          
+          if (!stripeIntegration || !stripeIntegration.stripeApiKey) {
             toolResults.push({
               tool_call_id: toolCall.id,
               role: "tool",
               name: "generate_payment_link",
               content: JSON.stringify({
                 success: false,
-                error: "No se proporcionó API key de Stripe",
-                suggestion: "Necesitas configurar tu integración de Stripe primero"
+                error: "No hay integración de Stripe configurada o activa",
+                suggestion: "Configura tu integración de Stripe en las configuraciones del chatbot"
               })
             });
             break;
@@ -288,7 +287,7 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
           const { createQuickPaymentLink } = await import("server/integrations/stripe-payments");
           
           const paymentUrl = await createQuickPaymentLink(
-            stripe_api_key,
+            stripeIntegration.stripeApiKey,
             amount,
             description,
             currency
@@ -319,7 +318,7 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
             content: JSON.stringify({
               success: false,
               error: error instanceof Error ? error.message : 'Error generating payment link',
-              suggestion: "Verifica que la API key de Stripe sea válida y que los parámetros estén correctos"
+              suggestion: "Verifica que la integración de Stripe esté correctamente configurada"
             })
           });
         }
@@ -572,12 +571,15 @@ export async function callGhostyWithTools(
         
         console.log('✅ Final response received, has content:', !!finalChoice?.message?.content);
         console.log('📝 Content length:', finalChoice?.message?.content?.length || 0);
+        console.log('🔍 Full finalData structure:', JSON.stringify(finalData, null, 2));
         
         if (finalChoice?.message?.content) {
           const finalContent = finalChoice.message.content;
+          console.log('📄 Final content preview:', finalContent.substring(0, 200));
           
           // Si necesitamos streaming para la respuesta final
           if (onChunk) {
+            console.log('📡 Streaming final content word by word...');
             const words = finalContent.split(' ');
             
             for (let i = 0; i < words.length; i++) {
@@ -585,6 +587,9 @@ export async function callGhostyWithTools(
               onChunk(chunk);
               await new Promise(resolve => setTimeout(resolve, 15));
             }
+            console.log('✅ Streaming completed');
+          } else {
+            console.log('⚠️ No onChunk callback provided, content will be returned directly');
           }
           
           return {
@@ -593,7 +598,7 @@ export async function callGhostyWithTools(
             sources: allSources.length > 0 ? allSources : undefined
           };
         } else {
-          console.log('⚠️ No content in final response:', finalData);
+          console.log('⚠️ No content in final response:', JSON.stringify(finalData, null, 2));
         }
       } else {
         const errorText = await finalResponse.text();
