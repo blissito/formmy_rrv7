@@ -30,18 +30,7 @@ export const AI_MODELS: AIModel[] = [
     tier: "enterprise",
   },
   
-  // Modelos Pro - Claude 3 Haiku único modelo premium
-  {
-    value: "claude-3-haiku-20240307",
-    label: "Claude 3 Haiku",
-    category: "PRO", 
-    provider: "anthropic-direct",
-    tier: "pro",
-    recommended: true,
-    badge: "Pro default",
-  },
-  
-  // Modelos Starter - Ultra económicos
+  // Modelos Pro/Starter - Ultra económicos con herramientas
   {
     value: "gpt-5-nano",
     label: "GPT-5 Nano",
@@ -49,7 +38,15 @@ export const AI_MODELS: AIModel[] = [
     provider: "openai-direct",
     tier: "starter",
     recommended: true,
-    badge: "Starter default",
+    badge: "Default + Tools",
+  },
+  
+  {
+    value: "claude-3-haiku-20240307",
+    label: "Claude 3 Haiku",
+    category: "PRO", 
+    provider: "anthropic-direct",
+    tier: "pro",
   },
   {
     value: "google/gemini-2.5-flash-lite",

@@ -1537,23 +1537,21 @@ export async function action({ request }: any) {
         // Smart routing para usuarios PRO: Nano para chat básico, Haiku para integraciones
         let selectedModel = chatbot.aiModel;
         
-        if (stripeToolsDetected) {
-          // CONFIRMADO: Solo Sonnet maneja herramientas correctamente vía Anthropic API
-          // Gemini vía OpenRouter no pasa herramientas correctamente
-          selectedModel = "claude-3-5-sonnet-20241022";
-        } else if (user.plan === "PRO" && chatbot.aiModel === "gpt-5-nano") {
-          const hasActiveIntegrations = stripeIntegration?.stripeApiKey ? true : false;
-          const isComplexQuery = basicRequiresTools || message.length > 200; // Queries largas o que requieren herramientas
-          selectedModel = getSmartModelForPro(hasActiveIntegrations, isComplexQuery);
-          
-        }
+        // Verificar si el modelo seleccionado soporta herramientas
+        const modelsWithToolSupport = ['gpt-5-nano', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
+        const modelSupportsTools = modelsWithToolSupport.includes(selectedModel);
 
         const fallbackModels = generateFallbackModels(selectedModel);
 
-        // Preparar tools disponibles si hay Stripe activo
+        // Preparar tools disponibles si hay Stripe activo Y el modelo soporta herramientas
         let tools = [];
+        let toolsDisabledWarning = null;
+        
         // Solo usuarios PRO y ENTERPRISE tienen acceso a herramientas de pago
         if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
+          if (!modelSupportsTools) {
+            toolsDisabledWarning = `Las integraciones de pago no están disponibles con ${selectedModel}. Usa GPT-5 Nano o Claude Haiku para acceder a herramientas.`;
+          } else {
           
           tools = [{
             name: "create_payment_link",
@@ -1578,8 +1576,7 @@ export async function action({ request }: any) {
               required: ["amount", "description"]
             }
           }];
-          
-        } else {
+          }
         }
 
         // Preparar request para el sistema modular
@@ -1623,6 +1620,7 @@ export async function action({ request }: any) {
                 const reader = result.stream.getReader();
                 let contentChunks = 0;
                 let accumulatedContent = "";
+                let warningAlreadySent = false;
                 
                 try {
                   while (true) {
@@ -1638,6 +1636,24 @@ export async function action({ request }: any) {
                     if (value.content && value.content.trim()) {
                       contentChunks++;
                       accumulatedContent += value.content;
+                      
+                      // Detectar si el modelo intentó usar herramientas pero no las tiene disponibles
+                      if (!warningAlreadySent && !modelSupportsTools && /\[.*create_payment_link|\[STRIPE_PAYMENT_REQUEST/i.test(accumulatedContent)) {
+                        const warningMsg = `> ⚠️ **Integración no disponible**
+> 
+> Las herramientas de pago no están disponibles con **${selectedModel}**. 
+> Usa **GPT-5 Nano** o **Claude Haiku** para acceder a integraciones.
+
+---
+
+`;
+                        const warningChunk = {
+                          content: warningMsg
+                        };
+                        const warningData = `data: ${JSON.stringify(warningChunk)}\n\n`;
+                        controller.enqueue(new TextEncoder().encode(warningData));
+                        warningAlreadySent = true;
+                      }
                       
                       // Enviar chunk al frontend en el formato que espera
                       const chunk = {
@@ -1688,6 +1704,23 @@ export async function action({ request }: any) {
             
             // Procesar la respuesta para detectar solicitudes de pago o tool calls
             let finalResponse = result.response.content;
+            
+            // Agregar warning si las herramientas no están disponibles
+            if (toolsDisabledWarning) {
+              finalResponse = `⚠️ ${toolsDisabledWarning}\n\n${finalResponse}`;
+            }
+            
+            // Detectar si el modelo intentó usar herramientas pero no las tiene disponibles
+            
+            if (!modelSupportsTools && /\[.*create_payment_link|\[STRIPE_PAYMENT_REQUEST/i.test(finalResponse)) {
+              const warningMsg = `> ⚠️ **Integración no disponible**
+> 
+> Las herramientas de pago no están disponibles con **${selectedModel}**. 
+> Usa **GPT-5 Nano** o **Claude Haiku** para acceder a integraciones.
+
+---`;
+              finalResponse = `${warningMsg}\n\n${finalResponse}`;
+            }
             
             
             // Si la respuesta contiene tool calls, procesarlos
