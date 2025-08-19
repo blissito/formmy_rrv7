@@ -1410,6 +1410,9 @@ export async function action({ request }: any) {
         const stream = requestedStream && (chatbot.enableStreaming !== false) && !basicRequiresTools;
         
         if (basicRequiresTools) {
+          console.log('🔧 DEBUG: basicRequiresTools activado');
+          console.log('   - Mensaje:', message);
+          console.log('   - stream calculado:', stream);
         }
 
         // Obtener las API keys necesarias
@@ -1435,7 +1438,7 @@ export async function action({ request }: any) {
         // Agregar capacidades de Stripe si está disponible
         // Solo agregar capacidades de Stripe para planes TRIAL, PRO y ENTERPRISE
         const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE" || user.plan === "TRIAL";
-        const allowToolsForTesting = false; // PRODUCTION: Restricciones de plan activas
+        const allowToolsForTesting = true; // DEBUG: Need to see what's happening
           
         if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
           // Agregar capacidades de pago al prompt
@@ -1594,9 +1597,16 @@ export async function action({ request }: any) {
           ],
           temperature: stripeToolsDetected ? 0.1 : (chatbot.temperature || 0.7), // Baja temperatura para herramientas = más obediente
           maxTokens: stripeToolsDetected ? 300 : 1000, // Reducir tokens para herramientas = menor costo
-          stream: stream,
+          stream: tools.length > 0 ? false : stream, // Forzar non-streaming cuando hay herramientas
           ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
+        
+        console.log('🔍 DEBUG: Request final preparado:');
+        console.log('   - stream en request:', chatRequest.stream);
+        console.log('   - tools count:', chatRequest.tools?.length || 0);
+        if (chatRequest.tools?.length > 0) {
+          console.log('   - tool names:', chatRequest.tools.map(t => t.name));
+        }
         
         
         let apiResponse;
@@ -1607,6 +1617,7 @@ export async function action({ request }: any) {
         
         try {
           if (stream) {
+            console.log('📡 DEBUG: Entrando en flujo STREAMING');
             // STREAMING con sistema modular
             const result = await providerManager.chatCompletionStreamWithFallback(
               chatRequest,
@@ -1675,6 +1686,7 @@ export async function action({ request }: any) {
             });
             
           } else {
+            console.log('📦 DEBUG: Entrando en flujo NON-STREAMING (correcto para herramientas)');
             // NON-STREAMING con sistema modular
             
             const result = await providerManager.chatCompletionWithFallback(

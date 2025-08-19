@@ -11,16 +11,21 @@ export class OpenRouterProvider extends AIProvider {
     'claude-3-5-haiku-20241022', 
     'claude-3-haiku-20240307',
     'claude-3-sonnet-20240229',
-    // OpenAI models (usar API directa) - GPT-4o/4o-mini removidos (caro/corrupto)
-    'gpt-4o-mini',
-    'gpt-4o',
-    'gpt-4',
-    'gpt-3.5-turbo'
+    // Google/Gemini models (temporal hasta implementar API directo)
+    'google/gemini-2.5-flash-lite',
+    'google/gemini-flash-1.5',
+    // Meta, Mistral y otros terceros
+    'meta-llama/llama-2-70b-chat',
+    'mistralai/mistral-7b-instruct'
   ];
 
   supportsModel(model: string): boolean {
-    // OpenRouter soporta casi todos los modelos excepto los de Anthropic directo
-    return !OpenRouterProvider.UNSUPPORTED_MODELS.includes(model);
+    // OpenRouter SOLO para Google/Gemini, Meta, Mistral y otros terceros
+    // NO para GPT (usar OpenAI directo) ni Anthropic (usar Anthropic directo)
+    return model.startsWith('google/') || 
+           model.startsWith('meta-llama/') || 
+           model.startsWith('mistralai/') ||
+           model.includes('gemini');
   }
 
   /**

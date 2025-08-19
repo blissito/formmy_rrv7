@@ -5,6 +5,9 @@ import { AIProvider, ChatRequest, ChatResponse, StreamChunk, ChatMessage } from 
  */
 export class OpenAIProvider extends AIProvider {
   private static readonly SUPPORTED_MODELS = [
+    'gpt-5-nano',
+    'gpt-5-mini', 
+    'gpt-5',
     'gpt-4o-mini',
     'gpt-4o',
     'gpt-4',

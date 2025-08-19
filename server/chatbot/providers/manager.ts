@@ -18,16 +18,17 @@ export class AIProviderManager {
     chinese?: ProviderConfig;
   }) {
     // Inicializar proveedores disponibles
+    // IMPORTANTE: El orden importa - proveedores directos tienen prioridad sobre OpenRouter
     if (configs.anthropic) {
       this.providers.set('anthropic', new AnthropicProvider('anthropic', configs.anthropic));
-    }
-    
-    if (configs.openrouter) {
-      this.providers.set('openrouter', new OpenRouterProvider('openrouter', configs.openrouter));
     }
 
     if (configs.openai) {
       this.providers.set('openai', new OpenAIProvider('openai', configs.openai));
+    }
+    
+    if (configs.openrouter) {
+      this.providers.set('openrouter', new OpenRouterProvider('openrouter', configs.openrouter));
     }
   }
 

@@ -131,7 +131,7 @@ export function getAgentName(agentType: AgentType): string {
 
 // Mensajes de bienvenida personalizados por tipo de agente
 export const AGENT_WELCOME_MESSAGES: Record<AgentType, string> = {
-  sales: "¡Hola! 👋 Soy tu asesor de ventas. Estoy aquí para entender tus necesidades y ofrecerte la mejor solución. ¿En qué puedo ayudarte a crecer hoy?",
+  sales: "¡Hola! 👋 Soy tu asesor de ventas. Estoy aquí para entender tus necesidades y ofrecerte la mejor solución. ¿Cuál es tu objetivo de negocio?",
   
   customer_support: "¡Hola! 😊 Soy tu agente de soporte. Estoy aquí para resolver cualquier duda o problema que tengas. ¿Cómo puedo asistirte hoy?",
   
