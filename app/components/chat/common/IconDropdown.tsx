@@ -113,6 +113,11 @@ export const IconDropdown = ({
               <p className=" text-base text-dark">
                 {selectedOption ? selectedOption.label : placeholder}
               </p>
+              {selectedOption?.badge && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                  {selectedOption.badge}
+                </span>
+              )}
             </div>
             {selectedOption?.description && (
               <p className="text-xs text-gray-500">
@@ -178,6 +183,11 @@ export const IconDropdown = ({
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-sm">{option.label}</p>
+                  {option.badge && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                      {option.badge}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {option.description && (

@@ -55,9 +55,7 @@ export const ModelDropdown = ({
     description: model.category,
     iconSrc: getModelLogo(model.value),
     disabled: !availableModels.includes(model.value),
-    disabledReason: !availableModels.includes(model.value)
-      ? `Requiere plan ${model.category}`
-      : undefined,
+    disabledReason: undefined,
     badge: model.badge,
     recommended: model.recommended,
   }));

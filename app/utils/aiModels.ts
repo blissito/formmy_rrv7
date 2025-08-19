@@ -18,7 +18,6 @@ export const AI_MODELS: AIModel[] = [
     category: "ENTERPRISE",
     provider: "openai-direct",
     tier: "enterprise",
-    recommended: true,
     badge: "Enterprise default",
   },
   
@@ -38,7 +37,7 @@ export const AI_MODELS: AIModel[] = [
     provider: "openai-direct",
     tier: "starter",
     recommended: true,
-    badge: "Default + Tools",
+    badge: "Mejor elección",
   },
   
   {
