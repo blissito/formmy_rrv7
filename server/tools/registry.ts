@@ -46,25 +46,26 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
         properties: {
           amount: {
             type: "number",
-            description: "Cantidad a cobrar en números (ej: 500, 1000)"
+            description: "Cantidad a cobrar en números (ej: 500, 1000)",
           },
           description: {
             type: "string",
-            description: "Descripción del pago o servicio"
+            description: "Descripción del pago o servicio",
           },
           currency: {
             type: "string",
             enum: ["mxn", "usd"],
-            description: "Moneda del pago (default: 'mxn' para pesos mexicanos)"
-          }
+            description:
+              "Moneda del pago (default: 'mxn' para pesos mexicanos)",
+          },
         },
-        required: ["amount", "description"]
-      }
+        required: ["amount", "description"],
+      },
     },
     handler: createPaymentLinkHandler,
     requiredIntegrations: ["stripe"],
     requiredPlan: ["PRO", "ENTERPRISE", "TRIAL"],
-    enabled: true
+    enabled: true,
   },
 
   // DENIK - Recordatorios
@@ -77,29 +78,31 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
         properties: {
           title: {
             type: "string",
-            description: "Título del recordatorio o cita"
+            description: "Título del recordatorio o cita",
           },
           date: {
             type: "string",
-            description: "Fecha en formato YYYY-MM-DD (ej: 2024-08-20 para mañana). SIEMPRE usar formato YYYY-MM-DD"
+            description:
+              "Fecha en formato YYYY-MM-DD (ej: 2024-08-20 para mañana). SIEMPRE usar formato YYYY-MM-DD",
           },
           time: {
             type: "string",
-            description: "Hora en formato HH:MM (24 horas)"
+            description: "Hora en formato HH:MM (24 horas)",
           },
           email: {
             type: "string",
-            description: "Email para enviar la notificación (OPCIONAL - solo si el usuario lo proporciona explícitamente, NUNCA inventar)"
-          }
+            description:
+              "Email para enviar la notificación (OPCIONAL - solo si el usuario lo proporciona explícitamente, NUNCA inventar)",
+          },
         },
-        required: ["title", "date", "time"]
-      }
+        required: ["title", "date", "time"],
+      },
     },
     handler: scheduleReminderHandler,
     requiredIntegrations: [], // Denik siempre disponible
     requiredPlan: ["PRO", "ENTERPRISE", "TRIAL"],
-    enabled: true
-  }
+    enabled: true,
+  },
 
   // FUTURAS HERRAMIENTAS
   // send_whatsapp: { ... }
@@ -125,14 +128,20 @@ export function getAvailableTools(
     if (!definition.enabled) continue;
 
     // Verificar plan
-    if (definition.requiredPlan && !definition.requiredPlan.includes(userPlan)) {
+    if (
+      definition.requiredPlan &&
+      !definition.requiredPlan.includes(userPlan)
+    ) {
       continue;
     }
 
     // Verificar integraciones requeridas
-    if (definition.requiredIntegrations && definition.requiredIntegrations.length > 0) {
+    if (
+      definition.requiredIntegrations &&
+      definition.requiredIntegrations.length > 0
+    ) {
       const hasAllIntegrations = definition.requiredIntegrations.every(
-        integration => integrations[integration]
+        (integration) => integrations[integration]
       );
       if (!hasAllIntegrations) continue;
     }
@@ -153,18 +162,18 @@ export async function executeToolCall(
   context: ToolContext
 ): Promise<ToolResponse> {
   const definition = TOOLS_REGISTRY[toolName];
-  
+
   if (!definition) {
     return {
       success: false,
-      message: `Herramienta no encontrada: ${toolName}`
+      message: `Herramienta no encontrada: ${toolName}`,
     };
   }
 
   if (!definition.enabled) {
     return {
       success: false,
-      message: `Herramienta deshabilitada: ${toolName}`
+      message: `Herramienta deshabilitada: ${toolName}`,
     };
   }
 
@@ -174,7 +183,7 @@ export async function executeToolCall(
     console.error(`Error ejecutando ${toolName}:`, error);
     return {
       success: false,
-      message: `Error al ejecutar ${toolName}: ${error.message}`
+      message: `Error al ejecutar ${toolName}: ${error.message}`,
     };
   }
 }
@@ -184,28 +193,36 @@ export async function executeToolCall(
  */
 export function generateToolPrompts(availableTools: Tool[]): string {
   let prompt = "";
-  
-  const hasStripe = availableTools.some(t => t.name === "create_payment_link");
-  const hasDenik = availableTools.some(t => t.name === "schedule_reminder");
-  
+
+  const hasStripe = availableTools.some(
+    (t) => t.name === "create_payment_link"
+  );
+  const hasDenik = availableTools.some((t) => t.name === "schedule_reminder");
+
   if (hasStripe) {
-    prompt += "🔥 STRIPE: Cuando detectes solicitud de pago, USA INMEDIATAMENTE create_payment_link.\n";
+    prompt +=
+      "🔥 STRIPE: Cuando detectes solicitud de pago, USA INMEDIATAMENTE create_payment_link.\n";
   }
-  
+
   if (hasDenik) {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD de hoy
-    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    
-    prompt += "📅 DENIK: Tienes acceso completo a recordatorios y agenda con nuestra alianza Denik.\n";
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD de hoy
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+
+    prompt +=
+      "📅 DENIK: Tienes acceso completo a recordatorios y agenda con nuestra alianza Denik.\n";
     prompt += "ÚSALA para agendar citas, recordatorios, meetings, eventos.\n";
     const currentYear = new Date().getFullYear();
     prompt += `CRÍTICO: Hoy es ${today}. Mañana es ${tomorrow}.\n`;
     prompt += `SIEMPRE usa el año ${currentYear} para fechas futuras. Formato: YYYY-MM-DD\n`;
-    prompt += "🚫 NUNCA inventes emails - solo usa email si el usuario lo proporciona explícitamente.\n";
-    prompt += "📧 IMPORTANTE: Si el usuario no proporciona email, pregunta si quiere recibir notificación por email.\n";
+    prompt +=
+      "🚫 NUNCA inventes emails - solo usa email si el usuario lo proporciona explícitamente.\n";
+    prompt +=
+      "📧 IMPORTANTE: Al agendar primero solicita el correo antes de decir que lo has agendado exitosamente. \n";
   }
-  
+
   // Agregar más prompts según se agreguen tools
-  
+
   return prompt;
 }

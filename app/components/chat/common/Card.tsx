@@ -136,6 +136,7 @@ export const IntegrationCard = ({
   onConnect,
   onDisconnect,
   onEdit,
+  isPermanent,
 }: {
   name: string;
   logo: string;
@@ -146,6 +147,7 @@ export const IntegrationCard = ({
   onConnect?: () => void;
   onDisconnect?: () => void;
   onEdit?: () => void;
+  isPermanent?: boolean;
 }) => {
   // Debug log para ver qué está recibiendo el componente - solo para Stripe y Google Calendar
   if (name === "Stripe" || name === "Google Calendar") {
@@ -157,6 +159,7 @@ export const IntegrationCard = ({
   const exists = !!integration;
 
   const getButtonText = () => {
+    if (isPermanent) return "Siempre activa";
     if (status === "connecting") return "Conectando...";
     if (!exists) return "Conectar";
     if (isActive) return "Conectado";
@@ -164,12 +167,13 @@ export const IntegrationCard = ({
   };
 
   const getButtonAction = () => {
+    if (isPermanent) return undefined; // No se puede hacer clic en integraciones permanentes
     if (!exists) return onConnect;
     if (isActive) return onEdit;
     return onConnect;
   };
 
-  const isConnected = exists && isActive;
+  const isConnected = isPermanent || (exists && isActive);
 
   return (
     <div className="grid shadow-standard border border-outlines p-3 rounded-2xl">
@@ -214,7 +218,7 @@ export const IntegrationCard = ({
           {getButtonText()}
         </SimpleButton>
 
-        {exists && (
+        {exists && !isPermanent && (
           <SimpleButton
             className="shrink-0 w-[40px] px-0"
             onClick={onEdit}
@@ -223,7 +227,7 @@ export const IntegrationCard = ({
           </SimpleButton>
         )}
 
-        {isConnected && (
+        {isConnected && !isPermanent && (
           <SimpleButton
             className="shrink-0 text-danger w-[40px] px-0"
             onClick={onDisconnect}

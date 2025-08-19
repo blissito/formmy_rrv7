@@ -17,6 +17,14 @@ import StripeIntegrationModal from "../../integrations/StripeIntegrationModal";
 // Integraciones disponibles con sus configuraciones
 const availableIntegrations = [
   {
+    id: "DENIK",
+    name: "Denik",
+    logo: "/assets/chat/bell.svg",
+    description:
+      "Sistema de recordatorios y agenda integrado. Tu agente puede crear recordatorios, agendar citas y enviar notificaciones automáticamente.",
+    isPermanent: true, // Integración permanente, siempre activa
+  },
+  {
     id: "STRIPE",
     name: "Stripe",
     logo: "/assets/chat/stripe.png",
@@ -116,7 +124,12 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
 
     // Inicializar todas las integraciones disponibles como desconectadas
     availableIntegrations.forEach((availableIntegration) => {
-      status[availableIntegration.id.toLowerCase()] = "disconnected";
+      // Denik es una integración permanente, siempre conectada
+      if (availableIntegration.isPermanent) {
+        status[availableIntegration.id.toLowerCase()] = "connected";
+      } else {
+        status[availableIntegration.id.toLowerCase()] = "disconnected";
+      }
     });
 
     // Verificar si hay integraciones existentes y actualizar su estado
@@ -198,6 +211,13 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
 
   const handleConnect = (integrationId: string) => {
     console.log("🔍 Debug - Conectando integración:", integrationId);
+
+    // No hacer nada para integraciones permanentes
+    const integration = availableIntegrations.find(i => i.id === integrationId);
+    if (integration?.isPermanent) {
+      console.log("🔍 Debug - Integración permanente, no requiere conexión:", integrationId);
+      return;
+    }
 
     setIntegrationStatus((prev) => ({
       ...prev,
@@ -530,12 +550,21 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
                 lastActivity={
                   integrationStatus[availableIntegration.id.toLowerCase()] ===
                   "connected"
-                    ? "Hoy"
+                    ? "Siempre activa"
                     : undefined
                 }
                 onConnect={() => handleConnect(availableIntegration.id)}
-                onDisconnect={() => handleDisconnect(availableIntegration.id)}
-                onEdit={() => handleEdit(availableIntegration.id)}
+                onDisconnect={
+                  availableIntegration.isPermanent
+                    ? undefined // No se puede desconectar integraciones permanentes
+                    : () => handleDisconnect(availableIntegration.id)
+                }
+                onEdit={
+                  availableIntegration.isPermanent
+                    ? undefined // No se puede editar integraciones permanentes
+                    : () => handleEdit(availableIntegration.id)
+                }
+                isPermanent={availableIntegration.isPermanent}
               />
             );
           })}
