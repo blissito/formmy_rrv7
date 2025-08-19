@@ -1561,13 +1561,13 @@ export async function action({ request }: any) {
         let selectedModel = chatbot.aiModel;
         
         if (stripeToolsDetected) {
-          // IMPORTANTE: Solo Sonnet maneja herramientas correctamente
-          // Pero optimizamos usando tokens mínimos y respuestas concisas
+          // CONFIRMADO: Solo Sonnet maneja herramientas correctamente vía Anthropic API
+          // Gemini vía OpenRouter no pasa herramientas correctamente
           selectedModel = "claude-3-5-sonnet-20241022";
-          console.log('🔧 TOOL REQUIRED: Usando Sonnet para tools de Stripe (único modelo confiable para tools)');
+          console.log('✅ TOOL CONFIRMED: Usando Sonnet para tools de Stripe (único modelo 100% confiable)');
           console.log('   - Modelo original:', chatbot.aiModel);
-          console.log('   - Modelo para tools:', selectedModel);
-          console.log('   - OPTIMIZACIÓN: Usar maxTokens bajos para minimizar costos');
+          console.log('   - Modelo confiable:', selectedModel);
+          console.log('   - NOTA: Gemini falló - OpenRouter no pasa tools correctamente');
         } else if (user.plan === "PRO" && chatbot.aiModel === "gpt-5-nano") {
           const hasActiveIntegrations = stripeIntegration?.stripeApiKey ? true : false;
           const isComplexQuery = basicRequiresTools || message.length > 200; // Queries largas o que requieren herramientas

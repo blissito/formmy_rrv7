@@ -71,6 +71,18 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 
 ## Próximos pasos técnicos
 
+### Google Gemini Direct API Integration (Prioridad media - 2-3 semanas)
+- **Objetivo**: Reducir costos de herramientas Stripe 90% (Sonnet $0.054 → Gemini $0.006)
+- **Problema identificado**: OpenRouter no pasa herramientas correctamente a Gemini
+- **Solución**: Implementar proveedor Google Gemini directo (como Anthropic directo)
+- **Stack**: Google AI SDK + Function Calling nativo
+- **ROI**: $0.048 ahorro por transacción × volumen = ahorro significativo
+- **Implementación**: 
+  - Crear `/server/chatbot/providers/google.ts`
+  - Agregar Google API keys en configuración
+  - Testing extensivo de herramientas con Gemini 2.5 Flash
+  - Fallback automático a Sonnet si Gemini falla
+
 ### RAG Implementation (Prioridad alta - 4-6 semanas)
 - **Objetivo**: Permitir contexto de 50MB+ sin explosión de costos
 - **Stack**: ChromaDB + OpenAI Embeddings + LangChain
