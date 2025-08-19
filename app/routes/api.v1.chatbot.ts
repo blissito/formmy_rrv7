@@ -1542,7 +1542,7 @@ export async function action({ request }: any) {
 
         // (stripeIntegration ya obtenido anteriormente)
 
-        // 🧪 MODO TESTING: Si detectamos tools de Stripe, forzar Sonnet para testing
+        // 💰 OPTIMIZACIÓN DE COSTOS: Si detectamos tools de Stripe, usar Haiku (económico y efectivo)
         const stripeToolsDetected = basicRequiresTools && stripeIntegration?.stripeApiKey;
         
         // (La lógica de prompt está ya incluida en la sección anterior)
@@ -1551,12 +1551,12 @@ export async function action({ request }: any) {
         let selectedModel = chatbot.aiModel;
         
         if (stripeToolsDetected) {
-          // Usar Sonnet para tools de Stripe para mejor performance
-          selectedModel = "claude-3-5-sonnet-20241022";
-          console.log('🧪 TESTING MODE: Forzando Sonnet para tools de Stripe');
+          // Usar Haiku para tools de Stripe (más económico, igual de efectivo para tools simples)
+          selectedModel = "claude-3-5-haiku-20241022";
+          console.log('💰 COST OPTIMIZATION: Usando Haiku para tools de Stripe');
           console.log('   - Modelo original:', chatbot.aiModel);
-          console.log('   - Modelo forzado:', selectedModel);
-          console.log('   - Razón: Tools de Stripe detectadas');
+          console.log('   - Modelo optimizado:', selectedModel);
+          console.log('   - Razón: Tools de Stripe (Haiku = ~1/10 del costo de Sonnet)');
         } else if (user.plan === "PRO" && chatbot.aiModel === "gpt-5-nano") {
           const hasActiveIntegrations = stripeIntegration?.stripeApiKey ? true : false;
           const isComplexQuery = basicRequiresTools || message.length > 200; // Queries largas o que requieren herramientas
