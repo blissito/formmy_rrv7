@@ -208,6 +208,34 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
             throw new Error(`Error: ${response.status}`);
           }
           
+          // ✅ ARREGLO: Verificar si es JSON (tools) o streaming
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            // Es una respuesta JSON (cuando se usan tools)
+            const jsonData = await response.json();
+            
+            if (jsonData.success && jsonData.response) {
+              // Mostrar la respuesta completa directamente
+              setChatMessages((msgs) => {
+                const newMsgs = [...msgs];
+                newMsgs[newMsgs.length - 1] = {
+                  role: "assistant",
+                  content: jsonData.response
+                };
+                return newMsgs;
+              });
+              
+              clearTimeout(timeoutId);
+              setChatLoading(false);
+              inputRef.current?.focus();
+              return;
+            } else {
+              throw new Error(jsonData.error || 'Error en la respuesta');
+            }
+          }
+          
+          // Lógica original para streaming
           if (response.body) {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
