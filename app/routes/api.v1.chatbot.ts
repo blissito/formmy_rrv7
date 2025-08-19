@@ -7,62 +7,70 @@ export async function loader({ request }: any) {
   });
 }
 
+// Imports moved inside functions to avoid client-side processing
+
 export async function action({ request }: any) {
+  // Imports dentro de la función para evitar problemas client-side
+  const {
+    mammoth,
+    XLSX,
+    IntegrationType,
+    createChatbot,
+    updateChatbot,
+    getChatbotById,
+    getChatbotBySlug,
+    getChatbotsByUserId,
+    removeContextItem,
+    activateChatbot,
+    deactivateChatbot,
+    setToDraftMode,
+    markChatbotAsDeleted,
+    getChatbotState,
+    validateChatbotCreationAccess,
+    getChatbotBrandingConfigById,
+    getChatbotUsageStats,
+    checkMonthlyUsageLimit,
+    addFileContext,
+    addUrlContext,
+    addTextContext,
+    addQuestionContext,
+    updateQuestionContext,
+    updateTextContext,
+    getChatbotContexts,
+    createIntegration,
+    upsertIntegration,
+    getIntegrationsByChatbotId,
+    updateIntegration,
+    toggleIntegrationStatus,
+    deleteIntegration,
+    getActiveStripeIntegration,
+    createQuickPaymentLink,
+    ReminderService,
+    getAvailableTools,
+    executeToolCall,
+    generateToolPrompts,
+    validateUserAIModelAccess,
+    getUserPlanFeatures,
+    DEFAULT_CHATBOT_CONFIG,
+    generateRandomChatbotName,
+    getDefaultAIModelForUser,
+    getUserOrRedirect,
+    db,
+    generateFallbackModels,
+    isAnthropicDirectModel,
+    buildEnrichedSystemPrompt,
+    estimateTokens,
+    AIProviderManager,
+    truncateConversationHistory,
+    createProviderManager
+  } = await import("../../server/chatbot-api.server");
+  
+  console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
   try {
-    // Import server utilities dynamically
-    const {
-      mammoth,
-      XLSX,
-      IntegrationType,
-      createChatbot,
-      updateChatbot,
-      getChatbotById,
-      getChatbotBySlug,
-      getChatbotsByUserId,
-      removeContextItem,
-      activateChatbot,
-      deactivateChatbot,
-      setToDraftMode,
-      markChatbotAsDeleted,
-      getChatbotState,
-      validateChatbotCreationAccess,
-      getChatbotBrandingConfigById,
-      getChatbotUsageStats,
-      checkMonthlyUsageLimit,
-      addFileContext,
-      addUrlContext,
-      addTextContext,
-      addQuestionContext,
-      updateQuestionContext,
-      updateTextContext,
-      getChatbotContexts,
-      createIntegration,
-      upsertIntegration,
-      getIntegrationsByChatbotId,
-      updateIntegration,
-      toggleIntegrationStatus,
-      deleteIntegration,
-      getActiveStripeIntegration,
-      createQuickPaymentLink,
-      validateUserAIModelAccess,
-      getUserPlanFeatures,
-      DEFAULT_CHATBOT_CONFIG,
-      generateRandomChatbotName,
-      getDefaultAIModelForUser,
-      getUserOrRedirect,
-      db,
-      generateFallbackModels,
-      getSmartModelForPro,
-      isAnthropicDirectModel,
-      buildEnrichedSystemPrompt,
-      estimateTokens,
-      AIProviderManager,
-      truncateConversationHistory,
-      createProviderManager
-    } = await import("~/utils/chatbot-api.server");
 
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
+    console.log('🎯 Intent received:', intent);
     const user = await getUserOrRedirect(request);
     const userId = user.id;
     switch (intent) {
@@ -1435,11 +1443,22 @@ export async function action({ request }: any) {
         const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE" || user.plan === "TRIAL";
         const allowToolsForTesting = true; // DEBUG: Need to see what's happening
           
-        if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
-          // Agregar capacidades de pago al prompt
-          enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES DE PAGO ===\n";
-          enrichedSystemPrompt += "🔥 PRIORIDAD MÁXIMA: Cuando detectes solicitud de pago, USA INMEDIATAMENTE la herramienta create_payment_link.\n";
-          enrichedSystemPrompt += "CRÍTICO: Tienes acceso a generar links de pago de Stripe.\n\n";
+        // Verificar acceso a herramientas (PRO/ENTERPRISE) 
+        const hasToolAccess = hasProPlan || allowToolsForTesting;
+        
+        // Verificar si el modelo actual soporta herramientas
+        const modelsWithToolSupport = ['gpt-5-nano', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
+        const modelSupportsTools = modelsWithToolSupport.includes(chatbot.aiModel);
+        
+        // PREPARAR HERRAMIENTAS DISPONIBLES
+        const integrations = {
+          stripe: stripeIntegration
+        };
+        const tools = getAvailableTools(user.plan, integrations, modelSupportsTools);
+        
+        if (hasToolAccess && modelSupportsTools && tools.length > 0) {
+          enrichedSystemPrompt += "\n\n=== HERRAMIENTAS DISPONIBLES ===\n";
+          enrichedSystemPrompt += generateToolPrompts(tools);
           
           // Si detectamos que requiere herramientas, ser más directivo
           if (basicRequiresTools) {
@@ -1476,8 +1495,38 @@ export async function action({ request }: any) {
           enrichedSystemPrompt += "- 'puedes proceder con el pago'\n";
           enrichedSystemPrompt += "- 'link para pagar'\n";
           enrichedSystemPrompt += "- 'pago por [servicio específico]'\n";
+          
+          enrichedSystemPrompt += "\n=== CAPACIDADES DE RECORDATORIOS ===\n";
+          enrichedSystemPrompt += "🔥 TAMBIÉN tienes acceso a la herramienta schedule_reminder.\n";
+          enrichedSystemPrompt += "ÚSALA cuando el usuario quiera:\n";
+          enrichedSystemPrompt += "- Agendar una cita\n";
+          enrichedSystemPrompt += "- Programar un recordatorio\n";
+          enrichedSystemPrompt += "- Crear una nota en el calendario\n";
+          enrichedSystemPrompt += "- Cualquier solicitud de agendamiento\n\n";
+          enrichedSystemPrompt += "**Formato requerido:**\n";
+          enrichedSystemPrompt += "- title: Descripción clara de la cita/recordatorio\n";
+          enrichedSystemPrompt += "- date: Formato YYYY-MM-DD (ej: 2024-12-25)\n";
+          enrichedSystemPrompt += "- time: Formato HH:MM en 24h (ej: 14:30)\n";
+          enrichedSystemPrompt += "- email: Opcional, para enviar notificación\n\n";
           enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
         }
+        
+        // CRÍTICO: Advertencia sobre limitaciones reales
+        enrichedSystemPrompt += "\n\n🚨 RESTRICCIONES CRÍTICAS:\n";
+        if (hasToolAccess && modelSupportsTools) {
+          const toolsList = [];
+          if (stripeIntegration && stripeIntegration.stripeApiKey) toolsList.push("pagos (Stripe)");
+          toolsList.push("recordatorios (Denik)");
+          enrichedSystemPrompt += `- TIENES acceso a: ${toolsList.join(" y ")}\n`;
+        } else if (hasToolAccess && !modelSupportsTools) {
+          enrichedSystemPrompt += "- Herramientas disponibles pero modelo no compatible\n";
+        } else {
+          enrichedSystemPrompt += "- NO tienes acceso a herramientas (requiere plan PRO)\n";
+        }
+        enrichedSystemPrompt += "- NO tienes acceso a datos de usuarios externos o sistemas third-party\n";
+        enrichedSystemPrompt += "- SOLO puedes usar las herramientas explícitamente listadas arriba\n";
+        enrichedSystemPrompt += "- SI no tienes una herramienta específica, di claramente 'No tengo acceso a esa función'\n";
+        enrichedSystemPrompt += "- NUNCA inventes datos, direcciones de email, o confirmes acciones que no puedes realizar\n";
         
         const systemMessage = {
           role: "system",
@@ -1536,47 +1585,13 @@ export async function action({ request }: any) {
         
         // Smart routing para usuarios PRO: Nano para chat básico, Haiku para integraciones
         let selectedModel = chatbot.aiModel;
-        
-        // Verificar si el modelo seleccionado soporta herramientas
-        const modelsWithToolSupport = ['gpt-5-nano', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
-        const modelSupportsTools = modelsWithToolSupport.includes(selectedModel);
 
         const fallbackModels = generateFallbackModels(selectedModel);
 
-        // Preparar tools disponibles si hay Stripe activo Y el modelo soporta herramientas
-        let tools = [];
+        // Preparar warning si el modelo no soporta tools
         let toolsDisabledWarning = null;
-        
-        // Solo usuarios PRO y ENTERPRISE tienen acceso a herramientas de pago
-        if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
-          if (!modelSupportsTools) {
-            toolsDisabledWarning = `Las integraciones de pago no están disponibles con ${selectedModel}. Usa GPT-5 Nano o Claude Haiku para acceder a herramientas.`;
-          } else {
-          
-          tools = [{
-            name: "create_payment_link",
-            description: "Crear un link de pago de Stripe para cobrar al cliente",
-            input_schema: {
-              type: "object",
-              properties: {
-                amount: {
-                  type: "number",
-                  description: "Cantidad a cobrar en números (ej: 500, 1000)"
-                },
-                description: {
-                  type: "string", 
-                  description: "Descripción del pago o servicio"
-                },
-                currency: {
-                  type: "string",
-                  enum: ["mxn", "usd"],
-                  description: "Moneda del pago (default: 'mxn' para pesos mexicanos)"
-                }
-              },
-              required: ["amount", "description"]
-            }
-          }];
-          }
+        if (hasToolAccess && !modelSupportsTools) {
+          toolsDisabledWarning = `Las herramientas no están disponibles con ${selectedModel}. Usa GPT-5 Nano o Claude Haiku para acceder a integraciones.`;
         }
 
         // Preparar request para el sistema modular
@@ -1626,7 +1641,10 @@ export async function action({ request }: any) {
                   while (true) {
                     const { done, value } = await reader.read();
                     
+                    console.log('📨 Stream chunk received:', { done, value });
+                    
                     if (done) {
+                      console.log(`🏁 Stream completed. Total chunks sent: ${contentChunks}`);
                       const doneMessage = 'data: [DONE]\n\n';
                       controller.enqueue(new TextEncoder().encode(doneMessage));
                       controller.close();
@@ -1728,43 +1746,24 @@ export async function action({ request }: any) {
             }
             
             
-            // Si la respuesta contiene tool calls, procesarlos
+            // SISTEMA CENTRALIZADO DE MANEJO DE HERRAMIENTAS
             if (result.response.toolCalls && result.response.toolCalls.length > 0) {
+              const toolContext = {
+                chatbotId: chatbot.id,
+                userId: user.id,
+                message: message,
+                integrations: integrations
+              };
               
               for (const toolCall of result.response.toolCalls) {
-                if (toolCall.name === 'create_payment_link') {
-                  try {
-                    const { amount, description, currency } = toolCall.input;
-                    
-                    
-                    // Usar la integración ya obtenida
-                    if (stripeIntegration && stripeIntegration.stripeApiKey) {
-                      // Generar el link de pago real
-                      const paymentUrl = await createQuickPaymentLink(
-                        stripeIntegration.stripeApiKey,
-                        amount,
-                        description || "Pago",
-                        currency || "mxn"
-                      );
-                      
-                      // Formatear el monto en pesos mexicanos con formato correcto
-                      const formattedAmount = new Intl.NumberFormat('es-MX', {
-                        style: 'currency',
-                        currency: (currency || 'mxn').toUpperCase(),
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2
-                      }).format(amount);
-                      
-                      // Agregar el link real a la respuesta
-                      finalResponse += `\n\n✅ Link de pago generado por ${formattedAmount}:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`;
-                    } else {
-                      finalResponse += "\n\n⚠️ No se pudo generar el link: Stripe no está configurado correctamente.";
-                    }
-                  } catch (error) {
-                    console.error("Error generando link de pago:", error);
-                    finalResponse += "\n\n❌ Error al generar el link de pago. Verifica tu configuración de Stripe.";
-                  }
-                }
+                const toolResult = await executeToolCall(
+                  toolCall.name,
+                  toolCall.input,
+                  toolContext
+                );
+                
+                // Agregar resultado a la respuesta
+                finalResponse += `\n\n${toolResult.message}`;
               }
             } else {
               

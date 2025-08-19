@@ -239,9 +239,32 @@ model Chatbot {
   conversations     Conversation[]
   integrations      Integration[]
   apiKeys           ApiKey[]
+  reminders         Reminder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Reminder {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId String   @db.ObjectId
+  chatbot   Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  
+  title     String
+  date      DateTime
+  time      String   // HH:MM format
+  email     String?
+  phone     String?
+  
+  status    String   @default("pending") // pending, sent, cancelled, failed
+  
+  // Metadata
+  userMessage String? // Original user request
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("reminders")
 }
 
 enum ConversationStatus {
@@ -335,7 +358,7 @@ model Integration {
   updatedAt DateTime @updatedAt
 
   // Constraint único: una integración por plataforma por chatbot
-  @@unique([platform, chatbotId])
+  @@unique([platform, chatbotId], map: "platform_chatbot_unique")
 }
 
 model ApiKey {

@@ -69,7 +69,37 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - **Límites de protección**: Máximo tokens por consulta según plan
 - **RAG futuro**: Vector embeddings para contexto masivo sin explosión de costos
 
+## 🛠️ Herramientas Disponibles
+
+### create_payment_link (Stripe)
+- **Función**: Generar links de pago seguros
+- **Acceso**: Usuarios PRO/ENTERPRISE con Stripe configurado
+- **Parámetros**: amount, description, currency
+- **Respuesta**: URL de pago + confirmación formateada
+
+### schedule_reminder (Recordatorios) ✨ NUEVO
+- **Función**: Programar recordatorios y citas
+- **Acceso**: Usuarios PRO/ENTERPRISE 
+- **Parámetros**: title, date (YYYY-MM-DD), time (HH:MM), email (opcional)
+- **Features**: 
+  - Almacenamiento en DB (MongoDB/Prisma)
+  - Email automático con template Formmy
+  - Validación de fecha futura
+  - Integración futura con agenda.js
+- **Respuesta**: Confirmación con fecha formateada
+
 ## ✅ Cambios Recientes (Agosto 2024)
+
+### Sistema de Recordatorios Implementado ✨
+- **✅ COMPLETADO**: Sistema completo de recordatorios con herramientas
+- **Componentes añadidos**:
+  - Schema `Reminder` en Prisma con relación a Chatbot
+  - `ReminderService` para gestión de recordatorios
+  - Tool `schedule_reminder` disponible para GPT-5-nano y Claude
+  - Template de email con estándar Formmy
+  - Handler completo en API con validaciones
+- **Arquitectura**: Híbrido DB local + futuro agenda.js + AWS SES
+- **Acceso**: Solo usuarios PRO/ENTERPRISE (mismo que Stripe)
 
 ### GPT-5 Nano: Herramientas Funcionando ✨
 - **✅ COMPLETADO**: GPT-5-nano ahora soporta herramientas Stripe completamente
@@ -130,6 +160,13 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - Prisma para ORM
 - Tailwind CSS para estilos
 - Para importar archivos desde `/server` en archivos dentro de `/app`, usar la ruta `server/...` sin prefijo ni alias
+
+### Sistema Centralizado de Herramientas
+- **Registro único**: Todas las herramientas en `/server/tools/registry.ts`
+- **Handlers modulares**: Cada herramienta en `/server/tools/handlers/[nombre].ts` 
+- **Auto-detección**: Plan, integraciones y modelo detectados automáticamente
+- **Prompts dinámicos**: Se generan según herramientas disponibles
+- **Para agregar nueva herramienta**: Solo registrar en registry.ts + crear handler
 
 ## AI Models Architecture Rules
 

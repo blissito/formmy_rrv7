@@ -74,6 +74,10 @@ export class OpenAIProvider extends AIProvider {
   }
 
   async chatCompletion(request: ChatRequest): Promise<ChatResponse> {
+    return this.chatCompletionWithRetry(request);
+  }
+
+  private async chatCompletionWithRetry(request: ChatRequest, retryCount: number = 0): Promise<ChatResponse> {
     const { model, messages, temperature = 0.7, maxTokens, tools } = request;
     
     // Cálculo inteligente de tokens según contexto
@@ -87,10 +91,13 @@ export class OpenAIProvider extends AIProvider {
     const systemMessage = formattedMessages.find(m => m.role === 'system');
     const conversationMessages = formattedMessages.filter(m => m.role !== 'system');
 
+    // En retry: temperatura más baja para más consistencia
+    const effectiveTemperature = retryCount > 0 ? 0.1 : temperature;
+
     const requestBody = {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
-      temperature: model === 'gpt-5-nano' ? Math.max(0, Math.min(1, temperature)) : Math.max(0, Math.min(2, temperature)),
+      temperature: model === 'gpt-5-nano' ? Math.max(0, Math.min(1, effectiveTemperature)) : Math.max(0, Math.min(2, effectiveTemperature)),
       ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
       ...(tools && tools.length > 0 ? { 
         tools: tools.map(tool => ({
@@ -126,8 +133,31 @@ export class OpenAIProvider extends AIProvider {
       input: JSON.parse(call.function?.arguments || '{}')
     })) || [];
 
+    // Generar contenido inteligente basado en contexto
+    let content = message?.content || '';
+    
+    // Si no hay contenido pero hay tool calls, generar respuesta contextual
+    if ((!content || content.trim().length === 0) && toolCalls.length > 0) {
+      if (retryCount === 0) {
+        // Primer intento falló - hacer retry con temperatura baja
+        console.log(`🔄 OpenAI retry: Empty response with tools, attempting with lower temperature`);
+        return this.chatCompletionWithRetry(request, 1);
+      } else {
+        // Retry también falló - generar respuesta contextual
+        content = this.generateContextualResponse(toolCalls);
+      }
+    } else if (!content || content.trim().length === 0) {
+      // No hay contenido ni tool calls
+      if (retryCount === 0) {
+        console.log(`🔄 OpenAI retry: Completely empty response, attempting with lower temperature`);
+        return this.chatCompletionWithRetry(request, 1);
+      } else {
+        content = 'Entiendo tu solicitud, pero no puedo proporcionar una respuesta específica en este momento.';
+      }
+    }
+
     return {
-      content: message?.content || 'Sin respuesta',
+      content,
       usage: {
         promptTokens: result.usage?.prompt_tokens || 0,
         completionTokens: result.usage?.completion_tokens || 0,
@@ -138,7 +168,64 @@ export class OpenAIProvider extends AIProvider {
     };
   }
 
+  private generateContextualResponse(toolCalls: any[]): string {
+    if (toolCalls.length === 0) return 'Procesando tu solicitud...';
+    
+    const toolCall = toolCalls[0];
+    
+    switch (toolCall.name) {
+      case 'create_payment_link':
+        return 'Perfecto, voy a generar tu link de pago ahora mismo.';
+      case 'schedule_reminder':
+        return 'Entendido, procediendo a programar tu recordatorio.';
+      case 'schedule_appointment':
+        return 'Entendido, procediendo a agendar tu cita.';
+      case 'search_knowledge':
+        return 'Buscando la información que necesitas...';
+      default:
+        return 'Procesando tu solicitud, un momento por favor.';
+    }
+  }
+
   async chatCompletionStream(request: ChatRequest): Promise<ReadableStream<StreamChunk>> {
+    try {
+      return await this.chatCompletionStreamAttempt(request);
+    } catch (error) {
+      console.log('🔄 Streaming failed, falling back to non-streaming with retry:', error.message);
+      // Fallback: usar non-streaming con retry y convertir a stream
+      const response = await this.chatCompletionWithRetry(request);
+      return this.convertResponseToStream(response);
+    }
+  }
+
+  private convertResponseToStream(response: any): ReadableStream<any> {
+    return new ReadableStream({
+      start(controller) {
+        if (response.content && response.content.trim()) {
+          // Simular chunks para el contenido
+          const words = response.content.split(' ');
+          let wordIndex = 0;
+          
+          const sendNextChunk = () => {
+            if (wordIndex < words.length) {
+              const chunk = wordIndex === 0 ? words[wordIndex] : ' ' + words[wordIndex];
+              controller.enqueue({ content: chunk });
+              wordIndex++;
+              setTimeout(sendNextChunk, 50); // 50ms delay entre palabras
+            } else {
+              controller.close();
+            }
+          };
+          
+          sendNextChunk();
+        } else {
+          controller.close();
+        }
+      }
+    });
+  }
+
+  private async chatCompletionStreamAttempt(request: ChatRequest): Promise<ReadableStream<StreamChunk>> {
     const { model, messages, temperature = 0.7, maxTokens } = request;
     
     // Cálculo inteligente de tokens según contexto
@@ -152,10 +239,13 @@ export class OpenAIProvider extends AIProvider {
     const systemMessage = formattedMessages.find(m => m.role === 'system');
     const conversationMessages = formattedMessages.filter(m => m.role !== 'system');
 
+    // En retry: temperatura más baja para más consistencia
+    const effectiveTemperature = retryCount > 0 ? 0.1 : temperature;
+
     const requestBody = {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
-      temperature: model === 'gpt-5-nano' ? Math.max(0, Math.min(1, temperature)) : Math.max(0, Math.min(2, temperature)),
+      temperature: model === 'gpt-5-nano' ? Math.max(0, Math.min(1, effectiveTemperature)) : Math.max(0, Math.min(2, effectiveTemperature)),
       ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
       stream: true,
     };
@@ -181,11 +271,26 @@ export class OpenAIProvider extends AIProvider {
 
         const decoder = new TextDecoder();
         let buffer = '';
+        let contentReceived = false;
+        let timeout: NodeJS.Timeout;
+
+        // Timeout para detectar stream vacío
+        timeout = setTimeout(() => {
+          if (!contentReceived) {
+            controller.error(new Error('Stream timeout: no content received'));
+          }
+        }, 5000); // 5 segundos timeout
 
         try {
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              clearTimeout(timeout);
+              if (!contentReceived) {
+                controller.error(new Error('Empty stream: no content received'));
+              }
+              break;
+            }
 
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
@@ -195,6 +300,7 @@ export class OpenAIProvider extends AIProvider {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6);
                 if (data === '[DONE]') {
+                  clearTimeout(timeout);
                   controller.close();
                   return;
                 }
@@ -204,10 +310,13 @@ export class OpenAIProvider extends AIProvider {
                   const content = parsed.choices?.[0]?.delta?.content;
                   
                   if (content) {
+                    contentReceived = true;
+                    clearTimeout(timeout);
                     controller.enqueue({ content });
                   }
                   
                   if (parsed.choices?.[0]?.finish_reason) {
+                    clearTimeout(timeout);
                     controller.close();
                     return;
                   }
@@ -218,6 +327,7 @@ export class OpenAIProvider extends AIProvider {
             }
           }
         } catch (error) {
+          clearTimeout(timeout);
           controller.error(error);
         } finally {
           reader.releaseLock();

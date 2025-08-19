@@ -8,20 +8,20 @@ import {
   getChatbotBySlug,
   getChatbotsByUserId,
   removeContextItem,
-} from "../../server/chatbot/chatbotModel.server";
+} from "./chatbot/chatbotModel.server";
 import {
   activateChatbot,
   deactivateChatbot,
   setToDraftMode,
   markChatbotAsDeleted,
   getChatbotState,
-} from "../../server/chatbot/chatbotStateManager.server";
-import { validateChatbotCreationAccess } from "../../server/chatbot/chatbotAccess.server";
-import { getChatbotBrandingConfigById } from "../../server/chatbot/brandingConfig.server";
+} from "./chatbot/chatbotStateManager.server";
+import { validateChatbotCreationAccess } from "./chatbot/chatbotAccess.server";
+import { getChatbotBrandingConfigById } from "./chatbot/brandingConfig.server";
 import {
   getChatbotUsageStats,
   checkMonthlyUsageLimit,
-} from "../../server/chatbot/usageTracking.server";
+} from "./chatbot/usageTracking.server";
 import {
   addFileContext,
   addUrlContext,
@@ -30,7 +30,7 @@ import {
   updateQuestionContext,
   updateTextContext,
   getChatbotContexts,
-} from "../../server/chatbot/contextManager.server";
+} from "./chatbot/contextManager.server";
 import {
   createIntegration,
   upsertIntegration,
@@ -39,8 +39,10 @@ import {
   toggleIntegrationStatus,
   deleteIntegration,
   getActiveStripeIntegration,
-} from "../../server/chatbot/integrationModel.server";
-import { createQuickPaymentLink } from "../../server/integrations/stripe-payments";
+} from "./chatbot/integrationModel.server";
+import { createQuickPaymentLink } from "./integrations/stripe-payments";
+import { ReminderService } from "./integrations/reminder-service";
+import { getAvailableTools, executeToolCall, generateToolPrompts } from "./tools/registry";
 import {
   validateUserAIModelAccess,
   getUserPlanFeatures,
@@ -48,11 +50,11 @@ import {
   generateRandomChatbotName,
   getDefaultAIModelForUser,
 } from "~/utils/chatbot.server";
-import { getUserOrRedirect } from "server/getUserUtils.server";
+import { getUserOrRedirect } from "./getUserUtils.server";
 import { db } from "~/utils/db.server";
 import { generateFallbackModels, isAnthropicDirectModel } from "~/utils/aiModels";
-import { buildEnrichedSystemPrompt, estimateTokens } from "server/chatbot/promptBuilder.server";
-import { AIProviderManager } from "server/chatbot/providers";
+import { buildEnrichedSystemPrompt, estimateTokens } from "./chatbot/promptBuilder.server";
+import { AIProviderManager } from "./chatbot/providers";
 
 // Utility functions
 export const truncateConversationHistory = (
@@ -129,6 +131,10 @@ export {
   deleteIntegration,
   getActiveStripeIntegration,
   createQuickPaymentLink,
+  ReminderService,
+  getAvailableTools,
+  executeToolCall,
+  generateToolPrompts,
   validateUserAIModelAccess,
   getUserPlanFeatures,
   DEFAULT_CHATBOT_CONFIG,

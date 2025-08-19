@@ -83,6 +83,9 @@ export function getDefaultModelForPlan(plan: string): string {
   }
 }
 
+// Alias para compatibilidad
+export const getModelForPlan = getDefaultModelForPlan;
+
 /**
  * Determina el modelo óptimo para PRO según el contexto
  * Routing inteligente: Nano para chat básico, Haiku para integraciones
