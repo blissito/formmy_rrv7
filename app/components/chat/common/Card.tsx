@@ -227,10 +227,15 @@ export const IntegrationCard = ({
           </SimpleButton>
         )}
 
-        {isConnected && !isPermanent && (
+        {isConnected && (
           <SimpleButton
-            className="shrink-0 text-danger w-[40px] px-0"
-            onClick={onDisconnect}
+            className={`shrink-0 w-[40px] px-0 ${
+              isPermanent 
+                ? "text-gray-400 cursor-not-allowed opacity-50" 
+                : "text-danger"
+            }`}
+            onClick={isPermanent ? undefined : onDisconnect}
+            disabled={isPermanent}
           >
           <VscDebugDisconnect className="text-2xl" />
           </SimpleButton>
