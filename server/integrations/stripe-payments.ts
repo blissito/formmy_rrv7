@@ -87,7 +87,8 @@ export async function createStripePaymentLink(
   });
 
   if (!paymentLinkResponse.ok) {
-    throw new Error(`Error creating payment link: ${paymentLinkResponse.status}`);
+    const errorText = await paymentLinkResponse.text();
+    throw new Error(`Error creating payment link: ${paymentLinkResponse.status} - ${errorText}`);
   }
 
   const paymentLink = await paymentLinkResponse.json();

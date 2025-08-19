@@ -1736,6 +1736,7 @@ export async function action({ request }: any) {
                   try {
                     const { amount, description, currency } = toolCall.input;
                     
+                    
                     // Usar la integración ya obtenida
                     if (stripeIntegration && stripeIntegration.stripeApiKey) {
                       // Generar el link de pago real
