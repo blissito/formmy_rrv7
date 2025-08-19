@@ -1,48 +1,42 @@
 // Modelos disponibles - priorizando calidad y estabilidad
 export const AI_MODELS = [
-  // Modelos Enterprise - solo Sonnet
+  // Modelos Enterprise - GPT-5 Mini y Claude 3.5 Haiku
   {
-    value: "claude-3-5-sonnet-20241022",
-    label: "Claude 3.5 Sonnet (Anthropic)",
+    value: "gpt-5-mini",
+    label: "GPT-5 Mini",
+    category: "ENTERPRISE",
+    provider: "openai-direct",
+    tier: "enterprise",
+  },
+  
+  {
+    value: "claude-3-5-haiku-20241022", 
+    label: "Claude 3.5 Haiku",
     category: "ENTERPRISE",
     provider: "anthropic-direct",
     tier: "enterprise",
   },
   
-  // Modelos Pro - Anthropic models 
-  {
-    value: "claude-3-5-haiku-20241022", 
-    label: "Claude 3.5 Haiku (Anthropic)",
-    category: "PRO",
-    provider: "anthropic-direct",
-    tier: "pro",
-  },
+  // Modelos Pro - Claude 3 Haiku único modelo premium
   {
     value: "claude-3-haiku-20240307",
-    label: "Claude 3 Haiku (Anthropic)",
+    label: "Claude 3 Haiku",
     category: "PRO", 
     provider: "anthropic-direct",
     tier: "pro",
   },
   
-  // Modelos Starter - más económicos
+  // Modelos Starter - Ultra económicos
   {
-    value: "gpt-3.5-turbo",
-    label: "GPT-3.5 Turbo (OpenAI)",
+    value: "gpt-5-nano",
+    label: "GPT-5 Nano",
     category: "STARTER",
     provider: "openai-direct",
     tier: "starter",
   },
   {
-    value: "google/gemini-flash-1.5",
-    label: "Gemini Flash 1.5 (Google)",
-    category: "STARTER",
-    provider: "openrouter",
-    tier: "starter",
-  },
-  {
-    value: "mistralai/mistral-small",
-    label: "Mistral Small (Mistral AI)",
+    value: "google/gemini-2.5-flash-lite",
+    label: "Gemini 2.5 Flash-Lite",
     category: "STARTER",
     provider: "openrouter",
     tier: "starter",

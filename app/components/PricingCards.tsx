@@ -38,7 +38,7 @@ export const plans: Plan[] = [
   {
     name: "Starter",
     description: "Para empezar",
-    price: "$189",
+    price: "$149",
     priceNote: "/mes",
     button: <Button className="w-full bg-brand-500 hover:bg-brand-600 text-clear font-bold rounded-full py-3  mt-6">¡Empieza ahora!</Button>,
     arr: "Bajo los $200 • Ahorra 15% al pagar anualmente",
@@ -48,7 +48,7 @@ export const plans: Plan[] = [
       "👨‍👩‍👦‍👦 Administración básica de usuarios",
       "🎨 Personalización limitada",
       "🤖 Solo 2 chatbots básicos",
-      "👩🏻‍🏫 Modelos IA básicos (GPT-3.5, Gemini)",
+      "👩🏻‍🏫 Modelos IA última generación (GPT-5 Nano, Gemini 2.5)",
       "🪪 Apenas 50 conversaciones/mes",
       "⚠️ Con marca de agua Formmy",
     ],
@@ -72,7 +72,7 @@ export const plans: Plan[] = [
         "🤖 10 chatbots con IA avanzada",
         "🪄 5MB de contexto personalizado por chatbot",
         "🚀 Integraciones premium: WhatsApp Business, Calendario, Webhooks",
-        "👩🏻‍🏫 Acceso exclusivo a Claude (Anthropic) - El mejor modelo IA",
+        "👩🏻‍🏫 Claude 3 Haiku premium - Calidad Anthropic",
         "🪪 250 conversaciones premium por mes",
         "📊 Dashboard de analytics profesional",
         "🎨 Sin marca de agua - Tu marca 100%",
@@ -90,17 +90,17 @@ export const plans: Plan[] = [
   {
     name: "Enterprise 🤖",
     description: "Solución corporativa",
-    price: "$899",
+    price: "$1,499",
     priceNote: "/mes",
     button: <Button className="w-full bg-cloud hover:bg-[#5FAFA8] text-dark font-bold rounded-full py-3  mt-6">¡Potencia total!</Button>,
-    arr: "Solo $30 MXN/día • Setup gratis ($1,500 valor)",
+    arr: "Solo $50 MXN/día • Setup gratis ($1,500 valor)",
     arrClass: "text-[#5FAFA8] underline underline-offset-4 decoration-2 decoration-[#5FAFA8]",
     includes: [
         "📋 Todo lo que incluye el plan Pro",
         "🤖 Chatbots y formmys ILIMITADOS",
         "🪄 Contexto máximo (10MB) por chatbot",
         "🚀 Integraciones enterprise: API propia, SSO, Webhooks",
-        "👩🏻‍🏫 Claude Sonnet - El modelo más avanzado del mundo",
+        "👩🏻‍🏫 GPT-5 Mini + Claude 3.5 Haiku - Modelos enterprise",
         "🪪 1,000 conversaciones empresariales por mes",
         "🔒 Soporte 24/7 con SLA garantizado",
         "📈 Reportes ejecutivos y analytics avanzados",
@@ -128,12 +128,12 @@ export const PricingCards = () => {
             plan.highlight && "scale-105 z-10 shadow-2xl"
           )}
         >
-          <h3 className={cn("text-3xl font-bold mb-2", plan.highlight ? "text-white" : "text-black")}>{plan.name}</h3>
-          <p className={cn("mb-4 text-lg", plan.highlight ? "text-white/90" : "text-gray-700")}>{plan.description}</p>
+          <h3 className={cn("text-3xl font-bold mb-2", plan.name === "Free" ? "text-white" : "text-black")}>{plan.name}</h3>
+          <p className={cn("mb-4 text-lg", plan.name === "Free" ? "text-white/90" : "text-gray-700")}>{plan.description}</p>
           <div className="flex items-end gap-2 mb-4">
-            <span className={cn("text-4xl font-bold", plan.highlight ? "text-white" : "text-black")}>{plan.price}</span>
+            <span className={cn("text-4xl font-bold", plan.name === "Free" ? "text-white" : "text-black")}>{plan.price}</span>
             <span className="font-semibold text-lg">MXN</span>
-            <span className={cn("text-lg", plan.highlight ? "text-white/80" : "text-gray-500")}>{plan.priceNote}</span>
+            <span className={cn("text-lg", plan.name === "Free" ? "text-white/80" : "text-gray-500")}>{plan.priceNote}</span>
           </div>
           {plan.button}
           <div className={cn("mt-6 mb-2 font-semibold", plan.arrClass)}>{plan.arr}</div>
@@ -143,7 +143,7 @@ export const PricingCards = () => {
               {plan.includes.map((inc) => (
                 <li key={inc} className="flex items-center gap-2">
                 
-                  <span className={plan.highlight ? "text-white" : "text-black"}>{inc}</span>
+                  <span className={plan.name === "Free" ? "text-white" : "text-black"}>{inc}</span>
                 </li>
               ))}
             </ul>

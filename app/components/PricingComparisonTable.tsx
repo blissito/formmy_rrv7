@@ -251,14 +251,14 @@ export function PricingComparisonTable() {
       integrations: "-"
     },
     "Starter": {
-      price: "$189",
+      price: "$149",
       priceNote: "/mes",
       forms: "Ilimitados",
       chatbots: "2",
       training: "2MB ",
       conversations: "50",
       analytics: "-",
-      basicModels: "GPT-3.5, Gemini, Mistral",
+      basicModels: "GPT-5 Nano, Gemini 2.5 Flash-Lite",
       advancedModels: "-",
       integrations: "-"
     },
@@ -266,24 +266,24 @@ export function PricingComparisonTable() {
       price: "$499",
       priceNote: "/mes",
       forms: "Ilimitados",
-      chatbots: "5 ",
+      chatbots: "10",
       training: "5MB ",
       conversations: "250",
       analytics: "Sentimientos e Intenciones",
-      basicModels: "Gpt 4, Mistral, Gemini, Claude Sonet",
-      advancedModels: "Claude Haiku",
+      basicModels: "Claude 3 Haiku",
+      advancedModels: "-",
       integrations: "Calendario, Webhooks, WhatsApp, Instagram, Messenger"
     },
     "Enterprise 🤖": {
-      price: "$899",
+      price: "$1,499",
       priceNote: "/mes",
       forms: "Ilimitados",
       chatbots: "Ilimitados",
-      training: "25mb",
+      training: "10MB",
       conversations: "1,000",
       analytics: "Sentimientos e Intenciones",
-      basicModels: "Gpt 4, Mistral, Gemini, Claude Sonet",
-      advancedModels: "Claude Haiku",
+      basicModels: "GPT-5 Mini, Claude 3.5 Haiku",
+      advancedModels: "-",
       integrations: "Calendario, Webhooks, WhatsApp, Instagram, Messenger"
     }
   };
