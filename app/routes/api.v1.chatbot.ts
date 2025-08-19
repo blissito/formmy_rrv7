@@ -1409,6 +1409,8 @@ export async function action({ request }: any) {
         if (basicRequiresTools) {
           console.log('🔧 Herramientas detectadas - Forzando modo non-streaming para garantizar funcionamiento');
           console.log('🔧 Mensaje original:', message);
+          console.log('🔧 Tiene Stripe activo:', stripeIntegration?.stripeApiKey ? 'SÍ' : 'NO');
+          console.log('🔧 Plan del usuario:', user.plan);
         }
 
         // Obtener las API keys necesarias
@@ -1423,6 +1425,23 @@ export async function action({ request }: any) {
           );
         }
 
+        // Obtener información de Stripe antes de construir el prompt
+        let stripeIntegration = null;
+        try {
+          stripeIntegration = await db.integration.findFirst({
+            where: {
+              chatbotId: chatbot.id,
+              platform: "STRIPE",
+              isActive: true,
+              stripeApiKey: {
+                not: null
+              }
+            },
+          });
+        } catch (error) {
+          console.warn("⚠️ Error checking Stripe integration for prompt:", error);
+        }
+
         // Usar función unificada para construir prompt optimizado
         let enrichedSystemPrompt = buildEnrichedSystemPrompt(chatbot, message, {
           maxContextTokens: 800, // Límite de emergencia
@@ -1434,29 +1453,40 @@ export async function action({ request }: any) {
         const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE";
           
         if (stripeIntegration && stripeIntegration.stripeApiKey && hasProPlan) {
+          console.log('🔧 Agregando capacidades de Stripe al prompt - Usuario PRO/ENTERPRISE con Stripe activo');
           // Agregar capacidades de pago al prompt
           enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES DE PAGO ===\n";
           enrichedSystemPrompt += "CRÍTICO: Tienes acceso a generar links de pago de Stripe.\n\n";
           
           // Si detectamos que requiere herramientas, ser más directivo
           if (basicRequiresTools) {
-            enrichedSystemPrompt += "🚨 MODO HERRAMIENTAS ACTIVO - El usuario quiere generar un pago. DEBES usar el formato correcto.\n\n";
+            enrichedSystemPrompt += "🚨 MODO HERRAMIENTAS ACTIVO - El usuario quiere generar un pago. Usa la herramienta create_payment_link.\n\n";
           }
             
-            enrichedSystemPrompt += "**CUÁNDO generar un link de pago:**\n";
-            enrichedSystemPrompt += "- Cuando el usuario solicite crear un cobro, factura, o link de pago\n";
-            enrichedSystemPrompt += "- Si mencionan cantidades específicas de dinero y quieren cobrar\n";
-            enrichedSystemPrompt += "- Frases como: 'genera un link de pago', 'cobrar $X', 'enviar factura'\n\n";
-            enrichedSystemPrompt += "**FORMATO OBLIGATORIO - NO USAR OTRO:**\n";
-            enrichedSystemPrompt += "JAMÁS escribas '[LINK DE PAGO STRIPE]' o variaciones.\n";
-            enrichedSystemPrompt += "SIEMPRE usar EXACTAMENTE este formato (copiar literalmente):\n";
-            enrichedSystemPrompt += "[STRIPE_PAYMENT_REQUEST:{\"amount\":[numero],\"description\":\"[descripción]\",\"currency\":\"[mxn/usd]\"}]\n\n";
-            enrichedSystemPrompt += "**EJEMPLOS CORRECTOS:**\n";
-            enrichedSystemPrompt += "Usuario: 'Genera un link de pago por 500 pesos para consultoría'\n";
-            enrichedSystemPrompt += "Tu respuesta: 'Claro, voy a generar tu link de pago por $500 MXN para consultoría.\n[STRIPE_PAYMENT_REQUEST:{\"amount\":500,\"description\":\"Consultoría\",\"currency\":\"mxn\"}]'\n\n";
-            enrichedSystemPrompt += "Usuario: 'Necesito cobrar 1000 pesos'\n";
-            enrichedSystemPrompt += "Tu respuesta: '¿Para qué concepto es el cobro de $1000 MXN? Te generaré el link de pago.\n[STRIPE_PAYMENT_REQUEST:{\"amount\":1000,\"description\":\"Pago de servicio\",\"currency\":\"mxn\"}]'\n\n";
-            enrichedSystemPrompt += "RECORDATORIO: Usa [STRIPE_PAYMENT_REQUEST:{...}] NO [LINK DE PAGO STRIPE].\n";
+          enrichedSystemPrompt += "**CONTEXTO IMPORTANTE DE ROLES:**\n";
+          enrichedSystemPrompt += "- El usuario que te habla ES un CLIENTE potencial\n";
+          enrichedSystemPrompt += "- Tú representas a la empresa/negocio dueño de este chatbot\n";
+          enrichedSystemPrompt += "- Los links de pago son para que el cliente pague por NUESTROS servicios\n";
+          enrichedSystemPrompt += "- Cuando generes un link, es para cobrarle AL USUARIO por nuestros servicios\n\n";
+          enrichedSystemPrompt += "**Tienes acceso a la herramienta create_payment_link:**\n";
+          enrichedSystemPrompt += "- Úsala cuando el cliente quiera pagar por nuestros servicios\n";
+          enrichedSystemPrompt += "- Cuando mencionen interés en contratar o pagar algo\n";
+          enrichedSystemPrompt += "- Para frases como: 'quiero pagar', 'genera un link', 'cómo puedo pagar'\n\n";
+          enrichedSystemPrompt += "**Cómo responder correctamente:**\n";
+          enrichedSystemPrompt += "1. Identifica qué servicio nuestro quiere contratar el cliente\n";
+          enrichedSystemPrompt += "2. Determina el precio correspondiente\n";
+          enrichedSystemPrompt += "3. Genera el link para que nos pague\n";
+          enrichedSystemPrompt += "4. Explica que puede proceder con el pago\n\n";
+          enrichedSystemPrompt += "**Ejemplos CORRECTOS:**\n";
+          enrichedSystemPrompt += "Cliente: 'Quiero contratar servicios de SEO por $1000'\n";
+          enrichedSystemPrompt += "Tu respuesta: 'Perfecto, genero el link de pago por $1,000 MXN para nuestros servicios de SEO.'\n";
+          enrichedSystemPrompt += "Cliente: 'Cómo puedo pagar la consultoría de $500?'\n";
+          enrichedSystemPrompt += "Tu respuesta: 'Te genero el link de pago por $500 MXN para la consultoría.'\n\n";
+          enrichedSystemPrompt += "**Frases correctas a usar:**\n";
+          enrichedSystemPrompt += "- 'nuestros servicios'\n";
+          enrichedSystemPrompt += "- 'puedes proceder con el pago'\n";
+          enrichedSystemPrompt += "- 'link para pagar'\n";
+          enrichedSystemPrompt += "- 'pago por [servicio específico]'\n";
           enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
         }
         
@@ -1506,22 +1536,7 @@ export async function action({ request }: any) {
         // ✅ NUEVO SISTEMA MODULAR DE PROVEEDORES
         const providerManager = createProviderManager(anthropicApiKey, openRouterApiKey, openaiApiKey);
         
-        // Obtener información de Stripe para smart routing
-        let stripeIntegration = null;
-        try {
-          stripeIntegration = await db.integration.findFirst({
-            where: {
-              chatbotId: chatbot.id,
-              platform: "STRIPE",
-              isActive: true,
-              stripeApiKey: {
-                not: null
-              }
-            },
-          });
-        } catch (error) {
-          console.warn("⚠️ Error checking Stripe integration for routing:", error);
-        }
+        // Usar la información de Stripe ya obtenida para smart routing
 
         // Smart routing para usuarios PRO: Nano para chat básico, Haiku para integraciones
         let selectedModel = chatbot.aiModel;
@@ -1540,6 +1555,35 @@ export async function action({ request }: any) {
 
         const fallbackModels = generateFallbackModels(selectedModel);
 
+        // Preparar tools disponibles si hay Stripe activo
+        let tools = [];
+        if (stripeIntegration && stripeIntegration.stripeApiKey && hasProPlan) {
+          console.log('🔧 Agregando tool de Stripe a la request');
+          tools = [{
+            name: "create_payment_link",
+            description: "Crear un link de pago de Stripe para cobrar al cliente",
+            input_schema: {
+              type: "object",
+              properties: {
+                amount: {
+                  type: "number",
+                  description: "Cantidad a cobrar en números (ej: 500, 1000)"
+                },
+                description: {
+                  type: "string", 
+                  description: "Descripción del pago o servicio"
+                },
+                currency: {
+                  type: "string",
+                  enum: ["mxn", "usd"],
+                  description: "Moneda del pago, típicamente 'mxn' para pesos mexicanos"
+                }
+              },
+              required: ["amount", "description", "currency"]
+            }
+          }];
+        }
+
         // Preparar request para el sistema modular
         const chatRequest = {
           model: selectedModel,
@@ -1550,7 +1594,8 @@ export async function action({ request }: any) {
           ],
           temperature: chatbot.temperature || 0.7,
           maxTokens: 1000,
-          stream: stream
+          stream: stream,
+          ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
         
         let apiResponse;
@@ -1639,45 +1684,75 @@ export async function action({ request }: any) {
             providerUsed = result.providerUsed;
             usedFallback = result.usedFallback;
             
-            // Procesar la respuesta para detectar solicitudes de pago
+            // Procesar la respuesta para detectar solicitudes de pago o tool calls
             let finalResponse = result.response.content;
             
-            // Detectar si hay un payment request en la respuesta
-            const paymentRequestMatch = finalResponse.match(/\[STRIPE_PAYMENT_REQUEST:({.*?})\]/);
-            
-            if (paymentRequestMatch) {
-              try {
-                const paymentData = JSON.parse(paymentRequestMatch[1]);
-                
-                // Obtener la integración de Stripe activa
-                const stripeIntegration = await getActiveStripeIntegration(chatbotId);
-                
-                if (stripeIntegration && stripeIntegration.stripeApiKey) {
-                  // Generar el link de pago real
-                  const paymentUrl = await createQuickPaymentLink(
-                    stripeIntegration.stripeApiKey,
-                    paymentData.amount,
-                    paymentData.description || "Pago",
-                    paymentData.currency || "mxn"
-                  );
+            // Si la respuesta contiene tool calls, procesarlos
+            if (result.response.toolCalls && result.response.toolCalls.length > 0) {
+              console.log('🔧 Tool calls detectados:', result.response.toolCalls);
+              
+              for (const toolCall of result.response.toolCalls) {
+                if (toolCall.name === 'create_payment_link') {
+                  try {
+                    const { amount, description, currency } = toolCall.input;
+                    
+                    // Usar la integración ya obtenida
+                    if (stripeIntegration && stripeIntegration.stripeApiKey) {
+                      // Generar el link de pago real
+                      const paymentUrl = await createQuickPaymentLink(
+                        stripeIntegration.stripeApiKey,
+                        amount,
+                        description || "Pago",
+                        currency || "mxn"
+                      );
+                      
+                      // Agregar el link real a la respuesta
+                      finalResponse += `\n\n✅ Link de pago generado:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`;
+                    } else {
+                      finalResponse += "\n\n⚠️ No se pudo generar el link: Stripe no está configurado correctamente.";
+                    }
+                  } catch (error) {
+                    console.error("Error generando link de pago:", error);
+                    finalResponse += "\n\n❌ Error al generar el link de pago. Verifica tu configuración de Stripe.";
+                  }
+                }
+              }
+            } else {
+              // Fallback: Detectar si hay un payment request en la respuesta (sistema anterior)
+              const paymentRequestMatch = finalResponse.match(/\[STRIPE_PAYMENT_REQUEST:({.*?})\]/);
+              
+              if (paymentRequestMatch) {
+                try {
+                  const paymentData = JSON.parse(paymentRequestMatch[1]);
                   
-                  // Reemplazar el marcador con el link real
+                  // Usar la integración ya obtenida
+                  if (stripeIntegration && stripeIntegration.stripeApiKey) {
+                    // Generar el link de pago real
+                    const paymentUrl = await createQuickPaymentLink(
+                      stripeIntegration.stripeApiKey,
+                      paymentData.amount,
+                      paymentData.description || "Pago",
+                      paymentData.currency || "mxn"
+                    );
+                    
+                    // Reemplazar el marcador con el link real
+                    finalResponse = finalResponse.replace(
+                      paymentRequestMatch[0],
+                      `\n\n✅ Link de pago generado:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`
+                    );
+                  } else {
+                    finalResponse = finalResponse.replace(
+                      paymentRequestMatch[0],
+                      "\n\n⚠️ No se pudo generar el link: Stripe no está configurado correctamente."
+                    );
+                  }
+                } catch (error) {
+                  console.error("Error generando link de pago:", error);
                   finalResponse = finalResponse.replace(
                     paymentRequestMatch[0],
-                    `\n\n✅ Link de pago generado:\n${paymentUrl}\n\n💳 Tu cliente puede pagar de forma segura con este link.`
-                  );
-                } else {
-                  finalResponse = finalResponse.replace(
-                    paymentRequestMatch[0],
-                    "\n\n⚠️ No se pudo generar el link: Stripe no está configurado correctamente."
+                    "\n\n❌ Error al generar el link de pago. Verifica tu configuración de Stripe."
                   );
                 }
-              } catch (error) {
-                console.error("Error generando link de pago:", error);
-                finalResponse = finalResponse.replace(
-                  paymentRequestMatch[0],
-                  "\n\n❌ Error al generar el link de pago. Verifica tu configuración de Stripe."
-                );
               }
             }
             

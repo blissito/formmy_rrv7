@@ -18,6 +18,12 @@ export interface StreamChunk {
   };
 }
 
+export interface ToolCall {
+  name: string;
+  input: Record<string, any>;
+  id?: string;
+}
+
 export interface ChatResponse {
   content: string;
   usage?: {
@@ -28,6 +34,17 @@ export interface ChatResponse {
   model: string;
   provider: string;
   finishReason?: string;
+  toolCalls?: ToolCall[];
+}
+
+export interface Tool {
+  name: string;
+  description: string;
+  input_schema: {
+    type: string;
+    properties: Record<string, any>;
+    required?: string[];
+  };
 }
 
 export interface ChatRequest {
@@ -37,6 +54,7 @@ export interface ChatRequest {
   maxTokens?: number;
   stream?: boolean;
   systemPrompt?: string;
+  tools?: Tool[];
 }
 
 export interface ProviderConfig {

@@ -158,21 +158,26 @@ export async function buildEnrichedSystemPromptWithIntegrations(
       // Agregar capacidades de pago al prompt
       enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES ===\n";
       enrichedSystemPrompt += "IMPORTANTE: Tienes acceso a generar links de pago de Stripe.\n\n";
+      enrichedSystemPrompt += "**CONTEXTO IMPORTANTE DE ROLES:**\n";
+      enrichedSystemPrompt += "- El usuario que te habla ES un CLIENTE potencial\n";
+      enrichedSystemPrompt += "- Tú representas a la empresa/negocio dueño de este chatbot\n";
+      enrichedSystemPrompt += "- Los links de pago son para que el cliente pague por NUESTROS servicios\n\n";
       enrichedSystemPrompt += "**Cuándo usar la generación de pagos:**\n";
-      enrichedSystemPrompt += "- Cuando el usuario solicite crear un cobro, factura, o link de pago\n";
-      enrichedSystemPrompt += "- Si mencionan cantidades de dinero y quieren cobrar\n";
-      enrichedSystemPrompt += "- Cuando pidan ayuda para recibir pagos\n\n";
+      enrichedSystemPrompt += "- Cuando el cliente quiera pagar por nuestros servicios\n";
+      enrichedSystemPrompt += "- Si mencionan interés en contratar o pagar algo\n";
+      enrichedSystemPrompt += "- Cuando pregunten cómo pueden pagar\n\n";
       enrichedSystemPrompt += "**Cómo proceder:**\n";
-      enrichedSystemPrompt += "1. Pregunta el monto y descripción del producto/servicio\n";
-      enrichedSystemPrompt += "2. Usa la función generate_payment_link con estos parámetros:\n";
+      enrichedSystemPrompt += "1. Identifica qué servicio nuestro quiere contratar el cliente\n";
+      enrichedSystemPrompt += "2. Determina el precio correspondiente\n";
+      enrichedSystemPrompt += "3. Usa la función generate_payment_link con estos parámetros:\n";
       enrichedSystemPrompt += `   - stripe_api_key: "${stripeIntegration.stripeApiKey}"\n`;
       enrichedSystemPrompt += "   - amount: [monto en la moneda especificada]\n";
-      enrichedSystemPrompt += "   - description: [descripción del producto/servicio]\n";
+      enrichedSystemPrompt += "   - description: [descripción del servicio nuestro]\n";
       enrichedSystemPrompt += "   - currency: [mxn, usd, etc.]\n\n";
-      enrichedSystemPrompt += "**Ejemplo de respuesta:**\n";
-      enrichedSystemPrompt += "✅ He generado tu link de pago para [descripción] por $[monto]:\n";
+      enrichedSystemPrompt += "**Ejemplo de respuesta CORRECTO:**\n";
+      enrichedSystemPrompt += "✅ Perfecto, genero el link de pago por $[monto] MXN para nuestros servicios de [descripción]:\n";
       enrichedSystemPrompt += "[LINK_DE_PAGO]\n\n";
-      enrichedSystemPrompt += "Puedes compartir este link directamente con tu cliente.\n";
+      enrichedSystemPrompt += "Puedes proceder con el pago de forma segura usando este link.\n";
       enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
       
       if (options.enableLogging) {

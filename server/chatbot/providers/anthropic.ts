@@ -84,6 +84,7 @@ export class AnthropicProvider extends AIProvider {
       temperature: this.normalizeTemperature(request.temperature || 0.7),
       ...(system && { system }),
       messages,
+      ...(request.tools && request.tools.length > 0 && { tools: request.tools }),
     };
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -99,8 +100,18 @@ export class AnthropicProvider extends AIProvider {
 
     const result = await response.json();
     
+    // Extraer contenido de texto
+    const textContent = result.content?.find((c: any) => c.type === 'text')?.text || '';
+    
+    // Extraer tool calls si existen
+    const toolCalls = result.content?.filter((c: any) => c.type === 'tool_use').map((tool: any) => ({
+      name: tool.name,
+      input: tool.input,
+      id: tool.id
+    })) || [];
+    
     return {
-      content: result.content?.[0]?.text || '',
+      content: textContent,
       usage: {
         inputTokens: result.usage?.input_tokens || 0,
         outputTokens: result.usage?.output_tokens || 0,
@@ -109,6 +120,7 @@ export class AnthropicProvider extends AIProvider {
       model: request.model,
       provider: this.name,
       finishReason: result.stop_reason,
+      ...(toolCalls.length > 0 && { toolCalls }),
     };
   }
 
@@ -125,6 +137,7 @@ export class AnthropicProvider extends AIProvider {
       stream: true,
       ...(system && { system }),
       messages,
+      ...(request.tools && request.tools.length > 0 && { tools: request.tools }),
     };
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
