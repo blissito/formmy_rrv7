@@ -91,7 +91,7 @@ export class OpenAIProvider extends AIProvider {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
       temperature: Math.max(0, Math.min(2, temperature)),
-      max_tokens: smartMaxTokens,
+      ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
     };
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -136,7 +136,7 @@ export class OpenAIProvider extends AIProvider {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
       temperature: Math.max(0, Math.min(2, temperature)),
-      max_tokens: smartMaxTokens,
+      ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
       stream: true,
     };
 

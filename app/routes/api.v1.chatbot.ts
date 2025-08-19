@@ -1616,7 +1616,7 @@ export async function action({ request }: any) {
         let lastError;
         
         try {
-          if (stream) {
+          if (chatRequest.stream) {
             console.log('📡 DEBUG: Entrando en flujo STREAMING');
             // STREAMING con sistema modular
             const result = await providerManager.chatCompletionStreamWithFallback(
