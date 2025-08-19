@@ -1,16 +1,23 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#EC4899;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <circle cx="12" cy="12" r="11" fill="url(#aiGrad)" stroke="#FFFFFF" stroke-width="0.5"/>
-  <rect x="7" y="7" width="10" height="10" rx="2" fill="white" fill-opacity="0.9"/>
-  <circle cx="10" cy="10" r="1" fill="url(#aiGrad)"/>
-  <circle cx="14" cy="10" r="1" fill="url(#aiGrad)"/>
-  <circle cx="10" cy="14" r="1" fill="url(#aiGrad)"/>
-  <circle cx="14" cy="14" r="1" fill="url(#aiGrad)"/>
+  <!-- Fondo redondeado -->
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#aiGrad)"/>
+  
+  <!-- Cerebro/AI estilizado -->
+  <path d="M8 10C8 8 9.5 6.5 11.5 6.5C12.5 6.5 13.3 7 13.8 7.8C14.3 7.3 15 7 15.7 7C17.2 7 18.5 8.3 18.5 9.8C18.5 10.5 18.2 11.1 17.7 11.5C17.9 12 18 12.5 18 13C18 15.2 16.2 17 14 17H10C8.3 17 7 15.7 7 14C7 12.8 7.6 11.8 8.5 11.2C8.2 10.8 8 10.4 8 10Z" fill="white"/>
+  
+  <!-- Conexiones neuronales -->
+  <circle cx="10" cy="10" r="0.8" fill="url(#aiGrad)"/>
+  <circle cx="14" cy="9" r="0.8" fill="url(#aiGrad)"/>
   <circle cx="12" cy="12" r="0.8" fill="url(#aiGrad)"/>
+  <circle cx="15" cy="13" r="0.8" fill="url(#aiGrad)"/>
+  
+  <!-- Líneas de conexión -->
+  <path d="M10.8 10.2L11.2 11.8M14 9.8L12.8 11.2M12.8 12.2L14.2 12.8" stroke="url(#aiGrad)" stroke-width="1" stroke-linecap="round"/>
 </svg>

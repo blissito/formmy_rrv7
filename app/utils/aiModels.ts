@@ -1,5 +1,16 @@
+// Tipos para los modelos
+export type AIModel = {
+  value: string;
+  label: string;
+  category: string;
+  provider: string;
+  tier: string;
+  recommended?: boolean;
+  badge?: string;
+};
+
 // Modelos disponibles - priorizando calidad y estabilidad
-export const AI_MODELS = [
+export const AI_MODELS: AIModel[] = [
   // Modelos Enterprise - GPT-5 Mini y Claude 3.5 Haiku
   {
     value: "gpt-5-mini",
@@ -7,6 +18,8 @@ export const AI_MODELS = [
     category: "ENTERPRISE",
     provider: "openai-direct",
     tier: "enterprise",
+    recommended: true,
+    badge: "Enterprise default",
   },
   
   {
@@ -24,6 +37,8 @@ export const AI_MODELS = [
     category: "PRO", 
     provider: "anthropic-direct",
     tier: "pro",
+    recommended: true,
+    badge: "Pro default",
   },
   
   // Modelos Starter - Ultra económicos
@@ -33,6 +48,8 @@ export const AI_MODELS = [
     category: "STARTER",
     provider: "openai-direct",
     tier: "starter",
+    recommended: true,
+    badge: "Starter default",
   },
   {
     value: "google/gemini-2.5-flash-lite",
@@ -50,6 +67,36 @@ export const MODEL_LABELS: Record<string, string> = Object.fromEntries(
 );
 
 export const DEFAULT_AI_MODEL = "claude-3-5-haiku-20241022";
+
+/**
+ * Obtiene el modelo por defecto según el plan del usuario
+ * Cada plan tiene un modelo optimizado para su nivel de valor
+ */
+export function getDefaultModelForPlan(plan: string): string {
+  switch (plan) {
+    case "FREE":
+    case "TRIAL":
+    case "STARTER":
+      return "gpt-5-nano"; // Nano: mejor balance velocidad/costo para planes básicos
+    case "PRO":
+      return "gpt-5-nano"; // Nano como default, con smart routing para integraciones
+    case "ENTERPRISE":
+      return "gpt-5-mini"; // Mini: máximo rendimiento para Enterprise
+    default:
+      return "gpt-5-nano";
+  }
+}
+
+/**
+ * Determina el modelo óptimo para PRO según el contexto
+ * Routing inteligente: Nano para chat básico, Haiku para integraciones
+ */
+export function getSmartModelForPro(hasActiveIntegrations: boolean, isComplexQuery: boolean = false): string {
+  if (hasActiveIntegrations || isComplexQuery) {
+    return "claude-3-haiku-20240307"; // Calidad para integraciones críticas
+  }
+  return "gpt-5-nano"; // Velocidad y costo para chat normal
+}
 
 // Todos los modelos requieren PRO o trial activo
 export const ALL_MODELS = AI_MODELS.map((m) => m.value);

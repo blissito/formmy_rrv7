@@ -23,12 +23,11 @@ export const PLAN_LIMITS = {
     maxTokensPerQuery: 8000, // Como PRO
     maxContextQueriesPerDay: 100, // Como PRO
     availableModels: [
-      "gpt-3.5-turbo",
-      "google/gemini-flash-1.5", 
-      "mistralai/mistral-small",
+      "gpt-5-nano",
+      "google/gemini-2.5-flash-lite",
       "claude-3-haiku-20240307",
       "claude-3-5-haiku-20241022"
-    ], // Todos los modelos PRO disponibles
+    ], // Todos los modelos STARTER + PRO disponibles
     showBranding: false, // Sin branding como PRO
     trialDays: 60, // 60 días de trial, luego automáticamente a FREE
   },
@@ -40,9 +39,8 @@ export const PLAN_LIMITS = {
     maxTokensPerQuery: 4000, // Protección básica
     maxContextQueriesPerDay: 20, // Limite diario bajo
     availableModels: [
-      "gpt-3.5-turbo",
-      "google/gemini-flash-1.5", 
-      "mistralai/mistral-small"
+      "gpt-5-nano",
+      "google/gemini-2.5-flash-lite"
     ], // Modelos más económicos
     showBranding: true,
     trialDays: 0,
@@ -55,9 +53,8 @@ export const PLAN_LIMITS = {
     maxTokensPerQuery: 8000, // Moderada protección
     maxContextQueriesPerDay: 100, // Límite generoso
     availableModels: [
-      "gpt-3.5-turbo",
-      "google/gemini-flash-1.5", 
-      "mistralai/mistral-small",
+      "gpt-5-nano",
+      "google/gemini-2.5-flash-lite",
       "claude-3-haiku-20240307",
       "claude-3-5-haiku-20241022"
     ], // Starter + Anthropic models

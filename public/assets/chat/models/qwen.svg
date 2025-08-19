@@ -1,15 +1,21 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="qwenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#00C7F7;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0066CC;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#1E40AF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E3A8A;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <circle cx="12" cy="12" r="11" fill="url(#qwenGrad)" stroke="#FFFFFF" stroke-width="0.5"/>
-  <path d="M8 8C8 7 8.5 6 9.5 6C10.5 6 11 7 11 8C11 9 10.5 10 9.5 10C8.5 10 8 9 8 8Z" fill="white" fill-opacity="0.9"/>
-  <path d="M13 8C13 7 13.5 6 14.5 6C15.5 6 16 7 16 8C16 9 15.5 10 14.5 10C13.5 10 13 9 13 8Z" fill="white" fill-opacity="0.9"/>
-  <path d="M8 12H16C16 14 15 16 14 17C13 18 11 18 10 17C9 16 8 14 8 12Z" fill="white" fill-opacity="0.9"/>
-  <circle cx="9.5" cy="8" r="0.8" fill="url(#qwenGrad)"/>
-  <circle cx="14.5" cy="8" r="0.8" fill="url(#qwenGrad)"/>
-  <path d="M10 14H14" stroke="url(#qwenGrad)" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Fondo redondeado -->
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#qwenGrad)"/>
+  
+  <!-- Logo Q estilizado -->
+  <circle cx="12" cy="11" r="5" stroke="white" stroke-width="2.5" fill="none"/>
+  <path d="M14.5 13.5L17 16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Punto interno -->
+  <circle cx="12" cy="11" r="1.5" fill="white"/>
+  
+  <!-- Detalles tech -->
+  <rect x="16" y="6" width="2" height="1" rx="0.5" fill="#00D4FF"/>
+  <rect x="6" y="17" width="2" height="1" rx="0.5" fill="#00D4FF"/>
 </svg>

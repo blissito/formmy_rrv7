@@ -52,6 +52,7 @@ export async function action({ request }: any) {
       getUserOrRedirect,
       db,
       generateFallbackModels,
+      getSmartModelForPro,
       isAnthropicDirectModel,
       buildEnrichedSystemPrompt,
       estimateTokens,
@@ -1352,18 +1353,24 @@ export async function action({ request }: any) {
           );
         }
 
-        // Detectar si el mensaje requiere herramientas
-        const requiresTools = (() => {
+        // Detectar si el mensaje requiere herramientas (básico primero)
+        const basicRequiresTools = (() => {
           const messageLC = message.toLowerCase();
           const toolIndicators = [
             // Indicadores de pago
             'link de pago',
+            'link de stripe',
             'cobrar',
             'factura',
             'payment link',
             'generar pago',
             'crear cobro',
             'enviar factura',
+            'stripe',
+            'pago',
+            'cobro',
+            'invoice',
+            'checkout',
             // Podemos agregar más herramientas aquí en el futuro
             'agendar cita',
             'calendario',
@@ -1371,6 +1378,19 @@ export async function action({ request }: any) {
             // Indicadores de cantidad de dinero con intención de cobro
             /\$\d+/,
             /\d+\s*(pesos|dolares|usd|mxn)/i,
+            // Indicadores comerciales
+            /servicio.*seo/i,
+            /paquete.*seo/i,
+            /optimizar.*sitio/i,
+            // Indicadores comerciales adicionales (más agresivos por defecto)
+            'servicios',
+            'paquete',
+            'seleccionar',
+            'precio',
+            'costo',
+            'llamada',
+            'consulta',
+            'especialista'
           ];
           
           return toolIndicators.some(indicator => {
@@ -1384,10 +1404,11 @@ export async function action({ request }: any) {
         })();
         
         // Si requiere herramientas, FORZAR non-streaming para garantizar funcionamiento correcto
-        const stream = requestedStream && (chatbot.enableStreaming !== false) && !requiresTools;
+        const stream = requestedStream && (chatbot.enableStreaming !== false) && !basicRequiresTools;
         
-        if (requiresTools) {
+        if (basicRequiresTools) {
           console.log('🔧 Herramientas detectadas - Forzando modo non-streaming para garantizar funcionamiento');
+          console.log('🔧 Mensaje original:', message);
         }
 
         // Obtener las API keys necesarias
@@ -1408,45 +1429,35 @@ export async function action({ request }: any) {
           enableLogging: true
         });
         
-        // Verificar si tiene integración de Stripe activa y agregar capacidades
-        try {
-          const stripeIntegration = await db.integration.findFirst({
-            where: {
-              chatbotId: chatbot.id,
-              platform: "STRIPE",
-              isActive: true,
-              stripeApiKey: {
-                not: null
-              }
-            },
-          });
+        // Agregar capacidades de Stripe si está disponible
+        // Solo agregar capacidades de Stripe para planes PRO en adelante
+        const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE";
           
-          if (stripeIntegration && stripeIntegration.stripeApiKey) {
-            // Agregar capacidades de pago al prompt
-            enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES DE PAGO ===\n";
-            enrichedSystemPrompt += "IMPORTANTE: Tienes acceso a generar links de pago de Stripe.\n\n";
+        if (stripeIntegration && stripeIntegration.stripeApiKey && hasProPlan) {
+          // Agregar capacidades de pago al prompt
+          enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES DE PAGO ===\n";
+          enrichedSystemPrompt += "CRÍTICO: Tienes acceso a generar links de pago de Stripe.\n\n";
+          
+          // Si detectamos que requiere herramientas, ser más directivo
+          if (basicRequiresTools) {
+            enrichedSystemPrompt += "🚨 MODO HERRAMIENTAS ACTIVO - El usuario quiere generar un pago. DEBES usar el formato correcto.\n\n";
+          }
             
-            // Si detectamos que requiere herramientas, ser más directivo
-            if (requiresTools) {
-              enrichedSystemPrompt += "⚠️ MODO HERRAMIENTAS ACTIVO - El usuario parece querer generar un pago.\n\n";
-            }
-            
-            enrichedSystemPrompt += "**Cuándo generar un link de pago:**\n";
+            enrichedSystemPrompt += "**CUÁNDO generar un link de pago:**\n";
             enrichedSystemPrompt += "- Cuando el usuario solicite crear un cobro, factura, o link de pago\n";
             enrichedSystemPrompt += "- Si mencionan cantidades específicas de dinero y quieren cobrar\n";
             enrichedSystemPrompt += "- Frases como: 'genera un link de pago', 'cobrar $X', 'enviar factura'\n\n";
-            enrichedSystemPrompt += "**Formato de respuesta OBLIGATORIO:**\n";
-            enrichedSystemPrompt += "Cuando identifiques que se debe generar un link, incluye EXACTAMENTE este formato en tu respuesta:\n";
+            enrichedSystemPrompt += "**FORMATO OBLIGATORIO - NO USAR OTRO:**\n";
+            enrichedSystemPrompt += "JAMÁS escribas '[LINK DE PAGO STRIPE]' o variaciones.\n";
+            enrichedSystemPrompt += "SIEMPRE usar EXACTAMENTE este formato (copiar literalmente):\n";
             enrichedSystemPrompt += "[STRIPE_PAYMENT_REQUEST:{\"amount\":[numero],\"description\":\"[descripción]\",\"currency\":\"[mxn/usd]\"}]\n\n";
-            enrichedSystemPrompt += "**Ejemplos:**\n";
+            enrichedSystemPrompt += "**EJEMPLOS CORRECTOS:**\n";
             enrichedSystemPrompt += "Usuario: 'Genera un link de pago por 500 pesos para consultoría'\n";
             enrichedSystemPrompt += "Tu respuesta: 'Claro, voy a generar tu link de pago por $500 MXN para consultoría.\n[STRIPE_PAYMENT_REQUEST:{\"amount\":500,\"description\":\"Consultoría\",\"currency\":\"mxn\"}]'\n\n";
             enrichedSystemPrompt += "Usuario: 'Necesito cobrar 1000 pesos'\n";
-            enrichedSystemPrompt += "Tu respuesta: '¿Para qué concepto es el cobro de $1000 MXN? Te generaré el link de pago.\n[STRIPE_PAYMENT_REQUEST:{\"amount\":1000,\"description\":\"Pago de servicio\",\"currency\":\"mxn\"}]'\n";
-            enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
-          }
-        } catch (error) {
-          console.warn("⚠️ Error checking Stripe integration:", error);
+            enrichedSystemPrompt += "Tu respuesta: '¿Para qué concepto es el cobro de $1000 MXN? Te generaré el link de pago.\n[STRIPE_PAYMENT_REQUEST:{\"amount\":1000,\"description\":\"Pago de servicio\",\"currency\":\"mxn\"}]'\n\n";
+            enrichedSystemPrompt += "RECORDATORIO: Usa [STRIPE_PAYMENT_REQUEST:{...}] NO [LINK DE PAGO STRIPE].\n";
+          enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
         }
         
         const systemMessage = {
@@ -1495,11 +1506,43 @@ export async function action({ request }: any) {
         // ✅ NUEVO SISTEMA MODULAR DE PROVEEDORES
         const providerManager = createProviderManager(anthropicApiKey, openRouterApiKey, openaiApiKey);
         
-        const fallbackModels = generateFallbackModels(chatbot.aiModel);
+        // Obtener información de Stripe para smart routing
+        let stripeIntegration = null;
+        try {
+          stripeIntegration = await db.integration.findFirst({
+            where: {
+              chatbotId: chatbot.id,
+              platform: "STRIPE",
+              isActive: true,
+              stripeApiKey: {
+                not: null
+              }
+            },
+          });
+        } catch (error) {
+          console.warn("⚠️ Error checking Stripe integration for routing:", error);
+        }
+
+        // Smart routing para usuarios PRO: Nano para chat básico, Haiku para integraciones
+        let selectedModel = chatbot.aiModel;
+        if (user.plan === "PRO" && chatbot.aiModel === "gpt-5-nano") {
+          const hasActiveIntegrations = stripeIntegration?.stripeApiKey ? true : false;
+          const isComplexQuery = basicRequiresTools || message.length > 200; // Queries largas o que requieren herramientas
+          selectedModel = getSmartModelForPro(hasActiveIntegrations, isComplexQuery);
+          
+          console.log('🎯 Smart routing PRO:');
+          console.log('   - Modelo original:', chatbot.aiModel);
+          console.log('   - Modelo seleccionado:', selectedModel);
+          console.log('   - Tiene integraciones:', hasActiveIntegrations);
+          console.log('   - Es query compleja:', isComplexQuery);
+          console.log('   - Requiere herramientas:', basicRequiresTools);
+        }
+
+        const fallbackModels = generateFallbackModels(selectedModel);
 
         // Preparar request para el sistema modular
         const chatRequest = {
-          model: chatbot.aiModel,
+          model: selectedModel,
           messages: [
             systemMessage,
             ...truncateConversationHistory(conversationHistory),
@@ -1511,7 +1554,7 @@ export async function action({ request }: any) {
         };
         
         let apiResponse;
-        let modelUsed = chatbot.aiModel;
+        let modelUsed = selectedModel;
         let providerUsed = 'unknown';
         let usedFallback = false;
         let lastError;

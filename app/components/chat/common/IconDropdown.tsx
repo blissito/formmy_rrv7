@@ -9,6 +9,8 @@ export type DropdownOption = {
   disabled?: boolean;
   disabledReason?: string;
   bgColor?: string;
+  badge?: string;
+  recommended?: boolean;
 };
 
 type IconDropdownProps = {
@@ -106,10 +108,12 @@ export const IconDropdown = ({
               />
             </div>
           )}
-          <div>
-            <p className=" text-base text-dark">
-              {selectedOption ? selectedOption.label : placeholder}
-            </p>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className=" text-base text-dark">
+                {selectedOption ? selectedOption.label : placeholder}
+              </p>
+            </div>
             {selectedOption?.description && (
               <p className="text-xs text-gray-500">
                 {selectedOption.description}
@@ -171,8 +175,10 @@ export const IconDropdown = ({
                   />
                 </div>
               )}
-              <div>
-                <p className="font-medium text-sm">{option.label}</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm">{option.label}</p>
+                </div>
                 <div className="flex items-center gap-2">
                   {option.description && (
                     <p className="text-xs text-gray-500">

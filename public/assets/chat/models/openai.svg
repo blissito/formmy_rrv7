@@ -1,14 +1,22 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="openaiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#00D4AA;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#10A37F;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#10A37F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0D9F6E;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <circle cx="12" cy="12" r="11" fill="url(#openaiGrad)" stroke="#FFFFFF" stroke-width="0.5"/>
-  <path d="M12 4C13.5 4 15 4.5 16 5.5C17 6.5 17.5 8 17.5 9.5C17.5 10.5 17.3 11.4 16.8 12.2C18.2 13 19 14.2 19 15.5C19 17 18.5 18.5 17.5 19.5C16.5 20.5 15 21 13.5 21H10.5C9 21 7.5 20.5 6.5 19.5C5.5 18.5 5 17 5 15.5C5 14.2 5.8 13 7.2 12.2C6.7 11.4 6.5 10.5 6.5 9.5C6.5 8 7 6.5 8 5.5C9 4.5 10.5 4 12 4Z" fill="white" fill-opacity="0.85"/>
-  <circle cx="12" cy="9" r="1.5" fill="url(#openaiGrad)"/>
-  <circle cx="12" cy="15" r="1.5" fill="url(#openaiGrad)"/>
-  <circle cx="9" cy="12" r="1" fill="url(#openaiGrad)"/>
-  <circle cx="15" cy="12" r="1" fill="url(#openaiGrad)"/>
+  <!-- Fondo redondeado -->
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#openaiGrad)"/>
+  
+  <!-- Logo OpenAI simplificado -->
+  <circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="1.2"/>
+  
+  <!-- Elementos internos característicos -->
+  <path d="M12 6C14.2 6 16 7.8 16 10C16 11.1 15.6 12.1 14.9 12.8" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M12 18C9.8 18 8 16.2 8 14C8 12.9 8.4 11.9 9.1 11.2" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M18 12C18 14.2 16.2 16 14 16C12.9 16 11.9 15.6 11.2 14.9" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M6 12C6 9.8 7.8 8 10 8C11.1 8 12.1 8.4 12.8 9.1" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- Centro -->
+  <circle cx="12" cy="12" r="1.5" fill="white"/>
 </svg>

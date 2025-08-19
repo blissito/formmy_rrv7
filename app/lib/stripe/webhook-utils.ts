@@ -1,6 +1,7 @@
 import { db } from "~/utils/db.server";
 import { Effect } from "effect";
 import { referralService } from "~/services/referral.service";
+import { getDefaultModelForPlan } from "~/utils/aiModels";
 
 type SubscriptionStatus =
   | "active"
@@ -16,6 +17,31 @@ export interface StripeSubscription {
   customer: string;
   status: SubscriptionStatus;
   // Otros campos de Stripe que podamos necesitar
+}
+
+/**
+ * Actualiza los modelos de IA de todos los chatbots del usuario según su nuevo plan
+ */
+async function updateUserChatbotModels(userId: string, newPlan: string) {
+  const defaultModel = getDefaultModelForPlan(newPlan);
+  
+  // Solo actualizar chatbots que no tengan un modelo específico configurado
+  // o que tengan un modelo que ya no esté disponible en su plan
+  await db.chatbot.updateMany({
+    where: {
+      userId,
+      OR: [
+        { aiModel: null },
+        { aiModel: "" },
+        // Podrías agregar aquí lógica para cambiar modelos que ya no están disponibles
+      ]
+    },
+    data: {
+      aiModel: defaultModel
+    }
+  });
+  
+  console.log(`[Webhook] Modelos de chatbots actualizados para el usuario ${userId} con plan ${newPlan}, modelo por defecto: ${defaultModel}`);
 }
 
 /**
@@ -57,6 +83,9 @@ export async function handleSubscriptionCreated(
       subscriptionIds: { push: subscription.id },
     },
   });
+
+  // Actualizar modelos de chatbots según el nuevo plan
+  await updateUserChatbotModels(user.id, "PRO");
 
   console.log(
     `[Webhook] Suscripción PRO creada para el usuario: ${user.email}`
@@ -105,6 +134,9 @@ export async function handleSubscriptionUpdated(subscription: StripeSubscription
     },
   });
 
+  // Actualizar modelos de chatbots según el nuevo plan
+  await updateUserChatbotModels(user.id, newPlan);
+
   console.log(
     `[Webhook] Suscripción actualizada para ${user.email}: ${subscription.status}`
   );
@@ -132,6 +164,9 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
         user.subscriptionIds?.filter((id) => id !== subscription.id) ?? [],
     },
   });
+
+  // Actualizar modelos de chatbots según el nuevo plan FREE
+  await updateUserChatbotModels(user.id, "FREE");
 
   console.log(`[Webhook] Suscripción eliminada para: ${user.email}`);
 }

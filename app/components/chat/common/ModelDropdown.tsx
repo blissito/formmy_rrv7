@@ -58,6 +58,8 @@ export const ModelDropdown = ({
     disabledReason: !availableModels.includes(model.value)
       ? `Requiere plan ${model.category}`
       : undefined,
+    badge: model.badge,
+    recommended: model.recommended,
   }));
 
   // Si no hay modelos disponibles (FREE sin trial), no debe haber selección

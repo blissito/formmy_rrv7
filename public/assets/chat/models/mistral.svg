@@ -1,13 +1,16 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="mistralGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F97316;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#DC2626;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F7931E;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <circle cx="12" cy="12" r="11" fill="url(#mistralGrad)" stroke="#FFFFFF" stroke-width="0.5"/>
-  <path d="M12 5L8 7.5V10.5L10 11.5V14L12 15L14 14V11.5L16 10.5V7.5L12 5Z" fill="white" fill-opacity="0.9"/>
-  <path d="M8 12.5L10 13.5V16.5L12 17.5L14 16.5V13.5L16 12.5" fill="white" fill-opacity="0.7"/>
-  <circle cx="12" cy="9" r="1" fill="url(#mistralGrad)"/>
-  <circle cx="12" cy="15" r="0.8" fill="url(#mistralGrad)"/>
+  <!-- Fondo redondeado -->
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#mistralGrad)"/>
+  
+  <!-- Logo M estilizado -->
+  <path d="M6 17V7H8.5L12 12L15.5 7H18V17H15.5V11L12 16L8.5 11V17H6Z" fill="white"/>
+  
+  <!-- Detalle distintivo -->
+  <circle cx="12" cy="5.5" r="1" fill="white"/>
 </svg>
