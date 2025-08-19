@@ -1,10 +1,10 @@
 ---
-title: "Guía paso a paso: crea tu primer Chatbot IA con Formmy"
+title: "Crea tu primer Chatbot IA con Formmy"
 excerpt: "Aprende a crear tu primer asistente de IA conversacional en minutos con esta guía práctica para principiantes."
 date: "2025-08-16"
-tags: ["tutorial", "chatbot", "IA", "asistente-virtual"]
+tags: ["tutorial", "Guía", "chatbot", "IA", "asistente-virtual"]
 author: "Equipo Formmy"
-image: "/home/crear-chatbot-guia.jpg"
+image: "/blogposts/chat.webp"
 category: "tutorial"
 ---
 
