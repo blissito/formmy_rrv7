@@ -37,66 +37,79 @@ export const plans: Plan[] = [
   },
   {
     name: "Starter",
-    description: "Ideal si eres freelancer",
-    price: "$140",
+    description: "Para empezar",
+    price: "$149",
     priceNote: "/mes",
-    button: <Button className="w-full bg-brand-500 hover:bg-brand-600 text-clear font-bold rounded-full py-3  mt-6">¡Impulsa tu proyecto!</Button>,
-    arr: "Ahorra 10% al pagar anualmente",
+    button: <Button className="w-full bg-brand-500 hover:bg-brand-600 text-clear font-bold rounded-full py-3  mt-6">¡Empieza ahora!</Button>,
+    arr: "Bajo los $200 • Ahorra 15% al pagar anualmente",
     arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-brand-600",
     includes: [
-      "📋 Formularios ilimitados con respuestas ilimitadas",
-      "👨‍👩‍👦‍👦 Administración de usuarios",
-      "🎨 Personalización avanzada de formularios",
-      "🤖 2 Chatbots",
-      "👩🏻‍🏫 Acceso a modelos como Gpt, Ollama y Gemini",
-      "🪪 100 conversaciones de chat por mes",
+      "📋 Formularios ilimitados",
+      "👨‍👩‍👦‍👦 Administración básica de usuarios",
+      "🎨 Personalización limitada",
+      "🤖 Solo 2 chatbots básicos",
+      "👩🏻‍🏫 Modelos IA última generación (GPT-5 Nano, Gemini 2.5)",
+      "🪪 Apenas 50 conversaciones/mes",
+      "⚠️ Con marca de agua Formmy",
     ],
     extra: [
-      "$ 199 mxn por cada 100 conversaciones extra",
+      "⚠️ $179 MXN por cada 100 conversaciones extra",
+      "📞 Soporte básico por email"
     ],
     cardClass: "bg-clear text-black border border-outlines",
     arrBoxClass: "bg-[#f6f3ff] text-[#7574D6]",
   },
   {
     name: "Pro ✨",
-    description: "Perfecto para negocios",
-    price: "$490",
+    description: "El plan más completo",
+    price: "$499",
     priceNote: "/mes",
     button: <Button className="w-full bg-bird hover:bg-[#E5C059] text-dark font-bold rounded-full py-3  mt-6">¡Hazte imparable con Pro!</Button>,
-    arr: "Ahorra 10% al pagar anualmente",
+    arr: "Gran valor bajo $500 • Ahorra 15% anual",
     arrClass: "text-[#DAB23F] underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
     includes: [
         "📋 Todo lo que incluye el plan Starter",
-        "🤖 10 chatbots",
-        "🪄 Mayor capacidad (5mb) de entrenamiento para tu agente",
-        "🚀 Integraciones de Calendario, Weebhook, WhatsApp y más ",
-        "👩🏻‍🏫 Acceso a los top Models IA como Claude",
-        "🪪 250 conversaciones de chat por mes",
+        "🤖 10 chatbots con IA avanzada",
+        "🪄 5MB de contexto personalizado por chatbot",
+        "🚀 Integraciones premium: WhatsApp Business, Calendario, Webhooks",
+        "👩🏻‍🏫 Claude 3 Haiku premium - Calidad Anthropic",
+        "🪪 250 conversaciones premium por mes",
+        "📊 Dashboard de analytics profesional",
+        "🎨 Sin marca de agua - Tu marca 100%",
+        "⚡ Respuestas 3x más rápidas e inteligentes",
+        "🔧 Soporte prioritario por WhatsApp",
     ],
     extra: [
-      "$ 99 mxn por cada 100 conversaciones extra",
+      "¡Solo $89 MXN por cada 100 conversaciones extra!",
+      "🎯 El plan más elegido por empresas mexicanas"
     ],
-    cardClass: "bg-clear text-black border border-outlines",
-    arrBoxClass: "bg-bird/10 text-[#DAB23F] border-bird",
+    cardClass: "bg-gradient-to-br from-yellow-50 to-orange-50 text-black border-2 border-yellow-400 shadow-xl",
+    arrBoxClass: "bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-700 border border-yellow-400",
+    highlight: true,
   },
   {
     name: "Enterprise 🤖",
-    description: "La opción de las empresas",
-    price: "$1,490",
+    description: "Solución corporativa",
+    price: "$1,499",
     priceNote: "/mes",
-    button: <Button className="w-full bg-cloud hover:bg-[#5FAFA8] text-dark font-bold rounded-full py-3  mt-6">¡Hazte imparable con Pro!</Button>,
-    arr: "Ahorra 10% al pagar anualmente",
+    button: <Button className="w-full bg-cloud hover:bg-[#5FAFA8] text-dark font-bold rounded-full py-3  mt-6">¡Potencia total!</Button>,
+    arr: "Solo $50 MXN/día • Setup gratis ($1,500 valor)",
     arrClass: "text-[#5FAFA8] underline underline-offset-4 decoration-2 decoration-[#5FAFA8]",
     includes: [
-        "📋 Todo lo que incluye el plan Starter",
-        "🤖 Chatbots ilimitados",
-        "🪄 Mayor capacidad (10mb) de entrenamiento para tu agente",
-        "🚀 Integraciones de Calendario, Weebhook, WhatsApp y más ",
-        "👩🏻‍🏫 Acceso a los top Models IA como Claude",
-        "🪪 1,000 conversaciones de chat por mes",
+        "📋 Todo lo que incluye el plan Pro",
+        "🤖 Chatbots y formmys ILIMITADOS",
+        "🪄 Contexto máximo (10MB) por chatbot",
+        "🚀 Integraciones enterprise: API propia, SSO, Webhooks",
+        "👩🏻‍🏫 GPT-5 Mini + Claude 3.5 Haiku - Modelos enterprise",
+        "🪪 1,000 conversaciones empresariales por mes",
+        "🔒 Soporte 24/7 con SLA garantizado",
+        "📈 Reportes ejecutivos y analytics avanzados",
+        "🏢 Onboarding personalizado",
+        "💼 Account Manager dedicado",
     ],
     extra: [
-      "$ 69 mxn por cada 100 conversaciones extra",
+      "Solo $59 MXN por cada 100 conversaciones extra",
+      "💰 Se paga solo con 30 leads calificados/mes"
     ],
     cardClass: "bg-clear text-black border border-outlines",
     arrBoxClass: "bg-cloud/10 text-[#5FAFA8] border-cloud",
@@ -115,12 +128,12 @@ export const PricingCards = () => {
             plan.highlight && "scale-105 z-10 shadow-2xl"
           )}
         >
-          <h3 className={cn("text-3xl font-bold mb-2", plan.highlight ? "text-white" : "text-black")}>{plan.name}</h3>
-          <p className={cn("mb-4 text-lg", plan.highlight ? "text-white/90" : "text-gray-700")}>{plan.description}</p>
+          <h3 className={cn("text-3xl font-bold mb-2", plan.name === "Free" ? "text-white" : "text-black")}>{plan.name}</h3>
+          <p className={cn("mb-4 text-lg", plan.name === "Free" ? "text-white/90" : "text-gray-700")}>{plan.description}</p>
           <div className="flex items-end gap-2 mb-4">
-            <span className={cn("text-4xl font-bold", plan.highlight ? "text-white" : "text-black")}>{plan.price}</span>
+            <span className={cn("text-4xl font-bold", plan.name === "Free" ? "text-white" : "text-black")}>{plan.price}</span>
             <span className="font-semibold text-lg">MXN</span>
-            <span className={cn("text-lg", plan.highlight ? "text-white/80" : "text-gray-500")}>{plan.priceNote}</span>
+            <span className={cn("text-lg", plan.name === "Free" ? "text-white/80" : "text-gray-500")}>{plan.priceNote}</span>
           </div>
           {plan.button}
           <div className={cn("mt-6 mb-2 font-semibold", plan.arrClass)}>{plan.arr}</div>
@@ -130,7 +143,7 @@ export const PricingCards = () => {
               {plan.includes.map((inc) => (
                 <li key={inc} className="flex items-center gap-2">
                 
-                  <span className={plan.highlight ? "text-white" : "text-black"}>{inc}</span>
+                  <span className={plan.name === "Free" ? "text-white" : "text-black"}>{inc}</span>
                 </li>
               ))}
             </ul>

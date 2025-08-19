@@ -88,6 +88,32 @@ const AVAILABLE_TOOLS: ToolDefinition[] = [
         required: ["data_type"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_payment_link",
+      description: "Genera un link de pago de Stripe usando la integración configurada del chatbot. Úsala cuando el usuario solicite crear un cobro, factura, o link de pago para productos/servicios.",
+      parameters: {
+        type: "object",
+        properties: {
+          amount: {
+            type: "number",
+            description: "Monto a cobrar en la moneda especificada (ej: 100 para $100 MXN)"
+          },
+          description: {
+            type: "string", 
+            description: "Descripción del producto o servicio a cobrar"
+          },
+          currency: {
+            type: "string",
+            description: "Código de moneda (mxn, usd, etc)",
+            default: "mxn"
+          }
+        },
+        required: ["amount", "description"]
+      }
+    }
   }
 ];
 
@@ -233,6 +259,71 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
         });
         break;
       }
+
+      case "generate_payment_link": {
+        console.log(`🔧 Modelo solicitó herramientas: [ 'generate_payment_link' ]`);
+        try {
+          const { amount, description, currency = 'mxn' } = args;
+          
+          // Obtener la integración de Stripe activa para este chatbot
+          const { getActiveStripeIntegration } = await import("server/chatbot/integrationModel.server");
+          const stripeIntegration = await getActiveStripeIntegration(chatbotId);
+          
+          if (!stripeIntegration || !stripeIntegration.stripeApiKey) {
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: "tool",
+              name: "generate_payment_link",
+              content: JSON.stringify({
+                success: false,
+                error: "No hay integración de Stripe configurada o activa",
+                suggestion: "Configura tu integración de Stripe en las configuraciones del chatbot"
+              })
+            });
+            break;
+          }
+          
+          // Importar la función de pagos
+          const { createQuickPaymentLink } = await import("server/integrations/stripe-payments");
+          
+          const paymentUrl = await createQuickPaymentLink(
+            stripeIntegration.stripeApiKey,
+            amount,
+            description,
+            currency
+          );
+
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: "tool",
+            name: "generate_payment_link",
+            content: JSON.stringify({
+              success: true,
+              payment_url: paymentUrl,
+              amount: amount,
+              currency: currency.toUpperCase(),
+              description: description,
+              formatted_amount: new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: currency.toUpperCase(),
+              }).format(amount)
+            })
+          });
+        } catch (error) {
+          console.error("Error generating payment link:", error);
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: "tool",
+            name: "generate_payment_link",
+            content: JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : 'Error generating payment link',
+              suggestion: "Verifica que la integración de Stripe esté correctamente configurada"
+            })
+          });
+        }
+        break;
+      }
       
       default:
         toolResults.push({
@@ -273,10 +364,17 @@ export async function callGhostyWithTools(
     role: "system",
     content: `Eres Ghosty 👻, asistente inteligente de Formmy.
 
+**CONTEXTO IMPORTANTE DE ROLES**:
+- El usuario que te habla es el DUEÑO del negocio/empresa que usa Formmy
+- Tú eres SU asistente personal para ayudarle a gestionar su negocio
+- Cuando generes links de pago, son para que ÉL cobre a SUS clientes
+- Habla en segunda persona dirigiéndote al dueño del negocio
+
 **CAPACIDADES ESPECIALES**:
 - Tienes acceso a herramientas que puedes usar automáticamente
 - Puedes buscar información actualizada en la web
 - Puedes acceder a datos del usuario (cuando estén disponibles)
+- Puedes generar links de pago de Stripe para que cobres a tus clientes
 
 **PATRÓN DE USO DE HERRAMIENTAS**:
 1. Cuando necesites información actualizada, usa las herramientas disponibles
@@ -290,7 +388,8 @@ export async function callGhostyWithTools(
 **REGLAS**:
 - USA las herramientas cuando sea necesario, no adivines
 - Sé transparente y narra tus acciones
-- Mantén un tono conversacional
+- Mantén un tono conversacional y profesional
+- Habla como asistente del dueño del negocio
 
 **FORMATO**:
 - Respuestas concisas y útiles
@@ -479,12 +578,15 @@ export async function callGhostyWithTools(
         
         console.log('✅ Final response received, has content:', !!finalChoice?.message?.content);
         console.log('📝 Content length:', finalChoice?.message?.content?.length || 0);
+        console.log('🔍 Full finalData structure:', JSON.stringify(finalData, null, 2));
         
         if (finalChoice?.message?.content) {
           const finalContent = finalChoice.message.content;
+          console.log('📄 Final content preview:', finalContent.substring(0, 200));
           
           // Si necesitamos streaming para la respuesta final
           if (onChunk) {
+            console.log('📡 Streaming final content word by word...');
             const words = finalContent.split(' ');
             
             for (let i = 0; i < words.length; i++) {
@@ -492,6 +594,9 @@ export async function callGhostyWithTools(
               onChunk(chunk);
               await new Promise(resolve => setTimeout(resolve, 15));
             }
+            console.log('✅ Streaming completed');
+          } else {
+            console.log('⚠️ No onChunk callback provided, content will be returned directly');
           }
           
           return {
@@ -500,7 +605,7 @@ export async function callGhostyWithTools(
             sources: allSources.length > 0 ? allSources : undefined
           };
         } else {
-          console.log('⚠️ No content in final response:', finalData);
+          console.log('⚠️ No content in final response:', JSON.stringify(finalData, null, 2));
         }
       } else {
         const errorText = await finalResponse.text();

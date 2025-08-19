@@ -1,14 +1,12 @@
 ---
 title: "¿Qué es la temperatura en la configuración de un agente de IA?"
 excerpt: "Descubre cómo el parámetro de temperatura afecta el comportamiento de los modelos de lenguaje y cómo ajustarlo para obtener los mejores resultados en tus interacciones con IA."
-date: "2025-08-17"
-tags: ["ia", "configuración", "modelos-de-lenguaje", "inteligencia-artificial", "ajuste-de-parámetros"]
+date: "2025-08-18"
+tags: ["IA", "configuración", "modelos"]
 author: "Equipo Formmy"
-image: "/home/temperatura-ia-config.jpg"
-category: "blog"
+image: "/blogposts/temperatura.webp"
+category: "article"
 ---
-
-# ¿Qué es la temperatura en la configuración de un agente de IA?
 
 La temperatura es uno de los parámetros más importantes al configurar un modelo de lenguaje de IA, pero ¿qué significa exactamente y cómo afecta las respuestas que recibes? En este artículo, exploraremos este concepto fundamental en el mundo de la inteligencia artificial.
 
@@ -62,18 +60,12 @@ Para restablecer tu contraseña, sigue estos pasos:
 
 ## 🔧 Cómo ajustar la temperatura en tu agente de IA
 
-En Formmy, puedes ajustar la temperatura desde el panel de configuración de tu agente:
+En Formmy, puedes ajustar la temperatura desde la configuración de tu agente:
 
-1. Ve a la configuración de tu agente
-2. Busca la sección "Parámetros del modelo"
-3. Ajusta el control deslizante de temperatura
-4. Prueba diferentes valores y observa los resultados
-
-## ⚖️ Temperatura vs. Otros Parámetros
-
-- **Top-p (núcleo de muestreo)**: Controla la diversidad de las respuestas de manera más sofisticada
-- **Frecuencia y presencia**: Afectan cómo se manejan las repeticiones
-- **Mejor de N**: Selecciona entre múltiples respuestas generadas
+1. **Ve al detalle de tu chatbot**
+2. **Busca la sección "Preview" > "Agente"**
+3. **Ajusta el nivel de temperatura**
+4. **Prueba diferentes valores y observa los resultados**
 
 ## 💡 Consejos Prácticos
 
@@ -82,32 +74,8 @@ En Formmy, puedes ajustar la temperatura desde el panel de configuración de tu 
 3. **Para brainstorming**: Experimenta con 1.0-1.2
 4. **Siempre prueba**: Ajusta y evalúa con casos reales
 
-## 📊 Ejemplo de Código
-
-```python
-# Ejemplo de configuración de un agente con temperatura ajustable
-from transformers import pipeline
-
-generator = pipeline('text-generation', model='gpt-3')
-
-def generate_response(prompt, temperature=0.7):
-    response = generator(
-        prompt,
-        max_length=150,
-        num_return_sequences=1,
-        temperature=temperature,
-        top_p=0.9,
-        do_sample=True
-    )
-    return response[0]['generated_text']
-
-# Uso con diferentes temperaturas
-print("Respuesta conservadora:", generate_response("¿Qué es la inteligencia artificial?", temperature=0.3))
-print("\nRespuesta creativa:", generate_response("¿Qué es la inteligencia artificial?", temperature=0.9))
-```
-
 ## Conclusión
 
 Entender y ajustar correctamente la temperatura puede marcar la diferencia entre un agente de IA que parece robótico y uno que se siente natural y útil. Experimenta con diferentes configuraciones para encontrar el equilibrio perfecto para tu caso de uso específico.
 
-¿Listo para optimizar tu agente de IA? [Prueba diferentes configuraciones] y descubre cómo pequeños ajustes pueden mejorar significativamente las interacciones con tus usuarios.
+Prueba diferentes configuraciones y descubre cómo pequeños ajustes pueden mejorar significativamente las interacciones con tus usuarios.

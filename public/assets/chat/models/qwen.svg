@@ -1,5 +1,21 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="24" height="24" rx="4" fill="#00A0D8"/>
-  <path d="M12 6L6 12H10L12 10L14 12H18L12 6Z" fill="white"/>
-  <path d="M12 18L18 12H14L12 14L10 12H6L12 18Z" fill="white"/>
+  <defs>
+    <linearGradient id="qwenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E40AF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E3A8A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Fondo redondeado -->
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#qwenGrad)"/>
+  
+  <!-- Logo Q estilizado -->
+  <circle cx="12" cy="11" r="5" stroke="white" stroke-width="2.5" fill="none"/>
+  <path d="M14.5 13.5L17 16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Punto interno -->
+  <circle cx="12" cy="11" r="1.5" fill="white"/>
+  
+  <!-- Detalles tech -->
+  <rect x="16" y="6" width="2" height="1" rx="0.5" fill="#00D4FF"/>
+  <rect x="6" y="17" width="2" height="1" rx="0.5" fill="#00D4FF"/>
 </svg>

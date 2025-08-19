@@ -1,10 +1,11 @@
-import { ChatbotStatus } from "@prisma/client";
+import { ChatbotStatus, Plans } from "@prisma/client";
 import type { Chatbot, ContextItem } from "@prisma/client";
 import { nanoid } from "nanoid";
 import { db } from "~/utils/db.server";
 import {
   validateChatbotLimit,
   validateAvailableModel,
+  isUserInTrial,
 } from "./planLimits.server";
 import { validateContextSizeLimit } from "./planLimits.server";
 import {
@@ -21,7 +22,7 @@ export async function createChatbot({
   userId,
   personality,
   welcomeMessage,
-  aiModel = "mistralai/mistral-small-3.2-24b-instruct",
+  aiModel,
   primaryColor,
   theme,
   temperature = 0.7,
@@ -46,14 +47,34 @@ export async function createChatbot({
     );
   }
 
-  // Validar modelo de IA disponible
-  const modelValidation = await validateAvailableModel(userId, aiModel);
-  if (!modelValidation.isAvailable) {
-    throw new Error(
-      `El modelo ${aiModel} no está disponible en tu plan actual. Modelos disponibles: ${modelValidation.availableModels.join(
-        ", "
-      )}`
-    );
+  // Obtener información del usuario y trial
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { plan: true },
+  });
+
+  if (!user) {
+    throw new Error(`Usuario con ID ${userId} no encontrado`);
+  }
+
+  const { inTrial } = await isUserInTrial(userId);
+  
+  // Determinar el modelo según el plan del usuario
+  let finalAiModel = aiModel;
+  
+  // Si es FREE sin trial, el modelo debe ser null
+  if (user.plan === Plans.FREE && !inTrial) {
+    finalAiModel = null;
+  } else if (finalAiModel) {
+    // Solo validar el modelo si no es null
+    const modelValidation = await validateAvailableModel(userId, finalAiModel);
+    if (!modelValidation.isAvailable) {
+      throw new Error(
+        `El modelo ${finalAiModel} no está disponible en tu plan actual. Modelos disponibles: ${modelValidation.availableModels.join(
+          ", "
+        )}`
+      );
+    }
   }
 
   // Generate a unique slug based on the name
@@ -67,7 +88,7 @@ export async function createChatbot({
       userId,
       personality,
       welcomeMessage,
-      aiModel,
+      aiModel: finalAiModel,
       primaryColor,
       theme,
       temperature,
@@ -87,7 +108,7 @@ export async function createChatbot({
  */
 export async function updateChatbot(
   id: string,
-  data: Partial<Omit<Chatbot, "id" | "userId" | "createdAt" | "updatedAt">>
+  data: Partial<Omit<Chatbot, "id" | "slug" | "userId" | "createdAt" | "updatedAt">>
 ): Promise<Chatbot> {
   // Si se está actualizando el modelo de IA, validar que esté disponible para el plan
   if (data.aiModel) {

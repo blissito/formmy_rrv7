@@ -1,14 +1,12 @@
 ---
-title: "Guía Definitiva de Prompt Engineering para Chatbots de IA"
+title: "Guía definitiva de Prompt Engineering para Chatbots de IA"
 excerpt: "Domina el arte de crear prompts efectivos para obtener las mejores respuestas de tu chatbot de IA y mejorar la experiencia de usuario."
 date: "2025-08-17"
-tags: ["ia", "chatbot", "productividad", "automatización"]
+tags: ["IA", "Chatbot", "Prompts", "Automatización"]
 author: "Equipo Formmy"
-image: "/home/blog-ia-prompts.webp"
-category: "blog"
+image: "/blogposts/prompt.webp"
+category: "article"
 ---
-
-# Guía Definitiva de Prompt Engineering para Chatbots de IA
 
 En la era de la inteligencia artificial, la calidad de tus prompts determina directamente la calidad de las respuestas que recibes. Un buen prompt puede ser la diferencia entre una interacción frustrante y una experiencia verdaderamente útil.
 
@@ -57,24 +55,34 @@ Crea un mensaje de bienvenida persuasivo para nuestra página de inicio.
 
 ## 🛠️ Plantillas de Prompts Efectivos
 
-### Para Generación de Contenido
+### Para Agente de Soporte
 ```
-Eres un [tipo de experto] especializado en [área específica]. 
-Crea un [tipo de contenido] sobre [tema] que sea [características deseables].
-Incluye [elementos específicos a incluir].
-El tono debe ser [tono deseado].
+Eres un experto en servicio al cliente con [X] años de experiencia en soporte técnico. Tu objetivo es resolver consultas de manera clara y eficiente.
+
+Instrucciones:
+1. Identifica rápidamente el problema del usuario
+2. Proporciona soluciones paso a paso
+3. Usa un tono empático y profesional
+4. Si el problema es complejo, ofrece escalar el caso
+5. Incluye enlaces a documentación relevante cuando sea necesario
+
+Ejemplo de respuesta:
+"Entiendo que estás teniendo problemas con [problema]. Vamos a solucionarlo juntos. Primero, por favor verifica [paso 1]. Luego, [paso 2]. Si el problema persiste, estaré encantado de escalar tu caso a nuestro equipo técnico."
 ```
 
-### Para Análisis de Datos
+### Para Agente de Ventas
 ```
-Analiza el siguiente conjunto de datos sobre [tema]:
-[pegar datos o describirlos]
+Eres un asesor comercial experto con [X] años de experiencia en ventas. Tu objetivo es guiar al cliente hacia la mejor solución para sus necesidades.
 
-Por favor:
-1. Identifica tendencias clave
-2. Destaca hallazgos inesperados
-3. Proporciona recomendaciones basadas en los datos
-4. Presenta los resultados en una tabla clara
+Estructura de respuesta:
+1. Saludo cordial y personalizado
+2. Preguntas para entender necesidades específicas
+3. Presentación de soluciones adecuadas
+4. Manejo de objeciones
+5. Cierre con llamada a la acción clara
+
+Ejemplo de respuesta:
+"¡Hola [Nombre]! Gracias por contactarnos. Para ofrecerte la mejor solución, ¿podrías contarme más sobre [necesidad específica]? Esto me ayudará a recomendarte exactamente lo que necesitas. Nuestro producto [X] podría ser perfecto para ti porque [beneficios específicos]. ¿Te gustaría agendar una demostración personalizada?"
 ```
 
 ## 📈 Mejores Prácticas para el Éxito
@@ -89,4 +97,4 @@ Por favor:
 
 Dominar el arte del prompt engineering es esencial para aprovechar al máximo los chatbots de IA. Con práctica y refinamiento constante, podrás crear interacciones más efectivas y obtener resultados de mayor calidad en menos tiempo.
 
-¿Listo para llevar tus habilidades de prompt engineering al siguiente nivel? ¡Empieza a experimentar hoy mismo!
+¡Empieza a experimentar hoy mismo!

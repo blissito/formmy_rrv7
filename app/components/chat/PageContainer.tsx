@@ -18,6 +18,7 @@ import UsersIcon from "../ui/icons/Users";
 import { motion } from "framer-motion";
 import EditIcon from "../ui/icons/Edit";
 import { type AgentType } from "./common/AgentDropdown";
+import { getDefaultModelForPlan } from "~/utils/aiModels";
 
 // Context para compartir estado entre PreviewForm y ChatPreview
 interface PreviewContextType {
@@ -29,6 +30,8 @@ interface PreviewContextType {
   setTemperature: (temp: number) => void;
   instructions: string;
   setInstructions: (instructions: string) => void;
+  customInstructions: string;
+  setCustomInstructions: (customInstructions: string) => void;
   name: string;
   setName: (name: string) => void;
   primaryColor: string;
@@ -395,7 +398,7 @@ export const EditionPair = ({
 }) => {
   // Estado compartido para el tab Preview
   const [selectedModel, setSelectedModel] = useState(
-    chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free"
+    chatbot.aiModel || getDefaultModelForPlan(user.plan)
   );
   const [selectedAgent, setSelectedAgent] = useState<AgentType>(
     (chatbot.personality as AgentType) || "sales"
@@ -418,10 +421,13 @@ export const EditionPair = ({
   );
   const [avatarUrl, setAvatarUrl] = useState(chatbot.avatarUrl || "");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [customInstructions, setCustomInstructions] = useState(
+    chatbot.customInstructions || ""
+  );
 
   // Sincronizar el estado del contexto cuando cambien los datos del loader
   useEffect(() => {
-    setSelectedModel(chatbot.aiModel || "mistralai/mistral-small-3.2-24b-instruct:free");
+    setSelectedModel(chatbot.aiModel || getDefaultModelForPlan(user.plan));
     setSelectedAgent((chatbot.personality as AgentType) || "sales");
     setTemperature(chatbot.temperature || 1);
     setInstructions(chatbot.instructions || "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios.");
@@ -430,7 +436,8 @@ export const EditionPair = ({
     setWelcomeMessage(chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?");
     setGoodbyeMessage(chatbot.goodbyeMessage || "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte.");
     setAvatarUrl(chatbot.avatarUrl || "");
-  }, [chatbot]);
+    setCustomInstructions(chatbot.customInstructions || "");
+  }, [chatbot, user.plan]);
 
   const contextValue: PreviewContextType = {
     selectedModel,
@@ -441,6 +448,8 @@ export const EditionPair = ({
     setTemperature,
     instructions,
     setInstructions,
+    customInstructions,
+    setCustomInstructions,
     name,
     setName,
     primaryColor,

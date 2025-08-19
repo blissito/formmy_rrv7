@@ -17,6 +17,8 @@ interface AgentFormProps {
   handleTemperatureChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   instructions: string;
   handleInstructionsChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  customInstructions?: string;
+  handleCustomInstructionsChange?: (value: string) => void;
 }
 
 export const AgentForm = ({
@@ -29,9 +31,10 @@ export const AgentForm = ({
   handleTemperatureChange,
   instructions,
   handleInstructionsChange,
+  customInstructions = "",
+  handleCustomInstructionsChange,
 }: AgentFormProps) => {
   const [showBasePrompt, setShowBasePrompt] = useState(false);
-  const [customInstructions, setCustomInstructions] = useState("");
   const [copied, setCopied] = useState(false);
   const basePrompt = getAgentPrompt(selectedAgent);
   
@@ -49,8 +52,9 @@ export const AgentForm = ({
     }
   }, [selectedAgent, customInstructions]);
 
-  const handleCustomInstructionsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setCustomInstructions(e.target.value);
+  const handleCustomInstructionsChangeLocal = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    handleCustomInstructionsChange?.(value);
   };
 
   const copyToClipboard = () => {
@@ -163,7 +167,7 @@ export const AgentForm = ({
           </div>
           <textarea
             value={customInstructions}
-            onChange={handleCustomInstructionsChange}
+            onChange={handleCustomInstructionsChangeLocal}
             placeholder="Añade instrucciones específicas para tu negocio, productos, tono de voz, restricciones, etc."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
             rows={4}
@@ -177,7 +181,7 @@ export const AgentForm = ({
               <button
                 key={tag}
                 type="button"
-                onClick={() => setCustomInstructions(prev => prev + ` [${tag}]`)}
+                onClick={() => handleCustomInstructionsChange?.(customInstructions + ` [${tag}]`)}
                 className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors"
               >
                 + {tag}

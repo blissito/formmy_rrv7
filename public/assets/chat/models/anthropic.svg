@@ -1,4 +1,17 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="12" cy="12" r="10" fill="#D6409F"/>
-  <path d="M8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12Z" fill="white"/>
+  <defs>
+    <linearGradient id="anthropicGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E97749;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CC5A2F;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Fondo redondeado -->
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#anthropicGrad)"/>
+  
+  <!-- Letra A estilizada -->
+  <path d="M8 17L12 7L16 17" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M9.5 14H14.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Punto distintivo -->
+  <circle cx="12" cy="5.5" r="1" fill="white"/>
 </svg>

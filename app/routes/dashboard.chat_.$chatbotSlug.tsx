@@ -8,6 +8,8 @@ import { useChipTabs } from "~/components/chat/common/ChipTabs";
 import { db } from "../utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
+import { isUserInTrial, checkTrialExpiration, applyFreeRestrictions } from "server/chatbot/planLimits.server";
+import { Plans } from "@prisma/client";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -44,6 +46,38 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     const errorMessage = accessValidation.restrictionReason || "No tienes acceso a este chatbot";
     const status = accessValidation.restrictionReason?.includes("límite") ? 402 : 403;
     throw new Response(errorMessage, { status });
+  }
+
+  // Verificar si el usuario TRIAL ha expirado y moverlo a FREE
+  if (user.plan === Plans.TRIAL) {
+    const { isExpired } = await checkTrialExpiration(user.id);
+    
+    if (isExpired) {
+      // Mover usuario a FREE automáticamente
+      await db.user.update({
+        where: { id: user.id },
+        data: { plan: Plans.FREE },
+      });
+      
+      // Aplicar restricciones FREE: desactivar chatbots y formmys excedentes
+      await applyFreeRestrictions(user.id);
+      
+      // Actualizar el usuario local para reflejar el cambio
+      user.plan = Plans.FREE;
+    }
+  }
+
+  // Verificar si el usuario FREE sin trial debería tener modelo null
+  if (user.plan === Plans.FREE) {
+    const { inTrial } = await isUserInTrial(user.id);
+    
+    // Si no está en trial y tiene un modelo asignado, actualizarlo a null
+    if (!inTrial && chatbot.aiModel !== null) {
+      chatbot = await db.chatbot.update({
+        where: { id: chatbot.id },
+        data: { aiModel: null },
+      });
+    }
   }
 
   const integrations = await db.integration.findMany({

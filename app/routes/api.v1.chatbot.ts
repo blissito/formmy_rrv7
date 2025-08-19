@@ -1,51 +1,5 @@
-import * as mammoth from "mammoth";
-import * as XLSX from "xlsx";
-import {
-  createChatbot,
-  updateChatbot,
-  getChatbotById,
-  getChatbotBySlug,
-  getChatbotsByUserId,
-  removeContextItem,
-} from "../../server/chatbot/chatbotModel.server";
-import {
-  activateChatbot,
-  deactivateChatbot,
-  setToDraftMode,
-  markChatbotAsDeleted,
-  getChatbotState,
-} from "../../server/chatbot/chatbotStateManager.server";
-import { validateChatbotCreationAccess } from "../../server/chatbot/chatbotAccess.server";
-import { getChatbotBrandingConfigById } from "../../server/chatbot/brandingConfig.server";
-import {
-  getChatbotUsageStats,
-  checkMonthlyUsageLimit,
-} from "../../server/chatbot/usageTracking.server";
-import {
-  addFileContext,
-  addUrlContext,
-  addTextContext,
-  addQuestionContext,
-  updateQuestionContext,
-  updateTextContext,
-  getChatbotContexts,
-} from "../../server/chatbot/contextManager.server";
-import {
-  createIntegration,
-  getIntegrationsByChatbotId,
-  updateIntegration,
-  toggleIntegrationStatus,
-  deleteIntegration,
-} from "../../server/chatbot/integrationModel.server";
-import {
-  validateUserAIModelAccess,
-  getUserPlanFeatures,
-  DEFAULT_CHATBOT_CONFIG,
-  generateRandomChatbotName,
-} from "~/utils/chatbot.server";
-import { getUserOrRedirect } from "server/getUserUtils.server";
-import { db } from "~/utils/db.server";
-import { generateFallbackModels } from "~/utils/aiModels";
+// This file will only export the loader and action functions
+
 
 export async function loader({ request }: any) {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {
@@ -55,6 +9,58 @@ export async function loader({ request }: any) {
 
 export async function action({ request }: any) {
   try {
+    // Import server utilities dynamically
+    const {
+      mammoth,
+      XLSX,
+      IntegrationType,
+      createChatbot,
+      updateChatbot,
+      getChatbotById,
+      getChatbotBySlug,
+      getChatbotsByUserId,
+      removeContextItem,
+      activateChatbot,
+      deactivateChatbot,
+      setToDraftMode,
+      markChatbotAsDeleted,
+      getChatbotState,
+      validateChatbotCreationAccess,
+      getChatbotBrandingConfigById,
+      getChatbotUsageStats,
+      checkMonthlyUsageLimit,
+      addFileContext,
+      addUrlContext,
+      addTextContext,
+      addQuestionContext,
+      updateQuestionContext,
+      updateTextContext,
+      getChatbotContexts,
+      createIntegration,
+      upsertIntegration,
+      getIntegrationsByChatbotId,
+      updateIntegration,
+      toggleIntegrationStatus,
+      deleteIntegration,
+      getActiveStripeIntegration,
+      createQuickPaymentLink,
+      validateUserAIModelAccess,
+      getUserPlanFeatures,
+      DEFAULT_CHATBOT_CONFIG,
+      generateRandomChatbotName,
+      getDefaultAIModelForUser,
+      getUserOrRedirect,
+      db,
+      generateFallbackModels,
+      getSmartModelForPro,
+      isAnthropicDirectModel,
+      buildEnrichedSystemPrompt,
+      estimateTokens,
+      AIProviderManager,
+      truncateConversationHistory,
+      createProviderManager
+    } = await import("~/utils/chatbot-api.server");
+
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
     const user = await getUserOrRedirect(request);
@@ -76,7 +82,7 @@ export async function action({ request }: any) {
           (formData.get("welcomeMessage") as string) ||
           DEFAULT_CHATBOT_CONFIG.welcomeMessage;
         const aiModel =
-          (formData.get("aiModel") as string) || DEFAULT_CHATBOT_CONFIG.aiModel;
+          (formData.get("aiModel") as string) || await getDefaultAIModelForUser(user.id);
         const primaryColor =
           (formData.get("primaryColor") as string) ||
           DEFAULT_CHATBOT_CONFIG.primaryColor;
@@ -95,7 +101,7 @@ export async function action({ request }: any) {
           return new Response(
             JSON.stringify({
               success: false,
-              error: `Has alcanzado el límite de ${validation.maxAllowed} chatbot${validation.maxAllowed > 1 ? "s" : ""} para tu plan ${validation.plan.toLowerCase()}.`,
+              error: `Has alcanzado el límite de ${validation.maxAllowed} chatbot${validation.maxAllowed > 1 ? "s" : ""} para tu plan ${validation.plan?.toLowerCase() || 'actual'}.`,
               currentCount: validation.currentOwnedCount,
               maxAllowed: validation.maxAllowed,
               isPro: validation.isPro,
@@ -105,8 +111,8 @@ export async function action({ request }: any) {
           );
         }
 
-        // Validar modelo de IA si se especifica uno diferente al por defecto
-        if (aiModel !== DEFAULT_CHATBOT_CONFIG.aiModel) {
+        // Validar modelo de IA si no es null
+        if (aiModel) {
           const modelAccess = await validateUserAIModelAccess(user.id);
           if (!modelAccess.availableModels.includes(aiModel)) {
             return new Response(
@@ -211,6 +217,10 @@ export async function action({ request }: any) {
         }
         const instructions = formData.get("instructions") as string;
         if (instructions) updateData.instructions = instructions;
+        const customInstructions = formData.get("customInstructions") as string;
+        if (customInstructions !== null && customInstructions !== undefined) {
+          updateData.customInstructions = customInstructions;
+        }
         const isActive = formData.get("isActive");
         if (isActive !== null && isActive !== undefined && isActive !== "") {
           updateData.isActive = isActive === "true" || isActive === true;
@@ -539,7 +549,7 @@ export async function action({ request }: any) {
             // Extraer contenido basado en el tipo de archivo
             if (
               fileType === "application/pdf" ||
-              fileName.toLowerCase().endsWith(".pdf")
+              (fileName && fileName.toLowerCase().endsWith(".pdf"))
             ) {
               // Procesar PDF con unpdf
               const arrayBuffer = await file.arrayBuffer();
@@ -581,7 +591,7 @@ export async function action({ request }: any) {
                 // No hay fallback necesario con pdf2json
                 content = `[ERROR_PDF: ${pdfError instanceof Error ? pdfError.message : "Error desconocido"} - archivo: ${fileName}]`;
               }
-            } else if (fileName.toLowerCase().endsWith(".docx")) {
+            } else if (fileName && fileName.toLowerCase().endsWith(".docx")) {
               // Procesar DOCX con mammoth
               const arrayBuffer = await file.arrayBuffer();
               const buffer = Buffer.from(arrayBuffer);
@@ -592,7 +602,7 @@ export async function action({ request }: any) {
               } catch (docxError) {
                 content = `[ERROR_DOCX: No se pudo extraer texto del archivo ${fileName}]`;
               }
-            } else if (fileName.toLowerCase().endsWith(".xlsx")) {
+            } else if (fileName && fileName.toLowerCase().endsWith(".xlsx")) {
               // Procesar XLSX con xlsx
               const arrayBuffer = await file.arrayBuffer();
 
@@ -612,8 +622,8 @@ export async function action({ request }: any) {
               }
             } else if (
               fileType.includes("text") ||
-              fileName.toLowerCase().endsWith(".txt") ||
-              fileName.toLowerCase().endsWith(".csv")
+              (fileName && fileName.toLowerCase().endsWith(".txt")) ||
+              (fileName && fileName.toLowerCase().endsWith(".csv"))
             ) {
               // Archivos de texto plano
               content = await file.text();
@@ -795,15 +805,37 @@ export async function action({ request }: any) {
       // Integraciones
       case "create_integration": {
         const chatbotId = formData.get("chatbotId") as string;
-        const platform = formData.get("platform") as any;
+        const platform = formData.get("platform") as IntegrationType;
         const token = formData.get("token") as string | undefined;
+        
+        // Manejar datos específicos según la plataforma
+        let whatsappData, googleCalendarData, stripeData;
+        
+        if (platform === "STRIPE") {
+          stripeData = {
+            stripeApiKey: formData.get("stripeApiKey") as string,
+            stripePublishableKey: formData.get("stripePublishableKey") as string,
+            stripeWebhookSecret: formData.get("stripeWebhookSecret") as string,
+          };
+        }
+        
         try {
-          const integration = await createIntegration(
+          const integration = await upsertIntegration(
             chatbotId,
             platform,
-            token
+            token,
+            whatsappData,
+            googleCalendarData,
+            stripeData
           );
-          return new Response(JSON.stringify({ success: true, integration }), {
+          
+          // Si es Stripe y tiene API key, activarla inmediatamente
+          let finalIntegration = integration;
+          
+          if (platform === "STRIPE" && stripeData?.stripeApiKey) {
+            finalIntegration = await updateIntegration(integration.id, { isActive: true });
+          }
+          return new Response(JSON.stringify({ success: true, integration: finalIntegration }), {
             headers: { "Content-Type": "application/json" },
           });
         } catch (error: any) {
@@ -830,15 +862,33 @@ export async function action({ request }: any) {
       case "update_integration": {
         const integrationId = formData.get("integrationId") as string;
         const token = formData.get("token") as string | undefined;
+        const platform = formData.get("platform") as IntegrationType;
         const isActive =
           formData.get("isActive") !== undefined
             ? formData.get("isActive") === "true"
             : undefined;
+        
+        // Manejar campos específicos de Stripe
+        const updateData: any = { token, isActive };
+        
+        if (formData.get("stripeApiKey")) {
+          updateData.stripeApiKey = formData.get("stripeApiKey") as string;
+        }
+        if (formData.get("stripePublishableKey")) {
+          updateData.stripePublishableKey = formData.get("stripePublishableKey") as string;
+        }
+        if (formData.get("stripeWebhookSecret")) {
+          updateData.stripeWebhookSecret = formData.get("stripeWebhookSecret") as string;
+        }
+        
         try {
-          const integration = await updateIntegration(integrationId, {
-            token,
-            isActive,
-          });
+          let integration = await updateIntegration(integrationId, updateData);
+          
+          // Si es Stripe y se proporciona API key, activar automáticamente
+          if (platform === "STRIPE" && updateData.stripeApiKey) {
+            integration = await updateIntegration(integrationId, { isActive: true });
+          }
+          
           return new Response(JSON.stringify({ success: true, integration }), {
             headers: { "Content-Type": "application/json" },
           });
@@ -1195,12 +1245,77 @@ export async function action({ request }: any) {
         });
       }
 
+      case "update_streaming": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "No tienes permiso para modificar este chatbot",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const enableStreaming = formData.get("enableStreaming") === "true";
+        const streamingSpeed = parseInt(formData.get("streamingSpeed") as string) || 50;
+
+        const updatedChatbot = await db.chatbot.update({
+          where: { id: chatbotId },
+          data: {
+            enableStreaming,
+            streamingSpeed,
+          },
+        });
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            chatbot: updatedChatbot,
+            message: "Configuración de streaming actualizada" 
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
       case "preview_chat": {
+        
         // Chat de preview para el dashboard (no requiere API key del SDK)
         const chatbotId = formData.get("chatbotId") as string;
         const message = formData.get("message") as string;
         const sessionId = formData.get("sessionId") as string;
-        const stream = formData.get("stream") === "true";
+        const conversationHistoryStr = formData.get("conversationHistory") as string;
+        const requestedStream = formData.get("stream") === "true";
+        
+        
+        // Parsear el historial conversacional
+        let conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
+        if (conversationHistoryStr) {
+          try {
+            conversationHistory = JSON.parse(conversationHistoryStr);
+          } catch (e) {
+            console.warn("Error parsing conversation history:", e);
+          }
+        }
+        
+        // Usar funciones de utilidad del archivo server correspondiente
         
         if (!chatbotId || !message) {
           return new Response(
@@ -1225,288 +1340,516 @@ export async function action({ request }: any) {
           );
         }
 
-        // Obtener la API key de OpenRouter del servidor
+        // Detectar si el mensaje requiere herramientas (básico primero)
+        const basicRequiresTools = (() => {
+          const messageLC = message.toLowerCase();
+          const toolIndicators = [
+            // Indicadores de pago
+            'link de pago',
+            'link de stripe',
+            'cobrar',
+            'factura',
+            'payment link',
+            'generar pago',
+            'crear cobro',
+            'enviar factura',
+            'stripe',
+            'pago',
+            'cobro',
+            'invoice',
+            'checkout',
+            // Podemos agregar más herramientas aquí en el futuro
+            'agendar cita',
+            'calendario',
+            'schedule',
+            // Indicadores de cantidad de dinero con intención de cobro
+            /\$\d+/,
+            /\d+\s*(pesos|dolares|usd|mxn)/i,
+            // Indicadores comerciales
+            /servicio.*seo/i,
+            /paquete.*seo/i,
+            /optimizar.*sitio/i,
+            // Indicadores comerciales específicos para generar pagos
+            'quiero contratar',
+            'necesito pagar',
+            'como puedo pagar',
+            'generar link',
+            'crear link',
+            'proceder con el pago'
+          ];
+          
+          return toolIndicators.some(indicator => {
+            if (typeof indicator === 'string') {
+              return messageLC.includes(indicator);
+            } else if (indicator instanceof RegExp) {
+              return indicator.test(message);
+            }
+            return false;
+          });
+        })();
+        
+        
+        // Obtener información de Stripe ANTES de todo para poder loggear correctamente
+        let stripeIntegration = null;
+        try {
+          stripeIntegration = await db.integration.findFirst({
+            where: {
+              chatbotId: chatbot.id,
+              platform: "STRIPE",
+              isActive: true,
+              stripeApiKey: {
+                not: null
+              }
+            },
+          });
+        } catch (error) {
+          console.warn("⚠️ Error checking Stripe integration for testing:", error);
+        }
+
+        // Si requiere herramientas, FORZAR non-streaming para garantizar funcionamiento correcto
+        const stream = requestedStream && (chatbot.enableStreaming !== false) && !basicRequiresTools;
+        
+
+        // Obtener las API keys necesarias
         const openRouterApiKey = process.env.OPENROUTER_API_KEY;
-        if (!openRouterApiKey) {
+        const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+        const openaiApiKey = process.env.CHATGPT_API_KEY;
+        
+        if (!openRouterApiKey && !anthropicApiKey && !openaiApiKey) {
           return new Response(
-            JSON.stringify({ error: "API key de OpenRouter no configurada" }),
+            JSON.stringify({ error: "No se encontraron API keys configuradas" }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
 
-        // Preparar los mensajes con el contexto del chatbot
+        // (stripeIntegration ya obtenido al inicio para logging)
+
+        // Usar función unificada para construir prompt optimizado
+        let enrichedSystemPrompt = buildEnrichedSystemPrompt(chatbot, message, {
+          maxContextTokens: 800, // Límite de emergencia
+          enableLogging: false
+        });
+        
+        // Agregar capacidades de Stripe si está disponible
+        // Solo agregar capacidades de Stripe para planes TRIAL, PRO y ENTERPRISE
+        const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE" || user.plan === "TRIAL";
+        const allowToolsForTesting = true; // DEBUG: Need to see what's happening
+          
+        if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
+          // Agregar capacidades de pago al prompt
+          enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES DE PAGO ===\n";
+          enrichedSystemPrompt += "🔥 PRIORIDAD MÁXIMA: Cuando detectes solicitud de pago, USA INMEDIATAMENTE la herramienta create_payment_link.\n";
+          enrichedSystemPrompt += "CRÍTICO: Tienes acceso a generar links de pago de Stripe.\n\n";
+          
+          // Si detectamos que requiere herramientas, ser más directivo
+          if (basicRequiresTools) {
+            enrichedSystemPrompt += "🚨 MODO HERRAMIENTAS ACTIVO - El usuario quiere generar un pago.\n";
+            enrichedSystemPrompt += "⚡ INSTRUCCIÓN CRÍTICA: USA INMEDIATAMENTE la herramienta create_payment_link SIN PEDIR MÁS INFORMACIÓN.\n";
+            enrichedSystemPrompt += "🎯 Si no hay descripción específica, usa 'Servicios profesionales' como descripción.\n";
+            enrichedSystemPrompt += "🚫 PROHIBIDO: NO preguntes por más detalles, NO pidas confirmación, actúa INMEDIATAMENTE.\n";
+            enrichedSystemPrompt += "💰 OPTIMIZACIÓN: Responde de forma CONCISA (máximo 2 párrafos) para minimizar costos.\n\n";
+          }
+            
+          enrichedSystemPrompt += "**CONTEXTO IMPORTANTE DE ROLES:**\n";
+          enrichedSystemPrompt += "- El usuario que te habla ES un CLIENTE potencial\n";
+          enrichedSystemPrompt += "- Tú representas a la empresa/negocio dueño de este chatbot\n";
+          enrichedSystemPrompt += "- Los links de pago son para que el cliente pague por NUESTROS servicios\n";
+          enrichedSystemPrompt += "- Cuando generes un link, es para cobrarle AL USUARIO por nuestros servicios\n\n";
+          enrichedSystemPrompt += "**Tienes acceso a la herramienta create_payment_link:**\n";
+          enrichedSystemPrompt += "- Úsala cuando el cliente quiera pagar por nuestros servicios\n";
+          enrichedSystemPrompt += "- Cuando mencionen interés en contratar o pagar algo\n";
+          enrichedSystemPrompt += "- Para frases como: 'quiero pagar', 'genera un link', 'cómo puedo pagar'\n\n";
+          enrichedSystemPrompt += "**Cómo responder correctamente:**\n";
+          enrichedSystemPrompt += "1. Identifica qué servicio nuestro quiere contratar el cliente\n";
+          enrichedSystemPrompt += "2. Determina el precio correspondiente (SIEMPRE en pesos mexicanos)\n";
+          enrichedSystemPrompt += "3. Usa format de México: números con PUNTO decimal (ej: 1500.50, NO 1500,50)\n";
+          enrichedSystemPrompt += "4. Genera el link con currency: 'mxn' (peso mexicano)\n";
+          enrichedSystemPrompt += "5. Explica que puede proceder con el pago\n\n";
+          enrichedSystemPrompt += "**Ejemplos CORRECTOS (USA LA HERRAMIENTA INMEDIATAMENTE):**\n";
+          enrichedSystemPrompt += "Cliente: 'Genera un link de pago por $3400'\n";
+          enrichedSystemPrompt += "Tu acción: [USA create_payment_link con amount: 3400, description: 'Servicios profesionales', currency: 'mxn']\n";
+          enrichedSystemPrompt += "Cliente: 'Quiero pagar servicios de SEO por $1000'\n";
+          enrichedSystemPrompt += "Tu acción: [USA create_payment_link con amount: 1000, description: 'Servicios de SEO', currency: 'mxn']\n";
+          enrichedSystemPrompt += "🚫 INCORRECTO: Preguntar '¿qué servicio específico?' - ¡USA LA HERRAMIENTA DIRECTAMENTE!\n\n";
+          enrichedSystemPrompt += "**Frases correctas a usar:**\n";
+          enrichedSystemPrompt += "- 'nuestros servicios'\n";
+          enrichedSystemPrompt += "- 'puedes proceder con el pago'\n";
+          enrichedSystemPrompt += "- 'link para pagar'\n";
+          enrichedSystemPrompt += "- 'pago por [servicio específico]'\n";
+          enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
+        }
+        
         const systemMessage = {
           role: "system",
-          content: chatbot.instructions || "Eres un asistente útil."
+          content: enrichedSystemPrompt
         };
-
-        // Lista de modelos fallback generada automáticamente desde la configuración central
-        const fallbackModels = generateFallbackModels(chatbot.aiModel);
-
-        let openRouterResponse;
-        let lastError;
         
-        // Función para validar si una respuesta es válida (no corrupta)
-        const isValidResponse = (content: string): boolean => {
-          if (!content || content.length < 5) return false;
+        // Función para llamar directamente a Anthropic
+        const callAnthropicDirect = async (messages: Array<{role: string, content: string}>) => {
+          const anthropicMessages = messages.filter(m => m.role !== 'system').map(m => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.content
+          }));
           
-          // Detectar respuestas corruptas por patrones más específicos
-          const corruptPatterns = [
-            // Mezcla de scripts diferentes en distancias cortas
-            /[\u0900-\u097F][\u0041-\u005A\u0061-\u007A]{1,10}[\u0600-\u06FF]/g, // Hindi + Latino + Árabe mezclados
-            /[\u4E00-\u9FFF][\u0041-\u005A\u0061-\u007A]{1,5}[\u0900-\u097F]/g, // Chino + Latino + Hindi mezclados  
-            /[\u0400-\u04FF][\u0041-\u005A\u0061-\u007A]{1,5}[\u0600-\u06FF]/g, // Cirílico + Latino + Árabe
-            /[\u0A80-\u0AFF][\u0041-\u005A\u0061-\u007A]{1,5}[\u30A0-\u30FF]/g, // Gujarati + Latino + Katakana
-            
-            // Patrones específicos del nuevo ejemplo corrupto
-            /[\u0600-\u06FF]{2,}.*[a-zA-Z]{2,}.*[\u4E00-\u9FFF]/g, // Árabe + Latino + Chino (como "۱۰ مرکز...Rand")
-            /\(\w*\d+\w*[=＝]+.*\)/g, // Paréntesis con números y símbolos extraños como "(»,68τεί＝"
-            /\w+‑\w+/g, // Guiones Unicode extraños como "Quick‑burn"
-            /\|\w*\|/g, // Pipe symbols con contenido extraño
-            /\<\|\w+\|/g, // Tokens especiales como "<|reserved_200369|>"
-            /reserved_\d+/g, // Tokens reserved específicos
-            
-            // Palabras truncadas con caracteres especiales pegados
-            /\w+ิ+\w+/g, // Caracteres Thai mezclados
-            /\w+ック+\w+/g, // Katakana mezclado
-            /\w+्या+\w+/g, // Devanagari mezclado
-            
-            // Patrones específicos del primer ejemplo
-            /flickित्र्याक/g, // Mezcla específica del ejemplo anterior
-            /[a-zA-Z]+्[a-zA-Z]+/g, // Latino con diacríticos Devanagari
-            /\w+ष्\w+/g, // Letras con caracteres Devanagari específicos
-            
-            // Strings muy largos sin espacios ni puntuación
-            /[a-zA-Z]{40,}/g, // Strings de letras muy largos sin espacios
-            /\w{50,}/g, // Cualquier carácter de palabra muy largo
-            
-            // Código mezclado con texto
-            /\}\s*\{\s*\w+/g, // Patrones de código mezclado
-            /\w+\.\w+\(\w+/g, // Llamadas de función mezcladas con texto normal
-            /\w+_[A-Z]{3,}/g, // Variables como "_SHOWN", "_BAL" mezcladas
-            
-            // Emojis mezclados extrañamente
-            /[a-zA-Z]+[😉🚀][a-zA-Z]+/g, // Emojis pegados a texto
-            
-            // Múltiples signos de interrogación seguidos
-            /\?\?\?\?+/g, // 4 o más signos de interrogación seguidos
-            
-            // Paréntesis con contenido muy extraño
-            /\([^)]{50,}\)/g, // Paréntesis con más de 50 caracteres dentro
-          ];
+          // Validar y ajustar temperatura para Anthropic (debe estar entre 0-1)
+          const rawTemperature = chatbot.temperature || 0.7;
+          const validTemperature = Math.max(0, Math.min(1, rawTemperature));
           
-          // Ratio de caracteres no-ASCII más estricto
-          const nonAsciiChars = (content.match(/[^\x00-\x7F]/g) || []).length;
-          const suspiciousRatio = nonAsciiChars / content.length;
-          if (suspiciousRatio > 0.4) return false; // Más de 40% caracteres no ASCII
           
-          // Detectar demasiadas palabras muy cortas mezcladas (como "y乐ش", "मुद्द")
-          const shortMixedWords = (content.match(/\s[\w\u0080-\uFFFF]{1,3}\s/g) || []).length;
-          if (shortMixedWords > 10) return false; // Más de 10 palabras muy cortas mezcladas
+          const requestBody = {
+            model: chatbot.aiModel,
+            max_tokens: 1000,
+            temperature: validTemperature,
+            system: enrichedSystemPrompt.substring(0, 4000), // Limitar system prompt para debug
+            messages: anthropicMessages,
+            ...(stream ? { stream: true } : {}) // Solo agregar stream si es true
+          };
           
-          // Detectar tokens especiales de modelos (muy sospechoso)
-          if (/\<\|.*\|\>/g.test(content)) return false; // Tokens como <|reserved_200369|>
-          if (/reserved_\d{6}/g.test(content)) return false; // Números reserved específicos
+          // DEBUG: Log de la request
           
-          // Detectar demasiados emojis mezclados en texto técnico
-          const emojiCount = (content.match(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu) || []).length;
-          if (emojiCount > 5) return false; // Más de 5 emojis es sospechoso para respuestas normales
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': anthropicApiKey!,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify(requestBody)
+          });
           
-          // Detectar demasiados caracteres especiales Unicode mezclados
-          const specialUnicodeCount = (content.match(/[‑–—""''…]/g) || []).length;
-          if (specialUnicodeCount > 10) return false; // Más de 10 caracteres especiales Unicode
+          // DEBUG: Log de la response
           
-          // Detectar si hay demasiados scripts diferentes
-          const hasDevanagari = /[\u0900-\u097F]/.test(content);
-          const hasArabic = /[\u0600-\u06FF]/.test(content);
-          const hasChinese = /[\u4E00-\u9FFF]/.test(content);
-          const hasCyrillic = /[\u0400-\u04FF]/.test(content);
-          const hasJapanese = /[\u30A0-\u30FF\u3040-\u309F]/.test(content);
-          const hasThai = /[\u0E00-\u0E7F]/.test(content);
-          const hasKorean = /[\uAC00-\uD7AF]/.test(content);
-          const hasGreek = /[\u0370-\u03FF]/.test(content);
-          
-          const scriptCount = [hasDevanagari, hasArabic, hasChinese, hasCyrillic, hasJapanese, hasThai, hasKorean, hasGreek].filter(Boolean).length;
-          if (scriptCount > 3) return false; // Más de 3 scripts diferentes es sospechoso
-          
-          // Detectar múltiples signos de interrogación o patrones repetitivos extraños
-          if (/\?\?\?\?+/.test(content)) return false; // 4+ signos de interrogación seguidos
-          if (/\.\.\.\.\.\.\.\.\.\.\.\./g.test(content)) return false; // Muchos puntos seguidos
-          
-          // Detectar tablas o estructuras de datos corruptas
-          if (/\|.*\|.*\|.*\|.*\|/g.test(content) && !/\n/.test(content)) return false; // Pipes sin saltos de línea (tabla corrupta)
-          
-          return !corruptPatterns.some(pattern => pattern.test(content));
+          return response;
         };
 
-        // Intentar con cada modelo hasta que uno funcione
-        for (const model of fallbackModels) {
-          // Saltar deepseek si aparece
-          if (model.includes("deepseek")) continue;
+        // ✅ NUEVO SISTEMA MODULAR DE PROVEEDORES
+        const providerManager = createProviderManager(anthropicApiKey, openRouterApiKey, openaiApiKey);
+        
+        // Usar la información de Stripe ya obtenida para smart routing
+
+        // (stripeIntegration ya obtenido anteriormente)
+
+        // 💰 OPTIMIZACIÓN DE COSTOS: Si detectamos tools de Stripe, usar Haiku (económico y efectivo)
+        const stripeToolsDetected = basicRequiresTools && stripeIntegration?.stripeApiKey;
+        
+        // (La lógica de prompt está ya incluida en la sección anterior)
+        
+        // Smart routing para usuarios PRO: Nano para chat básico, Haiku para integraciones
+        let selectedModel = chatbot.aiModel;
+        
+        // Verificar si el modelo seleccionado soporta herramientas
+        const modelsWithToolSupport = ['gpt-5-nano', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
+        const modelSupportsTools = modelsWithToolSupport.includes(selectedModel);
+
+        const fallbackModels = generateFallbackModels(selectedModel);
+
+        // Preparar tools disponibles si hay Stripe activo Y el modelo soporta herramientas
+        let tools = [];
+        let toolsDisabledWarning = null;
+        
+        // Solo usuarios PRO y ENTERPRISE tienen acceso a herramientas de pago
+        if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
+          if (!modelSupportsTools) {
+            toolsDisabledWarning = `Las integraciones de pago no están disponibles con ${selectedModel}. Usa GPT-5 Nano o Claude Haiku para acceder a herramientas.`;
+          } else {
           
-          try {
-            openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${openRouterApiKey}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": request.headers.get("origin") || "https://formmy.app",
-                "X-Title": "Formmy Chat Preview"
-              },
-              body: JSON.stringify({
-                model: model,
-                messages: [systemMessage, { role: "user", content: message }],
-                temperature: chatbot.temperature || 0.7,
-                stream: stream,
-                max_tokens: 1000 // Limitar tokens para evitar respuestas muy largas
-              })
-            });
-            
-            if (openRouterResponse.ok) {
-              // Si no es streaming, validar la respuesta
-              if (!stream) {
-                const testResult = await openRouterResponse.clone().json();
-                const testContent = testResult.choices?.[0]?.message?.content || "";
-                if (!isValidResponse(testContent)) {
-                  lastError = `Modelo ${model} generó respuesta corrupta`;
-                  console.log(`🚨 RESPUESTA CORRUPTA DETECTADA - Modelo: ${model}`);
-                  console.log(`📝 Contenido corrupto (primeros 200 chars): ${testContent.substring(0, 200)}...`);
-                  console.log(`📊 Longitud total: ${testContent.length} caracteres`);
-                  continue;
+          tools = [{
+            name: "create_payment_link",
+            description: "Crear un link de pago de Stripe para cobrar al cliente",
+            input_schema: {
+              type: "object",
+              properties: {
+                amount: {
+                  type: "number",
+                  description: "Cantidad a cobrar en números (ej: 500, 1000)"
+                },
+                description: {
+                  type: "string", 
+                  description: "Descripción del pago o servicio"
+                },
+                currency: {
+                  type: "string",
+                  enum: ["mxn", "usd"],
+                  description: "Moneda del pago (default: 'mxn' para pesos mexicanos)"
                 }
-              }
-              break; // Si funciona, salir del loop
-            } else {
-              lastError = await openRouterResponse.text();
-              console.log(`Modelo ${model} falló, intentando con siguiente...`);
+              },
+              required: ["amount", "description"]
             }
-          } catch (error) {
-            lastError = error;
-            console.log(`Error con modelo ${model}, intentando con siguiente...`);
+          }];
           }
         }
 
-        if (!openRouterResponse || !openRouterResponse.ok) {
-          return new Response(
-            JSON.stringify({ 
-              error: `Error de OpenRouter: ${lastError || 'Todos los modelos fallaron'}`,
-              triedModels: fallbackModels.filter(m => !m.includes("deepseek"))
+        // Preparar request para el sistema modular
+        const chatRequest = {
+          model: selectedModel,
+          messages: [
+            systemMessage,
+            ...truncateConversationHistory(conversationHistory),
+            { role: "user" as const, content: message }
+          ],
+          temperature: stripeToolsDetected ? 0.1 : (chatbot.temperature || 0.7), // Baja temperatura para herramientas = más obediente
+          maxTokens: stripeToolsDetected ? 300 : 1000, // Reducir tokens para herramientas = menor costo
+          stream: tools.length > 0 ? false : stream, // Forzar non-streaming cuando hay herramientas
+          ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
+        };
+        
+        
+        
+        let apiResponse;
+        let modelUsed = selectedModel;
+        let providerUsed = 'unknown';
+        let usedFallback = false;
+        let lastError;
+        
+        try {
+          if (chatRequest.stream) {
+            // STREAMING con sistema modular
+            const result = await providerManager.chatCompletionStreamWithFallback(
+              chatRequest,
+              fallbackModels.filter(m => !m.includes("deepseek"))
+            );
+            
+            modelUsed = result.modelUsed;
+            providerUsed = result.providerUsed;
+            usedFallback = result.usedFallback;
+            
+            
+            // Convertir el stream modular al formato esperado por el frontend
+            const compatibleStream = new ReadableStream({
+              async start(controller) {
+                const reader = result.stream.getReader();
+                let contentChunks = 0;
+                let accumulatedContent = "";
+                let warningAlreadySent = false;
+                
+                try {
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) {
+                      const doneMessage = 'data: [DONE]\n\n';
+                      controller.enqueue(new TextEncoder().encode(doneMessage));
+                      controller.close();
+                      break;
+                    }
+                    
+                    if (value.content && value.content.trim()) {
+                      contentChunks++;
+                      accumulatedContent += value.content;
+                      
+                      // Detectar si el modelo intentó usar herramientas pero no las tiene disponibles
+                      if (!warningAlreadySent && !modelSupportsTools && /\[.*create_payment_link|\[STRIPE_PAYMENT_REQUEST/i.test(accumulatedContent)) {
+                        const warningMsg = `> ⚠️ **Integración no disponible**
+> 
+> Las herramientas de pago no están disponibles con **${selectedModel}**. 
+> Usa **GPT-5 Nano** o **Claude Haiku** para acceder a integraciones.
+
+---
+
+`;
+                        const warningChunk = {
+                          content: warningMsg
+                        };
+                        const warningData = `data: ${JSON.stringify(warningChunk)}\n\n`;
+                        controller.enqueue(new TextEncoder().encode(warningData));
+                        warningAlreadySent = true;
+                      }
+                      
+                      // Enviar chunk al frontend en el formato que espera
+                      const chunk = {
+                        content: value.content  // Frontend espera content directamente
+                      };
+                      
+                      const chunkData = `data: ${JSON.stringify(chunk)}\n\n`;
+                      controller.enqueue(new TextEncoder().encode(chunkData));
+                    }
+                    
+                    if (value.finishReason) {
+                      // Stream completado por el modelo
+                      const doneMessage = 'data: [DONE]\n\n';
+                      controller.enqueue(new TextEncoder().encode(doneMessage));
+                      controller.close();
+                      break;
+                    }
+                  }
+                } catch (error) {
+                  console.error('❌ Stream error:', error);
+                  controller.error(error);
+                } finally {
+                  reader.releaseLock();
+                }
+              }
+            });
+            
+            return new Response(compatibleStream, {
+              headers: {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive"
+              }
+            });
+            
+          } else {
+            // NON-STREAMING con sistema modular
+            
+            const result = await providerManager.chatCompletionWithFallback(
+              chatRequest,
+              fallbackModels.filter(m => !m.includes("deepseek"))
+            );
+            
+            
+            modelUsed = result.modelUsed;
+            providerUsed = result.providerUsed;
+            usedFallback = result.usedFallback;
+            
+            // Procesar la respuesta para detectar solicitudes de pago o tool calls
+            let finalResponse = result.response.content;
+            
+            // Si el modelo solo hizo tool calls sin contenido, generar respuesta contextual
+            if (finalResponse === 'Sin respuesta' && result.response.toolCalls && result.response.toolCalls.length > 0) {
+              finalResponse = "Perfecto, procesando tu solicitud...";
+            }
+            
+            // Agregar warning si las herramientas no están disponibles
+            if (toolsDisabledWarning) {
+              finalResponse = `⚠️ ${toolsDisabledWarning}\n\n${finalResponse}`;
+            }
+            
+            // Detectar si el modelo intentó usar herramientas pero no las tiene disponibles
+            
+            if (!modelSupportsTools && /\[.*create_payment_link|\[STRIPE_PAYMENT_REQUEST/i.test(finalResponse)) {
+              const warningMsg = `> ⚠️ **Integración no disponible**
+> 
+> Las herramientas de pago no están disponibles con **${selectedModel}**. 
+> Usa **GPT-5 Nano** o **Claude Haiku** para acceder a integraciones.
+
+---`;
+              finalResponse = `${warningMsg}\n\n${finalResponse}`;
+            }
+            
+            
+            // Si la respuesta contiene tool calls, procesarlos
+            if (result.response.toolCalls && result.response.toolCalls.length > 0) {
+              
+              for (const toolCall of result.response.toolCalls) {
+                if (toolCall.name === 'create_payment_link') {
+                  try {
+                    const { amount, description, currency } = toolCall.input;
+                    
+                    
+                    // Usar la integración ya obtenida
+                    if (stripeIntegration && stripeIntegration.stripeApiKey) {
+                      // Generar el link de pago real
+                      const paymentUrl = await createQuickPaymentLink(
+                        stripeIntegration.stripeApiKey,
+                        amount,
+                        description || "Pago",
+                        currency || "mxn"
+                      );
+                      
+                      // Formatear el monto en pesos mexicanos con formato correcto
+                      const formattedAmount = new Intl.NumberFormat('es-MX', {
+                        style: 'currency',
+                        currency: (currency || 'mxn').toUpperCase(),
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
+                      }).format(amount);
+                      
+                      // Agregar el link real a la respuesta
+                      finalResponse += `\n\n✅ Link de pago generado por ${formattedAmount}:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`;
+                    } else {
+                      finalResponse += "\n\n⚠️ No se pudo generar el link: Stripe no está configurado correctamente.";
+                    }
+                  } catch (error) {
+                    console.error("Error generando link de pago:", error);
+                    finalResponse += "\n\n❌ Error al generar el link de pago. Verifica tu configuración de Stripe.";
+                  }
+                }
+              }
+            } else {
+              
+              // Fallback: Detectar si hay un payment request en la respuesta (sistema anterior)
+              const paymentRequestMatch = finalResponse.match(/\[STRIPE_PAYMENT_REQUEST:({.*?})\]/);
+              
+              if (paymentRequestMatch) {
+                try {
+                  const paymentData = JSON.parse(paymentRequestMatch[1]);
+                  
+                  // Usar la integración ya obtenida
+                  if (stripeIntegration && stripeIntegration.stripeApiKey) {
+                    // Generar el link de pago real
+                    const paymentUrl = await createQuickPaymentLink(
+                      stripeIntegration.stripeApiKey,
+                      paymentData.amount,
+                      paymentData.description || "Pago",
+                      paymentData.currency || "mxn"
+                    );
+                    
+                    // Formatear el monto con formato mexicano correcto
+                    const formattedAmount = new Intl.NumberFormat('es-MX', {
+                      style: 'currency',
+                      currency: (paymentData.currency || 'mxn').toUpperCase(),
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 2
+                    }).format(paymentData.amount);
+                    
+                    // Reemplazar el marcador con el link real
+                    finalResponse = finalResponse.replace(
+                      paymentRequestMatch[0],
+                      `\n\n✅ Link de pago generado por ${formattedAmount}:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`
+                    );
+                  } else {
+                    finalResponse = finalResponse.replace(
+                      paymentRequestMatch[0],
+                      "\n\n⚠️ No se pudo generar el link: Stripe no está configurado correctamente."
+                    );
+                  }
+                } catch (error) {
+                  console.error("Error generando link de pago:", error);
+                  finalResponse = finalResponse.replace(
+                    paymentRequestMatch[0],
+                    "\n\n❌ Error al generar el link de pago. Verifica tu configuración de Stripe."
+                  );
+                }
+              } else {
+              }
+            }
+            
+            
+            return new Response(
+              JSON.stringify({
+                success: true,
+                response: finalResponse,
+                // TRANSPARENCY: Incluir información del modelo usado
+                modelInfo: {
+                  used: modelUsed,
+                  preferred: chatbot.aiModel,
+                  provider: providerUsed,
+                  wasFromFallback: usedFallback,
+                  fallbackReason: usedFallback ? "Modelo preferido no disponible" : null,
+                  usage: result.response.usage
+                }
+              }),
+              { status: 200, headers: { "Content-Type": "application/json" } }
+            );
+          }
+          
+        } catch (error) {
+          lastError = error;
+          console.error('❌ All providers failed:', error);
+        }
+
+        // Si llegamos aquí, todos los proveedores fallaron
+        return new Response(
+          JSON.stringify({ 
+            error: `All providers failed: ${lastError?.message || 'Unknown error'}`,
+            triedModels: fallbackModels.filter(m => !m.includes("deepseek")),
+            preferredModel: chatbot.aiModel,
+            availableProviders: providerManager.getAvailableProviders()
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
-
-        // Si es streaming, procesar el stream de OpenRouter
-        if (stream) {
-          console.log(`🚀 Iniciando stream con modelo: ${fallbackModels[0]}`);
-          const decoder = new TextDecoder();
-          let accumulatedContent = "";
-          let chunkCount = 0;
-          let contentChunks = 0;
-          
-          // Crear un TransformStream para procesar el stream de OpenRouter
-          const transformStream = new TransformStream({
-            async transform(chunk, controller) {
-              chunkCount++;
-              const text = decoder.decode(chunk, { stream: true });
-              console.log(`📦 Chunk ${chunkCount}: ${text.substring(0, 100)}...`);
-              
-              const lines = text.split('\n');
-              
-              for (const line of lines) {
-                if (line.trim() === '') continue; // Saltar líneas vacías
-                
-                if (line.startsWith('data: ')) {
-                  const data = line.slice(6).trim();
-                  console.log(`📝 Data line: ${data.substring(0, 100)}...`);
-                  
-                  if (data === '[DONE]') {
-                    console.log(`✅ Stream terminado. Total content chunks: ${contentChunks}, Total accumulated: ${accumulatedContent.length} chars`);
-                    controller.enqueue('data: [DONE]\n\n');
-                    continue;
-                  }
-                  
-                  if (data === '') {
-                    console.log('⚠️ Línea de data vacía, saltando...');
-                    continue;
-                  }
-                  
-                  try {
-                    const parsed = JSON.parse(data);
-                    const delta = parsed.choices?.[0]?.delta;
-                    
-                    // Intentar obtener contenido de diferentes campos según el tipo de modelo
-                    let content = delta?.content || delta?.reasoning || "";
-                    
-                    // Para modelos de razonamiento, también revisar reasoning_details
-                    if (!content && delta?.reasoning_details?.length > 0) {
-                      content = delta.reasoning_details[0]?.text || "";
-                    }
-                    
-                    if (content && content.trim()) {
-                      contentChunks++;
-                      console.log(`💬 Contenido ${contentChunks}: "${content}"`);
-                      
-                      // Acumular contenido para validar
-                      accumulatedContent += content;
-                      
-                      // Validar contenido acumulado cada cierto número de caracteres
-                      if (accumulatedContent.length > 50 && accumulatedContent.length % 50 === 0) {
-                        if (!isValidResponse(accumulatedContent)) {
-                          console.log("🚨 Contenido corrupto detectado en streaming, cerrando...");
-                          controller.enqueue('data: {"error": "Respuesta corrupta detectada"}\n\n');
-                          controller.enqueue('data: [DONE]\n\n');
-                          return;
-                        }
-                      }
-                      
-                      // Enviar en el formato que espera el cliente
-                      const encoder = new TextEncoder();
-                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
-                    } else if (parsed.choices?.[0]?.finish_reason) {
-                      console.log(`🏁 Stream finished with reason: ${parsed.choices[0].finish_reason}`);
-                    } else {
-                      console.log(`📄 Parsed but no content:`, JSON.stringify(parsed, null, 2));
-                    }
-                  } catch (e) {
-                    console.log(`❌ Error parsing JSON: ${e.message}, data: ${data.substring(0, 100)}`);
-                  }
-                } else if (line.trim()) {
-                  console.log(`❓ Non-data line: ${line}`);
-                }
-              }
-            },
-            
-            flush(controller) {
-              console.log(`🔚 Stream flush called. Final stats: ${chunkCount} chunks, ${contentChunks} content chunks, ${accumulatedContent.length} total chars`);
-              if (contentChunks === 0) {
-                console.log('⚠️ No content was sent! Stream was empty.');
-              }
-            }
-          });
-          
-          // Pipe el stream original a través del transformador
-          const transformedStream = openRouterResponse.body?.pipeThrough(transformStream);
-          
-          return new Response(transformedStream, {
-            headers: {
-              "Content-Type": "text/event-stream",
-              "Cache-Control": "no-cache",
-              "Connection": "keep-alive"
-            }
-          });
-        }
-
-        // Si no es streaming, devolver la respuesta JSON
-        const result = await openRouterResponse.json();
-        return new Response(
-          JSON.stringify({
-            success: true,
-            response: result.choices?.[0]?.message?.content || "No se pudo generar respuesta"
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
-        );
-      }
 
       default:
         return new Response(

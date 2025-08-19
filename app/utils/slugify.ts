@@ -1,4 +1,5 @@
 export function slugify(str: string) {
+  if (!str) return "";
   str = str.replace(/^\s+|\s+$/g, ""); // trim leading/trailing white space
   str = str.toLowerCase(); // convert string to lowercase
   str = str

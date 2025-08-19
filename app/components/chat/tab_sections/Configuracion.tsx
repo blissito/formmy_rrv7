@@ -6,6 +6,7 @@ import { GeneralButton } from "../ConfigMenu";
 import { NotificacionesButton } from "../ConfigMenu";
 import { UsuariosButton } from "../ConfigMenu";
 import { SeguridadButton } from "../ConfigMenu";
+import { StreamingButton } from "../ConfigMenu";
 import { useChipTabs } from "../common/ChipTabs";
 import { Card } from "../common/Card";
 import type { Chatbot, Permission, User } from "@prisma/client";
@@ -47,6 +48,12 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     allowedDomains: chatbot.settings?.security?.allowedDomains?.join(", ") ?? "",
     status: chatbot.settings?.security?.status ?? "public",
     rateLimit: chatbot.settings?.security?.rateLimit ?? 100,
+  });
+
+  // Estado para configuración de streaming
+  const [streaming, setStreaming] = useState({
+    enableStreaming: chatbot.enableStreaming ?? true,
+    streamingSpeed: chatbot.streamingSpeed ?? 50,
   });
   
   const handleNotificationChange = async (field: string, value: boolean) => {
@@ -149,6 +156,28 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     }
   };
 
+  const handleStreamingUpdate = async () => {
+    setIsUpdating(true);
+    const formData = new FormData();
+    formData.append("intent", "update_streaming");
+    formData.append("chatbotId", chatbot.id);
+    formData.append("enableStreaming", String(streaming.enableStreaming));
+    formData.append("streamingSpeed", String(streaming.streamingSpeed));
+    
+    try {
+      await fetch("/api/v1/chatbot", {
+        method: "POST",
+        body: formData,
+      });
+      alert("Configuración de streaming actualizada");
+    } catch (error) {
+      console.error("Error updating streaming:", error);
+      alert("Error al actualizar la configuración de streaming");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleDeleteChatbot = async () => {
     try {
       setIsDeleting(true);
@@ -205,6 +234,10 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
         <SeguridadButton
           current={currentTab}
           onClick={() => setCurrentTab("seguridad")}
+        />
+        <StreamingButton
+          current={currentTab}
+          onClick={() => setCurrentTab("streaming")}
         />
       </ConfigMenu>
 
@@ -427,6 +460,52 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
               >
                 {isUpdating ? "Actualizando..." : "Actualizar"}
               </Button>
+              </div>
+            </main>
+          </Card>
+        </section>
+      )}
+
+      {currentTab === "streaming" && (
+        <section className="">
+          <Card title="Configuración de Streaming" text="Controla cómo se muestran las respuestas de tu chatbot en tiempo real.">
+            <main className="flex flex-col gap-4">
+              <Toggler 
+                title="Habilitar Streaming" 
+                text="Las respuestas aparecen palabra por palabra en tiempo real"
+                value={streaming.enableStreaming}
+                onChange={() => setStreaming({...streaming, enableStreaming: !streaming.enableStreaming})}
+              />
+              <section>
+                <Select
+                  value={String(streaming.streamingSpeed)}
+                  options={[
+                    { value: "25", label: "Muy rápido (25ms)" },
+                    { value: "50", label: "Rápido (50ms)" },
+                    { value: "100", label: "Normal (100ms)" },
+                    { value: "200", label: "Lento (200ms)" },
+                  ]}
+                  label="Velocidad de Streaming"
+                  placeholder="Selecciona una velocidad"
+                  onChange={(value) => setStreaming({...streaming, streamingSpeed: parseInt(value)})}
+                />
+                <div className="flex gap-1 items-start text-[12px] text-irongray">
+                  <span className="mt-[2px]">
+                    <IoInformationCircleOutline />
+                  </span>
+                  <p>
+                    Controla qué tan rápido aparecen las palabras en el chat. Menor número = más rápido.
+                  </p>
+                </div>
+              </section>
+              <div className="flex w-full justify-end">
+                <Button 
+                  className="w-full md:w-fit h-10 !mr-0"
+                  onClick={handleStreamingUpdate}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? "Actualizando..." : "Actualizar"}
+                </Button>
               </div>
             </main>
           </Card>

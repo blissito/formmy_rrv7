@@ -295,6 +295,24 @@ export const SeguridadButton = ({
   );
 };
 
+export const StreamingButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("streaming")}
+      src={"/assets/chat/play.svg"}
+    >
+      Streaming
+    </MenuButton>
+  );
+};
+
 export const GoogleDriveButton = ({
   onClick,
   current,

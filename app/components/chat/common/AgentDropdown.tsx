@@ -56,6 +56,32 @@ type AgentDropdownProps = {
   label?: string;
 };
 
+// Función para obtener el color de fondo según el tipo de agente
+const getAgentBg = (agentValue: string) => {
+  switch (agentValue) {
+    case "sales":
+      return "bg-gradient-to-br from-emerald-50 to-green-50 border-l-2 border-emerald-300";
+    case "customer_support":
+      return "bg-gradient-to-br from-blue-50 to-indigo-50 border-l-2 border-blue-300";
+    case "content_seo":
+      return "bg-gradient-to-br from-purple-50 to-violet-50 border-l-2 border-purple-300";
+    case "data_analyst":
+      return "bg-gradient-to-br from-cyan-50 to-blue-50 border-l-2 border-cyan-300";
+    case "automation_ai":
+      return "bg-gradient-to-br from-amber-50 to-yellow-50 border-l-2 border-amber-300";
+    case "growth_hacker":
+      return "bg-gradient-to-br from-red-50 to-pink-50 border-l-2 border-red-300";
+    default:
+      return "bg-gradient-to-br from-gray-50 to-slate-50 border-l-2 border-gray-300";
+  }
+};
+
+// Enhancear las opciones con colores personalizados
+const enhancedAgentOptions = AGENT_OPTIONS.map(option => ({
+  ...option,
+  bgColor: getAgentBg(option.value)
+}));
+
 export const AgentDropdown = ({
   selectedAgent,
   onChange,
@@ -64,7 +90,7 @@ export const AgentDropdown = ({
 }: AgentDropdownProps) => {
   return (
     <IconDropdown
-      options={AGENT_OPTIONS}
+      options={enhancedAgentOptions}
       selectedValue={selectedAgent}
       onChange={(value) => onChange(value as AgentType)}
       className={className}

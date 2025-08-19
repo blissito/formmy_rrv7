@@ -1,0 +1,19 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="analyticsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06B6D4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0891B2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="12" cy="12" r="11" fill="url(#analyticsGrad)" stroke="#FFFFFF" stroke-width="0.5"/>
+  <rect x="6" y="7" width="12" height="10" rx="1" fill="white" fill-opacity="0.9"/>
+  <rect x="8" y="13" width="1.5" height="3" fill="url(#analyticsGrad)"/>
+  <rect x="10.5" y="11" width="1.5" height="5" fill="url(#analyticsGrad)"/>
+  <rect x="13" y="9" width="1.5" height="7" fill="url(#analyticsGrad)"/>
+  <rect x="15.5" y="12" width="1.5" height="4" fill="url(#analyticsGrad)"/>
+  <path d="M8 10L10 9L13 7L16 8" stroke="url(#analyticsGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="8" cy="10" r="0.8" fill="url(#analyticsGrad)"/>
+  <circle cx="10" cy="9" r="0.8" fill="url(#analyticsGrad)"/>
+  <circle cx="13" cy="7" r="0.8" fill="url(#analyticsGrad)"/>
+  <circle cx="16" cy="8" r="0.8" fill="url(#analyticsGrad)"/>
+</svg>

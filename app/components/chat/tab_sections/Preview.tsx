@@ -34,6 +34,8 @@ export const PreviewForm = ({
     setTemperature,
     instructions,
     setInstructions,
+    customInstructions,
+    setCustomInstructions,
     name,
     setName,
     primaryColor,
@@ -120,6 +122,7 @@ export const PreviewForm = ({
     formData.append("aiModel", selectedModel);
     formData.append("temperature", temperature.toString());
     formData.append("instructions", instructions);
+    formData.append("customInstructions", customInstructions);
     formData.append("personality", selectedAgent); // Guardamos el tipo de agente en personality
     formData.append("primaryColor", primaryColor);
     formData.append("welcomeMessage", welcomeMessage);
@@ -198,6 +201,8 @@ export const PreviewForm = ({
           handleTemperatureChange={handleTemperatureChange}
           instructions={instructions}
           handleInstructionsChange={handleInstructionsChange}
+          customInstructions={customInstructions}
+          handleCustomInstructionsChange={setCustomInstructions}
         />
       )}
     </article>

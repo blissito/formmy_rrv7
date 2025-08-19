@@ -1,16 +1,14 @@
 ---
-title: "5 Claves para Crear Formularios Más Efectivos"
+title: "5 claves para crear formularios más efectivos"
 excerpt: "Aprende las técnicas más importantes para diseñar formularios que realmente conviertan y mejoren la experiencia de tus usuarios."
-date: "2025-01-12"
+date: "2025-01-17"
 tags: ["tutorial", "ux", "conversiones", "formularios"]
 author: "María González"
-image: "/home/blog.webp"
-category: "blog"
+image: "/blogposts/tips.webp"
+category: "article"
 ---
 
-# 5 Claves para Crear Formularios Más Efectivos
-
-Los formularios son el punto de conexión más importante entre tu negocio y tus usuarios. Un formulario bien diseñado puede ser la diferencia entre una conversión exitosa y un usuario perdido para siempre.
+Los formularios son un punto importante de conexión entre tu negocio y tus usuarios. Un formulario bien diseñado puede ser la diferencia entre una conversión exitosa y un usuario perdido para siempre.
 
 ## 1. 📝 Pide Solo la Información Esencial
 
@@ -58,7 +56,7 @@ Los usuarios deben entender inmediatamente qué información se solicita en cada
 - Agrupa campos relacionados visualmente
 
 ### Llamadas a la acción efectivas
-```css
+```
 /* ❌ Botón genérico */
 background: #ccc;
 text: "Enviar"
@@ -68,7 +66,7 @@ background: #00A6B8; /* Color de marca */
 text: "Obtener mi consulta gratuita"
 ```
 
-## 4. 📱 Diseña Mobile-First
+## 4. 📱 Diseña Mobile-First (Default con Formmy)
 
 Más del **60% de usuarios** acceden desde dispositivos móviles.
 
@@ -78,21 +76,13 @@ Más del **60% de usuarios** acceden desde dispositivos móviles.
 - Scroll mínimo o nulo
 - Botones de tamaño adecuado (mínimo 44px)
 
-## 5. 🔄 Implementa Validación Inteligente
+## 5. 🔄 Implementa Validación Inteligente (Default con Formmy)
 
 ### Validación en tiempo real
 - **Confirma éxito**: ✅ Marca verde cuando el campo es válido
 - **Señala errores**: ❌ Mensaje claro sobre qué corregir
 - **Guía la acción**: 💡 Sugerencias constructivas
 
-### Ejemplo de mensajes de error:
-```
-❌ "Error en email"
-✅ "Por favor, incluye el símbolo @ en tu email"
-
-❌ "Teléfono inválido"  
-✅ "El teléfono debe tener 9 dígitos (ej: 123456789)"
-```
 
 ## 🎯 Bonus: Utiliza Ghosty para Formularios Conversacionales
 
@@ -119,7 +109,7 @@ Con **Formmy** puedes crear formularios que se sienten como conversaciones natur
 
 ---
 
-**¿Quieres implementar estas técnicas de manera sencilla?** 
+## ¿Quieres implementar estas técnicas de manera sencilla?
 
 [Prueba Formmy gratis](https://formmy.app) y crea formularios que realmente conviertan con la ayuda de nuestro asistente AI, Ghosty.
 

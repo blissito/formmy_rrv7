@@ -1,14 +1,12 @@
 ---
-title: "Guía Avanzada: Cómo Entrenar a tu Agente de IA en Formmy"
+title: "Guía avanzada: cómo entrenar a tu Agente de IA en Formmy"
 excerpt: "Aprende técnicas avanzadas para entrenar a tu asistente de IA y mejorar significativamente sus respuestas y precisión."
 date: "2025-08-17"
-tags: ["tutorial", "ia", "entrenamiento", "chatbot", "formmy", "machine-learning"]
+tags: ["Tutorial", "IA", "Entrenamiento", "Chatbot", "Agentes"]
 author: "Equipo Formmy"
 image: "/home/entrenamiento-ia-avanzado.jpg"
 category: "tutorial"
 ---
-
-# Guía Avanzada: Cómo Entrenar a tu Agente de IA en Formmy
 
 El verdadero poder de un asistente de IA se revela cuando lo entrenas con datos específicos de tu negocio. En esta guía, te mostraremos cómo transformar un chatbot básico en un experto en tu industria.
 
@@ -28,12 +26,42 @@ Sube documentos para que tu IA aprenda:
 - Documentación técnica
 - Términos y condiciones
 
-**Formatos soportados:** PDF, DOCX, TXT, CSV, Excel
+**Formatos soportados:** pdf, docx, csv, excel
 
-### 2. Preguntas y Respuestas (Q&A)
+### 2. Texto plano
+Puedes pegar directamente contenido estructurado que quieras que tu IA aprenda. Este formato es ideal para:
+
+- Párrafos explicativos sobre tus productos/servicios
+- Descripciones detalladas de procesos
+- Información de contacto y horarios
+- Políticas de la empresa
+- Guías rápidas o instrucciones
+
+### 3. Links 
+Puedes proporcionar enlaces a recursos en línea para que tu IA consulte:
+
+- Páginas web de tu empresa
+- Documentación en línea
+- Páginas de productos específicos
+- Preguntas frecuentes (FAQ) en tu sitio web
+- Guías de usuario o manuales en línea
+
+**Formato recomendado:**
+```
+- url: "[https://tudominio.com/preguntas-frecuentes](https://tudominio.com/preguntas-frecuentes)"
+  descripción: "Preguntas frecuentes sobre productos y servicios"
+  
+- url: "[https://tudominio.com/guia-rapida](https://tudominio.com/guia-rapida)"
+  descripción: "Guía de inicio rápido para nuevos usuarios"
+
+- url: "[https://tudominio.com/catalogo](https://tudominio.com/catalogo)"
+  descripción: "Catálogo completo de productos"
+```
+
+### 4. Preguntas y Respuestas (Q&A)
 Crea pares de preguntas y respuestas para entrenamiento:
 
-```yaml
+```
 - pregunta: "¿Cuál es el tiempo de entrega?"
   respuesta: "El tiempo de entrega estándar es de 3-5 días hábiles para envíos nacionales."
   variantes:
@@ -44,17 +72,17 @@ Crea pares de preguntas y respuestas para entrenamiento:
   respuesta: "Sí, aceptamos devoluciones dentro de los 30 días posteriores a la recepción. El producto debe estar en su empaque original y sin uso."
 ```
 
+
+
+
 ## 🛠️ Proceso de Entrenamiento Paso a Paso
 
-### 1. Accede al Panel de Entrenamiento
-1. Ve a "Mi Agente"
-2. Selecciona "Entrenamiento"
-3. Elige "Añadir Nuevo Conocimiento"
+### 1. Accede al detalle de tu Chatbot
+- Selecciona "Entrenamiento"
+- Elige "Archivo" como formato para el entrenamiento
 
 ### 2. Carga tus Documentos
 - Arrastra y suelta los archivos
-- Configura el idioma
-- Establece la prioridad (baja/media/alta)
 
 ### 3. Revisa las Extracciones
 La IA analizará tus documentos y extraerá:
@@ -62,24 +90,12 @@ La IA analizará tus documentos y extraerá:
 - Preguntas frecuentes
 - Información estructurada
 
-### 4. Ajusta las Respuestas Generadas
-```yaml
-# Ejemplo de ajuste de respuesta
-antes:
-  pregunta: "¿Tienen garantía los productos?"
-  respuesta_genérica: "Sí, todos nuestros productos tienen garantía."
-
-después:
-  pregunta: "¿Tienen garantía los productos?"
-  respuesta_específica: "Sí, ofrecemos garantía de 1 año en todos nuestros productos contra defectos de fabricación. Para hacer válida la garantía, conserva tu comprobante de compra."
-```
-
 ## 🔄 Técnicas Avanzadas de Entrenamiento
 
 ### 1. Entrenamiento por Intenciones
 Agrupa preguntas similares bajo la misma intención:
 
-```yaml
+```
 intención: "consultar_estado_pedido"
 preguntas:
   - "¿Dónde está mi pedido?"
@@ -88,23 +104,10 @@ preguntas:
 respuesta: "Puedo ayudarte con el estado de tu pedido. Por favor, proporcióname tu número de seguimiento o correo electrónico asociado a la compra."
 ```
 
-### 2. Entidades Personalizadas
-Entrena a tu IA para reconocer información específica:
-
-```yaml
-entidad: "tipo_de_producto"
-valores:
-  - "camisetas"
-  - "tazas"
-  - "lápices"
-  - "mochilas"
-  - "gorras"
-```
-
-### 3. Flujos de Conversación
+### 2. Flujos de Conversación
 Crea diálogos guiados para procesos complejos:
 
-```yaml
+```
 flujo: "soporte_tecnico"
 pasos:
   1: "¿En qué puedo ayudarte con [producto]?"
@@ -118,17 +121,17 @@ pasos:
 
 ## 📊 Monitoreo y Mejora Continua
 
-1. **Revisa las conversaciones fallidas**
+### 1. **Revisa las conversaciones fallidas**
    - Identifica patrones de preguntas sin respuesta
    - Actualiza el entrenamiento según sea necesario
 
-2. **Métricas clave a monitorear**
+### 2. **Métricas clave a monitorear**
    - Tasa de resolución en primer contacto
    - Nivel de satisfacción del usuario
    - Tiempo promedio de respuesta
    - Porcentaje de derivaciones a agente humano
 
-3. **Actualizaciones periódicas**
+### 3. **Actualizaciones periódicas**
    - Programa revisiones mensuales
    - Incorpora nuevas preguntas frecuentes
    - Actualiza información de productos/servicios
@@ -145,4 +148,4 @@ pasos:
 
 Entrenar a tu agente de IA es un proceso continuo que mejora con el tiempo. Cuanto más lo alimentes con datos relevantes y realices ajustes basados en las interacciones, más efectivo será al atender a tus clientes.
 
-¿Listo para llevar tu agente al siguiente nivel? [Explora nuestras plantillas avanzadas] o [programa una sesión con nuestros expertos] para optimizar el rendimiento de tu asistente de IA.
+¿Listo para llevar tu agente al siguiente nivel? Programa una sesión con nuestros expertos para optimizar el rendimiento de tu asistente de IA.

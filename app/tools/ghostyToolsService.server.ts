@@ -3,9 +3,10 @@ import { getUnifiedWebSearchService } from "./webSearchUnified.server";
 import { getChatbotMetrics, getUserChatbotsMetrics, getChatbotQuickStats, getDateRange } from "server/chatbot/metricsModel.server";
 import { getSearchConsoleService } from "~/services/searchConsole.server";
 import { db } from "~/utils/db.server";
+import { createQuickPaymentLink } from "server/integrations/stripe-payments";
 
 export interface ToolRequest {
-  intent: 'search' | 'analyze-url' | 'get-metrics' | 'get-seo-insights';
+  intent: 'search' | 'analyze-url' | 'get-metrics' | 'get-seo-insights' | 'generate-payment-link';
   data: any;
 }
 
@@ -32,6 +33,14 @@ export interface SEOInsightsRequest {
   period?: '7d' | '30d' | '3m';
 }
 
+export interface PaymentLinkRequest {
+  amount: number;
+  description: string;
+  currency?: string;
+  successUrl?: string;
+  stripeApiKey: string;
+}
+
 export class GhostyToolsService {
   
   async executeIntent(intent: string, data: any): Promise<any> {
@@ -47,9 +56,12 @@ export class GhostyToolsService {
 
       case 'get-seo-insights':
         return await this.handleGetSEOInsights(data);
+
+      case 'generate-payment-link':
+        return await this.handleGeneratePaymentLink(data);
       
       default:
-        throw new Error(`Unknown intent: ${intent}. Available: search, analyze-url, get-metrics, get-seo-insights`);
+        throw new Error(`Unknown intent: ${intent}. Available: search, analyze-url, get-metrics, get-seo-insights, generate-payment-link`);
     }
   }
 
@@ -268,8 +280,58 @@ export class GhostyToolsService {
     return summary;
   }
 
+  private async handleGeneratePaymentLink(data: PaymentLinkRequest): Promise<any> {
+    const { amount, description, currency = 'mxn', successUrl, stripeApiKey } = data;
+
+    // Validaciones
+    if (!amount || amount <= 0) {
+      throw new Error("El monto debe ser mayor a 0");
+    }
+
+    if (!description?.trim()) {
+      throw new Error("La descripción es requerida");
+    }
+
+    if (!stripeApiKey?.trim()) {
+      throw new Error("La API key de Stripe es requerida");
+    }
+
+    try {
+      const paymentUrl = await createQuickPaymentLink(
+        stripeApiKey,
+        amount,
+        description,
+        currency
+      );
+
+      return {
+        success: true,
+        paymentUrl,
+        details: {
+          amount,
+          currency: currency.toUpperCase(),
+          description,
+          formatted_amount: new Intl.NumberFormat('es-MX', {
+            style: 'currency',
+            currency: currency.toUpperCase(),
+          }).format(amount)
+        },
+        message: `✅ Link de pago generado exitosamente para ${new Intl.NumberFormat('es-MX', {
+          style: 'currency',
+          currency: currency.toUpperCase(),
+        }).format(amount)}`
+      };
+    } catch (error) {
+      console.error('Error generating payment link:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error generating payment link'
+      };
+    }
+  }
+
   getAvailableIntents(): string[] {
-    return ['search', 'analyze-url', 'get-metrics', 'get-seo-insights'];
+    return ['search', 'analyze-url', 'get-metrics', 'get-seo-insights', 'generate-payment-link'];
   }
 }
 

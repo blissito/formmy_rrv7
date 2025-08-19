@@ -88,25 +88,26 @@ export const Faq = () => (
             }
           />
           <Question
-            question="¿Cúal es la diferencia principal entre el Plan FREE , GROW y PRO?"
+            question="¿Cúal es la diferencia principal entre los planes Free, Starter, Pro y Enterprise?"
             answer={
               <>
                 <p>Encuentra el plan que más te conviene:</p>
                 <ul>
                   <li>
-                    <strong>FREE:</strong> En plan básico que incluye
-                    formularios para tu sitio web pero con funcionalidades de
-                    personalización limtiadas.
+                    <strong>Free:</strong> Plan básico que incluye solo 3 formularios, 
+                    0 chatbots, con trial de 60 días de acceso completo.
                   </li>
                   <li>
-                    <strong>GROW:</strong> Incluye formularios ilimitados y
-                    todas las funcionalidades de personalización desbloqueadas.
+                    <strong>Starter ($149 MXN/mes):</strong> Incluye 2 chatbots, 
+                    50 conversaciones mensuales con modelos GPT-5 Nano y Gemini 2.5 Flash-Lite.
                   </li>
                   <li>
-                    <strong>PRO:</strong> Para quienes buscan el máximo
-                    potencial, incluye todo lo del plan Grow, además de chatbots
-                    IA para tu negocio, que puedes configurar para atender a tus
-                    clientes desde tu website.
+                    <strong>Pro ($499 MXN/mes):</strong> Para quienes buscan más potencia,
+                    incluye 10 chatbots, 250 conversaciones con Claude 3 Haiku.
+                  </li>
+                  <li>
+                    <strong>Enterprise ($1,499 MXN/mes):</strong> Acceso ilimitado,
+                    1000 conversaciones con GPT-5 Mini y Claude 3.5 Haiku.
                   </li>
                 </ul>
                 <p>
@@ -120,8 +121,8 @@ export const Faq = () => (
         </div>
         <div className="flex flex-col gap-8">
           <Question
-            question="¿Cuánto tiempo puedo permanecer en el Plan FREE?"
-            answer="Si no piensas tener más de 3 proyectos o no necesitas el Chat IA, puedes quedarte en FREE toda la vida sin pagar nada. 💸👴🏼"
+            question="¿Cuánto tiempo puedo permanecer en el Plan Free?"
+            answer="Si no necesitas más de 3 formularios o chatbots IA, puedes quedarte en Free toda la vida sin pagar nada. Después del trial de 60 días, tendrás acceso solo a formularios básicos. 💸👴🏼"
           />
           <Question
             question="¿Cómo funciona el Chatbot IA?"
@@ -145,9 +146,9 @@ export const Faq = () => (
               <>
                 <p>
                   El Chatbot IA de Formmy utiliza modelos avanzados de lenguaje
-                  natural, como GPT-4, Gemini, Mistral y Ollama en el plan Grow y hasta Claude en el plan Pro para comprender y
-                  responder a las preguntas de tus usuarios de manera
-                  conversacional y precisa. Siempre buscamos integrar la mejor
+                  natural: GPT-5 Nano y Gemini 2.5 Flash-Lite en el plan Starter,
+                  Claude 3 Haiku en el plan Pro, y GPT-5 Mini con Claude 3.5 Haiku 
+                  en el plan Enterprise. Siempre buscamos integrar la mejor
                   tecnología disponible para ofrecer respuestas útiles,
                   naturales y seguras en tu sitio web.
                 </p>
@@ -158,7 +159,7 @@ export const Faq = () => (
             question="¿Puedo probar el chatbot IA antes de pagar?"
             answer={
               <p>
-                ¡Sí! El plan FREE incluye acceso al chatbot IA por 30 días para
+                ¡Sí! El plan Free incluye acceso completo al chatbot IA por 60 días para
                 que puedas probarlo y ver cómo ayuda a tus visitantes antes de
                 decidir si quieres un plan superior.
               </p>

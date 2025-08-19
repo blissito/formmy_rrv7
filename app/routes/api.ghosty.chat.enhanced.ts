@@ -58,12 +58,16 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
                 contentLength: result.content?.length || 0,
                 contentPreview: result.content?.substring(0, 100) || 'NO CONTENT',
                 toolsUsed: result.toolsUsed,
-                sourcesCount: result.sources?.length || 0
+                sourcesCount: result.sources?.length || 0,
+                fullContentLength: fullContent?.length || 0
               });
+              
+              console.log('🔍 Full result object:', JSON.stringify(result, null, 2));
               
               // If no content was streamed but we have result.content, send it now
               if (!fullContent && result.content) {
                 console.log('⚠️ No chunks were streamed, sending full content now');
+                console.log('📄 Content being sent:', result.content.substring(0, 200) + '...');
                 const data = JSON.stringify({
                   type: "chunk",
                   content: result.content,
@@ -71,6 +75,7 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
                 controller.enqueue(
                   encoder.encode(`data: ${data}\n\n`)
                 );
+                fullContent = result.content; // Track that we sent it
               }
 
               // Send tools used metadata if any tools were used

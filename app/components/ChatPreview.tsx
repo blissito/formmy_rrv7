@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { sendOpenRouterMessageEffect } from "../lib/openrouter.client";
-import { Effect } from "effect";
+// Removed redundant openrouter.client - using unified API endpoint
 import { DEFAULT_AI_MODEL } from "../utils/constants";
 import { cn } from "~/lib/utils";
+import { isAnthropicDirectModel } from "~/utils/aiModels";
 import type { Chatbot } from "@prisma/client";
 import { ChatInput, type ChatInputRef } from "./chat/ChatInput";
 import { MessageBubble } from "./chat/MessageBubble";
@@ -13,6 +13,21 @@ import { LoadingIndicator } from "./chat/LoadingIndicator";
 export interface ChatPreviewProps {
   chatbot: Chatbot;
   production?: boolean;
+}
+
+// Función unificada para prompts optimizados (versión cliente)
+// La lógica se mantiene en el servidor - aquí solo básico para producción
+function buildBasicSystemPrompt(chatbot: Chatbot): string {
+  let prompt = chatbot.instructions || "Eres un asistente útil.";
+  
+  if (chatbot.customInstructions && chatbot.customInstructions.trim()) {
+    prompt += "\n\n=== INSTRUCCIONES ESPECÍFICAS ===\n";
+    prompt += chatbot.customInstructions;
+    prompt += "\n=== FIN INSTRUCCIONES ESPECÍFICAS ===\n";
+  }
+  
+  
+  return prompt;
 }
 
 export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
@@ -27,8 +42,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [stream, setStream] = useState(true);
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [stream, setStream] = useState(chatbot.enableStreaming !== false); // Respetar configuración de BD
   const inputRef = useRef<ChatInputRef>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -36,21 +50,9 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [isConversationEnded, setIsConversationEnded] = useState(false);
   const inactivityTimerRef = useRef<number | null>(null);
+  // SessionId persistente para mantener contexto conversacional
+  const sessionIdRef = useRef<string>(`${production ? 'prod' : 'preview'}-${chatbot.id}-${Date.now()}`);
 
-  // En producción, obtener la API key del chatbot
-  useEffect(() => {
-    if (production) {
-      // Obtener la API key pública del chatbot
-      fetch(`/api/v1/apikey?chatbotId=${chatbot.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.key) {
-            setApiKey(data.key);
-          }
-        })
-        .catch(console.error);
-    }
-  }, [production, chatbot.id]);
 
   useEffect(() => {
     setChatMessages((m) => {
@@ -61,6 +63,8 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
       };
       return update;
     });
+    // Actualizar configuración de streaming cuando cambie el chatbot
+    setStream(chatbot.enableStreaming !== false);
   }, [chatbot]);
 
   // Auto-scroll logic
@@ -160,6 +164,8 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
       return;
     }
     if (!chatInput.trim()) return;
+    
+    // DEBUG CRÍTICO: Verificar qué modelo tiene el chatbot
 
     const currentInput = chatInput.trim();
     setChatLoading(true);
@@ -177,51 +183,21 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     if (stream) {
       setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
       
-      // Determinar qué endpoint usar según el modo
-      if (production && apiKey) {
-        // En producción, usar el SDK con la API key del chatbot
-        Effect.runPromise(
-          sendOpenRouterMessageEffect({
-            chatbotId: chatbot.id,
-            apiKey: apiKey,
-            model: chatbot.aiModel || DEFAULT_AI_MODEL,
-            instructions: chatbot.instructions || "",
-            temperature: chatbot.temperature,
-            messages: [
-              { role: "system", content: chatbot.instructions || "" },
-              ...updatedMessages,
-            ],
-            stream: true,
-            onStreamChunk: (partial) => {
-              setChatMessages((msgs) => {
-                const updated = [...msgs];
-                let lastIdx = updated.length - 1;
-                while (lastIdx >= 0 && updated[lastIdx].role !== "assistant")
-                  lastIdx--;
-                if (lastIdx >= 0)
-                  updated[lastIdx] = { ...updated[lastIdx], content: partial };
-                return updated;
-              });
-            },
-          })
-        )
-          .then(() => {
-            setChatLoading(false);
-            inputRef.current?.focus();
-          })
-          .catch((err: unknown) => {
-            setChatError(err instanceof Error ? err.message : String(err));
-            setChatLoading(false);
-            inputRef.current?.focus();
-          });
-      } else {
-        // En preview (dashboard), usar el endpoint interno
+      // Usar siempre el endpoint interno unificado (tanto para preview como producción)
+      {
         const formData = new FormData();
         formData.append("intent", "preview_chat");
         formData.append("chatbotId", chatbot.id);
         formData.append("message", currentInput);
-        formData.append("sessionId", `preview-${chatbot.id}-${Date.now()}`);
+        formData.append("sessionId", sessionIdRef.current);
+        formData.append("conversationHistory", JSON.stringify(updatedMessages));
         formData.append("stream", "true");
+
+        // Timeout de seguridad para evitar loading infinito
+        const timeoutId = setTimeout(() => {
+          setChatLoading(false);
+          inputRef.current?.focus();
+        }, 30000);
 
         fetch("/api/v1/chatbot", {
           method: "POST",
@@ -232,11 +208,41 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
             throw new Error(`Error: ${response.status}`);
           }
           
+          // ✅ ARREGLO: Verificar si es JSON (tools) o streaming
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            // Es una respuesta JSON (cuando se usan tools)
+            const jsonData = await response.json();
+            
+            if (jsonData.success && jsonData.response) {
+              // Mostrar la respuesta completa directamente
+              setChatMessages((msgs) => {
+                const newMsgs = [...msgs];
+                newMsgs[newMsgs.length - 1] = {
+                  role: "assistant",
+                  content: jsonData.response
+                };
+                return newMsgs;
+              });
+              
+              clearTimeout(timeoutId);
+              setChatLoading(false);
+              inputRef.current?.focus();
+              return;
+            } else {
+              throw new Error(jsonData.error || 'Error en la respuesta');
+            }
+          }
+          
+          // Lógica original para streaming
           if (response.body) {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let fullContent = "";
 
+            let hasReceivedFirstChunk = false;
+            
             while (true) {
               const { done, value } = await reader.read();
               if (done) break;
@@ -246,9 +252,25 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
               
               for (const line of lines) {
                 if (line.startsWith('data: ')) {
+                  const dataStr = line.slice(6);
+                  
+                  // Manejar [DONE] explícitamente
+                  if (dataStr === '[DONE]' || dataStr.trim() === '[DONE]') {
+                    clearTimeout(timeoutId);
+                    setChatLoading(false);
+                    inputRef.current?.focus();
+                    return; // Salir completamente de toda la función fetch
+                  }
+                  
                   try {
-                    const data = JSON.parse(line.slice(6));
+                    const data = JSON.parse(dataStr);
                     if (data.content) {
+                      // ✅ Ocultar loading indicator en el primer chunk
+                      if (!hasReceivedFirstChunk) {
+                        setChatLoading(false);
+                        hasReceivedFirstChunk = true;
+                      }
+                      
                       fullContent += data.content;
                       setChatMessages((msgs) => {
                         const updated = [...msgs];
@@ -261,62 +283,34 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
                       });
                     }
                   } catch (e) {
-                    // Ignorar líneas que no son JSON válido
+                    console.warn('Failed to parse chunk:', dataStr);
                   }
                 }
               }
             }
           }
           
+          // Si llegamos aquí sin [DONE], limpiar loading
+          clearTimeout(timeoutId);
           setChatLoading(false);
           inputRef.current?.focus();
         })
         .catch((err: unknown) => {
+          clearTimeout(timeoutId);
           setChatError(err instanceof Error ? err.message : String(err));
           setChatLoading(false);
           inputRef.current?.focus();
         });
       }
     } else {
-      // Sin streaming
-      if (production && apiKey) {
-        // En producción, usar el SDK con la API key del chatbot
-        Effect.runPromise(
-          sendOpenRouterMessageEffect({
-            chatbotId: chatbot.id,
-            apiKey: apiKey,
-            model: chatbot.aiModel || DEFAULT_AI_MODEL,
-            instructions: chatbot.instructions || "",
-            temperature: chatbot.temperature,
-            messages: [
-              { role: "system", content: chatbot.instructions || "" },
-              ...updatedMessages,
-            ],
-            stream: false,
-          })
-        )
-          .then((result: any) => {
-            const botContent =
-              result.choices?.[0]?.message?.content || "Respuesta vacía";
-            setChatMessages((msgs) => [
-              ...msgs,
-              { role: "assistant", content: botContent },
-            ]);
-            setChatLoading(false);
-            inputRef.current?.focus();
-          })
-          .catch((err: unknown) => {
-            setChatError(err instanceof Error ? err.message : String(err));
-            setChatLoading(false);
-            inputRef.current?.focus();
-          });
-      } else {
-        // En preview (dashboard), usar el endpoint interno
+      // Sin streaming - usar siempre el endpoint interno unificado
+      {
         const formData = new FormData();
         formData.append("intent", "preview_chat");
         formData.append("chatbotId", chatbot.id);
         formData.append("message", currentInput);
-        formData.append("sessionId", `preview-${chatbot.id}-${Date.now()}`);
+        formData.append("sessionId", sessionIdRef.current);
+        formData.append("conversationHistory", JSON.stringify(updatedMessages));
         formData.append("stream", "false");
 
         fetch("/api/v1/chatbot", {
@@ -393,11 +387,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         </section>
 
         <section>
-          {/* {true && ( */}
-          {chatLoading && stream && (
-            // <LoadingIndicator
-            //   primaryColor={chatbot.primaryColor || "#63CFDE"}
-            // />
+          {chatLoading && (
             <MessageBubble
               role="assistant"
               primaryColor={chatbot.primaryColor || "#63CFDE"}

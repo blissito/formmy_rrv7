@@ -3,7 +3,6 @@ import { FloatingMenu } from "../common/FloatingMenu";
 import type { ReactNode } from "react";
 import { Select } from "./common/Select";
 import { cn } from "~/lib/utils";
-import { span } from "effect/Layer";
 import DownloadIcon from "../ui/icons/Download";
 import EditIcon from "../ui/icons/Edit";
 import DeleteIcon from "../ui/icons/Delete";
@@ -19,7 +18,7 @@ export const ListFiles = ({
   mode?: "local" | "context";
 }) => {
   const getFileType = (fileName: string): string => {
-    const extension = fileName.split(".").pop()?.toLowerCase();
+    const extension = fileName.split(".").pop()?.toLowerCase() || '';
     switch (extension) {
       case "pdf":
         return "pdf";

@@ -16,6 +16,7 @@ export interface BlogPost {
   author?: string;
   content: string;
   category?: string;
+  highlight?: string;
 }
 
 // Directory where blog posts are stored
@@ -91,6 +92,7 @@ async function readBlogPost(filename: string): Promise<BlogPost | null> {
       author: frontmatter.author,
       content: markdownContent,
       category: frontmatter.category || 'blog',
+      highlight: frontmatter.highlight,
     };
   } catch (error) {
     console.error(`Error reading blog post ${filename}:`, error);

@@ -40,14 +40,116 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 /server - Server utilities and configurations
 ```
 
+## Estrategia de Pricing y Monetización
+
+### Planes y Precios (Optimizados para mercado mexicano)
+- **Free**: $0 - Solo 3 formmys, 0 chatbots, trial 60 días
+- **Starter**: $149 MXN/mes - 2 chatbots, 50 conversaciones, GPT-5 Nano + Gemini 2.5 Flash-Lite
+- **Pro**: $499 MXN/mes - 10 chatbots, 250 conversaciones, Claude 3 Haiku
+- **Enterprise**: $1,499 MXN/mes - Ilimitado, 1000 conversaciones, GPT-5 Mini + Claude 3.5 Haiku
+
+### Proyección Año 1 (150 clientes)
+- **60% Starter** (90 clientes): $160.9K MXN revenue → $157.7K profit (98% margen)
+- **33% Pro** (50 clientes): $299.4K MXN revenue → $290.6K profit (97% margen)  
+- **7% Enterprise** (10 clientes): $179.9K MXN revenue → $161.9K profit (90% margen)
+- **Total**: $640.2K MXN revenue → $610.2K profit anual (~$33.9K USD)
+
+### Revenue Streams Adicionales
+- **Conversaciones extra**: $59-179 MXN/100 según plan
+- **WhatsApp Integration**: $99 MXN/mes
+- **Setup Service**: $1,500 MXN one-time
+- **White Label**: $299 MXN/mes
+- **API Access**: $199 MXN/mes
+
+### Optimizaciones de Costo
+- **Smart Model Routing**: Haiku para queries simples, Sonnet para complejos
+- **Context Compression**: Reducir tokens manteniendo calidad
+- **Response Caching**: 30% reducción en llamadas API
+- **Pricing psicológico**: Precios bajo barreras ($149, $499, $1,499)
+- **Límites de protección**: Máximo tokens por consulta según plan
+- **RAG futuro**: Vector embeddings para contexto masivo sin explosión de costos
+
+## ✅ Cambios Recientes (Agosto 2024)
+
+### GPT-5 Nano: Herramientas Funcionando ✨
+- **✅ COMPLETADO**: GPT-5-nano ahora soporta herramientas Stripe completamente
+- **Fixes aplicados**:
+  - `max_completion_tokens` en lugar de `max_tokens` para modelos GPT-5
+  - Corregido streaming vs non-streaming con herramientas (forzar `stream: false`)
+  - Temperature range 0-1 para GPT-5-nano (vs 0-2 para otros)
+  - OpenAI provider ahora envía/extrae tool calls correctamente
+- **Impacto**: GPT-5 Nano es ahora el **modelo por defecto** más económico con herramientas
+- **Profit**: Ahorro ~$36K USD/año, profit margin subió a 99%
+
+### Arquitectura de Proveedores Mejorada
+- **OpenAI Provider**: ✅ Soporte completo para herramientas (GPT-5-nano, GPT-5-mini)
+- **Anthropic Provider**: ✅ Herramientas funcionando (Claude 3 Haiku, 3.5 Haiku)  
+- **OpenRouter Provider**: ❌ Sin herramientas (Gemini, Mistral, otros)
+- **Warning System**: Notifica cuando modelos no soportan herramientas
+
+### Configuración de Planes Actualizada
+- **FREE**: Sin acceso después trial
+- **TRIAL**: **GPT-5 Nano** con herramientas (60 días)
+- **STARTER**: **GPT-5 Nano** con herramientas ($149 MXN)  
+- **PRO**: **GPT-5 Nano** con herramientas ($499 MXN)
+- **ENTERPRISE**: **GPT-5 Mini** premium ($1,499 MXN)
+
+## Próximos pasos técnicos
+
+### Google Gemini Direct API Integration (Prioridad alta - 2-3 semanas)
+- **Objetivo**: Reducir costos adicionales 90% (OpenRouter $0.054 → Gemini Direct $0.006)
+- **Problema**: OpenRouter no pasa herramientas correctamente a Gemini
+- **Solución**: Implementar proveedor Google Gemini directo (como Anthropic/OpenAI directos)
+- **Stack**: Google AI SDK + Function Calling nativo
+- **ROI**: ~$48K USD/año ahorro adicional
+- **Implementación**: 
+  - Crear `/server/chatbot/providers/google.ts`
+  - Agregar Google API keys en configuración
+  - Testing extensivo de herramientas con Gemini 2.5 Flash
+  - Fallback automático a GPT-5-nano si Gemini falla
+
+### RAG Implementation (Prioridad alta - 4-6 semanas)
+- **Objetivo**: Permitir contexto de 50MB+ sin explosión de costos
+- **Stack**: ChromaDB + OpenAI Embeddings + LangChain
+- **ROI**: Diferenciador clave para Enterprise $1,499
+- **Costos operativos**: <1% del revenue
+- **Implementación**: Vector DB + chunking + búsqueda semántica
+
+### Límites de protección (Siguiente semana)
+- **Tokens máximos por consulta**: Starter 4K, Pro 8K, Enterprise 16K
+- **Límites diarios**: Starter 20, Pro 100, Enterprise 500 consultas con contexto
+- **Truncamiento inteligente**: Primeras páginas + palabras clave de consulta
+- **UI warnings**: Notificar cuando se trunca contenido
+
 ## Convenciones de código
 
-- TypeScript estricto, nunca imports dinámicos
-- no colocar utilidades en el mismo modulo de ruta, siempre preferir colocar herramientas en archivos .server.tsx
+- TypeScript estricto, **NUNCA imports dinámicos** - usar solo imports estáticos
+- **NUNCA colocar utilidades en el mismo módulo de ruta** - siempre crear archivos `.server.tsx` correspondientes para utilidades
+- No agregar funciones de utilidad directamente en archivos de rutas - moverlas a archivos server separados
 - Server Components por defecto
 - Prisma para ORM
 - Tailwind CSS para estilos
 - Para importar archivos desde `/server` en archivos dentro de `/app`, usar la ruta `server/...` sin prefijo ni alias
+
+## AI Models Architecture Rules
+
+- **Anthropic models**: SIEMPRE usar conexión directa API, NUNCA a través de OpenRouter
+- **OpenAI models**: SIEMPRE usar conexión directa API con CHATGPT_API_KEY, NUNCA a través de OpenRouter
+- **OpenRouter models**: Solo para Google, Meta, Mistral y otros proveedores terceros
+- **Separación de proveedores**: Mantener Anthropic y OpenAI directos vs OpenRouter completamente separados
+- **No mezclar**: Nunca usar prefijos `anthropic/` o `openai/` con proveedor OpenRouter
+- **Modelos PRO**: Todos los modelos requieren plan PRO o trial activo de 60 días
+- **Usuarios FREE**: Acceso completo durante 60 días desde registro, luego sin acceso a modelos
+- **Sin fallback entre planes**: Usuarios sin acceso reciben error, no degradación de modelo
+
+### Streaming & Tools Implementation
+- **Smart Streaming**: Non-streaming automático cuando hay herramientas disponibles
+- **Tools Support**: GPT-5-nano, GPT-5-mini, Claude 3 Haiku, Claude 3.5 Haiku
+- **Warning System**: Markdown blockquotes para modelos sin herramientas
+- **TextDecoderStream**: Streams nativos para UTF-8 sin corrupción
+- **Buffer Management**: TransformStream con buffer persistente
+- **Token Limits**: Sistema inteligente según contexto (200-600 tokens)
+- **Error Handling**: Manejo robusto de finishReason y cierre correcto
 
 ## Email System
 

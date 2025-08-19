@@ -2,13 +2,12 @@
 title: "Bienvenido al Blog de Formmy"
 excerpt: "Descubre las últimas novedades, tutoriales y mejores prácticas para crear formularios inteligentes con AI."
 date: "2025-01-15"
-tags: ["anuncio", "formmy", "ai"]
+tags: ["Anuncio", "Formmy", "IA"]
 author: "Equipo Formmy"
-category: "blog"
+category: "article"
+image: "/blogposts/blog.webp"
+
 ---
-
-# ¡Bienvenido al Blog de Formmy! 🎉
-
 Estamos emocionados de lanzar nuestro blog oficial donde compartiremos contenido valioso para nuestra comunidad de usuarios.
 
 ## ✨ ¿Qué encontrarás aquí?

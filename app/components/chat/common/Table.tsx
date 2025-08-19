@@ -3,7 +3,6 @@ import { cn } from "~/lib/utils";
 import { Select } from "./Select";
 import type { WebsiteEntry } from "~/types/website";
 import { BsThreeDots } from "react-icons/bs";
-import { LuPencil, LuTrash2 } from "react-icons/lu";
 import { useState, useRef, useEffect } from "react";
 import DeleteIcon from "~/components/ui/icons/Delete";
 import EditIcon from "~/components/ui/icons/Edit";

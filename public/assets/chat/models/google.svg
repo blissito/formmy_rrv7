@@ -1,6 +1,16 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12Z" fill="white"/>
-  <path d="M12 12L5 8.5V15.5L12 19L19 15.5V8.5L12 5L5 8.5" stroke="#4285F4" stroke-width="2"/>
-  <path d="M12 5V12V19" stroke="#4285F4" stroke-width="2"/>
-  <path d="M5 8.5L12 12L19 8.5" stroke="#4285F4" stroke-width="2"/>
+  <!-- Fondo blanco redondeado -->
+  <rect x="2" y="2" width="20" height="20" rx="6" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <!-- Letra G con colores de Google -->
+  <path d="M12 7C14.8 7 17 9.2 17 12C17 14.8 14.8 17 12 17C9.2 17 7 14.8 7 12C7 9.2 9.2 7 12 7Z" stroke="#4285F4" stroke-width="2" fill="none"/>
+  
+  <!-- Corte característico de la G -->
+  <path d="M17 12H14V10H19V12C19 16.4 15.4 20 11 20C6.6 20 3 16.4 3 12C3 7.6 6.6 4 11 4C13.1 4 15 4.8 16.4 6.2" stroke="#4285F4" stroke-width="2" stroke-linecap="round" fill="none"/>
+  
+  <!-- Elementos coloridos -->
+  <circle cx="12" cy="8" r="1" fill="#EA4335"/>
+  <circle cx="15" cy="11" r="1" fill="#FBBC05"/>
+  <circle cx="12" cy="16" r="1" fill="#34A853"/>
+  <circle cx="9" cy="11" r="1" fill="#4285F4"/>
 </svg>
