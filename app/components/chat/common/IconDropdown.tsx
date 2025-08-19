@@ -8,6 +8,7 @@ export type DropdownOption = {
   iconSrc?: string;
   disabled?: boolean;
   disabledReason?: string;
+  bgColor?: string;
 };
 
 type IconDropdownProps = {
@@ -26,13 +27,23 @@ type IconDropdownProps = {
 // Función para obtener el color de fondo según el proveedor
 const getProviderBg = (modelValue: string) => {
   if (modelValue.includes("anthropic") || modelValue.includes("claude")) {
-    return "bg-orange-50";
+    return "bg-gradient-to-br from-orange-50 to-red-50 border-l-2 border-orange-300";
   } else if (modelValue.includes("openai") || modelValue.includes("gpt")) {
-    return "bg-green-50";
+    return "bg-gradient-to-br from-emerald-50 to-green-50 border-l-2 border-emerald-300";
   } else if (modelValue.includes("google") || modelValue.includes("gemini")) {
-    return "bg-blue-50";
+    return "bg-gradient-to-br from-blue-50 to-indigo-50 border-l-2 border-blue-300";
+  } else if (modelValue.includes("meta") || modelValue.includes("llama")) {
+    return "bg-gradient-to-br from-blue-50 to-gray-50 border-l-2 border-blue-400";
+  } else if (modelValue.includes("mistralai")) {
+    return "bg-gradient-to-br from-orange-50 to-red-50 border-l-2 border-orange-400";
+  } else if (modelValue.includes("deepseek")) {
+    return "bg-gradient-to-br from-sky-50 to-blue-50 border-l-2 border-sky-400";
+  } else if (modelValue.includes("qwen")) {
+    return "bg-gradient-to-br from-cyan-50 to-blue-50 border-l-2 border-cyan-400";
+  } else if (modelValue.includes("moonshotai") || modelValue.includes("kimi")) {
+    return "bg-gradient-to-br from-purple-50 to-blue-50 border-l-2 border-purple-400";
   }
-  return "bg-gray-50";
+  return "bg-gradient-to-br from-gray-50 to-purple-50 border-l-2 border-gray-300";
 };
 
 export const IconDropdown = ({
@@ -87,11 +98,13 @@ export const IconDropdown = ({
       >
         <div className="flex items-center gap-3 flex-1">
           {selectedOption?.iconSrc && (
-            <img
-              src={selectedOption.iconSrc}
-              alt={selectedOption.label}
-              className="w-6 h-6 object-contain"
-            />
+            <div className="w-6 h-6 flex items-center justify-center rounded-md bg-white shadow-sm">
+              <img
+                src={selectedOption.iconSrc}
+                alt={selectedOption.label}
+                className="w-5 h-5 object-contain"
+              />
+            </div>
           )}
           <div>
             <p className=" text-base text-dark">
@@ -144,17 +157,19 @@ export const IconDropdown = ({
               className={cn(
                 "flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-gray-50",
                 "border-b border-gray-100 last:border-b-0",
-                selectedValue === option.value && getProviderBg(option.value),
+                selectedValue === option.value && (option.bgColor || getProviderBg(option.value)),
                 option.disabled && "opacity-50 cursor-not-allowed",
                 optionClassName
               )}
             >
               {option.iconSrc && (
-                <img
-                  src={option.iconSrc}
-                  alt={option.label}
-                  className="w-6 h-6 object-contain"
-                />
+                <div className="w-6 h-6 flex items-center justify-center rounded-md bg-white shadow-sm">
+                  <img
+                    src={option.iconSrc}
+                    alt={option.label}
+                    className="w-5 h-5 object-contain"
+                  />
+                </div>
               )}
               <div>
                 <p className="font-medium text-sm">{option.label}</p>

@@ -1,5 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M12 2a8 8 0 0 1 8 8v12l-4-4-4 4-4-4-4 4V10a8 8 0 0 1 8-8z"></path>
-  <path d="M12 6v4"></path>
-  <path d="M12 14h.01"></path>
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#EC4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="12" cy="12" r="11" fill="url(#aiGrad)" stroke="#FFFFFF" stroke-width="0.5"/>
+  <rect x="7" y="7" width="10" height="10" rx="2" fill="white" fill-opacity="0.9"/>
+  <circle cx="10" cy="10" r="1" fill="url(#aiGrad)"/>
+  <circle cx="14" cy="10" r="1" fill="url(#aiGrad)"/>
+  <circle cx="10" cy="14" r="1" fill="url(#aiGrad)"/>
+  <circle cx="14" cy="14" r="1" fill="url(#aiGrad)"/>
+  <circle cx="12" cy="12" r="0.8" fill="url(#aiGrad)"/>
 </svg>

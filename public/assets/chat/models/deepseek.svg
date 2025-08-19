@@ -1,4 +1,15 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="24" height="24" rx="4" fill="#0F172A"/>
-  <path d="M7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12Z" fill="#38BDF8"/>
+  <defs>
+    <linearGradient id="deepseekGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0EA5E9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="12" cy="12" r="11" fill="url(#deepseekGrad)" stroke="#FFFFFF" stroke-width="0.5"/>
+  <circle cx="12" cy="12" r="6" fill="white" fill-opacity="0.9"/>
+  <circle cx="12" cy="12" r="3" fill="url(#deepseekGrad)"/>
+  <path d="M12 6V10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M12 14V18" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M6 12H10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M14 12H18" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
 </svg>
