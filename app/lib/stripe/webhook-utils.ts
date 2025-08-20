@@ -1,7 +1,12 @@
 import { db } from "~/utils/db.server";
 import { Effect } from "effect";
 import { referralService } from "~/services/referral.service";
+
+import { sendProEmail } from "~/utils/notifyers/pro";
+import { sendPlanCancellation } from "~/utils/notifyers/planCancellation";
+
 import { getDefaultModelForPlan } from "~/utils/aiModels";
+
 
 type SubscriptionStatus =
   | "active"
@@ -16,6 +21,7 @@ export interface StripeSubscription {
   id: string;
   customer: string;
   status: SubscriptionStatus;
+  current_period_end?: number; // Unix timestamp
   // Otros campos de Stripe que podamos necesitar
 }
 
@@ -90,6 +96,13 @@ export async function handleSubscriptionCreated(
   console.log(
     `[Webhook] Suscripción PRO creada para el usuario: ${user.email}`
   );
+
+  // Send PRO upgrade email
+  try {
+    await sendProEmail({ email: user.email, name: user.name });
+  } catch (error) {
+    console.error('Error sending PRO upgrade email:', error);
+  }
 
   // Si el usuario fue referido, registrar la conversión
   if (user.referrals && user.referrals.length > 0) {
@@ -169,4 +182,23 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
   await updateUserChatbotModels(user.id, "FREE");
 
   console.log(`[Webhook] Suscripción eliminada para: ${user.email}`);
+
+  // Send cancellation email
+  try {
+    // Format end date from Unix timestamp to Spanish date format
+    const endDate = subscription.current_period_end 
+      ? new Date(subscription.current_period_end * 1000).toLocaleDateString("es-MX", {
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        })
+      : "31 de diciembre de 2025"; // Fallback date
+    
+    await sendPlanCancellation({ 
+      email: user.email,
+      endDate 
+    });
+  } catch (error) {
+    console.error('Error sending plan cancellation email:', error);
+  }
 }

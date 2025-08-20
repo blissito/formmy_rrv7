@@ -3,6 +3,7 @@ import { getSesRemitent, getSesTransport } from "./ses";
 
 type FreeTrialEmail = {
   email: string;
+  name?: string;
 };
 
 const host =
@@ -13,7 +14,7 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendPlanCancellation = async ({ email }: FreeTrialEmail) => {
+export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
@@ -58,7 +59,7 @@ export const sendPlanCancellation = async ({ email }: FreeTrialEmail) => {
                     text-align: left;
                     "
                 >
-                    ¡Hola Luis! Tu chatbot IA está por desconectarse
+                    ¡Hola ${name || 'amigo'}! Tu chatbot IA está por desconectarse
                 </h2>
                 <p
                     style="
@@ -246,6 +247,12 @@ export const sendPlanCancellation = async ({ email }: FreeTrialEmail) => {
                     </p>
                     <p style="color: #81838e; font-size: 8px">
                         Derechos Reservados 2025 ®
+                    </p>
+                    <p style="color: #81838e; font-size: 10px; text-align: center; margin-top: 8px;">
+                        <a href="https://www.formmy.app/unsubscribe?email=${encodeURIComponent(email)}&type=marketing" 
+                           style="color: #81838e; text-decoration: underline;">
+                           ¿No deseas recibir estos correos? Darse de baja
+                        </a>
                     </p>
                     </div>
                 </div>
