@@ -89,7 +89,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   
   return {
     configuration: access.project.config as ConfigSchema,
-    isPro: user.plan === "PRO" ? true : false,
+    isPro: user.plan !== "FREE",
     projectId: access.project.id,
     type: access.project.type || "",
   };
@@ -129,7 +129,10 @@ const FormmyEditionPairContent = ({
     if (navigation.state === "idle" && isSaving) {
       setIsSaving(false);
       setIsDirty(false);
-      toast.success("Cambios guardados exitosamente");
+      const timer = setTimeout(() => {
+        toast.success("Cambios guardados exitosamente");
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [navigation.state, isSaving]);
 

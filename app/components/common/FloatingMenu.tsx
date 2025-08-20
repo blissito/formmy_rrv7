@@ -51,7 +51,7 @@ export const FloatingMenu = ({
     <div className={`relative flex ${className}`} ref={menuRef}>
       <button
         onClick={toggleMenu}
-        className={`text-2xl text-gray-600 hover:bg-gray-100 p-1 rounded-full ${buttonClassName}`}
+        className={`text-2xl text-gray-600 hover:bg-irongray/10 p-1 rounded-full ${buttonClassName}`}
         aria-label={buttonLabel}
       >
         {icon}

@@ -135,8 +135,12 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
     projects.concat(invitedProyects)
   );
   const [isSearch, setIsSearch] = useState<string>();
-  const isLimited = user.plan === "PRO" ? false : projects.length > 2;
-  const isPro = user.plan === "PRO";
+  // Check if user is on a free plan (case-insensitive check)
+  const isFreePlan = user.plan?.toUpperCase() === 'FREE';
+  // User is limited if they're on free plan and have more than 2 projects
+  const isLimited = isFreePlan && projects.length > 2;
+  // User has a paid plan if not free
+  const hasPaidPlan = !isFreePlan;
   const [isProOpen, setIsProOpen] = useState<boolean>(false);
   const { get, save } = useLocalStorage();
   const [showModal, setShowModal] = useState(false);
@@ -193,7 +197,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
         setIsProOpen(true);
       }
     } else {
-      !isPro && setIsProOpen(true);
+      !hasPaidPlan && setIsProOpen(true);
     }
   }, []);
 

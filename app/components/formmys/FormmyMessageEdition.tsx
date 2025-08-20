@@ -238,8 +238,6 @@ export function FormmyMessageEdition({
           </div>
         </div>
       </section>
-
-      <Toaster />
     </article>
   );
 }

@@ -69,15 +69,7 @@ export const GeneralConfig = ({
             </button>
           </nav>
         </div>
-        <div className="mb-6">
-          <span className="text-sm text-gray-600 block mb-2">Tamaño</span>
-        </div>
-        <div className="mb-0">
-          <span className="text-sm text-gray-600 block mb-2">
-            Historial del chat
-          </span>
-          <p>7 días</p>
-        </div>
+     
       </Card>
 
       <Card title="Eliminar Formmy">
@@ -91,7 +83,7 @@ export const GeneralConfig = ({
           <Button
             isLoading={fetcherState !== "idle"}
             onClick={() => onSetShowConfirm(true)}
-            className="h-10 md:h-12 block max-w-fit md:max-w-[220px] mt-0 ml-0 md:ml-auto disabled:opacity-50 disabled:cursor-not-allowed w-full bg-red-500 text-white py-2 px-4 rounded-full"
+            className="h-10 md:h-12 block max-w-fit md:max-w-[220px] mt-0 ml-0 md:ml-auto disabled:opacity-50 disabled:cursor-not-allowed w-full bg-danger hover:bg-[#DF4D42] text-white py-2 px-4 rounded-full"
             type="submit"
           >
             Eliminar Formmy
@@ -106,11 +98,12 @@ export const GeneralConfig = ({
         message="Si lo eliminas, dejarás de recibir mensajes y todos los mensajes que
             tenías se eliminarán automáticamente."
         footer={
-          <div className="flex mb-8">
+          <div className="flex gap-6 mt-8 justify-center">
             <Button
               autoFocus
+              variant="secondary"
               onClick={() => onSetShowConfirm(false)}
-              className="bg-gray-300 text-space-700"
+              className="bg-gray-300 text-space-700  mx-0 min-w-fit md:min-w-[160px]"
             >
               Cancelar
             </Button>
@@ -118,7 +111,7 @@ export const GeneralConfig = ({
               isLoading={fetcherState !== "idle"}
               onClick={match === project.name ? onHandleDelete : undefined}
               isDisabled={match !== project.name}
-              className="bg-red-400 text-red-100 not:disabled:hover:scale-105 transition-all disabled:bg-gray-500 disabled:text-gray-800"
+              className="bg-danger mx-0 text-white min-w-fit md:min-w-[160px] mt-0 hover:bg-[#DF4D42] transition-all disabled:bg-danger disabled:text-white"
             >
               Sí, eliminar
             </Button>
@@ -139,7 +132,7 @@ export const GeneralConfig = ({
             label={`Escribe el nombre del Formmy: ${project.name}`}
             type="text"
             placeholder={project.name}
-            className="mb-0"
+            className="mb-0 "
             autocomplete="off"
             onPaste={(e: SyntheticEvent) => e.preventDefault()}
           />
