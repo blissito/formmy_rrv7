@@ -4,6 +4,7 @@ import { db } from "~/utils/db.server";
 import { extraDataSchema, type ExtraData } from "~/utils/zod";
 import { processReferral } from "~/models/referral.server";
 import { Effect } from "effect";
+import { sendWelcomeEmail } from "~/utils/notifyers/welcome";
 
 const GOOGLE_SECRET = process.env.GOOGLE_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -152,6 +153,14 @@ export const createSession = async (code: string, request: Request, state?: stri
         },
         select: { id: true }
       });
+      
+      // Send welcome email to new user
+      try {
+        await sendWelcomeEmail({ email: extra.email, name: extra.name });
+      } catch (error) {
+        console.error('Error sending welcome email:', error);
+        // Don't fail registration if welcome email fails
+      }
       
       // Procesar referido si existe y es un nuevo usuario
       if (state && state.startsWith('ref_')) {
