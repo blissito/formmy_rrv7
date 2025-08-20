@@ -98,7 +98,7 @@ export default function HomeTestimonials() {
   const constraintsRef = useRef<HTMLDivElement | null>(null);
   return (
     <div ref={constraintsRef} className="w-full h-fit overflow-hidden">
-      <section className="max-w-7xl px-4 md:px-[5%] xl:px-0 mx-auto my-20 md:my-40 h-fit">
+      <section className="max-w-7xl px-4 md:px-[5%] xl:px-0 mx-auto  h-fit">
       <h2 className="heading font-bold text-[#080923] text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 lg:leading-[1.2]">
         Únete a otros equipos que potencian sus negocios con IA
       </h2>
