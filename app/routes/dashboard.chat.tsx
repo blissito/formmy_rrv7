@@ -6,12 +6,17 @@ import type { Route } from "./+types/chat";
 import type { Chatbot, Permission } from "@prisma/client";
 import toast from "react-hot-toast";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import ConfirmModal from "~/components/ConfirmModal";
 import { effect } from "../utils/effect";
 import { db } from "~/utils/db.server";
 import { getChatbotAccessInfo } from "server/chatbot/chatbotAccess.server";
 import { ChatbotCreateButton } from "~/components/chat/ChatbotCreateButton";
 import { Button } from "~/components/Button";
+
+interface InvitedChatbot extends Chatbot {
+  userRole: string;
+}
 
 const findActiveChatbotPermissions = async (email: string): Promise<Permission[]> => {
   const permissions = await db.permission.findMany({
@@ -194,24 +199,71 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
           Mis Chats IA
         </PageContainer.Title>
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {/* Chatbots propios */}
-          {chatbots.map((chatbot: Chatbot, i: number) => (
-            <PageContainer.ChatCard
-              onDelete={handleDeleteIntention(chatbot.id)}
-              key={`own-${i}`}
-              chatbot={chatbot}
-            />
-          ))}
-          
-          {/* Chatbots invitados */}
-          {invitedChatbots.map((chatbot: any, i: number) => (
-            <PageContainer.ChatCard
-              key={`invited-${i}`}
-              chatbot={chatbot}
-              userRole={chatbot.userRole}
-              isInvited={true}
-            />
-          ))}
+          {chatbots.length > 0 || (invitedChatbots && invitedChatbots.length > 0) ? (
+            <>
+              {/* Chatbots propios */}
+              {chatbots.map((chatbot: Chatbot, i: number) => (
+                <PageContainer.ChatCard
+                  onDelete={handleDeleteIntention(chatbot.id)}
+                  key={`own-${i}`}
+                  chatbot={chatbot}
+                />
+              ))}
+              
+              {/* Chatbots invitados */}
+              {invitedChatbots && invitedChatbots.map((chatbot: InvitedChatbot, i: number) => (
+                <PageContainer.ChatCard
+                  key={`invited-${i}`}
+                  chatbot={chatbot}
+                  userRole={chatbot.userRole}
+                  isInvited={true}
+                />
+              ))}
+            </>
+          ) : (
+            <motion.div 
+              className="mx-auto text-center flex flex-col justify-start md:justify-center w-full min-h-fit md:min-h-[60vh] col-span-full"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{
+                duration: 0.5,
+                ease: [0.16, 1, 0.3, 1]
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.5 }}
+              >
+                <img
+                  className="flex dark:hidden w-[240px] md:w-[320px] mx-auto"
+                  src="/assets/empty_ghost.svg"
+                  alt="empty ghost"
+                />
+                <img
+                  className="hidden dark:flex w-[240px] md:w-[320px] mx-auto"
+                  src="/assets/empty-ghost-dark.svg"
+                  alt="empty ghost"
+                />
+              </motion.div>
+              <motion.h2 
+                className="font-bold text-dark dark:text-white text-2xl mt-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
+                ¡Nada por aquí!
+              </motion.h2>
+              <motion.p 
+                className="font-light text-lg mt-4 text-metal dark:text-gray-400"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
+               Crea tu primer chatbot y empieza a atender a tus clientes 24/7.
+              </motion.p>
+            </motion.div>
+          )}
         </section>
       </PageContainer>
 

@@ -259,10 +259,9 @@ export default function Detail() {
 
   return (
     <div className="h-full">
-      <article className="max-w-7xl mx-auto p-4 md:px-0 md:py-8 h-full">
-        {/* <AnimatePresence>
+      <AnimatePresence>
           {show && (
-            <div className="w-full h-20 flex justify-center absolute top-8 z-[999] ">
+            <div className="w-full h-20 flex justify-center absolute top-0 z-[999] ">
               <ConfirmationToast
                 onClick={() => {
                   handleDelete(answers[currentIndex]);
@@ -273,7 +272,8 @@ export default function Detail() {
               />
             </div>
           )}
-        </AnimatePresence> */}
+        </AnimatePresence>
+      <article className="max-w-7xl mx-auto p-4 md:px-0 md:py-8 h-full">
         <main>
           <nav className="flex items-center h-fit gap-2 flex-wrap ">
             <div className="flex flex-col items-start ml-8 md:mr-auto mb-0 relative">

@@ -7,6 +7,8 @@ import { Form, useFetcher } from "react-router";
 import { TrashIcon } from "~/components/icons/TrashIcon";
 import Spinner from "~/components/Spinner";
 import { twMerge } from "tailwind-merge";
+import DeleteIcon from "~/components/ui/icons/Delete";
+import { IoMailOutline } from "react-icons/io5";
 
 interface UsersTableProps {
   isLoading?: boolean;
@@ -105,15 +107,15 @@ export const UserRow = ({
   const menuItems = [
     {
       label: "Reenviar",
-      icon: <MdOutlineEmail className="w-4 h-4" />,
+      icon: <IoMailOutline fill="metal" className="w-4 h-4" />,
       onClick: () => handleAction("reenviar"),
-      className: "text-blue-600 hover:bg-blue-50"
+      className: "text-metal hover:bg-gray-50"
     },
     {
       label: "Eliminar",
-      icon: <TrashIcon fill="tomato" />,
+      icon: <DeleteIcon className="w-5 h-5 " fill="tomato" />,
       onClick: () => handleAction("eliminar"),
-      className: "text-red-600 hover:bg-red-50",
+      className: "text-danger hover:bg-red-50",
     },
   ];
 

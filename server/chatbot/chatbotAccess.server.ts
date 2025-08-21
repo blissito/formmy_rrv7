@@ -150,7 +150,7 @@ export async function getChatbotAccessInfo(userId: string) {
     creation: creationAccess,
     showProTag: !creationAccess.canCreate && !creationAccess.isPro,
     proTagMessage: !creationAccess.canCreate 
-      ? `Has alcanzado el límite de ${creationAccess.maxAllowed} chatbot${creationAccess.maxAllowed > 1 ? 's' : ''} para tu plan gratuito. Actualiza a Pro para crear chatbots ilimitados.`
+      ? `Tu plan gratuito tiene un límite de ${creationAccess.maxAllowed} chatbot${creationAccess.maxAllowed === 0 || creationAccess.maxAllowed > 1 ? 's' : ''}. Actualiza tu plan para crear chatbots ilimitados.`
       : undefined,
   };
 }

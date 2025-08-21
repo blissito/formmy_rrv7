@@ -59,7 +59,7 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     const newProject = await db.project.create({ data: body });
-    return redirect(`/config/${newProject.id}/basic`);
+    return redirect(`/dashboard/formmys/${newProject.id}/edition`);
   }
   return null;
 };

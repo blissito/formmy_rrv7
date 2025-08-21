@@ -135,8 +135,12 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
     projects.concat(invitedProyects)
   );
   const [isSearch, setIsSearch] = useState<string>();
-  const isLimited = user.plan === "PRO" ? false : projects.length > 2;
-  const isPro = user.plan === "PRO";
+  // Check if user is on a free plan (case-insensitive check)
+  const isFreePlan = user.plan?.toUpperCase() === 'FREE';
+  // User is limited if they're on free plan and have more than 2 projects
+  const isLimited = isFreePlan && projects.length > 2;
+  // User has a paid plan if not free
+  const hasPaidPlan = !isFreePlan;
   const [isProOpen, setIsProOpen] = useState<boolean>(false);
   const { get, save } = useLocalStorage();
   const [showModal, setShowModal] = useState(false);
@@ -193,7 +197,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
         setIsProOpen(true);
       }
     } else {
-      !isPro && setIsProOpen(true);
+      !hasPaidPlan && setIsProOpen(true);
     }
   }, []);
 
@@ -207,22 +211,20 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                   <p>
                     Te han invitado al Formmy:{" "}
                     <strong>{permission?.project.name}</strong>
-                  </p>
-                  <p className="mt-2">
-                    Tu rol será: <strong className="text-brand-500">
+                    con el rol de <strong className="text-metal">
                       {permission?.role === "VIEWER" && "Viewer (Solo lectura)"}
                       {permission?.role === "EDITOR" && "Editor (Lectura y escritura)"}
                       {permission?.role === "ADMIN" && "Admin (Todos los permisos)"}
                       {!permission?.role && "Viewer (Solo lectura)"}
-                    </strong>
+                    </strong>. 
                   </p>
-                  <p className="mt-2 text-sm">
-                    Acepta la invitación si quieres ser parte del proyecto.
+                  <p>
+                  Acepta la invitación si quieres ser parte del proyecto.
                   </p>
                 </div>
               }
               footer={
-                <Form method="post" className="flex gap-6 mb-12">
+                <Form method="post" className="flex justify-center gap-6">
                   <input
                     className="hidden"
                     name="permissionId"
@@ -234,7 +236,8 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                     name="intent"
                     value="reject_invite"
                     autoFocus
-                    className="bg-gray-100 text-gray-600"
+                    variant="secondary"
+                    className=" mx-0"
                   >
                     Rechazar
                   </Button>
@@ -246,7 +249,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                     name="intent"
                     value="accept_invite"
                     type="submit"
-                    className="text-clear"
+                    className="text-clear mx-0 mt-0"
                   >
                     Aceptar invitación
                   </Button>
@@ -329,7 +332,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
           ))}
           {filtered.length === 0 && (
             <motion.div 
-              className="mx-auto text-center flex flex-col justify-start md:justify-center w-full min-h-fit md:min-h-[60vh]"
+              className="mx-auto col-span-1 md:col-span-2 md:col-span-4 text-center flex flex-col justify-start md:justify-center w-full min-h-fit md:min-h-[60vh]"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{
@@ -433,7 +436,7 @@ export const ProjectCard = ({
     >
       <Link
         to={id ?? ""}
-        className="group relative overflow-hidden hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl w-full h-full block"
+        className="group relative overflow-hidden hover:shadow-none transition-all md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl w-full h-full block"
       >
         <section className="bg-gradient-to-r from-[#51B8BF] to-bird w-full h-24 flex items-end justify-center border-b border-outlines">
           <img src="/dash/chat.png" alt="chatbot" />
