@@ -1,7 +1,8 @@
 import { data as json, redirect } from "react-router";
 import { useFetcher, useLoaderData } from "react-router";
 import { db } from "~/utils/db.server";
-import { getUserOrRedirect, getUserOrNull, getProjectWithAccess } from "server/getUserUtils.server";
+import { getUserOrRedirect, getUserOrNull, getProjectWithAccess, getRolePermissions } from "server/getUserUtils.server";
+import { Role } from "@prisma/client";
 import { type Notifications, notificationsSchema } from "~/utils/zod";
 import type { Route } from "./+types/dash_.$projectId_.settings.notifications";
 import { PageContainer, StickyGrid } from "~/components/chat/PageContainer";
@@ -35,9 +36,6 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
     const role = formData.get("role") as string;
     if (!email || email === user?.email) return { success: false };
 
-    // Import Role and getRolePermissions
-    const { Role } = await import("@prisma/client");
-    const { getRolePermissions } = await import("server/getUserUtils.server");
     
     const roleEnum = role as Role;
     const permissions = getRolePermissions(roleEnum);
@@ -76,8 +74,6 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
     const email = (formData.get("email") as string).toLowerCase();
     if (!email || email === user?.email) return { success: false };
 
-    const { Role } = await import("@prisma/client");
-    const { getRolePermissions } = await import("server/getUserUtils.server");
     
     const permissions = getRolePermissions(Role.VIEWER);
 

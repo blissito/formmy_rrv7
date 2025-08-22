@@ -213,6 +213,21 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - **Usuarios FREE**: Acceso completo durante 60 días desde registro, luego sin acceso a modelos
 - **Sin fallback entre planes**: Usuarios sin acceso reciben error, no degradación de modelo
 
+### Precios Reales API (Agosto 2025)
+
+#### GPT-5 Family (OpenAI Direct)
+- **GPT-5 nano**: $0.05/1M input, $0.40/1M output ⚡ *Modelo principal*
+- **GPT-5 mini**: $0.25/1M input, $2.00/1M output  
+- **GPT-5 (full)**: $1.25/1M input, $10.00/1M output
+
+#### Claude Family (Anthropic Direct)
+- **Claude 3 Haiku**: ~$0.25/1M input, ~$1.25/1M output
+- **Claude 3.5 Haiku**: ~$1.00/1M input, ~$5.00/1M output
+
+#### OpenRouter (Terceros)
+- **Gemini 2.5 Flash**: ~$0.075/1M (via OpenRouter markup)
+- **Otros modelos**: Precios variables con markup OpenRouter
+
 ### Streaming & Tools Implementation
 - **Smart Streaming**: Non-streaming automático cuando hay herramientas disponibles
 - **Tools Support**: GPT-5-nano, GPT-5-mini, Claude 3 Haiku, Claude 3.5 Haiku
