@@ -1,47 +1,24 @@
-# Usamos imagen más liviana
-FROM node:20-alpine AS base
-RUN apk update && apk add --no-cache \
-    openssl \
-    ca-certificates \
-    && rm -rf /var/cache/apk/*
+FROM node:20-alpine
 
-# Stage 1: Instalar dependencias (cacheable)
-FROM base AS deps
+# Install OpenSSL and other essentials for Prisma
+RUN apk add --no-cache openssl ca-certificates
+
 WORKDIR /app
-# Copiamos solo archivos de dependencias para mejor cache
+
+# Install dependencies
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
-# Cache mount para npm
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --frozen-lockfile
+RUN npm ci --frozen-lockfile
 
-# Stage 2: Build aplicación
-FROM base AS builder
-WORKDIR /app
-# Copiamos dependencias del stage anterior
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source code
 COPY . .
-# Generar Prisma client
+
+# Generate Prisma client for MongoDB and build
 RUN npx prisma generate
-# Build optimizado
-RUN npm run build && npm prune --omit=dev
+RUN npm run build
 
-# Stage 3: Imagen final de producción
-FROM base AS runner
-WORKDIR /app
-# Crear usuario no-root para seguridad
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copiar archivos necesarios
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/server.js ./
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/content ./content
-
-# Cambiar a usuario no-root
-USER nextjs
+# Verify Prisma client was generated correctly
+RUN ls -la node_modules/.prisma/client/ || echo "Prisma client not found"
 
 EXPOSE 3000
 ENV NODE_ENV=production
