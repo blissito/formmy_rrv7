@@ -56,6 +56,8 @@ import { generateFallbackModels, isAnthropicDirectModel } from "~/utils/aiModels
 import { buildEnrichedSystemPrompt, estimateTokens } from "./chatbot/promptBuilder.server";
 import { AIProviderManager } from "./chatbot/providers";
 import { addUserMessage, addAssistantMessage } from "./chatbot/messageModel.server";
+export { agentEngine } from "./chatbot/agent-decision-engine";
+export { performanceMonitor } from "./chatbot/performance-monitor";
 
 // Utility functions
 export const truncateConversationHistory = (

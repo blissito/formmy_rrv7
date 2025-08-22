@@ -12,10 +12,12 @@ export const ProTag = ({
   isOpen = false,
   onChange,
   onClose,
+  onDismiss,
 }: {
   onClose?: () => void;
   isOpen?: boolean;
   onChange?: (arg0: boolean) => void;
+  onDismiss?: () => void;
 }) => {
   const [localOpen, setLocalOpen] = useState(isOpen);
   const fetcher = useFetcher();
@@ -31,6 +33,7 @@ export const ProTag = ({
     onChange?.(false);
     setLocalOpen(false);
     onClose?.();
+    onDismiss?.();
   }
 
   useEffect(() => {
@@ -81,13 +84,22 @@ export const ProTag = ({
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full relative max-w-7xl transform overflow-hidden  rounded-2xl bg-clear dark:bg-space-900 pt-6 pb-10 px-10 text-left align-middle shadow-xl transition-all">
-                  <button onClick={closeModal}>
-                    <img
-                      className="absolute top-6 right-6 dark:opacity-40 z-20"
-                      src="/assets/close.svg"
-                      alt="close"
-                    />
-                  </button>
+                  <div className="absolute top-6 right-6 flex gap-2 z-20">
+                    <button 
+                      onClick={onDismiss}
+                      className="text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
+                      title="No mostrar por 7 días"
+                    >
+                      No mostrar por 7 días
+                    </button>
+                    <button onClick={closeModal}>
+                      <img
+                        className="dark:opacity-40"
+                        src="/assets/close.svg"
+                        alt="close"
+                      />
+                    </button>
+                  </div>
                   <div className="flex flex-wrap lg:flex-nowrap gap-4 ">
                     <div className="w-[280px]">
                       <div className="w-[64px] h-[64px] rounded-lg flex items-center justify-center border-[1px] border-[#DFDFE9] dark:border-[rgba(255,255,255,.1)] mb-8">

@@ -177,11 +177,11 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
   }, [actionData]);
   const [showInviteModal, setShowInviteModal] = useState(!!permission);
 
-  // hidding prices for 15 days
+  // hidding prices for 7 days
   const hid = () => {
     const until = new Date();
     // until.setMinutes(until.getMinutes() + 1);
-    until.setDate(until.getDate() + 15);
+    until.setDate(until.getDate() + 7);
     localStorage.setItem("hide_price", until.toISOString());
     // close
     setIsProOpen(false);
@@ -314,6 +314,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
                   <ProTag
                     isOpen={isProOpen}
                     onChange={(val) => setIsProOpen(val)}
+                    onDismiss={hid}
                   />
                 </button>
               )}  
@@ -382,6 +383,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
       {/* <ProTag
         isOpen={isProOpen}
         onChange={(val) => setIsProOpen(val)}
+        onDismiss={hid}
       /> */}
       <Outlet />
     </section>

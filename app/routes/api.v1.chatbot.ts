@@ -64,7 +64,9 @@ export async function action({ request }: any) {
     truncateConversationHistory,
     createProviderManager,
     addUserMessage,
-    addAssistantMessage
+    addAssistantMessage,
+    agentEngine,
+    performanceMonitor
   } = await import("../../server/chatbot-api.server");
   
   console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
@@ -447,6 +449,25 @@ export async function action({ request }: any) {
       }
       case "get_conversations_count": {
         const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Validate user access to this chatbot
+        const accessValidation = await validateChatbotAccess(user.id, chatbotId);
+        if (!accessValidation.canAccess) {
+          return new Response(
+            JSON.stringify({ 
+              error: accessValidation.restrictionReason || "Sin acceso a este chatbot",
+              needsUpgrade: accessValidation.isOwner && !accessValidation.canAccess
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
         const count = await db.conversation.count({
           where: {
             chatbotId,
@@ -1314,6 +1335,10 @@ export async function action({ request }: any) {
         const conversationHistoryStr = formData.get("conversationHistory") as string;
         const requestedStream = formData.get("stream") === "true";
         
+        // 📈 INICIAR PERFORMANCE MONITORING
+        const requestId = performanceMonitor.startRequest(chatbotId, userId, sessionId);
+        const requestStartTime = Date.now();
+        
         
         // Parsear el historial conversacional
         let conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
@@ -1350,74 +1375,66 @@ export async function action({ request }: any) {
           );
         }
 
-        // Detectar si el mensaje requiere herramientas (básico primero)
-        const basicRequiresTools = (() => {
-          const messageLC = message.toLowerCase();
-          const toolIndicators = [
-            // Indicadores de pago
-            'link de pago',
-            'link de stripe',
-            'cobrar',
-            'factura',
-            'payment link',
-            'generar pago',
-            'crear cobro',
-            'enviar factura',
-            'stripe',
-            'pago',
-            'cobro',
-            'invoice',
-            'checkout',
-            // Podemos agregar más herramientas aquí en el futuro
-            'agendar cita',
-            'calendario',
-            'schedule',
-            // Indicadores de cantidad de dinero con intención de cobro
-            /\$\d+/,
-            /\d+\s*(pesos|dolares|usd|mxn)/i,
-            // Indicadores comerciales
-            /servicio.*seo/i,
-            /paquete.*seo/i,
-            /optimizar.*sitio/i,
-            // Indicadores comerciales específicos para generar pagos
-            'quiero contratar',
-            'necesito pagar',
-            'como puedo pagar',
-            'generar link',
-            'crear link',
-            'proceder con el pago'
-          ];
-          
-          return toolIndicators.some(indicator => {
-            if (typeof indicator === 'string') {
-              return messageLC.includes(indicator);
-            } else if (indicator instanceof RegExp) {
-              return indicator.test(message);
-            }
-            return false;
-          });
-        })();
+        // ✨ NUEVO SISTEMA INTELIGENTE DE DECISIONES
+        const startDecisionTime = Date.now();
         
+        // Verificar acceso a herramientas y capacidades del modelo
+        const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE" || user.plan === "TRIAL";
+        const allowToolsForTesting = true; // DEBUG: Need to see what's happening
+        const hasToolAccess = hasProPlan || allowToolsForTesting;
+        const modelsWithToolSupport = ['gpt-5-nano', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
+        const modelSupportsTools = modelsWithToolSupport.includes(chatbot.aiModel);
         
-        // Obtener información de Stripe ANTES de todo para poder loggear correctamente
-        let stripeIntegration = null;
-        try {
-          stripeIntegration = await db.integration.findFirst({
-            where: {
-              chatbotId: chatbot.id,
-              platform: "STRIPE",
-              isActive: true,
-              stripeApiKey: {
-                not: null
-              }
-            },
-          });
-        } catch (error) {
-          console.warn("⚠️ Error checking Stripe integration for testing:", error);
+        // Preparar contexto para el agent engine
+        const toolContext = {
+          chatbotId: chatbot.id,
+          userId: user.id,
+          userPlan: user.plan,
+          hasStripeIntegration: undefined, // Se determinará lazy
+          modelSupportsTools
+        };
+        
+        // 🚀 DECISIÓN INTELIGENTE DEL AGENTE
+        const agentDecision = await agentEngine.makeDecision(message, toolContext);
+        
+        // 📈 LOG AGENT DECISION METRICS
+        performanceMonitor.logAgentDecision(requestId, {
+          chatbotId,
+          userId,
+          agentDecisionTime: agentDecision.detectionTime,
+          agentConfidence: agentDecision.confidence,
+          agentNeedsTools: agentDecision.needsTools,
+          agentSuggestedTools: agentDecision.suggestedTools,
+          agentReasoning: agentDecision.reasoning
+        });
+        
+        // 💰 LAZY LOADING: Solo cargar integraciones si realmente se necesitan
+        let integrationQueriesCount = 0;
+        const integrations = await agentEngine.getIntegrationsIfNeeded(
+          chatbot.id,
+          agentDecision.needsTools,
+          agentDecision.suggestedTools
+        );
+        
+        // Contar queries de integración para métricas
+        if (agentDecision.needsTools && agentDecision.suggestedTools.includes('create_payment_link')) {
+          integrationQueriesCount = 1;
         }
-
-        // Si requiere herramientas, FORZAR non-streaming para garantizar funcionamiento correcto
-        const stream = requestedStream && (chatbot.enableStreaming !== false) && !basicRequiresTools;
+        
+        // Determinar streaming basado en decisión inteligente
+        const stream = requestedStream && 
+                      (chatbot.enableStreaming !== false) && 
+                      agentDecision.shouldStream && 
+                      hasToolAccess; // Solo stream si hay acceso a herramientas
+        
+        // Performance warning si se deshabilita streaming innecesariamente
+        if (requestedStream && !stream && agentDecision.confidence < 70) {
+          performanceMonitor.logPerformanceWarning(
+            requestId,
+            'Streaming disabled with low tool confidence',
+            { confidence: agentDecision.confidence, needsTools: agentDecision.needsTools }
+          );
+        }
         
 
         // Obtener las API keys necesarias
@@ -1440,95 +1457,47 @@ export async function action({ request }: any) {
           enableLogging: false
         });
         
-        // Agregar capacidades de Stripe si está disponible
-        // Solo agregar capacidades de Stripe para planes TRIAL, PRO y ENTERPRISE
-        const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE" || user.plan === "TRIAL";
-        const allowToolsForTesting = true; // DEBUG: Need to see what's happening
-          
-        // Verificar acceso a herramientas (PRO/ENTERPRISE) 
-        const hasToolAccess = hasProPlan || allowToolsForTesting;
+        // 🧰 PREPARAR HERRAMIENTAS DISPONIBLES (Solo si agent decidió que se necesitan)
+        const tools = hasToolAccess && modelSupportsTools && agentDecision.needsTools ?
+          getAvailableTools(user.plan, integrations, modelSupportsTools) : [];
         
-        // Verificar si el modelo actual soporta herramientas
-        const modelsWithToolSupport = ['gpt-5-nano', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
-        const modelSupportsTools = modelsWithToolSupport.includes(chatbot.aiModel);
-        
-        // PREPARAR HERRAMIENTAS DISPONIBLES
-        const integrations = {
-          stripe: stripeIntegration
-        };
-        const tools = getAvailableTools(user.plan, integrations, modelSupportsTools);
-        
-        if (hasToolAccess && modelSupportsTools && tools.length > 0) {
+        // 🎯 PROMPT INTELIGENTE: Solo agregar instrucciones de herramientas si realmente se necesitan
+        if (tools.length > 0) {
           enrichedSystemPrompt += "\n\n=== HERRAMIENTAS DISPONIBLES ===\n";
           enrichedSystemPrompt += generateToolPrompts(tools);
           
-          // Si detectamos que requiere herramientas, ser más directivo
-          if (basicRequiresTools) {
-            enrichedSystemPrompt += "🚨 MODO HERRAMIENTAS ACTIVO - El usuario quiere generar un pago.\n";
-            enrichedSystemPrompt += "⚡ INSTRUCCIÓN CRÍTICA: USA INMEDIATAMENTE la herramienta create_payment_link SIN PEDIR MÁS INFORMACIÓN.\n";
-            enrichedSystemPrompt += "🎯 Si no hay descripción específica, usa 'Servicios profesionales' como descripción.\n";
-            enrichedSystemPrompt += "🚫 PROHIBIDO: NO preguntes por más detalles, NO pidas confirmación, actúa INMEDIATAMENTE.\n";
-            enrichedSystemPrompt += "💰 OPTIMIZACIÓN: Responde de forma CONCISA (máximo 2 párrafos) para minimizar costos.\n\n";
+          // Instrucciones específicas basadas en la confianza del agent
+          if (agentDecision.confidence >= 80) {
+            enrichedSystemPrompt += "🚨 ALTA CONFIANZA - Usuario requiere herramientas específicas.\n";
+            enrichedSystemPrompt += "⚡ INSTRUCCIÓN: USA INMEDIATAMENTE las herramientas sugeridas.\n";
+            enrichedSystemPrompt += `🎯 Herramientas recomendadas: ${agentDecision.suggestedTools.join(', ')}\n\n`;
+          } else if (agentDecision.confidence >= 60) {
+            enrichedSystemPrompt += "⚠️ CONFIANZA MEDIA - Usuario posiblemente necesita herramientas.\n";
+            enrichedSystemPrompt += "🤔 INSTRUCCIÓN: Evalúa si realmente se necesita usar herramientas antes de proceder.\n\n";
           }
-            
-          enrichedSystemPrompt += "**CONTEXTO IMPORTANTE DE ROLES:**\n";
-          enrichedSystemPrompt += "- El usuario que te habla ES un CLIENTE potencial\n";
-          enrichedSystemPrompt += "- Tú representas a la empresa/negocio dueño de este chatbot\n";
-          enrichedSystemPrompt += "- Los links de pago son para que el cliente pague por NUESTROS servicios\n";
-          enrichedSystemPrompt += "- Cuando generes un link, es para cobrarle AL USUARIO por nuestros servicios\n\n";
-          enrichedSystemPrompt += "**Tienes acceso a la herramienta create_payment_link:**\n";
-          enrichedSystemPrompt += "- Úsala cuando el cliente quiera pagar por nuestros servicios\n";
-          enrichedSystemPrompt += "- Cuando mencionen interés en contratar o pagar algo\n";
-          enrichedSystemPrompt += "- Para frases como: 'quiero pagar', 'genera un link', 'cómo puedo pagar'\n\n";
-          enrichedSystemPrompt += "**Cómo responder correctamente:**\n";
-          enrichedSystemPrompt += "1. Identifica qué servicio nuestro quiere contratar el cliente\n";
-          enrichedSystemPrompt += "2. Determina el precio correspondiente (SIEMPRE en pesos mexicanos)\n";
-          enrichedSystemPrompt += "3. Usa format de México: números con PUNTO decimal (ej: 1500.50, NO 1500,50)\n";
-          enrichedSystemPrompt += "4. Genera el link con currency: 'mxn' (peso mexicano)\n";
-          enrichedSystemPrompt += "5. Explica que puede proceder con el pago\n\n";
-          enrichedSystemPrompt += "**Ejemplos CORRECTOS (USA LA HERRAMIENTA INMEDIATAMENTE):**\n";
-          enrichedSystemPrompt += "Cliente: 'Genera un link de pago por $3400'\n";
-          enrichedSystemPrompt += "Tu acción: [USA create_payment_link con amount: 3400, description: 'Servicios profesionales', currency: 'mxn']\n";
-          enrichedSystemPrompt += "Cliente: 'Quiero pagar servicios de SEO por $1000'\n";
-          enrichedSystemPrompt += "Tu acción: [USA create_payment_link con amount: 1000, description: 'Servicios de SEO', currency: 'mxn']\n";
-          enrichedSystemPrompt += "🚫 INCORRECTO: Preguntar '¿qué servicio específico?' - ¡USA LA HERRAMIENTA DIRECTAMENTE!\n\n";
-          enrichedSystemPrompt += "**Frases correctas a usar:**\n";
-          enrichedSystemPrompt += "- 'nuestros servicios'\n";
-          enrichedSystemPrompt += "- 'puedes proceder con el pago'\n";
-          enrichedSystemPrompt += "- 'link para pagar'\n";
-          enrichedSystemPrompt += "- 'pago por [servicio específico]'\n";
           
-          enrichedSystemPrompt += "\n=== CAPACIDADES DE RECORDATORIOS ===\n";
-          enrichedSystemPrompt += "🔥 TAMBIÉN tienes acceso a la herramienta schedule_reminder.\n";
-          enrichedSystemPrompt += "ÚSALA cuando el usuario quiera:\n";
-          enrichedSystemPrompt += "- Agendar una cita\n";
-          enrichedSystemPrompt += "- Programar un recordatorio\n";
-          enrichedSystemPrompt += "- Crear una nota en el calendario\n";
-          enrichedSystemPrompt += "- Cualquier solicitud de agendamiento\n\n";
-          enrichedSystemPrompt += "**Formato requerido:**\n";
-          enrichedSystemPrompt += "- title: Descripción clara de la cita/recordatorio\n";
-          enrichedSystemPrompt += "- date: Formato YYYY-MM-DD (ej: 2024-12-25)\n";
-          enrichedSystemPrompt += "- time: Formato HH:MM en 24h (ej: 14:30)\n";
-          enrichedSystemPrompt += "- email: Opcional, para enviar notificación\n\n";
-          enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
+          // Contexto de roles simplificado
+          enrichedSystemPrompt += "**CONTEXTO:**\n";
+          enrichedSystemPrompt += "- Representas a la empresa dueña del chatbot\n";
+          enrichedSystemPrompt += "- Los pagos son para servicios de la empresa\n";
+          enrichedSystemPrompt += "- Usa herramientas cuando el usuario lo solicite claramente\n\n";
+          
+          enrichedSystemPrompt += "=== FIN HERRAMIENTAS ===\n";
         }
         
-        // CRÍTICO: Advertencia sobre limitaciones reales
-        enrichedSystemPrompt += "\n\n🚨 RESTRICCIONES CRÍTICAS:\n";
-        if (hasToolAccess && modelSupportsTools) {
-          const toolsList = [];
-          if (stripeIntegration && stripeIntegration.stripeApiKey) toolsList.push("pagos (Stripe)");
-          toolsList.push("recordatorios (Denik)");
-          enrichedSystemPrompt += `- TIENES acceso a: ${toolsList.join(" y ")}\n`;
-        } else if (hasToolAccess && !modelSupportsTools) {
-          enrichedSystemPrompt += "- Herramientas disponibles pero modelo no compatible\n";
-        } else {
-          enrichedSystemPrompt += "- NO tienes acceso a herramientas (requiere plan PRO)\n";
+        // 🚨 RESTRICCIONES CONTEXTUALES
+        enrichedSystemPrompt += "\n\n🚨 RESTRICCIONES:\n";
+        if (tools.length > 0) {
+          const availableTools = agentDecision.suggestedTools.length > 0 ? 
+            agentDecision.suggestedTools : ['herramientas básicas'];
+          enrichedSystemPrompt += `- TIENES acceso a: ${availableTools.join(', ')}\n`;
+        } else if (!hasToolAccess) {
+          enrichedSystemPrompt += "- Sin acceso a herramientas (requiere plan PRO+)\n";
+        } else if (!modelSupportsTools) {
+          enrichedSystemPrompt += "- Modelo no soporta herramientas - usa GPT-5 Nano o Claude Haiku\n";
         }
-        enrichedSystemPrompt += "- NO tienes acceso a datos de usuarios externos o sistemas third-party\n";
-        enrichedSystemPrompt += "- SOLO puedes usar las herramientas explícitamente listadas arriba\n";
-        enrichedSystemPrompt += "- SI no tienes una herramienta específica, di claramente 'No tengo acceso a esa función'\n";
-        enrichedSystemPrompt += "- NUNCA inventes datos, direcciones de email, o confirmes acciones que no puedes realizar\n";
+        enrichedSystemPrompt += "- NO inventes datos o confirmes acciones imposibles\n";
+        enrichedSystemPrompt += "- Sé transparente sobre limitaciones\n";
         
         const systemMessage = {
           role: "system",
@@ -1580,19 +1549,18 @@ export async function action({ request }: any) {
 
         // (stripeIntegration ya obtenido anteriormente)
 
-        // 💰 OPTIMIZACIÓN DE COSTOS: Si detectamos tools de Stripe, usar Haiku (económico y efectivo)
-        const stripeToolsDetected = basicRequiresTools && stripeIntegration?.stripeApiKey;
+        // 💰 OPTIMIZACIÓN DE COSTOS: Usar parámetros eficientes cuando se detectan herramientas
+        const toolsDetected = agentDecision.needsTools && agentDecision.confidence >= 70;
         
         // (La lógica de prompt está ya incluida en la sección anterior)
         
         // Smart routing para usuarios PRO: Nano para chat básico, Haiku para integraciones
         let selectedModel = chatbot.aiModel;
-
         const fallbackModels = generateFallbackModels(selectedModel);
 
-        // Preparar warning si el modelo no soporta tools
+        // Preparar warning si el modelo no soporta tools (solo si agent sugiere herramientas)
         let toolsDisabledWarning = null;
-        if (hasToolAccess && !modelSupportsTools) {
+        if (agentDecision.needsTools && !modelSupportsTools) {
           toolsDisabledWarning = `Las herramientas no están disponibles con ${selectedModel}. Usa GPT-5 Nano o Claude Haiku para acceder a integraciones.`;
         }
 
@@ -1604,9 +1572,9 @@ export async function action({ request }: any) {
             ...truncateConversationHistory(conversationHistory),
             { role: "user" as const, content: message }
           ],
-          temperature: stripeToolsDetected ? 0.1 : (chatbot.temperature || 0.7), // Baja temperatura para herramientas = más obediente
-          maxTokens: stripeToolsDetected ? 300 : 1000, // Reducir tokens para herramientas = menor costo
-          stream: tools.length > 0 ? false : stream, // Forzar non-streaming cuando hay herramientas
+          temperature: toolsDetected ? 0.1 : (chatbot.temperature || 0.7), // Baja temperatura para herramientas = más obediente
+          maxTokens: toolsDetected ? 400 : 1000, // Reducir tokens para herramientas = menor costo
+          stream: !agentDecision.needsTools && stream, // Solo forzar non-streaming cuando agente confirma herramientas
           ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
         
@@ -1630,6 +1598,15 @@ export async function action({ request }: any) {
             providerUsed = result.providerUsed;
             usedFallback = result.usedFallback;
             
+            // 📈 LOG MODEL METRICS FOR STREAMING
+            performanceMonitor.logModelMetrics(requestId, {
+              modelRequested: selectedModel,
+              modelUsed: result.modelUsed,
+              providerUsed: result.providerUsed,
+              usedFallback: result.usedFallback,
+              streamingEnabled: true
+            });
+            
             
             // Convertir el stream modular al formato esperado por el frontend
             const compatibleStream = new ReadableStream({
@@ -1646,7 +1623,24 @@ export async function action({ request }: any) {
                     console.log('📨 Stream chunk received:', { done, value });
                     
                     if (done) {
+                      const totalResponseTime = Date.now() - requestStartTime;
+                      totalTokensUsed = result.usage?.totalTokens || result.usage?.total_tokens || 0;
+                      
                       console.log(`🏁 Stream completed. Total chunks sent: ${contentChunks}`);
+                      
+                      // 📈 LOG RESOURCE USAGE & COMPLETE METRICS
+                      performanceMonitor.logResourceUsage(requestId, {
+                        integrationQueriesCount,
+                        cacheHitRate: 0, // TODO: implement cache hit tracking
+                        toolsExecuted: [] // Streaming rarely uses tools
+                      });
+                      
+                      performanceMonitor.endRequest(requestId, {
+                        totalResponseTime,
+                        firstTokenLatency: firstTokenTime ? firstTokenTime - requestStartTime : undefined,
+                        tokensGenerated: totalTokensUsed,
+                        errorOccurred: false
+                      }, sessionId);
                       
                       // ✨ GUARDAR MENSAJES EN BASE DE DATOS (STREAMING)
                       try {
@@ -1696,6 +1690,11 @@ export async function action({ request }: any) {
                     if (value.content && value.content.trim()) {
                       contentChunks++;
                       accumulatedContent += value.content;
+                      
+                      // Track first token time
+                      if (contentChunks === 1) {
+                        firstTokenTime = Date.now();
+                      }
                       
                       // Detectar si el modelo intentó usar herramientas pero no las tiene disponibles
                       if (!warningAlreadySent && !modelSupportsTools && /\[.*create_payment_link|\[STRIPE_PAYMENT_REQUEST/i.test(accumulatedContent)) {
@@ -1761,6 +1760,16 @@ export async function action({ request }: any) {
             modelUsed = result.modelUsed;
             providerUsed = result.providerUsed;
             usedFallback = result.usedFallback;
+            totalTokensUsed = result.response.usage?.totalTokens || result.response.usage?.total_tokens || 0;
+            
+            // 📈 LOG MODEL METRICS FOR NON-STREAMING
+            performanceMonitor.logModelMetrics(requestId, {
+              modelRequested: selectedModel,
+              modelUsed: result.modelUsed,
+              providerUsed: result.providerUsed,
+              usedFallback: result.usedFallback,
+              streamingEnabled: false
+            });
             
             // Procesar la respuesta para detectar solicitudes de pago o tool calls
             let finalResponse = result.response.content;
@@ -1856,6 +1865,24 @@ export async function action({ request }: any) {
               }
             }
             
+            const totalResponseTime = Date.now() - requestStartTime;
+            
+            // 📈 LOG RESOURCE USAGE & COMPLETE METRICS (NON-STREAMING)
+            const toolsExecuted = result.response.toolCalls?.map(tc => tc.name) || [];
+            
+            performanceMonitor.logResourceUsage(requestId, {
+              integrationQueriesCount,
+              cacheHitRate: 0, // TODO: implement cache hit tracking
+              toolsExecuted
+            });
+            
+            performanceMonitor.endRequest(requestId, {
+              totalResponseTime,
+              firstTokenLatency: undefined, // Non-streaming doesn't track first token
+              tokensGenerated: totalTokensUsed,
+              errorOccurred: false
+            }, sessionId);
+            
             // ✨ GUARDAR MENSAJES EN BASE DE DATOS
             try {
               // Crear o encontrar conversación usando sessionId
@@ -1917,6 +1944,14 @@ export async function action({ request }: any) {
         } catch (error) {
           lastError = error;
           console.error('❌ All providers failed:', error);
+          
+          // 📈 LOG ERROR METRICS
+          performanceMonitor.endRequest(requestId, {
+            totalResponseTime: Date.now() - requestStartTime,
+            tokensGenerated: 0,
+            errorOccurred: true,
+            errorType: error instanceof Error ? error.message : 'Unknown error'
+          }, sessionId);
         }
 
         // Si llegamos aquí, todos los proveedores fallaron
