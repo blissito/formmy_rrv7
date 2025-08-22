@@ -170,6 +170,7 @@ export class OpenAIProvider extends AIProvider {
       usage: {
         inputTokens: result.usage?.prompt_tokens || 0,
         outputTokens: result.usage?.completion_tokens || 0,
+        cachedTokens: result.usage?.prompt_tokens_details?.cached_tokens || 0,
         totalTokens: result.usage?.total_tokens || 0,
       },
       finishReason: result.choices?.[0]?.finish_reason || 'unknown',
@@ -353,6 +354,7 @@ export class OpenAIProvider extends AIProvider {
                         usage: {
                           inputTokens: parsed.usage.prompt_tokens || 0,
                           outputTokens: parsed.usage.completion_tokens || 0,
+                          cachedTokens: parsed.usage.prompt_tokens_details?.cached_tokens || 0,
                           totalTokens: parsed.usage.total_tokens || 0,
                         }
                       });

@@ -130,12 +130,37 @@ for await (const chunk of stream) {
 ```typescript
 function calculateCost(provider: string, model: string, usage: TokenUsage) {
   const pricing = {
-    'gpt-5-nano': { input: 0.05, output: 0.40 },
+    'gpt-5-nano': { 
+      input: 0.05,        // Input tokens regular
+      cachedInput: 0.005, // Cached input tokens (90% descuento!)
+      output: 0.40 
+    },
     'gpt-5-mini': { input: 0.25, output: 2.00 },
     'claude-3-haiku': { input: 0.25, output: 1.25 }
   };
   
   const modelPricing = pricing[model];
+  
+  // Para GPT-5-nano, separar cached vs regular input tokens
+  if (model === 'gpt-5-nano' && usage.cachedTokens) {
+    const regularInputTokens = usage.inputTokens - usage.cachedTokens;
+    const inputCost = (regularInputTokens / 1000000) * modelPricing.input;
+    const cachedCost = (usage.cachedTokens / 1000000) * modelPricing.cachedInput;
+    const outputCost = (usage.outputTokens / 1000000) * modelPricing.output;
+    
+    return {
+      totalCost: inputCost + cachedCost + outputCost,
+      breakdown: {
+        inputCost,
+        cachedCost,
+        outputCost,
+        savingsFromCache: (usage.cachedTokens / 1000000) * (modelPricing.input - modelPricing.cachedInput)
+      },
+      provider: normalizeProviderName(provider)
+    };
+  }
+  
+  // Fallback para otros modelos
   const inputCost = (usage.inputTokens / 1000000) * modelPricing.input;
   const outputCost = (usage.outputTokens / 1000000) * modelPricing.output;
   
@@ -236,6 +261,48 @@ try {
 } catch (error) {
   console.warn('OpenAI failed, falling back to Anthropic');
   return await anthropicProvider.chatCompletion(request);
+}
+```
+
+## Cache Optimization Strategy
+
+### GPT-5-nano Cached Input Tokens
+**Ahorro masivo**: Cached input tokens cuestan $0.005 vs $0.05 (90% descuento)
+
+```typescript
+interface TokenUsage {
+  inputTokens: number;      // Regular input tokens
+  cachedTokens?: number;    // Cached input tokens (GPT-5-nano)
+  outputTokens: number;
+  totalTokens: number;
+}
+```
+
+### Estrategias para Maximizar Cache Hits
+1. **Conversaciones largas**: Mantener contexto para aprovechar cache
+2. **System prompts consistentes**: Reusar mismo prompt base
+3. **Context window inteligente**: No truncar conversaciones prematuramente
+4. **Session continuity**: Mantener sessionId para cache persistence
+
+### Potential Savings Calculator
+```typescript
+// Ejemplo: 1000 tokens cached en lugar de regular
+const regularCost = (1000 / 1000000) * 0.05;   // $0.00005
+const cachedCost = (1000 / 1000000) * 0.005;   // $0.000005
+const savings = regularCost - cachedCost;       // $0.000045 (90% ahorro)
+
+// En escala: 1M tokens/mes
+const monthlySavings = savings * 1000;          // $45/mes por cada 1M tokens cached
+```
+
+### Cache Hit Rate Monitoring
+```typescript
+// Tracking recomendado para optimización
+interface CacheMetrics {
+  totalInputTokens: number;
+  cachedInputTokens: number;
+  cacheHitRate: number;     // cachedTokens / totalInputTokens
+  monthlySavings: number;   // Dinero ahorrado por cache
 }
 ```
 

@@ -6,22 +6,31 @@
 export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
+  cachedTokens?: number; // Cached input tokens (GPT-5-nano específico)
 }
 
 export interface CostCalculation {
   inputCost: number;
   outputCost: number;
+  cachedCost?: number; // Costo de cached tokens
   totalCost: number;
   provider: string;
   model: string;
+  breakdown?: {
+    regularInputCost: number;
+    cachedInputCost: number;
+    outputCost: number;
+    savingsFromCache: number;
+  };
 }
 
 // Precios por proveedor y modelo (en USD por 1M tokens)
 const PRICING_TABLE = {
   openai: {
     'gpt-5-nano': {
-      input: 0.05,   // $0.05 per 1M input tokens
-      output: 0.40   // $0.40 per 1M output tokens
+      input: 0.05,        // $0.05 per 1M input tokens
+      cachedInput: 0.005, // $0.005 per 1M cached input tokens (90% descuento!)
+      output: 0.40        // $0.40 per 1M output tokens
     },
     'gpt-5-mini': {
       input: 0.30,   // $0.30 per 1M input tokens
@@ -107,16 +116,43 @@ export function calculateCost(
   }
 
   // Calcular costos (convertir de "por 1M tokens" a costo real)
-  const inputCost = (usage.inputTokens / 1_000_000) * modelPricing.input;
+  let inputCost: number;
+  let cachedCost = 0;
+  let breakdown: CostCalculation['breakdown'] | undefined;
+  
+  // Para GPT-5-nano con cached tokens
+  if (model === 'gpt-5-nano' && usage.cachedTokens && (modelPricing as any).cachedInput) {
+    const regularInputTokens = usage.inputTokens - usage.cachedTokens;
+    const regularInputCost = (regularInputTokens / 1_000_000) * modelPricing.input;
+    cachedCost = (usage.cachedTokens / 1_000_000) * (modelPricing as any).cachedInput;
+    inputCost = regularInputCost;
+    
+    const savingsFromCache = (usage.cachedTokens / 1_000_000) * (modelPricing.input - (modelPricing as any).cachedInput);
+    
+    breakdown = {
+      regularInputCost,
+      cachedInputCost: cachedCost,
+      outputCost: (usage.outputTokens / 1_000_000) * modelPricing.output,
+      savingsFromCache
+    };
+    
+    console.log(`💰 GPT-5-nano Cache Savings: ${usage.cachedTokens} tokens = $${savingsFromCache.toFixed(6)} saved (${((savingsFromCache / (regularInputCost + cachedCost)) * 100).toFixed(1)}% discount)`);
+  } else {
+    // Fallback para otros modelos sin cached tokens
+    inputCost = (usage.inputTokens / 1_000_000) * modelPricing.input;
+  }
+  
   const outputCost = (usage.outputTokens / 1_000_000) * modelPricing.output;
-  const totalCost = inputCost + outputCost;
+  const totalCost = inputCost + cachedCost + outputCost;
 
   return {
     inputCost,
     outputCost,
+    cachedCost: cachedCost > 0 ? cachedCost : undefined,
     totalCost,
     provider: normalizedProvider,
-    model
+    model,
+    breakdown
   };
 }
 

@@ -1673,7 +1673,8 @@ export async function action({ request }: any) {
                         // Calcular costos del mensaje
                         const inputTokens = result.usage?.inputTokens || result.usage?.prompt_tokens || 0;
                         const outputTokens = result.usage?.outputTokens || result.usage?.completion_tokens || 0;
-                        const costCalc = calculateCost(providerUsed, modelUsed, { inputTokens, outputTokens });
+                        const cachedTokens = result.usage?.cachedTokens || 0;
+                        const costCalc = calculateCost(providerUsed, modelUsed, { inputTokens, outputTokens, cachedTokens });
                         
                         // Guardar respuesta del asistente con tokens y costos (streaming completado)
                         await addAssistantMessage(
@@ -1688,7 +1689,8 @@ export async function action({ request }: any) {
                           inputTokens, // inputTokens
                           outputTokens, // outputTokens
                           costCalc.totalCost, // totalCost
-                          costCalc.provider // provider normalizado
+                          costCalc.provider, // provider normalizado
+                          cachedTokens // cachedTokens
                         );
                         
                         console.log(`💾 Mensajes streaming guardados - Usuario: "${message.substring(0,50)}..." | AI: "${accumulatedContent.substring(0,50)}..." | Tokens: ${result.usage?.totalTokens || result.usage?.total_tokens || 0} | Costo: $${costCalc.totalCost.toFixed(6)} (${costCalc.provider})`);
@@ -1924,7 +1926,8 @@ export async function action({ request }: any) {
               // Calcular costos del mensaje
               const inputTokens = result.response.usage?.inputTokens || result.response.usage?.prompt_tokens || 0;
               const outputTokens = result.response.usage?.outputTokens || result.response.usage?.completion_tokens || 0;
-              const costCalc = calculateCost(providerUsed, modelUsed, { inputTokens, outputTokens });
+              const cachedTokens = result.response.usage?.cachedTokens || 0;
+              const costCalc = calculateCost(providerUsed, modelUsed, { inputTokens, outputTokens, cachedTokens });
               
               // Guardar respuesta del asistente con tokens y costos
               await addAssistantMessage(
@@ -1939,7 +1942,8 @@ export async function action({ request }: any) {
                 inputTokens, // inputTokens
                 outputTokens, // outputTokens
                 costCalc.totalCost, // totalCost
-                costCalc.provider // provider normalizado
+                costCalc.provider, // provider normalizado
+                cachedTokens // cachedTokens
               );
               
               console.log(`💾 Mensajes guardados - Usuario: "${message.substring(0,50)}..." | AI: "${finalResponse.substring(0,50)}..." | Tokens: ${result.response.usage?.totalTokens || result.response.usage?.total_tokens || 0} | Costo: $${costCalc.totalCost.toFixed(6)} (${costCalc.provider})`);

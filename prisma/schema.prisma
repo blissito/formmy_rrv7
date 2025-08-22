@@ -340,6 +340,7 @@ model Message {
   tokens            Int?         // Tokens totales (deprecated, usar inputTokens + outputTokens)
   inputTokens       Int?         // Tokens de entrada (input)
   outputTokens      Int?         // Tokens de salida (output/completion)
+  cachedTokens      Int?         // Cached input tokens (GPT-5-nano: 90% descuento)
   totalCost         Float?       // Costo total en USD
   provider          String?      // Proveedor: openai, anthropic, openrouter
   responseTime      Int?

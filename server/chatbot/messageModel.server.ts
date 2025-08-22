@@ -15,6 +15,7 @@ interface CreateMessageParams {
   tokens?: number;
   inputTokens?: number; // Tokens de entrada
   outputTokens?: number; // Tokens de salida
+  cachedTokens?: number; // Cached input tokens (GPT-5-nano: 90% descuento)
   totalCost?: number; // Costo total en USD
   provider?: string; // Proveedor: openai, anthropic, openrouter
   responseTime?: number;
@@ -45,6 +46,7 @@ export async function createMessage({
   tokens,
   inputTokens,
   outputTokens,
+  cachedTokens,
   totalCost,
   provider,
   responseTime,
@@ -83,6 +85,7 @@ export async function createMessage({
       tokens,
       inputTokens,
       outputTokens,
+      cachedTokens,
       totalCost,
       provider,
       responseTime,
@@ -213,7 +216,8 @@ export async function addAssistantMessage(
   inputTokens?: number,
   outputTokens?: number,
   totalCost?: number,
-  provider?: string
+  provider?: string,
+  cachedTokens?: number
 ): Promise<Message> {
   return createMessage({
     conversationId,
@@ -222,6 +226,7 @@ export async function addAssistantMessage(
     tokens,
     inputTokens,
     outputTokens,
+    cachedTokens,
     totalCost,
     provider,
     responseTime,

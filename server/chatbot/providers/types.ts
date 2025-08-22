@@ -14,6 +14,7 @@ export interface StreamChunk {
   usage?: {
     inputTokens?: number;
     outputTokens?: number;
+    cachedTokens?: number;
     totalTokens?: number;
   };
 }
@@ -29,6 +30,7 @@ export interface ChatResponse {
   usage?: {
     inputTokens: number;
     outputTokens: number;
+    cachedTokens?: number;
     totalTokens: number;
   };
   model: string;
