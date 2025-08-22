@@ -240,9 +240,38 @@ model Chatbot {
   integrations      Integration[]
   apiKeys           ApiKey[]
   reminders         Reminder[]
+  contacts          Contact[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String?  // Nombre completo
+  email       String?  // Email de contacto
+  phone       String?  // Teléfono
+  company     String?  // Empresa/organización
+  position    String?  // Cargo/posición
+  website     String?  // Sitio web
+  notes       String?  // Notas adicionales o contexto
+  source      String   @default("chatbot") // Fuente: chatbot, whatsapp, etc.
+  
+  // Relaciones
+  chatbotId   String   @db.ObjectId
+  chatbot     Chatbot  @relation(fields: [chatbotId], references: [id])
+  
+  conversationId String? @db.ObjectId
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  
+  // Metadatos
+  capturedAt  DateTime @default(now())
+  lastUpdated DateTime @updatedAt
+  
+  // Índices para búsqueda eficiente
+  @@index([email])
+  @@index([chatbotId])
+  @@index([capturedAt])
 }
 
 model Reminder {
@@ -287,6 +316,7 @@ model Conversation {
   chatbotId    String             @db.ObjectId
   chatbot      Chatbot            @relation(fields: [chatbotId], references: [id])
   messages     Message[]
+  contacts     Contact[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

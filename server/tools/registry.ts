@@ -6,6 +6,7 @@
 import { Tool } from "../chatbot/providers/types";
 import { createPaymentLinkHandler } from "./handlers/stripe";
 import { scheduleReminderHandler } from "./handlers/denik";
+import { saveContactInfoHandler } from "./handlers/contact";
 
 export interface ToolDefinition {
   tool: Tool;
@@ -104,6 +105,52 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
     enabled: true,
   },
 
+  // CONTACT CAPTURE - Guardar información de contactos
+  save_contact_info: {
+    tool: {
+      name: "save_contact_info",
+      description: "Guardar información de contacto de leads/prospectos que proporcionen sus datos durante la conversación",
+      input_schema: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description: "Nombre completo de la persona",
+          },
+          email: {
+            type: "string",
+            description: "Dirección de correo electrónico",
+          },
+          phone: {
+            type: "string", 
+            description: "Número de teléfono",
+          },
+          company: {
+            type: "string",
+            description: "Nombre de la empresa u organización",
+          },
+          position: {
+            type: "string",
+            description: "Cargo o posición en la empresa",
+          },
+          website: {
+            type: "string",
+            description: "Sitio web de la persona o empresa",
+          },
+          notes: {
+            type: "string",
+            description: "Notas adicionales o contexto sobre el contacto",
+          },
+        },
+        required: [], // Flexibilidad - al menos uno será validado en el handler
+      },
+    },
+    handler: saveContactInfoHandler,
+    requiredIntegrations: [], // Siempre disponible
+    requiredPlan: ["STARTER", "PRO", "ENTERPRISE", "TRIAL"],
+    enabled: true,
+  },
+
   // FUTURAS HERRAMIENTAS
   // send_whatsapp: { ... }
   // search_knowledge: { ... }
@@ -198,6 +245,7 @@ export function generateToolPrompts(availableTools: Tool[]): string {
     (t) => t.name === "create_payment_link"
   );
   const hasDenik = availableTools.some((t) => t.name === "schedule_reminder");
+  const hasContactCapture = availableTools.some((t) => t.name === "save_contact_info");
 
   if (hasStripe) {
     prompt +=
@@ -211,15 +259,24 @@ export function generateToolPrompts(availableTools: Tool[]): string {
       .split("T")[0];
 
     prompt +=
-      "📅 DENIK: Tienes acceso completo a recordatorios y agenda con nuestra alianza Denik.\n";
-    prompt += "ÚSALA para agendar citas, recordatorios, meetings, eventos.\n";
+      "📅 DENIK: Tienes acceso a recordatorios y agenda.\n";
+    prompt += "⚠️ SOLO usa schedule_reminder cuando el usuario SOLICITE EXPLÍCITAMENTE agendar algo.\n";
+    prompt += "❌ NO asumas que quiere agendar sin confirmación directa.\n";
+    prompt += "❌ NO uses la herramienta si solo menciona fechas o eventos casualmente.\n";
     const currentYear = new Date().getFullYear();
-    prompt += `CRÍTICO: Hoy es ${today}. Mañana es ${tomorrow}.\n`;
-    prompt += `SIEMPRE usa el año ${currentYear} para fechas futuras. Formato: YYYY-MM-DD\n`;
+    prompt += `📅 Hoy es ${today}. Formato requerido: YYYY-MM-DD\n`;
     prompt +=
-      "🚫 NUNCA inventes emails - solo usa email si el usuario lo proporciona explícitamente.\n";
+      "🚫 CRÍTICO: NUNCA inventes emails - SIEMPRE solicita el email antes de agendar.\n";
     prompt +=
-      "📧 IMPORTANTE: Al agendar primero solicita el correo antes de decir que lo has agendado exitosamente. \n";
+      "📧 FLUJO: 1) Confirmar si quiere agendar, 2) Solicitar email, 3) Usar herramienta.\n";
+  }
+
+  if (hasContactCapture) {
+    prompt += "\n📋 CONTACT CAPTURE: Cuando una persona proporcione información personal (nombre, email, teléfono, empresa), USA INMEDIATAMENTE save_contact_info.\n";
+    prompt += "✅ CASOS DE USO: 'Mi nombre es Juan', 'Soy María de IBM', 'mi email es...', 'trabajo en...'\n";
+    prompt += "❌ NO captures información HASTA que la persona la comparta voluntariamente.\n";
+    prompt += "💡 SUTIL: Si la conversación va bien, puedes preguntar: '¿Cómo te puedo contactar?' o '¿En qué empresa trabajas?'\n";
+    prompt += "🎯 BENEFICIO: Explica que guardas su info para futuras consultas o seguimiento.\n";
   }
 
   // Agregar más prompts según se agreguen tools

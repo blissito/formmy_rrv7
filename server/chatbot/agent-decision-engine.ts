@@ -80,6 +80,22 @@ export class AgentDecisionEngine {
       'cita para', 'reunión'
     ];
     
+    // Contact information patterns (high confidence)
+    const contactPatterns = [
+      /mi nombre es\s+[\w\s]+/i,
+      /soy\s+[\w\s]+\s+(de|en)\s+[\w\s]+/i,
+      /mi email es\s+[\w.-]+@[\w.-]+/i,
+      /mi correo es\s+[\w.-]+@[\w.-]+/i,
+      /trabajo en\s+[\w\s]+/i,
+      /empresa\s+[\w\s]+/i,
+      /mi teléfono es\s+[\d\s\-\+\(\)]+/i,
+    ];
+    
+    const contactKeywords = [
+      'mi nombre', 'me llamo', 'soy', 'trabajo en', 'empresa',
+      'mi email', 'mi correo', 'mi teléfono', 'contactarme'
+    ];
+    
     let confidence = 0;
     
     // Check payment keywords (40-60 confidence)
@@ -112,6 +128,24 @@ export class AgentDecisionEngine {
       if (messageLC.includes(keyword)) {
         detectedKeywords.push(keyword);
         confidence += 25;
+      }
+    }
+    
+    // Check contact patterns (very high confidence +50)
+    for (const pattern of contactPatterns) {
+      if (pattern.test(message)) {
+        detectedKeywords.push('contact_pattern_detected');
+        confidence += 50;
+        break;
+      }
+    }
+    
+    // Check contact keywords (+35)
+    for (const keyword of contactKeywords) {
+      if (messageLC.includes(keyword)) {
+        detectedKeywords.push(keyword);
+        confidence += 35;
+        break; // Solo uno para evitar inflar demasiado
       }
     }
     
@@ -153,6 +187,14 @@ export class AgentDecisionEngine {
       suggestedTools.push('schedule_reminder');
       confidence += 10;
       reasoning.push('Scheduling intent detected');
+    }
+    
+    if (quickScanResult.keywords.some(k => 
+      ['contact_pattern_detected', 'mi nombre', 'me llamo', 'soy', 'trabajo en', 'empresa', 'mi email', 'mi correo', 'mi teléfono', 'contactarme'].includes(k)
+    )) {
+      suggestedTools.push('save_contact_info');
+      confidence += 15;
+      reasoning.push('Contact information shared');
     }
     
     // Plan-based adjustments

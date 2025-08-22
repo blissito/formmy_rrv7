@@ -209,13 +209,21 @@ export async function addAssistantMessage(
   firstTokenLatency?: number,
   aiModel?: string,
   channel?: string,
-  externalMessageId?: string
+  externalMessageId?: string,
+  inputTokens?: number,
+  outputTokens?: number,
+  totalCost?: number,
+  provider?: string
 ): Promise<Message> {
   return createMessage({
     conversationId,
     content,
     role: MessageRole.ASSISTANT,
     tokens,
+    inputTokens,
+    outputTokens,
+    totalCost,
+    provider,
     responseTime,
     firstTokenLatency,
     aiModel,

@@ -69,6 +69,8 @@ export async function action({ request }: any) {
     performanceMonitor
   } = await import("../../server/chatbot-api.server");
   
+  const { calculateCost } = await import("../../server/chatbot/pricing.server");
+  
   console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
   try {
 
@@ -1668,7 +1670,12 @@ export async function action({ request }: any) {
                         // Guardar mensaje del usuario
                         await addUserMessage(conversation.id, message);
 
-                        // Guardar respuesta del asistente con tokens (streaming completado)
+                        // Calcular costos del mensaje
+                        const inputTokens = result.usage?.inputTokens || result.usage?.prompt_tokens || 0;
+                        const outputTokens = result.usage?.outputTokens || result.usage?.completion_tokens || 0;
+                        const costCalc = calculateCost(providerUsed, modelUsed, { inputTokens, outputTokens });
+                        
+                        // Guardar respuesta del asistente con tokens y costos (streaming completado)
                         await addAssistantMessage(
                           conversation.id,
                           accumulatedContent,
@@ -1676,10 +1683,15 @@ export async function action({ request }: any) {
                           undefined, // responseTime
                           undefined, // firstTokenLatency  
                           modelUsed,
-                          'web-preview-stream' // canal
+                          'web-preview-stream', // canal
+                          undefined, // externalMessageId
+                          inputTokens, // inputTokens
+                          outputTokens, // outputTokens
+                          costCalc.totalCost, // totalCost
+                          costCalc.provider // provider normalizado
                         );
                         
-                        console.log(`💾 Mensajes streaming guardados - Usuario: "${message.substring(0,50)}..." | AI: "${accumulatedContent.substring(0,50)}..." | Tokens: ${result.usage?.totalTokens || result.usage?.total_tokens || 0}`);
+                        console.log(`💾 Mensajes streaming guardados - Usuario: "${message.substring(0,50)}..." | AI: "${accumulatedContent.substring(0,50)}..." | Tokens: ${result.usage?.totalTokens || result.usage?.total_tokens || 0} | Costo: $${costCalc.totalCost.toFixed(6)} (${costCalc.provider})`);
                         
                       } catch (dbError) {
                         console.error('❌ Error guardando mensajes streaming:', dbError);
@@ -1909,7 +1921,12 @@ export async function action({ request }: any) {
               // Guardar mensaje del usuario
               await addUserMessage(conversation.id, message);
 
-              // Guardar respuesta del asistente con tokens
+              // Calcular costos del mensaje
+              const inputTokens = result.response.usage?.inputTokens || result.response.usage?.prompt_tokens || 0;
+              const outputTokens = result.response.usage?.outputTokens || result.response.usage?.completion_tokens || 0;
+              const costCalc = calculateCost(providerUsed, modelUsed, { inputTokens, outputTokens });
+              
+              // Guardar respuesta del asistente con tokens y costos
               await addAssistantMessage(
                 conversation.id,
                 finalResponse,
@@ -1917,10 +1934,15 @@ export async function action({ request }: any) {
                 undefined, // responseTime - podríamos medirlo
                 undefined, // firstTokenLatency - podríamos medirlo  
                 modelUsed,
-                'web-preview' // canal
+                'web-preview', // canal
+                undefined, // externalMessageId
+                inputTokens, // inputTokens
+                outputTokens, // outputTokens
+                costCalc.totalCost, // totalCost
+                costCalc.provider // provider normalizado
               );
               
-              console.log(`💾 Mensajes guardados - Usuario: "${message.substring(0,50)}..." | AI: "${finalResponse.substring(0,50)}..." | Tokens: ${result.response.usage?.totalTokens || result.response.usage?.total_tokens || 0}`);
+              console.log(`💾 Mensajes guardados - Usuario: "${message.substring(0,50)}..." | AI: "${finalResponse.substring(0,50)}..." | Tokens: ${result.response.usage?.totalTokens || result.response.usage?.total_tokens || 0} | Costo: $${costCalc.totalCost.toFixed(6)} (${costCalc.provider})`);
               
             } catch (dbError) {
               console.error('❌ Error guardando mensajes:', dbError);

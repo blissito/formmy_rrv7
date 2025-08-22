@@ -8,8 +8,10 @@ import {
   RevenueOverview,
   PlansDistribution,
   TokenUsageTable,
+  CostUsageTable,
   TopChatbots,
   ActiveIntegrations,
+  ContactsOverview,
 } from "~/components/admin";
 
 // Helper function to safely parse AI model provider
@@ -89,6 +91,83 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       where: { isActive: true },
     });
 
+    // Contact metrics (leads captured)
+    const [totalContacts, thisWeekContacts, thisMonthContacts, contactsBySource] = await Promise.all([
+      db.contact.count(),
+      db.contact.count({ where: { capturedAt: { gte: sevenDaysAgo } } }),
+      db.contact.count({ where: { capturedAt: { gte: startOfMonth } } }),
+      db.contact.groupBy({
+        by: ['source'],
+        _count: { source: true },
+      }),
+    ]);
+
+    // Cost metrics (aggregate all users for the last 30 days)
+    let costMetrics = {
+      totalCost: 0,
+      costByProvider: [],
+      costByModel: []
+    };
+
+    try {
+      // Get all messages with costs from the last 30 days
+      const costMessages = await db.message.findMany({
+        where: {
+          role: 'ASSISTANT',
+          totalCost: { not: null },
+          createdAt: { gte: thirtyDaysAgo },
+        },
+        select: {
+          totalCost: true,
+          tokens: true,
+          provider: true,
+          aiModel: true,
+        }
+      });
+
+      const totalCost = costMessages.reduce((sum, msg) => sum + (msg.totalCost || 0), 0);
+      
+      // Group by provider
+      const providerMap = new Map();
+      costMessages.forEach(msg => {
+        const provider = msg.provider || 'unknown';
+        const existing = providerMap.get(provider) || { cost: 0, messages: 0, tokens: 0 };
+        providerMap.set(provider, {
+          cost: existing.cost + (msg.totalCost || 0),
+          messages: existing.messages + 1,
+          tokens: existing.tokens + (msg.tokens || 0)
+        });
+      });
+
+      // Group by model
+      const modelMap = new Map();
+      costMessages.forEach(msg => {
+        const model = msg.aiModel || 'unknown';
+        const existing = modelMap.get(model) || { cost: 0, messages: 0, tokens: 0 };
+        modelMap.set(model, {
+          cost: existing.cost + (msg.totalCost || 0),
+          messages: existing.messages + 1,
+          tokens: existing.tokens + (msg.tokens || 0)
+        });
+      });
+
+      costMetrics = {
+        totalCost,
+        costByProvider: Array.from(providerMap.entries()).map(([provider, data]) => ({
+          provider,
+          model: 'aggregate',
+          ...data
+        })).sort((a, b) => b.cost - a.cost),
+        costByModel: Array.from(modelMap.entries()).map(([model, data]) => ({
+          provider: parseAiModelProvider(model),
+          model,
+          ...data
+        })).sort((a, b) => b.cost - a.cost)
+      };
+    } catch (error) {
+      console.error('Error loading cost metrics:', error);
+    }
+
     return {
       users: {
         total: totalUsers,
@@ -109,8 +188,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         count: t._count.aiModel || 0,
         tokens: t._sum.tokens || 0,
       })),
+      costs: {
+        totalCost: costMetrics.totalCost,
+        byProvider: costMetrics.costByProvider,
+        byModel: costMetrics.costByModel,
+      },
       topChatbots,
       integrations: integrations.map(i => ({ platform: i.platform, count: i._count.platform })),
+      contacts: {
+        total: totalContacts,
+        thisWeek: thisWeekContacts,
+        thisMonth: thisMonthContacts,
+        bySource: contactsBySource.map(c => ({ source: c.source, count: c._count.source })),
+      },
     };
   } catch (error) {
     console.error('Error loading admin dashboard data:', error);
@@ -121,8 +211,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       chatbots: { total: 0, active: 0, conversations: 0, thisMonthConversations: 0 },
       plans: [],
       tokens: [],
+      costs: { totalCost: 0, byProvider: [], byModel: [] },
       topChatbots: [],
       integrations: [],
+      contacts: { total: 0, thisWeek: 0, thisMonth: 0, bySource: [] },
       error: 'Error cargando datos del dashboard. Intenta refrescar la página.',
     };
   }
@@ -167,6 +259,12 @@ export default function AdminDashboard() {
 
       {/* Token Usage by Provider */}
       <TokenUsageTable tokens={data.tokens} />
+
+      {/* Cost Usage by Provider */}
+      <CostUsageTable costs={data.costs.byModel} totalCost={data.costs.totalCost} />
+
+      {/* Contacts Overview */}
+      <ContactsOverview contacts={data.contacts} />
 
       {/* Top Chatbots & Integrations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
