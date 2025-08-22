@@ -241,6 +241,7 @@ model Chatbot {
   apiKeys           ApiKey[]
   reminders         Reminder[]
   contacts          Contact[]
+  toolUsages        ToolUsage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -425,4 +426,23 @@ model Referral {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ToolUsage {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId   String   @db.ObjectId
+  chatbot     Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  
+  toolName    String   // create_payment_link, schedule_reminder, etc.
+  success     Boolean  @default(true)
+  errorMessage String?
+  
+  // Metadata para analytics
+  userMessage String?  // Mensaje original del usuario
+  response    String?  // Respuesta generada
+  
+  // Datos específicos según herramienta (JSON flexible)
+  metadata    Json?    // { amount: 500, currency: "mxn" } para stripe, { date: "2024-08-22" } para reminder
+  
+  createdAt   DateTime @default(now())
 }

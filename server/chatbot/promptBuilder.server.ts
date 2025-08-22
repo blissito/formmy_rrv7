@@ -27,6 +27,17 @@ export function buildEnrichedSystemPrompt(
   
   let enrichedSystemPrompt = chatbot.instructions || "Eres un asistente útil.";
   
+  // REGLAS UNIVERSALES ANTI-ALUCINACIÓN (aplicar a TODOS los chatbots)
+  enrichedSystemPrompt += "\n\n=== REGLAS CRÍTICAS OBLIGATORIAS ===\n";
+  enrichedSystemPrompt += "- NUNCA inventes información específica como horarios, lugares, nombres, fechas o precios\n";
+  enrichedSystemPrompt += "- NUNCA uses placeholders como [nombre del cliente], [fecha], [lugar], [precio], etc.\n";
+  enrichedSystemPrompt += "- ÚNICAMENTE usa información que esté EXPLÍCITAMENTE en tu contexto\n";
+  enrichedSystemPrompt += "- Si NO tienes información específica, di: 'No tengo esa información específica'\n";
+  enrichedSystemPrompt += "- SIEMPRE pregunta por detalles exactos que necesites en lugar de inventarlos\n";
+  enrichedSystemPrompt += "- PROHIBIDO asumir o crear información que no esté en tu contexto\n";
+  enrichedSystemPrompt += "- Si el contexto está vacío, RECONÓCELO abiertamente\n";
+  enrichedSystemPrompt += "=== FIN REGLAS CRÍTICAS ===\n";
+  
   if (enableLogging) {
     console.log("📝 [DEBUG] buildEnrichedSystemPrompt - Datos del chatbot:");
     console.log("   - instructions:", chatbot.instructions?.substring(0, 100) + "...");

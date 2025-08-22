@@ -72,7 +72,7 @@ export const MessageBubble = ({
             {nodes || message?.content}
           </p>
         </div>
-        <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex-shrink-0" />
+        <Avatar className="w-8 h-8" />
       </div>
     );
   }

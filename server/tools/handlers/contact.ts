@@ -1,5 +1,6 @@
 import type { ToolContext, ToolResponse } from "../registry";
 import { db } from "~/utils/db.server";
+import { ToolUsageTracker } from "../../integrations/tool-usage-tracker";
 
 interface SaveContactInput {
   name?: string;
@@ -91,12 +92,29 @@ export async function saveContactInfoHandler(
 
       console.log(`📋 [Save Contact] Contacto actualizado: ${updatedContact.id}`);
       
+      // Track usage (sin awaitar)
+      ToolUsageTracker.trackUsage({
+        chatbotId: context.chatbotId,
+        toolName: 'save_contact_info',
+        success: true,
+        userMessage: context.message,
+        metadata: {
+          action: 'updated',
+          contactId: updatedContact.id,
+          hasName: !!input.name,
+          hasEmail: !!input.email,
+          hasPhone: !!input.phone,
+          hasCompany: !!input.company
+        }
+      }).catch(console.error);
+      
       return {
         success: true,
-        message: `Perfecto! He actualizado la información de contacto de ${input.name || input.email}. Toda la información está guardada en nuestro sistema.`,
+        message: `🤖 **HERRAMIENTA UTILIZADA: Save Contact Info**\n\n✅ **Información de contacto actualizada:**\n👤 ${input.name || input.email}\n\n🔧 *Sistema: Contacto actualizado en base de datos con ID: ${updatedContact.id}*`,
         data: {
           contactId: updatedContact.id,
           action: 'updated',
+          toolUsed: 'save_contact_info',
           contact: {
             name: updatedContact.name,
             email: updatedContact.email,
@@ -123,12 +141,29 @@ export async function saveContactInfoHandler(
 
       console.log(`📋 [Save Contact] Nuevo contacto creado: ${newContact.id}`);
       
+      // Track usage (sin awaitar)
+      ToolUsageTracker.trackUsage({
+        chatbotId: context.chatbotId,
+        toolName: 'save_contact_info',
+        success: true,
+        userMessage: context.message,
+        metadata: {
+          action: 'created',
+          contactId: newContact.id,
+          hasName: !!input.name,
+          hasEmail: !!input.email,
+          hasPhone: !!input.phone,
+          hasCompany: !!input.company
+        }
+      }).catch(console.error);
+      
       return {
         success: true,
-        message: `¡Excelente! He guardado tu información de contacto correctamente. ${input.name ? `Gracias ${input.name}` : 'Gracias'} por proporcionarnos tus datos. Estaremos en contacto contigo pronto.`,
+        message: `🤖 **HERRAMIENTA UTILIZADA: Save Contact Info**\n\n✅ **Nuevo contacto guardado:**\n👤 ${input.name || input.email}\n\n${input.name ? `Gracias ${input.name}` : 'Gracias'} por proporcionarnos tus datos. Estaremos en contacto contigo pronto.\n\n🔧 *Sistema: Contacto creado en base de datos con ID: ${newContact.id}*`,
         data: {
           contactId: newContact.id,
           action: 'created',
+          toolUsed: 'save_contact_info',
           contact: {
             name: newContact.name,
             email: newContact.email,
@@ -140,6 +175,17 @@ export async function saveContactInfoHandler(
 
   } catch (error) {
     console.error('❌ Error guardando contacto:', error);
+    
+    // Track error (sin awaitar)
+    ToolUsageTracker.trackUsage({
+      chatbotId: context.chatbotId,
+      toolName: 'save_contact_info',
+      success: false,
+      errorMessage: error.message,
+      userMessage: context.message,
+      metadata: input
+    }).catch(console.error);
+    
     return {
       success: false,
       message: "Hubo un error al guardar la información. Por favor, intenta nuevamente.",

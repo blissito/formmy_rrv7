@@ -1,5 +1,6 @@
 import { ToolContext, ToolResponse } from "../registry";
 import { ReminderService } from "../../integrations/reminder-service";
+import { ToolUsageTracker } from "../../integrations/tool-usage-tracker";
 
 export async function scheduleReminderHandler(
   input: {
@@ -49,6 +50,21 @@ export async function scheduleReminderHandler(
       email,
       userMessage: context.message
     });
+
+    // Track usage (sin awaitar para no bloquear respuesta)
+    ToolUsageTracker.trackUsage({
+      chatbotId: context.chatbotId,
+      toolName: 'schedule_reminder',
+      success: true,
+      userMessage: context.message,
+      metadata: {
+        title,
+        date: correctedDate,
+        time,
+        hasEmail: !!finalEmail,
+        reminderId: reminder.id
+      }
+    }).catch(console.error);
     
     // Formatear la fecha para mostrar
     const formattedDate = new Intl.DateTimeFormat('es-MX', {
@@ -78,18 +94,30 @@ export async function scheduleReminderHandler(
     
     return {
       success: true,
-      message: `✅ Recordatorio programado exitosamente:\n📅 **${title}**\n🕒 ${formattedDate} a las ${time}\n📧 ${recipientInfo}`,
+      message: `🤖 **HERRAMIENTA UTILIZADA: Schedule Reminder**\n\n✅ **Recordatorio programado exitosamente en el sistema:**\n📅 **${title}**\n🕒 ${formattedDate} a las ${time}\n📧 ${recipientInfo}\n\n🔧 *Sistema: Recordatorio guardado en base de datos con ID: ${reminder.id}*`,
       data: {
         reminderId: reminder.id,
         title,
         date,
         time,
-        email
+        email,
+        toolUsed: 'schedule_reminder'
       }
     };
     
   } catch (error) {
     console.error("Error creando recordatorio:", error);
+    
+    // Track error (sin awaitar)
+    ToolUsageTracker.trackUsage({
+      chatbotId: context.chatbotId,
+      toolName: 'schedule_reminder',
+      success: false,
+      errorMessage: error.message,
+      userMessage: context.message,
+      metadata: { title, date, time }
+    }).catch(console.error);
+    
     return {
       success: false,
       message: `❌ Error al crear el recordatorio: ${error.message}`
