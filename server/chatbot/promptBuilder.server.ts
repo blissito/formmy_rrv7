@@ -1,5 +1,6 @@
 import type { Chatbot, Integration } from "@prisma/client";
 import { getActiveStripeIntegration } from "./integrationModel.server";
+import { getAgentPrompt, type AgentType } from "~/utils/agents/agentPrompts";
 
 /**
  * Función para estimar tokens aproximadamente (4 caracteres = 1 token)
@@ -25,18 +26,35 @@ export function buildEnrichedSystemPrompt(
     enableLogging = true 
   } = options;
   
-  let enrichedSystemPrompt = chatbot.instructions || "Eres un asistente útil.";
+  // Usar el prompt del agente específico si está configurado, sino usar instructions
+  let enrichedSystemPrompt: string;
   
-  // REGLAS UNIVERSALES ANTI-ALUCINACIÓN (aplicar a TODOS los chatbots)
-  enrichedSystemPrompt += "\n\n=== REGLAS CRÍTICAS OBLIGATORIAS ===\n";
-  enrichedSystemPrompt += "- NUNCA inventes información específica como horarios, lugares, nombres, fechas o precios\n";
-  enrichedSystemPrompt += "- NUNCA uses placeholders como [nombre del cliente], [fecha], [lugar], [precio], etc.\n";
-  enrichedSystemPrompt += "- ÚNICAMENTE usa información que esté EXPLÍCITAMENTE en tu contexto\n";
-  enrichedSystemPrompt += "- Si NO tienes información específica, di: 'No tengo esa información específica'\n";
-  enrichedSystemPrompt += "- SIEMPRE pregunta por detalles exactos que necesites en lugar de inventarlos\n";
-  enrichedSystemPrompt += "- PROHIBIDO asumir o crear información que no esté en tu contexto\n";
-  enrichedSystemPrompt += "- Si el contexto está vacío, RECONÓCELO abiertamente\n";
-  enrichedSystemPrompt += "=== FIN REGLAS CRÍTICAS ===\n";
+  if (chatbot.personality && chatbot.personality !== "default") {
+    // Usar prompt especializado del agente seleccionado
+    enrichedSystemPrompt = getAgentPrompt(chatbot.personality as AgentType);
+    if (enableLogging) {
+      console.log(`🎯 [DEBUG] Usando prompt especializado para agente: ${chatbot.personality}`);
+    }
+  } else {
+    // Fallback a instructions genéricas
+    enrichedSystemPrompt = chatbot.instructions || "Eres un asistente útil.";
+    if (enableLogging) {
+      console.log("📝 [DEBUG] Usando instructions genéricas del chatbot");
+    }
+  }
+  
+  // REGLAS UNIVERSALES ANTI-ALUCINACIÓN (solo para prompts genéricos, los agentes ya las incluyen)
+  if (!chatbot.personality || chatbot.personality === "default") {
+    enrichedSystemPrompt += "\n\n=== REGLAS CRÍTICAS OBLIGATORIAS ===\n";
+    enrichedSystemPrompt += "- NUNCA inventes información específica como horarios, lugares, nombres, fechas o precios\n";
+    enrichedSystemPrompt += "- NUNCA uses placeholders como [nombre del cliente], [fecha], [lugar], [precio], etc.\n";
+    enrichedSystemPrompt += "- ÚNICAMENTE usa información que esté EXPLÍCITAMENTE en tu contexto\n";
+    enrichedSystemPrompt += "- Si NO tienes información específica, di: 'No tengo esa información específica'\n";
+    enrichedSystemPrompt += "- SIEMPRE pregunta por detalles exactos que necesites en lugar de inventarlos\n";
+    enrichedSystemPrompt += "- PROHIBIDO asumir o crear información que no esté en tu contexto\n";
+    enrichedSystemPrompt += "- Si el contexto está vacío, RECONÓCELO abiertamente\n";
+    enrichedSystemPrompt += "=== FIN REGLAS CRÍTICAS ===\n";
+  }
   
   if (enableLogging) {
     console.log("📝 [DEBUG] buildEnrichedSystemPrompt - Datos del chatbot:");
