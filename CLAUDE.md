@@ -90,6 +90,14 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 
 ## ✅ Cambios Recientes (Agosto 2024)
 
+### ⚠️ Issue de Producción Resuelto (22 Agosto 2024)
+- **✅ SOLUCIONADO**: Server no levantaba en producción por import faltante
+- **Problema**: `server.js` importaba `./app/services/email-scheduler.server.js` que no existía en deploy
+- **Root Cause**: Archivo TypeScript `.ts` no se compilaba correctamente al build de producción
+- **Solución Temporal**: Email scheduler deshabilitado temporalmente en `server.js`
+- **Status**: ✅ Server funcionando, ⏳ Email scheduler pendiente de reactivación
+- **Próximo**: Mover email scheduler a ruta que se compile automáticamente o crear versión `.js` correcta
+
 ### Sistema de Recordatorios Implementado ✨
 - **✅ COMPLETADO**: Sistema completo de recordatorios con herramientas
 - **Componentes añadidos**:
@@ -125,6 +133,16 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - **ENTERPRISE**: **GPT-5 Mini** premium ($1,499 MXN)
 
 ## Próximos pasos técnicos
+
+### 🔥 Email Scheduler Reactivación (Prioridad inmediata - 1-2 días)
+- **Problema**: Email scheduler deshabilitado temporalmente por issues de compilación
+- **Solución A**: Mover `EmailScheduler` a `/app/lib/` para que se compile automáticamente
+- **Solución B**: Crear sistema de cron jobs externo con webhook calls
+- **Solución C**: Migrar lógica a React Router action/loader que se ejecute programáticamente
+- **Archivos afectados**: 
+  - `server.js` (reactivar scheduler)
+  - `app/services/email-scheduler.server.ts` (mover o refactorizar)
+- **Testing**: Verificar que emails automáticos funcionen en staging antes de producción
 
 ### Google Gemini Direct API Integration (Prioridad alta - 2-3 semanas)
 - **Objetivo**: Reducir costos adicionales 90% (OpenRouter $0.054 → Gemini Direct $0.006)
@@ -217,6 +235,12 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 
 - Producción: fly.io
 - always use server directly in imports from that folder with no prefix
+
+### Issues Conocidos de Deployment
+- **Server.js + TypeScript**: Los archivos `.ts` en `/app/services/` no se compilan automáticamente al build
+- **Solución**: Mover lógica server-side a `/app/lib/` o `/server/` para compilación automática
+- **Email Scheduler**: Temporalmente deshabilitado en `server.js` (línea 42-43)
+- **Status Actual**: ✅ Server funcionando sin email automation, ⏳ Pendiente reactivación
 
 ## Comandos útiles
 

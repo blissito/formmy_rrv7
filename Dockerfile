@@ -1,40 +1,50 @@
-FROM node:20-alpine AS development-dependencies-env
-COPY . /app
-WORKDIR /app
-RUN npm ci
-
-FROM node:20-alpine AS production-dependencies-env
-COPY . /app/
-# COPY ./package.json package-lock.json /app/
-WORKDIR /app
-# Solo dependencias básicas necesarias
+# Usamos imagen más liviana
+FROM node:20-alpine AS base
 RUN apk update && apk add --no-cache \
     openssl \
     ca-certificates \
     && rm -rf /var/cache/apk/*
+
+# Stage 1: Instalar dependencias (cacheable)
+FROM base AS deps
+WORKDIR /app
+# Copiamos solo archivos de dependencias para mejor cache
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
+# Cache mount para npm
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --frozen-lockfile
+
+# Stage 2: Build aplicación
+FROM base AS builder
+WORKDIR /app
+# Copiamos dependencias del stage anterior
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 # Generar Prisma client
 RUN npx prisma generate
-# Instalar dependencias de producción
-RUN npm ci --omit=dev
+# Build optimizado
+RUN npm run build && npm prune --omit=dev
 
-FROM node:20-alpine AS build-env
-COPY . /app/
-COPY --from=development-dependencies-env /app/node_modules /app/node_modules
+# Stage 3: Imagen final de producción
+FROM base AS runner
 WORKDIR /app
-RUN npm run build
+# Crear usuario no-root para seguridad
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-FROM node:20-alpine
-# Solo dependencias básicas para HTTP requests
-RUN apk update && apk add --no-cache \
-    openssl \
-    ca-certificates \
-    && rm -rf /var/cache/apk/*
+# Copiar archivos necesarios
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/server.js ./
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/content ./content
 
-COPY ./package.json package-lock.json /app/
-COPY server.js /app/server.js
-COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/build /app/build
-# Copy blog content directory for runtime access
-COPY content/ /app/content/
-WORKDIR /app
+# Cambiar a usuario no-root
+USER nextjs
+
+EXPOSE 3000
+ENV NODE_ENV=production
+ENV PORT=3000
+
 CMD ["npm", "run", "start"]
