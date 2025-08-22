@@ -55,6 +55,7 @@ import { db } from "~/utils/db.server";
 import { generateFallbackModels, isAnthropicDirectModel } from "~/utils/aiModels";
 import { buildEnrichedSystemPrompt, estimateTokens } from "./chatbot/promptBuilder.server";
 import { AIProviderManager } from "./chatbot/providers";
+import { addUserMessage, addAssistantMessage } from "./chatbot/messageModel.server";
 
 // Utility functions
 export const truncateConversationHistory = (
@@ -149,5 +150,7 @@ export {
   AIProviderManager,
   mammoth,
   XLSX,
-  IntegrationType
+  IntegrationType,
+  addUserMessage,
+  addAssistantMessage
 };

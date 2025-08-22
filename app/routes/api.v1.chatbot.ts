@@ -62,7 +62,9 @@ export async function action({ request }: any) {
     estimateTokens,
     AIProviderManager,
     truncateConversationHistory,
-    createProviderManager
+    createProviderManager,
+    addUserMessage,
+    addAssistantMessage
   } = await import("../../server/chatbot-api.server");
   
   console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
@@ -1645,6 +1647,46 @@ export async function action({ request }: any) {
                     
                     if (done) {
                       console.log(`🏁 Stream completed. Total chunks sent: ${contentChunks}`);
+                      
+                      // ✨ GUARDAR MENSAJES EN BASE DE DATOS (STREAMING)
+                      try {
+                        // Crear o encontrar conversación usando sessionId
+                        let conversation = await db.conversation.findFirst({
+                          where: {
+                            chatbotId: chatbot.id,
+                            externalId: sessionId || `session-${userId}-${Date.now()}`
+                          }
+                        });
+                        
+                        if (!conversation) {
+                          conversation = await db.conversation.create({
+                            data: {
+                              chatbotId: chatbot.id,
+                              externalId: sessionId || `session-${userId}-${Date.now()}`
+                            }
+                          });
+                        }
+
+                        // Guardar mensaje del usuario
+                        await addUserMessage(conversation.id, message);
+
+                        // Guardar respuesta del asistente con tokens (streaming completado)
+                        await addAssistantMessage(
+                          conversation.id,
+                          accumulatedContent,
+                          result.usage?.totalTokens || result.usage?.total_tokens || 0, // Tokens del stream completo
+                          undefined, // responseTime
+                          undefined, // firstTokenLatency  
+                          modelUsed,
+                          'web-preview-stream' // canal
+                        );
+                        
+                        console.log(`💾 Mensajes streaming guardados - Usuario: "${message.substring(0,50)}..." | AI: "${accumulatedContent.substring(0,50)}..." | Tokens: ${result.usage?.totalTokens || result.usage?.total_tokens || 0}`);
+                        
+                      } catch (dbError) {
+                        console.error('❌ Error guardando mensajes streaming:', dbError);
+                      }
+                      
                       const doneMessage = 'data: [DONE]\n\n';
                       controller.enqueue(new TextEncoder().encode(doneMessage));
                       controller.close();
@@ -1814,6 +1856,45 @@ export async function action({ request }: any) {
               }
             }
             
+            // ✨ GUARDAR MENSAJES EN BASE DE DATOS
+            try {
+              // Crear o encontrar conversación usando sessionId
+              let conversation = await db.conversation.findFirst({
+                where: {
+                  chatbotId: chatbot.id,
+                  externalId: sessionId || `session-${userId}-${Date.now()}`
+                }
+              });
+              
+              if (!conversation) {
+                conversation = await db.conversation.create({
+                  data: {
+                    chatbotId: chatbot.id,
+                    externalId: sessionId || `session-${userId}-${Date.now()}`
+                  }
+                });
+              }
+
+              // Guardar mensaje del usuario
+              await addUserMessage(conversation.id, message);
+
+              // Guardar respuesta del asistente con tokens
+              await addAssistantMessage(
+                conversation.id,
+                finalResponse,
+                result.response.usage?.totalTokens || result.response.usage?.total_tokens || 0,
+                undefined, // responseTime - podríamos medirlo
+                undefined, // firstTokenLatency - podríamos medirlo  
+                modelUsed,
+                'web-preview' // canal
+              );
+              
+              console.log(`💾 Mensajes guardados - Usuario: "${message.substring(0,50)}..." | AI: "${finalResponse.substring(0,50)}..." | Tokens: ${result.response.usage?.totalTokens || result.response.usage?.total_tokens || 0}`);
+              
+            } catch (dbError) {
+              console.error('❌ Error guardando mensajes:', dbError);
+              // No fallar la respuesta por error de BD, solo loggear
+            }
             
             return new Response(
               JSON.stringify({
