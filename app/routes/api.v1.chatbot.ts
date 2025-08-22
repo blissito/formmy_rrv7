@@ -48,6 +48,7 @@ export async function action({ request }: any) {
     ReminderService,
     getAvailableTools,
     executeToolCall,
+    SimpleAgentLoop,
     generateToolPrompts,
     validateUserAIModelAccess,
     getUserPlanFeatures,
@@ -1396,9 +1397,35 @@ export async function action({ request }: any) {
           modelSupportsTools
         };
         
-        // 🚀 DECISIÓN INTELIGENTE DEL AGENTE
-        const agentDecision = await agentEngine.makeDecision(message, toolContext);
-        console.log(`🎯 DEBUG AGENT: message="${message}" → needsTools=${agentDecision.needsTools}, confidence=${agentDecision.confidence}, tools=[${agentDecision.suggestedTools.join(',')}]`);
+        // 🚀 SIMPLE REMINDER DETECTION (HACK QUE FUNCIONA)
+        const messageLC = message.toLowerCase();
+        const isReminderQuery = messageLC.includes('mis recordatorios') || 
+                               messageLC.includes('recordatorios tengo') || 
+                               messageLC.includes('ver recordatorios') ||
+                               messageLC.includes('listar recordatorios');
+        
+        let agentDecision;
+        if (isReminderQuery) {
+          console.log(`📅 SIMPLE REMINDER DETECTION: Detected "${message}" as reminder query`);
+          agentDecision = {
+            needsTools: true,
+            confidence: 100,
+            suggestedTools: ['list_reminders'],
+            shouldStream: false,
+            reasoning: 'Simple keyword detection for reminders',
+            detectionTime: 0
+          };
+        } else {
+          // Fallback normal para otros casos
+          agentDecision = {
+            needsTools: false,
+            confidence: 0,
+            suggestedTools: [],
+            shouldStream: true,
+            reasoning: 'No reminder keywords detected',
+            detectionTime: 0
+          };
+        }
         
         // 📈 LOG AGENT DECISION METRICS
         performanceMonitor.logAgentDecision(requestId, {
@@ -1587,7 +1614,66 @@ export async function action({ request }: any) {
           ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
         
-        
+        // 🤖 AGENT LOOP SIMPLIFICADO - Solo si hay herramientas y no es streaming
+        if (tools.length > 0 && !chatRequest.stream) {
+          console.log('🤖 Iniciando Agent Loop simplificado...');
+          
+          const agentLoop = new SimpleAgentLoop();
+          
+          // Crear provider wrapper para compatibilidad
+          const providerWrapper = {
+            generateResponse: async (prompt: string, allowStreaming: boolean) => {
+              const tempRequest = {
+                ...chatRequest,
+                messages: [
+                  systemMessage,
+                  { role: "user" as const, content: prompt }
+                ],
+                stream: allowStreaming && stream
+              };
+              
+              if (allowStreaming && stream) {
+                // Para streaming, devolver texto simple
+                const result = await providerManager.chatCompletionStreamWithFallback(tempRequest, fallbackModels);
+                return "Streaming response"; // Placeholder - en agent loop preferimos non-streaming
+              } else {
+                const result = await providerManager.chatCompletionWithFallback(tempRequest, fallbackModels);
+                return result.response.content || "Sin respuesta";
+              }
+            }
+          };
+          
+          try {
+            const agentResult = await agentLoop.run(message, user, chatbot, providerWrapper);
+            
+            if (agentResult.needsTools) {
+              // El agent loop manejó herramientas, devolver la respuesta directamente
+              console.log('✅ Agent Loop completado con herramientas');
+              
+              const totalResponseTime = Date.now() - requestStartTime;
+              
+              performanceMonitor.endRequest(requestId, {
+                totalResponseTime,
+                tokensGenerated: 0, // TODO: trackear tokens del agent loop
+                errorOccurred: false
+              }, sessionId);
+              
+              return new Response(
+                JSON.stringify({ 
+                  message: agentResult.response,
+                  modelUsed: selectedModel,
+                  agentLoopUsed: true 
+                }),
+                { 
+                  status: 200, 
+                  headers: { "Content-Type": "application/json" } 
+                }
+              );
+            }
+          } catch (error) {
+            console.warn('⚠️ Agent Loop falló, continuando con flujo normal:', error);
+          }
+        }
         
         let apiResponse;
         let modelUsed = selectedModel;
@@ -1632,7 +1718,7 @@ export async function action({ request }: any) {
                   while (true) {
                     const { done, value } = await reader.read();
                     
-                    console.log('📨 Stream chunk received:', { done, value });
+                    // console.log('📨 Stream chunk received:', { done, value });
                     
                     // Capturar usage data si viene en el chunk
                     if (value?.usage) {

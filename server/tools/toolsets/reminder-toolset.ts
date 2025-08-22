@@ -367,7 +367,11 @@ export function detectReminderIntentSync(message: string): {
     'recordatorios pendientes', 'lista de recordatorios', 'ver recordatorios',
     'consultar recordatorios', 'mostrar recordatorios', 'tengo recordatorios',
     'recordatorios programados', 'check recordatorios', 'cuántos recordatorios',
-    'cuantos recordatorios', 'recordatorios tengo', 'qué recordatorios', 'que recordatorios'
+    'cuantos recordatorios', 'recordatorios tengo', 'qué recordatorios', 'que recordatorios',
+    'listar recordatorios', 'enlistar recordatorios', 'todos los recordatorios',
+    'ver todos', 'ver próximos', 'próximos recordatorios', 'agenda actual',
+    'calendario', 'cuales son mis', 'cuáles son mis', 'todos', 'próximos',
+    'ver agenda', 'mi agenda', 'agenda programada'
   ];
 
   for (const keyword of listKeywords) {

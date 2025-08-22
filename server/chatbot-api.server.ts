@@ -43,6 +43,7 @@ import {
 import { createQuickPaymentLink } from "./integrations/stripe-payments";
 import { ReminderService } from "./integrations/reminder-service";
 import { getAvailableTools, executeToolCall, generateToolPrompts } from "./tools/registry";
+import { SimpleAgentLoop } from "./chatbot/agent-loop";
 import {
   validateUserAIModelAccess,
   getUserPlanFeatures,
@@ -138,6 +139,7 @@ export {
   getAvailableTools,
   executeToolCall,
   generateToolPrompts,
+  SimpleAgentLoop,
   validateUserAIModelAccess,
   getUserPlanFeatures,
   DEFAULT_CHATBOT_CONFIG,

@@ -323,12 +323,12 @@ export class OpenAIProvider extends AIProvider {
 
                 try {
                   const parsed = JSON.parse(data);
-                  console.log(`🔍 [OpenAI Stream] Raw response:`, JSON.stringify(parsed, null, 2));
+                  // console.log(`🔍 [OpenAI Stream] Raw response:`, JSON.stringify(parsed, null, 2));
                   
                   const content = parsed.choices?.[0]?.delta?.content;
                   const finishReason = parsed.choices?.[0]?.finish_reason;
                   
-                  console.log(`🔍 [OpenAI Stream] Content: "${content}", FinishReason: "${finishReason}"`);
+                  // console.log(`🔍 [OpenAI Stream] Content: "${content}", FinishReason: "${finishReason}"`); 
                   
                   if (content) {
                     contentReceived = true;
@@ -337,7 +337,7 @@ export class OpenAIProvider extends AIProvider {
                   }
                   
                   if (finishReason) {
-                    console.log(`🔍 [OpenAI Stream] Stream finished with reason: ${finishReason}`);
+                    // console.log(`🔍 [OpenAI Stream] Stream finished with reason: ${finishReason}`); 
                     clearTimeout(timeout);
                     
                     // Detectar respuesta vacía por límite de tokens (problema conocido de GPT-5-nano)

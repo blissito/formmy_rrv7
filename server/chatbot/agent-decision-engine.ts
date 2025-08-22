@@ -9,6 +9,7 @@
 
 import { db } from "~/utils/db.server";
 import { detectReminderIntentSync } from "../tools/toolsets/reminder-toolset";
+import { classifyReminderIntentCached } from "../tools/toolsets/reminder-intent-classifier";
 
 // Types & Interfaces
 export interface AgentDecision {
@@ -50,9 +51,10 @@ export class AgentDecisionEngine {
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutos
   
   /**
-   * Análisis rápido de keywords básicos (< 1ms)
+   * Análisis inteligente con LLM + keywords de fallback
    */
-  private quickToolScan(message: string): { detected: boolean; keywords: string[]; confidence: number } {
+  private async quickToolScan(message: string): Promise<{ detected: boolean; keywords: string[]; confidence: number }> {
+    console.log(`🔍 QUICK TOOL SCAN: Starting with message "${message}"`);
     const messageLC = message.toLowerCase();
     const detectedKeywords: string[] = [];
     
@@ -94,21 +96,48 @@ export class AgentDecisionEngine {
     
     let confidence = 0;
     
-    // REMINDER TOOLSET - Detección con keywords (FUNCIONA)
-    console.log(`🔍 DEBUG: Llamando detectReminderIntentSync con mensaje: "${message}"`);
-    const reminderIntent = detectReminderIntentSync(message);
-    console.log(`🔍 DEBUG: Resultado de detectReminderIntentSync:`, reminderIntent);
-    console.log(`🎯 REMINDER INTENT DEBUG:`, {
-      message: message.substring(0, 50),
-      needsTools: reminderIntent.needsTools,
-      confidence: reminderIntent.confidence,
-      suggestedTool: reminderIntent.suggestedTool,
-      keywords: reminderIntent.keywords
-    });
-    
-    if (reminderIntent.needsTools) {
-      detectedKeywords.push(...reminderIntent.keywords);
-      confidence += reminderIntent.confidence;
+    // REMINDER TOOLSET - Detección con LLM inteligente (más preciso que keywords)
+    console.log(`🔍 DEBUG: Llamando classifyReminderIntentCached con mensaje: "${message}"`);
+    try {
+      const reminderIntent = await classifyReminderIntentCached(message);
+      console.log(`🔍 DEBUG: Resultado de classifyReminderIntentCached:`, reminderIntent);
+      console.log(`🎯 REMINDER INTENT DEBUG:`, {
+        message: message.substring(0, 50),
+        intent: reminderIntent.intent,
+        confidence: reminderIntent.confidence,
+        suggestedTool: reminderIntent.suggestedTool,
+        entities: reminderIntent.entities
+      });
+      
+      if (reminderIntent.intent !== 'none' && reminderIntent.confidence > 0.5) {
+        detectedKeywords.push(`llm_intent_${reminderIntent.intent}`);
+        confidence += reminderIntent.confidence * 100; // Convertir 0-1 a 0-100
+      }
+    } catch (error) {
+      console.warn('⚠️ LLM classifier failed, falling back to keywords:', error.message);
+      // Fallback a detección por keywords MEJORADA
+      const reminderIntent = detectReminderIntentSync(message);
+      console.log(`🔍 DEBUG: Fallback resultado detectReminderIntentSync:`, reminderIntent);
+      
+      if (reminderIntent.needsTools) {
+        detectedKeywords.push(...reminderIntent.keywords);
+        confidence += reminderIntent.confidence;
+        
+        // Mapear directamente la intención sugerida como keyword LLM
+        if (reminderIntent.suggestedTool) {
+          const intentMap = {
+            'list_reminders': 'list',
+            'schedule_reminder': 'create',
+            'update_reminder': 'update', 
+            'cancel_reminder': 'delete'
+          };
+          const intentType = intentMap[reminderIntent.suggestedTool as keyof typeof intentMap];
+          if (intentType) {
+            detectedKeywords.push(`llm_intent_${intentType}`);
+            console.log(`🎯 KEYWORD FALLBACK: Mapped ${reminderIntent.suggestedTool} to llm_intent_${intentType}`);
+          }
+        }
+      }
     }
     
     // Check payment keywords (40-60 confidence)
@@ -180,6 +209,28 @@ export class AgentDecisionEngine {
     const reasoning: string[] = [];
     
     // Context-aware analysis
+    
+    // LLM Intent Results (highest priority)
+    if (quickScanResult.keywords.some(k => k.startsWith('llm_intent_'))) {
+      const llmIntentKeyword = quickScanResult.keywords.find(k => k.startsWith('llm_intent_'));
+      const intentType = llmIntentKeyword?.split('_')[2]; // Extract 'list', 'create', etc.
+      
+      const intentToolMapping = {
+        'list': 'list_reminders',
+        'create': 'schedule_reminder', 
+        'update': 'update_reminder',
+        'delete': 'cancel_reminder'
+      };
+      
+      const suggestedTool = intentToolMapping[intentType as keyof typeof intentToolMapping];
+      if (suggestedTool) {
+        suggestedTools.push(suggestedTool);
+        confidence += 25; // High boost for LLM classification
+        reasoning.push(`LLM classified intent as ${intentType}`);
+      }
+    }
+    
+    // Stripe analysis  
     if (context.hasStripeIntegration && quickScanResult.keywords.some(k => 
       ['link de pago', 'stripe', 'generar pago', 'amount_detected'].includes(k)
     )) {
@@ -277,7 +328,7 @@ export class AgentDecisionEngine {
     }
     
     // Quick scan first (always runs)
-    const quickScan = this.quickToolScan(message);
+    const quickScan = await this.quickToolScan(message);
     
     let decision: AgentDecision;
     
