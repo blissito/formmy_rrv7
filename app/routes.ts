@@ -67,7 +67,6 @@ export default [
   route("chat/embed", "routes/chat_.embed.tsx"),
   route("chat/404", "routes/chat.404.tsx"),
   route("chat-ia", "routes/chat-ia.tsx"),
-  route("chatbot-test", "routes/chatbot-test.tsx"),
 
   // Public content routes
   route("formularios", "routes/formularios.tsx"),
@@ -81,8 +80,6 @@ export default [
   route("feedback", "routes/feedback.tsx"),
   route("full", "routes/full.tsx"),
   route("gracias", "routes/gracias.tsx"),
-  route("yutu", "routes/yutu.tsx"),
-  route("yutu2", "routes/yutu2.tsx"),
 
   // Blog routes
   route("blog", "routes/blog._index.tsx"),
