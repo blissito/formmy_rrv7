@@ -168,8 +168,8 @@ export class OpenAIProvider extends AIProvider {
     return {
       content,
       usage: {
-        promptTokens: result.usage?.prompt_tokens || 0,
-        completionTokens: result.usage?.completion_tokens || 0,
+        inputTokens: result.usage?.prompt_tokens || 0,
+        outputTokens: result.usage?.completion_tokens || 0,
         totalTokens: result.usage?.total_tokens || 0,
       },
       finishReason: result.choices?.[0]?.finish_reason || 'unknown',
@@ -343,6 +343,19 @@ export class OpenAIProvider extends AIProvider {
                     if (finishReason === 'length' && !contentReceived) {
                       controller.error(new Error(`GPT-5-nano empty response: finish_reason=${finishReason}, no content received`));
                       return;
+                    }
+                    
+                    // Enviar chunk final con usage data si está disponible
+                    if (parsed.usage) {
+                      controller.enqueue({
+                        content: '',
+                        finishReason,
+                        usage: {
+                          inputTokens: parsed.usage.prompt_tokens || 0,
+                          outputTokens: parsed.usage.completion_tokens || 0,
+                          totalTokens: parsed.usage.total_tokens || 0,
+                        }
+                      });
                     }
                     
                     controller.close();

@@ -58,3 +58,12 @@ temp/
 # Heavy dev dependencies que no necesitas en producción
 playwright-report/
 test-results/
+
+# Nested git repositories and their dependencies
+server/integrations/whatsapp-sdk/.git/
+server/integrations/whatsapp-sdk/node_modules/
+server/integrations/whatsapp-sdk/__tests__/
+server/integrations/whatsapp-sdk/examples/
+server/integrations/whatsapp-sdk/docs/
+server/integrations/whatsapp-sdk/*.tgz
+server/integrations/whatsapp-sdk/*.md

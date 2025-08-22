@@ -11,6 +11,7 @@ primary_region = 'dfw'
 [[vm]]
   cpu_kind = "shared"
   cpus = 2
+  memory = "1024mb"
 
 [env]
   NODE_ENV = "production"
