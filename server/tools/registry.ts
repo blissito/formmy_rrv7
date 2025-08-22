@@ -3,10 +3,17 @@
  * Todas las tools disponibles en el sistema deben registrarse aquí
  */
 
-import { Tool } from "../chatbot/providers/types";
+import type { Tool } from "../chatbot/providers/types";
 import { createPaymentLinkHandler } from "./handlers/stripe";
-import { scheduleReminderHandler } from "./handlers/denik";
 import { saveContactInfoHandler } from "./handlers/contact";
+// Importar el ReminderToolset completo
+import { 
+  ReminderToolset, 
+  getReminderTools, 
+  executeReminderTool,
+  generateReminderPrompt,
+  isReminderTool
+} from "./toolsets/reminder-toolset";
 
 export interface ToolDefinition {
   tool: Tool;
@@ -69,41 +76,8 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
     enabled: true,
   },
 
-  // DENIK - Recordatorios
-  schedule_reminder: {
-    tool: {
-      name: "schedule_reminder",
-      description: "Crear un recordatorio o cita en el calendario con Denik",
-      input_schema: {
-        type: "object",
-        properties: {
-          title: {
-            type: "string",
-            description: "Título del recordatorio o cita",
-          },
-          date: {
-            type: "string",
-            description:
-              "Fecha en formato YYYY-MM-DD (ej: 2024-08-20 para mañana). SIEMPRE usar formato YYYY-MM-DD",
-          },
-          time: {
-            type: "string",
-            description: "Hora en formato HH:MM (24 horas)",
-          },
-          email: {
-            type: "string",
-            description:
-              "Email para enviar la notificación (OPCIONAL - solo si el usuario lo proporciona explícitamente, NUNCA inventar)",
-          },
-        },
-        required: ["title", "date", "time"],
-      },
-    },
-    handler: scheduleReminderHandler,
-    requiredIntegrations: [], // Denik siempre disponible
-    requiredPlan: ["PRO", "ENTERPRISE", "TRIAL"],
-    enabled: true,
-  },
+  // ===== FAMILIA RECORDATORIOS 📅 (gestionada por ReminderToolset) =====
+  ...ReminderToolset,
 
   // CONTACT CAPTURE - Guardar información de contactos
   save_contact_info: {
@@ -150,6 +124,7 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
     requiredPlan: ["STARTER", "PRO", "ENTERPRISE", "TRIAL"],
     enabled: true,
   },
+
 
   // FUTURAS HERRAMIENTAS
   // send_whatsapp: { ... }
@@ -208,6 +183,12 @@ export async function executeToolCall(
   input: any,
   context: ToolContext
 ): Promise<ToolResponse> {
+  // Si es una herramienta de recordatorios, usar el toolset especializado
+  if (isReminderTool(toolName)) {
+    return await executeReminderTool(toolName, input, context);
+  }
+
+  // Para otras herramientas, usar el registro general
   const definition = TOOLS_REGISTRY[toolName];
 
   if (!definition) {
@@ -241,45 +222,32 @@ export async function executeToolCall(
 export function generateToolPrompts(availableTools: Tool[]): string {
   let prompt = "";
 
+  // STRIPE
   const hasStripe = availableTools.some(
     (t) => t.name === "create_payment_link"
   );
-  const hasDenik = availableTools.some((t) => t.name === "schedule_reminder");
-  const hasContactCapture = availableTools.some((t) => t.name === "save_contact_info");
-
   if (hasStripe) {
     prompt +=
-      "🔥 STRIPE: Cuando detectes solicitud de pago, USA INMEDIATAMENTE create_payment_link.\n";
+      "🔥 STRIPE: Cuando detectes solicitud de pago, USA INMEDIATAMENTE create_payment_link.\n\n";
   }
 
-  if (hasDenik) {
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD de hoy
-    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
-
-    prompt +=
-      "📅 DENIK: Tienes acceso a recordatorios y agenda.\n";
-    prompt += "⚠️ SOLO usa schedule_reminder cuando el usuario SOLICITE EXPLÍCITAMENTE agendar algo.\n";
-    prompt += "❌ NO asumas que quiere agendar sin confirmación directa.\n";
-    prompt += "❌ NO uses la herramienta si solo menciona fechas o eventos casualmente.\n";
-    const currentYear = new Date().getFullYear();
-    prompt += `📅 Hoy es ${today}. Formato requerido: YYYY-MM-DD\n`;
-    prompt +=
-      "🚫 CRÍTICO: NUNCA inventes emails - SIEMPRE solicita el email antes de agendar.\n";
-    prompt +=
-      "📧 FLUJO: 1) Confirmar si quiere agendar, 2) Solicitar email, 3) Usar herramienta.\n";
+  // RECORDATORIOS (usar el toolset especializado)
+  const reminderTools = availableTools.filter(t => isReminderTool(t.name));
+  if (reminderTools.length > 0) {
+    prompt += generateReminderPrompt(reminderTools);
   }
 
+  // CONTACT CAPTURE
+  const hasContactCapture = availableTools.some((t) => t.name === "save_contact_info");
   if (hasContactCapture) {
-    prompt += "\n📋 CONTACT CAPTURE: Cuando una persona proporcione información personal (nombre, email, teléfono, empresa), USA INMEDIATAMENTE save_contact_info.\n";
+    prompt += "📋 CONTACT CAPTURE: Cuando una persona proporcione información personal (nombre, email, teléfono, empresa), USA INMEDIATAMENTE save_contact_info.\n";
     prompt += "✅ CASOS DE USO: 'Mi nombre es Juan', 'Soy María de IBM', 'mi email es...', 'trabajo en...'\n";
     prompt += "❌ NO captures información HASTA que la persona la comparta voluntariamente.\n";
     prompt += "💡 SUTIL: Si la conversación va bien, puedes preguntar: '¿Cómo te puedo contactar?' o '¿En qué empresa trabajas?'\n";
-    prompt += "🎯 BENEFICIO: Explica que guardas su info para futuras consultas o seguimiento.\n";
+    prompt += "🎯 BENEFICIO: Explica que guardas su info para futuras consultas o seguimiento.\n\n";
   }
 
-  // Agregar más prompts según se agreguen tools
+  // Futuros toolsets se agregan aquí...
 
   return prompt;
 }

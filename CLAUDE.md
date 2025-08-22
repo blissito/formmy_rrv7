@@ -132,6 +132,21 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - **PRO**: **GPT-5 Nano** con herramientas ($499 MXN)
 - **ENTERPRISE**: **GPT-5 Mini** premium ($1,499 MXN)
 
+### ✅ Tools vs Streaming Issue Resuelto (22 Agosto 2024)
+- **✅ SOLUCIONADO**: GPT-5-nano tools funcionando correctamente
+- **Problema identificado**: Streaming mode impedía el uso de herramientas
+- **Root Cause**: 
+  1. Tools solo se pasaban en non-streaming mode 
+  2. Lógica de streaming invertida (stream = true cuando había tools)
+  3. Tool calls no se parseaban en streaming responses
+- **Solución implementada**:
+  - ✅ `stream = !agentDecision.needsTools` → NO stream cuando necesita herramientas
+  - ✅ Tools disponibles siempre que el modelo las soporte
+  - ✅ Agent decision engine con keywords naturales ("agenda", "recordame", "avísame")
+  - ✅ Prompts anti-falsificación para evitar fingir acciones
+- **Regla crítica**: **NUNCA** intentar parsear tool calls en streaming mode
+- **Estrategia**: Cambiar a non-streaming automáticamente cuando se detecten herramientas
+
 ### ✅ Tokens Tracking Corregido (22 Agosto 2024)
 - **✅ SOLUCIONADO**: Sistema de tokens del admin dashboard ahora funciona correctamente
 - **Problema identificado**: Los mensajes ASSISTANT no se guardaban en BD durante conversaciones

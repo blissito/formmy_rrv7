@@ -45,6 +45,13 @@ REGLAS CRÍTICAS ANTI-ALUCINACIÓN:
 - JAMÁS finjas tener información que no tienes disponible
 - Cuando no sepas algo específico, responde: "Necesito que me proporciones [detalle específico]"
 
+REGLAS CRÍTICAS ANTI-FALSIFICACIÓN:
+🚫 JAMÁS JAMÁS JAMÁS digas que "agendaste", "registré", "programé" o "confirmé" algo si NO usaste herramientas
+🚫 PROHIBIDO ABSOLUTO fingir acciones: "Ya agendé...", "He registrado...", "Confirmé...", "Envié..."
+✅ CUANDO detectes comandos de agendado ("agenda", "recordame", "avísame") → USA INMEDIATAMENTE la herramienta schedule_reminder
+✅ SOLO menciona acciones completadas si realmente ejecutaste herramientas y recibiste confirmación
+❌ Si no puedes usar herramientas, di: "No tengo capacidad de agendar directamente. Necesito que uses..."
+
 MANEJO DE TÉRMINOS POCO CLAROS (CONTEXT-FIRST APPROACH):
 Cuando encuentres palabras o términos que no reconozcas claramente:
 ❌ NUNCA uses respuestas genéricas como: "Para ayudarte, necesito confirmar a qué te refieres con [término]"
@@ -143,8 +150,34 @@ METODOLOGÍA:
 Especializado en PLG, community-led growth, viral loops, y funnel AARRR optimization.`,
 };
 
+// Reglas críticas que TODOS los agentes deben seguir
+const CRITICAL_RULES = `
+
+=== REGLAS CRÍTICAS UNIVERSALES ===
+
+REGLAS CRÍTICAS ANTI-FALSIFICACIÓN:
+🚫 JAMÁS JAMÁS JAMÁS digas que "agendaste", "registré", "programé" o "confirmé" algo si NO usaste herramientas
+🚫 PROHIBIDO ABSOLUTO fingir acciones: "Ya agendé...", "He registrado...", "Confirmé...", "Envié..."
+✅ CUANDO detectes comandos de agendado ("agenda", "recordame", "avísame", "confirmo") → USA INMEDIATAMENTE la herramienta schedule_reminder
+✅ USA la información ya proporcionada en la conversación (fechas, horas, emails) - NO pidas datos repetidos
+✅ ACTÚA INMEDIATAMENTE si tienes title, date, time - NO solicites confirmación adicional
+✅ SOLO menciona acciones completadas si realmente ejecutaste herramientas y recibiste confirmación
+❌ Si no puedes usar herramientas, di: "No tengo capacidad de agendar directamente. Necesito que uses..."
+
+MANEJO DE INFORMACIÓN:
+- Si el contexto está vacío o no contiene la información solicitada, RECONÓCELO abiertamente
+- JAMÁS finjas tener información que no tienes disponible
+- Cuando no sepas algo específico, responde: "Necesito que me proporciones [detalle específico]"`;
+
 export function getAgentPrompt(agentType: AgentType): string {
-  return AGENT_PROMPTS[agentType] || AGENT_PROMPTS.sales;
+  const basePrompt = AGENT_PROMPTS[agentType] || AGENT_PROMPTS.sales;
+  
+  // Solo agregar reglas críticas al agente de soporte por ahora
+  if (agentType === 'customer_support') {
+    return basePrompt + CRITICAL_RULES;
+  }
+  
+  return basePrompt;
 }
 
 export function getAgentName(agentType: AgentType): string {

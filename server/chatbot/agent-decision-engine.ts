@@ -8,6 +8,7 @@
  */
 
 import { db } from "~/utils/db.server";
+import { detectReminderIntentSync } from "../tools/toolsets/reminder-toolset";
 
 // Types & Interfaces
 export interface AgentDecision {
@@ -74,11 +75,6 @@ export class AgentDecisionEngine {
       'proceder con el pago', 'generar link', 'crear link'
     ];
     
-    // Scheduling indicators (medium confidence)
-    const scheduleKeywords = [
-      'agendar cita', 'calendario', 'schedule', 'recordatorio',
-      'cita para', 'reunión'
-    ];
     
     // Contact information patterns (high confidence)
     const contactPatterns = [
@@ -97,6 +93,23 @@ export class AgentDecisionEngine {
     ];
     
     let confidence = 0;
+    
+    // REMINDER TOOLSET - Detección con keywords (FUNCIONA)
+    console.log(`🔍 DEBUG: Llamando detectReminderIntentSync con mensaje: "${message}"`);
+    const reminderIntent = detectReminderIntentSync(message);
+    console.log(`🔍 DEBUG: Resultado de detectReminderIntentSync:`, reminderIntent);
+    console.log(`🎯 REMINDER INTENT DEBUG:`, {
+      message: message.substring(0, 50),
+      needsTools: reminderIntent.needsTools,
+      confidence: reminderIntent.confidence,
+      suggestedTool: reminderIntent.suggestedTool,
+      keywords: reminderIntent.keywords
+    });
+    
+    if (reminderIntent.needsTools) {
+      detectedKeywords.push(...reminderIntent.keywords);
+      confidence += reminderIntent.confidence;
+    }
     
     // Check payment keywords (40-60 confidence)
     for (const keyword of paymentKeywords) {
@@ -123,13 +136,7 @@ export class AgentDecisionEngine {
       }
     }
     
-    // Check scheduling (+25)
-    for (const keyword of scheduleKeywords) {
-      if (messageLC.includes(keyword)) {
-        detectedKeywords.push(keyword);
-        confidence += 25;
-      }
-    }
+    // Reminder toolset already processed above with modular detection
     
     // Check contact patterns (very high confidence +50)
     for (const pattern of contactPatterns) {
@@ -182,11 +189,25 @@ export class AgentDecisionEngine {
     }
     
     if (quickScanResult.keywords.some(k => 
-      ['agendar', 'calendario', 'schedule', 'recordatorio'].includes(k)
+      ['agendar', 'agendar cita', 'calendario', 'schedule', 'recordatorio', 
+       'cita para', 'reunión', 'programar', 'programé', 'recordar',
+       'agenda', 'envíame recordatorio', 'envíame un recordatorio', 
+       'mándame recordatorio', 'ponme recordatorio', 'recordame', 'recuerdame',
+       'avísame', 'notifícame'].includes(k)
     )) {
       suggestedTools.push('schedule_reminder');
-      confidence += 10;
-      reasoning.push('Scheduling intent detected');
+      
+      // Extra confidence for high-confidence scheduling keywords
+      const hasHighConfidenceScheduling = quickScanResult.keywords.some(k => 
+        ['agenda', 'envíame recordatorio', 'envíame un recordatorio', 
+         'mándame recordatorio', 'ponme recordatorio', 'recordame', 'recuerdame',
+         'avísame', 'notifícame'].includes(k)
+      );
+      
+      confidence += hasHighConfidenceScheduling ? 20 : 10;
+      reasoning.push(hasHighConfidenceScheduling ? 
+        'High confidence scheduling intent detected' : 
+        'Scheduling intent detected');
     }
     
     if (quickScanResult.keywords.some(k => 

@@ -239,7 +239,7 @@ model Chatbot {
   conversations     Conversation[]
   integrations      Integration[]
   apiKeys           ApiKey[]
-  reminders         Reminder[]
+  scheduledActions  ScheduledAction[]
   contacts          Contact[]
   toolUsages        ToolUsage[]
 
@@ -275,26 +275,20 @@ model Contact {
   @@index([capturedAt])
 }
 
-model Reminder {
+model ScheduledAction {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   chatbotId String   @db.ObjectId
   chatbot   Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
   
-  title     String
-  date      DateTime
-  time      String   // HH:MM format
-  email     String?
-  phone     String?
-  
-  status    String   @default("pending") // pending, sent, cancelled, failed
-  
-  // Metadata
-  userMessage String? // Original user request
+  type      String   // 'email', 'webhook', 'sms'
+  data      Json     // everything needed to execute
+  runAt     DateTime @map("run_at")
+  status    String   @default("pending") // 'pending', 'done', 'failed'
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  @@map("reminders")
+  @@map("scheduled_actions")
 }
 
 enum ConversationStatus {

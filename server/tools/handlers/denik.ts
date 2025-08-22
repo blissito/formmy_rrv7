@@ -1,5 +1,5 @@
-import { ToolContext, ToolResponse } from "../registry";
-import { ReminderService } from "../../integrations/reminder-service";
+import type { ToolContext, ToolResponse } from "../registry";
+import { Scheduler } from "../../integrations/scheduler";
 import { ToolUsageTracker } from "../../integrations/tool-usage-tracker";
 
 export async function scheduleReminderHandler(
@@ -11,6 +11,8 @@ export async function scheduleReminderHandler(
   },
   context: ToolContext
 ): Promise<ToolResponse> {
+  console.log(`📅 DENIK HANDLER: Ejecutando tool con input:`, JSON.stringify(input, null, 2));
+  console.log(`📧 CONTEXT: chatbotId=${context.chatbotId}, message=${context.message}`);
   const { title, date, time, email } = input;
   
   try {
@@ -41,15 +43,34 @@ export async function scheduleReminderHandler(
       console.log(`🔧 Fallback a mañana: ${correctedDate}`);
     }
     
-    // Crear el recordatorio con fecha corregida
-    const reminder = await ReminderService.scheduleReminder({
-      chatbotId: context.chatbotId,
-      title,
-      date: correctedDate,
-      time,
-      email,
-      userMessage: context.message
-    });
+    // Validar email - no permitir emails inventados
+    let finalEmail = email;
+    const suspiciousEmails = ['cliente@ejemplo.com', 'example@email.com', 'test@test.com', 'user@example.com'];
+    
+    if (email && suspiciousEmails.includes(email.toLowerCase())) {
+      console.log(`🚫 Email sospechoso detectado: ${email}, ignorando...`);
+      finalEmail = undefined;
+    }
+
+    console.log(`📧 DEBUG: finalEmail = ${finalEmail}`);
+
+    // Schedule email reminder using ultra-simple scheduler
+    const reminderDateTime = new Date(`${correctedDate}T${time}:00`);
+    console.log(`📅 DEBUG: reminderDateTime = ${reminderDateTime.toISOString()}`);
+    
+    console.log(`📅 DEBUG: Calling Scheduler.schedule...`);
+    const scheduledAction = await Scheduler.schedule(
+      context.chatbotId,
+      'email',
+      {
+        to: finalEmail || 'no-email-provided@placeholder.com',
+        title: title,
+        date: reminderDateTime.toISOString(),
+        chatbotName: 'Tu Asistente Formmy'
+      },
+      reminderDateTime
+    );
+    console.log(`✅ DEBUG: Scheduler.schedule completed, ID: ${scheduledAction.id}`);
 
     // Track usage (sin awaitar para no bloquear respuesta)
     ToolUsageTracker.trackUsage({
@@ -62,7 +83,7 @@ export async function scheduleReminderHandler(
         date: correctedDate,
         time,
         hasEmail: !!finalEmail,
-        reminderId: reminder.id
+        scheduledActionId: scheduledAction.id
       }
     }).catch(console.error);
     
@@ -73,15 +94,6 @@ export async function scheduleReminderHandler(
       month: 'long', 
       day: 'numeric'
     }).format(new Date(`${correctedDate}T${time}:00`));
-    
-    // Validar email - no permitir emails inventados
-    let finalEmail = email;
-    const suspiciousEmails = ['cliente@ejemplo.com', 'example@email.com', 'test@test.com', 'user@example.com'];
-    
-    if (email && suspiciousEmails.includes(email.toLowerCase())) {
-      console.log(`🚫 Email sospechoso detectado: ${email}, ignorando...`);
-      finalEmail = undefined;
-    }
     
     // Manejo de notificaciones según contexto del usuario
     let recipientInfo;
@@ -94,13 +106,13 @@ export async function scheduleReminderHandler(
     
     return {
       success: true,
-      message: `🤖 **HERRAMIENTA UTILIZADA: Schedule Reminder**\n\n✅ **Recordatorio programado exitosamente en el sistema:**\n📅 **${title}**\n🕒 ${formattedDate} a las ${time}\n📧 ${recipientInfo}\n\n🔧 *Sistema: Recordatorio guardado en base de datos con ID: ${reminder.id}*`,
+      message: `🤖 **HERRAMIENTA UTILIZADA: Schedule Reminder**\n\n✅ **Email programado exitosamente:**\n📅 **${title}**\n🕒 ${formattedDate} a las ${time}\n📧 ${recipientInfo}\n\n🔧 *Sistema: Acción programada con ID: ${scheduledAction.id}*`,
       data: {
-        reminderId: reminder.id,
+        scheduledActionId: scheduledAction.id,
         title,
-        date,
+        date: correctedDate,
         time,
-        email,
+        email: finalEmail,
         toolUsed: 'schedule_reminder'
       }
     };

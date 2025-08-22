@@ -1398,6 +1398,7 @@ export async function action({ request }: any) {
         
         // 🚀 DECISIÓN INTELIGENTE DEL AGENTE
         const agentDecision = await agentEngine.makeDecision(message, toolContext);
+        console.log(`🎯 DEBUG AGENT: message="${message}" → needsTools=${agentDecision.needsTools}, confidence=${agentDecision.confidence}, tools=[${agentDecision.suggestedTools.join(',')}]`);
         
         // 📈 LOG AGENT DECISION METRICS
         performanceMonitor.logAgentDecision(requestId, {
@@ -1427,7 +1428,9 @@ export async function action({ request }: any) {
         const stream = requestedStream && 
                       (chatbot.enableStreaming !== false) && 
                       agentDecision.shouldStream && 
-                      hasToolAccess; // Solo stream si hay acceso a herramientas
+                      !agentDecision.needsTools; // NO stream si necesita herramientas
+        
+        console.log(`🔄 DEBUG STREAMING: needsTools=${agentDecision.needsTools}, shouldStream=${agentDecision.shouldStream}, finalStream=${stream}`);
         
         // Performance warning si se deshabilita streaming innecesariamente
         if (requestedStream && !stream && agentDecision.confidence < 70) {
@@ -1459,11 +1462,13 @@ export async function action({ request }: any) {
           enableLogging: false
         });
         
-        // 🧰 PREPARAR HERRAMIENTAS DISPONIBLES (Solo si agent decidió que se necesitan)
-        const tools = hasToolAccess && modelSupportsTools && agentDecision.needsTools ?
+        // 🧰 PREPARAR HERRAMIENTAS DISPONIBLES (Siempre disponibles si el modelo las soporta)
+        const tools = hasToolAccess && modelSupportsTools ?
           getAvailableTools(user.plan, integrations, modelSupportsTools) : [];
         
-        // 🎯 PROMPT INTELIGENTE: Solo agregar instrucciones de herramientas si realmente se necesitan
+        console.log(`🧰 DEBUG: Tools disponibles: [${tools.map(t => t.name).join(', ')}] (plan: ${user.plan}, modelSupportsTools: ${modelSupportsTools}, hasToolAccess: ${hasToolAccess})`);
+        
+        // 🎯 PROMPT INTELIGENTE: Agregar herramientas disponibles y contexto del agente
         if (tools.length > 0) {
           enrichedSystemPrompt += "\n\n=== HERRAMIENTAS DISPONIBLES ===\n";
           enrichedSystemPrompt += generateToolPrompts(tools);
@@ -1621,6 +1626,7 @@ export async function action({ request }: any) {
                 let contentChunks = 0;
                 let accumulatedContent = "";
                 let warningAlreadySent = false;
+                let usageData: any = null; // Acumular datos de usage
                 
                 try {
                   while (true) {
@@ -1628,9 +1634,15 @@ export async function action({ request }: any) {
                     
                     console.log('📨 Stream chunk received:', { done, value });
                     
+                    // Capturar usage data si viene en el chunk
+                    if (value?.usage) {
+                      usageData = value.usage;
+                      console.log('💰 Usage data captured from stream:', usageData);
+                    }
+                    
                     if (done) {
                       const totalResponseTime = Date.now() - requestStartTime;
-                      totalTokensUsed = result.usage?.totalTokens || result.usage?.total_tokens || 0;
+                      totalTokensUsed = usageData?.totalTokens || usageData?.total_tokens || 0;
                       
                       console.log(`🏁 Stream completed. Total chunks sent: ${contentChunks}`);
                       
@@ -1670,17 +1682,17 @@ export async function action({ request }: any) {
                         // Guardar mensaje del usuario
                         await addUserMessage(conversation.id, message);
 
-                        // Calcular costos del mensaje
-                        const inputTokens = result.usage?.inputTokens || result.usage?.prompt_tokens || 0;
-                        const outputTokens = result.usage?.outputTokens || result.usage?.completion_tokens || 0;
-                        const cachedTokens = result.usage?.cachedTokens || 0;
+                        // Calcular costos del mensaje usando usageData capturado
+                        const inputTokens = usageData?.inputTokens || usageData?.prompt_tokens || 0;
+                        const outputTokens = usageData?.outputTokens || usageData?.completion_tokens || 0;
+                        const cachedTokens = usageData?.cachedTokens || 0;
                         const costCalc = calculateCost(providerUsed, modelUsed, { inputTokens, outputTokens, cachedTokens });
                         
                         // Guardar respuesta del asistente con tokens y costos (streaming completado)
                         await addAssistantMessage(
                           conversation.id,
                           accumulatedContent,
-                          result.usage?.totalTokens || result.usage?.total_tokens || 0, // Tokens del stream completo
+                          usageData?.totalTokens || usageData?.total_tokens || 0, // Tokens del stream completo
                           undefined, // responseTime
                           undefined, // firstTokenLatency  
                           modelUsed,
@@ -1693,7 +1705,7 @@ export async function action({ request }: any) {
                           cachedTokens // cachedTokens
                         );
                         
-                        console.log(`💾 Mensajes streaming guardados - Usuario: "${message.substring(0,50)}..." | AI: "${accumulatedContent.substring(0,50)}..." | Tokens: ${result.usage?.totalTokens || result.usage?.total_tokens || 0} | Costo: $${costCalc.totalCost.toFixed(6)} (${costCalc.provider})`);
+                        console.log(`💾 Mensajes streaming guardados - Usuario: "${message.substring(0,50)}..." | AI: "${accumulatedContent.substring(0,50)}..." | Tokens: ${usageData?.totalTokens || usageData?.total_tokens || 0} | Costo: $${costCalc.totalCost.toFixed(6)} (${costCalc.provider})`);
                         
                       } catch (dbError) {
                         console.error('❌ Error guardando mensajes streaming:', dbError);
@@ -1816,6 +1828,18 @@ export async function action({ request }: any) {
             
             
             // SISTEMA CENTRALIZADO DE MANEJO DE HERRAMIENTAS
+            console.log(`🔧 DEBUG: Tool calls detectados: ${result.response.toolCalls?.length || 0}`);
+            if (result.response.toolCalls?.length > 0) {
+              console.log(`🔧 DEBUG: Tool calls: ${result.response.toolCalls.map(tc => tc.name).join(', ')}`);
+              console.log(`🔧 DEBUG: Tool calls completos:`, JSON.stringify(result.response.toolCalls, null, 2));
+            }
+            
+            console.log(`🔧 DEBUG: Tool calls detectados: ${result.response.toolCalls?.length || 0}`);
+            if (result.response.toolCalls && result.response.toolCalls.length > 0) {
+              console.log(`🔧 DEBUG: Herramientas específicas:`, result.response.toolCalls.map(tc => `${tc.name}(${JSON.stringify(tc.input)})`));
+            }
+            console.log(`🔧 DEBUG: finalResponse antes de tools: "${finalResponse}"`);
+            
             if (result.response.toolCalls && result.response.toolCalls.length > 0) {
               const toolContext = {
                 chatbotId: chatbot.id,
@@ -1825,15 +1849,27 @@ export async function action({ request }: any) {
               };
               
               for (const toolCall of result.response.toolCalls) {
+                console.log(`🔧 TOOL EXECUTION START: ${toolCall.name} with input:`, JSON.stringify(toolCall.input, null, 2));
+                
                 const toolResult = await executeToolCall(
                   toolCall.name,
                   toolCall.input,
                   toolContext
                 );
                 
+                console.log(`✅ TOOL EXECUTION RESULT: ${toolCall.name} ->`, {
+                  success: toolResult.success,
+                  messageLength: toolResult.message?.length || 0,
+                  message: toolResult.message?.substring(0, 200) + (toolResult.message?.length > 200 ? '...' : ''),
+                  hasData: !!toolResult.data
+                });
+                
                 // Agregar resultado a la respuesta
                 finalResponse += `\n\n${toolResult.message}`;
               }
+              
+              console.log(`🔧 DEBUG: finalResponse después de tools: "${finalResponse}"`);
+              console.log(`🔧 DEBUG: Longitud final: ${finalResponse.length}`);
             } else {
               
               // Fallback: Detectar si hay un payment request en la respuesta (sistema anterior)
@@ -1952,6 +1988,9 @@ export async function action({ request }: any) {
               console.error('❌ Error guardando mensajes:', dbError);
               // No fallar la respuesta por error de BD, solo loggear
             }
+            
+            console.log(`🚀 FINAL RESPONSE ANTES DE ENVIAR: "${finalResponse}"`);
+            console.log(`🚀 LONGITUD FINAL RESPONSE: ${finalResponse?.length || 0}`);
             
             return new Response(
               JSON.stringify({
