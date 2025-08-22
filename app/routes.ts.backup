@@ -1,0 +1,65 @@
+import { type RouteConfig } from "@react-router/dev/routes";
+
+export default [
+  // Rutas principales
+  {
+    path: "/",
+    file: "routes/_index.tsx"
+  },
+  
+  // === CHATBOT & CONVERSATION ROUTES ===
+  // Conversación principal del chatbot (embed y directo)
+  {
+    path: "/chat",
+    file: "routes/chat.tsx"
+  },
+  {
+    path: "/chat/embed", 
+    file: "routes/chat_.embed.tsx"
+  },
+  {
+    path: "/chat/404",
+    file: "routes/chat.404.tsx"
+  },
+  
+  // Testing y desarrollo
+  {
+    path: "/chat-ia",
+    file: "routes/chat-ia.tsx"
+  },
+  {
+    path: "/chatbot-test",
+    file: "routes/chatbot-test.tsx"
+  },
+  
+  // Dashboard de chatbots
+  {
+    path: "/dashboard/chat",
+    file: "routes/dashboard.chat.tsx"
+  },
+  {
+    path: "/dashboard/chat/nuevo",
+    file: "routes/dashboard.chat_.nuevo.tsx"
+  },
+  {
+    path: "/dashboard/chat/:chatbotSlug",
+    file: "routes/dashboard.chat_.$chatbotSlug.tsx"
+  },
+  
+  // === API ENDPOINTS ===
+  // API principal del chatbot
+  {
+    path: "/api/v1/chatbot",
+    file: "routes/api.v1.chatbot.ts"
+  },
+  
+  // Ghosty (agente principal)
+  {
+    path: "/api/ghosty/chat",
+    file: "routes/api.ghosty.chat.ts"
+  },
+  {
+    path: "/api/ghosty/chat/enhanced",
+    file: "routes/api.ghosty.chat.enhanced.ts"
+  }
+] satisfies RouteConfig;
