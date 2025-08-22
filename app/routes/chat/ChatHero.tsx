@@ -109,7 +109,7 @@ export const ChatHero = () => {
 
   return (
     <div className="w-full mb-10  max-w-7xl mx-auto h-fit md:h-[60vh]  px-4 md:px-[5%] xl:px-0 flex flex-col md:flex-row items-center justify-start md:justify-between gap-0 md:gap-8 ">
-      <div className="w-full md:w-1/2 flex flex-col justify-center items-start md:items-start mb-8">
+      <div className="w-full md:w-1/2 flex flex-col justify-center items-start md:items-start ">
         <h1 className="font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 leading-tight text-center md:text-left">
           Chat IA que conecta
           <br className="hidden md:block" /> con tus clientes
@@ -127,7 +127,13 @@ export const ChatHero = () => {
         </div>
       </div>
       <div className="w-full md:w-1/2 flex justify-center items-center pl-0 md:pl-16">
-        <div className=" border border-gray-300 rounded-3xl p-4 md:p-8 w-full h-[480px] md:min-h-[550px] flex flex-col justify-end shadow-lg relative overflow-hidden ">
+        <motion.div 
+          id="chat"
+          className="border border-gray-300 rounded-3xl p-4 md:p-8 w-full h-[480px] md:min-h-[550px] flex flex-col justify-end shadow-lg relative overflow-hidden"
+          initial={{ opacity: 0, y: -100 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        >
           <div className="absolute z-10 border-b border-outlines left-0 top-0 w-full h-16 bg-dark text-white flex gap-3 items-center px-6 text-xl font-medium">
             <img src="/home/ghosty-avatar.svg" />
             Ghosty
@@ -141,7 +147,7 @@ export const ChatHero = () => {
             }
             onRestart={() => setCurrent(0)}
           />
-        </div>
+        </motion.div>
       </div>
     </div>
   );

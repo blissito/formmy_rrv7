@@ -149,7 +149,7 @@ export const loader = async ({ params, request }: Route.LoaderArgs) => {
     },
   });
   
-  const isPro = user.plan === "PRO" ? true : false;
+  const isPro = user.plan !== "FREE";
   return {
     isPro,
     notifications: projectWithPermissions?.settings?.notifications,

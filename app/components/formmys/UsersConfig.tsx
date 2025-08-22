@@ -41,7 +41,7 @@ export default function UsersConfig({
 
   return (
     <section className="grid gap-5 relative">
-      <Card title="Usuarios">
+      <Card navClassName="!mb-0" title="Usuarios">
         <p className="text-xs text-gray-600 dark:text-gray-400 tracking-wide mb-8">
           {permissions.length}{" "}
           <Pluralize

@@ -117,8 +117,8 @@ export const loader = async ({ request, params }: any) => {
       ? `<iframe src="http://${url.host}/embed/${access.project.id}" width="100%" height="600" frameborder="0"></iframe>`
       : `<iframe src="https://${url.host}/embed/${access.project.id}" width="100%" height="600" frameborder="0"></iframe>`,
     link: isDev
-      ? `http://${url.host}/form/${access.project.id}`
-      : `https://${url.host}/form/${access.project.id}`,
+      ? `http://${url.host}/preview/${access.project.id}`
+      : `https://${url.host}/preview/${access.project.id}`,
   };
 
   return { user, project: access.project, urls };

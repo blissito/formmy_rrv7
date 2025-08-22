@@ -33,7 +33,6 @@ export const InputModalFormWithRole = ({
     <Modal onClose={onClose}   title="Agregar usuario" size="md" className="px-4 pb-4 md:pt-0 md:pb-8 md:px-8 box-border overflow-hidden  ">
       <Form
         method="post"
-
       >
     <div className=" w-full mt-6 md:mt-8">
     <label className="block text-sm font-medium mb-1 text-metal">
