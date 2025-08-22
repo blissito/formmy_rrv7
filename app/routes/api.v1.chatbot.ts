@@ -1573,7 +1573,9 @@ export async function action({ request }: any) {
             { role: "user" as const, content: message }
           ],
           temperature: toolsDetected ? 0.1 : (chatbot.temperature || 0.7), // Baja temperatura para herramientas = más obediente
-          maxTokens: toolsDetected ? 400 : 1000, // Reducir tokens para herramientas = menor costo
+          maxTokens: selectedModel.startsWith('gpt-5') 
+            ? (toolsDetected ? 500 : 800) // GPT-5 necesita más tokens mínimos para funcionar
+            : (toolsDetected ? 400 : 1000), // Otros modelos mantienen límites originales
           stream: !agentDecision.needsTools && stream, // Solo forzar non-streaming cuando agente confirma herramientas
           ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
@@ -1585,6 +1587,8 @@ export async function action({ request }: any) {
         let providerUsed = 'unknown';
         let usedFallback = false;
         let lastError;
+        let totalTokensUsed = 0;
+        let firstTokenTime: number | undefined;
         
         try {
           if (chatRequest.stream) {

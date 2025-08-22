@@ -21,7 +21,7 @@ export class OpenAIProvider extends AIProvider {
   /**
    * Calcula tokens inteligentemente según el contexto de la conversación
    */
-  private calculateSmartTokens(messages: ChatMessage[]): number {
+  private calculateSmartTokens(messages: ChatMessage[], model: string): number {
     const lastMessage = messages[messages.length - 1]?.content || '';
     const messageLength = lastMessage.length;
     
@@ -48,12 +48,15 @@ export class OpenAIProvider extends AIProvider {
       baseTokens = 500; // Respuestas generales
     }
     
-    // Ajustar según contexto disponible (máximo 4096 tokens para GPT-4o mini)
-    const maxContextWindow = 4096;
-    const availableTokens = maxContextWindow - totalContextTokens - 100; // 100 tokens de margen
+    // Ajustar según contexto disponible - GPT-5-nano tiene context window más grande
+    const maxContextWindow = model.startsWith('gpt-5') ? 32000 : 4096; // GPT-5 tiene 32K context window
+    const availableTokens = maxContextWindow - totalContextTokens - 200; // 200 tokens de margen
     
-    // Retornar el menor entre baseTokens y tokens disponibles, pero mínimo 200
-    return Math.max(200, Math.min(baseTokens, availableTokens));
+    // Para GPT-5, mínimo 300 tokens para permitir respuestas básicas sin quemar tokens
+    const minTokens = model.startsWith('gpt-5') ? 300 : 200;
+    
+    // Retornar el menor entre baseTokens y tokens disponibles, pero respetando mínimo
+    return Math.max(minTokens, Math.min(baseTokens, availableTokens));
   }
 
   protected getHeaders(): Record<string, string> {
@@ -81,7 +84,7 @@ export class OpenAIProvider extends AIProvider {
     const { model, messages, temperature = 0.7, maxTokens, tools } = request;
     
     // Cálculo inteligente de tokens según contexto
-    const smartMaxTokens = maxTokens || this.calculateSmartTokens(messages);
+    const smartMaxTokens = maxTokens || this.calculateSmartTokens(messages, model);
 
     if (!this.supportsModel(model)) {
       throw new Error(`Modelo ${model} no soportado por OpenAI provider`);
@@ -91,14 +94,20 @@ export class OpenAIProvider extends AIProvider {
     const systemMessage = formattedMessages.find(m => m.role === 'system');
     const conversationMessages = formattedMessages.filter(m => m.role !== 'system');
 
-    // En retry: temperatura más baja para más consistencia, pero respetar limitaciones del modelo
-    const effectiveTemperature = retryCount > 0 ? (model === 'gpt-5-nano' ? 1 : 0.1) : temperature;
+    // En retry: temperatura más baja para más consistencia, pero GPT-5 no soporta temperature
+    const effectiveTemperature = retryCount > 0 ? 0.1 : temperature;
 
     const requestBody = {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
-      temperature: model === 'gpt-5-nano' ? 1 : Math.max(0, Math.min(2, effectiveTemperature)),
+      // GPT-5 models no soportan temperature - es un parámetro no compatible
+      ...(model.startsWith('gpt-5') ? {} : { temperature: Math.max(0, Math.min(2, effectiveTemperature)) }),
       ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
+      // Parámetros específicos para GPT-5 según mejores prácticas de la comunidad
+      ...(model === 'gpt-5-nano' ? { 
+        reasoning_effort: "minimal", // Para respuestas rápidas sin reasoning tokens
+        verbosity: "low" // Para respuestas más concisas
+      } : {}),
       ...(tools && tools.length > 0 ? { 
         tools: tools.map(tool => ({
           type: "function",
@@ -229,7 +238,7 @@ export class OpenAIProvider extends AIProvider {
     const { model, messages, temperature = 0.7, maxTokens } = request;
     
     // Cálculo inteligente de tokens según contexto
-    const smartMaxTokens = maxTokens || this.calculateSmartTokens(messages);
+    const smartMaxTokens = maxTokens || this.calculateSmartTokens(messages, model);
 
     if (!this.supportsModel(model)) {
       throw new Error(`Modelo ${model} no soportado por OpenAI provider`);
@@ -242,10 +251,18 @@ export class OpenAIProvider extends AIProvider {
     const requestBody = {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
-      temperature: model === 'gpt-5-nano' ? 1 : Math.max(0, Math.min(2, temperature)),
+      // GPT-5 models no soportan temperature - es un parámetro no compatible
+      ...(model.startsWith('gpt-5') ? {} : { temperature: Math.max(0, Math.min(2, temperature)) }),
       ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
+      // Parámetros específicos para GPT-5 según mejores prácticas de la comunidad
+      ...(model === 'gpt-5-nano' ? { 
+        reasoning_effort: "minimal", // Para respuestas rápidas sin reasoning tokens
+        verbosity: "low" // Para respuestas más concisas
+      } : {}),
       stream: true,
     };
+
+    console.log(`🔍 [OpenAI Request] Model: ${model}, Body:`, JSON.stringify(requestBody, null, 2));
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -255,6 +272,7 @@ export class OpenAIProvider extends AIProvider {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`🔍 [OpenAI Stream Error] Status: ${response.status}, Response: ${errorText}`);
       throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
@@ -304,7 +322,12 @@ export class OpenAIProvider extends AIProvider {
 
                 try {
                   const parsed = JSON.parse(data);
+                  console.log(`🔍 [OpenAI Stream] Raw response:`, JSON.stringify(parsed, null, 2));
+                  
                   const content = parsed.choices?.[0]?.delta?.content;
+                  const finishReason = parsed.choices?.[0]?.finish_reason;
+                  
+                  console.log(`🔍 [OpenAI Stream] Content: "${content}", FinishReason: "${finishReason}"`);
                   
                   if (content) {
                     contentReceived = true;
@@ -312,8 +335,16 @@ export class OpenAIProvider extends AIProvider {
                     controller.enqueue({ content });
                   }
                   
-                  if (parsed.choices?.[0]?.finish_reason) {
+                  if (finishReason) {
+                    console.log(`🔍 [OpenAI Stream] Stream finished with reason: ${finishReason}`);
                     clearTimeout(timeout);
+                    
+                    // Detectar respuesta vacía por límite de tokens (problema conocido de GPT-5-nano)
+                    if (finishReason === 'length' && !contentReceived) {
+                      controller.error(new Error(`GPT-5-nano empty response: finish_reason=${finishReason}, no content received`));
+                      return;
+                    }
+                    
                     controller.close();
                     return;
                   }

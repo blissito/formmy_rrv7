@@ -83,7 +83,8 @@ export class AnthropicProvider extends AIProvider {
     const smartMaxTokens = request.maxTokens || this.calculateSmartTokens(request.messages);
     
     // En retry: temperatura más baja para más consistencia
-    const baseTemperature = request.temperature || 0.7;
+    // Anthropic recomienda temperature=1 como default (2025)
+    const baseTemperature = request.temperature ?? 1.0;
     const effectiveTemperature = retryCount > 0 ? 0.1 : baseTemperature;
     
     const body = {
@@ -94,6 +95,8 @@ export class AnthropicProvider extends AIProvider {
       messages,
       ...(request.tools && request.tools.length > 0 && { tools: request.tools }),
     };
+
+    console.log(`🔍 [Anthropic Request] Model: ${request.model}, Body:`, JSON.stringify(body, null, 2));
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -180,12 +183,14 @@ export class AnthropicProvider extends AIProvider {
     const body = {
       model: request.model,
       max_tokens: smartMaxTokens,
-      temperature: this.normalizeTemperature(request.temperature || 0.7),
+      temperature: this.normalizeTemperature(request.temperature ?? 1.0), // Anthropic default 2025
       stream: true,
       ...(system && { system }),
       messages,
       ...(request.tools && request.tools.length > 0 && { tools: request.tools }),
     };
+
+    console.log(`🔍 [Anthropic Stream] Model: ${request.model}, Body:`, JSON.stringify(body, null, 2));
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

@@ -13,6 +13,10 @@ interface CreateMessageParams {
   content: string;
   role: MessageRole;
   tokens?: number;
+  inputTokens?: number; // Tokens de entrada
+  outputTokens?: number; // Tokens de salida
+  totalCost?: number; // Costo total en USD
+  provider?: string; // Proveedor: openai, anthropic, openrouter
   responseTime?: number;
   firstTokenLatency?: number; // Tiempo hasta el primer chunk en ms
   aiModel?: string; // Modelo de IA usado para generar la respuesta (solo para ASSISTANT messages)
@@ -39,6 +43,10 @@ export async function createMessage({
   content,
   role,
   tokens,
+  inputTokens,
+  outputTokens,
+  totalCost,
+  provider,
   responseTime,
   firstTokenLatency,
   aiModel,
@@ -73,6 +81,10 @@ export async function createMessage({
       content,
       role,
       tokens,
+      inputTokens,
+      outputTokens,
+      totalCost,
+      provider,
       responseTime,
       firstTokenLatency,
       aiModel,
