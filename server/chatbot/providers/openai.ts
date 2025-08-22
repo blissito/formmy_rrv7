@@ -91,13 +91,13 @@ export class OpenAIProvider extends AIProvider {
     const systemMessage = formattedMessages.find(m => m.role === 'system');
     const conversationMessages = formattedMessages.filter(m => m.role !== 'system');
 
-    // En retry: temperatura más baja para más consistencia
-    const effectiveTemperature = retryCount > 0 ? 0.1 : temperature;
+    // En retry: temperatura más baja para más consistencia, pero respetar limitaciones del modelo
+    const effectiveTemperature = retryCount > 0 ? (model === 'gpt-5-nano' ? 1 : 0.1) : temperature;
 
     const requestBody = {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
-      temperature: model === 'gpt-5-nano' ? Math.max(0, Math.min(1, effectiveTemperature)) : Math.max(0, Math.min(2, effectiveTemperature)),
+      temperature: model === 'gpt-5-nano' ? 1 : Math.max(0, Math.min(2, effectiveTemperature)),
       ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
       ...(tools && tools.length > 0 ? { 
         tools: tools.map(tool => ({
@@ -239,13 +239,10 @@ export class OpenAIProvider extends AIProvider {
     const systemMessage = formattedMessages.find(m => m.role === 'system');
     const conversationMessages = formattedMessages.filter(m => m.role !== 'system');
 
-    // En retry: temperatura más baja para más consistencia
-    const effectiveTemperature = retryCount > 0 ? 0.1 : temperature;
-
     const requestBody = {
       model,
       messages: systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages,
-      temperature: model === 'gpt-5-nano' ? Math.max(0, Math.min(1, effectiveTemperature)) : Math.max(0, Math.min(2, effectiveTemperature)),
+      temperature: model === 'gpt-5-nano' ? 1 : Math.max(0, Math.min(2, temperature)),
       ...(model.startsWith('gpt-5') ? { max_completion_tokens: smartMaxTokens } : { max_tokens: smartMaxTokens }),
       stream: true,
     };

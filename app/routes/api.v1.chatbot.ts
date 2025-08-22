@@ -1654,7 +1654,7 @@ export async function action({ request }: any) {
                         let conversation = await db.conversation.findFirst({
                           where: {
                             chatbotId: chatbot.id,
-                            externalId: sessionId || `session-${userId}-${Date.now()}`
+                            sessionId: sessionId || `session-${userId}-${Date.now()}`
                           }
                         });
                         
@@ -1662,7 +1662,7 @@ export async function action({ request }: any) {
                           conversation = await db.conversation.create({
                             data: {
                               chatbotId: chatbot.id,
-                              externalId: sessionId || `session-${userId}-${Date.now()}`
+                              sessionId: sessionId || `session-${userId}-${Date.now()}`
                             }
                           });
                         }
@@ -1862,7 +1862,7 @@ export async function action({ request }: any) {
               let conversation = await db.conversation.findFirst({
                 where: {
                   chatbotId: chatbot.id,
-                  externalId: sessionId || `session-${userId}-${Date.now()}`
+                  sessionId: sessionId || `session-${userId}-${Date.now()}`
                 }
               });
               
@@ -1870,7 +1870,7 @@ export async function action({ request }: any) {
                 conversation = await db.conversation.create({
                   data: {
                     chatbotId: chatbot.id,
-                    externalId: sessionId || `session-${userId}-${Date.now()}`
+                    sessionId: sessionId || `session-${userId}-${Date.now()}`
                   }
                 });
               }

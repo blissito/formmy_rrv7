@@ -91,7 +91,7 @@ export const AgentForm = ({
           <button className="group flex gap-2">
             <IoInformationCircleOutline />
             <span className="text-xs bg-black text-white rounded px-2 opacity-0 group-hover:opacity-100 transition-all duration-200 ease-in-out transform scale-95 group-hover:scale-100">
-              Temperatura
+              {selectedModel === 'gpt-5-nano' ? 'Temperatura fija en 1.0 para GPT-5-nano' : 'Temperatura'}
             </span>
           </button>
         </label>
@@ -100,13 +100,20 @@ export const AgentForm = ({
           min="0"
           max="2"
           step="0.1"
-          value={temperature}
+          value={selectedModel === 'gpt-5-nano' ? 1 : temperature}
           onChange={handleTemperatureChange}
+          disabled={selectedModel === 'gpt-5-nano'}
+          className={selectedModel === 'gpt-5-nano' ? 'opacity-50 cursor-not-allowed' : ''}
         />
         <div className="flex justify-between text-sm text-dark mt-0">
           <span>Reservado</span>
           <span>Muy creativo</span>
         </div>
+        {selectedModel === 'gpt-5-nano' && (
+          <p className="text-xs text-gray-500 mt-1">
+            GPT-5-nano solo soporta temperatura fija en 1.0
+          </p>
+        )}
       </div>
 
       {/* Sistema de Prompts Mejorado */}
