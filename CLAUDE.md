@@ -312,6 +312,42 @@ if (hasValidResponse)
 - **Testing**: Conversaciones mantienen contexto, respuestas naturales, temperature correcta
 - **Impacto**: Framework ahora funciona como chat AI real con memoria conversacional
 
+## 📝 Blog Posts y Documentación
+
+### Blog Posts Creados (Agosto 2024)
+- **Post 1**: `como-construimos-nuestro-framework-agentes-ia.md` - Storytelling sobre desarrollo del framework
+- **Post 2**: `tutorial-express-formmy-agent-framework.md` - Tutorial práctico de Express.js
+
+### ⚠️ Links Pendientes de Crear
+Los blog posts referencian estos recursos que necesitan ser creados:
+
+1. **Repository GitHub**: https://github.com/formmy/agent-examples
+   - **Contenido necesario**: Ejemplos de código, framework files, documentación
+   - **Prioridad**: Alta - links rotos en blog posts
+   - **Estructura sugerida**:
+     ```
+     formmy/agent-examples/
+     ├── framework/          # Core framework files  
+     ├── examples/          # Código de ejemplo
+     ├── tutorials/         # Tutoriales paso a paso
+     └── README.md         # Documentación principal
+     ```
+
+2. **Discord Community**: https://discord.gg/formmy
+   - **Status**: ✅ Existe y funciona
+   - **Contenido**: Community para soporte y discusión
+
+3. **Documentación Formmy**: https://formmy.app/docs
+   - **Status**: ⚠️ Verificar si existe
+   - **Contenido necesario**: Docs del framework, guías, API reference
+
+### 📋 Tareas Pendientes
+- [ ] Crear repository `formmy/agent-examples` en GitHub
+- [ ] Subir archivos del framework al repository
+- [ ] Crear documentación básica en README
+- [ ] Verificar funcionamiento de todos los links en blog posts
+- [ ] Crear documentación en formmy.app/docs si no existe
+
 ## Próximos pasos técnicos
 
 ### 🔥 Email Scheduler Reactivación (Prioridad inmediata - 1-2 días)
@@ -535,3 +571,4 @@ function getSmartModelForPro(hasActiveIntegrations: boolean, isComplexQuery: boo
 - **Deploy forzado**: `npm run deploy:force`
 - **Typecheck**: `npm run typecheck`
 - **Lint**: `npm run lint` (verificar si existe)
+- no me gustan los adjetivos bobos y agringados como "felicidades champion"
