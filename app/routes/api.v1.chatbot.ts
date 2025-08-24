@@ -72,6 +72,8 @@ export async function action({ request }: any) {
   
   const { calculateCost } = await import("../../server/chatbot/pricing.server");
   
+  const { createAgent } = await import("../../server/formmy-agent");
+  
   console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
   try {
 
@@ -1614,9 +1616,77 @@ export async function action({ request }: any) {
           ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
         
-        // 🤖 AGENT LOOP SIMPLIFICADO - Solo si hay herramientas y no es streaming
-        if (tools.length > 0 && !chatRequest.stream) {
-          console.log('🤖 Iniciando Agent Loop simplificado...');
+        // 🚀 FORMMY AGENT FRAMEWORK - EXPERIMENTAL
+        const useFormmyFramework = true; // FLAG para activar/desactivar framework
+        
+        console.log('🔍 Framework check:', {
+          useFramework: useFormmyFramework,
+          toolsLength: tools.length,
+          toolNames: tools.map(t => t.name),
+          userPlan: user.plan,
+          model: selectedModel
+        });
+        
+        if (useFormmyFramework && tools.length > 0) {
+          console.log('🚀 Iniciando Formmy Agent Framework...');
+          
+          try {
+            console.log('📦 Creating agent for chatbot:', chatbot.id, 'model:', chatbot.aiModel);
+            const agent = await createAgent(chatbot, user);
+            console.log('✅ Agent created successfully');
+            
+            console.log('💬 Executing framework chat...');
+            const frameworkResponse = await agent.chat(message, {
+              contexts: chatbot.contexts || [],
+              conversationHistory: truncateConversationHistory(conversationHistory),
+              model: selectedModel,
+              stream: stream && chatRequest.stream,
+              user: user,
+              chatbotId: chatbot.id,
+              sessionId: sessionId
+            });
+            
+            console.log('✅ Framework response received:', {
+              hasContent: !!frameworkResponse.content,
+              contentLength: frameworkResponse.content?.length || 0,
+              toolsUsed: frameworkResponse.toolsUsed,
+              iterations: frameworkResponse.iterations,
+              error: frameworkResponse.error
+            });
+            
+            // Si el framework produjo una respuesta, usarla
+            if (frameworkResponse.content) {
+              const totalResponseTime = Date.now() - requestStartTime;
+              
+              performanceMonitor.endRequest(requestId, {
+                totalResponseTime,
+                tokensGenerated: frameworkResponse.usage?.totalTokens || 0,
+                errorOccurred: false
+              }, sessionId);
+              
+              return new Response(JSON.stringify({
+                message: frameworkResponse.content,
+                modelUsed: selectedModel,
+                tokensUsed: frameworkResponse.usage?.totalTokens || 0,
+                toolsUsed: frameworkResponse.toolsUsed || [],
+                iterations: frameworkResponse.iterations || 0,
+                frameworkUsed: 'formmy-agent',
+                agentLoopUsed: true
+              }), {
+                status: 200,
+                headers: { "Content-Type": "application/json" }
+              });
+            }
+            
+          } catch (frameworkError) {
+            console.error('❌ Framework error, falling back to original:', frameworkError);
+            // Continuar con el código original como fallback
+          }
+        }
+        
+        // 🤖 AGENT LOOP SIMPLIFICADO - Solo si hay herramientas y no es streaming (FALLBACK)
+        if (tools.length > 0 && !chatRequest.stream && !useFormmyFramework) {
+          console.log('🤖 Iniciando Agent Loop simplificado (fallback)...');
           
           const agentLoop = new SimpleAgentLoop();
           
