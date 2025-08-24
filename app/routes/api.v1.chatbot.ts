@@ -72,7 +72,7 @@ export async function action({ request }: any) {
   
   const { calculateCost } = await import("../../server/chatbot/pricing.server");
   
-  const { createAgent } = await import("../../server/formmy-agent");
+  const { createAgentFromChatbot } = await import("@formmy/agent-framework");
   
   console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
   try {
@@ -1632,7 +1632,12 @@ export async function action({ request }: any) {
           
           try {
             console.log('📦 Creating agent for chatbot:', chatbot.id, 'model:', chatbot.aiModel);
-            const agent = await createAgent(chatbot, user);
+            // Crear función para obtener herramientas del registry real
+            const toolsProvider = (userPlan: string) => {
+              return getAvailableTools(userPlan, {}, true);
+            };
+            
+            const agent = await createAgentFromChatbot(chatbot, user, toolsProvider);
             console.log('✅ Agent created successfully');
             
             console.log('💬 Executing framework chat...');
