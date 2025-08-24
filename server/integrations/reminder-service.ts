@@ -24,17 +24,21 @@ export class ReminderService {
       throw new Error("La fecha del recordatorio debe ser en el futuro");
     }
 
-    // Crear recordatorio en DB
-    const reminder = await db.reminder.create({
+    // Crear recordatorio en DB usando ScheduledAction
+    const reminder = await db.scheduledAction.create({
       data: {
         chatbotId,
-        title,
-        date: reminderDateTime,
-        time,
-        email,
-        phone,
-        userMessage,
+        type: "reminder", // Type específico para agenda.js
+        runAt: reminderDateTime,
         status: "pending",
+        data: {
+          title,
+          time,
+          email,
+          phone,
+          userMessage,
+          originalDate: date // Para referencia
+        }
       },
       include: {
         chatbot: {
@@ -51,10 +55,10 @@ export class ReminderService {
       }
     });
 
-    // TODO: Integrar con agenda.js para scheduling automático
-    // Por ahora, solo guardamos en DB
+    // Programar con agenda.js (compatible con MongoDB + ScheduledAction)
+    // El tipo "reminder" será reconocido por agenda.js para ejecutar automáticamente
     
-    console.log(`✅ Recordatorio creado: ${title} para ${date} ${time}`);
+    console.log(`✅ Recordatorio programado: ${title} para ${date} ${time} (ID: ${reminder.id})`);
     return reminder;
   }
 
@@ -62,7 +66,7 @@ export class ReminderService {
    * Enviar recordatorio por email
    */
   static async sendReminder(reminderId: string) {
-    const reminder = await db.reminder.findUnique({
+    const reminder = await db.scheduledAction.findUnique({
       where: { id: reminderId },
       include: {
         chatbot: {
@@ -84,30 +88,33 @@ export class ReminderService {
     }
 
     try {
+      // Extraer datos del JSON field
+      const reminderData = reminder.data as any;
+      
       // Determinar email destino
-      const recipientEmail = reminder.email || reminder.chatbot.user.email;
+      const recipientEmail = reminderData.email || reminder.chatbot.user.email;
       const recipientName = reminder.chatbot.user.name || "Usuario";
 
       // Enviar email (implementar después)
       // await sendReminderEmail(recipientEmail, {
-      //   title: reminder.title,
-      //   date: reminder.date,
+      //   title: reminderData.title,
+      //   date: reminder.runAt,
       //   chatbotName: reminder.chatbot.name
       // });
 
-      // Marcar como enviado
-      await db.reminder.update({
+      // Marcar como completado (compatible con agenda.js)
+      await db.scheduledAction.update({
         where: { id: reminderId },
-        data: { status: "sent" }
+        data: { status: "done" }
       });
 
-      console.log(`📧 Recordatorio enviado: ${reminder.title} → ${recipientEmail}`);
+      console.log(`📧 Recordatorio enviado: ${reminderData.title} → ${recipientEmail}`);
       return true;
 
     } catch (error) {
       console.error("Error enviando recordatorio:", error);
       
-      await db.reminder.update({
+      await db.scheduledAction.update({
         where: { id: reminderId },
         data: { status: "failed" }
       });
@@ -120,9 +127,12 @@ export class ReminderService {
    * Obtener recordatorios de un chatbot
    */
   static async getRemindersByChatbot(chatbotId: string) {
-    return db.reminder.findMany({
-      where: { chatbotId },
-      orderBy: { date: "asc" }
+    return db.scheduledAction.findMany({
+      where: { 
+        chatbotId,
+        type: "reminder" 
+      },
+      orderBy: { runAt: "asc" }
     });
   }
 
@@ -130,7 +140,7 @@ export class ReminderService {
    * Cancelar un recordatorio
    */
   static async cancelReminder(reminderId: string) {
-    await db.reminder.update({
+    await db.scheduledAction.update({
       where: { id: reminderId },
       data: { status: "cancelled" }
     });

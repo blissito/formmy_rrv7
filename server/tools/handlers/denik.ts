@@ -12,8 +12,26 @@ export async function scheduleReminderHandler(
   context: ToolContext
 ): Promise<ToolResponse> {
   console.log(`📅 DENIK HANDLER: Ejecutando tool con input:`, JSON.stringify(input, null, 2));
-  console.log(`📧 CONTEXT: chatbotId=${context.chatbotId}, message=${context.message}`);
+  console.log(`📧 CONTEXT: chatbotId=${context.chatbotId} (length: ${context.chatbotId?.length}), message=${context.message}`);
   const { title, date, time, email } = input;
+  
+  // Validar que tenemos un chatbotId válido
+  if (!context.chatbotId) {
+    return {
+      success: false,
+      message: "❌ Error: chatbotId requerido para crear recordatorio"
+    };
+  }
+  
+  // Validar que chatbotId sea un ObjectID válido (24 caracteres hex)
+  const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+  if (!objectIdPattern.test(context.chatbotId)) {
+    console.error(`❌ Invalid ObjectID: ${context.chatbotId} (length: ${context.chatbotId.length})`);
+    return {
+      success: false,
+      message: "❌ Error interno: ID de chatbot inválido"
+    };
+  }
   
   try {
     // Debug: Log de fecha recibida
@@ -106,7 +124,7 @@ export async function scheduleReminderHandler(
     
     return {
       success: true,
-      message: `🤖 **HERRAMIENTA UTILIZADA: Schedule Reminder**\n\n✅ **Email programado exitosamente:**\n📅 **${title}**\n🕒 ${formattedDate} a las ${time}\n📧 ${recipientInfo}\n\n🔧 *Sistema: Acción programada con ID: ${scheduledAction.id}*`,
+      message: `✅ **Recordatorio programado exitosamente:**\n\n📅 **${title}**\n🕒 ${formattedDate} a las ${time}\n${recipientInfo ? `📧 ${recipientInfo}` : ''}`,
       data: {
         scheduledActionId: scheduledAction.id,
         title,
