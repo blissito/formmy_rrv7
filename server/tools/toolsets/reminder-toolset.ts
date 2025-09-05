@@ -15,8 +15,11 @@ import {
   deleteReminderHandler
 } from "../handlers/reminder-management";
 
-// Importar el handler original de creación de recordatorios
-import { scheduleReminderHandler } from "../handlers/denik";
+// Lazy import del handler para evitar circular dependency
+const getScheduleReminderHandler = async () => {
+  const { scheduleReminderHandler } = await import("../handlers/denik");
+  return scheduleReminderHandler;
+};
 
 /**
  * DEFINICIÓN DEL TOOLSET DE RECORDATORIOS
@@ -50,7 +53,10 @@ export const ReminderToolset: Record<string, ToolDefinition> = {
         required: ["title", "date", "time"],
       },
     },
-    handler: scheduleReminderHandler, // Usar el handler original que ya funciona
+    handler: async (input, context) => {
+      const handler = await getScheduleReminderHandler();
+      return handler(input, context);
+    }, // Lazy load del handler
     requiredIntegrations: [],
     requiredPlan: ["PRO", "ENTERPRISE", "TRIAL"],
     enabled: true,
