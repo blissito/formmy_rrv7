@@ -12,5 +12,6 @@ export default defineConfig({
       plugins: [tailwindcss, autoprefixer],
     },
   },
+  publicDir: "public",
   plugins: [reactRouter(), tsconfigPaths()],
 });

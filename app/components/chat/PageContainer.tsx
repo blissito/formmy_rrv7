@@ -18,6 +18,7 @@ import UsersIcon from "../ui/icons/Users";
 import { motion } from "framer-motion";
 import EditIcon from "../ui/icons/Edit";
 import { type AgentType } from "./common/AgentDropdown";
+import { ProTagChatbot } from "../ProTagChatbot";
 import { getDefaultModelForPlan } from "~/utils/aiModels";
 
 // Context para compartir estado entre PreviewForm y ChatPreview
@@ -239,7 +240,7 @@ export const ChatCard = ({
   isInvited,
 }: {
   onDelete?: () => void;
-  chatbot: Chatbot;
+  chatbot: Chatbot & { canAccess?: boolean; needsUpgrade?: boolean };
   userRole?: string;
   isInvited?: boolean;
 }) => {
@@ -258,16 +259,23 @@ export const ChatCard = ({
           }),
         catch: (error) => new Error(`Error en la petición: ${error}`),
       }),
-      Effect.flatMap((response) =>
-        Effect.tryPromise({
+      Effect.flatMap((response) => {
+        // Handle 403 (access denied) gracefully
+        if (response.status === 403) {
+          console.log("Access denied to chatbot - user needs to upgrade");
+          return Effect.succeed({ needsUpgrade: true, count: 0 });
+        }
+        return Effect.tryPromise({
           try: () => response.json(),
           catch: (error) =>
             new Error(`Error al procesar la respuesta: ${error}`),
-        })
-      ),
+        });
+      }),
       Effect.map((data) => {
         if (data.success && data.count !== undefined) {
           setConversationsCount(data.count);
+        } else if (data.needsUpgrade) {
+          setConversationsCount(0); // Show 0 for blocked access
         }
         return data;
       }),
@@ -296,72 +304,109 @@ export const ChatCard = ({
       }}
       className="col-span-1"
     >
-      <Link
-        to={`/dashboard/chat/${chatbot.slug}`}
-        className="group relative overflow-hidden transition-all hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)]  border border-outlines bg-white rounded-2xl  w-full h-full block"
-      >
-        <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
-          <img src="/dash/chat.png" alt="chatbot" />
-        </section>
-        <div className="flex flex-col  px-4 pt-4 pb-2">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xl font-medium text-dark truncate">
-              {chatbot.name}
-            </h2>
-            {isInvited && userRole && (
-              <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {userRole === "VIEWER" && "Viewer"}
-                {userRole === "EDITOR" && "Editor"}
-                {userRole === "ADMIN" && "Admin"}
-              </span>
+{chatbot.canAccess === false ? (
+        // Show as disabled div with Pro upgrade for blocked chatbots  
+        <div className="group relative overflow-hidden transition-all border border-outlines bg-white rounded-2xl w-full h-full block opacity-75">
+          <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
+            <img src="/dash/chat.png" alt="chatbot" />
+          </section>
+          <div className="flex flex-col px-4 pt-4 pb-2 relative">
+            <ProTagChatbot 
+              message="Tu plan gratuito no incluye acceso a chatbots. Actualiza tu plan para usar esta funcionalidad."
+            />
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-medium text-dark truncate">
+                {chatbot.name}
+              </h2>
+              {isInvited && userRole && (
+                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {userRole === "VIEWER" && "Viewer"}
+                  {userRole === "EDITOR" && "Editor"}
+                  {userRole === "ADMIN" && "Admin"}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-metal flex-grow">
+              {chatbot.description ||
+                "Pronto podrás saber que es lo que más preguntan tus clientes"}
+            </p>
+            <div className="flex text-sm gap-4 mt-4 justify-between items-end">
+              <p className="text-metal font-normal flex gap-1 items-center">
+                <UsersIcon className="w-5 h-5" /> {conversationsCount}{" "}
+                {conversationsCount === 1 ? "chat" : "chats"}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Normal link for accessible chatbots
+        <Link
+          to={`/dashboard/chat/${chatbot.slug}`}
+          className="group relative overflow-hidden transition-all hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] border border-outlines bg-white rounded-2xl w-full h-full block"
+        >
+          <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
+            <img src="/dash/chat.png" alt="chatbot" />
+          </section>
+          <div className="flex flex-col px-4 pt-4 pb-2">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-medium text-dark truncate">
+                {chatbot.name}
+              </h2>
+              {isInvited && userRole && (
+                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {userRole === "VIEWER" && "Viewer"}
+                  {userRole === "EDITOR" && "Editor"}
+                  {userRole === "ADMIN" && "Admin"}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-metal flex-grow">
+              {chatbot.description ||
+                "Pronto podrás saber que es lo que más preguntan tus clientes"}
+            </p>
+            <div className="flex text-sm gap-4 mt-4 justify-between items-end">
+              <p className="text-metal font-normal flex gap-1 items-center">
+                <UsersIcon className="w-5 h-5" /> {conversationsCount}{" "}
+                {conversationsCount === 1 ? "chat" : "chats"}
+              </p>
+            </div>
+            {!isInvited && (
+              <div
+                id="actions"
+                className=" hidden md:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute z-20 -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all  items-center justify-end px-3"
+              >
+                <button
+                  className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onDelete?.();
+                  }}
+                >
+                   <DeleteIcon className="w-5 h-5" />
+                </button>
+                <hr className="h-6 w-[1px] border-none bg-outlines" />
+                <a 
+                  href={`/chat/embed?slug=${chatbot.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <OpenTabIcon />
+                </a>
+                <Link 
+                  to={`/dashboard/chat/${chatbot.slug}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
+                >
+                  <EditIcon />
+                </Link>
+              </div>
             )}
           </div>
-          <p className="text-sm text-metal flex-grow">
-            {chatbot.description ||
-              "Pronto podrás saber que es lo que más preguntan tus clientes"}
-          </p>
-          <div className="flex text-sm gap-4 mt-4 justify-between items-end">
-            <p className="text-metal font-normal flex gap-1 items-center">
-              <UsersIcon className="w-5 h-5" /> {conversationsCount}{" "}
-              {conversationsCount === 1 ? "chat" : "chats"}
-            </p>
-          </div>
-          {!isInvited && (
-            <div
-              id="actions"
-              className=" hidden md:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute z-20 -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all  items-center justify-end px-3"
-            >
-              <button
-                className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onDelete?.();
-                }}
-              >
-                 <DeleteIcon className="w-5 h-5" />
-              </button>
-              <hr className="h-6 w-[1px] border-none bg-outlines" />
-              <a 
-                href={`/chat/embed?slug=${chatbot.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <OpenTabIcon />
-              </a>
-              <Link 
-                to={`/dashboard/chat/${chatbot.slug}`}
-                onClick={(e) => e.stopPropagation()}
-                className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
-              >
-                <EditIcon />
-              </Link>
-            </div>
-          )}
-        </div>
-      </Link>
+        </Link>
+      )}
     </motion.div>
   );
 };

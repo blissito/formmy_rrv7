@@ -1,40 +1,27 @@
-FROM node:20-alpine AS development-dependencies-env
-COPY . /app
-WORKDIR /app
-RUN npm ci
+FROM node:20-alpine
 
-FROM node:20-alpine AS production-dependencies-env
-COPY . /app/
-# COPY ./package.json package-lock.json /app/
+# Install OpenSSL and other essentials for Prisma
+RUN apk add --no-cache openssl ca-certificates
+
 WORKDIR /app
-# Solo dependencias básicas necesarias
-RUN apk update && apk add --no-cache \
-    openssl \
-    ca-certificates \
-    && rm -rf /var/cache/apk/*
-# Generar Prisma client
+
+# Install dependencies
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
+RUN npm ci --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client for MongoDB and build
 RUN npx prisma generate
-# Instalar dependencias de producción
-RUN npm ci --omit=dev
-
-FROM node:20-alpine AS build-env
-COPY . /app/
-COPY --from=development-dependencies-env /app/node_modules /app/node_modules
-WORKDIR /app
 RUN npm run build
 
-FROM node:20-alpine
-# Solo dependencias básicas para HTTP requests
-RUN apk update && apk add --no-cache \
-    openssl \
-    ca-certificates \
-    && rm -rf /var/cache/apk/*
+# Verify Prisma client was generated correctly
+RUN ls -la node_modules/.prisma/client/ || echo "Prisma client not found"
 
-COPY ./package.json package-lock.json /app/
-COPY server.js /app/server.js
-COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/build /app/build
-# Copy blog content directory for runtime access
-COPY content/ /app/content/
-WORKDIR /app
+EXPOSE 3000
+ENV NODE_ENV=production
+ENV PORT=3000
+
 CMD ["npm", "run", "start"]

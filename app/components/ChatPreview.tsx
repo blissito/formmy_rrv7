@@ -212,26 +212,35 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           const contentType = response.headers.get('content-type');
           
           if (contentType && contentType.includes('application/json')) {
-            // Es una respuesta JSON (cuando se usan tools)
+            // Es una respuesta JSON (framework formmy-agent o legacy)
             const jsonData = await response.json();
             
-            if (jsonData.success && jsonData.response) {
+            // ✅ UNIFICADO: Soportar tanto framework como respuestas legacy
+            const responseContent = jsonData.message || jsonData.response || jsonData.content;
+            const hasValidResponse = responseContent && typeof responseContent === 'string';
+            
+            if (hasValidResponse) {
               // Mostrar la respuesta completa directamente
               setChatMessages((msgs) => {
                 const newMsgs = [...msgs];
                 newMsgs[newMsgs.length - 1] = {
                   role: "assistant",
-                  content: jsonData.response
+                  content: responseContent
                 };
                 return newMsgs;
               });
+              
+              // 🎯 LOG DEBUG para marketing/monitoring
+              if (jsonData.frameworkUsed === 'formmy-agent') {
+                console.log(`🤖 Formmy Agent: ${jsonData.iterations} iterations, tools: [${jsonData.toolsUsed?.join(', ') || 'none'}]`);
+              }
               
               clearTimeout(timeoutId);
               setChatLoading(false);
               inputRef.current?.focus();
               return;
             } else {
-              throw new Error(jsonData.error || 'Error en la respuesta');
+              throw new Error(jsonData.error || 'Respuesta vacía del servidor');
             }
           }
           
@@ -322,7 +331,14 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
             throw new Error(`Error: ${response.status}`);
           }
           const result = await response.json();
-          const botContent = result.response || result.content || "Respuesta vacía";
+          // ✅ UNIFICADO: Soportar framework formmy-agent y respuestas legacy
+          const botContent = result.message || result.response || result.content || "Respuesta vacía";
+          
+          // 🎯 LOG DEBUG para marketing/monitoring
+          if (result.frameworkUsed === 'formmy-agent') {
+            console.log(`🤖 Formmy Agent: ${result.iterations} iterations, tools: [${result.toolsUsed?.join(', ') || 'none'}]`);
+          }
+          
           setChatMessages((msgs) => [
             ...msgs,
             { role: "assistant", content: botContent },

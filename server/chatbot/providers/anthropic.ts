@@ -73,19 +73,30 @@ export class AnthropicProvider extends AIProvider {
   }
 
   async chatCompletion(request: ChatRequest): Promise<ChatResponse> {
+    return this.chatCompletionWithRetry(request);
+  }
+
+  private async chatCompletionWithRetry(request: ChatRequest, retryCount: number = 0): Promise<ChatResponse> {
     const { system, messages } = this.formatMessages(request.messages);
     
     // Cálculo inteligente de tokens según contexto
     const smartMaxTokens = request.maxTokens || this.calculateSmartTokens(request.messages);
     
+    // En retry: temperatura más baja para más consistencia
+    // Anthropic recomienda temperature=1 como default (2025)
+    const baseTemperature = request.temperature ?? 1.0;
+    const effectiveTemperature = retryCount > 0 ? 0.1 : baseTemperature;
+    
     const body = {
       model: request.model,
       max_tokens: smartMaxTokens,
-      temperature: this.normalizeTemperature(request.temperature || 0.7),
+      temperature: this.normalizeTemperature(effectiveTemperature),
       ...(system && { system }),
       messages,
       ...(request.tools && request.tools.length > 0 && { tools: request.tools }),
     };
+
+    console.log(`🔍 [Anthropic Request] Model: ${request.model}, Body:`, JSON.stringify(body, null, 2));
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -101,7 +112,7 @@ export class AnthropicProvider extends AIProvider {
     const result = await response.json();
     
     // Extraer contenido de texto
-    const textContent = result.content?.find((c: any) => c.type === 'text')?.text || '';
+    let textContent = result.content?.find((c: any) => c.type === 'text')?.text || '';
     
     // Extraer tool calls si existen
     const toolCalls = result.content?.filter((c: any) => c.type === 'tool_use').map((tool: any) => ({
@@ -109,6 +120,26 @@ export class AnthropicProvider extends AIProvider {
       input: tool.input,
       id: tool.id
     })) || [];
+    
+    // Si no hay contenido pero hay tool calls, generar respuesta contextual
+    if ((!textContent || textContent.trim().length === 0) && toolCalls.length > 0) {
+      if (retryCount === 0) {
+        // Primer intento falló - hacer retry con temperatura baja
+        console.log(`🔄 Anthropic retry: Empty response with tools, attempting with lower temperature`);
+        return this.chatCompletionWithRetry(request, 1);
+      } else {
+        // Retry también falló - generar respuesta contextual
+        textContent = this.generateContextualResponse(toolCalls);
+      }
+    } else if (!textContent || textContent.trim().length === 0) {
+      // No hay contenido ni tool calls
+      if (retryCount === 0) {
+        console.log(`🔄 Anthropic retry: Completely empty response, attempting with lower temperature`);
+        return this.chatCompletionWithRetry(request, 1);
+      } else {
+        textContent = 'Entiendo tu solicitud, pero no puedo proporcionar una respuesta específica en este momento.';
+      }
+    }
     
     return {
       content: textContent,
@@ -124,6 +155,25 @@ export class AnthropicProvider extends AIProvider {
     };
   }
 
+  private generateContextualResponse(toolCalls: any[]): string {
+    if (toolCalls.length === 0) return 'Procesando tu solicitud...';
+    
+    const toolCall = toolCalls[0];
+    
+    switch (toolCall.name) {
+      case 'create_payment_link':
+        return 'Perfecto, voy a generar tu link de pago ahora mismo.';
+      case 'schedule_reminder':
+        return 'Entendido, procediendo a programar tu recordatorio.';
+      case 'schedule_appointment':
+        return 'Entendido, procediendo a agendar tu cita.';
+      case 'search_knowledge':
+        return 'Buscando la información que necesitas...';
+      default:
+        return 'Procesando tu solicitud, un momento por favor.';
+    }
+  }
+
   async chatCompletionStream(request: ChatRequest): Promise<ReadableStream<StreamChunk>> {
     const { system, messages } = this.formatMessages(request.messages);
     
@@ -133,12 +183,14 @@ export class AnthropicProvider extends AIProvider {
     const body = {
       model: request.model,
       max_tokens: smartMaxTokens,
-      temperature: this.normalizeTemperature(request.temperature || 0.7),
+      temperature: this.normalizeTemperature(request.temperature ?? 1.0), // Anthropic default 2025
       stream: true,
       ...(system && { system }),
       messages,
       ...(request.tools && request.tools.length > 0 && { tools: request.tools }),
     };
+
+    console.log(`🔍 [Anthropic Stream] Model: ${request.model}, Body:`, JSON.stringify(body, null, 2));
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

@@ -53,7 +53,7 @@ export const ProTagChatbot = ({
           setLocalOpen(true);
           onChange?.(true);
         }}
-        className="cursor-pointer flex gap-1 items-center z-10 absolute -top-1 -right-4 border-[1px] border-none bg-[#FFEEBC] text-[#DAAC1F] rounded  text-sm py-[2px] px-2"
+        className="cursor-pointer flex gap-1 items-center z-10 absolute -top-1 right-2 border-[1px] border-none bg-[#FFEEBC] text-[#DAAC1F] rounded  text-sm py-[2px] px-2"
       >
         <img className="w-[12px]" src="/assets/thunder.svg" alt="thunder" />
         Pro

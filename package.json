@@ -2,6 +2,9 @@
   "name": "formmy",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "cross-env NODE_ENV=production react-router build",
     "dev": "react-router dev",
@@ -13,7 +16,9 @@
     "typecheck": "react-router typegen && tsc",
     "postinstall": "prisma generate",
     "dev:setup": "npx playwright install chromium && prisma generate",
-    "playwright:install": "npx playwright install chromium"
+    "playwright:install": "npx playwright install chromium",
+    "deploy": "./scripts/fast-deploy.sh",
+    "deploy:force": "fly deploy --no-cache"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.863.0",

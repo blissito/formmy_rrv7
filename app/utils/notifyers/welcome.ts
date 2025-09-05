@@ -3,6 +3,7 @@ import { getSesRemitent, getSesTransport } from "./ses";
 
 type WelcomeEmail = {
   email: string;
+  name?: string;
 };
 
 const host =
@@ -13,7 +14,7 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendPlanCancellation = async ({ email }: WelcomeEmail) => {
+export const sendWelcomeEmail = async ({ email, name }: WelcomeEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),

@@ -1,8 +1,18 @@
 import nodemailer from "nodemailer";
 import { getSesRemitent, getSesTransport } from "./ses";
 
+type WeeklyMetrics = {
+  totalConversations: number;
+  totalMessages: number;
+  averageMessagesPerConversation: number;
+  averageResponseTime?: number;
+};
+
 type WeekSummaryEmail = {
   email: string;
+  name?: string;
+  chatbotName?: string;
+  metrics?: WeeklyMetrics;
 };
 
 const host =
@@ -13,12 +23,20 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendPlanCancellation = async ({ email }: WeekSummaryEmail) => {
+export const sendWeekSummaryEmail = async ({ email, name, chatbotName, metrics }: WeekSummaryEmail) => {
+  // Default metrics if none provided
+  const defaultMetrics = {
+    totalConversations: 0,
+    totalMessages: 0,
+    averageMessagesPerConversation: 0,
+  };
+  
+  const actualMetrics = metrics || defaultMetrics;
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
       to: email,
-      subject: "¡Tu Formmy aún no está en acción!",
+      subject: "📊 Esta semana en Formmy",
       html: `
         <html>
         <head>
@@ -58,8 +76,8 @@ export const sendPlanCancellation = async ({ email }: WeekSummaryEmail) => {
                     text-align: left;
                     "
                 >
-                    ¡Hola Luis! aquí está tu resumen semanal de tu chatbot
-                    <span style="color: #7271cc"> Fulanito 🤖</span>
+                    ¡Hola ${name || 'amigo'}! aquí está tu resumen semanal de tu chatbot
+                    <span style="color: #7271cc"> ${chatbotName || 'Ghosty'} 🤖</span>
                 </h2>
                 <p
                     style="
@@ -83,7 +101,7 @@ export const sendPlanCancellation = async ({ email }: WeekSummaryEmail) => {
                     font-weight: bold;
                     "
                 >
-                    🤖 Conversaciones totales: [Número]
+                    🤖 Conversaciones totales: ${actualMetrics.totalConversations}
                 </p>
                 <p
                     style="
@@ -96,7 +114,7 @@ export const sendPlanCancellation = async ({ email }: WeekSummaryEmail) => {
                     font-weight: bold;
                     "
                 >
-                    💬 Mensajes respondidos: [Número]
+                    💬 Mensajes respondidos: ${actualMetrics.totalMessages}
                 </p>
                 <p
                     style="
@@ -109,7 +127,7 @@ export const sendPlanCancellation = async ({ email }: WeekSummaryEmail) => {
                     font-weight: bold;
                     "
                 >
-                    ⭐ Satisfacción de los usuarios: [Porcentaje o valoración]
+                    ⭐ Mensajes promedio por conversación: ${actualMetrics.averageMessagesPerConversation}
                 </p>
                 <p
                     style="
@@ -122,7 +140,7 @@ export const sendPlanCancellation = async ({ email }: WeekSummaryEmail) => {
                     font-weight: bold;
                     "
                 >
-                    ⏱ Mensajes promedio por conversación: [Segundos]
+                    ⏱ Tiempo promedio de respuesta: ${actualMetrics.averageResponseTime ? `${actualMetrics.averageResponseTime}ms` : 'N/A'}
                 </p>
                 <p
                     style="
@@ -133,7 +151,7 @@ export const sendPlanCancellation = async ({ email }: WeekSummaryEmail) => {
                     font-size: 16px;
                     "
                 >
-                    Consulta el detalle completo en tu dashbaord.
+                    Consulta el detalle completo en tu dashboard.
                 </p>
                 <p
                     style="
@@ -264,6 +282,12 @@ export const sendPlanCancellation = async ({ email }: WeekSummaryEmail) => {
                     </p>
                     <p style="color: #81838e; font-size: 8px">
                         Derechos Reservados 2025 ®
+                    </p>
+                    <p style="color: #81838e; font-size: 10px; text-align: center; margin-top: 8px;">
+                        <a href="https://www.formmy.app/unsubscribe?email=${encodeURIComponent(email)}&type=weekly" 
+                           style="color: #81838e; text-decoration: underline;">
+                           ¿No deseas recibir estos correos? Darse de baja
+                        </a>
                     </p>
                     </div>
                 </div>

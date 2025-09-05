@@ -1,4 +1,69 @@
+# Build outputs
 .react-router
 build
+dist
+
+# Dependencies
 node_modules
+
+# Development files
+.env.local
+.env.development
+.env.test
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.nyc_output
+__tests__
+*.test.*
+*.spec.*
+
+# Documentation
 README.md
+docs/
+*.md
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# Cache directories
+.cache
+.npm
+.yarn
+.pnpm
+
+# Temporary files
+tmp/
+temp/
+
+# Heavy dev dependencies que no necesitas en producción
+playwright-report/
+test-results/
+
+# Nested git repositories and their dependencies
+server/integrations/whatsapp-sdk/.git/
+server/integrations/whatsapp-sdk/node_modules/
+server/integrations/whatsapp-sdk/__tests__/
+server/integrations/whatsapp-sdk/examples/
+server/integrations/whatsapp-sdk/docs/
+server/integrations/whatsapp-sdk/*.tgz
+server/integrations/whatsapp-sdk/*.md

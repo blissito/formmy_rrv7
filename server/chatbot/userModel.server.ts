@@ -1,6 +1,6 @@
 import { Plans, type User } from "@prisma/client";
 import { db } from "~/utils/db.server";
-import { PLAN_LIMITS } from "./planLimits.server";
+import { PLAN_LIMITS, validateAvailableModel } from "./planLimits.server";
 
 /**
  * Gets a user by ID with chatbot information
@@ -16,6 +16,7 @@ export async function getUserWithChatbots(userId: string) {
 
 /**
  * Gets all chatbots for a user with plan validation
+ * FREE users (maxChatbots: 0) will see empty chatbots array
  */
 export async function getUserChatbotsWithPlanInfo(userId: string) {
   const user = await db.user.findUnique({
@@ -35,13 +36,21 @@ export async function getUserChatbotsWithPlanInfo(userId: string) {
   }
 
   const planLimits = PLAN_LIMITS[user.plan];
+  
+  // Show all chatbots but mark accessibility based on plan
+  // FREE users will see their chatbots but won't be able to access them
+  const chatbotsWithAccess = user.chatbots.map(chatbot => ({
+    ...chatbot,
+    canAccess: planLimits.maxChatbots > 0, // FREE users (maxChatbots: 0) cannot access
+    needsUpgrade: planLimits.maxChatbots === 0
+  }));
 
   return {
-    chatbots: user.chatbots,
+    chatbots: chatbotsWithAccess,
     plan: user.plan,
     limits: {
       maxChatbots: planLimits.maxChatbots,
-      currentCount: user.chatbots.length,
+      currentCount: user.chatbots.length, // Keep original count for plan validation
       canCreateMore:
         user.chatbots.length < planLimits.maxChatbots ||
         planLimits.maxChatbots === Infinity,

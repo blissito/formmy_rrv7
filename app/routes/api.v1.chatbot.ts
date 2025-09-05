@@ -7,62 +7,79 @@ export async function loader({ request }: any) {
   });
 }
 
+// Imports moved inside functions to avoid client-side processing
+
 export async function action({ request }: any) {
+  // Imports dentro de la función para evitar problemas client-side
+  const {
+    mammoth,
+    XLSX,
+    IntegrationType,
+    createChatbot,
+    updateChatbot,
+    getChatbotById,
+    getChatbotBySlug,
+    getChatbotsByUserId,
+    removeContextItem,
+    activateChatbot,
+    deactivateChatbot,
+    setToDraftMode,
+    markChatbotAsDeleted,
+    getChatbotState,
+    validateChatbotCreationAccess,
+    getChatbotBrandingConfigById,
+    getChatbotUsageStats,
+    checkMonthlyUsageLimit,
+    addFileContext,
+    addUrlContext,
+    addTextContext,
+    addQuestionContext,
+    updateQuestionContext,
+    updateTextContext,
+    getChatbotContexts,
+    createIntegration,
+    upsertIntegration,
+    getIntegrationsByChatbotId,
+    updateIntegration,
+    toggleIntegrationStatus,
+    deleteIntegration,
+    getActiveStripeIntegration,
+    createQuickPaymentLink,
+    ReminderService,
+    getAvailableTools,
+    executeToolCall,
+    SimpleAgentLoop,
+    generateToolPrompts,
+    validateUserAIModelAccess,
+    getUserPlanFeatures,
+    DEFAULT_CHATBOT_CONFIG,
+    generateRandomChatbotName,
+    getDefaultAIModelForUser,
+    getUserOrRedirect,
+    db,
+    generateFallbackModels,
+    isAnthropicDirectModel,
+    buildEnrichedSystemPrompt,
+    estimateTokens,
+    AIProviderManager,
+    truncateConversationHistory,
+    createProviderManager,
+    addUserMessage,
+    addAssistantMessage,
+    agentEngine,
+    performanceMonitor
+  } = await import("../../server/chatbot-api.server");
+  
+  const { calculateCost } = await import("../../server/chatbot/pricing.server");
+  
+  const { createAgentFromChatbot } = await import("@formmy/agent-framework");
+  
+  console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
   try {
-    // Import server utilities dynamically
-    const {
-      mammoth,
-      XLSX,
-      IntegrationType,
-      createChatbot,
-      updateChatbot,
-      getChatbotById,
-      getChatbotBySlug,
-      getChatbotsByUserId,
-      removeContextItem,
-      activateChatbot,
-      deactivateChatbot,
-      setToDraftMode,
-      markChatbotAsDeleted,
-      getChatbotState,
-      validateChatbotCreationAccess,
-      getChatbotBrandingConfigById,
-      getChatbotUsageStats,
-      checkMonthlyUsageLimit,
-      addFileContext,
-      addUrlContext,
-      addTextContext,
-      addQuestionContext,
-      updateQuestionContext,
-      updateTextContext,
-      getChatbotContexts,
-      createIntegration,
-      upsertIntegration,
-      getIntegrationsByChatbotId,
-      updateIntegration,
-      toggleIntegrationStatus,
-      deleteIntegration,
-      getActiveStripeIntegration,
-      createQuickPaymentLink,
-      validateUserAIModelAccess,
-      getUserPlanFeatures,
-      DEFAULT_CHATBOT_CONFIG,
-      generateRandomChatbotName,
-      getDefaultAIModelForUser,
-      getUserOrRedirect,
-      db,
-      generateFallbackModels,
-      getSmartModelForPro,
-      isAnthropicDirectModel,
-      buildEnrichedSystemPrompt,
-      estimateTokens,
-      AIProviderManager,
-      truncateConversationHistory,
-      createProviderManager
-    } = await import("~/utils/chatbot-api.server");
 
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
+    console.log('🎯 Intent received:', intent);
     const user = await getUserOrRedirect(request);
     const userId = user.id;
     switch (intent) {
@@ -437,6 +454,25 @@ export async function action({ request }: any) {
       }
       case "get_conversations_count": {
         const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Validate user access to this chatbot
+        const accessValidation = await validateChatbotAccess(user.id, chatbotId);
+        if (!accessValidation.canAccess) {
+          return new Response(
+            JSON.stringify({ 
+              error: accessValidation.restrictionReason || "Sin acceso a este chatbot",
+              needsUpgrade: accessValidation.isOwner && !accessValidation.canAccess
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
         const count = await db.conversation.count({
           where: {
             chatbotId,
@@ -1304,6 +1340,10 @@ export async function action({ request }: any) {
         const conversationHistoryStr = formData.get("conversationHistory") as string;
         const requestedStream = formData.get("stream") === "true";
         
+        // 📈 INICIAR PERFORMANCE MONITORING
+        const requestId = performanceMonitor.startRequest(chatbotId, userId, sessionId);
+        const requestStartTime = Date.now();
+        
         
         // Parsear el historial conversacional
         let conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
@@ -1340,74 +1380,95 @@ export async function action({ request }: any) {
           );
         }
 
-        // Detectar si el mensaje requiere herramientas (básico primero)
-        const basicRequiresTools = (() => {
-          const messageLC = message.toLowerCase();
-          const toolIndicators = [
-            // Indicadores de pago
-            'link de pago',
-            'link de stripe',
-            'cobrar',
-            'factura',
-            'payment link',
-            'generar pago',
-            'crear cobro',
-            'enviar factura',
-            'stripe',
-            'pago',
-            'cobro',
-            'invoice',
-            'checkout',
-            // Podemos agregar más herramientas aquí en el futuro
-            'agendar cita',
-            'calendario',
-            'schedule',
-            // Indicadores de cantidad de dinero con intención de cobro
-            /\$\d+/,
-            /\d+\s*(pesos|dolares|usd|mxn)/i,
-            // Indicadores comerciales
-            /servicio.*seo/i,
-            /paquete.*seo/i,
-            /optimizar.*sitio/i,
-            // Indicadores comerciales específicos para generar pagos
-            'quiero contratar',
-            'necesito pagar',
-            'como puedo pagar',
-            'generar link',
-            'crear link',
-            'proceder con el pago'
-          ];
-          
-          return toolIndicators.some(indicator => {
-            if (typeof indicator === 'string') {
-              return messageLC.includes(indicator);
-            } else if (indicator instanceof RegExp) {
-              return indicator.test(message);
-            }
-            return false;
-          });
-        })();
+        // ✨ NUEVO SISTEMA INTELIGENTE DE DECISIONES
+        const startDecisionTime = Date.now();
         
+        // Verificar acceso a herramientas y capacidades del modelo
+        const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE" || user.plan === "TRIAL";
+        const allowToolsForTesting = true; // DEBUG: Need to see what's happening
+        const hasToolAccess = hasProPlan || allowToolsForTesting;
+        const modelsWithToolSupport = ['gpt-5-nano', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
+        const modelSupportsTools = modelsWithToolSupport.includes(chatbot.aiModel);
         
-        // Obtener información de Stripe ANTES de todo para poder loggear correctamente
-        let stripeIntegration = null;
-        try {
-          stripeIntegration = await db.integration.findFirst({
-            where: {
-              chatbotId: chatbot.id,
-              platform: "STRIPE",
-              isActive: true,
-              stripeApiKey: {
-                not: null
-              }
-            },
-          });
-        } catch (error) {
-          console.warn("⚠️ Error checking Stripe integration for testing:", error);
+        // Preparar contexto para el agent engine
+        const toolContext = {
+          chatbotId: chatbot.id,
+          userId: user.id,
+          userPlan: user.plan,
+          hasStripeIntegration: undefined, // Se determinará lazy
+          modelSupportsTools
+        };
+        
+        // 🚀 SIMPLE REMINDER DETECTION (HACK QUE FUNCIONA)
+        const messageLC = message.toLowerCase();
+        const isReminderQuery = messageLC.includes('mis recordatorios') || 
+                               messageLC.includes('recordatorios tengo') || 
+                               messageLC.includes('ver recordatorios') ||
+                               messageLC.includes('listar recordatorios');
+        
+        let agentDecision;
+        if (isReminderQuery) {
+          console.log(`📅 SIMPLE REMINDER DETECTION: Detected "${message}" as reminder query`);
+          agentDecision = {
+            needsTools: true,
+            confidence: 100,
+            suggestedTools: ['list_reminders'],
+            shouldStream: false,
+            reasoning: 'Simple keyword detection for reminders',
+            detectionTime: 0
+          };
+        } else {
+          // Fallback normal para otros casos
+          agentDecision = {
+            needsTools: false,
+            confidence: 0,
+            suggestedTools: [],
+            shouldStream: true,
+            reasoning: 'No reminder keywords detected',
+            detectionTime: 0
+          };
         }
-
-        // Si requiere herramientas, FORZAR non-streaming para garantizar funcionamiento correcto
-        const stream = requestedStream && (chatbot.enableStreaming !== false) && !basicRequiresTools;
+        
+        // 📈 LOG AGENT DECISION METRICS
+        performanceMonitor.logAgentDecision(requestId, {
+          chatbotId,
+          userId,
+          agentDecisionTime: agentDecision.detectionTime,
+          agentConfidence: agentDecision.confidence,
+          agentNeedsTools: agentDecision.needsTools,
+          agentSuggestedTools: agentDecision.suggestedTools,
+          agentReasoning: agentDecision.reasoning
+        });
+        
+        // 💰 LAZY LOADING: Solo cargar integraciones si realmente se necesitan
+        let integrationQueriesCount = 0;
+        const integrations = await agentEngine.getIntegrationsIfNeeded(
+          chatbot.id,
+          agentDecision.needsTools,
+          agentDecision.suggestedTools
+        );
+        
+        // Contar queries de integración para métricas
+        if (agentDecision.needsTools && agentDecision.suggestedTools.includes('create_payment_link')) {
+          integrationQueriesCount = 1;
+        }
+        
+        // Determinar streaming basado en decisión inteligente
+        const stream = requestedStream && 
+                      (chatbot.enableStreaming !== false) && 
+                      agentDecision.shouldStream && 
+                      !agentDecision.needsTools; // NO stream si necesita herramientas
+        
+        console.log(`🔄 DEBUG STREAMING: needsTools=${agentDecision.needsTools}, shouldStream=${agentDecision.shouldStream}, finalStream=${stream}`);
+        
+        // Performance warning si se deshabilita streaming innecesariamente
+        if (requestedStream && !stream && agentDecision.confidence < 70) {
+          performanceMonitor.logPerformanceWarning(
+            requestId,
+            'Streaming disabled with low tool confidence',
+            { confidence: agentDecision.confidence, needsTools: agentDecision.needsTools }
+          );
+        }
         
 
         // Obtener las API keys necesarias
@@ -1430,54 +1491,49 @@ export async function action({ request }: any) {
           enableLogging: false
         });
         
-        // Agregar capacidades de Stripe si está disponible
-        // Solo agregar capacidades de Stripe para planes TRIAL, PRO y ENTERPRISE
-        const hasProPlan = user.plan === "PRO" || user.plan === "ENTERPRISE" || user.plan === "TRIAL";
-        const allowToolsForTesting = true; // DEBUG: Need to see what's happening
+        // 🧰 PREPARAR HERRAMIENTAS DISPONIBLES (Siempre disponibles si el modelo las soporta)
+        const tools = hasToolAccess && modelSupportsTools ?
+          getAvailableTools(user.plan, integrations, modelSupportsTools) : [];
+        
+        console.log(`🧰 DEBUG: Tools disponibles: [${tools.map(t => t.name).join(', ')}] (plan: ${user.plan}, modelSupportsTools: ${modelSupportsTools}, hasToolAccess: ${hasToolAccess})`);
+        
+        // 🎯 PROMPT INTELIGENTE: Agregar herramientas disponibles y contexto del agente
+        if (tools.length > 0) {
+          enrichedSystemPrompt += "\n\n=== HERRAMIENTAS DISPONIBLES ===\n";
+          enrichedSystemPrompt += generateToolPrompts(tools);
           
-        if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
-          // Agregar capacidades de pago al prompt
-          enrichedSystemPrompt += "\n\n=== CAPACIDADES ESPECIALES DE PAGO ===\n";
-          enrichedSystemPrompt += "🔥 PRIORIDAD MÁXIMA: Cuando detectes solicitud de pago, USA INMEDIATAMENTE la herramienta create_payment_link.\n";
-          enrichedSystemPrompt += "CRÍTICO: Tienes acceso a generar links de pago de Stripe.\n\n";
-          
-          // Si detectamos que requiere herramientas, ser más directivo
-          if (basicRequiresTools) {
-            enrichedSystemPrompt += "🚨 MODO HERRAMIENTAS ACTIVO - El usuario quiere generar un pago.\n";
-            enrichedSystemPrompt += "⚡ INSTRUCCIÓN CRÍTICA: USA INMEDIATAMENTE la herramienta create_payment_link SIN PEDIR MÁS INFORMACIÓN.\n";
-            enrichedSystemPrompt += "🎯 Si no hay descripción específica, usa 'Servicios profesionales' como descripción.\n";
-            enrichedSystemPrompt += "🚫 PROHIBIDO: NO preguntes por más detalles, NO pidas confirmación, actúa INMEDIATAMENTE.\n";
-            enrichedSystemPrompt += "💰 OPTIMIZACIÓN: Responde de forma CONCISA (máximo 2 párrafos) para minimizar costos.\n\n";
+          // Instrucciones específicas basadas en la confianza del agent
+          if (agentDecision.confidence >= 80) {
+            enrichedSystemPrompt += "🚨 ALTA CONFIANZA - Usuario requiere herramientas específicas.\n";
+            enrichedSystemPrompt += "⚡ INSTRUCCIÓN: USA INMEDIATAMENTE las herramientas sugeridas.\n";
+            enrichedSystemPrompt += `🎯 Herramientas recomendadas: ${agentDecision.suggestedTools.join(', ')}\n\n`;
+          } else if (agentDecision.confidence >= 60) {
+            enrichedSystemPrompt += "⚠️ CONFIANZA MEDIA - Usuario posiblemente necesita herramientas.\n";
+            enrichedSystemPrompt += "🤔 INSTRUCCIÓN: Evalúa si realmente se necesita usar herramientas antes de proceder.\n\n";
           }
-            
-          enrichedSystemPrompt += "**CONTEXTO IMPORTANTE DE ROLES:**\n";
-          enrichedSystemPrompt += "- El usuario que te habla ES un CLIENTE potencial\n";
-          enrichedSystemPrompt += "- Tú representas a la empresa/negocio dueño de este chatbot\n";
-          enrichedSystemPrompt += "- Los links de pago son para que el cliente pague por NUESTROS servicios\n";
-          enrichedSystemPrompt += "- Cuando generes un link, es para cobrarle AL USUARIO por nuestros servicios\n\n";
-          enrichedSystemPrompt += "**Tienes acceso a la herramienta create_payment_link:**\n";
-          enrichedSystemPrompt += "- Úsala cuando el cliente quiera pagar por nuestros servicios\n";
-          enrichedSystemPrompt += "- Cuando mencionen interés en contratar o pagar algo\n";
-          enrichedSystemPrompt += "- Para frases como: 'quiero pagar', 'genera un link', 'cómo puedo pagar'\n\n";
-          enrichedSystemPrompt += "**Cómo responder correctamente:**\n";
-          enrichedSystemPrompt += "1. Identifica qué servicio nuestro quiere contratar el cliente\n";
-          enrichedSystemPrompt += "2. Determina el precio correspondiente (SIEMPRE en pesos mexicanos)\n";
-          enrichedSystemPrompt += "3. Usa format de México: números con PUNTO decimal (ej: 1500.50, NO 1500,50)\n";
-          enrichedSystemPrompt += "4. Genera el link con currency: 'mxn' (peso mexicano)\n";
-          enrichedSystemPrompt += "5. Explica que puede proceder con el pago\n\n";
-          enrichedSystemPrompt += "**Ejemplos CORRECTOS (USA LA HERRAMIENTA INMEDIATAMENTE):**\n";
-          enrichedSystemPrompt += "Cliente: 'Genera un link de pago por $3400'\n";
-          enrichedSystemPrompt += "Tu acción: [USA create_payment_link con amount: 3400, description: 'Servicios profesionales', currency: 'mxn']\n";
-          enrichedSystemPrompt += "Cliente: 'Quiero pagar servicios de SEO por $1000'\n";
-          enrichedSystemPrompt += "Tu acción: [USA create_payment_link con amount: 1000, description: 'Servicios de SEO', currency: 'mxn']\n";
-          enrichedSystemPrompt += "🚫 INCORRECTO: Preguntar '¿qué servicio específico?' - ¡USA LA HERRAMIENTA DIRECTAMENTE!\n\n";
-          enrichedSystemPrompt += "**Frases correctas a usar:**\n";
-          enrichedSystemPrompt += "- 'nuestros servicios'\n";
-          enrichedSystemPrompt += "- 'puedes proceder con el pago'\n";
-          enrichedSystemPrompt += "- 'link para pagar'\n";
-          enrichedSystemPrompt += "- 'pago por [servicio específico]'\n";
-          enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
+          
+          // Contexto de roles simplificado
+          enrichedSystemPrompt += "**CONTEXTO:**\n";
+          enrichedSystemPrompt += "- Representas a la empresa dueña del chatbot\n";
+          enrichedSystemPrompt += "- Los pagos son para servicios de la empresa\n";
+          enrichedSystemPrompt += "- Usa herramientas cuando el usuario lo solicite claramente\n\n";
+          
+          enrichedSystemPrompt += "=== FIN HERRAMIENTAS ===\n";
         }
+        
+        // 🚨 RESTRICCIONES CONTEXTUALES
+        enrichedSystemPrompt += "\n\n🚨 RESTRICCIONES:\n";
+        if (tools.length > 0) {
+          const availableTools = agentDecision.suggestedTools.length > 0 ? 
+            agentDecision.suggestedTools : ['herramientas básicas'];
+          enrichedSystemPrompt += `- TIENES acceso a: ${availableTools.join(', ')}\n`;
+        } else if (!hasToolAccess) {
+          enrichedSystemPrompt += "- Sin acceso a herramientas (requiere plan PRO+)\n";
+        } else if (!modelSupportsTools) {
+          enrichedSystemPrompt += "- Modelo no soporta herramientas - usa GPT-5 Nano o Claude Haiku\n";
+        }
+        enrichedSystemPrompt += "- NO inventes datos o confirmes acciones imposibles\n";
+        enrichedSystemPrompt += "- Sé transparente sobre limitaciones\n";
         
         const systemMessage = {
           role: "system",
@@ -1529,54 +1585,19 @@ export async function action({ request }: any) {
 
         // (stripeIntegration ya obtenido anteriormente)
 
-        // 💰 OPTIMIZACIÓN DE COSTOS: Si detectamos tools de Stripe, usar Haiku (económico y efectivo)
-        const stripeToolsDetected = basicRequiresTools && stripeIntegration?.stripeApiKey;
+        // 💰 OPTIMIZACIÓN DE COSTOS: Usar parámetros eficientes cuando se detectan herramientas
+        const toolsDetected = agentDecision.needsTools && agentDecision.confidence >= 70;
         
         // (La lógica de prompt está ya incluida en la sección anterior)
         
         // Smart routing para usuarios PRO: Nano para chat básico, Haiku para integraciones
         let selectedModel = chatbot.aiModel;
-        
-        // Verificar si el modelo seleccionado soporta herramientas
-        const modelsWithToolSupport = ['gpt-5-nano', 'gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'];
-        const modelSupportsTools = modelsWithToolSupport.includes(selectedModel);
-
         const fallbackModels = generateFallbackModels(selectedModel);
 
-        // Preparar tools disponibles si hay Stripe activo Y el modelo soporta herramientas
-        let tools = [];
+        // Preparar warning si el modelo no soporta tools (solo si agent sugiere herramientas)
         let toolsDisabledWarning = null;
-        
-        // Solo usuarios PRO y ENTERPRISE tienen acceso a herramientas de pago
-        if (stripeIntegration && stripeIntegration.stripeApiKey && (hasProPlan || allowToolsForTesting)) {
-          if (!modelSupportsTools) {
-            toolsDisabledWarning = `Las integraciones de pago no están disponibles con ${selectedModel}. Usa GPT-5 Nano o Claude Haiku para acceder a herramientas.`;
-          } else {
-          
-          tools = [{
-            name: "create_payment_link",
-            description: "Crear un link de pago de Stripe para cobrar al cliente",
-            input_schema: {
-              type: "object",
-              properties: {
-                amount: {
-                  type: "number",
-                  description: "Cantidad a cobrar en números (ej: 500, 1000)"
-                },
-                description: {
-                  type: "string", 
-                  description: "Descripción del pago o servicio"
-                },
-                currency: {
-                  type: "string",
-                  enum: ["mxn", "usd"],
-                  description: "Moneda del pago (default: 'mxn' para pesos mexicanos)"
-                }
-              },
-              required: ["amount", "description"]
-            }
-          }];
-          }
+        if (agentDecision.needsTools && !modelSupportsTools) {
+          toolsDisabledWarning = `Las herramientas no están disponibles con ${selectedModel}. Usa GPT-5 Nano o Claude Haiku para acceder a integraciones.`;
         }
 
         // Preparar request para el sistema modular
@@ -1587,19 +1608,155 @@ export async function action({ request }: any) {
             ...truncateConversationHistory(conversationHistory),
             { role: "user" as const, content: message }
           ],
-          temperature: stripeToolsDetected ? 0.1 : (chatbot.temperature || 0.7), // Baja temperatura para herramientas = más obediente
-          maxTokens: stripeToolsDetected ? 300 : 1000, // Reducir tokens para herramientas = menor costo
-          stream: tools.length > 0 ? false : stream, // Forzar non-streaming cuando hay herramientas
+          temperature: toolsDetected ? 0.1 : (chatbot.temperature || 0.7), // Baja temperatura para herramientas = más obediente
+          maxTokens: selectedModel.startsWith('gpt-5') 
+            ? (toolsDetected ? 500 : 800) // GPT-5 necesita más tokens mínimos para funcionar
+            : (toolsDetected ? 400 : 1000), // Otros modelos mantienen límites originales
+          stream: !agentDecision.needsTools && stream, // Solo forzar non-streaming cuando agente confirma herramientas
           ...(tools.length > 0 ? { tools } : {}) // Solo agregar tools si hay alguna disponible
         };
         
+        // 🚀 FORMMY AGENT FRAMEWORK - EXPERIMENTAL
+        const useFormmyFramework = true; // FLAG para activar/desactivar framework
         
+        console.log('🔍 Framework check:', {
+          useFramework: useFormmyFramework,
+          toolsLength: tools.length,
+          toolNames: tools.map(t => t.name),
+          userPlan: user.plan,
+          model: selectedModel
+        });
+        
+        if (useFormmyFramework && tools.length > 0) {
+          console.log('🚀 Iniciando Formmy Agent Framework...');
+          
+          try {
+            console.log('📦 Creating agent for chatbot:', chatbot.id, 'model:', chatbot.aiModel);
+            // Crear función para obtener herramientas del registry real
+            const toolsProvider = (userPlan: string) => {
+              return getAvailableTools(userPlan, {}, true);
+            };
+            
+            const agent = await createAgentFromChatbot(chatbot, user, toolsProvider);
+            console.log('✅ Agent created successfully');
+            
+            console.log('💬 Executing framework chat...');
+            const frameworkResponse = await agent.chat(message, {
+              contexts: chatbot.contexts || [],
+              conversationHistory: truncateConversationHistory(conversationHistory),
+              model: selectedModel,
+              stream: stream && chatRequest.stream,
+              user: user,
+              chatbotId: chatbot.id,
+              sessionId: sessionId
+            });
+            
+            console.log('✅ Framework response received:', {
+              hasContent: !!frameworkResponse.content,
+              contentLength: frameworkResponse.content?.length || 0,
+              toolsUsed: frameworkResponse.toolsUsed,
+              iterations: frameworkResponse.iterations,
+              error: frameworkResponse.error
+            });
+            
+            // Si el framework produjo una respuesta, usarla
+            if (frameworkResponse.content) {
+              const totalResponseTime = Date.now() - requestStartTime;
+              
+              performanceMonitor.endRequest(requestId, {
+                totalResponseTime,
+                tokensGenerated: frameworkResponse.usage?.totalTokens || 0,
+                errorOccurred: false
+              }, sessionId);
+              
+              return new Response(JSON.stringify({
+                message: frameworkResponse.content,
+                modelUsed: selectedModel,
+                tokensUsed: frameworkResponse.usage?.totalTokens || 0,
+                toolsUsed: frameworkResponse.toolsUsed || [],
+                iterations: frameworkResponse.iterations || 0,
+                frameworkUsed: 'formmy-agent',
+                agentLoopUsed: true
+              }), {
+                status: 200,
+                headers: { "Content-Type": "application/json" }
+              });
+            }
+            
+          } catch (frameworkError) {
+            console.error('❌ Framework error, falling back to original:', frameworkError);
+            // Continuar con el código original como fallback
+          }
+        }
+        
+        // 🤖 AGENT LOOP SIMPLIFICADO - Solo si hay herramientas y no es streaming (FALLBACK)
+        if (tools.length > 0 && !chatRequest.stream && !useFormmyFramework) {
+          console.log('🤖 Iniciando Agent Loop simplificado (fallback)...');
+          
+          const agentLoop = new SimpleAgentLoop();
+          
+          // Crear provider wrapper para compatibilidad
+          const providerWrapper = {
+            generateResponse: async (prompt: string, allowStreaming: boolean) => {
+              const tempRequest = {
+                ...chatRequest,
+                messages: [
+                  systemMessage,
+                  { role: "user" as const, content: prompt }
+                ],
+                stream: allowStreaming && stream
+              };
+              
+              if (allowStreaming && stream) {
+                // Para streaming, devolver texto simple
+                const result = await providerManager.chatCompletionStreamWithFallback(tempRequest, fallbackModels);
+                return "Streaming response"; // Placeholder - en agent loop preferimos non-streaming
+              } else {
+                const result = await providerManager.chatCompletionWithFallback(tempRequest, fallbackModels);
+                return result.response.content || "Sin respuesta";
+              }
+            }
+          };
+          
+          try {
+            const agentResult = await agentLoop.run(message, user, chatbot, providerWrapper);
+            
+            if (agentResult.needsTools) {
+              // El agent loop manejó herramientas, devolver la respuesta directamente
+              console.log('✅ Agent Loop completado con herramientas');
+              
+              const totalResponseTime = Date.now() - requestStartTime;
+              
+              performanceMonitor.endRequest(requestId, {
+                totalResponseTime,
+                tokensGenerated: 0, // TODO: trackear tokens del agent loop
+                errorOccurred: false
+              }, sessionId);
+              
+              return new Response(
+                JSON.stringify({ 
+                  message: agentResult.response,
+                  modelUsed: selectedModel,
+                  agentLoopUsed: true 
+                }),
+                { 
+                  status: 200, 
+                  headers: { "Content-Type": "application/json" } 
+                }
+              );
+            }
+          } catch (error) {
+            console.warn('⚠️ Agent Loop falló, continuando con flujo normal:', error);
+          }
+        }
         
         let apiResponse;
         let modelUsed = selectedModel;
         let providerUsed = 'unknown';
         let usedFallback = false;
         let lastError;
+        let totalTokensUsed = 0;
+        let firstTokenTime: number | undefined;
         
         try {
           if (chatRequest.stream) {
@@ -1613,6 +1770,15 @@ export async function action({ request }: any) {
             providerUsed = result.providerUsed;
             usedFallback = result.usedFallback;
             
+            // 📈 LOG MODEL METRICS FOR STREAMING
+            performanceMonitor.logModelMetrics(requestId, {
+              modelRequested: selectedModel,
+              modelUsed: result.modelUsed,
+              providerUsed: result.providerUsed,
+              usedFallback: result.usedFallback,
+              streamingEnabled: true
+            });
+            
             
             // Convertir el stream modular al formato esperado por el frontend
             const compatibleStream = new ReadableStream({
@@ -1621,12 +1787,91 @@ export async function action({ request }: any) {
                 let contentChunks = 0;
                 let accumulatedContent = "";
                 let warningAlreadySent = false;
+                let usageData: any = null; // Acumular datos de usage
                 
                 try {
                   while (true) {
                     const { done, value } = await reader.read();
                     
+                    // console.log('📨 Stream chunk received:', { done, value });
+                    
+                    // Capturar usage data si viene en el chunk
+                    if (value?.usage) {
+                      usageData = value.usage;
+                      console.log('💰 Usage data captured from stream:', usageData);
+                    }
+                    
                     if (done) {
+                      const totalResponseTime = Date.now() - requestStartTime;
+                      totalTokensUsed = usageData?.totalTokens || usageData?.total_tokens || 0;
+                      
+                      console.log(`🏁 Stream completed. Total chunks sent: ${contentChunks}`);
+                      
+                      // 📈 LOG RESOURCE USAGE & COMPLETE METRICS
+                      performanceMonitor.logResourceUsage(requestId, {
+                        integrationQueriesCount,
+                        cacheHitRate: 0, // TODO: implement cache hit tracking
+                        toolsExecuted: [] // Streaming rarely uses tools
+                      });
+                      
+                      performanceMonitor.endRequest(requestId, {
+                        totalResponseTime,
+                        firstTokenLatency: firstTokenTime ? firstTokenTime - requestStartTime : undefined,
+                        tokensGenerated: totalTokensUsed,
+                        errorOccurred: false
+                      }, sessionId);
+                      
+                      // ✨ GUARDAR MENSAJES EN BASE DE DATOS (STREAMING)
+                      try {
+                        // Crear o encontrar conversación usando sessionId
+                        let conversation = await db.conversation.findFirst({
+                          where: {
+                            chatbotId: chatbot.id,
+                            sessionId: sessionId || `session-${userId}-${Date.now()}`
+                          }
+                        });
+                        
+                        if (!conversation) {
+                          conversation = await db.conversation.create({
+                            data: {
+                              chatbotId: chatbot.id,
+                              sessionId: sessionId || `session-${userId}-${Date.now()}`
+                            }
+                          });
+                        }
+
+                        // Guardar mensaje del usuario
+                        await addUserMessage(conversation.id, message);
+
+                        // Calcular costos del mensaje usando usageData capturado
+                        const inputTokens = usageData?.inputTokens || usageData?.prompt_tokens || 0;
+                        const outputTokens = usageData?.outputTokens || usageData?.completion_tokens || 0;
+                        const cachedTokens = usageData?.cachedTokens || 0;
+                        const costCalc = calculateCost(providerUsed, modelUsed, { inputTokens, outputTokens, cachedTokens });
+                        
+                        // Guardar respuesta del asistente con tokens y costos (streaming completado)
+                        await addAssistantMessage(
+                          conversation.id,
+                          accumulatedContent,
+                          usageData?.totalTokens || usageData?.total_tokens || 0, // Tokens del stream completo
+                          undefined, // responseTime
+                          undefined, // firstTokenLatency  
+                          modelUsed,
+                          'web-preview-stream', // canal
+                          undefined, // externalMessageId
+                          inputTokens, // inputTokens
+                          outputTokens, // outputTokens
+                          costCalc.totalCost, // totalCost
+                          costCalc.provider, // provider normalizado
+                          cachedTokens // cachedTokens
+                        );
+                        
+                        console.log(`💾 Mensajes streaming guardados - Usuario: "${message.substring(0,50)}..." | AI: "${accumulatedContent.substring(0,50)}..." | Tokens: ${usageData?.totalTokens || usageData?.total_tokens || 0} | Costo: $${costCalc.totalCost.toFixed(6)} (${costCalc.provider})`);
+                        
+                      } catch (dbError) {
+                        console.error('❌ Error guardando mensajes streaming:', dbError);
+                      }
+                      
                       const doneMessage = 'data: [DONE]\n\n';
                       controller.enqueue(new TextEncoder().encode(doneMessage));
                       controller.close();
@@ -1636,6 +1881,11 @@ export async function action({ request }: any) {
                     if (value.content && value.content.trim()) {
                       contentChunks++;
                       accumulatedContent += value.content;
+                      
+                      // Track first token time
+                      if (contentChunks === 1) {
+                        firstTokenTime = Date.now();
+                      }
                       
                       // Detectar si el modelo intentó usar herramientas pero no las tiene disponibles
                       if (!warningAlreadySent && !modelSupportsTools && /\[.*create_payment_link|\[STRIPE_PAYMENT_REQUEST/i.test(accumulatedContent)) {
@@ -1701,6 +1951,16 @@ export async function action({ request }: any) {
             modelUsed = result.modelUsed;
             providerUsed = result.providerUsed;
             usedFallback = result.usedFallback;
+            totalTokensUsed = result.response.usage?.totalTokens || result.response.usage?.total_tokens || 0;
+            
+            // 📈 LOG MODEL METRICS FOR NON-STREAMING
+            performanceMonitor.logModelMetrics(requestId, {
+              modelRequested: selectedModel,
+              modelUsed: result.modelUsed,
+              providerUsed: result.providerUsed,
+              usedFallback: result.usedFallback,
+              streamingEnabled: false
+            });
             
             // Procesar la respuesta para detectar solicitudes de pago o tool calls
             let finalResponse = result.response.content;
@@ -1728,44 +1988,49 @@ export async function action({ request }: any) {
             }
             
             
-            // Si la respuesta contiene tool calls, procesarlos
+            // SISTEMA CENTRALIZADO DE MANEJO DE HERRAMIENTAS
+            console.log(`🔧 DEBUG: Tool calls detectados: ${result.response.toolCalls?.length || 0}`);
+            if (result.response.toolCalls?.length > 0) {
+              console.log(`🔧 DEBUG: Tool calls: ${result.response.toolCalls.map(tc => tc.name).join(', ')}`);
+              console.log(`🔧 DEBUG: Tool calls completos:`, JSON.stringify(result.response.toolCalls, null, 2));
+            }
+            
+            console.log(`🔧 DEBUG: Tool calls detectados: ${result.response.toolCalls?.length || 0}`);
             if (result.response.toolCalls && result.response.toolCalls.length > 0) {
+              console.log(`🔧 DEBUG: Herramientas específicas:`, result.response.toolCalls.map(tc => `${tc.name}(${JSON.stringify(tc.input)})`));
+            }
+            console.log(`🔧 DEBUG: finalResponse antes de tools: "${finalResponse}"`);
+            
+            if (result.response.toolCalls && result.response.toolCalls.length > 0) {
+              const toolContext = {
+                chatbotId: chatbot.id,
+                userId: user.id,
+                message: message,
+                integrations: integrations
+              };
               
               for (const toolCall of result.response.toolCalls) {
-                if (toolCall.name === 'create_payment_link') {
-                  try {
-                    const { amount, description, currency } = toolCall.input;
-                    
-                    
-                    // Usar la integración ya obtenida
-                    if (stripeIntegration && stripeIntegration.stripeApiKey) {
-                      // Generar el link de pago real
-                      const paymentUrl = await createQuickPaymentLink(
-                        stripeIntegration.stripeApiKey,
-                        amount,
-                        description || "Pago",
-                        currency || "mxn"
-                      );
-                      
-                      // Formatear el monto en pesos mexicanos con formato correcto
-                      const formattedAmount = new Intl.NumberFormat('es-MX', {
-                        style: 'currency',
-                        currency: (currency || 'mxn').toUpperCase(),
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2
-                      }).format(amount);
-                      
-                      // Agregar el link real a la respuesta
-                      finalResponse += `\n\n✅ Link de pago generado por ${formattedAmount}:\n${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.`;
-                    } else {
-                      finalResponse += "\n\n⚠️ No se pudo generar el link: Stripe no está configurado correctamente.";
-                    }
-                  } catch (error) {
-                    console.error("Error generando link de pago:", error);
-                    finalResponse += "\n\n❌ Error al generar el link de pago. Verifica tu configuración de Stripe.";
-                  }
-                }
+                console.log(`🔧 TOOL EXECUTION START: ${toolCall.name} with input:`, JSON.stringify(toolCall.input, null, 2));
+                
+                const toolResult = await executeToolCall(
+                  toolCall.name,
+                  toolCall.input,
+                  toolContext
+                );
+                
+                console.log(`✅ TOOL EXECUTION RESULT: ${toolCall.name} ->`, {
+                  success: toolResult.success,
+                  messageLength: toolResult.message?.length || 0,
+                  message: toolResult.message?.substring(0, 200) + (toolResult.message?.length > 200 ? '...' : ''),
+                  hasData: !!toolResult.data
+                });
+                
+                // Agregar resultado a la respuesta
+                finalResponse += `\n\n${toolResult.message}`;
               }
+              
+              console.log(`🔧 DEBUG: finalResponse después de tools: "${finalResponse}"`);
+              console.log(`🔧 DEBUG: Longitud final: ${finalResponse.length}`);
             } else {
               
               // Fallback: Detectar si hay un payment request en la respuesta (sistema anterior)
@@ -1815,6 +2080,78 @@ export async function action({ request }: any) {
               }
             }
             
+            const totalResponseTime = Date.now() - requestStartTime;
+            
+            // 📈 LOG RESOURCE USAGE & COMPLETE METRICS (NON-STREAMING)
+            const toolsExecuted = result.response.toolCalls?.map(tc => tc.name) || [];
+            
+            performanceMonitor.logResourceUsage(requestId, {
+              integrationQueriesCount,
+              cacheHitRate: 0, // TODO: implement cache hit tracking
+              toolsExecuted
+            });
+            
+            performanceMonitor.endRequest(requestId, {
+              totalResponseTime,
+              firstTokenLatency: undefined, // Non-streaming doesn't track first token
+              tokensGenerated: totalTokensUsed,
+              errorOccurred: false
+            }, sessionId);
+            
+            // ✨ GUARDAR MENSAJES EN BASE DE DATOS
+            try {
+              // Crear o encontrar conversación usando sessionId
+              let conversation = await db.conversation.findFirst({
+                where: {
+                  chatbotId: chatbot.id,
+                  sessionId: sessionId || `session-${userId}-${Date.now()}`
+                }
+              });
+              
+              if (!conversation) {
+                conversation = await db.conversation.create({
+                  data: {
+                    chatbotId: chatbot.id,
+                    sessionId: sessionId || `session-${userId}-${Date.now()}`
+                  }
+                });
+              }
+
+              // Guardar mensaje del usuario
+              await addUserMessage(conversation.id, message);
+
+              // Calcular costos del mensaje
+              const inputTokens = result.response.usage?.inputTokens || result.response.usage?.prompt_tokens || 0;
+              const outputTokens = result.response.usage?.outputTokens || result.response.usage?.completion_tokens || 0;
+              const cachedTokens = result.response.usage?.cachedTokens || 0;
+              const costCalc = calculateCost(providerUsed, modelUsed, { inputTokens, outputTokens, cachedTokens });
+              
+              // Guardar respuesta del asistente con tokens y costos
+              await addAssistantMessage(
+                conversation.id,
+                finalResponse,
+                result.response.usage?.totalTokens || result.response.usage?.total_tokens || 0,
+                undefined, // responseTime - podríamos medirlo
+                undefined, // firstTokenLatency - podríamos medirlo  
+                modelUsed,
+                'web-preview', // canal
+                undefined, // externalMessageId
+                inputTokens, // inputTokens
+                outputTokens, // outputTokens
+                costCalc.totalCost, // totalCost
+                costCalc.provider, // provider normalizado
+                cachedTokens // cachedTokens
+              );
+              
+              console.log(`💾 Mensajes guardados - Usuario: "${message.substring(0,50)}..." | AI: "${finalResponse.substring(0,50)}..." | Tokens: ${result.response.usage?.totalTokens || result.response.usage?.total_tokens || 0} | Costo: $${costCalc.totalCost.toFixed(6)} (${costCalc.provider})`);
+              
+            } catch (dbError) {
+              console.error('❌ Error guardando mensajes:', dbError);
+              // No fallar la respuesta por error de BD, solo loggear
+            }
+            
+            console.log(`🚀 FINAL RESPONSE ANTES DE ENVIAR: "${finalResponse}"`);
+            console.log(`🚀 LONGITUD FINAL RESPONSE: ${finalResponse?.length || 0}`);
             
             return new Response(
               JSON.stringify({
@@ -1837,6 +2174,14 @@ export async function action({ request }: any) {
         } catch (error) {
           lastError = error;
           console.error('❌ All providers failed:', error);
+          
+          // 📈 LOG ERROR METRICS
+          performanceMonitor.endRequest(requestId, {
+            totalResponseTime: Date.now() - requestStartTime,
+            tokensGenerated: 0,
+            errorOccurred: true,
+            errorType: error instanceof Error ? error.message : 'Unknown error'
+          }, sessionId);
         }
 
         // Si llegamos aquí, todos los proveedores fallaron

@@ -84,28 +84,20 @@ export async function validateChatbotAccess(
   const isOwner = chatbot.userId === userId;
 
   if (isOwner) {
-    // For owned chatbots, apply plan restrictions
-    if (user.plan === Plans.FREE) {
-      // Count user's owned chatbots
-      const ownedChatbotsCount = await db.chatbot.count({
-        where: {
-          userId: userId,
-          status: { not: "DELETED" },
-        },
-      });
-
-      // FREE users can access their single chatbot
-      const canAccess = ownedChatbotsCount <= 1;
-      
+    // For owned chatbots, apply plan restrictions based on PLAN_LIMITS
+    const planLimits = PLAN_LIMITS[user.plan];
+    
+    if (planLimits.maxChatbots === 0) {
+      // FREE users cannot access any owned chatbots
       return {
-        canAccess,
+        canAccess: false,
         isOwner: true,
         isShared: false,
-        restrictionReason: canAccess ? undefined : "Límite de chatbots alcanzado para cuenta gratuita",
+        restrictionReason: "Tu plan gratuito no incluye acceso a chatbots. Actualiza tu plan para usar esta funcionalidad.",
       };
     }
 
-    // PRO users can access all their chatbots
+    // For other plans (STARTER, PRO, ENTERPRISE), they can access their chatbots
     return {
       canAccess: true,
       isOwner: true,

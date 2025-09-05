@@ -22,6 +22,8 @@ import {
   getPermission,
   getProjectOwner,
   getUserOrRedirect,
+  hasPermission,
+  getRolePermissions,
 } from "server/getUserUtils.server";
 import type { Route } from "./+types/dash_.$projectId";
 import { IoIosArrowRoundBack } from "react-icons/io";
@@ -36,8 +38,6 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
   const intent = formData.get("intent");
   const user = await getUserOrRedirect(request);
   
-  // Import hasPermission helper
-  const { hasPermission } = await import("server/getUserUtils.server");
   
   // Check permissions based on intent
   if (intent === "delete") {
@@ -107,8 +107,6 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   const projectId = params.projectId as string;
   
-  // Import getRolePermissions
-  const { getRolePermissions } = await import("server/getUserUtils.server");
   
   const project = await getProjectOwner({
     userId: user.id,

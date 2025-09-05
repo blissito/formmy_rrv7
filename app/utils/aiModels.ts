@@ -83,6 +83,9 @@ export function getDefaultModelForPlan(plan: string): string {
   }
 }
 
+// Alias para compatibilidad
+export const getModelForPlan = getDefaultModelForPlan;
+
 /**
  * Determina el modelo óptimo para PRO según el contexto
  * Routing inteligente: Nano para chat básico, Haiku para integraciones
@@ -108,7 +111,8 @@ export const FALLBACK_MODELS = {
   "claude-3-5-haiku-20241022": "claude-3-haiku-20240307", 
   "claude-3-haiku-20240307": "gpt-3.5-turbo",
   "gpt-3.5-turbo": "claude-3-haiku-20240307",
-  "gpt-5-nano": "claude-3-haiku-20240307", // Fallback para GPT-5-nano
+  "gpt-5-nano": "gpt-5-mini", // Fallback a GPT-5-mini de la misma familia
+  "gpt-5-mini": "claude-3-haiku-20240307", // Luego a Claude si falla
   "google/gemini-flash-1.5": "claude-3-haiku-20240307",
   "mistralai/mistral-small": "claude-3-haiku-20240307",
 };

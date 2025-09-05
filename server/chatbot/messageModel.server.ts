@@ -13,6 +13,11 @@ interface CreateMessageParams {
   content: string;
   role: MessageRole;
   tokens?: number;
+  inputTokens?: number; // Tokens de entrada
+  outputTokens?: number; // Tokens de salida
+  cachedTokens?: number; // Cached input tokens (GPT-5-nano: 90% descuento)
+  totalCost?: number; // Costo total en USD
+  provider?: string; // Proveedor: openai, anthropic, openrouter
   responseTime?: number;
   firstTokenLatency?: number; // Tiempo hasta el primer chunk en ms
   aiModel?: string; // Modelo de IA usado para generar la respuesta (solo para ASSISTANT messages)
@@ -39,6 +44,11 @@ export async function createMessage({
   content,
   role,
   tokens,
+  inputTokens,
+  outputTokens,
+  cachedTokens,
+  totalCost,
+  provider,
   responseTime,
   firstTokenLatency,
   aiModel,
@@ -73,6 +83,11 @@ export async function createMessage({
       content,
       role,
       tokens,
+      inputTokens,
+      outputTokens,
+      cachedTokens,
+      totalCost,
+      provider,
       responseTime,
       firstTokenLatency,
       aiModel,
@@ -197,13 +212,23 @@ export async function addAssistantMessage(
   firstTokenLatency?: number,
   aiModel?: string,
   channel?: string,
-  externalMessageId?: string
+  externalMessageId?: string,
+  inputTokens?: number,
+  outputTokens?: number,
+  totalCost?: number,
+  provider?: string,
+  cachedTokens?: number
 ): Promise<Message> {
   return createMessage({
     conversationId,
     content,
     role: MessageRole.ASSISTANT,
     tokens,
+    inputTokens,
+    outputTokens,
+    cachedTokens,
+    totalCost,
+    provider,
     responseTime,
     firstTokenLatency,
     aiModel,

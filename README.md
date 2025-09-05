@@ -8,6 +8,20 @@ Built with ❤️ by @BrendaOrtega & @blissito.
 
 ---
 
+## 🤖 Formmy Agent Framework
+
+Micro-framework de agentes AI propio (~500 líneas) con arquitectura ReAct mejorada:
+
+- **Agent Loop robusto**: Pattern ReAct con retry automático y manejo de errores
+- **Context optimization**: Chunking inteligente y selección de contexto relevante
+- **Unified API**: Interfaz simple para todos los chatbots de la plataforma
+- **Tool integration**: Sistema modular de herramientas con registro centralizado
+- **Smart streaming**: Non-streaming automático cuando se usan herramientas
+
+**Ubicación**: `/server/formmy-agent/`
+
+---
+
 ## ⚡ Sistema de Streaming
 
 El chatbot soporta respuestas en tiempo real con efecto de escritura (typing effect) para una experiencia más natural.

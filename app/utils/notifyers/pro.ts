@@ -3,6 +3,7 @@ import { getSesRemitent, getSesTransport } from "./ses";
 
 type ProEmail = {
   email: string;
+  name?: string;
 };
 
 const host =
@@ -13,7 +14,7 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendPlanCancellation = async ({ email }: ProEmail) => {
+export const sendProEmail = async ({ email, name }: ProEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
@@ -58,7 +59,7 @@ export const sendPlanCancellation = async ({ email }: ProEmail) => {
                     text-align: left;
                     "
                 >
-            ¡Luis, tu experiencia en Formmy PRO acaba de despegar! ✨
+            ¡${name || 'Amigo'}, tu experiencia en Formmy PRO acaba de despegar! ✨
                 </h2>
                 <p
                     style="
@@ -124,7 +125,7 @@ export const sendPlanCancellation = async ({ email }: ProEmail) => {
                         border: none;
                     "
                     >
-                    Ir a mi dashbaord
+                    Ir a mi dashboard
                     </button>
                 </a>
 

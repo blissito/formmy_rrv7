@@ -1,0 +1,54 @@
+{
+  "name": "@formmy/agent-framework",
+  "version": "0.1.0",
+  "description": "Micro-framework de agentes AI desarrollado por Formmy - Patrón ReAct con retry automático y optimización de contexto",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "echo \"Tests pending implementation\" && exit 0"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "framework", 
+    "react-pattern",
+    "chatbot",
+    "llm",
+    "artificial-intelligence",
+    "formmy"
+  ],
+  "author": "Formmy Team <hello@formmy.app>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/formmy/formmy",
+    "directory": "packages/formmy-agent-framework"
+  },
+  "homepage": "https://formmy.app/docs/agent-framework",
+  "bugs": {
+    "url": "https://github.com/formmy/formmy/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}
