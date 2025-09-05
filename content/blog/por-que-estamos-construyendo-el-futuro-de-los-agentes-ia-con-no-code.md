@@ -1,5 +1,5 @@
 ---
-title: "Por Qué Estamos Construyendo el Futuro de los Agentes IA con No-Code"
+title: "El Futuro de la IA es No-Code: Por Qué Democratizamos los Agentes Inteligentes"
 excerpt: "En formmy.app, creemos que la inteligencia artificial no debería ser un privilegio exclusivo de los desarrolladores. Descubre nuestra visión para democratizar la creación de agentes avanzados."
 date: "2025-01-05"
 tags: ["ia", "no-code", "agentes", "futuro", "democratizacion"]
@@ -8,7 +8,7 @@ image: "https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=
 author: "Equipo Formmy"
 ---
 
-# Por Qué Estamos Construyendo el Futuro de los Agentes IA con No-Code
+# El Futuro de la IA es No-Code: Por Qué Democratizamos los Agentes Inteligentes
 
 ![Inteligencia Artificial del Futuro](https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1)
 
