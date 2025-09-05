@@ -4,8 +4,17 @@
  */
 
 import type { Tool } from "../chatbot/providers/types";
-import { createPaymentLinkHandler } from "./handlers/stripe";
-import { saveContactInfoHandler } from "./handlers/contact";
+
+// Lazy imports to avoid circular dependencies
+const getStripeHandler = async () => {
+  const { createPaymentLinkHandler } = await import("./handlers/stripe");
+  return createPaymentLinkHandler;
+};
+
+const getContactHandler = async () => {
+  const { saveContactInfoHandler } = await import("./handlers/contact");
+  return saveContactInfoHandler;
+};
 // Importar el ReminderToolset completo
 import { 
   ReminderToolset, 
@@ -70,7 +79,10 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
         required: ["amount", "description"],
       },
     },
-    handler: createPaymentLinkHandler,
+    handler: async (input, context) => {
+      const handler = await getStripeHandler();
+      return handler(input, context);
+    },
     requiredIntegrations: ["stripe"],
     requiredPlan: ["PRO", "ENTERPRISE", "TRIAL"],
     enabled: true,
@@ -119,7 +131,10 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
         required: [], // Flexibilidad - al menos uno será validado en el handler
       },
     },
-    handler: saveContactInfoHandler,
+    handler: async (input, context) => {
+      const handler = await getContactHandler();
+      return handler(input, context);
+    },
     requiredIntegrations: [], // Siempre disponible
     requiredPlan: ["STARTER", "PRO", "ENTERPRISE", "TRIAL"],
     enabled: true,
