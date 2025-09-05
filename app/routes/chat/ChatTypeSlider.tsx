@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "~/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 function ChatCard({ label, backgroundImage, description, color, isExpanded, onClick }: { 
   label: string; 
@@ -9,7 +10,7 @@ function ChatCard({ label, backgroundImage, description, color, isExpanded, onCl
   isExpanded?: boolean;
   onClick?: () => void;
 }) {
-  // Simplified logic: Selected card always goes to positions 2,3,6,7 (center-right 2x2)
+  // Responsive expansion logic
   let colSpan = "col-span-1";
   let rowSpan = "row-span-1";
   let gridColumn = "";
@@ -18,14 +19,17 @@ function ChatCard({ label, backgroundImage, description, color, isExpanded, onCl
   if (isExpanded) {
     colSpan = "col-span-2";
     rowSpan = "row-span-2";
-    gridColumn = "col-start-2"; // Column 2-3
-    gridRow = "row-start-2"; // Row 2-3
+    // Mobile: Center expansion (cols 1-2, rows 3-4)
+    // Tablet: Center-right expansion (cols 2-3, rows 2-3) 
+    // Desktop: Center-right expansion (cols 2-3, rows 2-3)
+    gridColumn = "col-start-1 md:col-start-2"; 
+    gridRow = "row-start-3 md:row-start-2";
   }
 
   return (
-    <div 
+    <motion.div 
       className={cn(
-        "relative overflow-hidden rounded-3xl cursor-pointer transition-all duration-500 ease-in-out hover:scale-[1.02] group",
+        "relative overflow-hidden rounded-3xl cursor-pointer group",
         colSpan,
         rowSpan,
         gridColumn,
@@ -35,39 +39,96 @@ function ChatCard({ label, backgroundImage, description, color, isExpanded, onCl
       style={{ 
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        // Asegurar que respete los límites del grid
+        maxWidth: '100%',
+        maxHeight: '100%'
       }}
       onClick={onClick}
+      layout
+      initial={{ scale: 1, opacity: 0.8 }}
+      animate={{ 
+        scale: 1, // Remover el scale para evitar desbordamientos
+        opacity: isExpanded ? 1 : 0.8,
+        transition: {
+          duration: 0.5,
+          ease: [0.25, 0.46, 0.45, 0.94]
+        }
+      }}
+      whileHover={{ 
+        scale: 1.02,
+        transition: { duration: 0.2 }
+      }}
     >
       {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       
       {/* Content */}
-      <div className={cn(
-        "absolute inset-0 p-6 flex flex-col justify-end text-white transition-opacity duration-300",
-        isExpanded ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-      )}>
-        <h3 
-          className={cn(
-            "font-bold text-white mb-2 transition-all duration-300",
-            isExpanded ? "text-2xl md:text-3xl" : "text-lg md:text-xl"
-          )}
+      <motion.div 
+        className="absolute inset-0 p-3 md:p-6 flex flex-col justify-end text-white"
+        animate={{
+          opacity: isExpanded ? 1 : 0,
+          transition: {
+            duration: 0.3,
+            delay: isExpanded ? 0.2 : 0
+          }
+        }}
+        whileHover={{
+          opacity: 1,
+          transition: { duration: 0.2 }
+        }}
+      >
+        <motion.h3 
+          className={`font-bold text-white mb-1 md:mb-2 py-1 w-fit px-1 md:px-2 rounded ${
+            isExpanded ? "text-3xl" : "text-xl"
+          }`}
+          style={{ 
+            backgroundColor: isExpanded ? (color || '#f3f4f6') : 'transparent'
+          }}
         >
           {label}
-        </h3>
-        {isExpanded && (
-          <p className="text-white/90 text-base md:text-lg leading-relaxed">
-            {description}
-          </p>
-        )}
-      </div>
+        </motion.h3>
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.p 
+              className="text-white/90 text-xs md:text-base lg:text-lg leading-relaxed"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                transition: {
+                  duration: 0.4,
+                  delay: 0.3
+                }
+              }}
+              exit={{ 
+                opacity: 0, 
+                y: -20,
+                transition: {
+                  duration: 0.2
+                }
+              }}
+            >
+              {description}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Color indicator */}
-      <div 
-        className="absolute top-4 right-4 w-4 h-4 rounded-full border-2 border-white/50"
+      <motion.div 
+        className="absolute top-2 right-2 md:top-4 md:right-4 rounded-full border-2 border-white/50"
         style={{ backgroundColor: color || '#f3f4f6' }}
+        animate={{
+          width: isExpanded ? "1.25rem" : "0.75rem",
+          height: isExpanded ? "1.25rem" : "0.75rem",
+          transition: {
+            duration: 0.3,
+            ease: "easeInOut"
+          }
+        }}
       />
-    </div>
+    </motion.div>
   );
 }
 
@@ -83,7 +144,7 @@ const tabContent = [
   },
   {
     id: "ventas",
-    title: "E-commerce",
+    title: "Asesor de ventas E-commerce",
     content: {
       text: "Un cliente pregunta por la talla disponible de unos tenis a medianoche → el chatbot responde, muestra inventario y le da el link directo para comprar.",
       image: "/formmys/formmy6.webp"
@@ -94,7 +155,7 @@ const tabContent = [
     id: "feedback",
     title: "Agencias de marketing 📈",
     content: {
-      text: "Un prospecto entra al sitio y quiere una cotización → el chatbot recoge sus datos, necesidades y los envía al equipo de ventas.",
+      text: "Cuando un usuario entra al sitio y quiere una cotización → el chatbot recoge sus datos, necesidades y los envía al asesor encargado.",
       image: "/formmys/formmy5.webp"
     },
     color: "#FBE05D"
@@ -103,7 +164,7 @@ const tabContent = [
     id: "citas",
     title: "Salones de belleza, consultorios o spas",
     content: {
-      text: "Un cliente agenda su cita en el chat sin llamar por teléfono → el bot confirma la fecha y envía recordatorios automáticos.",
+      text: "Permite a tus clientes agendar citas en el chat sin llamar por teléfono, el bot muestra los horarios disponibles y agenda la cita.",
       image: "/formmys/formmy3.webp"
     },
     color: "#D56D80"
@@ -112,16 +173,16 @@ const tabContent = [
     id: "onboarding",
     title: "Asistente de onboarding",
     content: {
-      text: "Guía a los usuarios paso a paso dentro de tu plataforma y responde preguntas frecuentes al instante.",
+      text: "Tu asistente guía a los usuarios paso a paso dentro de tu plataforma y responde preguntas frecuentes al instante.",
       image: "/formmys/formmy1.webp"
     },
     color: "#9A99EA"
   },
   {
     id: "nutri",
-    title: "Asistente nutricional",
+    title: "Asistente médico",
     content: {
-      text: "Eres un profesional de la salud con muchos clientes, permite que tu agente resuelva todas esas dudas que solo te quitan tiempo.",
+      text: "Si eres un profesional de la salud con muchos pacientes, permite que tu agente resuelva todas esas dudas que solo te quitan tiempo.",
       image: "/formmys/formmy4.webp"
     },
     color: "#B2E7C9"
@@ -130,71 +191,79 @@ const tabContent = [
     id: "cod",
     title: "Host/mesero",
     content: {
-      text: "Un usuario quiere pedir comida por WhatsApp → el chatbot toma la orden, sugiere complementos y envía la ubicación de entrega al sistema.",
-      image: "/formmys/formmy2.webp"
+      text: "Ahora tus clientes puede hacer pedidos por chat, tu asistente siempre esta listo para tomar la orden, sugiere complementos y envia la informacion de pago.",
+      image: "/formmys/formmy11.webp"
     },
     color: "#76D3CB"
   },
   {
     id: "doc",
-    title: "Asistente maestro",
+    title: "Asistente educativo",
     content: {
-      text: "Responde preguntas sobre políticas de la empresa, beneficios, vacaciones y trámites internos.",
-      image: "/formmys/formmy9.webp"
+      text: "¿Eres profesor o tutor en línea? Responde automaticamente preguntas sobre tus horarios, costos, materias y agenda una clase muestra.",
+      image: "/formmys/formmy10.webp"
     },
-    color: "#FBE05D"
+    color: "#EDC75A"
   }
   ,
-  {
-    id: "rrhh",
-    title: "Asistente de RRHH",
-    content: {
-      text: "Responde preguntas sobre políticas de la empresa, beneficios, vacaciones y trámites internos.",
-      image: "/formmys/formmy9.webp"
-    },
-    color: "#FBE05D"
-  },
+  // {
+  //   id: "rrhh",
+  //   title: "Asistente de RRHH",
+  //   content: {
+  //     text: "Responde preguntas sobre políticas de la empresa, beneficios, vacaciones y trámites internos.",
+  //     image: "/formmys/formmy12.webp"
+  //   },
+  //   color: "#FBE05D"
+  // },
   {
     id: "ecommerce",
-    title: "Asistente de e-commerce",
+    title: "Asistente personal",
     content: {
-      text: "Ayuda a los clientes a encontrar productos, procesar pedidos y resolver dudas sobre envíos y devoluciones.",
+      text: "¿Necesitas ayuda con tu marca personal? Deja que tu asistente responda preguntas sobre tus servicios, cotizaciones y envíe links de pagos.",
       image: "/formmys/formmy1.webp"
     },
     color: "#FF6B6B"
   },
-  {
-    id: "educacion",
-    title: "Tutor educativo",
-    content: {
-      text: "Responde dudas académicas, proporciona explicaciones personalizadas y guía el proceso de aprendizaje.",
-      image: "/formmys/formmy2.webp"
-    },
-    color: "#4ECDC4"
-  },
-  {
-    id: "inmobiliaria",
-    title: "Agente inmobiliario",
-    content: {
-      text: "Filtra propiedades según preferencias, agenda visitas y proporciona información detallada sobre inmuebles.",
-      image: "/formmys/formmy3.webp"
-    },
-    color: "#45B7D1"
-  },
-  {
-    id: "restaurante",
-    title: "Asistente de restaurante",
-    content: {
-      text: "Toma reservaciones, recomienda platos, informa sobre ingredientes y gestiona pedidos para delivery.",
-      image: "/formmys/formmy4.webp"
-    },
-    color: "#F39C12"
-  }
+  // {
+  //   id: "educacion",
+  //   title: "Tutor educativo",
+  //   content: {
+  //     text: "Responde dudas académicas, proporciona explicaciones personalizadas y guía el proceso de aprendizaje.",
+  //     image: "/formmys/formmy2.webp"
+  //   },
+  //   color: "#4ECDC4"
+  // },
+  // {
+  //   id: "inmobiliaria",
+  //   title: "Agente inmobiliario",
+  //   content: {
+  //     text: "Filtra propiedades según preferencias, agenda visitas y proporciona información detallada sobre inmuebles.",
+  //     image: "/formmys/formmy3.webp"
+  //   },
+  //   color: "#45B7D1"
+  // },
+  // {
+  //   id: "restaurante",
+  //   title: "Asistente de restaurante",
+  //   content: {
+  //     text: "Toma reservaciones, recomienda platos, informa sobre ingredientes y gestiona pedidos para delivery.",
+  //     image: "/formmys/formmy4.webp"
+  //   },
+  //   color: "#F39C12"
+  // }
 ];
 
 
 export default function ChatTypeSlider() {
   const [expandedIndex, setExpandedIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   const cards = tabContent.map(item => ({
     label: item.title,
@@ -203,16 +272,18 @@ export default function ChatTypeSlider() {
     color: item.color
   }));
 
+  const cardCount = isMobile ? 11 : 13;
+
   return (
     <section className="relative w-full flex flex-col items-center my-20 md:my-40 px-4">
       <h2 className="font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-10 md:mb-16 leading-tight">
         Para qué puedes usar Formmy Chat
       </h2>
       
-      {/* Gallery Grid - 4x4 grid with 13 cards (3 spaces remain empty) */}
-      <div className="w-full max-w-7xl mx-auto">
-        <div className="grid grid-cols-4 grid-rows-4 gap-4 h-[800px] relative">
-          {cards.slice(0, 13).map((card, index) => (
+      {/* Gallery Grid - Responsive: Mobile 2x6, Tablet 3x5, Desktop 4x4 */}
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="grid grid-cols-2 grid-rows-6 md:grid-cols-3 md:grid-rows-5 lg:grid-cols-4 lg:grid-rows-3 gap-2 md:gap-4 h-[600px] md:h-[700px] lg:h-[700px] relative overflow-hidden">
+          {cards.slice(0, cardCount).map((card, index) => (
             <ChatCard
               key={index}
               label={card.label}

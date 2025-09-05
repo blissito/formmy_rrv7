@@ -119,8 +119,8 @@ export const ChatHero = () => {
           Chat IA que conecta con tus clientes
         </h1>
         <p className="text-metal text-lg md:text-2xl font-light   mb-0 max-w-4xl text-center ">
-          La forma de crear y desplegar agentes de soporte con IA en tu sitio
-          web. Responde preguntas, guía a tus visitantes y capta leads
+          La forma más fácil de crear agentes de soporte con IA para tu sitio
+          web. Responde preguntas, guía a tus clientes y capta leads
           automáticamente, 24/7.
         </p>
         <Form method="post" className="mt-10 mx-auto md:mx-0" action="/api/login">
@@ -147,9 +147,9 @@ export const ChatHero = () => {
             />
             <defs>
               <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#76D3CB"/>
-                <stop offset="50%" stopColor="#76D3CB"/>
-                <stop offset="100%" stopColor="#76D3CB"/>
+                <stop offset="0%" stopColor="#F5F5FC"/>
+                <stop offset="50%" stopColor="#F5F5FC"/>
+                <stop offset="100%" stopColor="#F5F5FC"/>
               </linearGradient>
             </defs>
           </svg>
@@ -175,7 +175,7 @@ export const ChatHero = () => {
               <div className="absolute w-10 h-10  rounded-full left-2 -bottom-3 overflow-hidden border-2 border-sky"> <img className="w-full h-full object-cover" src="https://images.pexels.com/photos/4792285/pexels-photo-4792285.jpeg" /></div>
 
             <BsCloudUpload className="text-3xl text-metal mx-auto"/>
-              <p className="text-xs text-metal leading-relaxed text-center mt-2">Arrastra los archivos o selecciona desde tu computadora</p>
+              <p className="text-xs text-metal leading-relaxed text-center mt-2">Arrastra o selecciona los archivos </p>
             </div>
           </FeatureCardWithHover>
    

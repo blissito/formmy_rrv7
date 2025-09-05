@@ -80,7 +80,8 @@ export default {
         patternwhite: "url('/assets/pattern-w.svg')",
         steperCover: "url('/home/steper-cover.webp')",
         actionsBack: "url('/dash/actions-back.svg')",
-        chatPattern:"url('/dash/chat-pattern.webp')"
+        chatPattern:"url('/dash/chat-pattern.webp')",
+        city:"url('/dash/city.svg')"
       },
       boxShadow: {
         standard: "8px 16px 14px #F8F8FB",

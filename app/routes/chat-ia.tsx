@@ -65,11 +65,8 @@ export default function ChatIA() {
         <AiBanner />
       </section>
       <ChatBenefits />
-
-
       <ChatTypeSlider />
       {/* <ChatTypes /> */}    
-    
       <ChatIntegrations />
       <IAModels/>
         <SectionFadeIn delay={0.4}>

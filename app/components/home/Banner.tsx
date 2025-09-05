@@ -11,7 +11,7 @@ export const Banner = () => {
         ¡Prueba Formmy! No te vas a arrepentir.
       </h2>
       <p className="text-lg lg:text-2xl text-white mt-6 max-w-4xl mx-auto  font-light text-white">
-        Si tienes alguna duda, agenda un demo en línea para que nuestro equipo
+        Si tienes alguna duda, agenda un demo para que nuestro equipo
         te muestre todo lo que puedes hacer con Formmy.
       </p>
       <div className="flex flex-col md:flex-row gap-6 md:gap-8 mt-12 justify-center items-center dark">

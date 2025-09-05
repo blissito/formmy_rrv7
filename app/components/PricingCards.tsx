@@ -37,22 +37,22 @@ export const plans: Plan[] = [
   },
   {
     name: "Starter",
-    description: "Para empezar",
+    description: "La opción entrepreneur",
     price: "$149",
     priceNote: "/mes",
     button: <Button className="w-full bg-brand-500 hover:bg-brand-600 text-clear font-bold rounded-full py-3  mt-6">¡Empieza ahora!</Button>,
-    arr: "Ahorra 15% al pagar anualmente",
+    arr: "Ahorra 10% al pagar anualmente",
     arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-brand-600",
     includes: [
       "📋 Formularios ilimitados",
       "👨‍👩‍👦‍👦 Administración básica de usuarios",
-      "🎨 Personalización limitada",
+      "🎨 Personalización avanzada de formularios",
       "🤖 2 chatbots",
       "👩🏻‍🏫 Modelos IA última generación (GPT-5 Nano, Gemini 2.5)",
       "🪪 50 conversaciones/mes",
     ],
     extra: [
-      "¡⚠️ $179 MXN por cada 100 conversaciones extra!",
+      "¡$149 MXN por cada 100 conversaciones extra!",
     ],
     cardClass: "bg-clear text-black border border-outlines",
     arrBoxClass: "bg-[#f6f3ff] text-[#7574D6]",
@@ -75,8 +75,7 @@ export const plans: Plan[] = [
         "⚡ Respuestas 3x más rápidas",
     ],
     extra: [
-      "¡Solo $99 MXN por cada 100 conversaciones extra!",
-      "🎯 El plan más elegido por empresas mexicanas"
+      "¡$99 MXN por cada 100 conversaciones extra!",
     ],
     cardClass: "bg-gradient-to-br from-yellow-50 to-orange-50 text-black border-2 border-yellow-400 shadow-xl",
     arrBoxClass: "bg-gradient-to-r from-yellow-100 to-orange-100 text-[#C79D26] border border-yellow-400",
@@ -91,7 +90,7 @@ export const plans: Plan[] = [
     arr: "Ahorra 15% al pagar anualmente",
         arrClass: "text-[#5FAFA8] underline underline-offset-4 decoration-2 decoration-[#5FAFA8]",
     includes: [
-        "📋 Todo lo que incluye el plan Pro",
+        "📋 Todo lo que incluye el plan Starter",
         "🤖 Chatbots ILIMITADOS",
         "🪄 Más contexto por chatbot",
         "🚀 Integraciones enterprise",
@@ -101,7 +100,7 @@ export const plans: Plan[] = [
         "🎧 Soporte prioritario",
     ],
     extra: [
-      "¡Solo $59 MXN por cada 100 conversaciones extra!",
+      "¡$59 MXN por cada 100 conversaciones extra!",
     ],
     cardClass: "bg-clear text-black border border-outlines",
     arrBoxClass: "bg-cloud/10 text-[#5FAFA8] border-cloud",

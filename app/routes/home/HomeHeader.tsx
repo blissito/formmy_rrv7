@@ -75,7 +75,7 @@ export default function HomeHeader() {
                 </a>
                 <Form method="post" action="/api/login">
                   <button
-                    className="text-dark text-lg font-regular mb-2  px-2 py-3"
+                    className="text-dark text-lg font-regular mb-2 font-medium px-2 py-3"
                     type="submit"
                     name="intent"
                     value="google-login"
