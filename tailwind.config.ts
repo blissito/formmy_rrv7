@@ -40,6 +40,8 @@ export default {
         bird:"#EDC75A",
         pro:"#F2C94C",
         cloud:"#8AD7C9",
+        fiusha:"#D56D80",
+        sky:"#76D3CB",
         grass:"#7FBE60",
         salmon:"#E4AE8E",
         brand: {

@@ -13,7 +13,7 @@ import { AIMotivation } from "./chat/AIMotivation";
 import ChatTypes from "./chat/ChatTypes";
 import { SectionFadeIn } from "./home/home";
 import getBasicMetaTags from "~/utils/getBasicMetaTags";
-
+import ChatTypeSlider from "./chat/ChatTypeSlider";
 
 
 export const meta = () =>
@@ -56,16 +56,20 @@ const stepsWithImages = [
 
 export default function ChatIA() {
   return (
-    <section className="bg-clear pt-40 md:pt-52 overflow-hidden">
+    <section className="bg-clear pt-40 md:pt-64 overflow-hidden">
       <HomeHeader />
       <ChatHero />
-      <CompaniesScroll />
-      <ChatBenefits />
+      {/* <CompaniesScroll /> */}
       <AIMotivation />
       <section className="max-w-7xl w-full mx-auto px-4 md:px-[5%] xl:px-0">
         <AiBanner />
       </section>
-      <ChatTypes />
+      <ChatBenefits />
+
+
+      <ChatTypeSlider />
+      {/* <ChatTypes /> */}    
+    
       <ChatIntegrations />
       <IAModels/>
         <SectionFadeIn delay={0.4}>

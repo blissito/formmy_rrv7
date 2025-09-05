@@ -32,7 +32,7 @@ export default function HomeProducts() {
   const products = [
     {
       svgPattern:"/home/ribbon-1.png",
-      bg: "bg-[#edc75a]",
+      bg: "bg-bird",
       title: "Formularios de contacto",
       desc: "Recibe mensajes de tus clientes sin perder ni uno solo. Personaliza campos, colores, tema y estilo con un par de clics.",
       img: imgImage1,
@@ -41,7 +41,7 @@ export default function HomeProducts() {
     {
       patternClassName:"!top-0",
       svgPattern:"/home/ribbon-2.svg",
-      bg: "bg-[#79bc97]",
+      bg: "bg-[#BFDD78]",
       title: "Formularios de suscripción",
       desc: "Convierte visitantes en suscriptores con formularios atractivos y fáciles de usar. Conecta con tu newsletter y haz crecer tu comunidad automáticamente.",
       img: imgImage2,
@@ -50,7 +50,7 @@ export default function HomeProducts() {
     },
     {
       svgPattern:"/home/ribbon-3.svg",
-      bg: "bg-[#9a99ea]",
+      bg: "bg-[#76D3CB]",
       title: "Chat IA para tu negocio",
       desc: "Automatiza la atención y soporte con agentes inteligentes que responden 24/7. Mejora la experiencia de tus usuarios y dedica tu tiempo a lo que realmente importa.",
       img: imgImage3,
@@ -63,7 +63,7 @@ export default function HomeProducts() {
         ¿Cansado de perder clientes por formularios rotos o chats complicados?
       </h2>
       <p className="paragraph text-gray-600 font-light text-lg md:text-xl md:text-2xl text-center mb-16">
-        Agrega un chat que responde solo y formularios que sí funcionan. Fácil y rápido.
+        Agrega un chat que responde solo y formularios que sí funcionan.
       </p>
       {products.map((p, i) => (
         <ProductCard key={i} {...p} />

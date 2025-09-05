@@ -80,14 +80,14 @@ export default function Formularios() {
         <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 lg:leading-[1.2]">
           Formmys para tu sitio web
         </h1>
-        <p className="paragraph text-gray-600 font-light text-lg md:text-xl md:text-2xl  text-center mb-4 md:mb-0">
+        <p className="paragraph text-metal font-light text-lg md:text-2xl   text-center mb-4 md:mb-0">
           Crea formularios personalizados para tu sitio web, recopila
           información de tus usuarios y gestiona tus datos de manera sencilla y
           segura con Formmy.
         </p>
       </section>
       <section>
-        <div className="flex flex-col items-center  max-w-7xl mx-auto w-full mb-0 md:mb-10 px-4 md:px-[5%] xl:px-0">
+        <div className="flex flex-col items-center  max-w-7xl mx-auto w-full mt-4 mb-0 md:mb-10 px-4 md:px-[5%] xl:px-0">
           <div className="flex  flex-col md:flex-row items-center justify-around w-full gap-10 md:gap-20 relative">
             <div className="relative z-10 rotate-0 md:-rotate-3  ">
               <Suscription />

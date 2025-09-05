@@ -13,7 +13,7 @@ export const AIMotivation = ({ className }: AIMotivationProps) => {
   
   return (
     <section className={cn("w-full my-20 md:my-40 bg-white", className)}>
-        <p className="text-sm mb-4 md:text-xl text-center uppercase text-metal"> Fácil y rápido</p>
+        <p className="text-sm mb-4 md:text-xl text-center uppercase text-metal">Simple y eficaz</p>
       <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-2 items-center">
         {/* First part - before Dev */}
         {words.map((word, index) => (
