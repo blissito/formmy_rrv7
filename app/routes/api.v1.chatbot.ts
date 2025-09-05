@@ -72,7 +72,8 @@ export async function action({ request }: any) {
   
   const { calculateCost } = await import("../../server/chatbot/pricing.server");
   
-  const { createAgentFromChatbot } = await import("@formmy/agent-framework");
+  // Framework temporalmente deshabilitado durante refactor
+  // const { createAgentFromChatbot } = await import("@formmy/agent-framework");
   
   console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
   try {
@@ -1632,60 +1633,10 @@ export async function action({ request }: any) {
           
           try {
             console.log('📦 Creating agent for chatbot:', chatbot.id, 'model:', chatbot.aiModel);
-            // Crear función para obtener herramientas del registry real
-            const toolsProvider = (userPlan: string) => {
-              return getAvailableTools(userPlan, {}, true);
-            };
-            
-            const agent = await createAgentFromChatbot(chatbot, user, toolsProvider);
-            console.log('✅ Agent created successfully');
-            
-            console.log('💬 Executing framework chat...');
-            const frameworkResponse = await agent.chat(message, {
-              contexts: chatbot.contexts || [],
-              conversationHistory: truncateConversationHistory(conversationHistory),
-              model: selectedModel,
-              stream: stream && chatRequest.stream,
-              user: user,
-              chatbotId: chatbot.id,
-              sessionId: sessionId
-            });
-            
-            console.log('✅ Framework response received:', {
-              hasContent: !!frameworkResponse.content,
-              contentLength: frameworkResponse.content?.length || 0,
-              toolsUsed: frameworkResponse.toolsUsed,
-              iterations: frameworkResponse.iterations,
-              error: frameworkResponse.error
-            });
-            
-            // Si el framework produjo una respuesta, usarla
-            if (frameworkResponse.content) {
-              const totalResponseTime = Date.now() - requestStartTime;
-              
-              performanceMonitor.endRequest(requestId, {
-                totalResponseTime,
-                tokensGenerated: frameworkResponse.usage?.totalTokens || 0,
-                errorOccurred: false
-              }, sessionId);
-              
-              return new Response(JSON.stringify({
-                message: frameworkResponse.content,
-                modelUsed: selectedModel,
-                tokensUsed: frameworkResponse.usage?.totalTokens || 0,
-                toolsUsed: frameworkResponse.toolsUsed || [],
-                iterations: frameworkResponse.iterations || 0,
-                frameworkUsed: 'formmy-agent',
-                agentLoopUsed: true
-              }), {
-                status: 200,
-                headers: { "Content-Type": "application/json" }
-              });
-            }
-            
+            // Framework deshabilitado temporalmente durante refactor
+            console.log('⚠️ Framework disabled during refactor');
           } catch (frameworkError) {
-            console.error('❌ Framework error, falling back to original:', frameworkError);
-            // Continuar con el código original como fallback
+            console.error('❌ Framework error:', frameworkError);
           }
         }
         
