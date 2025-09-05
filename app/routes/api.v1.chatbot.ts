@@ -73,7 +73,6 @@ export async function action({ request }: any) {
   const { calculateCost } = await import("../../server/chatbot/pricing.server");
   
   // Framework temporalmente deshabilitado durante refactor
-  // const { createAgentFromChatbot } = await import("@formmy/agent-framework");
   
   console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
   try {
