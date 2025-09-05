@@ -99,7 +99,7 @@ export const FullBanner = () => {
 
 export const AiBanner = () => {
   return (
-    <div className="col-span-4 h-[500px] w-full md:h-[400px] flex flex-col bg-dark text-white md:flex-row rounded-3xl py-8 px-6 md:px-12 relative overflow-hidden ">
+    <div className="col-span-4 h-[400px] lg:h-[500px] w-full md:h-[400px] flex flex-col bg-dark text-white md:flex-row rounded-3xl py-8 px-6 md:px-12 relative overflow-hidden ">
       {/* Fondo de estrellas decorativas */}
       <DecorativeStarsBackground />
       <div>
@@ -114,7 +114,7 @@ export const AiBanner = () => {
         </Form>
       </div>
       <div className="absolute -bottom-10 md:bottom-0 right-0 z-10 flex gap-2 md:gap-4 w-auto h-auto">
-        <img className="h-[240px] md:h-[400px]" src="/home/figures.svg" />
+        <img className="h-[200px] md:h-[400px]" src="/home/figures.svg" />
       </div>
     </div>
   );
@@ -130,7 +130,7 @@ export const DemoBanner = () => {
           ¡Prueba Formmy! No te vas a arrepentir.{" "}
         </h2>
         <h2 className="text-lg md:text-2xl max-w-2xl mt-4 font-light text-lightgray">
-          Si tienes alguna duda, agenda un demo en línea para que nuestro equipo
+          Si tienes alguna duda, agenda un demo para que nuestro equipo
           te muestre todo lo que puedes hacer con Formmy.
         </h2>
         <a

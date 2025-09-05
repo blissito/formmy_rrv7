@@ -85,10 +85,10 @@ export const ChatBenefits = () => {
             </div>
             <div>
               <h2 className="text-2xl heading ">
-                Diseñado específicamente para LLM
+                Está diseñado específicamente para LLM's
               </h2>
-              <p className="text-gray-600">
-                Modelos de lenguaje con capacidades de razonamiento para
+              <p className="text-metal">
+                Usa modelos de lenguaje con capacidades de razonamiento para
                 respuestas efectivas a consultas complejas.
               </p>
             </div>
@@ -148,8 +148,8 @@ export const ChatBenefits = () => {
               </div>
             </div>
             <div>
-              <h2 className="text-2xl heading ">Rápido y simple</h2>
-              <p className="text-gray-600">
+              <h2 className="text-2xl heading ">Es rápido y simple</h2>
+              <p className="text-metal">
                 Crea, administra e implementa agentes de IA fácilmente.
               </p>{" "}
             </div>
@@ -171,7 +171,7 @@ export const ChatBenefits = () => {
               <div className="flex justify-end w-full">
                 <div className="bg-clear border border-gray-200 rounded-2xl px-3 py-2 flex items-center gap-3 shadow-sm">
                   <span className="text-gray-800">
-                    Hola, no ha venido el asesor
+                    Hola, no puedo acceder a mi cuenta y ya seguí los pasos
                   </span>
                   <img
                     src="https://randomuser.me/api/portraits/women/44.jpg"
@@ -187,13 +187,13 @@ export const ChatBenefits = () => {
                     ✨
                   </span>
                   <span className="text-gray-800">
-                    Un asesor se ponga en contacto contigo!
+                    Un asesor se pondrá en contacto contigo!
                   </span>
                 </div>
               </div>
             </div>
-            <h2 className="text-2xl heading mt-0">Optimización</h2>
-            <p className="text-gray-600">
+            <h2 className="text-2xl heading mt-0">Potencia la eficacia</h2>
+            <p className="text-metal">
               Da instrucciones a tu agente sobre cuándo escalar consultas a un
               agente humano.
             </p>
@@ -230,7 +230,7 @@ export const ChatBenefits = () => {
                 <div className="w-8 h-8 bg-[#EDC75A] rounded-full flex items-center justify-center">
                   <CgWebsite />
                 </div>
-                Sitios web (tu porpio website)
+                Sitios web (tu propio website)
               </div>
   
               <div className="bg-brand-100 h-10 rounded-full flex items-center gap-2 px-2 w-fit col-span-8 col-start-5">
@@ -246,8 +246,8 @@ export const ChatBenefits = () => {
                 Documentos pdf, doc, csv
               </div>
             </div>
-            <h2 className="text-2xl heading mt-4">Entrénalo fácilmente</h2>
-            <p>
+            <h2 className="text-2xl heading mt-4">Es fácil de entrenar</h2>
+            <p className="text-metal">
               Integra diversas fuentes de información para enriquecer el
               conocimiento y las capacidades de tus agentes.
             </p>

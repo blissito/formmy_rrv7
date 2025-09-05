@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { GradientButton } from "./ui/GradientButton";
 import { cn } from "~/lib/utils";
 
 export const BigCTA = ({
@@ -25,23 +24,28 @@ export const BigCTA = ({
   name?: string;
 }) => {
   return (
-    <GradientButton
-      isLoading={isLoading}
-      className={cn(
-        (className =
-          "group bg-brand-500 hover:bg-brand-600 transition-all transition-all text-clear  dark:text-white border-neutral-200 dark:border-white/10"),
-        containerClassName
-      )}
+    <button
+      type={type || "button"}
       value={value}
+      name={name}
       onClick={onClick}
-      type={type}
+      disabled={isLoading}
+      className={cn(
+        "group bg-brand-500 hover:bg-brand-600 transition-all hover:-translate-y-2 text-white rounded-full px-6 py-3  text-base h-12 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed",
+        containerClassName,
+        className
+      )}
       {...props}
     >
-      {children ?? (
-        <p className={cn("text-base heading ", textClassName)}>
-          Comenzar gratis <span className="group-hover:rotate-45"> &rarr;</span>
-        </p>
+      {isLoading ? (
+        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      ) : (
+        children ?? (
+          <p className={cn("text-base heading", textClassName)}>
+            Comenzar gratis 
+          </p>
+        )
       )}
-    </GradientButton>
+    </button>
   );
 };

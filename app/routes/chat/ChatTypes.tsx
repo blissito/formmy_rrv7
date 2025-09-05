@@ -4,7 +4,7 @@ const img = "https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg"
 
 function ChatCard({ label, backgroundImage, imageClassName,description }: { label: string; backgroundImage?: string; imageClassName?: string,  description?: string }) {
   return (
-    <div className="bg-white border border-outlines h-fit p-6 w-[340px] rounded-3xl relative overflow-hidden flex-shrink-0">
+    <div className="bg-white border border-outlines h-fit p-6 w-[340px] rounded-3xl relative flex-shrink-0">
       <img src={backgroundImage} className="w-full h-[180px] object-cover rounded-2xl"/>
       <h3 className="text-xl md:text-2xl text-dark mt-4 heading">{label}</h3>
       <p className="text-metal text-base md:text-lg">{description}</p>
@@ -18,7 +18,7 @@ const tabContent = [
     title: "Atención al cliente",
     content: {
       text: "Ofrece respuestas instantáneas 24/7, resuelve dudas frecuentes, guía paso a paso al usuario y automatiza procesos, todo dentro del mismo chat.",
-      image: "/home/chat-1.webp"
+         image: "/formmys/formmy7.webp"
     }
   },
   {
@@ -70,7 +70,7 @@ export default function ChatTypes() {
     backgroundImage: item.content.image
   }));
   return (
-    <section className="relative w-full flex flex-col items-center my-20 md:my-40 overflow-hidden">
+    <section className="relative w-full flex flex-col items-center my-20 md:my-40 ">
       <h2 className="font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-10 md:mb-16 leading-tight px-4">
         Para qué puedes usar Formmy Chat
       </h2>
@@ -150,7 +150,7 @@ export default function ChatTypes() {
     <div
       ref={containerRef}
       className={cn(
-        "scroller relative z-20 mx-auto  overflow-hidden",
+        "scroller relative z-20 mx-auto ",
         className
       )}
     >

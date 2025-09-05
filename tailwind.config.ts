@@ -40,6 +40,8 @@ export default {
         bird:"#EDC75A",
         pro:"#F2C94C",
         cloud:"#8AD7C9",
+        fiusha:"#D56D80",
+        sky:"#76D3CB",
         grass:"#7FBE60",
         salmon:"#E4AE8E",
         brand: {
@@ -78,7 +80,8 @@ export default {
         patternwhite: "url('/assets/pattern-w.svg')",
         steperCover: "url('/home/steper-cover.webp')",
         actionsBack: "url('/dash/actions-back.svg')",
-        chatPattern:"url('/dash/chat-pattern.webp')"
+        chatPattern:"url('/dash/chat-pattern.webp')",
+        city:"url('/dash/city.svg')"
       },
       boxShadow: {
         standard: "8px 16px 14px #F8F8FB",

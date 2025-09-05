@@ -55,19 +55,19 @@ export default function HomeBenefits() {
       desc: "Colores, textos y estilos que combinan con tu marca. Haz que el formulario y el chat se vean como parte de tu sitio, no como algo pegado.",
     },
     {
-      color: "bg-[#b2e7ca]",
+      color: "bg-[#BFDD78]",
       icon: <RiChatAiLine />,
       title: "Chat IA que conversa como tú lo harías",
       desc: "Responde preguntas comunes, guía a tus visitantes y capta leads automáticamente, sin que tengas que estar conectado todo el día.",
     },
     {
-      color: "bg-[#edc75a]",
+      color: "bg-[#FBE05D]",
       icon: <PiUserFocusBold />,
       title: "Capta más clientes, sin perder mensajes",
       desc: "Recibe todas las respuestas en tu correo o dashboard. Nada se pierde, nada se queda sin responder.",
     },
     {
-      color: "bg-[#bbf0ff]",
+      color: "bg-[#76D3CB]",
       icon: <LuRocket />,
       title: "Todo en un solo lugar",
       desc: "Gestiona tus formularios y chat desde el mismo panel. Ve tus mensajes, edita tus formularios y ajusta tu chat IA en minutos.",
