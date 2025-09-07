@@ -147,17 +147,11 @@ export default function ChatbotDetailRoute({
 const Tareas = () => {
   return (
     <section className="h-full min-h-[60vh] p-4">
-      <div style={{ 
-        all: 'unset',
-        display: 'block',
-        width: '100%',
-        height: '100%',
-        minHeight: '500px',
-        position: 'relative',
-        isolation: 'isolate'
-      }}>
-        <AIFlowCanvas />
-      </div>
+      <AIFlowCanvas 
+        showToaster={false}
+        isolateStyles={true}
+        containerHeight="500px"
+      />
     </section>
   );
 };
