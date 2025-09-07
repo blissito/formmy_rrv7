@@ -115,7 +115,7 @@ export default function ChatbotDetailRoute({
         activeTab={currentTab}
         onTabChange={handleTabChange}
       />
-      <div className="mt-0">
+      <div className="mt-0 overflow-hidden h-full">
         {currentTab === "Preview" && (
           <PageContainer.EditionPair
             chatbot={chatbot}
@@ -150,7 +150,8 @@ const Tareas = () => {
       <AIFlowCanvas 
         showToaster={false}
         isolateStyles={true}
-        containerHeight="500px"
+        containerHeight="100%"
+        theme="light"
       />
     </section>
   );
