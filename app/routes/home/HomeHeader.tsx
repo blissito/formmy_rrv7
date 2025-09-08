@@ -73,12 +73,13 @@ export default function HomeHeader() {
                 >
                   <span>Planes</span>
                 </a>
-                <Form method="post" action="/api/login">
+                <Form method="post" action="/api/login" id="start_navbar">
                   <button
                     className="text-dark text-lg font-regular mb-2 font-medium px-2 py-3"
                     type="submit"
                     name="intent"
                     value="google-login"
+                 
                   >
                     Iniciar sesión
                   </button>
@@ -175,7 +176,7 @@ export default function HomeHeader() {
               Iniciar sesión
             </button>
           </Form>
-          <Form method="post" action="/api/login">
+          <Form method="post" action="/api/login" id="start_navbar">
             <BigCTA
               type="submit"
               name="intent"

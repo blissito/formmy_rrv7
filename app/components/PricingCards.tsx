@@ -23,7 +23,7 @@ export const plans: Plan[] = [
     description: "Perfecto para empezar",
     price: "$0",
     priceNote: "/mes",
-    button: <Form method="post" action="/api/login"><Button type="submit" name="intent" value="google-login" action="/api/login" className="w-full bg-white hover:bg-white/90 text-[#7574D6] font-bold rounded-full py-3  mt-6">¡Empieza gratis!</Button></Form>,
+    button: <Form method="post" action="/api/login" id="start_plans"><Button type="submit" name="intent" value="google-login" action="/api/login" className="w-full bg-white hover:bg-white/90 text-[#7574D6] font-bold rounded-full py-3  mt-6">¡Empieza gratis!</Button></Form>,
     arrClass: "text-white underline underline-offset-4 decoration-2 decoration-white",
     includes: [
       "📋 Hasta 3 formularios con respuestas ilimitadas",
