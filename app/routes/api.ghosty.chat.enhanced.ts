@@ -1,5 +1,8 @@
 import type { Route } from "./+types/api.ghosty.chat.enhanced";
 import { callGhostyWithTools } from "~/services/ghostyEnhanced.server";
+import { GhostyLlamaIndex } from "server/ghosty-llamaindex";
+import { getUserOrNull } from "server/getUserUtils.server";
+import type { User } from "@prisma/client";
 
 /**
  * Endpoint mejorado que aprovecha capacidades nativas del modelo
@@ -24,87 +27,156 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
         new ReadableStream({
           async start(controller) {
             try {
-              // Enviar estado inicial indicando que está pensando
-              const thinkingData = JSON.stringify({
-                type: "status",
-                status: "thinking",
-                message: "🤔 Analizando tu pregunta..."
-              });
-              controller.enqueue(
-                encoder.encode(`data: ${thinkingData}\n\n`)
-              );
+              // Try to get user for LlamaIndex version
+              const user = await getUserOrNull(request);
               
-              let fullContent = '';
-              const result = await callGhostyWithTools(
-                message, 
-                true,
-                (chunk: string) => {
-                  // Send each chunk as SSE
-                  const data = JSON.stringify({
-                    type: "chunk",
-                    content: chunk,
+              // Use LlamaIndex if user is available, fallback to old system
+              if (user) {
+                // LlamaIndex enhanced version
+                console.log('🚀 Using LlamaIndex enhanced Ghosty');
+                
+                const ghosty = new GhostyLlamaIndex({
+                  mode: process.env.GHOSTY_MODE === 'remote' ? 'remote' : 'local',
+                });
+
+                // Send enhanced status messages
+                const thinkingData = JSON.stringify({
+                  type: "status", 
+                  status: "thinking",
+                  message: "🤔 Analizando tu pregunta con IA avanzada..."
+                });
+                controller.enqueue(encoder.encode(`data: ${thinkingData}\n\n`));
+
+                const analyzingData = JSON.stringify({
+                  type: "status",
+                  status: "tool-analyzing", 
+                  message: "🔧 Evaluando qué herramientas necesito..."
+                });
+                controller.enqueue(encoder.encode(`data: ${analyzingData}\n\n`));
+
+                const response = await ghosty.chat(message, user, {
+                  conversationHistory: history,
+                  stream: false,
+                });
+
+                // Simulate tool execution feedback
+                if (response.toolsUsed && response.toolsUsed.length > 0) {
+                  for (const tool of response.toolsUsed) {
+                    // Tool start
+                    const toolStartData = JSON.stringify({
+                      type: "tool-start",
+                      tool: tool,
+                      message: `Ejecutando ${tool}...`
+                    });
+                    controller.enqueue(encoder.encode(`data: ${toolStartData}\n\n`));
+                    
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    // Tool complete
+                    const toolCompleteData = JSON.stringify({
+                      type: "tool-complete", 
+                      tool: tool,
+                      message: "Completado"
+                    });
+                    controller.enqueue(encoder.encode(`data: ${toolCompleteData}\n\n`));
+                  }
+
+                  // Synthesizing
+                  const synthesizingData = JSON.stringify({
+                    type: "synthesizing",
+                    message: "🧠 Organizando la información encontrada..."
                   });
-                  controller.enqueue(
-                    encoder.encode(`data: ${data}\n\n`)
-                  );
-                  fullContent += chunk;
-                },
-                history // Pasar el historial de conversación
-              );
-              
-              // Debug: log what we got back
-              console.log('🔍 Enhanced Ghosty result:', {
-                hasContent: !!result.content,
-                contentLength: result.content?.length || 0,
-                contentPreview: result.content?.substring(0, 100) || 'NO CONTENT',
-                toolsUsed: result.toolsUsed,
-                sourcesCount: result.sources?.length || 0,
-                fullContentLength: fullContent?.length || 0
-              });
-              
-              console.log('🔍 Full result object:', JSON.stringify(result, null, 2));
-              
-              // If no content was streamed but we have result.content, send it now
-              if (!fullContent && result.content) {
-                console.log('⚠️ No chunks were streamed, sending full content now');
-                console.log('📄 Content being sent:', result.content.substring(0, 200) + '...');
-                const data = JSON.stringify({
-                  type: "chunk",
-                  content: result.content,
-                });
-                controller.enqueue(
-                  encoder.encode(`data: ${data}\n\n`)
-                );
-                fullContent = result.content; // Track that we sent it
-              }
+                  controller.enqueue(encoder.encode(`data: ${synthesizingData}\n\n`));
+                  
+                  await new Promise(resolve => setTimeout(resolve, 300));
+                }
 
-              // Send tools used metadata if any tools were used
-              if (result.toolsUsed && result.toolsUsed.length > 0) {
-                const toolsData = JSON.stringify({
-                  type: "metadata",
-                  toolsUsed: result.toolsUsed
-                });
-                controller.enqueue(
-                  encoder.encode(`data: ${toolsData}\n\n`)
-                );
-              }
+                // Stream the response content
+                if (response.content) {
+                  const words = response.content.split(' ');
+                  for (const word of words) {
+                    const chunk = word + ' ';
+                    const data = JSON.stringify({
+                      type: "chunk",
+                      content: chunk,
+                    });
+                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                    await new Promise(resolve => setTimeout(resolve, 15));
+                  }
+                }
 
-              // Send sources if available
-              if (result.sources && result.sources.length > 0) {
-                const sourcesData = JSON.stringify({
-                  type: "sources",
-                  sources: result.sources
-                });
-                controller.enqueue(
-                  encoder.encode(`data: ${sourcesData}\n\n`)
-                );
-              }
+                // Send tools used metadata
+                if (response.toolsUsed && response.toolsUsed.length > 0) {
+                  const toolsData = JSON.stringify({
+                    type: "metadata",
+                    toolsUsed: response.toolsUsed
+                  });
+                  controller.enqueue(encoder.encode(`data: ${toolsData}\n\n`));
+                }
 
-              // Send completion signal
-              const doneData = JSON.stringify({ type: "done" });
-              controller.enqueue(
-                encoder.encode(`data: ${doneData}\n\n`)
-              );
+                // Send sources if available
+                if (response.sources && response.sources.length > 0) {
+                  const sourcesData = JSON.stringify({
+                    type: "sources",
+                    sources: response.sources
+                  });
+                  controller.enqueue(encoder.encode(`data: ${sourcesData}\n\n`));
+                }
+
+                // Send completion
+                const completionData = JSON.stringify({
+                  type: "done",
+                  metadata: response.metadata
+                });
+                controller.enqueue(encoder.encode(`data: ${completionData}\n\n`));
+                
+              } else {
+                // Fallback to old system
+                console.log('⚠️ Using fallback Ghosty system');
+                
+                const thinkingData = JSON.stringify({
+                  type: "status",
+                  status: "thinking",
+                  message: "🤔 Analizando tu pregunta..."
+                });
+                controller.enqueue(encoder.encode(`data: ${thinkingData}\n\n`));
+                
+                let fullContent = '';
+                const result = await callGhostyWithTools(
+                  message, 
+                  true,
+                  (chunk: string) => {
+                    const data = JSON.stringify({
+                      type: "chunk", 
+                      content: chunk,
+                    });
+                    controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+                    fullContent += chunk;
+                  },
+                  history
+                );
+                
+                // Handle old system metadata
+                if (result.toolsUsed && result.toolsUsed.length > 0) {
+                  const toolsData = JSON.stringify({
+                    type: "metadata",
+                    toolsUsed: result.toolsUsed
+                  });
+                  controller.enqueue(encoder.encode(`data: ${toolsData}\n\n`));
+                }
+
+                if (result.sources && result.sources.length > 0) {
+                  const sourcesData = JSON.stringify({
+                    type: "sources",
+                    sources: result.sources
+                  });
+                  controller.enqueue(encoder.encode(`data: ${sourcesData}\n\n`));
+                }
+
+                // Send completion signal
+                const doneData = JSON.stringify({ type: "done" });
+                controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
+              }
               controller.close();
             } catch (error) {
               console.error("Enhanced Ghosty streaming error:", error);

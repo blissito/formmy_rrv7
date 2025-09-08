@@ -19,6 +19,7 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 ### Ghosty
 
 **Ubicación**: `/dashboard/ghosty`
+**Framework**: **LlamaIndex 2025** ⚠️ **OBLIGATORIO** - seguir patrones al pie de la letra
 **Descripción**: Agente principal de la plataforma que actúa como interfaz conversacional para:
 
 - Guiar a usuarios en la creación de formularios y chatbots
@@ -26,6 +27,17 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - Ofrecer recomendaciones de optimización
 - Ejecutar tareas automatizadas
 - Servir como punto central de información del sistema
+
+**Arquitectura LlamaIndex 2025**:
+- **Agent Pattern**: `agent()` function que crea `AgentWorkflow`
+- **Agent Type**: `FunctionAgent` con `BaseToolWithCall[]`
+- **Memory**: Automática via workflow (no gestión manual)
+- **Tools**: LlamaIndex `FunctionTool` pattern
+- **Context**: Pasado a través del workflow system
+- **Streaming**: Soporte nativo del workflow
+- **Ubicación**: `/server/ghosty-llamaindex/`
+
+**Regla crítica**: NUNCA improvisar patrones. Usar únicamente patrones documentados de LlamaIndex 2025.
 
 ### Formmy Agent Framework (Micro-framework propio)
 
