@@ -10,6 +10,8 @@ import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
 import { isUserInTrial, checkTrialExpiration, applyFreeRestrictions } from "server/chatbot/planLimits.server";
 import { Plans } from "@prisma/client";
+import { AIFlowCanvas } from "formmy-actions";
+import "@xyflow/react/dist/style.css";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -113,7 +115,7 @@ export default function ChatbotDetailRoute({
         activeTab={currentTab}
         onTabChange={handleTabChange}
       />
-      <div className="mt-0">
+      <div className="mt-0 overflow-hidden h-full">
         {currentTab === "Preview" && (
           <PageContainer.EditionPair
             chatbot={chatbot}
@@ -143,11 +145,24 @@ export default function ChatbotDetailRoute({
 
 
 const Tareas = () => {
-  return <section className="h-full min-h-[60vh] place-items-center grid">
-    <div>
+  return (
+    <section className="h-full min-h-[60vh] p-4">
+      <AIFlowCanvas 
+        showToaster={false}
+        isolateStyles={true}
+        containerHeight="100%"
+        theme="light"
+      />
+    </section>
+  );
+};
+
+/* TODO: Empty state que estaba antes del canvas - encontrar mejor ubicación
+<section className="h-full min-h-[60vh] place-items-center grid">
+  <div>
     <img className="w-40 md:w-[200px] mx-auto" src="/dash/comming.svg" alt="comming soon" />
     <h3 className="text-2xl font-bold text-dark text-center heading mt-6">Tareas Automatizadas en Camino</h3>
     <p className="paragraph text-center text-metal mt-3 max-w-md mx-auto">Estamos trabajando en una poderosa herramienta para que automatices tareas recurrentes y optimices la productividad de tu agente. ¡Muy pronto podrás programar acciones y flujos de trabajo personalizados!</p>
-    </div>
-  </section>;
-};
+  </div>
+</section>
+*/

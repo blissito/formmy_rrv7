@@ -4,37 +4,14 @@
  */
 
 import type { Tool } from "../chatbot/providers/types";
-import { createPaymentLinkHandler } from "./handlers/stripe";
-import { saveContactInfoHandler } from "./handlers/contact";
-// Importar el ReminderToolset completo
-import { 
-  ReminderToolset, 
-  getReminderTools, 
-  executeReminderTool,
-  generateReminderPrompt,
-  isReminderTool
-} from "./toolsets/reminder-toolset";
+import type { ToolDefinition, ToolContext, ToolResponse } from "./types";
+// Herramientas temporalmente deshabilitadas para evitar circular imports
+// import { createPaymentLinkHandler } from "./handlers/stripe";
+// import { saveContactInfoHandler } from "./handlers/contact";
+// import { ReminderToolset } from "./toolsets/reminder-toolset";
 
-export interface ToolDefinition {
-  tool: Tool;
-  handler: (input: any, context: ToolContext) => Promise<ToolResponse>;
-  requiredIntegrations?: string[];
-  requiredPlan?: string[];
-  enabled?: boolean;
-}
-
-export interface ToolContext {
-  chatbotId: string;
-  userId: string;
-  message?: string;
-  integrations?: Record<string, any>;
-}
-
-export interface ToolResponse {
-  success: boolean;
-  message: string;
-  data?: any;
-}
+// Re-export types for backward compatibility
+export type { ToolDefinition, ToolContext, ToolResponse };
 
 /**
  * REGISTRO MAESTRO DE TODAS LAS HERRAMIENTAS
@@ -44,6 +21,8 @@ export interface ToolResponse {
  * 3. Agregar entrada al registro
  */
 export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
+  // Herramientas temporalmente deshabilitadas para resolver circular imports
+  /*
   // STRIPE - Pagos
   create_payment_link: {
     tool: {
@@ -119,7 +98,10 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
         required: [], // Flexibilidad - al menos uno será validado en el handler
       },
     },
-    handler: saveContactInfoHandler,
+    handler: async (input, context) => {
+      const handler = await getContactHandler();
+      return handler(input, context);
+    },
     requiredIntegrations: [], // Siempre disponible
     requiredPlan: ["STARTER", "PRO", "ENTERPRISE", "TRIAL"],
     enabled: true,
@@ -131,6 +113,7 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
   // search_knowledge: { ... }
   // create_invoice: { ... }
   // schedule_meeting: { ... }
+  */
 };
 
 /**
@@ -183,10 +166,8 @@ export async function executeToolCall(
   input: any,
   context: ToolContext
 ): Promise<ToolResponse> {
-  // Si es una herramienta de recordatorios, usar el toolset especializado
-  if (isReminderTool(toolName)) {
-    return await executeReminderTool(toolName, input, context);
-  }
+  // Herramientas temporalmente deshabilitadas
+  // TODO: Reactivar cuando se resuelvan las circular imports
 
   // Para otras herramientas, usar el registro general
   const definition = TOOLS_REGISTRY[toolName];
@@ -231,21 +212,8 @@ export function generateToolPrompts(availableTools: Tool[]): string {
       "🔥 STRIPE: Cuando detectes solicitud de pago, USA INMEDIATAMENTE create_payment_link.\n\n";
   }
 
-  // RECORDATORIOS (usar el toolset especializado)
-  const reminderTools = availableTools.filter(t => isReminderTool(t.name));
-  if (reminderTools.length > 0) {
-    prompt += generateReminderPrompt(reminderTools);
-  }
-
-  // CONTACT CAPTURE
-  const hasContactCapture = availableTools.some((t) => t.name === "save_contact_info");
-  if (hasContactCapture) {
-    prompt += "📋 CONTACT CAPTURE: Cuando una persona proporcione información personal (nombre, email, teléfono, empresa), USA INMEDIATAMENTE save_contact_info.\n";
-    prompt += "✅ CASOS DE USO: 'Mi nombre es Juan', 'Soy María de IBM', 'mi email es...', 'trabajo en...'\n";
-    prompt += "❌ NO captures información HASTA que la persona la comparta voluntariamente.\n";
-    prompt += "💡 SUTIL: Si la conversación va bien, puedes preguntar: '¿Cómo te puedo contactar?' o '¿En qué empresa trabajas?'\n";
-    prompt += "🎯 BENEFICIO: Explica que guardas su info para futuras consultas o seguimiento.\n\n";
-  }
+  // Herramientas temporalmente deshabilitadas
+  // TODO: Reactivar prompts de herramientas cuando se resuelvan las circular imports
 
   // Futuros toolsets se agregan aquí...
 

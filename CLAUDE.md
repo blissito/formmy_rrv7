@@ -19,6 +19,7 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 ### Ghosty
 
 **Ubicación**: `/dashboard/ghosty`
+**Framework**: **LlamaIndex 2025** ⚠️ **OBLIGATORIO** - seguir patrones al pie de la letra
 **Descripción**: Agente principal de la plataforma que actúa como interfaz conversacional para:
 
 - Guiar a usuarios en la creación de formularios y chatbots
@@ -26,6 +27,17 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - Ofrecer recomendaciones de optimización
 - Ejecutar tareas automatizadas
 - Servir como punto central de información del sistema
+
+**Arquitectura LlamaIndex 2025**:
+- **Agent Pattern**: `agent()` function que crea `AgentWorkflow`
+- **Agent Type**: `FunctionAgent` con `BaseToolWithCall[]`
+- **Memory**: Automática via workflow (no gestión manual)
+- **Tools**: LlamaIndex `FunctionTool` pattern
+- **Context**: Pasado a través del workflow system
+- **Streaming**: Soporte nativo del workflow
+- **Ubicación**: `/server/ghosty-llamaindex/`
+
+**Regla crítica**: NUNCA improvisar patrones. Usar únicamente patrones documentados de LlamaIndex 2025.
 
 ### Formmy Agent Framework (Micro-framework propio)
 
@@ -539,6 +551,94 @@ function getSmartModelForPro(hasActiveIntegrations: boolean, isComplexQuery: boo
 - **Claude Code Action**: Configurado para responder a menciones `@claude` en issues y PRs
 - **Workflow**: `.github/workflows/claude-code.yml`
 - **Secrets requeridos**: `ANTHROPIC_API_KEY`
+
+## AgentMapper - Mapeo Formmy ↔️ Flowise
+
+### Descripción
+Sistema de mapeo bidireccional entre configuraciones de chatbots Formmy y Flowise AgentFlow V2, permitiendo exportar/importar flows entre plataformas.
+
+### Mapeo de Configuración
+
+#### 1. Configuración Base
+```typescript
+// Formmy Chatbot → Flowise AgentFlow
+{
+  name: chatbot.name,
+  description: chatbot.description,
+  state: {
+    personality: chatbot.personality,
+    systemPrompt: `${chatbot.instructions}\n${chatbot.customInstructions}`,
+    welcomeMessage: chatbot.welcomeMessage
+  },
+  llmConfig: {
+    model: chatbot.aiModel,
+    temperature: chatbot.temperature
+  }
+}
+```
+
+#### 2. Contextos → Knowledge Store
+```typescript
+// Formmy contexts (FILE, LINK, TEXT, QUESTION) → Flowise Document Stores
+chatbot.contexts.map(context => ({
+  type: "documentStore",
+  config: {
+    storeType: context.type === "FILE" ? "document" : "text",
+    source: context.fileUrl || context.url || context.content,
+    metadata: { title: context.title, sizeKB: context.sizeKB }
+  }
+}))
+```
+
+#### 3. Herramientas → Tool Nodes
+```typescript
+// Formmy tools → Flowise API Tools
+tools.map(tool => ({
+  type: "apiTool",
+  name: tool.name,
+  method: "POST",
+  endpoint: `/api/tools/${tool.name}`,
+  schema: tool.parameters
+}))
+```
+
+#### 4. Agent Framework → Sequential Nodes
+```typescript
+// Formmy Agent Loop → Flowise Sequential Agent
+{
+  type: "sequentialAgent",
+  maxIterations: config.maxIterations,
+  retryConfig: config.retryConfig,
+  nodes: [
+    { type: "input", id: "start" },
+    { type: "agent", id: "main", tools: availableTools },
+    { type: "conditional", id: "toolCheck" },
+    { type: "output", id: "response" }
+  ]
+}
+```
+
+#### 5. Integraciones → Sub-workflows
+```typescript
+// WhatsApp, Stripe → Flowise Sub-flows
+integrations.map(int => ({
+  type: "subflow",
+  flowId: `integration_${int.type}`,
+  config: int.settings
+}))
+```
+
+### Compatibilidad con Flycast
+- **Posible**: Flowise puede desplegarse en Fly.io usando Flycast para networking privado
+- **Arquitectura**: Formmy API (Fly app) → Flycast → Flowise (contenedor privado)
+- **Beneficios**: Baja latencia, comunicación segura, sin exposición pública
+- **Configuración**: `fly.toml` con internal_port para Flowise, proxy reverso en Formmy
+
+### Implementación Futura
+- [ ] Endpoint `/api/export/flowise` para generar JSON de AgentFlow
+- [ ] Endpoint `/api/import/flowise` para importar configuraciones
+- [ ] UI de sincronización bidireccional en dashboard
+- [ ] Webhook para actualización automática de flows
 
 ## Deployment
 

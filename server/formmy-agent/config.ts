@@ -3,7 +3,6 @@
  */
 
 import type { AgentConfig, AgentCallbacks } from './types';
-import { FormmyAgent } from './index';
 import { getAvailableTools } from '../tools/registry';
 
 // Tipos de Prisma para compatibilidad
@@ -65,7 +64,8 @@ const MODEL_CONFIGS = {
 /**
  * Factory principal para crear agentes desde un Chatbot
  */
-export const createAgent = async (chatbot: Chatbot, user?: User): Promise<FormmyAgent> => {
+export const createAgent = async (chatbot: Chatbot, user?: User) => {
+  const { FormmyAgent } = await import('./index');
   const modelConfig = MODEL_CONFIGS[chatbot.aiModel as keyof typeof MODEL_CONFIGS] || 
                       MODEL_CONFIGS['gpt-5-nano']; // Fallback default
 
@@ -92,7 +92,8 @@ export const createAgent = async (chatbot: Chatbot, user?: User): Promise<Formmy
 /**
  * Factory simplificado para testing
  */
-export const createTestAgent = (model: string = 'gpt-5-nano'): FormmyAgent => {
+export const createTestAgent = async (model: string = 'gpt-5-nano') => {
+  const { FormmyAgent } = await import('./index');
   const modelConfig = MODEL_CONFIGS[model as keyof typeof MODEL_CONFIGS] || 
                       MODEL_CONFIGS['gpt-5-nano'];
 
@@ -224,7 +225,8 @@ export const adaptConfigForContext = (
 /**
  * Configuración de desarrollo/debug
  */
-export const createDebugAgent = (model: string = 'gpt-5-nano'): FormmyAgent => {
+export const createDebugAgent = async (model: string = 'gpt-5-nano') => {
+  const { FormmyAgent } = await import('./index');
   const config: AgentConfig = {
     model,
     temperature: undefined,
