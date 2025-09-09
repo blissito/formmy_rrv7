@@ -185,7 +185,7 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
 export const PricingCards = () => {
   return (
     <div className="w-full flex flex-col md:flex-row gap-4 justify-center items-stretch">
-      {plans.map((plan, idx) => (
+      {plans.map((plan) => (
         <PricingCard key={plan.name} plan={plan} />
       ))}
     </div>
