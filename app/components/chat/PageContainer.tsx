@@ -303,6 +303,7 @@ export const ChatCard = ({
         ease: [0.25, 0.1, 0.25, 1],
       }}
       className="col-span-1"
+      id="chatbot_detail"
     >
 {chatbot.canAccess === false ? (
         // Show as disabled div with Pro upgrade for blocked chatbots  
@@ -623,6 +624,7 @@ export const TabSelector = ({
       >
         {tabs.map((tab, index) => (
           <TabButton
+            id={`tab_${tab}`}
             key={tab}
             ref={(el: HTMLButtonElement | null) =>
               (tabRefs.current[index] = el)

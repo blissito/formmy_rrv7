@@ -13,7 +13,7 @@ export const useTagManager = () => {
         })(window,document,'script','dataLayer','GTM-PGW48MFV');
         `;
     noscript.innerHTML = `
-     <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W9JM63Z3"
+     <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PGW48MFV"
 height="0" width="0" style="display:none;visibility:hidden"></iframe>
         `;
     document.head.appendChild(script1);

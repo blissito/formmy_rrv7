@@ -329,6 +329,7 @@ export default function Detail() {
                 </AnimatePresence>
                 {isEditing ? (
                   <button 
+    
                     onClick={() => {
                       setIsEditing(false);
                       setProjectName(project.name); // Reset to original name
@@ -471,7 +472,7 @@ export const SearchBar = ({
           name="search"
         />
       </div>
-      <Link reloadDocument to={`/api/download/${projectId}.csv`}>
+      <Link id="formmy_download" reloadDocument to={`/api/download/${projectId}.csv`}>
         <Button
           onClick={() => {
             set(true);
@@ -490,6 +491,7 @@ export const SearchBar = ({
       <div className="flex gap-2">
         {userPermissions?.update ? (
           <Link
+          id="formmy_edition" 
             to={`/dashboard/formmys/${projectId}/edition`}
             className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
           >
@@ -501,6 +503,7 @@ export const SearchBar = ({
         
         {userPermissions?.read ? (
           <Link
+            id="formmy_code" 
             className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
             to={`/dashboard/formmys/${projectId}/code`}
           >
@@ -512,6 +515,7 @@ export const SearchBar = ({
         
         {userPermissions?.delete ? (
           <Link
+          id="formmy_settings" 
             prefetch="intent"
             to={`/dashboard/formmys/${projectId}/settings`}
             className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
