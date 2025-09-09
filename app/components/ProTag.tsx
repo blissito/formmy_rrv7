@@ -205,6 +205,7 @@ export const ProTag = ({
                       </p>
                     </div>
                     <div className="w-full flex flex-col md:flex-row gap-4 justify-center items-stretch">
+                      {/* Probar flujo */}
                       {plans
                         .filter(plan => plan.name !== 'Free')
                         .map((plan) => (
