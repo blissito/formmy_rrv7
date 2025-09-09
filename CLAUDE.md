@@ -75,8 +75,11 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 ### Planes y Precios (Optimizados para mercado mexicano)
 - **Free**: $0 - Solo 3 formmys, 0 chatbots, trial 60 días
 - **Starter**: $149 MXN/mes - 2 chatbots, 50 conversaciones, GPT-5 Nano + Gemini 2.5 Flash-Lite
+  - *Stripe Price ID*: `price_1S5AqXDtYmGT70YtepLAzwk4`
 - **Pro**: $499 MXN/mes - 10 chatbots, 250 conversaciones, Claude 3 Haiku
+  - *Stripe Price ID*: `price_1S5CqADtYmGT70YtTZUtJOiS`
 - **Enterprise**: $1,499 MXN/mes - Ilimitado, 1000 conversaciones, GPT-5 Mini + Claude 3.5 Haiku
+  - *Stripe Price ID*: `price_1S5Cm2DtYmGT70YtwzUlp99P`
 
 ### Proyección Año 1 (150 clientes)
 - **60% Starter** (90 clientes): $160.9K MXN revenue → $157.7K profit (98% margen)

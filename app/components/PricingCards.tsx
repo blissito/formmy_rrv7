@@ -23,7 +23,7 @@ export const plans: Plan[] = [
     description: "Perfecto para empezar",
     price: "$0",
     priceNote: "/mes",
-    button: <Form method="post" action="/api/login" id="start_plans"><Button type="submit" name="intent" value="google-login" action="/api/login" className="w-full bg-white hover:bg-white/90 text-[#7574D6] font-bold rounded-full py-3  mt-6">¡Empieza gratis!</Button></Form>,
+    button: <Form method="post" action="/api/login" id="start_plans"><Button type="submit" name="intent" value="google-login" className="w-full bg-white hover:bg-white/90 text-[#7574D6] font-bold rounded-full py-3  mt-6">¡Empieza gratis!</Button></Form>,
     arrClass: "text-white underline underline-offset-4 decoration-2 decoration-white",
     includes: [
       "📋 Hasta 3 formularios con respuestas ilimitadas",
@@ -40,7 +40,7 @@ export const plans: Plan[] = [
     description: "La opción entrepreneur",
     price: "$149",
     priceNote: "/mes",
-    button: <Button className="w-full bg-brand-500 hover:bg-brand-600 text-clear font-bold rounded-full py-3  mt-6">¡Empieza ahora!</Button>,
+    button: <Form method="post" action="/api/stripe"><Button type="submit" name="intent" value="starter_plan" className="w-full bg-brand-500 hover:bg-brand-600 text-clear font-bold rounded-full py-3  mt-6">¡Empieza ahora!</Button></Form>,
     arr: "Ahorra 10% al pagar anualmente",
     arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-brand-600",
     includes: [
@@ -62,7 +62,7 @@ export const plans: Plan[] = [
     description: "El plan más completo",
     price: "$499",
     priceNote: "/mes",
-    button: <Button className="w-full bg-bird hover:bg-[#E5C059] text-dark font-bold rounded-full py-3  mt-6">¡Hazte imparable con Pro!</Button>,
+    button: <Form method="post" action="/api/stripe"><Button type="submit" name="intent" value="pro_plan" className="w-full bg-bird hover:bg-[#E5C059] text-dark font-bold rounded-full py-3  mt-6">¡Hazte imparable con Pro!</Button></Form>,
     arr: "Ahorra 15% al pagar anualmente",
     arrClass: "text-[#DAB23F] underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
     includes: [
@@ -86,7 +86,7 @@ export const plans: Plan[] = [
     description: "Solución corporativa",
     price: "$1,499",
     priceNote: "/mes",
-    button: <Button className="w-full bg-cloud hover:bg-[#5FAFA8] text-dark font-bold rounded-full py-3  mt-6">¡Potencia total!</Button>,
+    button: <Form method="post" action="/api/stripe"><Button type="submit" name="intent" value="enterprise_plan" className="w-full bg-cloud hover:bg-[#5FAFA8] text-dark font-bold rounded-full py-3  mt-6">¡Potencia total!</Button></Form>,
     arr: "Ahorra 15% al pagar anualmente",
         arrClass: "text-[#5FAFA8] underline underline-offset-4 decoration-2 decoration-[#5FAFA8]",
     includes: [

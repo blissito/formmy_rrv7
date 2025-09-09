@@ -149,11 +149,9 @@ export const createCheckoutSessionURL = async ({
 }: {
   origin: string;
   coupon?: string;
-  user: User;
+  user: User | null;
   price?: string;
 }) => {
-  if (!user) throw new Error("Need a user to create a customer");
-
   const isDevelopment = process.env.NODE_ENV === "development";
   const DOMAIN = origin;
   const stripe = getClient();
@@ -166,20 +164,29 @@ export const createCheckoutSessionURL = async ({
     ? "price_1OinFxDtYmGT70YtW9UbUdpM"
     : "price_1OgF7RDtYmGT70YtJB3kRl9T"; // prod
 
-  // price_1MowQULkdIwHu7ixraBm864M
-
-  const session = await stripe.checkout.sessions.create({
+  const sessionConfig: any = {
     mode: "subscription",
-    customer: await getOrCreateCustomerId(user),
     success_url: `${DOMAIN}/profile?success=1`,
-    discounts: { coupon },
     line_items: [
       {
         price: price || ANUAL_PRICE,
         quantity: 1,
       },
     ],
-  });
+  };
+
+  if (user) {
+    sessionConfig.customer = await getOrCreateCustomerId(user);
+  } else {
+    // Para usuarios anónimos, Stripe creará el customer después del checkout
+    sessionConfig.customer_creation = "always";
+  }
+
+  if (coupon) {
+    sessionConfig.discounts = { coupon };
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionConfig);
 
   return session.url;
 };
