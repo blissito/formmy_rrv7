@@ -287,6 +287,7 @@ export const GhostyChatInterface = ({
           </div>
 
           <Button
+            id="ghosty-send-button"
             type="submit"
             isLoading={isLoading}
             isDisabled={!inputValue.trim() || isLoading}

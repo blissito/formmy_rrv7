@@ -33,8 +33,8 @@ export default function HomeCallToAction() {
             <br />
             Házlo fácil, rápido y sin código con <span className="text-brand-500">Formmy</span>.
           </h2>
-          <Form method="post" action="/api/login">
-          <BigCTA type="submit" name="intent" value="google-login"  containerClassName="bg-white hover:bg-[#E1E3E7] heading text-dark text-lg">Empezar gratis <span className="ml-2">→</span></BigCTA>
+          <Form method="post" action="/api/login" id="start_footer">
+          <BigCTA type="submit" name="intent" value="google-login"   containerClassName="bg-white hover:bg-[#E1E3E7] heading text-dark text-lg">Empezar gratis <span className="ml-2">→</span></BigCTA>
         </Form>
           {/* <Form method="post" action="/api/login">
           <Button className="ml-0 h-14 bg-white text-dark font-semibold rounded-full px-8 text-base md:text-lg flex items-center gap-2 shadow hover:scale-105 transition">
@@ -126,7 +126,7 @@ export const GeneralCallToAction = () => {
             Y reduce costos.
           </h2>
         </div>
-        <Form method="post" action="/api/login">
+        <Form method="post" action="/api/login" id="start_footer">
           <BigCTA
             className="mx-auto w-[180px]"
             type="submit"

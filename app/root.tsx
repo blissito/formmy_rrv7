@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import useHotjar from "./utils/useHotjar";
 import useGoogleTM from "./utils/useGoogleTM";
 import { Toaster } from "react-hot-toast";
+import { useTagManager } from "./utils/useTagManager";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -31,6 +32,7 @@ export const links: Route.LinksFunction = () => [
 export function Layout({ children }: { children: ReactNode }) {
   useHotjar();
   useGoogleTM();
+  useTagManager();
   return (
     <html
       lang="en"
