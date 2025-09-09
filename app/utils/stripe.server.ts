@@ -177,10 +177,9 @@ export const createCheckoutSessionURL = async ({
 
   if (user) {
     sessionConfig.customer = await getOrCreateCustomerId(user);
-  } else {
-    // Para usuarios anónimos, Stripe creará el customer después del checkout
-    sessionConfig.customer_creation = "always";
   }
+  // Para usuarios anónimos en modo subscription, Stripe crea customer automáticamente
+  // No necesitamos customer_creation ya que solo funciona en payment mode
 
   if (coupon) {
     sessionConfig.discounts = { coupon };
