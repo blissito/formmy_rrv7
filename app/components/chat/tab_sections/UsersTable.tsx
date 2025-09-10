@@ -163,7 +163,7 @@ export const UserRow = ({
       </div>
       
       {!isOwner && (
-        <div className="col-span-1">
+        <div className="col-span-1 grid place-items-center">
           <FloatingMenu
             items={menuItems}
             buttonClassName="text-2xl text-gray-600 hover:bg-gray-100 p-1 rounded-full"

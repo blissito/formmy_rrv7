@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiX, FiCheck, FiAlertCircle, FiLoader, FiInfo } from "react-icons/fi";
+import { FiX, FiCheck, FiAlertCircle, FiLoader } from "react-icons/fi";
 import Modal from "~/components/Modal";
 import { Button } from "~/components/Button";
 import { Input } from "../chat/common/Input";
@@ -241,24 +241,34 @@ export default function WhatsAppIntegrationModal({
       title={existingIntegration ? 'Editar integración de WhatsApp' : 'Conectar WhatsApp'}
       size="lg"
     >
-      <div className="space-y-6">
-        <div className="bg-blue-50 p-4 rounded-lg text-blue-700 text-sm flex items-start">
-          <FiInfo className="flex-shrink-0 mt-0.5 mr-2" />
-          <div>
-            <p className="font-medium">Información necesaria</p>
-            <p className="mt-1">
-              Para conectar con WhatsApp Business API, necesitas proporcionar las credenciales 
-              de tu cuenta de WhatsApp Business. Puedes encontrarlas en el{' '}
-              <a 
-                href="https://business.facebook.com/wa/manage/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
-              >
-                Administrador de WhatsApp Business
-              </a>.
-            </p>
+      <div className="space-y-6 mt-8">
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <img 
+              src="/assets/chat/whatsapp.svg" 
+              alt="WhatsApp" 
+              className="w-8 h-8"
+            />
+            <div>
+              <h3 className="font-medium text-dark">WhatsApp Business</h3>
+              <p className="text-sm text-metal">
+                Conecta tu chatbot con WhatsApp Business API
+              </p>
+            </div>
           </div>
+        </div>
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h4 className="font-medium text-dark mb-2">💡 Cómo obtener las credenciales</h4>
+          <ol className="text-sm text-metal space-y-1">
+            <li>1. Ve al <a href="https://business.facebook.com/wa/manage/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Administrador de WhatsApp Business</a></li>
+            <li>2. Selecciona tu aplicación o crea una nueva</li>
+            <li>3. En "API Setup", encuentra el "Phone Number ID"</li>
+            <li>4. Copia el "Access Token" (temporal o permanente)</li>
+            <li>5. Anota el "Business Account ID" desde la configuración</li>
+          </ol>
+          <p className="text-xs text-metal mt-2">
+            ⚠️ Guarda tus credenciales de forma segura. El access token permite el envío de mensajes.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -351,10 +361,10 @@ export default function WhatsAppIntegrationModal({
           <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-2">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               onClick={handleTestConnection}
-              disabled={isTesting || status === 'loading'}
-              className="w-full sm:w-auto"
+              isDisabled={isTesting || status === 'loading'}
+              className="w-full sm:w-auto mt-0"
             >
               {isTesting ? (
                 <>
@@ -368,23 +378,16 @@ export default function WhatsAppIntegrationModal({
             
             <Button
               type="submit"
-              variant="primary"
-              disabled={!testResult?.success || status === 'loading'}
-              className="w-full sm:w-auto"
+              isDisabled={!testResult?.success || status === 'loading'}
+              isLoading={status === 'loading'}
+              className="w-full sm:w-auto mt-0"
             >
-              {status === 'loading' ? (
-                <>
-                  <FiLoader className="animate-spin mr-2" />
-                  {existingIntegration ? 'Actualizando...' : 'Conectando...'}
-                </>
-              ) : existingIntegration ? (
-                'Actualizar integración'
-              ) : (
-                'Conectar WhatsApp'
-              )}
+              {existingIntegration ? 'Actualizar integración' : 'Conectar WhatsApp'}
             </Button>
           </div>
         </form>
+
+    
       </div>
     </Modal>
   );

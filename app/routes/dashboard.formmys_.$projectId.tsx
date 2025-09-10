@@ -591,16 +591,31 @@ const MessagesViewer = ({
         </nav>
         {/* List */}
         <div className="h-fit md:h-96 overflow-hidden overflow-y-scroll">
-          <AnimatePresence mode="popLayout">
-            {filtered.map((answer) => (
-              <Card
-                isCurrent={answer.id == current.id}
-                key={answer.id}
-                onClick={() => onChange(answer.id)}
-                answer={answer}
-              />
-            ))}
-            {active === 1 && !filtered.length && <EmptyFavorites />}
+          <AnimatePresence mode="wait" initial={false}>
+            {filtered.length > 0 ? (
+              <motion.div key="cards-list">
+                <AnimatePresence mode="popLayout">
+                  {filtered.map((answer) => (
+                    <Card
+                      isCurrent={answer.id == current.id}
+                      key={answer.id}
+                      onClick={() => onChange(answer.id)}
+                      answer={answer}
+                    />
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            ) : active === 1 ? (
+              <motion.div
+                key="empty-favorites"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+              >
+                <EmptyFavorites />
+              </motion.div>
+            ) : null}
           </AnimatePresence>
         </div>
       </section>

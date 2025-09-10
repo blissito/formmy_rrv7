@@ -30,10 +30,10 @@ export function InputRich({
   if (typeof window === "undefined") {
     return (
       <div
-        className={`rounded-lg border border-gray-300 bg-[#fff] p-2 shadow-sm ${className}`}
+        className={`rounded-lg border border-gray-300  p-2 bg-purple-400 shadow-sm ${className}`}
       >
         <div className="min-h-[100px] w-full p-2">
-          <p className="text-gray-400">{placeholder}</p>
+          <p className="text-gray-400 ">{placeholder}</p>
         </div>
       </div>
     );
@@ -93,7 +93,7 @@ export function InputRich({
         className={`rounded-lg border border-gray-300 bg-[#fff] p-2 shadow-sm ${className}`}
       >
         <div className="min-h-[100px] w-full p-2">
-          <p className="text-gray-400">{placeholder}</p>
+          <p className="text-lightgray">{placeholder}</p>
         </div>
       </div>
     );
@@ -154,8 +154,8 @@ export function InputRich({
 
         <EditorContent
           editor={editor}
-          style={{ border: "none" }}
-          className="min-h-[100px] w-full p-2 focus:border-none focus:ring-none focus:outline-none"
+          style={{ border: "none", minHeight: "100px" }}
+          className="min-h-[100px] h-full w-full p-2 focus:border-none focus:ring-none focus:outline-none [&_.ProseMirror]:min-h-[84px] [&_.ProseMirror]:h-full [&_.ProseMirror]:outline-none"
         />
       </div>
     </>

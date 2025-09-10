@@ -1,9 +1,10 @@
-import { Form, useFetcher } from "react-router";
+import { Form, Link, useFetcher } from "react-router";
 import { useLoaderData, useNavigation } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { twMerge } from "tailwind-merge";
 import useLocalStorage from "~/lib/hooks/useLocalStorage";
 import { searchStripeSubscriptions } from "~/utils/stripe.server";
+import Spinner from "~/components/Spinner";
 
 type SubscriptionResponse = {
   current_period_end?: number;
@@ -43,33 +44,63 @@ export default function DashboardPlan() {
         <h2 className="text-2xl md:text-3xl text-space-800 dark:text-white font-semibold mb-8">
           Administra tu plan
         </h2>
-        {user.plan === "PRO" ? (
+        {user.plan === "FREE" && (
             <>
-            <CardEnterprise
-            isLoading={navigation.state === "submitting"}
-            endDate={subscription.endDate}
-            planPrice={subscription.planPrice}
-          />
-               <CardFree
-            isLoading={navigation.state === "submitting"}
-            endDate={subscription.endDate}
-            planPrice={subscription.planPrice}
-          />
-          <CardPro
-            isLoading={navigation.state === "submitting"}
-            endDate={subscription.endDate}
-            planPrice={subscription.planPrice}
-          />
-          <CardStarter
-          isLoading={navigation.state === "submitting"}
-          endDate={subscription.endDate}
-          planPrice={subscription.planPrice}
-        />
-        <TaxesInfo/>
-        </>
-        ) : (
-          <CardFree />
-        )}
+              <CardFree />
+              <CardStarter
+                isLoading={navigation.state === "submitting"}
+                endDate={subscription.endDate}
+              />
+              <CardPro
+                isLoading={navigation.state === "submitting"}
+                endDate={subscription.endDate}
+              />
+              <CardEnterprise
+                isLoading={navigation.state === "submitting"}
+                endDate={subscription.endDate}
+              />
+              <TaxesInfo/>
+            </>
+          )}
+          {user.plan === "STARTER" && (
+            <>
+              <CardStarter
+                isLoading={navigation.state === "submitting"}
+                endDate={subscription.endDate}
+              />
+              <CardPro
+                isLoading={navigation.state === "submitting"}
+                endDate={subscription.endDate}
+              />
+              <CardEnterprise
+                isLoading={navigation.state === "submitting"}
+                endDate={subscription.endDate}
+              />
+              <TaxesInfo/>
+            </>
+          )}
+          {user.plan === "PRO" && (
+            <>
+              <CardPro
+                isLoading={navigation.state === "submitting"}
+                endDate={subscription.endDate}
+              />
+              <CardEnterprise
+                isLoading={navigation.state === "submitting"}
+                endDate={subscription.endDate}
+              />
+              <TaxesInfo/>
+            </>
+          )}
+          {user.plan === "ENTERPRISE" && (
+            <>
+              <CardEnterprise
+                isLoading={navigation.state === "submitting"}
+                endDate={subscription.endDate}
+              />
+              <TaxesInfo/>
+            </>
+          )}
     </section>
   );
 }
@@ -109,18 +140,17 @@ export const CardFree = () => {
           <h4 className="md:mt-0 mt-4 text-[32px] text-dark font-bold">
             $ 0 <span className="text-metal font-light text-base">/mes</span>
           </h4>
+          <Link to="/planes">
           <button
-            name="intent"
-            value="manage-stripe"
-            type="submit"
             className={twMerge(
-              "absolute bottom-0 left-0 mt-8 bg-brand-500 text-base font-normal h-[48px] rounded-full text-[#fff]  px-8 hover:scale-105 transition-all mb-1 block  disabled:bg-gray-600"
+              "absolute bottom-0 left-0 mt-8 bg-brand-500 text-base font-normal h-[48px] rounded-full text-[#fff]  px-8 hover:bg-brand-600 transition-all mb-1 block  disabled:bg-gray-600"
             )}
           >
             <span onClick={handleOnClickMonthlySuscription}>
               Mejorar mi plan &rarr;{" "}
             </span>
           </button>
+          </Link>
         </Form>
         <div className="md:mt-0 mt-4">
           <h4 className="font-semibold text-dark mb-2">
@@ -140,11 +170,9 @@ export const CardFree = () => {
   
   export const CardPro = ({
     isLoading,
-    planPrice,
     endDate,
   }: {
     isLoading?: boolean;
-    planPrice?: number;
     endDate?: number;
   }) => {
     return (
@@ -152,7 +180,7 @@ export const CardFree = () => {
         className="border border-outlines shadow-standard relative rounded-3xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
       >
           <img className="h-80 opacity-10 absolute bottom-0 right-0" src="/dash/pro.svg" alt="pro"/>
-        <Form method="post" className="min-w-[320px]  pb-16 md:pb-0 relative">
+        <Form method="post" action="/api/stripe" className="min-w-[320px]  pb-16 md:pb-0 relative">
           <img className="h-16" src="/dash/pro.svg" alt="pro"/>
         
           <h3 className="text-pro text-2xl font-semibold">
@@ -162,9 +190,9 @@ export const CardFree = () => {
             Ideal para tu negocio 
           </p>
           <h4 className="mt-4 md:mt-12 text-[32px] text-space-800 dark:text-white font-bold">
-            $ {planPrice}
+            $ 499  
             <span className="text-metal font-light text-base ml-2">
-              USD /mes
+              MXN /mes
             </span>
           </h4>
           <button
@@ -186,12 +214,12 @@ export const CardFree = () => {
           <p className="text-metal font-light my-2">
             Siguiente fecha de facturación{" "}
             <strong className="font-bold">
-              {new Date(endDate).toLocaleDateString("es-MX", {
+              {endDate ? new Date(endDate).toLocaleDateString("es-MX", {
                 weekday: "long",
                 year: "numeric",
                 month: "long",
                 day: "numeric",
-              })}
+              }) : "No disponible"}
             </strong>
             .
           </p>
@@ -223,11 +251,9 @@ export const CardFree = () => {
 
   export const CardEnterprise = ({
     isLoading,
-    planPrice,
     endDate,
   }: {
     isLoading?: boolean;
-    planPrice?: number;
     endDate?: number;
   }) => {
     return (
@@ -235,7 +261,7 @@ export const CardFree = () => {
         className="border border-outlines shadow-standard relative rounded-3xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
       >
           <img className="h-80 opacity-10 absolute bottom-0 right-0" src="/dash/enterprise.svg" alt="pro"/>
-        <Form method="post" className="min-w-[320px]  pb-16 md:pb-0 relative">
+        <Form method="post" action="/api/stripe" className="min-w-[320px]  pb-16 md:pb-0 relative">
           <img className="h-16" src="/dash/enterprise.svg" alt="pro"/>
         
           <h3 className="text-[#5FAFA8] text-2xl font-semibold">
@@ -245,9 +271,9 @@ export const CardFree = () => {
             Ideal para tu negocio 
           </p>
           <h4 className="mt-4 md:mt-12 text-[32px] text-space-800 dark:text-white font-bold">
-            $ {planPrice}
+           $ 1,499  
             <span className="text-metal font-light text-base ml-2">
-              USD /mes
+              MXN /mes
             </span>
           </h4>
           <button
@@ -269,12 +295,12 @@ export const CardFree = () => {
           <p className="text-metal font-light my-2">
             Siguiente fecha de facturación{" "}
             <strong className="font-bold">
-              {new Date(endDate).toLocaleDateString("es-MX", {
+              {endDate ? new Date(endDate).toLocaleDateString("es-MX", {
                 weekday: "long",
                 year: "numeric",
                 month: "long",
                 day: "numeric",
-              })}
+              }) : "No disponible"}
             </strong>
             .
           </p>
@@ -292,11 +318,15 @@ export const CardFree = () => {
             </p>
             <p>🪄 Mayor capacidad de entrenamiento para tu agente
             </p>
-            <p>🚀 Integraciones de Calendario, Weebhook, WhatsApp y más
+            <p>🚀 Integraciones enterprise
             </p>
-            <p>👩🏻‍🏫 Acceso a los top Models IA como Claude
+            <p>👩🏻‍🏫 Acceso a los top Models IA como 👩🏻‍🏫 GPT-5 Mini + Claude 3.5 Haiku
             </p>
+            <p>📊 Dashboard de analytics profesional
+              </p>
             <p>🪪 1,000 conversaciones de chat por mes
+            </p>
+            <p>🎧 Soporte prioritario
             </p>
           </div>
         </div>
@@ -306,11 +336,9 @@ export const CardFree = () => {
   
   export const CardStarter= ({
     isLoading,
-    planPrice,
     endDate,
   }: {
     isLoading?: boolean;
-    planPrice?: number;
     endDate?: number;
   }) => {
     return (
@@ -318,7 +346,7 @@ export const CardFree = () => {
         className="border border-outlines shadow-standard relative rounded-3xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
       >
       <img className="h-80 opacity-10 absolute bottom-0 right-0" src="/dash/starter.svg" alt="pro"/>
-        <Form method="post" className="min-w-[320px]  pb-16 md:pb-0 relative">
+        <Form method="post" action="/api/stripe" className="min-w-[320px]  pb-16 md:pb-0 relative">
           <img className="h-16" src="/dash/starter.svg" alt="pro"/>
           <h3 className="text-brand-500 dark:text-white text-2xl font-semibold">
             Starter 
@@ -327,9 +355,9 @@ export const CardFree = () => {
           Perfecto para ti y tu sitio web
           </p>
           <h4 className="mt-4 md:mt-12 text-[32px] text-space-800 dark:text-white font-bold">
-            $ {planPrice}
+          $ 149 
             <span className="text-metal font-light text-base ml-2">
-              USD /mes
+              MXN /mes
             </span>
           </h4>
           <button
@@ -351,12 +379,12 @@ export const CardFree = () => {
           <p className="text-metal font-light my-2">
             Siguiente fecha de facturación{" "}
             <strong className="font-bold">
-              {new Date(endDate).toLocaleDateString("es-MX", {
+              {endDate ? new Date(endDate).toLocaleDateString("es-MX", {
                 weekday: "long",
                 year: "numeric",
                 month: "long",
                 day: "numeric",
-              })}
+              }) : "No disponible"}
             </strong>
             .
           </p>
