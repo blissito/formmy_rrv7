@@ -299,8 +299,8 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
 
         
             {!isLimited && (
-                <Link to="new" id="new-formmy">
-                  <button className="h-10 w-[auto] md:min-w-[120px] flex gap-1 items-center bg-brand-500 py-3 px-6 rounded-full text-clear hover:ring hover:ring-brand-500 transition-all">
+                <Link to="new" >
+                  <button id="new-formmy" className="h-10 w-[auto] md:min-w-[120px] flex gap-1 items-center bg-brand-500 py-3 px-6 rounded-full text-clear hover:ring hover:ring-brand-500 transition-all">
                     + <span className="">Formmy</span>
                   </button>
                 </Link>

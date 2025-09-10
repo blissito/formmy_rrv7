@@ -342,6 +342,7 @@ export const ChatCard = ({
       ) : (
         // Normal link for accessible chatbots
         <Link
+          id="chatbot_detail"
           to={`/dashboard/chat/${chatbot.slug}`}
           className="group relative overflow-hidden transition-all hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] border border-outlines bg-white rounded-2xl w-full h-full block"
         >
