@@ -1,12 +1,9 @@
 ---
 title: "AgentEngine V0: Cuando la Simplicidad Gana"
-date: "2024-09-16"
-author: "Héctor Bliss"
-category: "Technical"
-tags: ["AI", "LlamaIndex", "Agents", "TypeScript", "Architecture"]
 excerpt: "Cómo construimos un motor de agentes funcional en 231 líneas, derrotando a implementaciones de 2000+ líneas con programación funcional pura"
-image: "https://images.pexels.com/photos/943096/pexels-photo-943096.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop"
-highlight: "true"
+date: "2024-09-16"
+tags: ["AI", "LlamaIndex", "Agents", "TypeScript"]
+image: "/blogposts/cursos.webp"
 ---
 
 # AgentEngine V0: Cuando la Simplicidad Gana
