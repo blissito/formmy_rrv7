@@ -8,7 +8,7 @@ WORKDIR /app
 # Install dependencies
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
-RUN npm ci --frozen-lockfile
+RUN npm ci --frozen-lockfile --legacy-peer-deps
 
 # Copy source code
 COPY . .
