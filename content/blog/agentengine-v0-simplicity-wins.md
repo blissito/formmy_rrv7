@@ -1,6 +1,6 @@
 ---
 title: "AgentEngine V0: Cuando la Simplicidad Gana"
-date: "2025-09-16"
+date: "2024-09-16"
 author: "Héctor Bliss"
 category: "Technical"
 tags: ["AI", "LlamaIndex", "Agents", "TypeScript", "Architecture"]
