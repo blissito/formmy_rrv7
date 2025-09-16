@@ -183,15 +183,15 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     if (stream) {
       setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
       
-      // Usar siempre el endpoint interno unificado (tanto para preview como producción)
+      // 🚀 Usar endpoint moderno LlamaIndex V2 con AgentEngine_v0 (RECOMPILED)
       {
         const formData = new FormData();
-        formData.append("intent", "preview_chat");
+        formData.append("intent", "chat");
         formData.append("chatbotId", chatbot.id);
         formData.append("message", currentInput);
         formData.append("sessionId", sessionIdRef.current);
         formData.append("conversationHistory", JSON.stringify(updatedMessages));
-        formData.append("stream", "false"); // 🚨 STREAMING DISABLED - Tools compatibility fix
+        formData.append("stream", "false"); // AgentEngine_v0 non-streaming por simplicidad
 
         // Timeout de seguridad para evitar loading infinito
         const timeoutId = setTimeout(() => {
@@ -199,7 +199,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           inputRef.current?.focus();
         }, 30000);
 
-        fetch("/api/v1/chatbot", {
+        fetch("/api/v0/chatbot", {
           method: "POST",
           body: formData,
         })
@@ -312,17 +312,17 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         });
       }
     } else {
-      // Sin streaming - usar siempre el endpoint interno unificado
+      // 🚀 Sin streaming - usar endpoint moderno LlamaIndex V2 con AgentEngine_v0
       {
         const formData = new FormData();
-        formData.append("intent", "preview_chat");
+        formData.append("intent", "chat");
         formData.append("chatbotId", chatbot.id);
         formData.append("message", currentInput);
         formData.append("sessionId", sessionIdRef.current);
         formData.append("conversationHistory", JSON.stringify(updatedMessages));
         formData.append("stream", "false");
 
-        fetch("/api/v1/chatbot", {
+        fetch("/api/v0/chatbot", {
           method: "POST",
           body: formData,
         })

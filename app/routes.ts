@@ -102,11 +102,9 @@ export default [
   route("api/formmy", "routes/api.formmy.tsx"),
 
   // API v1 routes
-  route("api/v1/chatbot", "routes/api.v1.chatbot.ts"),
 
-  // API LlamaIndex V2 (Clean & Modularized)
-  route("api/llamaindex/v2", "routes/api.llamaindex.v2.ts"),
-  // =========================================================
+  // API v0 routes - Motor AgentEngine_v0
+  route("api/v0/chatbot", "routes/api.v0.chatbot.ts"),
   route("api/v1/messages", "routes/api.v1.messages.ts"),
   route("api/v1/apikey", "routes/api.v1.apikey.ts"),
   route("api/v1/context", "routes/api.v1.context.ts"),

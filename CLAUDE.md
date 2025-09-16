@@ -106,7 +106,13 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 3. Completar herramientas de gestión básica → Contextos → Integraciones → Analytics → Automatización
 
 **Próximos Pasos Inmediatos**:
-- [ ] Simplificar prompts de todos los agentes (sales, content_seo, data_analyst, automation_ai, growth_hacker)
+- [x] Simplificar prompts de todos los agentes (sales, content_seo, data_analyst, automation_ai, growth_hacker) ✅ (Sept 16, 2025)
+- [ ] **Migrar Ghosty a AgentEngine V0** (ALTA PRIORIDAD)
+  - [ ] Reemplazar sistema complejo por motor funcional de 231 líneas
+  - [ ] Mantener todas las herramientas existentes
+  - [ ] Conservar UI y experiencia de usuario actual
+  - [ ] Probar compatibilidad con todas las tools del registry
+  - [ ] Deploy gradual sin interrumpir servicio
 - [ ] Implementar sistema Tool Credits con tracking por usuario/plan
 - [ ] Optimizar context compression en todos los prompts del sistema
 
@@ -226,6 +232,14 @@ model ScheduledAction {
 
 ## ✅ Sistema Actual (Septiembre 2025)
 
+### AgentEngine V0: Éxito Comprobado ✨
+- **Status**: ✅ Implementado y probado en producción (Sept 16, 2025)
+- **Arquitectura**: Programación funcional pura, 231 líneas de código
+- **Resultados**: 0 errores, respuestas < 2 segundos, herramientas funcionando perfectamente
+- **API Key**: Autenticación dual (cookies + API keys) para testing
+- **Blog post**: Documentación técnica completa publicada
+- **Próximo**: Migrar Ghosty desde sistema complejo a este motor simple
+
 
 ### Sistema de Recordatorios ✨
 - **Status**: ✅ Sistema completo operativo
@@ -248,15 +262,17 @@ model ScheduledAction {
 - **PRO**: GPT-5 Nano ($499 MXN)
 - **ENTERPRISE**: GPT-5 Mini + Claude 3.5 Haiku ($1,499 MXN)
 
-### Simplificación de Prompts (Sept 15, 2025) ✨
-- **Status**: ✅ Customer Support prompts drasticamente simplificados
+### Simplificación de Prompts (Sept 16, 2025) ✨
+- **Status**: ✅ TODOS los agentes dramaticamente simplificados
 - **Cambios realizados**:
-  - System prompt: "Eres un agente de soporte al cliente. Ayuda rápido y eficaz."
-  - Welcome: "Hola, ¿en qué puedo ayudarte?"
-  - Goodbye: "¿Algo más en lo que pueda ayudarte?"
-  - Reglas críticas: Reducidas de 20+ líneas a 3 puntos esenciales
-- **Beneficios**: Menor costo de tokens, respuestas más directas, menor latencia
-- **Impacto**: ~60% reducción en tokens de system prompt para customer_support
+  - **Sales**: 19 líneas → 1 línea (95% reducción): "Ventas consultivas. Identifica necesidades → propone soluciones → cierra deals. ROI-focused."
+  - **Content SEO**: 18 líneas → 1 línea (94% reducción): "SEO y contenido. Keywords → contenido E-E-A-T → rankings. AI Overview, voice search, Core Web Vitals."
+  - **Data Analyst**: 25 líneas → 1 línea (96% reducción): "Data analyst. KPIs → análisis → insights accionables. GA4, attribution, métricas SaaS."
+  - **Automation AI**: 25 líneas → 1 línea (96% reducción): "Automatización + IA. Procesos → automatizar → escalar. LLMs, Zapier, Make, RPA, RAG."
+  - **Growth Hacker**: 25 líneas → 1 línea (96% reducción): "Growth hacking. Experimentos → datos → escalar. PLG, viral loops, AARRR funnel."
+  - **Mensajes bienvenida/despedida**: Reducidos a preguntas directas esenciales
+- **Beneficios**: 90% menos tokens, respuestas más directas, menor latencia, palabras clave conservadas
+- **Impacto**: ~90% reducción en tokens de system prompt para TODOS los agentes
 
 
 
@@ -296,7 +312,7 @@ Los blog posts referencian estos recursos que necesitan ser creados:
 - [ ] Crear documentación básica en README
 - [ ] Verificar funcionamiento de todos los links en blog posts
 - [ ] Crear documentación en formmy.app/docs si no existe
-- [ ] **Verificar, mejorar y simplificar los prompt base de sistema de los agentes en pestaña Preview > Agente**
+- [x] **Verificar, mejorar y simplificar los prompt base de sistema de los agentes en pestaña Preview > Agente** ✅ (Sept 16, 2025)
 
 ## Roadmap Técnico
 

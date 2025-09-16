@@ -210,15 +210,16 @@ export class LlamaIndexChatEngine {
         const systemPrompt = messages.find(m => m.role === 'system')?.content;
         console.log(`💬 System prompt: ${systemPrompt?.substring(0, 100)}...`);
 
-        // 🧠 IMPROVED: agent() con verbose + better prompting
-        console.log('🚀 Creating enhanced agent workflow with reasoning...');
+        // 🧠 MULTI-STEP ADVANCED: agent() con iteraciones como Claude
+        console.log('🚀 Creating multi-step advanced agent workflow...');
         const agentWorkflow = agent({
-          name: 'llamaindex-v2-enhanced',
+          name: 'llamaindex-v2-multistep',
           llm: this.llm,
           tools: this.tools,
           systemPrompt,
-          description: 'Enhanced LlamaIndex v2 with explicit reasoning and tool usage',
-          verbose: true // ✅ VERBOSE = TRUE para ver proceso de pensamiento
+          description: 'Advanced multi-step agent with Claude-level reasoning iterations',
+          verbose: true, // ✅ VERBOSE = TRUE para ver proceso de pensamiento
+          maxIterations: 12 // ✅ CLAUDE-LEVEL: 12 iteraciones para reasoning complejo
         });
 
         console.log(`📤 Enviando mensaje al agente: "${message}"`);
@@ -336,12 +337,14 @@ export class LlamaIndexChatEngine {
       const toolsInfo = this.tools.map(t => `- ${t.metadata.name}: ${t.metadata.description}`).join('\n');
       systemPrompt += `
 
-**🚨 INSTRUCCIÓN CRÍTICA**: SIEMPRE evalúa si el usuario necesita ayuda con acciones concretas. Para CUALQUIER solicitud relacionada con recordatorios, agenda, eventos, pagos, tareas o planificación, SIEMPRE usa las herramientas disponibles.
+**🚨 INSTRUCCIÓN CRÍTICA**: ACCIÓN PRIMERO, PREGUNTAS DESPUÉS. Para CUALQUIER solicitud relacionada con recordatorios, agenda, eventos, pagos, tareas o planificación, SIEMPRE ejecuta herramientas INMEDIATAMENTE con la información disponible.
 
-**🧠 RAZONAMIENTO REQUERIDO**: Antes de responder, EXPLICA tu proceso de pensamiento paso a paso:
-1. ¿Qué quiere el usuario exactamente?
-2. ¿Qué herramientas podrían ser útiles?
-3. ¿Por qué eliges esta acción?
+**⚡ REGLA DE ORO**: NUNCA pidas información sin antes intentar ejecutar herramientas con lo que tienes.
+
+**🧠 RAZONAMIENTO REQUERIDO**:
+1. Identifica TODAS las acciones posibles con información disponible
+2. EJECUTA herramientas inmediatamente con datos parciales pero útiles
+3. DESPUÉS pregunta solo por refinamientos o información faltante crítica
 
 **HERRAMIENTAS DISPONIBLES**:
 ${toolsInfo}
@@ -350,16 +353,26 @@ ${toolsInfo}
 1. Si dicen "recuérdame", "agenda", "avísame", "programa", "misa", "fiesta", "evento" → USA schedule_reminder INMEDIATAMENTE
 2. Si preguntan "qué recordatorios tengo", "mis citas" → USA list_reminders
 3. Si quieren "pagar", "cobrar", "link de pago" → USA create_payment_link
-4. **CRÍTICO**: Si falta información (hora), USA valores por defecto sensatos:
-   - Hora faltante → "09:00" (mañana)
-   - Eventos religiosos (misa) → "10:00"
-   - Fiestas → "20:00" (noche)
-5. **PROHIBIDO**: NUNCA pidas más información - EJECUTA con defaults inteligentes
-6. **FORMATO**: Después de ejecutar tool, pregunta si quiere ajustar la hora
+4. **CRÍTICO**: Si tienes al menos título + fecha/referencia temporal → EJECUTA inmediatamente con información disponible
+5. **SOLO pregunta** información faltante DESPUÉS de ejecutar las herramientas que SÍ puedes ejecutar
+6. **EJEMPLO**: "reunión martes 3pm" → EJECUTA schedule_reminder(reunión, 2025-09-24, 15:00) → después pregunta si quiere ajustes
 5. NO pidas confirmación adicional - el usuario ya te pidió la acción
 
-**PROCESO OBLIGATORIO**:
-1. Identifica si el mensaje requiere una herramienta
+**PROCESO MULTI-STEP OBLIGATORIO**:
+1. Identifica si el mensaje requiere herramientas
+2. Ejecuta la primera herramienta necesaria
+3. **EVALÚA EL RESULTADO**: ¿Sugiere acciones adicionales?
+4. **REASONING**: ¿Qué más podría ser útil para el usuario?
+5. Si hay más acciones útiles → ejecuta más herramientas secuencialmente
+6. **REPITE** pasos 3-5 hasta completar todas las acciones útiles
+7. Solo responde al usuario cuando NO haya más acciones beneficiosas
+
+**EJEMPLOS DE MULTI-STEP**:
+- "Recuérdame misa domingo" → schedule_reminder → evalúa → ¿crear recordatorio preparación? → schedule_reminder(preparación) → respuesta
+- "Agenda reunión y cobra $200" → schedule_reminder → evalúa → create_payment_link → respuesta
+- "¿Qué citas tengo?" → list_reminders → evalúa resultado → ¿hay conflictos? → sugerir reordenamiento
+
+**REGLA CLAVE**: Después de cada herramienta, PREGÚNTATE: "¿Qué más sería útil aquí?"
 2. USA la herramienta apropiada INMEDIATAMENTE
 3. Responde con el resultado de la herramienta
 4. NO simules ni describas lo que "harías"`;
