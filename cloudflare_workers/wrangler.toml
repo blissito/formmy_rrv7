@@ -1,0 +1,32 @@
+name = "formmy-whatsapp-bridge"
+main = "worker.js"
+compatibility_date = "2025-01-15"
+
+# Configuración de desarrollo
+[env.development]
+name = "formmy-whatsapp-bridge-dev"
+
+[env.development.vars]
+ENVIRONMENT = "development"
+FLOWISE_URL = "http://localhost:3000"
+FLOWISE_CHATFLOW_ID = "your-dev-chatflow-id"
+
+# Configuración de producción
+[env.production]
+name = "formmy-whatsapp-bridge"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+FLOWISE_URL = "https://formmy-tasks.fly.dev"
+FLOWISE_CHATFLOW_ID = "1a7b3b45-e9b2-45ec-a2ed-f1eb293f0271"
+
+# Las siguientes variables se configuran como secrets:
+# wrangler secret put FLOWISE_API_KEY --env production
+# wrangler secret put WHATSAPP_TOKEN --env production
+# wrangler secret put PHONE_NUMBER_ID --env production
+# wrangler secret put VERIFY_TOKEN --env production
+
+# Configuración de rutas personalizadas (opcional)
+# [[routes]]
+# pattern = "your-domain.com/whatsapp/*"
+# zone_name = "your-domain.com"

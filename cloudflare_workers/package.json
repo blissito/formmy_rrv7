@@ -1,0 +1,33 @@
+{
+  "name": "formmy-whatsapp-bridge",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker bridge between WhatsApp Business and Flowise",
+  "main": "worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "./deploy.sh production",
+    "deploy:dev": "./deploy.sh development",
+    "deploy:quick": "wrangler deploy --env production",
+    "deploy:secrets": "node update-secrets.js",
+    "tail": "wrangler tail --env production",
+    "tail:dev": "wrangler tail --env development",
+    "test": "node test-local.js",
+    "config": "node config-manager.js",
+    "config:list": "node config-manager.js list",
+    "config:current": "node config-manager.js current",
+    "config:set": "node config-manager.js set",
+    "config:add": "node config-manager.js add"
+  },
+  "keywords": [
+    "whatsapp",
+    "flowise",
+    "cloudflare-workers",
+    "webhook",
+    "chatbot"
+  ],
+  "author": "Formmy",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
