@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFetcher, useRevalidator } from "react-router";
 import { Button } from "~/components/Button";
+import Modal from "~/components/Modal";
 
 interface StripeIntegrationModalProps {
   isOpen: boolean;
@@ -82,20 +83,12 @@ export default function StripeIntegrationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-dark">
-            {existingIntegration ? "Configurar Stripe" : "Conectar Stripe"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-metal hover:text-dark"
-            type="button"
-          >
-            ✕
-          </button>
-        </div>
+    <Modal
+      onClose={onClose}
+      title={existingIntegration ? "Configurar Stripe" : "Conectar Stripe"}
+     
+    >
+      <div className="space-y-6 mt-8 min-w-[480px]">
 
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-4">
@@ -105,103 +98,15 @@ export default function StripeIntegrationModal({
               className="w-8 h-8"
             />
             <div>
-              <h3 className="font-medium text-dark">Stripe</h3>
+              <h3 className=" text-metal">Stripe</h3>
               <p className="text-sm text-metal">
                 Genera links de pago automáticamente
               </p>
             </div>
           </div>
         </div>
-
-        <fetcher.Form method="post" action="/api/v1/chatbot" onSubmit={handleSubmit} className="space-y-4">
-          <input type="hidden" name="intent" value={existingIntegration ? "update_integration" : "create_integration"} />
-          <input type="hidden" name="chatbotId" value={chatbotId} />
-          <input type="hidden" name="platform" value="STRIPE" />
-          {existingIntegration && (
-            <input type="hidden" name="integrationId" value={existingIntegration.id} />
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-dark mb-2">
-              Secret Key (Requerida)
-            </label>
-            <input
-              type="password"
-              name="stripeApiKey"
-              value={formData.stripeApiKey}
-              onChange={(e) => handleInputChange("stripeApiKey", e.target.value)}
-              placeholder="sk_test_..."
-              className="w-full px-3 py-2 border border-outlines rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              required
-            />
-            <p className="text-xs text-metal mt-1">
-              Tu clave secreta de Stripe (comienza con sk_)
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-dark mb-2">
-              Publishable Key (Opcional)
-            </label>
-            <input
-              type="text"
-              name="stripePublishableKey"
-              value={formData.stripePublishableKey}
-              onChange={(e) => handleInputChange("stripePublishableKey", e.target.value)}
-              placeholder="pk_test_..."
-              className="w-full px-3 py-2 border border-outlines rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-            <p className="text-xs text-metal mt-1">
-              Tu clave pública de Stripe (comienza con pk_)
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-dark mb-2">
-              Webhook Secret (Opcional)
-            </label>
-            <input
-              type="password"
-              name="stripeWebhookSecret"
-              value={formData.stripeWebhookSecret}
-              onChange={(e) => handleInputChange("stripeWebhookSecret", e.target.value)}
-              placeholder="whsec_..."
-              className="w-full px-3 py-2 border border-outlines rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-            <p className="text-xs text-metal mt-1">
-              Para validar webhooks de Stripe (comienza con whsec_)
-            </p>
-          </div>
-
-          {fetcher.data?.error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-700">{fetcher.data.error}</p>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="secondary"
-              className="flex-1 mt-0"
-              isDisabled={isLoading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 mt-0"
-              isDisabled={isLoading || !formData.stripeApiKey}
-              isLoading={isLoading}
-            >
-              {existingIntegration ? "Actualizar" : "Conectar"}
-            </Button>
-          </div>
-        </fetcher.Form>
-
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-dark mb-2">💡 Cómo obtener las claves</h4>
+        <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+          <h4 className=" text-metal mb-2">💡 Cómo obtener las claves</h4>
           <ol className="text-sm text-metal space-y-1">
             <li>1. Ve a tu dashboard de Stripe</li>
             <li>2. En el menú lateral, busca "Developers" → "API keys"</li>
@@ -212,7 +117,95 @@ export default function StripeIntegrationModal({
             ⚠️ Usa claves de prueba (test) mientras desarrollas
           </p>
         </div>
+        <fetcher.Form method="post" action="/api/v1/chatbot" onSubmit={handleSubmit} className="space-y-4">
+          <input type="hidden" name="intent" value={existingIntegration ? "update_integration" : "create_integration"} />
+          <input type="hidden" name="chatbotId" value={chatbotId} />
+          <input type="hidden" name="platform" value="STRIPE" />
+          {existingIntegration && (
+            <input type="hidden" name="integrationId" value={existingIntegration.id} />
+          )}
+
+          <div>
+            <label className="block text-sm  text-metal mb-2">
+              Secret Key (Requerida)
+            </label>
+            <input
+              type="password"
+              name="stripeApiKey"
+              value={formData.stripeApiKey}
+              onChange={(e) => handleInputChange("stripeApiKey", e.target.value)}
+              placeholder="sk_test_..."
+              className="w-full text-dark px-3 h-12 border border-outlines rounded-xl focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-transparent"
+              required
+            />
+            <p className="text-xs text-irongray mt-1">
+              Tu clave secreta de Stripe (comienza con sk_)
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm  text-metal mb-2">
+              Publishable Key (Opcional)
+            </label>
+            <input
+              type="text"
+              name="stripePublishableKey"
+              value={formData.stripePublishableKey}
+              onChange={(e) => handleInputChange("stripePublishableKey", e.target.value)}
+              placeholder="pk_test_..."
+              className="w-full text-dark px-3 h-12 border border-outlines rounded-xl focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-transparent"
+            />
+            <p className="text-xs text-irongray mt-1">
+              Tu clave pública de Stripe (comienza con pk_)
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm  text-metal mb-2">
+              Webhook Secret (Opcional)
+            </label>
+            <input
+              type="password"
+              name="stripeWebhookSecret"
+              value={formData.stripeWebhookSecret}
+              onChange={(e) => handleInputChange("stripeWebhookSecret", e.target.value)}
+              placeholder="whsec_..."
+              className="w-full text-dark px-3 h-12 border border-outlines rounded-xl focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-transparent"
+            />
+            <p className="text-xs text-irongray mt-1">
+              Para validar webhooks de Stripe (comienza con whsec_)
+            </p>
+          </div>
+
+          {fetcher.data?.error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-sm text-red-700">{fetcher.data.error}</p>
+            </div>
+          )}
+
+          <div className="flex w-full justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              onClick={onClose}
+              variant="secondary"
+              className="mx-0 mt-0"
+              isDisabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              className="mx-0 mt-0"
+              isDisabled={isLoading || !formData.stripeApiKey}
+              isLoading={isLoading}
+            >
+              {existingIntegration ? "Actualizar" : "Conectar"}
+            </Button>
+          </div>
+        </fetcher.Form>
+
+       
       </div>
-    </div>
+    </Modal>
   );
 }

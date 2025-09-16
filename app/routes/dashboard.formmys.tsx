@@ -299,8 +299,8 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
 
         
             {!isLimited && (
-                <Link to="new">
-                  <button className="h-10 w-[auto] md:min-w-[120px] flex gap-1 items-center bg-brand-500 py-3 px-6 rounded-full text-clear hover:ring hover:ring-brand-500 transition-all">
+                <Link to="new" >
+                  <button id="new-formmy" className="h-10 w-[auto] md:min-w-[120px] flex gap-1 items-center bg-brand-500 py-3 px-6 rounded-full text-clear hover:ring hover:ring-brand-500 transition-all">
                     + <span className="">Formmy</span>
                   </button>
                 </Link>
@@ -435,6 +435,7 @@ export const ProjectCard = ({
         ease: [0.25, 0.1, 0.25, 1]
       }}
       className="col-span-1"
+      id="formmy-card-detail"
     >
       <Link
         to={id ?? ""}

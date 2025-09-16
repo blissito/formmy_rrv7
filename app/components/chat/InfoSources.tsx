@@ -163,7 +163,7 @@ export const InfoSources = ({
 
         {mode === "create" && (
           <Button
-            className="mt-6 "
+            className="mt-6 flex items-center justify-center "
             onClick={onCreateChatbot}
             isDisabled={
               totalWeight > maxWeight ||

@@ -10,6 +10,38 @@
   --secondary: #9da3ae;
 }
 
+/* TipTap Placeholder Styles */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror .is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+/* TipTap Editor Height Fix */
+.ProseMirror {
+  min-height: 84px;
+  cursor: text;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+.ProseMirror p {
+  margin: 0;
+  min-height: 1.2em;
+}
+
 html:not(.dark) {
   background-color: white;
 }

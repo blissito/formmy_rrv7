@@ -1,5 +1,5 @@
 ---
-title: "¡Revolucionamos Formmy! Lanzamiento 8 de Septiembre 2025"
+title: "¡Revolucionamos Formmy! Lanzamiento 13 de Octubre 2025"
 excerpt: "Descubre las innovadoras características que llegarán a Formmy, incluyendo un nuevo dashboard, Ghosty tu asistente virtual, y potentes chatbots IA para tu sitio web."
 date: "2025-08-20"
 tags: ["Lanzamiento", "Novedades", "IA", "Ghosty", "Dashboard"]
@@ -11,7 +11,7 @@ highlight: "main"
 
 # La Revolución de Formmy llega el 8 de Septiembre
 
-Estamos emocionados de presentarte la mayor actualización en la historia de Formmy. El 8 de septiembre, lanzaremos una nueva versión que transformará completamente cómo interactúas con nuestra plataforma.
+Estamos emocionados de presentarte la mayor actualización en la historia de Formmy. El 13 de octubre, lanzaremos una nueva versión que transformará completamente cómo interactúas con nuestra plataforma.
 
 ## 🔥 Novedades Principales
 
@@ -37,7 +37,7 @@ Estamos emocionados de presentarte la mayor actualización en la historia de For
 - Totalmente responsive
 
 ## 📅 Calendario del Lanzamiento
-- **1 de Septiembre**: Acceso anticipado para usuarios premium
-- **8 de Septiembre**: Lanzamiento general
+- **13 de Octubre**: Acceso anticipado para usuarios premium
+- **3 de Noviembre**: Lanzamiento general
 
 ¡Prepárate para una experiencia completamente nueva con Formmy! El futuro de los formularios inteligentes está a punto de comenzar.

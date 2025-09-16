@@ -39,7 +39,7 @@ export const GhostyCompactInput = ({
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} id="ghosty-compact-input">
       <div className={cn(
         "border border-outlines rounded-full w-full h-14 overflow-hidden flex justify-between items-center px-3",
         "transition-all duration-300 hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-500/10",
@@ -60,6 +60,7 @@ export const GhostyCompactInput = ({
           disabled={isLoading}
         />
         <Button 
+        id="ghosty-compact-input"
           className={cn(
             "h-10 mt-0",
             { "opacity-50 cursor-not-allowed": isLoading }

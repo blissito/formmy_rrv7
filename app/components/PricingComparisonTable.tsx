@@ -161,7 +161,7 @@ export function PricingComparisonTable() {
       isIntegration: false
     },
     { 
-      name: "Analytics", 
+      name: "Analytics (Proximamente)", 
       key: "analytics",
       description: "Análisis de tus conversaciones",
       isSectionHeader: false,

@@ -329,6 +329,7 @@ export default function Detail() {
                 </AnimatePresence>
                 {isEditing ? (
                   <button 
+    
                     onClick={() => {
                       setIsEditing(false);
                       setProjectName(project.name); // Reset to original name
@@ -471,7 +472,7 @@ export const SearchBar = ({
           name="search"
         />
       </div>
-      <Link reloadDocument to={`/api/download/${projectId}.csv`}>
+      <Link  reloadDocument to={`/api/download/${projectId}.csv`}>
         <Button
           onClick={() => {
             set(true);
@@ -483,6 +484,7 @@ export const SearchBar = ({
           name="intent"
           value="download_all"
           type="submit"
+          id="formmy_download"
         >
           <DownloadIcon className="w-7 h-7" />
         </Button>
@@ -491,9 +493,10 @@ export const SearchBar = ({
         {userPermissions?.update ? (
           <Link
             to={`/dashboard/formmys/${projectId}/edition`}
-            className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
           >
+            <button id="formmy_edition" className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines">
             <EditIcon className="w-7 h-7" />
+            </button>
           </Link>
         ) : (
           <DisabledButton icon={<FiEdit3 />} />
@@ -501,10 +504,11 @@ export const SearchBar = ({
         
         {userPermissions?.read ? (
           <Link
-            className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
             to={`/dashboard/formmys/${projectId}/code`}
           >
+            <button id="formmy_code" className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines">
             <CodeIcon className="text-metal w-7 h-7" />
+            </button>
           </Link>
         ) : (
           <DisabledButton icon={<BsCodeSlash />} />
@@ -514,9 +518,10 @@ export const SearchBar = ({
           <Link
             prefetch="intent"
             to={`/dashboard/formmys/${projectId}/settings`}
-            className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines"
           >
+            <button id="formmy_settings" className="text-2xl hover:bg-[#F6F6FA] bg-transparent text-metal w-10 h-10 grid place-content-center rounded-lg border border-outlines">
             <FiSettings className="text-metal" />
+            </button>
           </Link>
         ) : (
           <DisabledButton icon={<FiSettings />} />
@@ -587,16 +592,31 @@ const MessagesViewer = ({
         </nav>
         {/* List */}
         <div className="h-fit md:h-96 overflow-hidden overflow-y-scroll">
-          <AnimatePresence mode="popLayout">
-            {filtered.map((answer) => (
-              <Card
-                isCurrent={answer.id == current.id}
-                key={answer.id}
-                onClick={() => onChange(answer.id)}
-                answer={answer}
-              />
-            ))}
-            {active === 1 && !filtered.length && <EmptyFavorites />}
+          <AnimatePresence mode="wait" initial={false}>
+            {filtered.length > 0 ? (
+              <motion.div key="cards-list">
+                <AnimatePresence mode="popLayout">
+                  {filtered.map((answer) => (
+                    <Card
+                      isCurrent={answer.id == current.id}
+                      key={answer.id}
+                      onClick={() => onChange(answer.id)}
+                      answer={answer}
+                    />
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            ) : active === 1 ? (
+              <motion.div
+                key="empty-favorites"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+              >
+                <EmptyFavorites />
+              </motion.div>
+            ) : null}
           </AnimatePresence>
         </div>
       </section>

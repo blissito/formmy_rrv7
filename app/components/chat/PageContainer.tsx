@@ -303,6 +303,7 @@ export const ChatCard = ({
         ease: [0.25, 0.1, 0.25, 1],
       }}
       className="col-span-1"
+      id="chatbot_detail"
     >
 {chatbot.canAccess === false ? (
         // Show as disabled div with Pro upgrade for blocked chatbots  
@@ -341,6 +342,7 @@ export const ChatCard = ({
       ) : (
         // Normal link for accessible chatbots
         <Link
+          id="chatbot_detail"
           to={`/dashboard/chat/${chatbot.slug}`}
           className="group relative overflow-hidden transition-all hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] border border-outlines bg-white rounded-2xl w-full h-full block"
         >
@@ -623,6 +625,7 @@ export const TabSelector = ({
       >
         {tabs.map((tab, index) => (
           <TabButton
+            id={`tab_${tab}`}
             key={tab}
             ref={(el: HTMLButtonElement | null) =>
               (tabRefs.current[index] = el)

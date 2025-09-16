@@ -1,13 +1,16 @@
-import { Form } from "react-router";
+import { useFetcher } from "react-router";
 import { Button } from "./Button";
 import { cn } from "~/lib/utils";
+import Spinner from "./Spinner";
 
 export interface Plan {
   name: string;
   description: string;
   price: string;
   priceNote: string;
-  button: React.ReactNode;
+  buttonText: string;
+  buttonAction?: string;
+  intent?: string;
   arr?: string;
   arrClass?: string;
   includes: string[];
@@ -23,7 +26,9 @@ export const plans: Plan[] = [
     description: "Perfecto para empezar",
     price: "$0",
     priceNote: "/mes",
-    button: <Form method="post" action="/api/login"><Button type="submit" name="intent" value="google-login" action="/api/login" className="w-full bg-white hover:bg-white/90 text-[#7574D6] font-bold rounded-full py-3  mt-6">¡Empieza gratis!</Button></Form>,
+    buttonText: "¡Empieza gratis!",
+    buttonAction: "/api/login",
+    intent: "google-login",
     arrClass: "text-white underline underline-offset-4 decoration-2 decoration-white",
     includes: [
       "📋 Hasta 3 formularios con respuestas ilimitadas",
@@ -31,7 +36,6 @@ export const plans: Plan[] = [
       "🤖 Chatbot por 30 días",
     ],
     highlight: true,
-
     cardClass: "bg-[#7574D6] text-white border-none shadow-xl",
     arrBoxClass: "bg-[#7574D6] text-white",
   },
@@ -40,7 +44,9 @@ export const plans: Plan[] = [
     description: "La opción entrepreneur",
     price: "$149",
     priceNote: "/mes",
-    button: <Button className="w-full bg-brand-500 hover:bg-brand-600 text-clear font-bold rounded-full py-3  mt-6">¡Empieza ahora!</Button>,
+    buttonText: "¡Empieza ahora!",
+    buttonAction: "/api/stripe",
+    intent: "starter_plan",
     arr: "Ahorra 10% al pagar anualmente",
     arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-brand-600",
     includes: [
@@ -62,7 +68,9 @@ export const plans: Plan[] = [
     description: "El plan más completo",
     price: "$499",
     priceNote: "/mes",
-    button: <Button className="w-full bg-bird hover:bg-[#E5C059] text-dark font-bold rounded-full py-3  mt-6">¡Hazte imparable con Pro!</Button>,
+    buttonText: "¡Hazte imparable con Pro!",
+    buttonAction: "/api/stripe",
+    intent: "pro_plan",
     arr: "Ahorra 15% al pagar anualmente",
     arrClass: "text-[#DAB23F] underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
     includes: [
@@ -86,9 +94,11 @@ export const plans: Plan[] = [
     description: "Solución corporativa",
     price: "$1,499",
     priceNote: "/mes",
-    button: <Button className="w-full bg-cloud hover:bg-[#5FAFA8] text-dark font-bold rounded-full py-3  mt-6">¡Potencia total!</Button>,
+    buttonText: "¡Potencia total!",
+    buttonAction: "/api/stripe",
+    intent: "enterprise_plan",
     arr: "Ahorra 15% al pagar anualmente",
-        arrClass: "text-[#5FAFA8] underline underline-offset-4 decoration-2 decoration-[#5FAFA8]",
+    arrClass: "text-[#5FAFA8] underline underline-offset-4 decoration-2 decoration-[#5FAFA8]",
     includes: [
         "📋 Todo lo que incluye el plan Starter",
         "🤖 Chatbots ILIMITADOS",
@@ -107,45 +117,76 @@ export const plans: Plan[] = [
   },
 ];
 
+const PricingCard = ({ plan }: { plan: Plan }) => {
+  const fetcher = useFetcher();
+  const isLoading = fetcher.state !== "idle";
+
+  const handleClick = () => {
+    if (plan.buttonAction && plan.intent) {
+      fetcher.submit(
+        { intent: plan.intent },
+        { method: "post", action: plan.buttonAction }
+      );
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-3xl p-8 w-full md:min-w-[280px] md:max-w-[340px] w-full border transition-all",
+        plan.cardClass,
+        plan.highlight && "scale-105 z-10 shadow-2xl"
+      )}
+    >
+      <h3 className={cn("text-3xl font-bold mb-2", plan.name === "Free" ? "text-white" : "text-black")}>{plan.name}</h3>
+      <p className={cn("mb-4 text-lg", plan.name === "Free" ? "text-white/90" : "text-gray-700")}>{plan.description}</p>
+      <div className="flex items-end gap-2 mb-4">
+        <span className={cn("text-4xl font-bold", plan.name === "Free" ? "text-white" : "text-black")}>{plan.price}</span>
+        <span className="font-semibold text-lg">MXN</span>
+        <span className={cn("text-lg", plan.name === "Free" ? "text-white/80" : "text-gray-500")}>{plan.priceNote}</span>
+      </div>
+      
+      <Button
+        type="button"
+        onClick={handleClick}
+        disabled={isLoading}
+        className={cn(
+          "w-full font-bold rounded-full py-3 mt-6",
+          plan.name === "Free" && "bg-white hover:bg-white/90 text-[#7574D6]",
+          plan.name === "Starter" && "bg-brand-500 hover:bg-brand-600 text-clear",
+          plan.name === "Pro ✨" && "bg-bird hover:bg-[#E5C059] text-dark",
+          plan.name === "Enterprise 🤖" && "bg-cloud hover:bg-[#5FAFA8] text-dark"
+        )}
+      >
+        {isLoading ? <Spinner /> : plan.buttonText}
+      </Button>
+
+      <div className={cn("mt-6 mb-2 font-semibold", plan.arrClass)}>{plan.arr}</div>
+      <div className="mt-2 mb-4">
+        <div className="font-bold mb-2">Incluye:</div>
+        <ul className="space-y-2">
+          {plan.includes.map((inc) => (
+            <li key={inc} className="flex items-center gap-2">
+              <span className={plan.name === "Free" ? "text-white" : "text-black"}>{inc}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {/* Sección extra solo si existe y tiene contenido */}
+      {Array.isArray(plan.extra) && plan.extra.length > 0 && (
+        <div className={cn("rounded-xl px-4 py-3 text-sm mt-auto border border-[#e5e5e5]", plan.arrBoxClass)}>
+          {plan.extra[0]}<br />{plan.extra[1]}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const PricingCards = () => {
   return (
     <div className="w-full flex flex-col md:flex-row gap-4 justify-center items-stretch">
-      {plans.map((plan, idx) => (
-        <div
-          key={plan.name}
-          className={cn(
-            "flex flex-col rounded-3xl p-8 w-full md:min-w-[280px] md:max-w-[340px] w-full border transition-all",
-            plan.cardClass,
-            plan.highlight && "scale-105 z-10 shadow-2xl"
-          )}
-        >
-          <h3 className={cn("text-3xl font-bold mb-2", plan.name === "Free" ? "text-white" : "text-black")}>{plan.name}</h3>
-          <p className={cn("mb-4 text-lg", plan.name === "Free" ? "text-white/90" : "text-gray-700")}>{plan.description}</p>
-          <div className="flex items-end gap-2 mb-4">
-            <span className={cn("text-4xl font-bold", plan.name === "Free" ? "text-white" : "text-black")}>{plan.price}</span>
-            <span className="font-semibold text-lg">MXN</span>
-            <span className={cn("text-lg", plan.name === "Free" ? "text-white/80" : "text-gray-500")}>{plan.priceNote}</span>
-          </div>
-          {plan.button}
-          <div className={cn("mt-6 mb-2 font-semibold", plan.arrClass)}>{plan.arr}</div>
-          <div className="mt-2 mb-4">
-            <div className="font-bold mb-2">Incluye:</div>
-            <ul className="space-y-2">
-              {plan.includes.map((inc) => (
-                <li key={inc} className="flex items-center gap-2">
-                
-                  <span className={plan.name === "Free" ? "text-white" : "text-black"}>{inc}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* Sección extra solo si existe y tiene contenido */}
-          {Array.isArray(plan.extra) && plan.extra.length > 0 && (
-            <div className={cn("rounded-xl px-4 py-3 text-sm mt-auto border border-[#e5e5e5]", plan.arrBoxClass)}>
-              {plan.extra[0]}<br />{plan.extra[1]}
-            </div>
-          )}
-        </div>
+      {plans.map((plan) => (
+        <PricingCard key={plan.name} plan={plan} />
       ))}
     </div>
   );

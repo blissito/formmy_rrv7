@@ -18,8 +18,8 @@ import StripeIntegrationModal from "../../integrations/StripeIntegrationModal";
 const availableIntegrations = [
   {
     id: "DENIK",
-    name: "Denik",
-    logo: "/assets/chat/bell.svg",
+    name: "Deník",
+    logo: "/assets/chat/denik.svg",
     description:
       "Sistema de recordatorios y agenda integrado. Tu agente puede crear recordatorios, agendar citas y enviar notificaciones automáticamente.",
     isPermanent: true, // Integración permanente, siempre activa

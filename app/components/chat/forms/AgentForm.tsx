@@ -176,7 +176,7 @@ export const AgentForm = ({
             value={customInstructions}
             onChange={handleCustomInstructionsChangeLocal}
             placeholder="Añade instrucciones específicas para tu negocio, productos, tono de voz, restricciones, etc."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
             rows={4}
             maxLength={500}
           />

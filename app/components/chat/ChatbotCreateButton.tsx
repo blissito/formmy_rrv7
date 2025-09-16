@@ -30,6 +30,7 @@ export const ChatbotCreateButton = ({
     // User can create chatbots, show normal button
     return (
       <Link
+        id="add_chatbot"
         to="/dashboard/chat/nuevo"
         className={cn(
           "h-10 w-[auto] flex gap-1 items-center px-6 rounded-full transition-all",
