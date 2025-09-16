@@ -153,7 +153,6 @@ export {
   estimateTokens,
   AIProviderManager,
   mammoth,
-  XLSX,
   IntegrationType,
   addUserMessage,
   addAssistantMessage
