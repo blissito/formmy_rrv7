@@ -163,7 +163,7 @@ async function queryChatbotsCore(
       return cleaned;
     });
     
-    console.log(`🧹 Sanitized ${sanitizedResults.length} chatbot records for LlamaIndex`);
+    console.log(`🧹 Sanitized ${sanitizedResults.length} chatbot records for agent framework`);
     return sanitizedResults;
 }
 

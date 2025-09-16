@@ -225,7 +225,7 @@ model Chatbot {
   primaryColor      String?
   avatarUrl         String?
   theme             String?          @default("light")
-  enableStreaming   Boolean          @default(true)
+  enableStreaming   Boolean          @default(false) // 🚨 STREAMING DESHABILITADO por defecto - problema crítico resuelto
   streamingSpeed    Int              @default(50)
   status            ChatbotStatus    @default(DRAFT)
   isActive          Boolean          @default(false)

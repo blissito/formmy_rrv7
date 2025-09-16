@@ -5,10 +5,10 @@
 
 import type { Tool } from "../chatbot/providers/types";
 import type { ToolDefinition, ToolContext, ToolResponse } from "./types";
-// Herramientas temporalmente deshabilitadas para evitar circular imports
+// Herramientas de recordatorios habilitadas
+import { ReminderToolset } from "./toolsets/reminder-toolset";
 // import { createPaymentLinkHandler } from "./handlers/stripe";
 // import { saveContactInfoHandler } from "./handlers/contact";
-// import { ReminderToolset } from "./toolsets/reminder-toolset";
 
 // Re-export types for backward compatibility
 export type { ToolDefinition, ToolContext, ToolResponse };
@@ -21,6 +21,9 @@ export type { ToolDefinition, ToolContext, ToolResponse };
  * 3. Agregar entrada al registro
  */
 export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
+  // ===== FAMILIA RECORDATORIOS 📅 (gestionada por ReminderToolset) =====
+  ...ReminderToolset,
+
   // Herramientas temporalmente deshabilitadas para resolver circular imports
   /*
   // STRIPE - Pagos
@@ -55,9 +58,6 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
     enabled: true,
   },
 
-  // ===== FAMILIA RECORDATORIOS 📅 (gestionada por ReminderToolset) =====
-  ...ReminderToolset,
-
   // CONTACT CAPTURE - Guardar información de contactos
   save_contact_info: {
     tool: {
@@ -75,7 +75,7 @@ export const TOOLS_REGISTRY: Record<string, ToolDefinition> = {
             description: "Dirección de correo electrónico",
           },
           phone: {
-            type: "string", 
+            type: "string",
             description: "Número de teléfono",
           },
           company: {
@@ -203,6 +203,27 @@ export async function executeToolCall(
 export function generateToolPrompts(availableTools: Tool[]): string {
   let prompt = "";
 
+  // RECORDATORIOS - Prompt simple pero efectivo
+  const reminderTools = availableTools.filter(t =>
+    ['schedule_reminder', 'list_reminders', 'update_reminder', 'cancel_reminder', 'delete_reminder'].includes(t.name)
+  );
+
+  if (reminderTools.length > 0) {
+    const today = new Date().toISOString().split("T")[0];
+    prompt += "📅 **FAMILIA RECORDATORIOS** - Tienes acceso completo a gestión de recordatorios:\n\n";
+
+    if (reminderTools.some(t => t.name === "schedule_reminder")) {
+      prompt += "✅ **CREAR**: USA `schedule_reminder` para comandos como: 'agenda', 'recordame', 'avísame', 'envíame recordatorio'\n";
+    }
+    if (reminderTools.some(t => t.name === "list_reminders")) {
+      prompt += "📋 **CONSULTAR**: USA `list_reminders` cuando pregunten '¿qué recordatorios tengo?', 'mis citas'\n";
+    }
+
+    prompt += `\n📅 Hoy es ${today}. Formato requerido: YYYY-MM-DD\n`;
+    prompt += "🚫 CRÍTICO: NUNCA inventes emails que no fueron proporcionados.\n";
+    prompt += "🎯 **FLUJO SIMPLE**: Si piden crear → USA `schedule_reminder` inmediatamente\n\n";
+  }
+
   // STRIPE
   const hasStripe = availableTools.some(
     (t) => t.name === "create_payment_link"
@@ -211,9 +232,6 @@ export function generateToolPrompts(availableTools: Tool[]): string {
     prompt +=
       "🔥 STRIPE: Cuando detectes solicitud de pago, USA INMEDIATAMENTE create_payment_link.\n\n";
   }
-
-  // Herramientas temporalmente deshabilitadas
-  // TODO: Reactivar prompts de herramientas cuando se resuelvan las circular imports
 
   // Futuros toolsets se agregan aquí...
 

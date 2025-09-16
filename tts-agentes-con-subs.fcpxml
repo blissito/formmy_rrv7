@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+<fcpxml version="1.10">
+  <resources>
+    <format id="r1" name="FFVideoFormat1080p30" frameDuration="1001/30000s" width="1920" height="1080"/>
+  </resources>
+  <library>
+    <event name="TTS Subtitles">
+      <project name="Subtitles">
+        <sequence format="r1" duration="30s">
+          <spine>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">Los agentes son asistentes de chat conectados a</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">un LLM o un modelo de lenguaje que</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">puede razonar. El LLM asignado al agente puede</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">solicitar el uso de herramientas que le permitan</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">conseguir más información, hacer investigaciones o ejecutar acciones</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">como lectura y escritura de archivos o ejecución</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">de comandos y scripts. Lo más importante es</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">que pueden ir y venir, mantenerse en loops</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">de acciones hasta terminar. Todo, a partir de</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title offset="0/30s" duration="0/30s" name="Basic Title">
+              <text>
+                <text-style ref="ts1">tu solicitud.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="60" fontColor="1 1 1 1" alignment="center"/>
+              </text-style-def>
+            </title>
+          </spine>
+        </sequence>
+      </project>
+    </event>
+  </library>
+</fcpxml>

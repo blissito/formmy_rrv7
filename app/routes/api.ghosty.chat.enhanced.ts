@@ -33,7 +33,7 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
               // Use LlamaIndex if user is available, fallback to old system
               if (user) {
                 // LlamaIndex enhanced version
-                console.log('🚀 Using LlamaIndex enhanced Ghosty');
+                console.log('🚀 Using enhanced Ghosty with agent framework');
                 
                 const ghosty = new GhostyLlamaIndex({
                   mode: process.env.GHOSTY_MODE === 'remote' ? 'remote' : 'local',

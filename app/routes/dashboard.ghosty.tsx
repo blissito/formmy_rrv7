@@ -30,7 +30,7 @@ export default function DashboardGhosty() {
             🔄 Cambiar a versión original
           </button>
           <p className="text-sm text-gray-600 mt-2">
-            ✨ <strong>Nueva versión con LlamaIndex</strong> - Herramientas avanzadas y mejor UX
+            ✨ <strong>Nueva versión</strong> - Herramientas avanzadas y mejor UX
           </p>
         </div>
         
@@ -54,7 +54,7 @@ export default function DashboardGhosty() {
           onClick={() => setShowEnhanced(!showEnhanced)}
           className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
         >
-          ⚡ Probar versión con LlamaIndex
+          ⚡ Probar versión avanzada
         </button>
         <p className="text-sm text-gray-600 mt-2">
           Versión original de Ghosty

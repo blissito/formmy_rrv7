@@ -329,17 +329,23 @@ export class AgentDecisionEngine {
     
     // Quick scan first (always runs)
     const quickScan = await this.quickToolScan(message);
-    
+    console.log(`🚨 QUICKSCAN DEBUG for "${message}":`, {
+      detected: quickScan.detected,
+      confidence: quickScan.confidence,
+      keywords: quickScan.keywords
+    });
+
     let decision: AgentDecision;
-    
-    if (!quickScan.detected || quickScan.confidence < 20) {
+
+    if (!quickScan.detected || quickScan.confidence < 10) {
       // No tools detected or very low confidence - fast path
+      console.log(`🚨 FAST PATH: detected=${quickScan.detected}, confidence=${quickScan.confidence} < 10`);
       decision = {
         needsTools: false,
         confidence: 0,
         suggestedTools: [],
         shouldStream: true,  // Default to streaming
-        reasoning: 'No tool indicators detected',
+        reasoning: `No tool indicators detected (confidence: ${quickScan.confidence})`,
         detectionTime: Date.now() - startTime
       };
     } else {

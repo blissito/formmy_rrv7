@@ -1,5 +1,16 @@
 # Formmy - Project Context
 
+## ⚠️ REGLA CRÍTICA PARA CLAUDE
+
+**SIEMPRE lee la documentación oficial antes de implementar cualquier funcionalidad de librerías externas.**
+
+- **WebFetch** la documentación oficial del framework/librería que estés usando
+- **NO hagas suposiciones** sobre APIs o funcionalidades sin verificar
+- **NO improvises** implementaciones basándote en conocimiento incompleto
+- Si no estás 100% seguro de cómo funciona algo, **busca la documentación primero**
+
+Ejemplo: Para LlamaIndex streaming, leer https://docs.llamaindex.ai/en/stable/understanding/agent/streaming/ antes de implementar.
+
 ## Overview
 
 Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzadas de AI y automatización, que posee un agente inteligente con acceso a herramientas avanzadas e integraciones.
@@ -15,6 +26,70 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - **Email**: AWS SES con nodemailer
 
 ## Agentes y Asistentes
+
+### 🚨 PROBLEMA CRÍTICO CONFIRMADO: Streaming + Tools Incompatible (Septiembre 2025)
+
+**Status**: 🚨 **URGENTE** - STREAMING DEBE SER DESHABILITADO INMEDIATAMENTE
+**Ubicaciones afectadas**:
+- `/app/routes/api.v1.chatbot.ts` (DEPRECATED)
+- `/server/llamaindex-engine-v2/index.ts` (ENGINE ACTUAL)
+- `/server/llamaindex-engine/core/engine.ts` (MOTOR CORE)
+
+## 🚨 CONFIRMACIÓN DEL PROBLEMA CRÍTICO
+
+**PROBLEMA PRINCIPAL**: Una vez que el sistema entra en streaming mode con "Hola", **NUNCA** vuelve a las herramientas, incluso con keywords claros como "recuérdame"
+
+**CAUSA ROOT CONFIRMADA**:
+- El estado de streaming se mantiene activo en la sesión del usuario
+- `detectToolNeed()` SÍ funciona correctamente
+- Pero el engine mantiene el flag de streaming habilitado permanentemente
+- Una vez en streaming, ignora completamente las herramientas
+
+## 🚨 EVIDENCIA DEL PROBLEMA
+
+```typescript
+// MENSAJE 1: "Hola"
+🌊 LlamaIndex v2: Usando modo STREAMING ← SE ACTIVA STREAMING
+
+// MENSAJE 2: "Recuérdame llamar mañana"
+🔍 Engine v2 detectToolNeed: {
+  needsTools: true,           ← DETECTA HERRAMIENTAS CORRECTAMENTE
+  toolsAvailable: 5,         ← HERRAMIENTAS DISPONIBLES
+}
+🌊 LlamaIndex v2: Usando modo STREAMING ← PERO MANTIENE STREAMING!!!
+```
+
+## ✅ SOLUCIÓN APLICADA - STREAMING DESHABILITADO
+
+**ESTADO**: ✅ **COMPLETADO** - Streaming deshabilitado en toda la aplicación
+
+### 🔧 Cambios Aplicados:
+
+1. **Engine Backend**:
+   - ✅ `/server/llamaindex-engine-v2/index.ts:108` → `shouldStream = false`
+   - ✅ `/server/llamaindex-engine/core/engine.ts:111` → `shouldStream = false`
+
+2. **UI Frontend**:
+   - ✅ `/app/components/ChatPreview.tsx:45` → `useState(false)`
+   - ✅ `/app/components/ChatPreview.tsx:67` → `setStream(false)`
+
+3. **Database Schema**:
+   - ✅ `/prisma/schema.prisma:228` → `@default(false)`
+   - ✅ Database actualizada con `prisma db push`
+
+4. **Documentación**:
+   - ✅ `/README.md` → Default cambiado a `false`
+   - ✅ `/CLAUDE.md` → Problema documentado
+
+### 🎯 Resultado Final:
+
+- ✅ **Nuevos chatbots**: Creados con `enableStreaming: false`
+- ✅ **Chatbots existentes**: UI ignora configuración, siempre `false`
+- ✅ **Engine**: Forzado a modo no-streaming
+- ✅ **Herramientas**: Funcionan correctamente sin conflictos
+- ✅ **Producción**: Sistema estable y confiable
+
+**Status RESUELTO**: 🟢 **SISTEMA OPERATIVO SIN STREAMING**
 
 ### Ghosty
 
@@ -39,35 +114,76 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 
 **Regla crítica**: NUNCA improvisar patrones. Usar únicamente patrones documentados de LlamaIndex 2025.
 
-### Formmy Agent Framework (Micro-framework propio)
+**🚧 TODOs para Ghosty - CRUD Completo (Próximas implementaciones)**:
 
-**Ubicación**: `/server/formmy-agent/`
-**Descripción**: Micro-framework de agentes AI desarrollado internamente (~500 líneas) que proporciona:
+### Herramientas de Gestión de Chatbots
+- [ ] **create_chatbot**: Crear nuevos chatbots con configuración completa
+- [ ] **update_chatbot**: Modificar configuración, personalidad, modelo AI
+- [ ] **delete_chatbot**: Eliminar chatbots (soft delete)
+- [ ] **clone_chatbot**: Duplicar chatbots existentes
+- [ ] **toggle_chatbot_status**: Activar/desactivar chatbots
 
-- **Agent Loop robusto**: Pattern ReAct con retry automático y manejo de errores
-- **Context optimization**: Chunking inteligente y selección de contexto relevante sin embeddings
-- **Unified API**: Interfaz simple para todos los chatbots de la plataforma
-- **Tool integration**: Sistema modular de herramientas con registro centralizado
+### Herramientas de Contextos
+- [ ] **add_context**: Subir archivos, URLs, texto a chatbots
+- [ ] **remove_context**: Eliminar contextos específicos
+- [ ] **update_context**: Modificar contextos existentes
+- [ ] **optimize_contexts**: Reordenar por relevancia y tamaño
 
-**Arquitectura del framework**:
-```
-/server/formmy-agent/
-  ├── index.ts           - Core del framework y clase FormmyAgent
-  ├── agent-core.ts      - Retry logic y error handling
-  ├── agent-executor.ts  - Loop ReAct mejorado con memoria
-  ├── context-chunker.ts - División y selección de contexto
-  ├── context-optimizer.ts - Optimización de tokens
-  ├── config.ts          - Configuración y factory
-  └── types.ts           - Interfaces TypeScript
-```
+### Herramientas de Formularios
+- [ ] **query_forms**: Consultar formularios del usuario
+- [ ] **create_form**: Crear nuevos formularios
+- [ ] **update_form**: Modificar estructura y campos
+- [ ] **delete_form**: Eliminar formularios
+- [ ] **get_form_responses**: Obtener respuestas y estadísticas
 
-**Características clave**:
-- Sin dependencias de frameworks externos (LangChain, Mastra, etc.)
-- Retry automático con exponential backoff para respuestas vacías
-- Chunking de contexto para optimizar uso de tokens (4KB límite)
-- Iteraciones dinámicas (3-7) según complejidad del query
-- Compatible con streaming y non-streaming
-- Integración nativa con proveedores existentes (OpenAI, Anthropic, OpenRouter)
+### Herramientas de Integraciones
+- [ ] **setup_whatsapp**: Configurar integración WhatsApp
+- [ ] **setup_stripe**: Configurar pagos Stripe
+- [ ] **setup_webhook**: Configurar webhooks personalizados
+- [ ] **test_integrations**: Probar conectividad de integraciones
+
+### Herramientas de Análisis Avanzado
+- [ ] **get_conversation_insights**: Análisis profundo de conversaciones
+- [ ] **get_performance_metrics**: KPIs y métricas de rendimiento
+- [ ] **generate_reports**: Informes automáticos en PDF/CSV
+- [ ] **get_usage_forecasts**: Predicciones de uso y costos
+
+### Herramientas de Automatización
+- [ ] **bulk_operations**: Operaciones masivas en chatbots
+- [ ] **schedule_maintenance**: Programar mantenimiento automático
+- [ ] **backup_restore**: Respaldo y restauración de configuraciones
+- [ ] **export_import**: Migración entre cuentas/ambientes
+
+### Sistema de Tool Credits (NUEVA IMPLEMENTACIÓN PENDIENTE)
+- [ ] **Implementar sistema de credits**: Tracking de tool calls por usuario/plan
+- [ ] **Credit deduction system**: Descontar credits según herramienta usada
+- [ ] **Usage monitoring**: Dashboard para ver consumo de credits mensual
+- [ ] **Upgrade prompts**: Notificar cuando se acerquen a límites
+- [ ] **Credit refill**: Reset automático cada mes según plan
+- [ ] **Overage protection**: Bloquear tools cuando credits = 0
+
+**Prioridad de Implementación**: Completar herramientas de gestión básica → **Sistema Tool Credits** → Contextos → Integraciones → Analytics → Automatización
+
+### ❌ Formmy Agent Framework (DEPRECADO - NO USAR)
+
+**Status**: ⚠️ **COMPLETAMENTE DEPRECADO** - Migrado a LlamaIndex 2025
+**Ubicación**: `/server/formmy-agent/` (mantener solo para referencia/debugging legacy)
+**Descripción**: Micro-framework interno que fue reemplazado por LlamaIndex 2025 oficial
+
+**⚠️ IMPORTANTE**:
+- **NO usar** para nuevas implementaciones
+- **✅ TODA la app ya usa LlamaIndex Engine v2** (`/server/llamaindex-engine-v2/`) como motor unificado
+- **Ghosty** usa LlamaIndex 2025 para funcionalidades avanzadas de agente
+- **Chatbots regulares** ya usan LlamaIndex Engine v2 para chat básico
+- **Framework deprecado** será removido en futuras versiones
+- **Problema específico**: Solo api.v1.chatbot.ts tiene issues con streaming + tools
+
+**Razón de deprecación**: LlamaIndex 2025 ofrece:
+- Workflows nativos más robustos
+- Memory management automático
+- Tool integration oficial
+- Mejor soporte de streaming
+- Mantenimiento activo del equipo LlamaIndex
 
 ## Estructura de carpetas principales
 
@@ -86,9 +202,43 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 
 ### Planes y Precios (Optimizados para mercado mexicano)
 - **Free**: $0 - Solo 3 formmys, 0 chatbots, trial 60 días
-- **Starter**: $149 MXN/mes - 2 chatbots, 50 conversaciones, GPT-5 Nano + Gemini 2.5 Flash-Lite
-- **Pro**: $499 MXN/mes - 10 chatbots, 250 conversaciones, Claude 3 Haiku
-- **Enterprise**: $1,499 MXN/mes - Ilimitado, 1000 conversaciones, GPT-5 Mini + Claude 3.5 Haiku
+- **Starter**: $149 MXN/mes - 2 chatbots, 50 conversaciones, 200 tool credits, GPT-5 Nano + Gemini 2.5 Flash-Lite
+- **Pro**: $499 MXN/mes - 10 chatbots, 250 conversaciones, 1000 tool credits, Claude 3 Haiku
+- **Enterprise**: $1,499 MXN/mes - Ilimitado, 1000 conversaciones, 5000 tool credits, GPT-5 Mini + Claude 3.5 Haiku
+
+#### 🎯 Sistema de Tool Credits
+**Protección contra uso excesivo de herramientas avanzadas**:
+- **Conversaciones** = Token tracking (sistema actual)
+- **Tool Credits** = Límite adicional para herramientas (nuevo sistema híbrido)
+
+#### 💳 Consumo de Credits por Herramienta
+```typescript
+// Credits por complejidad de herramienta
+const TOOL_CREDITS = {
+  // Básicas (1 AI call)
+  schedule_reminder: 1,
+  list_reminders: 1,
+
+  // Intermedias (2-3 AI calls)
+  create_payment_link: 2,
+  calendar_create_event: 3,
+  database_query: 3,
+
+  // Avanzadas (4+ AI calls)
+  bulk_email_campaign: 5,
+  document_analysis: 4,
+  complex_automation: 6
+};
+```
+
+#### 📊 Consumo Mensual Estimado (Usuario PRO Activo)
+- **Recordatorios básicos**: 20/mes × 1 credit = 20
+- **Google Calendar**: 15 eventos/mes × 4 credits = 60
+- **Drive + RAG**: 10 documentos/mes × 1 credit = 10
+- **DB queries**: 25 consultas/mes × 3 credits = 75
+- **Stripe payments**: 30 links/mes × 2 credits = 60
+- **WhatsApp automation**: 40 respuestas/mes × 2 credits = 80
+- **Total mensual**: ~305 credits (usuario PRO activo = 1000 credits disponibles)
 
 ### Proyección Año 1 (150 clientes)
 - **60% Starter** (90 clientes): $160.9K MXN revenue → $157.7K profit (98% margen)
@@ -359,6 +509,7 @@ Los blog posts referencian estos recursos que necesitan ser creados:
 - [ ] Crear documentación básica en README
 - [ ] Verificar funcionamiento de todos los links en blog posts
 - [ ] Crear documentación en formmy.app/docs si no existe
+- [ ] **Verificar, mejorar y simplificar los prompt base de sistema de los agentes en pestaña Preview > Agente**
 
 ## Próximos pasos técnicos
 

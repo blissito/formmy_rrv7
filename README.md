@@ -30,7 +30,7 @@ El chatbot soporta respuestas en tiempo real con efecto de escritura (typing eff
 
 Cada chatbot tiene dos campos configurables:
 
-- **`enableStreaming`**: Activa/desactiva el efecto de escritura (default: `true`)
+- **`enableStreaming`**: Activa/desactiva el efecto de escritura (default: `false`) 🚨 **DESHABILITADO** por problema crítico
 - **`streamingSpeed`**: Velocidad en milisegundos entre caracteres (default: `50ms`)
 
 ### ¿Cómo funciona?

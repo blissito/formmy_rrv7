@@ -7,7 +7,7 @@ import { AgentForm } from "../forms/AgentForm";
 import { ChatForm } from "../forms/ChatForm";
 import { useSubmit } from "react-router";
 import { useS3Upload } from "~/hooks/useS3Upload";
-import { getAgentWelcomeMessage, getAgentGoodbyeMessage, getAgentColor } from "~/utils/agents/agentPrompts";
+// import { getAgentWelcomeMessage, getAgentGoodbyeMessage } from "~/utils/agents/agentPrompts";
 import type { AgentType } from "../common/AgentDropdown";
 
 // Componente para el tab de Preview
@@ -56,10 +56,10 @@ export const PreviewForm = ({
 
   const handleAgentChange = (value: AgentType) => {
     setSelectedAgent(value);
-    // Actualizar automáticamente los mensajes y el color cuando cambie el agente
-    setWelcomeMessage(getAgentWelcomeMessage(value));
-    setGoodbyeMessage(getAgentGoodbyeMessage(value));
-    setPrimaryColor(getAgentColor(value));
+    // Los agentes ya no cambian automáticamente mensajes ni color
+    // setWelcomeMessage(getAgentWelcomeMessage(value));
+    // setGoodbyeMessage(getAgentGoodbyeMessage(value));
+    // setPrimaryColor(getAgentColor(value));
   };
 
   const handleTemperatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {

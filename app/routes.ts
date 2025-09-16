@@ -103,6 +103,9 @@ export default [
 
   // API v1 routes
   route("api/v1/chatbot", "routes/api.v1.chatbot.ts"),
+
+  // API LlamaIndex V2 (Clean & Modularized)
+  route("api/llamaindex/v2", "routes/api.llamaindex.v2.ts"),
   // =========================================================
   route("api/v1/messages", "routes/api.v1.messages.ts"),
   route("api/v1/apikey", "routes/api.v1.apikey.ts"),

@@ -37,7 +37,7 @@ export class GhostyLocalAgent {
     // IMPORTANT: Configure LlamaIndex Settings globally before using any components
     Settings.llm = this.llm;
 
-    console.log(`🤖 GhostyLocalAgent initialized with ${config.model} [LlamaIndex 2025]`);
+    console.log(`🤖 GhostyLocalAgent initialized with ${config.model} [Agent Framework]`);
   }
 
   /**
@@ -60,7 +60,7 @@ export class GhostyLocalAgent {
    */
   async chat(message: string, context: GhostyContext, stream?: boolean): Promise<GhostyResponse> {
     const startTime = Date.now();
-    console.log(`💬 Ghosty chat: "${message.substring(0, 50)}..." [LlamaIndex 2025]`);
+    console.log(`💬 Ghosty chat: "${message.substring(0, 50)}..." [Agent Framework]`);
 
     try {
       // Get available tools for this context
@@ -71,7 +71,7 @@ export class GhostyLocalAgent {
       const contextualPrompt = this.buildContextualPrompt(context);
 
       // Create AgentWorkflow using LlamaIndex 2025 pattern
-      console.log('🚀 Creating LlamaIndex AgentWorkflow...');
+      console.log('🚀 Creating Agent Workflow...');
       this.agentWorkflow = agent({
         name: 'ghosty',
         llm: this.llm,
@@ -127,12 +127,12 @@ export class GhostyLocalAgent {
         }
       };
 
-      console.log(`✅ Ghosty LlamaIndex response generated in ${Date.now() - startTime}ms`);
+      console.log(`✅ Ghosty Agent response generated in ${Date.now() - startTime}ms`);
       
       return result;
 
     } catch (error) {
-      console.error('❌ Ghosty LlamaIndex Agent error:', error);
+      console.error('❌ Ghosty Agent Framework error:', error);
       console.error('Error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,

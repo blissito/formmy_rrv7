@@ -42,7 +42,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [stream, setStream] = useState(chatbot.enableStreaming !== false); // Respetar configuración de BD
+  const [stream, setStream] = useState(false); // 🚨 STREAMING DESHABILITADO por defecto - problema crítico resuelto
   const inputRef = useRef<ChatInputRef>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -63,8 +63,8 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
       };
       return update;
     });
-    // Actualizar configuración de streaming cuando cambie el chatbot
-    setStream(chatbot.enableStreaming !== false);
+    // 🚨 STREAMING DESHABILITADO - mantener siempre false hasta resolver problema crítico
+    setStream(false);
   }, [chatbot]);
 
   // Auto-scroll logic
@@ -191,7 +191,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         formData.append("message", currentInput);
         formData.append("sessionId", sessionIdRef.current);
         formData.append("conversationHistory", JSON.stringify(updatedMessages));
-        formData.append("stream", "true");
+        formData.append("stream", "false"); // 🚨 STREAMING DISABLED - Tools compatibility fix
 
         // Timeout de seguridad para evitar loading infinito
         const timeoutId = setTimeout(() => {

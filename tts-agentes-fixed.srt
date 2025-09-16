@@ -1,0 +1,40 @@
+1
+00:00:00,000 --> 00:00:00,000
+Los agentes son asistentes de chat conectados a
+
+2
+00:00:00,000 --> 00:00:00,000
+un LLM o un modelo de lenguaje que
+
+3
+00:00:00,000 --> 00:00:00,000
+puede razonar. El LLM asignado al agente puede
+
+4
+00:00:00,000 --> 00:00:00,000
+solicitar el uso de herramientas que le permitan
+
+5
+00:00:00,000 --> 00:00:00,000
+conseguir más información, hacer investigaciones o ejecutar acciones
+
+6
+00:00:00,000 --> 00:00:00,000
+como lectura y escritura de archivos o ejecución
+
+7
+00:00:00,000 --> 00:00:00,000
+de comandos y scripts. Lo más importante es
+
+8
+00:00:00,000 --> 00:00:00,000
+que pueden ir y venir, mantenerse en loops
+
+9
+00:00:00,000 --> 00:00:00,000
+de acciones hasta terminar. Todo, a partir de
+
+10
+00:00:00,000 --> 00:00:00,000
+tu solicitud.
+

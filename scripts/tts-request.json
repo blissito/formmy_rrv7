@@ -1,0 +1,13 @@
+{
+  "input": {
+    "text": "Los agentes son asistentes de chat conectados a un LLM (o un modelo de lenguaje) que puede razonar. El LLM asignado al agente puede solicitar el uso de herramientas que le permitan conseguir más información; hacer investigaciones o ejecutar acciones como lectura y escritura de archivos o ejecución de comandos y scripts. Lo más importante es que pueden ir y venir, mantenerse en loops de acciones hasta terminar. Todo, a partir de tu solicitud."
+  },
+  "voice": {
+    "languageCode": "es-US",
+    "name": "es-US-Neural2-A"
+  },
+  "audioConfig": {
+    "audioEncoding": "MP3",
+    "speakingRate": 1.0
+  }
+}
