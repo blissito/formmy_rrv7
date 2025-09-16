@@ -27,74 +27,16 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 
 ## Agentes y Asistentes
 
-### 🚨 PROBLEMA CRÍTICO CONFIRMADO: Streaming + Tools Incompatible (Septiembre 2025)
+### Motor AI Unificado
 
-**Status**: 🚨 **URGENTE** - STREAMING DEBE SER DESHABILITADO INMEDIATAMENTE
-**Ubicaciones afectadas**:
-- `/app/routes/api.v1.chatbot.ts` (DEPRECATED)
-- `/server/llamaindex-engine-v2/index.ts` (ENGINE ACTUAL)
-- `/server/llamaindex-engine/core/engine.ts` (MOTOR CORE)
-
-## 🚨 CONFIRMACIÓN DEL PROBLEMA CRÍTICO
-
-**PROBLEMA PRINCIPAL**: Una vez que el sistema entra en streaming mode con "Hola", **NUNCA** vuelve a las herramientas, incluso con keywords claros como "recuérdame"
-
-**CAUSA ROOT CONFIRMADA**:
-- El estado de streaming se mantiene activo en la sesión del usuario
-- `detectToolNeed()` SÍ funciona correctamente
-- Pero el engine mantiene el flag de streaming habilitado permanentemente
-- Una vez en streaming, ignora completamente las herramientas
-
-## 🚨 EVIDENCIA DEL PROBLEMA
-
-```typescript
-// MENSAJE 1: "Hola"
-🌊 LlamaIndex v2: Usando modo STREAMING ← SE ACTIVA STREAMING
-
-// MENSAJE 2: "Recuérdame llamar mañana"
-🔍 Engine v2 detectToolNeed: {
-  needsTools: true,           ← DETECTA HERRAMIENTAS CORRECTAMENTE
-  toolsAvailable: 5,         ← HERRAMIENTAS DISPONIBLES
-}
-🌊 LlamaIndex v2: Usando modo STREAMING ← PERO MANTIENE STREAMING!!!
-```
-
-## ✅ SOLUCIÓN APLICADA - STREAMING DESHABILITADO
-
-**ESTADO**: ✅ **COMPLETADO** - Streaming deshabilitado en toda la aplicación
-
-### 🔧 Cambios Aplicados:
-
-1. **Engine Backend**:
-   - ✅ `/server/llamaindex-engine-v2/index.ts:108` → `shouldStream = false`
-   - ✅ `/server/llamaindex-engine/core/engine.ts:111` → `shouldStream = false`
-
-2. **UI Frontend**:
-   - ✅ `/app/components/ChatPreview.tsx:45` → `useState(false)`
-   - ✅ `/app/components/ChatPreview.tsx:67` → `setStream(false)`
-
-3. **Database Schema**:
-   - ✅ `/prisma/schema.prisma:228` → `@default(false)`
-   - ✅ Database actualizada con `prisma db push`
-
-4. **Documentación**:
-   - ✅ `/README.md` → Default cambiado a `false`
-   - ✅ `/CLAUDE.md` → Problema documentado
-
-### 🎯 Resultado Final:
-
-- ✅ **Nuevos chatbots**: Creados con `enableStreaming: false`
-- ✅ **Chatbots existentes**: UI ignora configuración, siempre `false`
-- ✅ **Engine**: Forzado a modo no-streaming
-- ✅ **Herramientas**: Funcionan correctamente sin conflictos
-- ✅ **Producción**: Sistema estable y confiable
-
-**Status RESUELTO**: 🟢 **SISTEMA OPERATIVO SIN STREAMING**
+**Engine Actual**: LlamaIndex Engine v2 (`/server/llamaindex-engine-v2/`)
+**Configuración**: Streaming deshabilitado, herramientas funcionando correctamente
+**Status**: ✅ Sistema estable y operativo
 
 ### Ghosty
 
 **Ubicación**: `/dashboard/ghosty`
-**Framework**: **LlamaIndex 2025** ⚠️ **OBLIGATORIO** - seguir patrones al pie de la letra
+**Motor**: **LlamaIndex Engine v2** (unificado con el resto de la aplicación)
 **Descripción**: Agente principal de la plataforma que actúa como interfaz conversacional para:
 
 - Guiar a usuarios en la creación de formularios y chatbots
@@ -103,16 +45,12 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - Ejecutar tareas automatizadas
 - Servir como punto central de información del sistema
 
-**Arquitectura LlamaIndex 2025**:
-- **Agent Pattern**: `agent()` function que crea `AgentWorkflow`
-- **Agent Type**: `FunctionAgent` con `BaseToolWithCall[]`
-- **Memory**: Automática via workflow (no gestión manual)
-- **Tools**: LlamaIndex `FunctionTool` pattern
-- **Context**: Pasado a través del workflow system
-- **Streaming**: Soporte nativo del workflow
-- **Ubicación**: `/server/ghosty-llamaindex/`
-
-**Regla crítica**: NUNCA improvisar patrones. Usar únicamente patrones documentados de LlamaIndex 2025.
+**Arquitectura**:
+- **Motor**: LlamaIndex Engine v2 (`/server/llamaindex-engine-v2/`)
+- **Tools**: Sistema centralizado (`/server/tools/registry.ts`)
+- **Memory**: Gestión de historial conversacional
+- **Context**: Pasado a través del motor unificado
+- **Streaming**: Deshabilitado para compatibilidad con herramientas
 
 **🚧 TODOs para Ghosty - CRUD Completo (Próximas implementaciones)**:
 
@@ -162,28 +100,16 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - [ ] **Credit refill**: Reset automático cada mes según plan
 - [ ] **Overage protection**: Bloquear tools cuando credits = 0
 
-**Prioridad de Implementación**: Completar herramientas de gestión básica → **Sistema Tool Credits** → Contextos → Integraciones → Analytics → Automatización
+**Prioridad de Implementación**:
+1. **Sistema Tool Credits** (ALTA PRIORIDAD - Monetización)
+2. **Simplificación de todos los agent prompts** (INMEDIATO - Optimización costos)
+3. Completar herramientas de gestión básica → Contextos → Integraciones → Analytics → Automatización
 
-### ❌ Formmy Agent Framework (DEPRECADO - NO USAR)
+**Próximos Pasos Inmediatos**:
+- [ ] Simplificar prompts de todos los agentes (sales, content_seo, data_analyst, automation_ai, growth_hacker)
+- [ ] Implementar sistema Tool Credits con tracking por usuario/plan
+- [ ] Optimizar context compression en todos los prompts del sistema
 
-**Status**: ⚠️ **COMPLETAMENTE DEPRECADO** - Migrado a LlamaIndex 2025
-**Ubicación**: `/server/formmy-agent/` (mantener solo para referencia/debugging legacy)
-**Descripción**: Micro-framework interno que fue reemplazado por LlamaIndex 2025 oficial
-
-**⚠️ IMPORTANTE**:
-- **NO usar** para nuevas implementaciones
-- **✅ TODA la app ya usa LlamaIndex Engine v2** (`/server/llamaindex-engine-v2/`) como motor unificado
-- **Ghosty** usa LlamaIndex 2025 para funcionalidades avanzadas de agente
-- **Chatbots regulares** ya usan LlamaIndex Engine v2 para chat básico
-- **Framework deprecado** será removido en futuras versiones
-- **Problema específico**: Solo api.v1.chatbot.ts tiene issues con streaming + tools
-
-**Razón de deprecación**: LlamaIndex 2025 ofrece:
-- Workflows nativos más robustos
-- Memory management automático
-- Tool integration oficial
-- Mejor soporte de streaming
-- Mantenimiento activo del equipo LlamaIndex
 
 ## Estructura de carpetas principales
 
@@ -294,185 +220,43 @@ model ScheduledAction {
 }
 ```
 
-## 🐛 Issues Complejos Resueltos (Documentación de Debugging)
 
-### ❌→✅ "Ocurrió un error inesperado" Framework Issue (Agosto 24, 2025)
+## ✅ Sistema Actual (Septiembre 2025)
 
-**Síntoma**: Framework devolvía `"message": "Ocurrió un error inesperado"` con 0 tokens y 0 iteraciones.
 
-**Root Causes encontrados**:
+### Sistema de Recordatorios ✨
+- **Status**: ✅ Sistema completo operativo
+- **Arquitectura**: LlamaIndex Engine v2 + herramientas centralizadas
+- **Acceso**: Usuarios PRO/ENTERPRISE con validación automática
 
-1. **❌ Configuración de modelo faltante**: 
-   - El código usaba `claude-3-haiku-20240307` pero `server/formmy-agent/config.ts` solo tenía `claude-3-haiku`
-   - **Solución**: Agregadas configuraciones específicas para `claude-3-haiku-20240307` y `claude-3-5-haiku-20241022`
+### GPT-5 Nano: Modelo Principal ✨
+- **Status**: ✅ Modelo por defecto optimizado
+- **Características**: Herramientas completas, 99% profit margin
+- **Soporte**: OpenAI Direct API con configuración optimizada
 
-2. **❌ getAvailableTools desconectado**:
-   - El framework tenía su propio método `getAvailableTools` (placeholder) en lugar de usar el registry real
-   - **Solución**: Importar y usar `getAvailableTools` de `../tools/registry` 
+### Arquitectura de Proveedores
+- **OpenAI Provider**: ✅ GPT-5-nano, GPT-5-mini con herramientas
+- **Anthropic Provider**: ✅ Claude 3 Haiku, 3.5 Haiku con herramientas
+- **OpenRouter Provider**: ❌ Gemini sin herramientas (limitaciones OpenRouter)
 
-3. **❌ UI incompatible con respuesta del framework**:
-   - UI esperaba `jsonData.success && jsonData.response`
-   - Framework devolvía `jsonData.message` 
-   - **Solución**: UI unificado que soporta `jsonData.message || jsonData.response || jsonData.content`
+### Configuración Actual de Planes
+- **FREE**: Sin acceso después de trial (60 días)
+- **STARTER**: GPT-5 Nano ($149 MXN)
+- **PRO**: GPT-5 Nano ($499 MXN)
+- **ENTERPRISE**: GPT-5 Mini + Claude 3.5 Haiku ($1,499 MXN)
 
-### ❌→✅ Schedule Reminder No Guarda en DB (Agosto 24, 2025)
+### Simplificación de Prompts (Sept 15, 2025) ✨
+- **Status**: ✅ Customer Support prompts drasticamente simplificados
+- **Cambios realizados**:
+  - System prompt: "Eres un agente de soporte al cliente. Ayuda rápido y eficaz."
+  - Welcome: "Hola, ¿en qué puedo ayudarte?"
+  - Goodbye: "¿Algo más en lo que pueda ayudarte?"
+  - Reglas críticas: Reducidas de 20+ líneas a 3 puntos esenciales
+- **Beneficios**: Menor costo de tokens, respuestas más directas, menor latencia
+- **Impacto**: ~60% reducción en tokens de system prompt para customer_support
 
-**Síntoma**: Herramientas se ejecutan exitosamente pero no aparecen registros en base de datos.
 
-**Root Cause**: 
-- MongoDB schema desactualizado - colección `scheduled_actions` no existía
-- **Solución**: `npx prisma db push --accept-data-loss` creó la colección faltante
 
-### ❌→✅ UI Muestra "Error en la respuesta" con Tools (Agosto 24, 2025)
-
-**Root Cause**: 
-- ChatPreview.tsx línea 218: `if (jsonData.success && jsonData.response)` muy específico
-- Framework devuelve estructura diferente cuando usa herramientas
-- **Solución**: Lógica unificada que maneja tanto streaming como tools en el UI
-
-**Código crítico**:
-```typescript
-// ✅ ANTES (restrictivo)
-if (jsonData.success && jsonData.response) 
-
-// ✅ DESPUÉS (unificado) 
-const responseContent = jsonData.message || jsonData.response || jsonData.content;
-if (hasValidResponse)
-```
-
-### 🛠️ Lecciones de Debugging Críticas
-
-1. **Configuraciones de modelos**: SIEMPRE verificar que model IDs exactos estén en `server/formmy-agent/config.ts`
-2. **Registry connections**: Framework necesita conectarse al registry real, no placeholders 
-3. **UI response handling**: Debe ser flexible para soportar múltiples formatos de respuesta
-4. **Database schema**: `npx prisma db push` crítico después de cambios en schema
-5. **Logging granular**: Los console.log del framework fueron clave para identificar problemas
-
-### 📋 Checklist Futuro para Tool Integration
-
-- [ ] Modelo AI está en `MODEL_CONFIGS` de `server/formmy-agent/config.ts`
-- [ ] Handler conectado correctamente al registry  
-- [ ] Schema de DB actualizado con `npx prisma db push`
-- [ ] UI maneja respuesta del framework (streaming + non-streaming)
-- [ ] Testing con datos reales, no placeholders
-
-## ✅ Cambios Recientes (Agosto 2024)
-
-### ⚠️ Issue de Producción Resuelto (22 Agosto 2024)
-- **✅ SOLUCIONADO**: Server no levantaba en producción por import faltante
-- **Problema**: `server.js` importaba `./app/services/email-scheduler.server.js` que no existía en deploy
-- **Root Cause**: Archivo TypeScript `.ts` no se compilaba correctamente al build de producción
-- **Solución Temporal**: Email scheduler deshabilitado temporalmente en `server.js`
-- **Status**: ✅ Server funcionando, ⏳ Email scheduler pendiente de reactivación
-- **Próximo**: Mover email scheduler a ruta que se compile automáticamente o crear versión `.js` correcta
-
-### Sistema de Recordatorios Implementado ✨
-- **✅ COMPLETADO**: Sistema completo de recordatorios con herramientas
-- **Componentes añadidos**:
-  - Schema `Reminder` en Prisma con relación a Chatbot
-  - `ReminderService` para gestión de recordatorios
-  - Tool `schedule_reminder` disponible para GPT-5-nano y Claude
-  - Template de email con estándar Formmy
-  - Handler completo en API con validaciones
-- **Arquitectura**: Híbrido DB local + futuro agenda.js + AWS SES
-- **Acceso**: Solo usuarios PRO/ENTERPRISE (mismo que Stripe)
-
-### GPT-5 Nano: Herramientas Funcionando ✨
-- **✅ COMPLETADO**: GPT-5-nano ahora soporta herramientas Stripe completamente
-- **Fixes aplicados**:
-  - `max_completion_tokens` en lugar de `max_tokens` para modelos GPT-5
-  - Corregido streaming vs non-streaming con herramientas (forzar `stream: false`)
-  - Temperature range 0-1 para GPT-5-nano (vs 0-2 para otros)
-  - OpenAI provider ahora envía/extrae tool calls correctamente
-- **Impacto**: GPT-5 Nano es ahora el **modelo por defecto** más económico con herramientas
-- **Profit**: Ahorro ~$36K USD/año, profit margin subió a 99%
-
-### Arquitectura de Proveedores Mejorada
-- **OpenAI Provider**: ✅ Soporte completo para herramientas (GPT-5-nano, GPT-5-mini)
-- **Anthropic Provider**: ✅ Herramientas funcionando (Claude 3 Haiku, 3.5 Haiku)  
-- **OpenRouter Provider**: ❌ Sin herramientas (Gemini, Mistral, otros)
-- **Warning System**: Notifica cuando modelos no soportan herramientas
-
-### Configuración de Planes Actualizada
-- **FREE**: Sin acceso después trial
-- **TRIAL**: **GPT-5 Nano** con herramientas (60 días)
-- **STARTER**: **GPT-5 Nano** con herramientas ($149 MXN)  
-- **PRO**: **GPT-5 Nano** con herramientas ($499 MXN)
-- **ENTERPRISE**: **GPT-5 Mini** premium ($1,499 MXN)
-
-### ✅ Tools vs Streaming Issue Resuelto (22 Agosto 2024)
-- **✅ SOLUCIONADO**: GPT-5-nano tools funcionando correctamente
-- **Problema identificado**: Streaming mode impedía el uso de herramientas
-- **Root Cause**: 
-  1. Tools solo se pasaban en non-streaming mode 
-  2. Lógica de streaming invertida (stream = true cuando había tools)
-  3. Tool calls no se parseaban en streaming responses
-- **Solución implementada**:
-  - ✅ `stream = !agentDecision.needsTools` → NO stream cuando necesita herramientas
-  - ✅ Tools disponibles siempre que el modelo las soporte
-  - ✅ Agent decision engine con keywords naturales ("agenda", "recordame", "avísame")
-  - ✅ Prompts anti-falsificación para evitar fingir acciones
-- **Regla crítica**: **NUNCA** intentar parsear tool calls en streaming mode
-- **Estrategia**: Cambiar a non-streaming automáticamente cuando se detecten herramientas
-
-### ✅ Tokens Tracking Corregido (22 Agosto 2024)
-- **✅ SOLUCIONADO**: Sistema de tokens del admin dashboard ahora funciona correctamente
-- **Problema identificado**: Los mensajes ASSISTANT no se guardaban en BD durante conversaciones
-- **Root Cause**: La API `/api/v1/chatbot` caso `preview_chat` no llamaba `addUserMessage`/`addAssistantMessage`
-- **Solución implementada**:
-  - ✅ Agregados imports `addUserMessage`, `addAssistantMessage` en `server/chatbot-api.server.ts`
-  - ✅ Implementado guardado automático en modo streaming y non-streaming
-  - ✅ Manejo de conversaciones con `sessionId` para continuidad
-  - ✅ Logging detallado de tokens guardados
-  - ✅ Manejo de errores sin fallar la respuesta del chat
-- **Archivos modificados**:
-  - `server/chatbot-api.server.ts` → Exports agregados
-  - `app/routes/api.v1.chatbot.ts` → Guardado implementado (líneas 1819-1857, 1651-1688)
-- **Testing**: Dashboard admin `/admin` ahora muestra correctamente "Uso de Tokens por Proveedor (30 días)"
-- **Impacto**: Métricas de costos y usage tracking ahora operativas para optimización
-
-### ✅ Formmy Agent Framework: Tool Simulation → Real Execution (24 Agosto 2025) 🔧
-- **✅ SOLUCIONADO**: Framework ejecutaba simulaciones en lugar de herramientas reales
-- **Problema crítico**: Herramientas aparentaban funcionar pero no generaban registros en BD
-- **Root Cause**: `server/formmy-agent/agent-executor.ts` líneas 463-479 contenían código de simulación hardcodeado
-- **Descubrimiento complejo**: 
-  - Framework tenía 3 capas de desconexión: configuración, registry, y ejecución simulada
-  - Logs mostraban éxito pero `ScheduledAction.count() === 0` revelaba simulación
-  - Lógica de tools usaba `switch` con casos hardcodeados en lugar de registry real
-- **Solución implementada**:
-  - ✅ Agregado import real: `import { executeToolCall } from '../tools/registry';`
-  - ✅ Reemplazado simulación con ejecución real: `const toolResult = await executeToolCall(tool.name, decision.args, toolContext);`
-  - ✅ Conectado `toolContext` con chatbotId, userId, message para handlers reales
-  - ✅ Framework ahora ejecuta herramientas reales del registry centralizado
-- **Archivos críticos modificados**:
-  - `server/formmy-agent/agent-executor.ts:463-479` → Simulación → Ejecución real
-  - `server/formmy-agent/index.ts` → getAvailableTools conectado a registry
-  - `server/formmy-agent/config.ts` → Modelos faltantes agregados
-- **Testing**: `check-db.cjs` debe mostrar registros después de tool execution
-- **Impacto**: Herramientas del framework ahora operan en sistema real, no simulación
-
-### ✅ Framework Memory Fix: Placeholder Response → Real AI Integration (24 Agosto 2025) 🧠
-- **✅ SOLUCIONADO**: Framework devolvía respuestas placeholder + perdía memoria de conversación
-- **Problema crítico**: 
-  1. Respuestas como "Esta sería la respuesta procesada para: [mensaje]" en lugar de AI real
-  2. Framework no mantenía contexto de conversación entre mensajes
-- **Root Causes identificados**:
-  - `generateSimpleResponse()` usaba placeholder hardcodeado en lugar de sistema de proveedores
-  - Framework no recibía `conversationHistory` del API endpoint
-  - Temperature incorrecta para GPT-5-nano (debe ser `undefined`)
-- **Solución implementada**:
-  - ✅ Conectado `generateSimpleResponse` con `AIProviderManager` real
-  - ✅ Agregado `conversationHistory` a `ChatOptions` y `AgentContext` interfaces
-  - ✅ Modificado endpoint API para pasar historial truncado al framework
-  - ✅ Actualizado construcción de mensajes para incluir historial completo
-  - ✅ Corregido manejo de temperature: `context.model === 'gpt-5-nano' ? undefined : 0.7`
-- **Archivos modificados**:
-  - `server/formmy-agent/index.ts:243-281` → Placeholder → AI Provider real
-  - `server/formmy-agent/agent-executor.ts:563-578` → Historial en agent loop
-  - `server/formmy-agent/types.ts` → Interfaces con `conversationHistory`
-  - `app/routes/api.v1.chatbot.ts:1641` → Pasar historial al framework
-- **Testing**: Conversaciones mantienen contexto, respuestas naturales, temperature correcta
-- **Impacto**: Framework ahora funciona como chat AI real con memoria conversacional
 
 ## 📝 Blog Posts y Documentación
 
@@ -511,42 +295,25 @@ Los blog posts referencian estos recursos que necesitan ser creados:
 - [ ] Crear documentación en formmy.app/docs si no existe
 - [ ] **Verificar, mejorar y simplificar los prompt base de sistema de los agentes en pestaña Preview > Agente**
 
-## Próximos pasos técnicos
+## Roadmap Técnico
 
-### 🔥 Email Scheduler Reactivación (Prioridad inmediata - 1-2 días)
-- **Problema**: Email scheduler deshabilitado temporalmente por issues de compilación
-- **Solución A**: Mover `EmailScheduler` a `/app/lib/` para que se compile automáticamente
-- **Solución B**: Crear sistema de cron jobs externo con webhook calls
-- **Solución C**: Migrar lógica a React Router action/loader que se ejecute programáticamente
-- **Archivos afectados**: 
-  - `server.js` (reactivar scheduler)
-  - `app/services/email-scheduler.server.ts` (mover o refactorizar)
-- **Testing**: Verificar que emails automáticos funcionen en staging antes de producción
 
-### Google Gemini Direct API Integration (Prioridad alta - 2-3 semanas)
-- **Objetivo**: Reducir costos adicionales 90% (OpenRouter $0.054 → Gemini Direct $0.006)
-- **Problema**: OpenRouter no pasa herramientas correctamente a Gemini
-- **Solución**: Implementar proveedor Google Gemini directo (como Anthropic/OpenAI directos)
-- **Stack**: Google AI SDK + Function Calling nativo
+### Google Gemini Direct API Integration
+- **Objetivo**: Reducción de costos 90% vs OpenRouter
+- **Implementación**: Proveedor directo en LlamaIndex Engine v2
 - **ROI**: ~$48K USD/año ahorro adicional
-- **Implementación**: 
-  - Crear `/server/chatbot/providers/google.ts`
-  - Agregar Google API keys en configuración
-  - Testing extensivo de herramientas con Gemini 2.5 Flash
-  - Fallback automático a GPT-5-nano si Gemini falla
+- **Stack**: Google AI SDK + Function Calling nativo
 
-### RAG Implementation (Prioridad alta - 4-6 semanas)
-- **Objetivo**: Permitir contexto de 50MB+ sin explosión de costos
-- **Stack**: ChromaDB + OpenAI Embeddings + LangChain
-- **ROI**: Diferenciador clave para Enterprise $1,499
-- **Costos operativos**: <1% del revenue
+### RAG Implementation
+- **Objetivo**: Contexto 50MB+ sin explosión de costos
+- **Stack**: ChromaDB + OpenAI Embeddings integrados en Engine v2
+- **ROI**: Diferenciador Enterprise $1,499
 - **Implementación**: Vector DB + chunking + búsqueda semántica
 
-### Límites de protección (Siguiente semana)
+### Límites de Protección
 - **Tokens máximos por consulta**: Starter 4K, Pro 8K, Enterprise 16K
-- **Límites diarios**: Starter 20, Pro 100, Enterprise 500 consultas con contexto
-- **Truncamiento inteligente**: Primeras páginas + palabras clave de consulta
-- **UI warnings**: Notificar cuando se trunca contenido
+- **Límites diarios**: Starter 20, Pro 100, Enterprise 500 consultas
+- **Implementación**: En LlamaIndex Engine v2 con validación automática
 
 ## Convenciones de código
 
@@ -590,34 +357,30 @@ Los blog posts referencian estos recursos que necesitan ser creados:
 #### ❌ TIER FREE (Plan Free)
 - **Sin acceso** después del trial de 60 días
 
-### Configuraciones del Framework Formmy Agent
+### Configuración de Modelos AI
 
-Cada modelo tiene configuración optimizada en el micro-framework:
+Cada modelo tiene configuración optimizada en el motor LlamaIndex Engine v2:
 
 ```typescript
-// Configuraciones por modelo (server/formmy-agent/config.ts)
+// Configuraciones por modelo (server/llamaindex-engine-v2/)
 'gpt-5-nano': {
   temperature: undefined,      // GPT-5 nano no soporta temperature
-  maxIterations: 5,
   contextLimit: 4000,
   retryConfig: { maxRetries: 3, backoffMs: 1000 }
 },
 'claude-3-haiku-20240307': {
-  temperature: 0.7,            // Haiku necesita control de variabilidad 
-  maxIterations: 4,            // Menos iteraciones para Haiku
+  temperature: 0.7,            // Haiku necesita control de variabilidad
   contextLimit: 3500,
-  retryConfig: { maxRetries: 4, backoffMs: 1500 } // Más retries
+  retryConfig: { maxRetries: 4, backoffMs: 1500 }
 },
 'claude-3-5-haiku-20241022': {
   temperature: 0.5,            // Más determinista que 3.0
-  maxIterations: 6,            // 3.5 es más estable
   contextLimit: 4000,
   retryConfig: { maxRetries: 3, backoffMs: 1000 }
 },
 'gpt-5-mini': {
   temperature: 0.3,            // Máximo determinismo Enterprise
-  maxIterations: 6,
-  contextLimit: 5000,          // Modelo más capaz
+  contextLimit: 5000,
   retryConfig: { maxRetries: 2, backoffMs: 800 }
 }
 ```
@@ -666,14 +429,13 @@ function getSmartModelForPro(hasActiveIntegrations: boolean, isComplexQuery: boo
 - **Gemini 2.5 Flash**: ~$0.075/1M (via OpenRouter markup)
 - **Otros modelos**: Precios variables con markup OpenRouter
 
-### Streaming & Tools Implementation
-- **Smart Streaming**: Non-streaming automático cuando hay herramientas disponibles
+### Motor LlamaIndex Engine v2 - Características
+- **Streaming**: Deshabilitado para compatibilidad con herramientas
 - **Tools Support**: GPT-5-nano, GPT-5-mini, Claude 3 Haiku, Claude 3.5 Haiku
-- **Warning System**: Markdown blockquotes para modelos sin herramientas
-- **TextDecoderStream**: Streams nativos para UTF-8 sin corrupción
-- **Buffer Management**: TransformStream con buffer persistente
-- **Token Limits**: Sistema inteligente según contexto (200-600 tokens)
-- **Error Handling**: Manejo robusto de finishReason y cierre correcto
+- **Sistema de Proveedores**: OpenAI Direct, Anthropic Direct, OpenRouter
+- **Error Handling**: Manejo robusto y reintentos automáticos
+- **Token Management**: Límites inteligentes por plan de usuario
+- **Memory**: Historial conversacional con truncamiento automático
 
 ## Email System
 
@@ -793,26 +555,11 @@ integrations.map(int => ({
 - Producción: fly.io
 - always use server directly in imports from that folder with no prefix
 
-### 🚀 Optimizaciones de Deploy Implementadas (22 Agosto 2024)
-- **✅ COMPLETADO**: Deploy optimizado de 8-15min → 2-4min (60-75% mejora)
-- **Dockerfile Multi-stage**: Cache inteligente de dependencias y build layers
-- **VM mejorada**: 512MB → 1024MB memoria para builds más rápidos
-- **BuildKit + Cache**: Registry cache persistente para layers de Docker
-- **Deploy inteligente**: Detecta cambios en dependencias vs código
-- **Scripts de deploy**: `npm run deploy` (rápido) y `npm run deploy:force` (completo)
-
-### Archivos modificados:
-- `fly.toml`: VM más grande, builder optimizado, timeouts ajustados
-- `Dockerfile`: Multi-stage con cache mount y usuario no-root
-- `.dockerignore`: Filtrado completo de archivos innecesarios
-- `scripts/fast-deploy.sh`: Deploy inteligente con detección de cambios
-- `.fly/docker-cache.sh`: Cache registry persistente
-
-### Issues Conocidos de Deployment
-- **Server.js + TypeScript**: Los archivos `.ts` en `/app/services/` no se compilan automáticamente al build
-- **Solución**: Mover lógica server-side a `/app/lib/` o `/server/` para compilación automática
-- **Email Scheduler**: Temporalmente deshabilitado en `server.js` (línea 42-43)
-- **Status Actual**: ✅ Server funcionando sin email automation, ⏳ Pendiente reactivación
+### 🚀 Optimizaciones de Deploy
+- **Deploy optimizado**: 8-15min → 2-4min (60-75% mejora)
+- **Dockerfile Multi-stage**: Cache inteligente de dependencias
+- **Scripts**: `npm run deploy` (rápido) y `npm run deploy:force` (completo)
+- **Status**: ✅ Producción estable en fly.io
 
 ## Comandos útiles
 
