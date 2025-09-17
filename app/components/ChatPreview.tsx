@@ -389,22 +389,11 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
 
   return (
     <main
-      className={cn("h-full max-h-[680px] relative", {
+      className={cn("h-full max-h-[680px] ", {
         "bg-chatPattern bg-cover rounded-3xl  ": !production,
       })}
     >
       {!production && <StreamToggle stream={stream} onToggle={setStream} />}
-
-      {/* Botón X para cerrar en modo demo */}
-      {!production && (
-        <button
-          onClick={() => setIsMinimized(true)}
-          className="absolute top-2 right-2 z-10 bg-gray-600 hover:bg-gray-700 text-white rounded-full p-1.5 shadow-lg transition-colors"
-          aria-label="Minimizar chat"
-        >
-          <XMarkIcon className="w-4 h-4" />
-        </button>
-      )}
 
       <article
         className={cn(
@@ -425,6 +414,8 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           primaryColor={chatbot.primaryColor || "#63CFDE"}
           name={chatbot.name}
           avatarUrl={chatbot.avatarUrl}
+          showCloseButton={!production}
+          onClose={() => setIsMinimized(true)}
         />
 
         <section
