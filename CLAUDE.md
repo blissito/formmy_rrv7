@@ -80,6 +80,16 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - [ ] **setup_webhook**: Configurar webhooks personalizados
 - [ ] **test_integrations**: Probar conectividad de integraciones
 
+### WhatsApp Coexistence - Embedded Signup (NUEVA IMPLEMENTACIÓN)
+- [ ] **Reemplazar modal manual por Embedded Signup**: Cambiar formulario actual por Meta SDK
+- [ ] **Crear WhatsAppCoexistenceModal.tsx**: Nuevo componente con Meta JavaScript SDK
+- [ ] **Endpoint /api/v1/integrations/whatsapp/embedded-signup**: Backend para token exchange
+- [ ] **Actualizar webhook Cloudflare**: Filtrar mensajes "echo" del Business App
+- [ ] **Variables de entorno Meta**: FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
+- [ ] **Configurar permisos de coexistence**: whatsapp_business_management + messaging
+- [ ] **Setup automático de webhook**: Sin configuración manual de verify token
+- [ ] **Sincronización de 6 meses de historial**: Mantener chats existentes
+
 ### Herramientas de Análisis Avanzado
 - [ ] **get_conversation_insights**: Análisis profundo de conversaciones
 - [ ] **get_performance_metrics**: KPIs y métricas de rendimiento
@@ -107,6 +117,11 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 
 **Próximos Pasos Inmediatos**:
 - [x] Simplificar prompts de todos los agentes (sales, content_seo, data_analyst, automation_ai, growth_hacker) ✅ (Sept 16, 2025)
+- [x] **Reparar funcionalidad del dashboard de chatbots** ✅ (Sept 16, 2025)
+  - [x] Modularizar API v1 endpoint con arquitectura limpia
+  - [x] Restaurar CRUD completo de contextos (entrenamiento)
+  - [x] Implementar gestión completa de chatbots
+  - [x] Sistema de procesamiento de archivos (PDF/DOCX/XLSX)
 - [ ] **Migrar Ghosty a AgentEngine V0** (ALTA PRIORIDAD)
   - [ ] Reemplazar sistema complejo por motor funcional de 231 líneas
   - [ ] Mantener todas las herramientas existentes
@@ -274,6 +289,45 @@ model ScheduledAction {
 - **Beneficios**: 90% menos tokens, respuestas más directas, menor latencia, palabras clave conservadas
 - **Impacto**: ~90% reducción en tokens de system prompt para TODOS los agentes
 
+### API v1 Chatbot - Arquitectura Modular (Sept 16, 2025) ✨
+- **Status**: ✅ Sistema completamente funcional con arquitectura modular
+- **Problema resuelto**: Sección de entrenamiento no funcionaba (intents faltantes)
+- **Solución implementada**: Delegación modular manteniendo endpoint limpio
+
+#### **Arquitectura Modular**:
+```
+/app/routes/api.v1.chatbot.ts (Switch principal - 330 líneas)
+├── Context Handler (/server/chatbot/context-handler.server.ts)
+│   ├── add_file_context (PDF, DOCX, XLSX, TXT)
+│   ├── add_url_context (Websites)
+│   ├── add_text_context + update_text_context
+│   ├── add_question_context + update_question_context
+│   ├── remove_context
+│   └── get_contexts
+├── Management Handler (/server/chatbot/management-handler.server.ts)
+│   ├── create_chatbot (con validaciones de plan)
+│   ├── delete_chatbot + activate_chatbot + deactivate_chatbot
+│   ├── set_to_draft + get_chatbot_state
+│   └── get_chatbot_by_slug
+└── Integration Handler (/server/chatbot/integration-handler.server.ts)
+    ├── create_integration + get_integrations
+    ├── update_integration + toggle_integration_status
+    └── delete_integration
+```
+
+#### **Funcionalidad Restaurada**:
+- ✅ **Entrenamiento**: CRUD completo de contextos (archivos, texto, Q&A, URLs)
+- ✅ **Gestión**: Crear/eliminar/activar chatbots con validaciones
+- ✅ **Integraciones**: Gestión completa de servicios externos
+- ✅ **Procesamiento**: Archivos PDF/DOCX/XLSX con librerías especializadas
+
+#### **Beneficios de la Modularización**:
+- 🔧 **Mantenibilidad**: Lógica separada por funcionalidad
+- 🚀 **Performance**: Imports dinámicos, carga bajo demanda
+- 🧪 **Testeable**: Handlers independientes fáciles de probar
+- 📦 **Reutilizable**: Handlers pueden usarse en otros endpoints
+- 🔍 **Debuggeable**: Errores aislados por módulo
+
 
 
 
@@ -313,6 +367,7 @@ Los blog posts referencian estos recursos que necesitan ser creados:
 - [ ] Verificar funcionamiento de todos los links en blog posts
 - [ ] Crear documentación en formmy.app/docs si no existe
 - [x] **Verificar, mejorar y simplificar los prompt base de sistema de los agentes en pestaña Preview > Agente** ✅ (Sept 16, 2025)
+- [x] **Reparar funcionalidad de entrenamiento del dashboard de chatbots** ✅ (Sept 16, 2025)
 
 ## Roadmap Técnico
 
@@ -336,9 +391,11 @@ Los blog posts referencian estos recursos que necesitan ser creados:
 
 ## Convenciones de código
 
-- TypeScript estricto, **NUNCA imports dinámicos** - usar solo imports estáticos
+- TypeScript estricto con validaciones completas
+- **Imports dinámicos permitidos** en endpoints server para optimización de performance (cargar módulos bajo demanda)
 - **NUNCA colocar utilidades en el mismo módulo de ruta** - siempre crear archivos `.server.tsx` correspondientes para utilidades
 - No agregar funciones de utilidad directamente en archivos de rutas - moverlas a archivos server separados
+- **Arquitectura modular**: Delegar lógica compleja a handlers especializados
 - Server Components por defecto
 - Prisma para ORM
 - Tailwind CSS para estilos

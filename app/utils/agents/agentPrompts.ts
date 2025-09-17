@@ -21,7 +21,7 @@ REGLAS:
 - Si no sabes algo, dilo`;
 
 export function getAgentPrompt(agentType: AgentType): string {
-  const basePrompt = AGENT_PROMPTS[agentType] || AGENT_PROMPTS.sales;
+  const basePrompt = AGENT_PROMPTS[agentType] || AGENT_PROMPTS.customer_support;
   
   // Solo agregar reglas críticas al agente de soporte por ahora
   if (agentType === 'customer_support') {
@@ -74,11 +74,11 @@ export const AGENT_GOODBYE_MESSAGES: Record<AgentType, string> = {
 };
 
 export function getAgentWelcomeMessage(agentType: AgentType): string {
-  return AGENT_WELCOME_MESSAGES[agentType] || AGENT_WELCOME_MESSAGES.sales;
+  return AGENT_WELCOME_MESSAGES[agentType] || AGENT_WELCOME_MESSAGES.customer_support;
 }
 
 export function getAgentGoodbyeMessage(agentType: AgentType): string {
-  return AGENT_GOODBYE_MESSAGES[agentType] || AGENT_GOODBYE_MESSAGES.sales;
+  return AGENT_GOODBYE_MESSAGES[agentType] || AGENT_GOODBYE_MESSAGES.customer_support;
 }
 
 // Colores temáticos para cada tipo de agente
@@ -92,5 +92,5 @@ export const AGENT_COLORS: Record<AgentType, string> = {
 };
 
 export function getAgentColor(agentType: AgentType): string {
-  return AGENT_COLORS[agentType] || AGENT_COLORS.sales;
+  return AGENT_COLORS[agentType] || AGENT_COLORS.customer_support;
 }

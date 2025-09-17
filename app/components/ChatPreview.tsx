@@ -9,6 +9,7 @@ import { MessageBubble } from "./chat/MessageBubble";
 import { ChatHeader } from "./chat/ChatHeader";
 import { StreamToggle } from "./chat/StreamToggle";
 import { LoadingIndicator } from "./chat/LoadingIndicator";
+import { XMarkIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline";
 
 export interface ChatPreviewProps {
   chatbot: Chatbot;
@@ -42,7 +43,8 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [stream, setStream] = useState(false); // 🚨 STREAMING DESHABILITADO por defecto - problema crítico resuelto
+  const [stream, setStream] = useState(true); // ✅ STREAMING HABILITADO - AgentEngine V0 con SSE funcionando
+  const [isMinimized, setIsMinimized] = useState(false); // Estado para minimizar en modo demo
   const inputRef = useRef<ChatInputRef>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -63,8 +65,8 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
       };
       return update;
     });
-    // 🚨 STREAMING DESHABILITADO - mantener siempre false hasta resolver problema crítico
-    setStream(false);
+    // ✅ STREAMING HABILITADO - mantener el estado del usuario
+    // Nota: El usuario puede cambiar el toggle manualmente
   }, [chatbot]);
 
   // Auto-scroll logic
@@ -191,7 +193,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         formData.append("message", currentInput);
         formData.append("sessionId", sessionIdRef.current);
         formData.append("conversationHistory", JSON.stringify(updatedMessages));
-        formData.append("stream", "false"); // AgentEngine_v0 non-streaming por simplicidad
+        formData.append("stream", stream.toString()); // Usar valor real del toggle
 
         // Timeout de seguridad para evitar loading infinito
         const timeoutId = setTimeout(() => {
@@ -263,23 +265,25 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
                 if (line.startsWith('data: ')) {
                   const dataStr = line.slice(6);
                   
-                  // Manejar [DONE] explícitamente
-                  if (dataStr === '[DONE]' || dataStr.trim() === '[DONE]') {
-                    clearTimeout(timeoutId);
-                    setChatLoading(false);
-                    inputRef.current?.focus();
-                    return; // Salir completamente de toda la función fetch
-                  }
-                  
                   try {
                     const data = JSON.parse(dataStr);
-                    if (data.content) {
+
+                    // Manejar evento de finalización
+                    if (data.type === 'done') {
+                      clearTimeout(timeoutId);
+                      setChatLoading(false);
+                      inputRef.current?.focus();
+                      return; // Salir completamente de toda la función fetch
+                    }
+
+                    // Manejar chunks de contenido
+                    if (data.type === 'chunk' && data.content) {
                       // ✅ Ocultar loading indicator en el primer chunk
                       if (!hasReceivedFirstChunk) {
                         setChatLoading(false);
                         hasReceivedFirstChunk = true;
                       }
-                      
+
                       fullContent += data.content;
                       setChatMessages((msgs) => {
                         const updated = [...msgs];
@@ -291,8 +295,18 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
                         return updated;
                       });
                     }
+
+                    // Manejar errores
+                    if (data.type === 'error') {
+                      clearTimeout(timeoutId);
+                      setChatError(data.content || 'Error del servidor');
+                      setChatLoading(false);
+                      inputRef.current?.focus();
+                      return;
+                    }
+
                   } catch (e) {
-                    console.warn('Failed to parse chunk:', dataStr);
+                    console.warn('Failed to parse SSE chunk:', dataStr);
                   }
                 }
               }
@@ -320,7 +334,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         formData.append("message", currentInput);
         formData.append("sessionId", sessionIdRef.current);
         formData.append("conversationHistory", JSON.stringify(updatedMessages));
-        formData.append("stream", "false");
+        formData.append("stream", stream.toString()); // Usar valor real del toggle
 
         fetch("/api/v0/chatbot", {
           method: "POST",
@@ -355,13 +369,42 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     }
   };
 
+  // En modo demo, si está minimizado, mostrar solo la burbuja
+  if (!production && isMinimized) {
+    return (
+      <main className="h-full max-h-[680px] bg-chatPattern bg-cover rounded-3xl flex items-end justify-end p-6">
+        <button
+          onClick={() => setIsMinimized(false)}
+          className="w-16 h-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center text-white hover:scale-105"
+          style={{
+            backgroundColor: chatbot.primaryColor || "#63CFDE"
+          }}
+          aria-label="Abrir chat"
+        >
+          <ChatBubbleLeftRightIcon className="w-8 h-8" />
+        </button>
+      </main>
+    );
+  }
+
   return (
     <main
-      className={cn("h-full max-h-[680px] ", {
+      className={cn("h-full max-h-[680px] relative", {
         "bg-chatPattern bg-cover rounded-3xl  ": !production,
       })}
     >
       {!production && <StreamToggle stream={stream} onToggle={setStream} />}
+
+      {/* Botón X para cerrar en modo demo */}
+      {!production && (
+        <button
+          onClick={() => setIsMinimized(true)}
+          className="absolute top-2 right-2 z-10 bg-gray-600 hover:bg-gray-700 text-white rounded-full p-1.5 shadow-lg transition-colors"
+          aria-label="Minimizar chat"
+        >
+          <XMarkIcon className="w-4 h-4" />
+        </button>
+      )}
 
       <article
         className={cn(

@@ -1,5 +1,6 @@
 import { useLoaderData } from "react-router";
 import ChatPreview from "~/components/ChatPreview";
+import FloatingChatWidget from "~/components/FloatingChatWidget";
 import type { Chatbot } from "@prisma/client";
 import { db } from "~/utils/db.server";
 
@@ -79,11 +80,11 @@ export default function ChatEmbedRoute() {
     );
   }
 
-  // Si todo está bien, mostrar el chatbot con fondo transparente
+  // Si todo está bien, mostrar el widget flotante con fondo transparente
   return (
     <>
       <GlobalStyles />
-      <ChatPreview production chatbot={data.chatbot as Chatbot} />
+      <FloatingChatWidget chatbot={data.chatbot as Chatbot} />
     </>
   );
 }

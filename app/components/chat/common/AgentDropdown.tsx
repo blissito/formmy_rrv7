@@ -12,16 +12,16 @@ export type AgentType =
 // Opciones de agentes predefinidas
 const AGENT_OPTIONS: DropdownOption[] = [
   {
-    value: "sales",
-    label: "Agente de Ventas",
-    description: "Experto en ventas consultivas B2B/B2C",
-    iconSrc: "/assets/chat/agents/sales.svg",
-  },
-  {
     value: "customer_support",
     label: "Soporte al Cliente",
     description: "Customer success y resolución rápida",
     iconSrc: "/assets/chat/agents/customer-service.svg",
+  },
+  {
+    value: "sales",
+    label: "Agente de Ventas",
+    description: "Experto en ventas consultivas B2B/B2C",
+    iconSrc: "/assets/chat/agents/sales.svg",
   },
   {
     value: "content_seo",

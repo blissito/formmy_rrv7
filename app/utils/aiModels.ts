@@ -29,13 +29,13 @@ export const AI_MODELS: AIModel[] = [
     tier: "enterprise",
   },
   
-  // Modelos Pro/Starter - Ultra económicos con herramientas
+  // Modelos Pro - Ultra económicos con herramientas
   {
     value: "gpt-5-nano",
     label: "GPT-5 Nano",
-    category: "STARTER",
+    category: "PRO",
     provider: "openai-direct",
-    tier: "starter",
+    tier: "pro",
     recommended: true,
     badge: "Mejor elección",
   },
@@ -43,18 +43,20 @@ export const AI_MODELS: AIModel[] = [
   {
     value: "claude-3-haiku-20240307",
     label: "Claude 3 Haiku",
-    category: "PRO", 
+    category: "PRO",
     provider: "anthropic-direct",
     tier: "pro",
   },
+
   {
-    value: "google/gemini-2.5-flash-lite",
-    label: "Gemini 2.5 Flash-Lite",
+    value: "gpt-3.5-turbo",
+    label: "GPT-3.5 Turbo",
     category: "STARTER",
-    provider: "openrouter",
+    provider: "openai-direct",
     tier: "starter",
   },
-  
+
+  // Nota: Gemini 2.5 Flash-Lite removido por incompatibilidad con herramientas via OpenRouter
   // Nota: Llama 3.3 70B y Nemotron Ultra 253B removidos por generar respuestas problemáticas
 ];
 
@@ -71,15 +73,16 @@ export const DEFAULT_AI_MODEL = "claude-3-5-haiku-20241022";
 export function getDefaultModelForPlan(plan: string): string {
   switch (plan) {
     case "FREE":
+      return "gpt-3.5-turbo"; // FREE usa turbo como fallback
     case "TRIAL":
-    case "STARTER":
-      return "gpt-5-nano"; // Nano: mejor balance velocidad/costo para planes básicos
     case "PRO":
-      return "gpt-5-nano"; // Nano como default, con smart routing para integraciones
+      return "gpt-5-nano"; // Nano para trial y PRO
+    case "STARTER":
+      return "gpt-3.5-turbo"; // Ultra económico para starter
     case "ENTERPRISE":
       return "gpt-5-mini"; // Mini: máximo rendimiento para Enterprise
     default:
-      return "gpt-5-nano";
+      return "gpt-3.5-turbo";
   }
 }
 
@@ -108,13 +111,11 @@ export const DEFAULT_MODEL_ROTATION = [
 
 export const FALLBACK_MODELS = {
   "claude-3-5-sonnet-20241022": "claude-3-5-haiku-20241022",
-  "claude-3-5-haiku-20241022": "claude-3-haiku-20240307", 
+  "claude-3-5-haiku-20241022": "claude-3-haiku-20240307",
   "claude-3-haiku-20240307": "gpt-3.5-turbo",
-  "gpt-3.5-turbo": "claude-3-haiku-20240307",
+  "gpt-3.5-turbo": "gpt-5-nano", // Fallback a Nano si Turbo falla
   "gpt-5-nano": "gpt-5-mini", // Fallback a GPT-5-mini de la misma familia
   "gpt-5-mini": "claude-3-haiku-20240307", // Luego a Claude si falla
-  "google/gemini-flash-1.5": "claude-3-haiku-20240307",
-  "mistralai/mistral-small": "claude-3-haiku-20240307",
 };
 
 /**

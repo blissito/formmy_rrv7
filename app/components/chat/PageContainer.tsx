@@ -11,6 +11,7 @@ import {
   ConversationsPreview,
 } from "./tab_sections/Conversations";
 import ChatPreview from "../ChatPreview";
+import FloatingChatWidget from "../FloatingChatWidget";
 import DeleteIcon from "../ui/icons/Delete";
 import CodeIcon from "../ui/icons/Code";
 import OpenTabIcon from "../ui/icons/OpenTab";
@@ -448,7 +449,7 @@ export const EditionPair = ({
     chatbot.aiModel || getDefaultModelForPlan(user.plan)
   );
   const [selectedAgent, setSelectedAgent] = useState<AgentType>(
-    (chatbot.personality as AgentType) || "sales"
+    (chatbot.personality as AgentType) || "customer_support"
   );
   const [temperature, setTemperature] = useState(chatbot.temperature || 1);
   const [instructions, setInstructions] = useState(
@@ -475,7 +476,7 @@ export const EditionPair = ({
   // Sincronizar el estado del contexto cuando cambien los datos del loader
   useEffect(() => {
     setSelectedModel(chatbot.aiModel || getDefaultModelForPlan(user.plan));
-    setSelectedAgent((chatbot.personality as AgentType) || "sales");
+    setSelectedAgent((chatbot.personality as AgentType) || "customer_support");
     setTemperature(chatbot.temperature || 1);
     setInstructions(chatbot.instructions || "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios.");
     setName(chatbot.name || "Geeki");
@@ -522,7 +523,7 @@ export const EditionPair = ({
             <PreviewForm chatbot={chatbot} user={user} />
           </section>
           <section className="col-span-12 md:col-span-8">
-            <ChatPreview 
+            <ChatPreview
               chatbot={{
                 ...chatbot,
                 name,
@@ -534,7 +535,7 @@ export const EditionPair = ({
                 temperature,
                 instructions,
                 personality: selectedAgent,
-              }} 
+              }}
             />
           </section>
         </article>

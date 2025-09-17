@@ -669,36 +669,45 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
       : "https://formmy-v2.fly.dev";
 
   const codeToCopy = `
-<article style="background:transparent;position:fixed;bottom:40px;right:40px;">
-  <iframe 
-    src="${baseUrl}/chat/embed?slug=${chatbot.slug}" 
-    width="400" 
-    height="600"
-    frameborder="0"
-    style="border-radius: 8px;"
-  ></iframe>
-</article>
+<!-- Widget de chat flotante - Inicia cerrado y se abre al hacer clic -->
+<iframe
+  src="${baseUrl}/chat/embed?slug=${chatbot.slug}"
+  width="100%"
+  height="100%"
+  frameborder="0"
+  style="position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none; background: transparent;"
+  allow="clipboard-write"
+></iframe>
+
+<style>
+  /* Permite interacción solo con el widget flotante */
+  iframe[src*="/chat/embed"] {
+    pointer-events: auto;
+  }
+</style>
 `;
 
   const instructions = [
-    { step: "1", description: "Copia el código del iframe" },
+    { step: "1", description: "Copia el código del widget flotante" },
     {
       step: "2",
-      description: "Pégalo en tu archivo HTML donde quieras que aparezca",
+      description: "Pégalo en tu archivo HTML, preferiblemente antes del </body>",
     },
     {
       step: "3",
-      description: "Ajusta el width y height según tus necesidades",
+      description: "El widget aparecerá como una burbuja en la esquina inferior derecha",
     },
     {
       step: "4",
-      description:
-        "El chatbot se adaptará automáticamente y ocupará todo el espacio disponible",
+      description: "Inicia CERRADO - los usuarios deben hacer clic para abrir el chat",
     },
     {
       step: "5",
-      description:
-        "La ruta /chat/embed usa el slug de tu chatbot para mostrarlo correctamente",
+      description: "Incluye botón X para cerrar y volver al estado de burbuja",
+    },
+    {
+      step: "6",
+      description: "Es completamente responsive y no afecta el diseño de tu sitio",
     },
   ];
 
