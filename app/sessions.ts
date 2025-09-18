@@ -26,7 +26,7 @@ const { getSession, commitSession, destroySession } =
       path: "/",
       sameSite: "lax",
       secrets: ["blissm0"],
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
     },
   });
 

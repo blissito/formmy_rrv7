@@ -28,7 +28,7 @@ export default function HomeHero() {
       </p>
       <div className="flex gap-4 mt-10">
         <Form method="post" action="/api/login" id="start_hero">
-          <BigCTA type="submit" name="intent" value="google-login" textClassName="text-base md:text-lg" className="h-14" arrowClassName="w-14 h-14 text-xl" />
+          <BigCTA type="submit" name="intent" value="google-login" textClassName="text-base md:text-lg" className="h-14" />
         </Form>
         <Link to="/planes">
         <Button variant="secondary" className="mt-0 h-14 text-base md:text-lg">

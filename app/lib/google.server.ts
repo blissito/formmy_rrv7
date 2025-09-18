@@ -9,13 +9,11 @@ import { sendWelcomeEmail } from "~/utils/notifyers/welcome";
 const GOOGLE_SECRET = process.env.GOOGLE_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
-let redirect_uri;
 const getredirectUri = (host: string) => {
-  redirect_uri ??=
-    host && process.env.NODE_ENV === "production"
-      ? "https://" + host
-      : "http://" + host;
-  return redirect_uri;
+  const baseUrl = process.env.NODE_ENV === "production"
+    ? "https://" + host
+    : "http://" + host;
+  return baseUrl;
 };
 
 export const getExtraData = (access_token: string): ExtraData => {
@@ -59,7 +57,7 @@ export const getAccessToken = async <Code extends string>(
   return fetch(url, {
     method: "post",
     headers: {
-      "contant-type": "application/json",
+      "content-type": "application/json",
       Authorization: `Basic ${btoa(GOOGLE_CLIENT_ID + ":" + GOOGLE_SECRET)}`,
     },
   })

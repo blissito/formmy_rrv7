@@ -1,16 +1,7 @@
 import { data as json } from "react-router";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { Effect, Layer } from "effect";
 import { IntegrationType } from "@prisma/client";
 import {
-  WhatsAppService,
-  WhatsAppServiceLive,
-} from "../../server/integrations/whatsapp/WhatsAppService";
-import { WhatsAppConfigLive } from "../../server/integrations/whatsapp/config";
-import { WhatsAppHttpClientLive } from "../../server/integrations/whatsapp/httpClient";
-import {
-  WhatsAppError,
-  ValidationError,
   type IncomingMessage,
 } from "../../server/integrations/whatsapp/types";
 import {
@@ -23,6 +14,8 @@ import {
 } from "../../server/chatbot/conversationModel.server";
 import { getChatbotById } from "../../server/chatbot/chatbotModel.server";
 import { db } from "../utils/db.server";
+import { createAgent } from "../../server/agent-engine-v0";
+import { agentStreamEvent } from "@llamaindex/workflow";
 
 // Types for WhatsApp webhook payload
 interface WhatsAppWebhookEntry {
@@ -91,172 +84,183 @@ interface WhatsAppWebhookPayload {
 
 /**
  * Loader function - handles GET requests for webhook verification
- * WhatsApp sends a GET request to verify the webhook endpoint
+ * WhatsApp sends a GET request to verify the webhook endpoint - simplified
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const verificationEffect = Effect.gen(function* () {
+  try {
     const url = new URL(request.url);
     const mode = url.searchParams.get("hub.mode");
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
-    const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
-
-    yield* Effect.logInfo("Webhook verification request", {
+    // Para embedded signup, verificamos contra tokens dinámicos guardados en BD
+    console.log("Webhook verification request", {
       mode,
-      token,
-      challenge,
-      hasVerifyToken: !!verifyToken,
+      token: token ? '***' : 'missing',
+      challenge: challenge ? 'present' : 'missing',
     });
 
     // Verify that this is a webhook verification request
     if (mode !== "subscribe") {
-      const error = `Invalid mode: ${mode}. Expected 'subscribe'`;
-      yield* Effect.logWarning(error);
-      return yield* Effect.fail(
-        new ValidationError({
-          field: "hub.mode",
-          value: mode,
-          message: error,
-        })
-      );
+      console.warn(`Invalid mode: ${mode}. Expected 'subscribe'`);
+      return new Response("Invalid mode", { status: 400 });
     }
 
-    // Verify token matches
-    if (token !== verifyToken) {
-      const error = `Token verification failed. Received: ${token}, Expected: ${verifyToken}`;
-      yield* Effect.logWarning(error);
-      return yield* Effect.fail(
-        new ValidationError({
-          field: "hub.verify_token",
-          value: "[REDACTED]", // Don't log the actual tokens
-          message: "Token verification failed",
-        })
-      );
+    // Verificar token contra integraciones existentes o variable de entorno para testing
+    let isValidToken = false;
+
+    // 1. Verificar contra variable de entorno (para testing manual)
+    const envToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+    if (envToken && token === envToken) {
+      isValidToken = true;
+    }
+
+    // 2. Verificar contra tokens dinámicos de embedded signup
+    if (!isValidToken && token) {
+      const integration = await db.integration.findFirst({
+        where: {
+          platform: "WHATSAPP",
+          settings: {
+            path: ["webhookVerifyToken"],
+            equals: token
+          }
+        }
+      });
+
+      if (integration) {
+        isValidToken = true;
+        console.log("Token verified against dynamic webhook token");
+      }
+    }
+
+    if (!isValidToken) {
+      console.warn("Token verification failed");
+      return new Response("Forbidden", { status: 403 });
     }
 
     if (!challenge) {
-      const error = "No challenge provided";
-      yield* Effect.logWarning(error);
-      return yield* Effect.fail(
-        new ValidationError({
-          field: "hub.challenge",
-          value: challenge,
-          message: error,
-        })
-      );
+      console.warn("No challenge provided");
+      return new Response("No challenge provided", { status: 400 });
     }
 
-    yield* Effect.logInfo("Webhook verification successful");
-    return challenge;
-  });
-
-  try {
-    const result = await Effect.runPromise(
-      verificationEffect.pipe(
-        Effect.catchAll((error) =>
-          Effect.gen(function* () {
-            yield* Effect.logError("Webhook verification failed", { error });
-            return yield* Effect.fail(error);
-          })
-        )
-      )
-    );
-
-    return new Response(result, {
+    console.log("Webhook verification successful");
+    return new Response(challenge, {
       status: 200,
       headers: {
         "Content-Type": "text/plain",
       },
     });
+
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return new Response(error.message, { status: 400 });
-    }
+    console.error("Webhook verification failed:", error);
     return new Response("Verification failed", { status: 500 });
   }
 };
 
 /**
  * Action function - handles POST requests for incoming webhooks
- * Processes incoming WhatsApp messages and generates chatbot responses
+ * Processes incoming WhatsApp messages and generates chatbot responses - simplified
  */
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const webhookProcessingEffect = Effect.gen(function* () {
+  try {
     // Parse the webhook payload
-    const payload = yield* Effect.tryPromise({
-      try: () => request.json() as Promise<WhatsAppWebhookPayload>,
-      catch: (error) =>
-        new ValidationError({
-          field: "payload",
-          value: "invalid",
-          message: `Failed to parse webhook payload: ${error}`,
-        }),
+    const payload = await request.json() as WhatsAppWebhookPayload;
+    console.log("Received webhook payload", {
+      object: payload.object,
+      entryCount: payload.entry?.length
     });
 
-    yield* Effect.logInfo("Received webhook payload", { payload });
+    // Process each entry in the webhook
+    const results = [];
 
-    // Get webhook signature for verification
-    const signature = request.headers.get("x-hub-signature-256");
+    for (const entry of payload.entry || []) {
+      for (const change of entry.changes || []) {
+        if (change.field === "messages" && change.value.messages) {
+          // Process regular messages
+          for (const message of change.value.messages) {
+            try {
+              const incomingMessage: IncomingMessage = {
+                messageId: message.id,
+                from: message.from,
+                to: change.value.metadata.phone_number_id,
+                type: message.type as any,
+                body: message.text?.body || '',
+                timestamp: message.timestamp
+              };
 
-    // Process webhook using WhatsApp service
-    const whatsappService = yield* WhatsAppService;
+              const result = await processIncomingMessage(incomingMessage);
+              results.push(result);
+            } catch (error) {
+              console.error("Error processing individual message:", error);
+              results.push({
+                success: false,
+                messageId: message.id,
+                error: error instanceof Error ? error.message : "Unknown error"
+              });
+            }
+          }
+        } else if ((change.field as string) === "smb_message_echoes" && (change.value as any).message_echoes) {
+          // Process echo messages - save but don't respond
+          for (const echoMessage of (change.value as any).message_echoes) {
+            try {
+              console.log("Processing echo message", {
+                messageId: echoMessage.id,
+                from: echoMessage.from,
+                to: echoMessage.to
+              });
 
-    // Convert payload to the format expected by WhatsApp service
-    const incomingMessages = yield* whatsappService.processWebhook(
-      payload,
-      signature || ""
-    );
+              // Find integration and conversation for echo message
+              const integration = await findIntegrationByPhoneNumber(
+                change.value.metadata.phone_number_id
+              );
 
-    // Process each incoming message
-    const results = yield* Effect.all(
-      incomingMessages.map((message) => processIncomingMessageEffect(message)),
-      { concurrency: 5 } // Process up to 5 messages concurrently
-    );
+              if (integration) {
+                const conversation = await getOrCreateConversation(
+                  echoMessage.to, // The customer who received the echo
+                  integration.chatbotId
+                );
 
-    return {
+                // Save echo message using special channel to indicate echo
+                await db.message.create({
+                  data: {
+                    conversationId: conversation.id,
+                    content: echoMessage.text?.body || '',
+                    role: "ASSISTANT",
+                    channel: "whatsapp_echo", // Special channel to indicate echo message
+                    externalMessageId: echoMessage.id,
+                    tokens: 0,
+                    responseTime: 0,
+                  }
+                });
+
+                results.push({
+                  success: true,
+                  messageId: echoMessage.id,
+                  type: 'echo',
+                  conversationId: conversation.id
+                });
+              }
+            } catch (error) {
+              console.error("Error processing echo message:", error);
+              results.push({
+                success: false,
+                messageId: echoMessage.id,
+                type: 'echo',
+                error: error instanceof Error ? error.message : "Unknown error"
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return json({
       success: true,
       processed: results.length,
       results,
-    };
-  });
+    });
 
-  // Create the service layer
-  const serviceLayer = Layer.mergeAll(
-    WhatsAppConfigLive,
-    WhatsAppHttpClientLive,
-    WhatsAppServiceLive
-  );
-
-  try {
-    const result = await Effect.runPromise(
-      webhookProcessingEffect.pipe(Effect.provide(serviceLayer))
-    );
-
-    return json(result);
   } catch (error) {
     console.error("Webhook processing failed:", error);
-
-    if (error instanceof ValidationError) {
-      return json(
-        {
-          success: false,
-          error: "Validation failed",
-          details: error.message,
-        },
-        { status: 400 }
-      );
-    }
-
-    if (error instanceof WhatsAppError) {
-      return json(
-        {
-          success: false,
-          error: "WhatsApp API error",
-          details: error.message,
-        },
-        { status: 500 }
-      );
-    }
 
     return json(
       {
@@ -270,128 +274,114 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 /**
- * Process an incoming WhatsApp message using Effect
+ * Process an incoming WhatsApp message - simplified direct approach
  */
-const processIncomingMessageEffect = (message: IncomingMessage) =>
-  Effect.gen(function* () {
-    yield* Effect.logInfo("Processing incoming message", {
-      messageId: message.messageId,
-      from: message.from,
-      type: message.type,
-    });
+async function processIncomingMessage(message: IncomingMessage) {
+  console.log("Processing incoming message", {
+    messageId: message.messageId,
+    from: message.from,
+    type: message.type,
+  });
 
+  try {
     // Find the integration for this phone number
-    const integration = yield* findIntegrationByPhoneNumberEffect(message.to);
+    const integration = await findIntegrationByPhoneNumber(message.to);
 
-    if (!integration.isActive) {
-      yield* Effect.logWarning("Integration is not active", {
-        integrationId: integration.id,
+    if (!integration || !integration.isActive) {
+      console.warn("Integration not found or not active", {
+        phoneNumberId: message.to,
+        integration: integration?.id
       });
-      return yield* Effect.fail(
-        new ValidationError({
-          field: "integration",
-          value: integration.id,
-          message: "Integration is not active",
-        })
-      );
+      throw new Error("Integration is not active");
     }
 
     // Get the chatbot
-    const chatbot = yield* Effect.tryPromise({
-      try: () => getChatbotById(integration.chatbotId),
-      catch: (error) =>
-        new ValidationError({
-          field: "chatbot",
-          value: integration.chatbotId,
-          message: `Failed to get chatbot: ${error}`,
-        }),
-    });
+    const chatbot = await getChatbotById(integration.chatbotId);
 
     if (!chatbot) {
-      yield* Effect.logError("Chatbot not found", {
-        chatbotId: integration.chatbotId,
-      });
-      return yield* Effect.fail(
-        new ValidationError({
-          field: "chatbot",
-          value: integration.chatbotId,
-          message: "Chatbot not found",
-        })
-      );
+      console.error("Chatbot not found", { chatbotId: integration.chatbotId });
+      throw new Error("Chatbot not found");
     }
 
     // Create or find conversation
-    const conversation = yield* getOrCreateConversationEffect(
+    const conversation = await getOrCreateConversation(
       message.from,
       integration.chatbotId
     );
 
-    // Save the incoming message
-    const userMessage = yield* Effect.tryPromise({
-      try: () =>
-        addWhatsAppUserMessage(
-          conversation.id,
-          message.body,
-          message.messageId
-        ),
-      catch: (error) =>
-        new ValidationError({
-          field: "userMessage",
-          value: message.messageId,
-          message: `Failed to save user message: ${error}`,
-        }),
+    // Save the incoming message first
+    const userMessage = await addWhatsAppUserMessage(
+      conversation.id,
+      message.body,
+      message.messageId
+    );
+
+    // Check if conversation is in manual mode
+    if (conversation.manualMode) {
+      console.log("Conversation is in manual mode - skipping automatic response", {
+        conversationId: conversation.id,
+        messageId: message.messageId
+      });
+
+      return {
+        success: true,
+        messageId: message.messageId,
+        conversationId: conversation.id,
+        userMessageId: userMessage.id,
+        mode: "manual",
+        note: "Message saved but no automatic response generated (manual mode)"
+      };
+    }
+
+    // Get recent conversation history for context (only if not in manual mode)
+    const recentMessages = await db.message.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        role: true,
+        content: true,
+        createdAt: true
+      }
     });
 
-    // Generate chatbot response
-    const botResponse = yield* generateChatbotResponseEffect(
+    // Generate chatbot response with history context
+    const botResponse = await generateChatbotResponse(
       message.body,
       chatbot,
-      conversation.id
+      conversation.id,
+      recentMessages.reverse() // Oldest first for context
     );
 
     // Save the bot response
-    const assistantMessage = yield* Effect.tryPromise({
-      try: () =>
-        addWhatsAppAssistantMessage(
-          conversation.id,
-          botResponse.content,
-          undefined, // WhatsApp message ID will be set when sent
-          botResponse.tokens,
-          botResponse.responseTime
-        ),
-      catch: (error) =>
-        new ValidationError({
-          field: "assistantMessage",
-          value: conversation.id,
-          message: `Failed to save assistant message: ${error}`,
-        }),
-    });
+    const assistantMessage = await addWhatsAppAssistantMessage(
+      conversation.id,
+      botResponse.content,
+      undefined, // WhatsApp message ID will be set when sent
+      botResponse.tokens,
+      botResponse.responseTime
+    );
 
-    // Send response back to WhatsApp using the service
-    const whatsappService = yield* WhatsAppService;
-    const messageResponse = yield* whatsappService.sendTextMessage(
+    // Send response back to WhatsApp using simplified HTTP call
+    const messageResponse = await sendWhatsAppMessage(
       message.from,
-      botResponse.content
+      botResponse.content,
+      integration
     );
 
     // Update the assistant message with the WhatsApp message ID
-    yield* Effect.tryPromise({
-      try: () =>
-        db.message.update({
+    if (messageResponse.messageId) {
+      try {
+        await db.message.update({
           where: { id: assistantMessage.id },
           data: { externalMessageId: messageResponse.messageId },
-        }),
-      catch: (error) => {
+        });
+      } catch (error) {
         console.warn("Failed to update message with WhatsApp ID:", error);
-        return null;
-      },
-    }).pipe(
-      Effect.catchAll(() =>
-        Effect.logWarning("Failed to update message with WhatsApp ID")
-      )
-    );
+      }
+    }
 
-    yield* Effect.logInfo("Message processed successfully", {
+    console.log("Message processed successfully", {
       messageId: message.messageId,
       conversationId: conversation.id,
       responseMessageId: messageResponse.messageId,
@@ -405,167 +395,186 @@ const processIncomingMessageEffect = (message: IncomingMessage) =>
       assistantMessageId: assistantMessage.id,
       whatsappMessageId: messageResponse.messageId,
     };
-  });
+
+  } catch (error) {
+    console.error("Error processing WhatsApp message:", error);
+    throw error;
+  }
+}
 
 /**
- * Find integration by phone number ID using Effect
+ * Find integration by phone number ID - simplified
  */
-const findIntegrationByPhoneNumberEffect = (phoneNumberId: string) =>
-  Effect.gen(function* () {
-    const integration = yield* Effect.tryPromise({
-      try: () =>
-        db.integration.findFirst({
-          where: {
-            platform: IntegrationType.WHATSAPP,
-            phoneNumberId,
-            isActive: true,
-          },
-        }),
-      catch: (error) =>
-        new ValidationError({
-          field: "phoneNumberId",
-          value: phoneNumberId,
-          message: `Failed to find integration: ${error}`,
-        }),
-    });
-
-    if (!integration) {
-      yield* Effect.logWarning("No integration found for phone number", {
-        phoneNumberId,
-      });
-      return yield* Effect.fail(
-        new ValidationError({
-          field: "phoneNumberId",
-          value: phoneNumberId,
-          message: "No active integration found for this phone number",
-        })
-      );
-    }
-
-    return integration;
+async function findIntegrationByPhoneNumber(phoneNumberId: string) {
+  return await db.integration.findFirst({
+    where: {
+      platform: IntegrationType.WHATSAPP,
+      phoneNumberId,
+      isActive: true,
+    },
   });
+}
 
 /**
- * Get or create conversation using Effect
+ * Get or create conversation - simplified
  */
-const getOrCreateConversationEffect = (
-  phoneNumber: string,
-  chatbotId: string
-) =>
-  Effect.gen(function* () {
-    const sessionId = `whatsapp_${phoneNumber}`;
+async function getOrCreateConversation(phoneNumber: string, chatbotId: string) {
+  const sessionId = `whatsapp_${phoneNumber}`;
 
-    // Try to find existing conversation
-    const existingConversation = yield* Effect.tryPromise({
-      try: () => getConversationBySessionId(sessionId),
-      catch: () => null, // If not found, we'll create a new one
-    });
+  // Try to find existing conversation
+  const existingConversation = await getConversationBySessionId(sessionId);
 
-    if (existingConversation) {
-      yield* Effect.logInfo("Found existing conversation", {
-        conversationId: existingConversation.id,
-        sessionId,
-      });
-      return existingConversation;
-    }
-
-    // Create new conversation
-    const newConversation = yield* Effect.tryPromise({
-      try: () =>
-        createConversation({
-          chatbotId,
-          visitorId: phoneNumber,
-          visitorIp: undefined,
-        }),
-      catch: (error) =>
-        new ValidationError({
-          field: "conversation",
-          value: phoneNumber,
-          message: `Failed to create conversation: ${error}`,
-        }),
-    });
-
-    // Update the sessionId to our custom format for WhatsApp
-    const updatedConversation = yield* Effect.tryPromise({
-      try: () =>
-        db.conversation.update({
-          where: { id: newConversation.id },
-          data: { sessionId },
-        }),
-      catch: (error) =>
-        new ValidationError({
-          field: "sessionId",
-          value: sessionId,
-          message: `Failed to update session ID: ${error}`,
-        }),
-    });
-
-    yield* Effect.logInfo("Created new WhatsApp conversation", {
-      conversationId: updatedConversation.id,
+  if (existingConversation) {
+    console.log("Found existing conversation", {
+      conversationId: existingConversation.id,
       sessionId,
-      phoneNumber,
     });
+    return existingConversation;
+  }
 
-    return updatedConversation;
+  // Create new conversation
+  const newConversation = await createConversation({
+    chatbotId,
+    visitorId: phoneNumber,
+    visitorIp: undefined,
   });
 
+  // Update the sessionId to our custom format for WhatsApp
+  const updatedConversation = await db.conversation.update({
+    where: { id: newConversation.id },
+    data: { sessionId },
+  });
+
+  console.log("Created new WhatsApp conversation", {
+    conversationId: updatedConversation.id,
+    sessionId,
+    phoneNumber,
+  });
+
+  return updatedConversation;
+}
+
 /**
- * Generate chatbot response using Effect
+ * Send WhatsApp message using direct HTTP call
  */
-const generateChatbotResponseEffect = (
+async function sendWhatsAppMessage(
+  to: string,
+  text: string,
+  integration: any
+) {
+  const url = `https://graph.facebook.com/v18.0/${integration.phoneNumberId}/messages`;
+
+  const payload = {
+    messaging_product: 'whatsapp',
+    to: to,
+    text: {
+      body: text.substring(0, 4096) // WhatsApp has 4096 character limit
+    }
+  };
+
+  console.log(`Sending WhatsApp message to ${to}: "${text.substring(0, 100)}..."`);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${integration.token}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('WhatsApp API error:', response.status, errorText);
+    throw new Error(`WhatsApp API error: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+  console.log('WhatsApp message sent successfully:', result);
+
+  return {
+    messageId: result.messages?.[0]?.id,
+    success: true
+  };
+}
+
+// Removed unused Effect functions - now using simplified direct functions above
+
+/**
+ * Generate chatbot response using AgentEngine V0
+ */
+async function generateChatbotResponse(
   userMessage: string,
   chatbot: any,
-  conversationId: string
-) =>
-  Effect.gen(function* () {
-    const startTime = Date.now();
+  conversationId: string,
+  conversationHistory?: any[]
+) {
+  const startTime = Date.now();
 
-    yield* Effect.logInfo("Generating chatbot response", {
-      userMessage: userMessage.substring(0, 100), // Log first 100 chars
-      chatbotId: chatbot.id,
-      conversationId,
+  console.log("Generating chatbot response", {
+    userMessage: userMessage.substring(0, 100),
+    chatbotId: chatbot.id,
+    conversationId,
+  });
+
+  try {
+    // Get user info from chatbot owner
+    const user = await db.user.findFirst({
+      where: { projects: { some: { id: chatbot.projectId } } },
+      include: { projects: true }
     });
 
-    // TODO: Integrate with your existing chatbot AI service
-    // This should use the same logic as your web chat
-    // For now, we'll return a basic response with proper Effect error handling
+    if (!user) {
+      throw new Error("User not found for chatbot");
+    }
 
-    const response = yield* Effect.try({
-      try: () => ({
-        content: `Hello! I received your message: "${userMessage}". This is a basic response from ${chatbot.name}. Full AI integration coming soon!`,
-        tokens: 50, // Estimated tokens
-        responseTime: Date.now() - startTime,
-      }),
-      catch: (error) =>
-        new WhatsAppError({
-          cause: error,
-          message: "Failed to generate chatbot response",
-          code: "AI_GENERATION_ERROR",
-        }),
+    // Create agent with V0 engine
+    const agent = await createAgent(chatbot, user);
+
+    // Build conversation history from recent messages
+    const chatHistory = conversationHistory?.slice(-10).map(msg => ({
+      role: (msg.role === "USER" ? "user" : "assistant") as any,
+      content: msg.content
+    })) || [];
+
+    // Generate response using agent - use direct method to avoid streaming complexity
+    let responseContent = '';
+    try {
+      const responseStream = agent.runStream(userMessage, { chatHistory }) as any;
+
+      for await (const event of responseStream) {
+        if (agentStreamEvent.include(event)) {
+          responseContent += event.data.delta || '';
+        }
+      }
+    } catch (streamError) {
+      console.error("Streaming error, falling back to simple response:", streamError);
+      responseContent = `Hola! Soy ${chatbot.name}. Recibí tu mensaje: "${userMessage}". El sistema de IA completo se está configurando, mientras tanto puedo ayudarte con consultas básicas.`;
+    }
+
+    const responseTime = Date.now() - startTime;
+
+    console.log("Chatbot response generated", {
+      responseLength: responseContent.length,
+      responseTime,
     });
 
-    yield* Effect.logInfo("Chatbot response generated", {
-      responseLength: response.content.length,
-      tokens: response.tokens,
-      responseTime: response.responseTime,
-    });
+    return {
+      content: responseContent.trim() || "Lo siento, no pude generar una respuesta. Intenta de nuevo.",
+      tokens: Math.ceil(responseContent.length / 4), // Estimated tokens
+      responseTime,
+    };
 
-    return response;
-  }).pipe(
-    Effect.catchAll((error) =>
-      Effect.gen(function* () {
-        yield* Effect.logError("Error generating chatbot response", { error });
+  } catch (error) {
+    console.error("Error generating chatbot response:", error);
 
-        return {
-          content:
-            "I'm sorry, I'm having trouble processing your message right now. Please try again later.",
-          tokens: 20,
-          responseTime: Date.now() - startTime,
-        };
-      })
-    )
-  );
+    return {
+      content: "Lo siento, estoy teniendo problemas para procesar tu mensaje. Por favor intenta de nuevo.",
+      tokens: 20,
+      responseTime: Date.now() - startTime,
+    };
+  }
+}
 
-// All webhook processing is now handled by the WhatsApp service using Effect.js
-// The service handles message sending, signature verification, and error handling
-// with proper logging and type safety.
+// WhatsApp webhook endpoint - simplified implementation with AgentEngine V0
+// Handles both regular messages and echo messages from coexistence mode

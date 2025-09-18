@@ -11,6 +11,7 @@ interface MessageBubbleProps {
   message?: {
     role: "user" | "assistant";
     content: ReactNode;
+    channel?: string; // Para detectar echo messages
   };
   role?: "user" | "assistant";
   children?: ReactNode;
@@ -91,10 +92,23 @@ export const MessageBubble = ({
       </main>
     );
   }
+  // Detectar si es un echo message de WhatsApp
+  const isWhatsAppEcho = message?.channel === "whatsapp_echo";
+
   return (
     <main className="px-4 flex items-start gap-3 max-w-[90%] ">
       <Avatar className="w-8 h-8" src={avatarUrl} />
       <div className="bg-white border border-outlines rounded-tr-lg rounded-xl  p-3 max-w-md ">
+        {/* Indicador de Echo Message */}
+        {isWhatsAppEcho && (
+          <div className="flex items-center gap-1 mb-2 pb-2 border-b border-gray-200 dark:border-gray-600">
+            <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+            </svg>
+            <span className="text-xs text-green-600 font-medium">📱 Enviado desde App</span>
+          </div>
+        )}
         <div
           className={PROSE_STYLES}
           style={{ whiteSpace: "pre-line", lineHeight: "1" }}

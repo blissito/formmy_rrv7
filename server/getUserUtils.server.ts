@@ -123,7 +123,7 @@ export const redirectIfUser = async (request: Request) => {
   const cookie = request.headers.get("Cookie");
   const session = await getSession(cookie);
   if (session.has("userId")) {
-    throw redirect("/dashboard");
+    throw redirect("/dashboard/ghosty");
   }
 };
 

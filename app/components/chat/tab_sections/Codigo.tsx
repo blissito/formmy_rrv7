@@ -11,6 +11,9 @@ import { useChipTabs } from "../common/ChipTabs";
 import { CodeBlock } from "../common/CodeBlock";
 import type { Chatbot, Integration as PrismaIntegration } from "@prisma/client";
 import WhatsAppIntegrationModal from "../../integrations/WhatsAppIntegrationModal";
+import WhatsAppCoexistenceModal from "../../integrations/WhatsAppCoexistenceModal";
+import WhatsAppCoexistenceRealModal from "../../integrations/WhatsAppCoexistenceRealModal";
+import WhatsAppEmbeddedSignupModal from "../../integrations/WhatsAppEmbeddedSignupModal";
 import GoogleCalendarIntegrationModal from "../../integrations/GoogleCalendarIntegrationCard";
 import StripeIntegrationModal from "../../integrations/StripeIntegrationModal";
 
@@ -99,11 +102,12 @@ interface CodigoProps {
   integrations: Integration[];
   user: {
     id: string;
+    subscriptionPlan?: string;
     // Otras propiedades del usuario que necesites
   };
 }
 
-export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
+export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   const { currentTab, setCurrentTab } = useChipTabs("integrations", `codigo_${chatbot.id}`);
   const { currentTab: miniCard, setCurrentTab: setMiniCard } =
     useChipTabs("iframe", `codigo_mini_${chatbot.id}`);
@@ -206,8 +210,16 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
   }, [integrations]);
   // Estados para controlar los modales de integración
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
+  const [whatsAppCoexistenceModalOpen, setWhatsAppCoexistenceModalOpen] = useState(false);
+  const [whatsAppCoexistenceRealModalOpen, setWhatsAppCoexistenceRealModalOpen] = useState(false);
+  const [whatsAppEmbeddedSignupModalOpen, setWhatsAppEmbeddedSignupModalOpen] = useState(false);
   const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false);
   const [stripeModalOpen, setStripeModalOpen] = useState(false);
+
+  // Solo Embedded Signup - sin manual
+  const useEmbeddedSignup = true;
+
+  console.log('🔍 Debug - Embedded Signup only:', { useEmbeddedSignup });
 
   const handleConnect = (integrationId: string) => {
     console.log("🔍 Debug - Conectando integración:", integrationId);
@@ -228,6 +240,7 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
 
     // Abrir el modal correspondiente
     if (integrationId === "WHATSAPP") {
+      // Usar modal manual por defecto (embedded signup requiere app verificada)
       setWhatsAppModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
       console.log("🔍 Starting Google Calendar OAuth2 flow");
@@ -322,11 +335,23 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
       }));
 
       setWhatsAppModalOpen(false);
+      setWhatsAppCoexistenceModalOpen(false);
+      setWhatsAppCoexistenceRealModalOpen(false);
+      setWhatsAppEmbeddedSignupModalOpen(false);
       setSelectedIntegration(null);
 
       // Mostrar notificación de éxito
       // Aquí podrías usar tu sistema de notificaciones
-      alert("¡Integración de WhatsApp configurada correctamente!");
+      const isEmbeddedSignup = integration.embeddedSignup;
+      const isCoexistence = integration.coexistenceMode;
+
+      let message = "¡Integración de WhatsApp configurada correctamente!";
+      if (isEmbeddedSignup) {
+        message = "¡WhatsApp conectado via Embedded Signup oficial! Business Integration Token generado.";
+      } else if (isCoexistence) {
+        message = "¡WhatsApp conectado en modo coexistencia! Tu chatbot y la app móvil funcionarán juntos.";
+      }
+      alert(message);
 
       // Nota: En una aplicación real, podrías querer actualizar el estado
       // de las integraciones sin recargar la página, pero para este ejemplo
@@ -570,27 +595,92 @@ export const Codigo = ({ chatbot, integrations }: CodigoProps) => {
           })}
 
           {selectedIntegration === "WHATSAPP" && (
-            <WhatsAppIntegrationModal
-              isOpen={whatsAppModalOpen}
-              onClose={() => setWhatsAppModalOpen(false)}
-              chatbotId={chatbot.id}
-              onSuccess={handleWhatsAppSuccess}
-              existingIntegration={(() => {
-                const whatsappIntegration = integrations.find(
-                  (integration) => integration.platform === "WHATSAPP"
-                );
-                if (!whatsappIntegration) return null;
+            <>
+              <WhatsAppIntegrationModal
+                isOpen={whatsAppModalOpen}
+                onClose={() => setWhatsAppModalOpen(false)}
+                chatbotId={chatbot.id}
+                onSuccess={handleWhatsAppSuccess}
+                existingIntegration={(() => {
+                  const whatsappIntegration = integrations.find(
+                    (integration) => integration.platform === "WHATSAPP"
+                  );
+                  if (!whatsappIntegration) return null;
 
-                return {
-                  id: whatsappIntegration.id,
-                  phoneNumberId: whatsappIntegration.phoneNumberId || "",
-                  businessAccountId:
-                    whatsappIntegration.businessAccountId || "",
-                  webhookVerifyToken:
-                    whatsappIntegration.webhookVerifyToken || undefined,
-                };
-              })()}
-            />
+                  return {
+                    id: whatsappIntegration.id,
+                    phoneNumberId: whatsappIntegration.phoneNumberId || "",
+                    businessAccountId:
+                      whatsappIntegration.businessAccountId || "",
+                    webhookVerifyToken:
+                      whatsappIntegration.webhookVerifyToken || undefined,
+                  };
+                })()}
+              />
+              <WhatsAppCoexistenceModal
+                isOpen={whatsAppCoexistenceModalOpen}
+                onClose={() => setWhatsAppCoexistenceModalOpen(false)}
+                chatbotId={chatbot.id}
+                onSuccess={handleWhatsAppSuccess}
+                existingIntegration={(() => {
+                  const whatsappIntegration = integrations.find(
+                    (integration) => integration.platform === "WHATSAPP"
+                  );
+                  if (!whatsappIntegration) return null;
+
+                  return {
+                    id: whatsappIntegration.id,
+                    phoneNumberId: whatsappIntegration.phoneNumberId || "",
+                    businessAccountId:
+                      whatsappIntegration.businessAccountId || "",
+                    webhookVerifyToken:
+                      whatsappIntegration.webhookVerifyToken || undefined,
+                  };
+                })()}
+              />
+              <WhatsAppCoexistenceRealModal
+                isOpen={whatsAppCoexistenceRealModalOpen}
+                onClose={() => setWhatsAppCoexistenceRealModalOpen(false)}
+                chatbotId={chatbot.id}
+                onSuccess={handleWhatsAppSuccess}
+                existingIntegration={(() => {
+                  const whatsappIntegration = integrations.find(
+                    (integration) => integration.platform === "WHATSAPP"
+                  );
+                  if (!whatsappIntegration) return null;
+
+                  return {
+                    id: whatsappIntegration.id,
+                    phoneNumberId: whatsappIntegration.phoneNumberId || "",
+                    businessAccountId:
+                      whatsappIntegration.businessAccountId || "",
+                    webhookVerifyToken:
+                      whatsappIntegration.webhookVerifyToken || undefined,
+                  };
+                })()}
+              />
+              <WhatsAppEmbeddedSignupModal
+                isOpen={whatsAppEmbeddedSignupModalOpen}
+                onClose={() => setWhatsAppEmbeddedSignupModalOpen(false)}
+                chatbotId={chatbot.id}
+                onSuccess={handleWhatsAppSuccess}
+                existingIntegration={(() => {
+                  const whatsappIntegration = integrations.find(
+                    (integration) => integration.platform === "WHATSAPP"
+                  );
+                  if (!whatsappIntegration) return null;
+
+                  return {
+                    id: whatsappIntegration.id,
+                    phoneNumberId: whatsappIntegration.phoneNumberId || "",
+                    businessAccountId:
+                      whatsappIntegration.businessAccountId || "",
+                    webhookVerifyToken:
+                      whatsappIntegration.webhookVerifyToken || undefined,
+                  };
+                })()}
+              />
+            </>
           )}
 
           {selectedIntegration === "STRIPE" && (

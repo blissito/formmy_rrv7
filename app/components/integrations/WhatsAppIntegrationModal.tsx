@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiX, FiCheck, FiAlertCircle, FiLoader } from "react-icons/fi";
+import { FiX, FiCheck, FiAlertCircle, FiLoader, FiCopy } from "react-icons/fi";
 import Modal from "~/components/Modal";
 import { Button } from "~/components/Button";
 import { Input } from "../chat/common/Input";
@@ -44,7 +44,7 @@ export default function WhatsAppIntegrationModal({
     phoneNumberId: existingIntegration?.phoneNumberId || '',
     accessToken: '', // Never pre-fill access token for security
     businessAccountId: existingIntegration?.businessAccountId || '',
-    webhookVerifyToken: existingIntegration?.webhookVerifyToken || '',
+    webhookVerifyToken: existingIntegration?.webhookVerifyToken || 'USAR_VARIABLE_ENTORNO_PRODUCCION',
   });
 
   const [validation, setValidation] = useState<FormValidation>({
@@ -58,6 +58,7 @@ export default function WhatsAppIntegrationModal({
   const [error, setError] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
   // Reset form when opening/closing the modal
   useEffect(() => {
@@ -66,13 +67,24 @@ export default function WhatsAppIntegrationModal({
         phoneNumberId: existingIntegration?.phoneNumberId || '',
         accessToken: '',
         businessAccountId: existingIntegration?.businessAccountId || '',
-        webhookVerifyToken: existingIntegration?.webhookVerifyToken || '',
+        webhookVerifyToken: existingIntegration?.webhookVerifyToken || 'USAR_VARIABLE_ENTORNO_PRODUCCION',
       });
       setStatus('idle');
       setError(null);
       setTestResult(null);
     }
   }, [isOpen, existingIntegration]);
+
+  // Función para copiar al portapapeles
+  const copyToClipboard = async (text: string, itemId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedItem(itemId);
+      setTimeout(() => setCopiedItem(null), 2000);
+    } catch (err) {
+      console.error('Error copying to clipboard:', err);
+    }
+  };
 
   const validateField = (field: keyof FormData, value: string): boolean => {
     if (!value.trim()) {
@@ -134,24 +146,45 @@ export default function WhatsAppIntegrationModal({
 
   const handleTestConnection = async () => {
     if (!validateForm()) return;
-    
+
     setIsTesting(true);
     setTestResult(null);
     setError(null);
 
     try {
+      // Limpiar y validar los valores antes de enviar
+      const token = formData.accessToken.trim();
+      const phoneNumberId = formData.phoneNumberId.trim();
+      const businessAccountId = formData.businessAccountId.trim();
+
+      // Debug logs
+      console.log('🔍 Testing WhatsApp connection from UI:', {
+        phoneNumberId,
+        businessAccountId,
+        tokenLength: token.length,
+        tokenFirst20: token.substring(0, 20),
+        tokenLast20: token.substring(token.length - 20),
+      });
+
+      // Validar longitud mínima del token
+      if (token.length < 100) {
+        throw new Error(`Token incompleto: solo ${token.length} caracteres. Un token válido debe tener al menos 100 caracteres.`);
+      }
+
       const requestBody: any = {
         intent: 'test',
         chatbotId,
-        phoneNumberId: formData.phoneNumberId,
-        accessToken: formData.accessToken,
-        businessAccountId: formData.businessAccountId,
+        phoneNumberId,
+        accessToken: token,
+        businessAccountId,
       };
 
       // Si es una integración existente, incluir el ID
       if (existingIntegration?.id) {
         requestBody.integrationId = existingIntegration.id;
       }
+
+      console.log('📤 Sending request with token length:', token.length);
 
       const response = await fetch('/api/v1/integrations/whatsapp', {
         method: 'POST',
@@ -162,7 +195,7 @@ export default function WhatsAppIntegrationModal({
       });
 
       const data = await response.json();
-      console.log('Test connection response:', data);
+      console.log('📥 Test connection response:', data);
 
       if (response.ok && data.success) {
         setTestResult({
@@ -170,11 +203,16 @@ export default function WhatsAppIntegrationModal({
           message: '¡Conexión exitosa! Las credenciales son válidas.'
         });
       } else {
-        const errorMessage = data.testResult?.message || data.message || 'Error al probar la conexión con WhatsApp';
+        const errorMessage = data.error || data.testResult?.message || data.message || 'Error al probar la conexión con WhatsApp';
+        console.error('❌ Connection test failed:', {
+          status: response.status,
+          error: errorMessage,
+          details: data.details
+        });
         throw new Error(errorMessage);
       }
     } catch (err) {
-      console.error('Error testing connection:', err);
+      console.error('❌ Error testing connection:', err);
       setTestResult({
         success: false,
         message: err instanceof Error ? err.message : 'Error desconocido al probar la conexión con WhatsApp'
@@ -257,18 +295,12 @@ export default function WhatsAppIntegrationModal({
             </div>
           </div>
         </div>
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-dark mb-2">💡 Cómo obtener las credenciales</h4>
-          <ol className="text-sm text-metal space-y-1">
-            <li>1. Ve al <a href="https://business.facebook.com/wa/manage/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Administrador de WhatsApp Business</a></li>
-            <li>2. Selecciona tu aplicación o crea una nueva</li>
-            <li>3. En "API Setup", encuentra el "Phone Number ID"</li>
-            <li>4. Copia el "Access Token" (temporal o permanente)</li>
-            <li>5. Anota el "Business Account ID" desde la configuración</li>
-          </ol>
-          <p className="text-xs text-metal mt-2">
-            ⚠️ Guarda tus credenciales de forma segura. El access token permite el envío de mensajes.
-          </p>
+        <div className="mt-6 p-3 bg-blue-50 rounded-lg">
+          <h4 className="font-medium text-dark mb-2">💡 Obtener credenciales</h4>
+          <div className="text-sm text-metal">
+            <p>Ve a <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Meta Developers</a> → Tu app → WhatsApp → Getting Started</p>
+            <p className="text-xs mt-2 text-gray-600">O crea una <a href="https://developers.facebook.com/apps/create/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">nueva app</a> si no tienes una</p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -318,15 +350,31 @@ export default function WhatsAppIntegrationModal({
           </div>
 
           <div className="space-y-1">
-            <Input
-              label="Token de verificación de webhook (opcional)"
-              name="webhookVerifyToken"
-              value={formData.webhookVerifyToken}
-              onChange={(value) => handleInputChange({ target: { name: 'webhookVerifyToken', value } } as React.ChangeEvent<HTMLInputElement>)}
-              onBlur={() => validateField('webhookVerifyToken', formData.webhookVerifyToken)}
-              error={!validation.webhookVerifyToken.isValid ? validation.webhookVerifyToken.error : undefined}
-              placeholder="mi_token_secreto"
-            />
+            <div className="relative">
+              <Input
+                label="Token de verificación de webhook (opcional)"
+                name="webhookVerifyToken"
+                value={formData.webhookVerifyToken}
+                onChange={(value) => handleInputChange({ target: { name: 'webhookVerifyToken', value } } as React.ChangeEvent<HTMLInputElement>)}
+                onBlur={() => validateField('webhookVerifyToken', formData.webhookVerifyToken)}
+                error={!validation.webhookVerifyToken.isValid ? validation.webhookVerifyToken.error : undefined}
+                placeholder="mi_token_secreto"
+              />
+              {formData.webhookVerifyToken && (
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(formData.webhookVerifyToken, 'webhook-token-field')}
+                  className="absolute right-2 top-8 p-1.5 hover:bg-gray-100 rounded transition-colors"
+                  title="Copiar token de verificación"
+                >
+                  {copiedItem === 'webhook-token-field' ? (
+                    <FiCheck className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <FiCopy className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+              )}
+            </div>
             <p className="text-xs text-gray-500 mt-1">
               Si lo dejas en blanco, se generará uno automáticamente.
             </p>
@@ -357,6 +405,59 @@ export default function WhatsAppIntegrationModal({
               </div>
             </div>
           )}
+
+          {/* CONFIGURACIÓN WEBHOOK - COMPACTA */}
+          <div className="bg-orange-50 border-l-4 border-orange-400 p-3 mt-4">
+            <h4 className="font-semibold text-orange-800 mb-2 text-sm">
+              ⚠️ Configurar Webhook en Meta Developers
+            </h4>
+
+            <div className="space-y-2">
+              <div>
+                <span className="font-medium text-orange-800">Callback URL para Meta Developers:</span>
+                <div className="bg-white p-1.5 rounded mt-1 border flex items-center justify-between">
+                  <span className="font-mono break-all flex-1 mr-2 text-xs">
+                    https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard('https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook', 'webhook-url')}
+                    className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
+                  >
+                    {copiedItem === 'webhook-url' ? (
+                      <FiCheck className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <FiCopy className="w-3 h-3 text-gray-500" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-xs text-orange-700 space-y-1">
+                <div>
+                  <span className="font-medium">Configurar en:</span> WhatsApp → Configuration → Webhooks
+                  <span className="ml-3 font-medium">Eventos:</span> messages, smb_message_echoes
+                </div>
+                <div className="bg-green-50 p-2 rounded border-l-2 border-green-400">
+                  <span className="font-medium text-green-800">✅ Verify Token:</span>
+                  <span className="font-mono text-xs ml-1 bg-gray-100 px-1 py-0.5 rounded">
+                    {formData.webhookVerifyToken}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(formData.webhookVerifyToken, 'verify-token')}
+                    className="ml-2 p-1 hover:bg-green-100 rounded"
+                  >
+                    {copiedItem === 'verify-token' ? (
+                      <FiCheck className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <FiCopy className="w-3 h-3 text-green-600" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-2">
             <Button

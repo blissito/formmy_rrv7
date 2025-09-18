@@ -69,7 +69,15 @@ const testWhatsAppConnection = (config: WhatsAppConnectionConfig) => {
   return Effect.tryPromise({
     try: async () => {
 
-      
+      // Debug log to see what we're receiving
+      console.log('Testing WhatsApp connection with:', {
+        businessAccountId: config.businessAccountId,
+        phoneNumberId: config.phoneNumberId,
+        tokenLength: config.accessToken?.length,
+        tokenFirst20: config.accessToken?.substring(0, 20),
+        tokenLast20: config.accessToken?.substring(config.accessToken.length - 20)
+      });
+
       // First, try to get business account info
       const accountResponse = await fetch(businessAccountUrl, {
         method: "GET",
@@ -359,6 +367,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return await handleDeleteIntegration(formDataObject);
       case "test":
         return await handleTestConnection(formDataObject);
+      case "test_coexistence":
+        return await handleTestCoexistence(formDataObject);
       default:
         return new Response(
           JSON.stringify({ success: false, error: "Invalid intent", code: "INVALID_INTENT" }),
@@ -850,7 +860,7 @@ async function handleTestConnection(formData: FormData) {
       );
     }
 
-    // For existing integrations, fetch and test
+    // For existing integrations, use provided data if available, otherwise fallback to DB
     const integration = await db.integration.findUnique({
       where: { id: integrationId },
     });
@@ -866,13 +876,13 @@ async function handleTestConnection(formData: FormData) {
       );
     }
 
-    // Test connection with integration data
+    // IMPORTANTE: Usar los datos del formulario si están presentes, sino usar los de la DB
     const testResult = await Effect.runPromise(
       testWhatsAppConnection({
-        phoneNumberId: integration.phoneNumberId || "",
-        accessToken: integration.token || "",
-        businessAccountId: integration.businessAccountId || "",
-        webhookVerifyToken: integration.webhookVerifyToken || undefined,
+        phoneNumberId: phoneNumberId?.trim() || integration.phoneNumberId || "",
+        accessToken: accessToken?.trim() || integration.token || "",
+        businessAccountId: businessAccountId?.trim() || integration.businessAccountId || "",
+        webhookVerifyToken: webhookVerifyToken?.trim() || integration.webhookVerifyToken || undefined,
       })
     );
 
@@ -923,6 +933,129 @@ async function handleTestConnection(formData: FormData) {
     );
   }
 }
+
+async function handleTestCoexistence(formData: FormData) {
+  try {
+    const integrationId = formData.get("integrationId") as string | null;
+    const phoneNumberId = formData.get("phoneNumberId") as string | null;
+    const accessToken = formData.get("accessToken") as string | null;
+    const businessAccountId = formData.get("businessAccountId") as string | null;
+
+    // Validar campos requeridos
+    if (!phoneNumberId?.trim() || !accessToken?.trim() || !businessAccountId?.trim()) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "phoneNumberId, accessToken, and businessAccountId are required for coexistence test",
+          fields: {
+            phoneNumberId: !phoneNumberId?.trim() ? "Required" : undefined,
+            accessToken: !accessToken?.trim() ? "Required" : undefined,
+            businessAccountId: !businessAccountId?.trim() ? "Required" : undefined,
+          },
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const config: WhatsAppConnectionConfig = {
+      phoneNumberId: phoneNumberId!,
+      accessToken: accessToken!,
+      businessAccountId: businessAccountId!,
+      webhookVerifyToken: formData.get("webhookVerifyToken") as string || undefined,
+    };
+
+    // 1. Primero hacer el test de conexión estándar
+    const standardTestResult = await pipe(
+      testWhatsAppConnection(config),
+      Effect.runPromise
+    );
+
+    // 2. Probar si el número está en modo coexistencia
+    const coexistenceResult = await pipe(
+      checkCoexistenceMode(config),
+      Effect.runPromise
+    );
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        testResult: standardTestResult,
+        coexistenceDetected: coexistenceResult.coexistenceEnabled,
+        coexistenceDetails: coexistenceResult.details,
+        message: coexistenceResult.coexistenceEnabled
+          ? "¡Coexistence detectado! Tu número funciona en App y API simultáneamente."
+          : "Conexión válida. Para activar coexistence, asegúrate de que el número esté activo en WhatsApp Business App."
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error testing coexistence:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error during coexistence test",
+        testResult: {
+          success: false,
+          message: "Failed to test coexistence mode"
+        }
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+
+// Función para verificar si el número está en modo coexistencia
+const checkCoexistenceMode = (config: WhatsAppConnectionConfig) =>
+  pipe(
+    Effect.tryPromise({
+      try: async () => {
+        // Verificar información adicional del número para detectar coexistencia
+        const response = await fetch(
+          `https://graph.facebook.com/v17.0/${config.phoneNumberId}?fields=verified_name,code_verification_status,quality_rating,messaging_limit_tier,platform_type,account_mode`,
+          {
+            headers: {
+              Authorization: `Bearer ${config.accessToken}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to check coexistence: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Indicadores de que podría estar en coexistence:
+        // - account_mode podría indicar si está conectado a una app
+        // - platform_type podría mostrar múltiples plataformas
+        // - Presencia de ciertos campos específicos de coexistencia
+
+        const coexistenceIndicators = {
+          hasAccountMode: !!data.account_mode,
+          hasPlatformType: !!data.platform_type,
+          accountMode: data.account_mode,
+          platformType: data.platform_type,
+          verifiedName: data.verified_name,
+          qualityRating: data.quality_rating
+        };
+
+        // Por ahora, detectar coexistencia basado en la presencia de account_mode
+        // En la práctica, Meta proporcionará indicadores más específicos
+        const coexistenceEnabled = !!(data.account_mode || data.platform_type);
+
+        return {
+          coexistenceEnabled,
+          details: coexistenceIndicators,
+          rawData: data
+        };
+      },
+      catch: (error) =>
+        new IntegrationError(
+          "COEXISTENCE_CHECK_FAILED",
+          `Failed to check coexistence mode: ${error instanceof Error ? error.message : 'Unknown error'}`
+        )
+    })
+  );
 
 // ============================================================================
 // Effect-based WhatsApp Integration API Route

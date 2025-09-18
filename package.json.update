@@ -1,0 +1,2 @@
+// Agregar a package.json scripts:
+"update-whatsapp-token": "./scripts/update-whatsapp-token.sh"

@@ -308,6 +308,7 @@ model Conversation {
   endedAt      DateTime?
   messageCount Int                @default(0)
   isFavorite   Boolean            @default(false)
+  manualMode   Boolean            @default(false) // Para controlar respuestas manuales vs automáticas
   chatbotId    String             @db.ObjectId
   chatbot      Chatbot            @relation(fields: [chatbotId], references: [id])
   messages     Message[]
