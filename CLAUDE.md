@@ -82,15 +82,25 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - [ ] **setup_webhook**: Configurar webhooks personalizados
 - [ ] **test_integrations**: Probar conectividad de integraciones
 
-### WhatsApp Coexistence - Embedded Signup (NUEVA IMPLEMENTACIÓN)
-- [ ] **Reemplazar modal manual por Embedded Signup**: Cambiar formulario actual por Meta SDK
-- [ ] **Crear WhatsAppCoexistenceModal.tsx**: Nuevo componente con Meta JavaScript SDK
-- [ ] **Endpoint /api/v1/integrations/whatsapp/embedded-signup**: Backend para token exchange
-- [ ] **Actualizar webhook Cloudflare**: Filtrar mensajes "echo" del Business App
-- [ ] **Variables de entorno Meta**: FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
-- [ ] **Configurar permisos de coexistence**: whatsapp_business_management + messaging
-- [ ] **Setup automático de webhook**: Sin configuración manual de verify token
-- [ ] **Sincronización de 6 meses de historial**: Mantener chats existentes
+### ✅ WhatsApp Coexistence - Embedded Signup (IMPLEMENTADO - Sept 18, 2025)
+- [x] **Reemplazar modal manual por Embedded Signup**: ✅ Meta JavaScript SDK integrado
+- [x] **Crear WhatsAppCoexistenceModal.tsx**: ✅ Componente con Facebook SDK completo
+- [x] **Endpoint /api/v1/integrations/whatsapp/embedded-signup**: ✅ Backend para token exchange
+- [x] **Webhook interno Formmy**: ✅ Sistema robusto maneja mensajes echo automáticamente
+- [x] **Variables de entorno Meta**: ✅ FACEBOOK_APP_ID, FACEBOOK_APP_SECRET configuradas
+- [x] **Schema BD actualizado**: ✅ platform, token, phoneNumberId, webhookVerifyToken
+- [x] **Setup automático de webhook**: ✅ Configuración automática durante signup
+- [x] **Integración AgentEngine V0**: ✅ Respuestas inteligentes con filtrado echo
+
+#### 🚨 **BLOQUEADOR ACTUAL: Meta App Review**
+- **Status**: ⏳ Pendiente Advanced Access para permisos WhatsApp Business API
+- **Permisos solicitados**:
+  - `whatsapp_business_management` (gestión WABAs, templates, números)
+  - `whatsapp_business_messaging` (envío/recepción mensajes)
+  - `whatsapp_business_manage_events` (eventos, webhooks)
+- **Standard Access**: ❌ NO permite Embedded Signup (solo mensajería básica)
+- **Advanced Access**: ✅ Requerido para funcionalidad completa
+- **Timeline**: 1-2 semanas para App Review de Meta
 
 ### Herramientas de Análisis Avanzado
 - [ ] **get_conversation_insights**: Análisis profundo de conversaciones
