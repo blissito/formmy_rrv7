@@ -55,14 +55,31 @@ export async function action({ request }: ActionFunctionArgs) {
       });
     }
 
-    // TODO: Autenticar usuario para flujo real (auth.server no existe aún)
-    // const user = await authenticateUserFromCookie(request);
-    // if (!user) {
-    //   return Response.json({ error: "Usuario no autenticado" }, { status: 401 });
-    // }
+    // Autenticar usuario desde sesión
+    const cookieHeader = request.headers.get("Cookie");
+    if (!cookieHeader) {
+      return Response.json({ error: "Usuario no autenticado" }, { status: 401 });
+    }
 
-    // Mock user para desarrollo
-    const user = { id: 'mock_user_id', projectId: 'mock_project_id' };
+    // Extraer projectId de la sesión/cookie
+    // Por ahora usamos un approach simple - en producción se debería validar la sesión completa
+    let user: { id: string; projectId: string } | null = null;
+
+    try {
+      // Intentamos obtener user de la sesión/DB usando cookies
+      // Este es un approach simplificado para el MVP
+      const sessionMatch = cookieHeader.match(/projectId=([^;]+)/);
+      if (sessionMatch) {
+        const projectId = decodeURIComponent(sessionMatch[1]);
+        user = { id: 'user_from_session', projectId };
+      }
+    } catch (error) {
+      console.error("Error parsing session:", error);
+    }
+
+    if (!user) {
+      return Response.json({ error: "Usuario no autenticado" }, { status: 401 });
+    }
     const { chatbotId, code, accessToken, userID } = body;
 
     // Validar que el chatbot pertenece al usuario
@@ -94,7 +111,7 @@ export async function action({ request }: ActionFunctionArgs) {
     tokenExchangeUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
     tokenExchangeUrl.searchParams.append('client_secret', FACEBOOK_APP_SECRET);
     tokenExchangeUrl.searchParams.append('code', code);
-    tokenExchangeUrl.searchParams.append('redirect_uri', `${process.env.APP_URL || 'https://formmy-v2.fly.dev'}/api/v1/integrations/whatsapp/embedded_signup`);
+    tokenExchangeUrl.searchParams.append('redirect_uri', `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/embedded_signup`);
 
     const tokenResponse = await fetch(tokenExchangeUrl.toString());
 
@@ -170,7 +187,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const webhookVerifyToken = `formmy_${chatbotId}_${Date.now()}`;
 
     // 5. Configurar el webhook automáticamente en Meta
-    const webhookUrl = `${process.env.APP_URL || 'https://formmy-v2.fly.dev'}/api/v1/integrations/whatsapp/webhook`;
+    const webhookUrl = `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`;
 
     const webhookConfigUrl = `https://graph.facebook.com/v21.0/${FACEBOOK_APP_ID}/subscriptions`;
     const webhookResponse = await fetch(webhookConfigUrl, {
@@ -200,7 +217,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const existingIntegration = await db.integration.findFirst({
       where: {
         chatbotId: chatbotId,
-        type: "WHATSAPP",
+        platform: "WHATSAPP",
       },
     });
 
@@ -211,19 +228,11 @@ export async function action({ request }: ActionFunctionArgs) {
       integration = await db.integration.update({
         where: { id: existingIntegration.id },
         data: {
-          settings: {
-            phoneNumberId: phoneNumber.id,
-            businessAccountId: businessAccount.id,
-            accessToken: encryptedToken,
-            webhookVerifyToken: webhookVerifyToken,
-            displayPhoneNumber: phoneNumber.display_phone_number,
-            verifiedName: phoneNumber.verified_name,
-            coexistenceMode: true,
-            setupMethod: 'embedded_signup',
-            metaUserID: userID,
-            lastSyncedAt: new Date(),
-          },
-          status: "ACTIVE",
+          token: encryptedToken,
+          phoneNumberId: phoneNumber.id,
+          businessAccountId: businessAccount.id,
+          webhookVerifyToken: webhookVerifyToken,
+          isActive: true,
         },
       });
     } else {
@@ -231,20 +240,12 @@ export async function action({ request }: ActionFunctionArgs) {
       integration = await db.integration.create({
         data: {
           chatbotId: chatbotId,
-          type: "WHATSAPP",
-          status: "ACTIVE",
-          settings: {
-            phoneNumberId: phoneNumber.id,
-            businessAccountId: businessAccount.id,
-            accessToken: encryptedToken,
-            webhookVerifyToken: webhookVerifyToken,
-            displayPhoneNumber: phoneNumber.display_phone_number,
-            verifiedName: phoneNumber.verified_name,
-            coexistenceMode: true,
-            setupMethod: 'embedded_signup',
-            metaUserID: userID,
-            lastSyncedAt: new Date(),
-          },
+          platform: "WHATSAPP",
+          token: encryptedToken,
+          phoneNumberId: phoneNumber.id,
+          businessAccountId: businessAccount.id,
+          webhookVerifyToken: webhookVerifyToken,
+          isActive: true,
         },
       });
     }
@@ -260,9 +261,11 @@ export async function action({ request }: ActionFunctionArgs) {
         phoneNumber: phoneNumber.display_phone_number,
         verifiedName: phoneNumber.verified_name,
         businessAccountId: businessAccount.id,
+        phoneNumberId: phoneNumber.id,
         coexistenceMode: true,
+        embeddedSignup: true,
       },
-      message: "Integración de WhatsApp configurada exitosamente en modo coexistencia",
+      message: "Integración de WhatsApp configurada exitosamente con Embedded Signup",
     });
 
   } catch (error) {

@@ -79,58 +79,6 @@ export default function WhatsAppEmbeddedSignupModal({
 
   // Handler para el Embedded Signup
   const handleEmbeddedSignup = useCallback(async () => {
-    // Mock para desarrollo local (localhost)
-    if (window.location.hostname === 'localhost') {
-      setStatus('loading');
-      setError(null);
-
-      console.log('🧪 MOCK: Simulando Embedded Signup en localhost');
-
-      // Simular respuesta de Facebook
-      setTimeout(async () => {
-        try {
-          const mockResponse = {
-            chatbotId,
-            code: 'mock_code_12345',
-            accessToken: 'mock_access_token',
-            userID: 'mock_user_id',
-          };
-
-          const exchangeResponse = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(mockResponse),
-          });
-
-          const data = await exchangeResponse.json();
-
-          if (!exchangeResponse.ok) {
-            throw new Error(data.error || 'Error al procesar la autorización');
-          }
-
-          setStatus('success');
-          onSuccess({
-            ...data.integration,
-            embeddedSignup: true,
-            mockMode: true,
-          });
-
-          setTimeout(() => {
-            onClose();
-          }, 1500);
-
-        } catch (error) {
-          console.error('Mock exchange error:', error);
-          setStatus('error');
-          setError(error instanceof Error ? error.message : 'Error en modo mock');
-        }
-      }, 2000);
-
-      return;
-    }
-
     if (!window.FB) {
       setError('Facebook SDK no está cargado');
       return;
@@ -195,7 +143,9 @@ export default function WhatsAppEmbeddedSignupModal({
           }
         },
         {
-          config_id: import.meta.env.VITE_FACEBOOK_CONFIG_ID, // Si tienes configuración personalizada
+          ...(import.meta.env.VITE_FACEBOOK_CONFIG_ID && {
+            config_id: import.meta.env.VITE_FACEBOOK_CONFIG_ID
+          }),
           response_type: 'code', // Requerido para Embedded Signup
           override_default_response_type: true,
           extras: {
@@ -409,16 +359,6 @@ export default function WhatsAppEmbeddedSignupModal({
           </div>
         )}
 
-        {/* Límites y consideraciones */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-medium text-dark mb-2">📊 Límites de Onboarding</h4>
-          <ul className="text-sm text-metal space-y-1">
-            <li>• Por defecto: 10 nuevos clientes por periodo de 7 días</li>
-            <li>• Después de verificación: Hasta 200 nuevos clientes por periodo</li>
-            <li>• Se requiere App Review para acceso avanzado</li>
-            <li>• Soporte automático para 30 idiomas</li>
-          </ul>
-        </div>
 
         {/* Botón de cancelar */}
         <div className="flex justify-end pt-2">
