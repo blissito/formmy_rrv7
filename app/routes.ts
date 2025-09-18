@@ -103,6 +103,7 @@ export default [
 
   // API v1 routes
   route("api/v1/chatbot", "routes/api.v1.chatbot.ts"),
+  route("api/v1/conversations", "routes/api.v1.conversations.tsx"),
 
   // API v0 routes - Motor AgentEngine_v0
   route("api/v0/chatbot", "routes/api.v0.chatbot.ts"),
@@ -125,6 +126,10 @@ export default [
   route(
     "api/v1/integrations/whatsapp/webhook",
     "routes/api.v1.integrations.whatsapp.webhook.tsx"
+  ),
+  route(
+    "api/v1/integrations/whatsapp/embedded_signup",
+    "routes/api.v1.integrations.whatsapp.embedded_signup.ts"
   ),
   route(
     "api/v1/oauth2/google/calendar/callback",

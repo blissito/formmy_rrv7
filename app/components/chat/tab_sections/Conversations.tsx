@@ -1,7 +1,8 @@
 import type { Chatbot, Message, User } from "@prisma/client";
 import { ChipTabs, useChipTabs } from "../common/ChipTabs";
 import { Avatar } from "../Avatar";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useNavigate } from "react-router";
 import { cn } from "~/lib/utils";
 
 const dev_conversations = [
@@ -81,7 +82,7 @@ const dev_conversations = [
       },
     ],
     isFavorite: true,
-    id: 1,
+    id: "1",
     userName: "Nombre",
     userEmail: "email@example.com",
     lastMessage: "Con gusto. Actualmente tenemos 5 mensajes",
@@ -90,6 +91,8 @@ const dev_conversations = [
     unread: 0,
     avatar: "/assets/chat/ghosty.svg",
     tel: "+52 776 762 78 90",
+    manualMode: false,
+    isWhatsApp: true,
   },
   {
     messages: [
@@ -125,7 +128,7 @@ const dev_conversations = [
       },
     ],
     isFavorite: false,
-    id: 2,
+    id: "2",
     userName: "Nombre",
     userEmail: "email@example.com",
     lastMessage: "Ultimo mensaje",
@@ -134,6 +137,8 @@ const dev_conversations = [
     unread: 0,
     avatar: "/assets/chat/ghosty.svg",
     tel: "+52 776 762 78 90",
+    manualMode: false,
+    isWhatsApp: true,
   },
   {
     messages: [
@@ -169,7 +174,7 @@ const dev_conversations = [
       },
     ],
     isFavorite: false,
-    id: 2,
+    id: "2",
     userName: "Nombre",
     userEmail: "email@example.com",
     lastMessage: "Ultimo mensaje",
@@ -178,16 +183,21 @@ const dev_conversations = [
     unread: 0,
     avatar: "/assets/chat/ghosty.svg",
     tel: "+52 776 762 78 90",
+    manualMode: false,
+    isWhatsApp: true,
   },
 ];
 
 type ConversationsProps = {
   chatbot: Chatbot;
   user: User;
+  conversations?: Conversation[];
+  onToggleManual?: (conversationId: string) => void;
+  onSendManualResponse?: (conversationId: string, message: string) => void;
 };
 
 interface Conversation {
-  id: number;
+  id: string;
   chatbotId: string;
   messages: Message[];
   userName: string;
@@ -198,21 +208,87 @@ interface Conversation {
   unread: number;
   avatar: string;
   tel: string;
+  isFavorite: boolean;
+  manualMode: boolean;
+  isWhatsApp: boolean;
 }
 
 export const Conversations = ({
-  conversations = dev_conversations,
+  conversations = [],
   chatbot,
   user,
+  onToggleManual,
+  onSendManualResponse,
 }: ConversationsProps) => {
+  console.log("🔍 DEBUG - Conversations Props:", {
+    conversationsCount: conversations.length,
+    hasToggleManual: !!onToggleManual,
+    hasSendManual: !!onSendManualResponse,
+    firstConversationId: conversations.length > 0 ? conversations[0].id : 'none',
+    conversationIDs: conversations.map(c => c.id)
+  });
+
+  // Use real conversations if provided, fallback to dev data for development
+  const actualConversations = conversations.length > 0 ? conversations : dev_conversations;
+
+  console.log("🔍 Using conversations:", {
+    source: conversations.length > 0 ? 'real' : 'dev',
+    count: actualConversations.length,
+    ids: actualConversations.map(c => c.id)
+  });
   const { currentTab, setCurrentTab } = useChipTabs("Todos", `conversations_${chatbot?.id || 'default'}`);
-  const favoriteConversations = conversations.filter(
+  const navigate = useNavigate();
+
+  const favoriteConversations = actualConversations.filter(
     (conversation) => conversation.isFavorite
   );
-  const allConversations = conversations;
+  const allConversations = actualConversations;
   const [conversation, setConversation] = useState<Conversation>(
-    dev_conversations[0]
+    actualConversations[0] || dev_conversations[0]
   );
+
+  // Estado local para toggle manual (temporal)
+  const [localManualModes, setLocalManualModes] = useState<Record<string, boolean>>({});
+
+  // 🔄 Actualizar conversación seleccionada cuando cambian las props
+  useEffect(() => {
+    if (actualConversations.length > 0 && conversation) {
+      const updated = actualConversations.find(c => c.id === conversation.id);
+      if (updated) {
+        console.log("🔄 Updating selected conversation:", {
+          id: updated.id,
+          manualMode: updated.manualMode
+        });
+        setConversation(updated);
+      }
+    }
+  }, [actualConversations, conversation?.id]);
+
+  // Polling básico para actualizaciones en tiempo real
+  useEffect(() => {
+    if (!chatbot?.id) return;
+
+    const interval = setInterval(() => {
+      // Revalidar loader data cada 5 segundos para obtener nuevas conversaciones
+      navigate(window.location.pathname, { replace: true });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [chatbot?.id, navigate]);
+
+  // 🎯 Toggle local simple (sin API)
+  const handleToggleManual = (conversationId: string) => {
+    console.log("🔄 Local toggle for:", conversationId);
+    setLocalManualModes(prev => ({
+      ...prev,
+      [conversationId]: !prev[conversationId]
+    }));
+  };
+
+  const handleSendManualResponse = onSendManualResponse || (async (conversationId: string, message: string) => {
+    console.log("⚠️ No onSendManualResponse function provided - using fallback");
+    alert("⚠️ Función de envío no disponible");
+  });
 
   return (
     <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
@@ -233,7 +309,13 @@ export const Conversations = ({
         />
       </article>
       <section className="col-span-12 md:col-span-9 pb-4 ">
-        <ConversationsPreview conversation={conversation} chatbot={chatbot} />
+        <ConversationsPreview
+          conversation={conversation}
+          chatbot={chatbot}
+          onToggleManual={handleToggleManual}
+          onSendManualResponse={handleSendManualResponse}
+          localManualMode={localManualModes[conversation?.id] || false}
+        />
       </section>
     </main>
   );
@@ -292,7 +374,7 @@ const Conversation = ({
         }
       )}
     >
-      <Avatar className="w-10" src={pic || "/assets/chat/ghosty.svg"} />
+      <Avatar className="w-10" src={pic || "/assets/chat/user-placeholder.svg"} />
       <div className="flex-1 truncate">
         <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
         <p className="text-xs text-irongray truncate -mt-[2px]">
@@ -312,11 +394,58 @@ const Conversation = ({
 const ChatHeader = ({
   conversation,
   primaryColor,
+  onToggleManual,
+  onSendManualResponse,
+  localManualMode = false,
 }: {
   conversation: Conversation;
   primaryColor?: string;
+  onToggleManual?: (conversationId: string) => void;
+  onSendManualResponse?: (conversationId: string, message: string) => void;
+  localManualMode?: boolean;
 }) => {
   const { date, tel } = conversation;
+  const [manualMessage, setManualMessage] = useState("");
+  const [isToggling, setIsToggling] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+
+  console.log("🔍 DEBUG - ChatHeader:", {
+    conversationId: conversation.id,
+    localManualMode,
+    hasToggleFunction: !!onToggleManual,
+    isToggling
+  });
+
+  // Detectar si es conversación de WhatsApp
+  // Si tel es un número válido (no "N/A" o "Usuario Web") → es WhatsApp
+  const isWhatsAppConversation = conversation.isWhatsApp ||
+    (conversation.tel !== "N/A" && conversation.tel.startsWith("+") && conversation.tel.length >= 10);
+
+  const handleToggleManual = () => {
+    console.log("🔄 Local toggle clicked:", conversation.id);
+    if (onToggleManual) {
+      onToggleManual(conversation.id);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!onSendManualResponse || !manualMessage.trim() || isSending) return;
+    setIsSending(true);
+    try {
+      await onSendManualResponse(conversation.id, manualMessage.trim());
+      setManualMessage(""); // Clear input after sending
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   return (
     <header
       style={{ borderColor: primaryColor || "brand-500" }}
@@ -329,19 +458,169 @@ const ChatHeader = ({
         "bg-brand-100/40 w-full p-3"
       )}
     >
-      <Avatar className="h-10 w-10" src={conversation.messages[0].picture || "/assets/chat/ghosty.svg"} />
+      <Avatar className="h-10 w-10" src={conversation.messages[0]?.picture || "/assets/chat/ghosty.svg"} />
       <div>
         <div className="flex items-center gap-1">
           <h3 className="text-base font-medium text-dark">{tel}</h3>
-          {/* @TODO: This should match chat icons */}
-          <img src="/assets/chat/whatsapp.svg" alt="whatsapp icon" />
+          {/* Solo mostrar logo WhatsApp si es conversación legítima de WhatsApp */}
+          {isWhatsAppConversation && (
+            <img src="/assets/chat/whatsapp.svg" alt="whatsapp icon" />
+          )}
         </div>
         <p className="text-xs text-gray-500">{date}</p>
       </div>
-      <button className="ml-auto mr-3">
+      <ToggleButton
+        isManual={localManualMode}
+        onClick={handleToggleManual}
+        disabled={false}
+      />
+      <button className="mr-3">
         <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
       </button>
     </header>
+  );
+};
+
+const ToggleButton = ({
+  isManual,
+  onClick,
+  disabled
+}: {
+  isManual: boolean;
+  onClick: () => void;
+  disabled: boolean;
+}) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={cn(
+      "ml-auto mr-2 px-3 py-1 text-xs rounded-full font-medium transition-colors",
+      isManual
+        ? "bg-orange-100 text-orange-800"
+        : "bg-blue-100 text-blue-800",
+      "disabled:opacity-50"
+    )}
+  >
+    {isManual ? "🔧 MANUAL" : "🤖 BOT"}
+  </button>
+);
+
+const ManualResponseInput = ({
+  conversationId,
+  onSendResponse,
+}: {
+  conversationId: string;
+  onSendResponse: (conversationId: string, message: string) => void;
+}) => {
+  const [message, setMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 🎯 AUTO-FOCUS: Input listo inmediatamente
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(0, 0);
+    }
+  }, []);
+
+  // 🎯 AUTO-RESIZE: Se expande con el contenido
+  const handleAutoResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+  };
+
+  const handleSend = async () => {
+    if (!message.trim() || isSending) return;
+
+    setIsSending(true);
+    try {
+      await onSendResponse(conversationId, message.trim());
+      setMessage(""); // Clear input after sending
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // 🎯 SMART SHORTCUTS: Ctrl+Enter envía, Esc cancela
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // 🎯 QUICK RESPONSES: Respuestas rápidas pre-definidas
+  const quickResponses = [
+    "👋 ¡Hola! ¿En qué puedo ayudarte?",
+    "✅ Perfecto, entendido",
+    "⏱️ Te respondo en un momento",
+    "📞 ¿Podrías compartir tu contacto?",
+  ];
+
+  return (
+    <div className="border-l border-r border-b border-outlines bg-gradient-to-r from-blue-50 to-indigo-50 p-4 w-full rounded-b-3xl">
+      {/* 🎯 QUICK RESPONSES */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {quickResponses.map((response, index) => (
+          <button
+            key={index}
+            onClick={() => setMessage(response)}
+            className="px-3 py-1 text-xs bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+          >
+            {response}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={handleAutoResize}
+            onKeyDown={handleKeyDown}
+            placeholder="💬 Responde al usuario aquí..."
+            className="w-full p-3 border-2 border-blue-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            rows={2}
+            maxLength={4096}
+            style={{ minHeight: '60px' }}
+          />
+          <div className="flex justify-between items-center mt-2 text-xs text-gray-600">
+            <span>⚡ Enter envía • Shift+Enter nueva línea</span>
+            <span className={message.length > 3500 ? 'text-orange-600 font-medium' : ''}>{message.length}/4096</span>
+          </div>
+        </div>
+        <button
+          onClick={handleSend}
+          disabled={!message.trim() || isSending}
+          className={cn(
+            "px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl transition-all transform",
+            "hover:from-blue-600 hover:to-blue-700 hover:scale-105 hover:shadow-lg",
+            "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+            "flex items-center gap-2 font-medium whitespace-nowrap",
+            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          )}
+        >
+          {isSending ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Enviando...
+            </>
+          ) : (
+            <>
+              <span>🚀</span>
+              Enviar
+            </>
+          )}
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -385,30 +664,65 @@ export const ConversationsPreview = ({
   conversation,
   primaryColor,
   chatbot,
+  onToggleManual,
+  onSendManualResponse,
+  localManualMode = false,
 }: {
   conversation: Conversation | undefined;
   primaryColor?: string;
   chatbot?: Chatbot;
+  onToggleManual?: (conversationId: string) => void;
+  onSendManualResponse?: (conversationId: string, message: string) => void;
+  localManualMode?: boolean;
 }) => {
+  // Log conversation state for debugging
+  console.log("🔍 ConversationsPreview render:", {
+    conversationId: conversation?.id,
+    manualMode: conversation?.manualMode,
+    hasToggleFunction: !!onToggleManual,
+    hasSendFunction: !!onSendManualResponse
+  });
   return (
-    <article className="flex items-end flex-col ">
+    <article className="flex flex-col h-full">
       <ActionButtons />
       <hr className="my-3" />
-      {conversation && <ChatHeader conversation={conversation} />}
+      {conversation && (
+        <ChatHeader
+          conversation={conversation}
+          onToggleManual={onToggleManual}
+          onSendManualResponse={onSendManualResponse}
+          localManualMode={localManualMode}
+        />
+      )}
+
+      {/* Messages Area - Scroll container con altura fija */}
       <section
         style={{ borderColor: primaryColor || "brand-500" }}
         className={cn(
           "flex",
           "flex-col",
           "border",
-          "rounded-b-3xl",
-          "w-full p-3 shadow-standard max-h-[420px] md:max-h-[554px] overflow-y-scroll"
+          localManualMode ? "border-b-0" : "rounded-b-3xl",
+          "w-full shadow-standard flex-1 overflow-hidden",
+          "min-h-0" // Importante para que funcione el scroll
         )}
       >
-        {conversation?.messages?.map((message) => (
-          <SingleMessage message={message} chatbotAvatarUrl={chatbot?.avatarUrl} />
-        )) || <div className="text-center text-gray-500 p-4">Selecciona una conversación para ver los mensajes</div>}
+        <div className="flex-1 overflow-y-auto p-3">
+          {conversation?.messages?.map((message, index) => (
+            <SingleMessage key={index} message={message} chatbotAvatarUrl={chatbot?.avatarUrl} />
+          )) || <div className="text-center text-gray-500 p-4">Selecciona una conversación para ver los mensajes</div>}
+          {/* Spacer para asegurar que el último mensaje no se corte */}
+          <div className="h-6"></div>
+        </div>
       </section>
+
+      {/* Manual Response Input - Abajo como chat natural */}
+      {localManualMode && onSendManualResponse && (
+        <ManualResponseInput
+          conversationId={conversation.id}
+          onSendResponse={onSendManualResponse}
+        />
+      )}
     </article>
   );
 };
@@ -423,12 +737,12 @@ export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: Message;
 
 const UserMessage = ({ message }: { message: Message }) => {
   return (
-    <main className="justify-end p-2 flex items-start gap-2">
-      <div className="text-base p-2 bg-dark text-white rounded-xl">
+    <div className="justify-end flex items-start gap-2 mb-2">
+      <div className="text-base p-3 bg-dark text-white rounded-xl max-w-[80%]">
         {message.content}
       </div>
-      <Avatar className="w-8 h-8" src={message.picture} />
-    </main>
+      <Avatar className="w-8 h-8" src={message.picture || "/assets/chat/user-placeholder.svg"} />
+    </div>
   );
 };
 /**
@@ -440,13 +754,13 @@ const UserMessage = ({ message }: { message: Message }) => {
  */
 const AssistantMessage = ({ message, avatarUrl }: { message: Message; avatarUrl?: string }) => {
   return (
-    <main className="justify-start p-2  flex items-start gap-2">
+    <div className="justify-start flex items-start gap-2 mb-2">
       <Avatar className="w-8 h-8" src={avatarUrl} />
-      <div className="text-base p-2 bg-white border border-outlines rounded-xl relative">
+      <div className="text-base p-3 bg-white border border-outlines rounded-xl relative max-w-[80%]">
         {message.content}
         <MicroLikeButton />
       </div>
-    </main>
+    </div>
   );
 };
 

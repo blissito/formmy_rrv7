@@ -1,5 +1,6 @@
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { PageContainer } from "~/components/chat/PageContainer";
+import { useNavigate } from "react-router";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
@@ -9,6 +10,7 @@ import { db } from "../utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
 import { isUserInTrial, checkTrialExpiration, applyFreeRestrictions } from "server/chatbot/planLimits.server";
+import { transformConversationsToUI } from "server/chatbot/conversationTransformer.server";
 import { Plans } from "@prisma/client";
 import { AIFlowCanvas } from "formmy-actions";
 import "@xyflow/react/dist/style.css";
@@ -88,22 +90,137 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     },
   });
 
-  return { 
-    user, 
-    chatbot, 
+  // Obtener conversaciones reales con mensajes
+  const conversationsFromDB = await db.conversation.findMany({
+    where: {
+      chatbotId: chatbot.id,
+      status: { not: "DELETED" }
+    },
+    include: {
+      messages: {
+        orderBy: { createdAt: 'asc' },
+        where: { deleted: { not: true } }
+      }
+    },
+    orderBy: { updatedAt: 'desc' },
+    take: 50 // Limitar a las 50 conversaciones más recientes
+  });
+
+  // Transformar a formato UI
+  const conversations = transformConversationsToUI(conversationsFromDB, chatbot.avatarUrl || undefined);
+
+  return {
+    user,
+    chatbot,
     integrations,
-    accessInfo: accessValidation 
+    conversations,
+    accessInfo: accessValidation
   };
 };
 
 export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
-  const { user, chatbot, integrations, accessInfo } = loaderData;
+  const { user, chatbot, integrations, conversations, accessInfo } = loaderData;
   const { currentTab, setCurrentTab } = useChipTabs("Entrenamiento", `main_${chatbot.id}`);
+  const navigate = useNavigate();
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);
+  };
+
+  // Toggle manual mode for conversation
+  const handleToggleManual = async (conversationId: string) => {
+    console.log("🔄 Route handleToggleManual called:", conversationId);
+
+    try {
+      const response = await fetch(`/api/v1/conversations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intent: 'toggle_manual',
+          conversationId
+        })
+      });
+
+      console.log("📡 Toggle response:", response.status, response.statusText);
+      console.log("📡 Toggle response headers:", Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Toggle error response:", errorText);
+        throw new Error(`Error toggling manual mode: ${response.status} - ${errorText}`);
+      }
+
+      // Check if response is actually JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const htmlText = await response.text();
+        console.error("❌ Response is not JSON:", htmlText);
+        throw new Error('Server returned HTML instead of JSON - check API endpoint');
+      }
+
+      const result = await response.json();
+      console.log("✅ Toggle result:", result);
+
+      if (!result.success) {
+        throw new Error(result.error || "Unknown error toggling manual mode");
+      }
+
+      // Refresh conversations after toggle - trigger revalidation
+      navigate(window.location.pathname, { replace: true });
+    } catch (error) {
+      console.error('❌ Error toggling manual mode:', error);
+      alert(`Error al cambiar modo manual: ${error.message}`);
+    }
+  };
+
+  // Send manual response
+  const handleSendManualResponse = async (conversationId: string, message: string) => {
+    console.log("🚀 Route handleSendManualResponse called:", {
+      conversationId,
+      messageLength: message.length
+    });
+
+    try {
+      const response = await fetch(`/api/v1/conversations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intent: 'send_manual_response',
+          conversationId,
+          message
+        })
+      });
+
+      console.log("📡 Send response:", response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Send error response:", errorText);
+        throw new Error(`Error sending manual response: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log("✅ Send result:", result);
+
+      if (!result.success) {
+        throw new Error(result.error || "Unknown error sending manual response");
+      }
+
+      // Show success/warning based on WhatsApp delivery
+      if (result.whatsappSent) {
+        alert("✅ Respuesta enviada por WhatsApp exitosamente");
+      } else {
+        alert(`⚠️ ${result.message}${result.whatsappError ? `\nError: ${result.whatsappError}` : ''}`);
+      }
+
+      // Refresh conversations after sending - trigger revalidation
+      navigate(window.location.pathname, { replace: true });
+    } catch (error) {
+      console.error('❌ Error sending manual response:', error);
+      alert(`Error al enviar respuesta manual: ${error.message}`);
+    }
   };
 
   return (
@@ -124,7 +241,13 @@ export default function ChatbotDetailRoute({
           />
         )}
         {currentTab === "Conversaciones" && (
-          <Conversations chatbot={chatbot} user={user} />
+          <Conversations
+            chatbot={chatbot}
+            user={user}
+            conversations={conversations}
+            onToggleManual={handleToggleManual}
+            onSendManualResponse={handleSendManualResponse}
+          />
         )}
         {currentTab === "Entrenamiento" && (
           <Entrenamiento chatbot={chatbot} user={user} />

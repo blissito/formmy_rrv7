@@ -15,6 +15,8 @@ Ejemplo: Para LlamaIndex streaming, leer https://docs.llamaindex.ai/en/stable/un
 
 Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzadas de AI y automatización, que posee un agente inteligente con acceso a herramientas avanzadas e integraciones.
 
+**URL de Producción**: https://formmy-v2.fly.dev
+
 ## Arquitectura
 
 - **Frontend**: React Router v7 no Remix, tailwindcss
@@ -101,6 +103,22 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - [ ] **schedule_maintenance**: Programar mantenimiento automático
 - [ ] **backup_restore**: Respaldo y restauración de configuraciones
 - [ ] **export_import**: Migración entre cuentas/ambientes
+
+### ✅ Respuestas Manuales en Conversaciones (COMPLETADO - Sept 2025)
+- [x] **Sistema de toggle manual/automático**: ✅ Toggle instantáneo con estado local y persistencia en BD
+- [x] **Envío real por WhatsApp Business API**: ✅ Integración completa con Meta Business API
+- [x] **Persistencia de modo manual**: ✅ Campo manualMode en BD con Prisma sincronizado
+- [x] **UX optimizada**: ✅ Input abajo como chat natural, scroll perfecto, mensajes visibles
+- [x] **Manejo robusto de errores**: ✅ Fallback graceful cuando WhatsApp falla
+- [x] **Respuestas rápidas**: ✅ Templates predefinidos para agentes
+- [x] **Validaciones de producción**: ✅ Timeouts, logs seguros, feedback contextual
+- [x] **API endpoints funcionales**: ✅ /api/v1/conversations con toggle + envío manual
+
+#### Próximas mejoras pendientes:
+- [ ] **Email/SMS fallback**: Sistema de respuesta por email cuando WhatsApp no está disponible
+- [ ] **Historial de respuestas**: Guardar quién envió qué respuesta manual (audit trail)
+- [ ] **Notificaciones al equipo**: Alertar cuando conversación cambia a modo manual
+- [ ] **Asignación de conversaciones**: Sistema para asignar conversaciones manuales a agentes específicos
 
 ### Sistema de Tool Credits (NUEVA IMPLEMENTACIÓN PENDIENTE)
 - [ ] **Implementar sistema de credits**: Tracking de tool calls por usuario/plan
