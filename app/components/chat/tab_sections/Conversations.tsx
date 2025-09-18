@@ -247,8 +247,17 @@ export const Conversations = ({
     actualConversations[0] || dev_conversations[0]
   );
 
-  // Estado local para toggle manual (temporal)
+  // Estado local para toggle manual (inicializado con valores reales)
   const [localManualModes, setLocalManualModes] = useState<Record<string, boolean>>({});
+
+  // Inicializar estado local con valores de BD
+  useEffect(() => {
+    const initialModes: Record<string, boolean> = {};
+    actualConversations.forEach(conv => {
+      initialModes[conv.id] = conv.manualMode || false;
+    });
+    setLocalManualModes(initialModes);
+  }, [actualConversations]);
 
   // 🔄 Actualizar conversación seleccionada cuando cambian las props
   useEffect(() => {
@@ -276,13 +285,30 @@ export const Conversations = ({
     return () => clearInterval(interval);
   }, [chatbot?.id, navigate]);
 
-  // 🎯 Toggle local simple (sin API)
-  const handleToggleManual = (conversationId: string) => {
-    console.log("🔄 Local toggle for:", conversationId);
+  // 🎯 Toggle que sincroniza con backend
+  const handleToggleManual = async (conversationId: string) => {
+    console.log("🔄 Toggle with backend sync for:", conversationId);
+
+    // Actualizar estado local inmediatamente para UX responsiva
     setLocalManualModes(prev => ({
       ...prev,
       [conversationId]: !prev[conversationId]
     }));
+
+    // Sincronizar con backend si hay función disponible
+    if (onToggleManual) {
+      try {
+        await onToggleManual(conversationId);
+        console.log("✅ Backend sync completed");
+      } catch (error) {
+        console.error("❌ Backend sync failed:", error);
+        // Revertir estado local si falló
+        setLocalManualModes(prev => ({
+          ...prev,
+          [conversationId]: !prev[conversationId]
+        }));
+      }
+    }
   };
 
   const handleSendManualResponse = onSendManualResponse || (async (conversationId: string, message: string) => {
@@ -683,49 +709,51 @@ export const ConversationsPreview = ({
     hasSendFunction: !!onSendManualResponse
   });
   return (
-    <article className="flex flex-col h-full">
-      <ActionButtons />
-      <hr className="my-3" />
-      {conversation && (
-        <ChatHeader
-          conversation={conversation}
-          onToggleManual={onToggleManual}
-          onSendManualResponse={onSendManualResponse}
-          localManualMode={localManualMode}
-        />
-      )}
+    <div className="h-full flex flex-col max-h-[calc(100vh-320px)]">
+      <div className="flex-shrink-0">
+        <ActionButtons />
+        <hr className="my-3" />
+        {conversation && (
+          <ChatHeader
+            conversation={conversation}
+            onToggleManual={onToggleManual}
+            onSendManualResponse={onSendManualResponse}
+            localManualMode={localManualMode}
+          />
+        )}
+      </div>
 
-      {/* Messages Area - Scroll container con altura fija */}
-      <section
+      {/* Messages - Flex grow container */}
+      <div
         style={{ borderColor: primaryColor || "brand-500" }}
         className={cn(
-          "flex",
-          "flex-col",
-          "border",
-          localManualMode ? "border-b-0" : "rounded-b-3xl",
-          "w-full shadow-standard",
-          "flex-1 min-h-0 overflow-hidden"
+          "border w-full shadow-standard flex-1 overflow-y-auto",
+          localManualMode ? "border-b-0" : "rounded-b-3xl"
         )}
       >
-        <div className="flex-1 overflow-y-auto overscroll-contain">
-          <div className="p-3 space-y-3 min-h-full flex flex-col">
-            {conversation?.messages?.map((message, index) => (
-              <SingleMessage key={index} message={message} chatbotAvatarUrl={chatbot?.avatarUrl} />
-            )) || <div className="text-center text-gray-500 p-4">Selecciona una conversación para ver los mensajes</div>}
-            {/* Spacer extra para scroll completo */}
-            <div className="h-8 flex-shrink-0"></div>
-          </div>
+        <div className="p-4">
+          {conversation?.messages?.map((message, index) => (
+            <div key={index} className="mb-4 last:mb-8">
+              <SingleMessage message={message} chatbotAvatarUrl={chatbot?.avatarUrl} />
+            </div>
+          )) || (
+            <div className="text-center text-gray-500 p-8">
+              Selecciona una conversación para ver los mensajes
+            </div>
+          )}
         </div>
-      </section>
+      </div>
 
-      {/* Manual Response Input - Abajo como chat natural */}
+      {/* Manual Response Input - Flex shrink */}
       {localManualMode && onSendManualResponse && (
-        <ManualResponseInput
-          conversationId={conversation.id}
-          onSendResponse={onSendManualResponse}
-        />
+        <div className="flex-shrink-0">
+          <ManualResponseInput
+            conversationId={conversation.id}
+            onSendResponse={onSendManualResponse}
+          />
+        </div>
       )}
-    </article>
+    </div>
   );
 };
 
