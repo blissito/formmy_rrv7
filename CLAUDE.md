@@ -105,14 +105,16 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - [ ] **export_import**: Migración entre cuentas/ambientes
 
 ### ✅ Respuestas Manuales en Conversaciones (COMPLETADO - Sept 2025)
-- [x] **Sistema de toggle manual/automático**: ✅ Toggle instantáneo con estado local y persistencia en BD
+- [x] **Sistema de toggle manual/automático**: ✅ Toggle híbrido local+backend con sincronización automática
 - [x] **Envío real por WhatsApp Business API**: ✅ Integración completa con Meta Business API
 - [x] **Persistencia de modo manual**: ✅ Campo manualMode en BD con Prisma sincronizado
-- [x] **UX optimizada**: ✅ Input abajo como chat natural, scroll perfecto, mensajes visibles
-- [x] **Manejo robusto de errores**: ✅ Fallback graceful cuando WhatsApp falla
+- [x] **UX ultra-optimizada**: ✅ Layout flex simple, scroll natural, textarea protegido
+- [x] **Sincronización estado**: ✅ Estado local inicializado con BD, sync automático, rollback en errores
+- [x] **Manejo robusto de errores**: ✅ Fallback graceful cuando WhatsApp falla, feedback contextual
 - [x] **Respuestas rápidas**: ✅ Templates predefinidos para agentes
-- [x] **Validaciones de producción**: ✅ Timeouts, logs seguros, feedback contextual
+- [x] **Validaciones de producción**: ✅ Timeouts, logs seguros, verificaciones backend
 - [x] **API endpoints funcionales**: ✅ /api/v1/conversations con toggle + envío manual
+- [x] **Layout responsivo**: ✅ Chat natural con header fijo, mensajes scrollables, input protegido
 
 #### Próximas mejoras pendientes:
 - [ ] **Email/SMS fallback**: Sistema de respuesta por email cuando WhatsApp no está disponible
