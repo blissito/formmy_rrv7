@@ -703,16 +703,18 @@ export const ConversationsPreview = ({
           "flex-col",
           "border",
           localManualMode ? "border-b-0" : "rounded-b-3xl",
-          "w-full shadow-standard flex-1 overflow-hidden",
-          "min-h-0" // Importante para que funcione el scroll
+          "w-full shadow-standard",
+          "flex-1 min-h-0 overflow-hidden"
         )}
       >
-        <div className="flex-1 overflow-y-auto p-3">
-          {conversation?.messages?.map((message, index) => (
-            <SingleMessage key={index} message={message} chatbotAvatarUrl={chatbot?.avatarUrl} />
-          )) || <div className="text-center text-gray-500 p-4">Selecciona una conversación para ver los mensajes</div>}
-          {/* Spacer para asegurar que el último mensaje no se corte */}
-          <div className="h-6"></div>
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="p-3 space-y-3 min-h-full flex flex-col">
+            {conversation?.messages?.map((message, index) => (
+              <SingleMessage key={index} message={message} chatbotAvatarUrl={chatbot?.avatarUrl} />
+            )) || <div className="text-center text-gray-500 p-4">Selecciona una conversación para ver los mensajes</div>}
+            {/* Spacer extra para scroll completo */}
+            <div className="h-8 flex-shrink-0"></div>
+          </div>
         </div>
       </section>
 
@@ -737,11 +739,11 @@ export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: Message;
 
 const UserMessage = ({ message }: { message: Message }) => {
   return (
-    <div className="justify-end flex items-start gap-2 mb-2">
-      <div className="text-base p-3 bg-dark text-white rounded-xl max-w-[80%]">
+    <div className="justify-end flex items-start gap-2">
+      <div className="text-base p-3 bg-dark text-white rounded-xl max-w-[80%] break-words">
         {message.content}
       </div>
-      <Avatar className="w-8 h-8" src={message.picture || "/assets/chat/user-placeholder.svg"} />
+      <Avatar className="w-8 h-8 flex-shrink-0" src={message.picture || "/assets/chat/user-placeholder.svg"} />
     </div>
   );
 };
@@ -754,9 +756,9 @@ const UserMessage = ({ message }: { message: Message }) => {
  */
 const AssistantMessage = ({ message, avatarUrl }: { message: Message; avatarUrl?: string }) => {
   return (
-    <div className="justify-start flex items-start gap-2 mb-2">
-      <Avatar className="w-8 h-8" src={avatarUrl} />
-      <div className="text-base p-3 bg-white border border-outlines rounded-xl relative max-w-[80%]">
+    <div className="justify-start flex items-start gap-2">
+      <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
+      <div className="text-base p-3 bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
         {message.content}
         <MicroLikeButton />
       </div>
