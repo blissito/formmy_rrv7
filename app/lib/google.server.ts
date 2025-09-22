@@ -141,12 +141,13 @@ export const createSession = async (code: string, request: Request, state?: stri
         }
       });
     } else {
-      // If user doesn't exist, create without customerId
+      // If user doesn't exist, create with TRIAL plan and set trial start date
       const newUser = await db.user.create({
         data: {
           ...propieties,
           customerId: undefined, // Let the database handle the default value
-          plan: 'FREE', // Ensure default plan is set
+          plan: 'TRIAL', // New users start with 60-day TRIAL
+          trialStartedAt: new Date(), // Set trial start date to track 60 days
           subscriptionIds: [] // Initialize empty array for subscriptionIds
         },
         select: { id: true }
@@ -158,6 +159,16 @@ export const createSession = async (code: string, request: Request, state?: stri
       } catch (error) {
         console.error('Error sending welcome email:', error);
         // Don't fail registration if welcome email fails
+      }
+
+      // Crear chatbot demo para nuevos usuarios durante revisión de Meta (Sept-Oct 2025)
+      try {
+        const { createDemoChatbot } = await import("../../server/chatbot/createDemoChatbot.server");
+        await createDemoChatbot(newUser.id, extra.email, 'TRIAL');
+        console.log(`✅ Chatbot demo creado automáticamente para ${extra.email}`);
+      } catch (error) {
+        console.error('Error creando chatbot demo:', error);
+        // No fallar el registro si el chatbot demo no se puede crear
       }
       
       // Procesar referido si existe y es un nuevo usuario
@@ -179,7 +190,8 @@ export const createSession = async (code: string, request: Request, state?: stri
         data: {
           ...propieties,
           customerId: `cust_${Date.now()}`,
-          plan: 'FREE',
+          plan: 'TRIAL',
+          trialStartedAt: new Date(),
           subscriptionIds: []
         }
       });

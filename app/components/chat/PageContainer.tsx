@@ -1,5 +1,13 @@
 import type { Chatbot, User } from "@prisma/client";
-import { useState, type ReactNode, useEffect, Children, useRef, createContext, useContext } from "react";
+import {
+  useState,
+  type ReactNode,
+  useEffect,
+  Children,
+  useRef,
+  createContext,
+  useContext,
+} from "react";
 import { cn } from "~/lib/utils";
 import Spinner from "../Spinner";
 import { Effect, pipe } from "effect";
@@ -306,16 +314,14 @@ export const ChatCard = ({
       className="col-span-1"
       id="chatbot_detail"
     >
-{chatbot.canAccess === false ? (
-        // Show as disabled div with Pro upgrade for blocked chatbots  
+      {chatbot.canAccess === false ? (
+        // Show as disabled div with Pro upgrade for blocked chatbots
         <div className="group relative overflow-hidden transition-all border border-outlines bg-white rounded-2xl w-full h-full block opacity-75">
           <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
             <img src="/dash/chat.png" alt="chatbot" />
           </section>
           <div className="flex flex-col px-4 pt-4 pb-2 relative">
-            <ProTagChatbot 
-              message="Tu plan gratuito no incluye acceso a chatbots. Actualiza tu plan para usar esta funcionalidad."
-            />
+            <ProTagChatbot message="Tu plan gratuito no incluye acceso a chatbots. Actualiza tu plan para usar esta funcionalidad." />
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-medium text-dark truncate">
                 {chatbot.name}
@@ -386,10 +392,10 @@ export const ChatCard = ({
                     onDelete?.();
                   }}
                 >
-                   <DeleteIcon className="w-5 h-5" />
+                  <DeleteIcon className="w-5 h-5" />
                 </button>
                 <hr className="h-6 w-[1px] border-none bg-outlines" />
-                <a 
+                <a
                   href={`/chat/embed?slug=${chatbot.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -398,7 +404,7 @@ export const ChatCard = ({
                 >
                   <OpenTabIcon />
                 </a>
-                <Link 
+                <Link
                   to={`/dashboard/chat/${chatbot.slug}`}
                   onClick={(e) => e.stopPropagation()}
                   className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
@@ -418,9 +424,7 @@ export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
     <article className="flex gap-2 md:gap-6 w-full pb-8 ">
-      <section className="self-start sticky top-4  md:mr-0">
-        {nodes[0]}
-      </section>
+      <section className="self-start sticky top-4  md:mr-0">{nodes[0]}</section>
       <div className="flex flex-col md:flex-row gap-4 md:gap-6 grow  ">
         <section className={`grow w-full ${nodes[2] ? "max-w-[732px]" : ""}`}>
           {nodes[1]}
@@ -478,11 +482,19 @@ export const EditionPair = ({
     setSelectedModel(chatbot.aiModel || getDefaultModelForPlan(user.plan));
     setSelectedAgent((chatbot.personality as AgentType) || "customer_support");
     setTemperature(chatbot.temperature || 1);
-    setInstructions(chatbot.instructions || "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios.");
+    setInstructions(
+      chatbot.instructions ||
+        "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios."
+    );
     setName(chatbot.name || "Geeki");
     setPrimaryColor(chatbot.primaryColor || "#63CFDE");
-    setWelcomeMessage(chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?");
-    setGoodbyeMessage(chatbot.goodbyeMessage || "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte.");
+    setWelcomeMessage(
+      chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?"
+    );
+    setGoodbyeMessage(
+      chatbot.goodbyeMessage ||
+        "Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte."
+    );
     setAvatarUrl(chatbot.avatarUrl || "");
     setCustomInstructions(chatbot.customInstructions || "");
   }, [chatbot, user.plan]);

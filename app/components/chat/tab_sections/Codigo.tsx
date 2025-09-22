@@ -108,9 +108,14 @@ interface CodigoProps {
 }
 
 export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
-  const { currentTab, setCurrentTab } = useChipTabs("integrations", `codigo_${chatbot.id}`);
-  const { currentTab: miniCard, setCurrentTab: setMiniCard } =
-    useChipTabs("iframe", `codigo_mini_${chatbot.id}`);
+  const { currentTab, setCurrentTab } = useChipTabs(
+    "integrations",
+    `codigo_${chatbot.id}`
+  );
+  const { currentTab: miniCard, setCurrentTab: setMiniCard } = useChipTabs(
+    "iframe",
+    `codigo_mini_${chatbot.id}`
+  );
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
     null
   );
@@ -178,17 +183,21 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   // Sincronizar estado cuando cambien las props de integrations
   // pero preservar estados "connected" del estado local
   useEffect(() => {
-    console.log("🔄 Debug - Props de integrations cambiaron, sincronizando estado inteligentemente");
-    
-    setIntegrationStatus(prevStatus => {
+    console.log(
+      "🔄 Debug - Props de integrations cambiaron, sincronizando estado inteligentemente"
+    );
+
+    setIntegrationStatus((prevStatus) => {
       const newStatus = initializeIntegrationStatus(integrations);
-      
+
       // Preservar cualquier estado "connected" del estado local si no hay contradición en BD
       const mergedStatus = { ...newStatus };
-      Object.keys(prevStatus).forEach(key => {
+      Object.keys(prevStatus).forEach((key) => {
         if (prevStatus[key] === "connected") {
-          const integration = integrations.find(i => i.platform.toLowerCase() === key);
-          
+          const integration = integrations.find(
+            (i) => i.platform.toLowerCase() === key
+          );
+
           // Preservar estado conectado si:
           // 1. No hay integración en BD (estado local temporal)
           // 2. La integración en BD está activa
@@ -196,38 +205,50 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
             mergedStatus[key] = "connected";
             console.log(`🔄 Debug - Preservando estado conectado para ${key}`);
           } else {
-            console.log(`🔄 Debug - Integración ${key} existe pero está inactiva, respetando BD`);
+            console.log(
+              `🔄 Debug - Integración ${key} existe pero está inactiva, respetando BD`
+            );
           }
         }
       });
-      
+
       console.log("🔄 Debug - Estado anterior:", prevStatus);
       console.log("🔄 Debug - Estado de BD:", newStatus);
       console.log("🔄 Debug - Estado merged:", mergedStatus);
-      
+
       return mergedStatus;
     });
   }, [integrations]);
   // Estados para controlar los modales de integración
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
-  const [whatsAppCoexistenceModalOpen, setWhatsAppCoexistenceModalOpen] = useState(false);
-  const [whatsAppCoexistenceRealModalOpen, setWhatsAppCoexistenceRealModalOpen] = useState(false);
-  const [whatsAppEmbeddedSignupModalOpen, setWhatsAppEmbeddedSignupModalOpen] = useState(false);
-  const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false);
+  const [whatsAppCoexistenceModalOpen, setWhatsAppCoexistenceModalOpen] =
+    useState(false);
+  const [
+    whatsAppCoexistenceRealModalOpen,
+    setWhatsAppCoexistenceRealModalOpen,
+  ] = useState(false);
+  const [whatsAppEmbeddedSignupModalOpen, setWhatsAppEmbeddedSignupModalOpen] =
+    useState(false);
+  // const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false);
   const [stripeModalOpen, setStripeModalOpen] = useState(false);
 
   // Solo Embedded Signup - sin manual
   const useEmbeddedSignup = true;
 
-  console.log('🔍 Debug - Embedded Signup only:', { useEmbeddedSignup });
+  console.log("🔍 Debug - Embedded Signup only:", { useEmbeddedSignup });
 
   const handleConnect = (integrationId: string) => {
     console.log("🔍 Debug - Conectando integración:", integrationId);
 
     // No hacer nada para integraciones permanentes
-    const integration = availableIntegrations.find(i => i.id === integrationId);
+    const integration = availableIntegrations.find(
+      (i) => i.id === integrationId
+    );
     if (integration?.isPermanent) {
-      console.log("🔍 Debug - Integración permanente, no requiere conexión:", integrationId);
+      console.log(
+        "🔍 Debug - Integración permanente, no requiere conexión:",
+        integrationId
+      );
       return;
     }
 
@@ -240,8 +261,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
     // Abrir el modal correspondiente
     if (integrationId === "WHATSAPP") {
-      // Usar modal manual por defecto (embedded signup requiere app verificada)
-      setWhatsAppModalOpen(true);
+      // Usar Embedded Signup ahora que la empresa está activada
+      setWhatsAppEmbeddedSignupModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
       console.log("🔍 Starting Google Calendar OAuth2 flow");
       handleGoogleCalendarOAuth();
@@ -260,7 +281,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
   const handleDisconnect = async (integrationId: string) => {
     console.log("🔍 Debug - Desconectando integración:", integrationId);
-    
+
     // Actualizar estado local inmediatamente para UI responsiva
     setIntegrationStatus((prev) => ({
       ...prev,
@@ -298,13 +319,13 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       }
     } catch (error) {
       console.error("❌ Error al desconectar integración:", error);
-      
+
       // Revertir estado local en caso de error
       setIntegrationStatus((prev) => ({
         ...prev,
         [integrationId.toLowerCase()]: "connected",
       }));
-      
+
       // Mostrar error al usuario
       alert("Error al desconectar la integración. Inténtalo de nuevo.");
     }
@@ -315,9 +336,10 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     setSelectedIntegration(integrationId);
 
     if (integrationId === "WHATSAPP") {
-      setWhatsAppModalOpen(true);
+      // Usar Embedded Signup también para editar
+      setWhatsAppEmbeddedSignupModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
-      setGoogleCalendarModalOpen(true);
+      // setGoogleCalendarModalOpen(true);
     } else if (integrationId === "STRIPE") {
       setStripeModalOpen(true);
     }
@@ -347,9 +369,11 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
       let message = "¡Integración de WhatsApp configurada correctamente!";
       if (isEmbeddedSignup) {
-        message = "¡WhatsApp conectado via Embedded Signup oficial! Business Integration Token generado.";
+        message =
+          "¡WhatsApp conectado via Embedded Signup oficial! Business Integration Token generado.";
       } else if (isCoexistence) {
-        message = "¡WhatsApp conectado en modo coexistencia! Tu chatbot y la app móvil funcionarán juntos.";
+        message =
+          "¡WhatsApp conectado en modo coexistencia! Tu chatbot y la app móvil funcionarán juntos.";
       }
       alert(message);
 
@@ -360,31 +384,32 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     }
   };
 
-  const handleGoogleCalendarSuccess = (integration: any) => {
-    console.log("🔍 Debug - Google Calendar integración exitosa:", integration);
+  // const handleGoogleCalendarSuccess = (integration: any) => {
+  //   console.log("🔍 Debug - Google Calendar integración exitosa:", integration);
 
-    if (selectedIntegration) {
-      // Actualizar el estado local
-      setIntegrationStatus((prev) => ({
-        ...prev,
-        [selectedIntegration.toLowerCase()]: "connected" as const,
-      }));
+  //   if (selectedIntegration) {
+  //     // Actualizar el estado local
+  //     setIntegrationStatus((prev) => ({
+  //       ...prev,
+  //       [selectedIntegration.toLowerCase()]: "connected" as const,
+  //     }));
 
-      setGoogleCalendarModalOpen(false);
-      setSelectedIntegration(null);
+  //     // setGoogleCalendarModalOpen(false);
+  //     setSelectedIntegration(null);
 
-      // Mostrar notificación de éxito
-      // Aquí podrías usar tu sistema de notificaciones
-      alert("¡Integración de Google Calendar configurada correctamente!");
+  //     // Mostrar notificación de éxito
+  //     // Aquí podrías usar tu sistema de notificaciones
+  //     alert("¡Integración de Google Calendar configurada correctamente!");
 
-      // Nota: En una aplicación real, podrías querer actualizar el estado
-      // de las integraciones sin recargar la página, pero para este ejemplo
-      // lo hacemos simple con una recarga
-      window.location.reload();
-    }
-  };
+  //     // Nota: En una aplicación real, podrías querer actualizar el estado
+  //     // de las integraciones sin recargar la página, pero para este ejemplo
+  //     // lo hacemos simple con una recarga
+  //     window.location.reload();
+  //   }
+  // };
 
   // Manejador de éxito para la integración de Stripe
+
   const handleStripeSuccess = (integration: any) => {
     console.log("🔍 Debug - Stripe integración exitosa:", integration);
     console.log("🔍 Debug - Estado anterior:", integrationStatus);
@@ -426,7 +451,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       if (!response.ok) {
         const errorData = await response.text();
         console.error("API Error Response:", errorData);
-        throw new Error(`Error al crear la integración: ${response.status} - ${errorData}`);
+        throw new Error(
+          `Error al crear la integración: ${response.status} - ${errorData}`
+        );
       }
 
       const data = await response.json();
@@ -479,13 +506,13 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
             ...prev,
             google_calendar: "connected",
           }));
-          
+
           // Limpiar listener
           window.removeEventListener("message", handleMessage);
-          
+
           // Mostrar notificación de éxito
           alert("¡Integración de Google Calendar configurada correctamente!");
-          
+
           // Recargar para actualizar la lista de integraciones
           window.location.reload();
         } else if (event.data.type === "oauth_error") {
@@ -494,28 +521,33 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
             ...prev,
             google_calendar: "disconnected",
           }));
-          
+
           // Limpiar listener
           window.removeEventListener("message", handleMessage);
-          
+
           // Mostrar error
-          alert(`Error en la autorización: ${event.data.description || "Error desconocido"}`);
+          alert(
+            `Error en la autorización: ${event.data.description || "Error desconocido"}`
+          );
         }
       };
 
       window.addEventListener("message", handleMessage);
-      
     } catch (error) {
       console.error("Error en OAuth2 de Google Calendar:", error);
-      
+
       // Actualizar estado de integración a error
       setIntegrationStatus((prev) => ({
         ...prev,
         google_calendar: "disconnected",
       }));
-      
+
       // Mostrar error al usuario
-      alert(error instanceof Error ? error.message : "Error desconocido en la autorización");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Error desconocido en la autorización"
+      );
     }
   };
 
@@ -571,7 +603,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                 name={availableIntegration.name}
                 logo={availableIntegration.logo}
                 description={availableIntegration.description}
-                status={integrationStatus[availableIntegration.id.toLowerCase()]}
+                status={
+                  integrationStatus[availableIntegration.id.toLowerCase()]
+                }
                 lastActivity={
                   integrationStatus[availableIntegration.id.toLowerCase()] ===
                   "connected"
@@ -698,8 +732,10 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                 return {
                   id: stripeIntegration.id,
                   stripeApiKey: stripeIntegration.stripeApiKey || "",
-                  stripePublishableKey: stripeIntegration.stripePublishableKey || "",
-                  stripeWebhookSecret: stripeIntegration.stripeWebhookSecret || "",
+                  stripePublishableKey:
+                    stripeIntegration.stripePublishableKey || "",
+                  stripeWebhookSecret:
+                    stripeIntegration.stripeWebhookSecret || "",
                   isActive: stripeIntegration.isActive,
                 };
               })()}
@@ -781,15 +817,18 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
     { step: "1", description: "Copia el código del widget flotante" },
     {
       step: "2",
-      description: "Pégalo en tu archivo HTML, preferiblemente antes del </body>",
+      description:
+        "Pégalo en tu archivo HTML, preferiblemente antes del </body>",
     },
     {
       step: "3",
-      description: "El widget aparecerá como una burbuja en la esquina inferior derecha",
+      description:
+        "El widget aparecerá como una burbuja en la esquina inferior derecha",
     },
     {
       step: "4",
-      description: "Inicia CERRADO - los usuarios deben hacer clic para abrir el chat",
+      description:
+        "Inicia CERRADO - los usuarios deben hacer clic para abrir el chat",
     },
     {
       step: "5",
@@ -797,7 +836,8 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
     },
     {
       step: "6",
-      description: "Es completamente responsive y no afecta el diseño de tu sitio",
+      description:
+        "Es completamente responsive y no afecta el diseño de tu sitio",
     },
   ];
 
@@ -810,4 +850,3 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
     />
   );
 };
-

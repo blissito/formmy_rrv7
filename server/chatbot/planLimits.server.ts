@@ -28,7 +28,7 @@ export const PLAN_LIMITS = {
       "claude-3-haiku-20240307"
     ], // Todos los modelos STARTER + PRO disponibles
     showBranding: false, // Sin branding como PRO
-    trialDays: 60, // 60 días de trial, luego automáticamente a FREE
+    trialDays: 365, // 365 días de trial para revisión de Meta App (Sept-Oct 2025)
   },
   [Plans.STARTER]: {
     maxChatbots: 2,

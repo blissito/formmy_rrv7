@@ -98,7 +98,7 @@ export const Faq = () => (
                     0 chatbots, con trial de 60 días de acceso completo.
                   </li>
                   <li>
-                    <strong>Starter ($149 MXN/mes):</strong> Incluye 2 chatbots, 
+                    <strong>Starter ($149 MXN/mes):</strong> Incluye 2 chatbots,
                     50 conversaciones mensuales con modelos GPT-5 Nano y Gemini 2.5 Flash-Lite.
                   </li>
                   <li>

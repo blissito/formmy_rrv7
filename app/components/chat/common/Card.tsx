@@ -29,12 +29,19 @@ export const Card = ({
         className
       )}
     >
-      <nav className={cn("flex justify-between gap-3 items-center mb-4 md:mb-6", navClassName)}>
+      <nav
+        className={cn(
+          "flex justify-between gap-3 items-center mb-4 md:mb-6",
+          navClassName
+        )}
+      >
         <div>
           <h3 className="text-lg md:text-2xl font-medium min-w-none md:min-w-max text-dark ">
             {title}
           </h3>
-          {text && <p className="text-metal mb-2 text-sm md:text-base">{text}</p>}
+          {text && (
+            <p className="text-metal mb-2 text-sm md:text-base">{text}</p>
+          )}
         </div>
         {!noSearch && !action && <SearchInput />}
         {action && <div className="flex-shrink-0">{action}</div>}
@@ -58,9 +65,12 @@ export const MiniCard = ({
 }) => {
   return (
     <label
-      className={cn("flex gap-3 p-3 md:p-4 rounded-2xl border-outlines border", {
-        "border-outlines": isSelected,
-      })}
+      className={cn(
+        "flex gap-3 p-3 md:p-4 rounded-2xl border-outlines border",
+        {
+          "border-outlines": isSelected,
+        }
+      )}
     >
       <input
         checked={isSelected}
@@ -151,11 +161,14 @@ export const IntegrationCard = ({
 }) => {
   // Debug log para ver qué está recibiendo el componente - solo para Stripe y Google Calendar
   if (name === "Stripe" || name === "Google Calendar") {
-    console.log(`🔍 ${name} Card - status: ${status}, exists: ${!!integration}, active: ${integration?.isActive}`);
+    console.log(
+      `🔍 ${name} Card - status: ${status}, exists: ${!!integration}, active: ${integration?.isActive}`
+    );
   }
 
   // Usar el status pasado como prop, o fallback a integration?.isActive
-  const isActive = status === "connected" || (status === undefined && integration?.isActive);
+  const isActive =
+    status === "connected" || (status === undefined && integration?.isActive);
   const exists = !!integration;
 
   const getButtonText = () => {
@@ -211,7 +224,9 @@ export const IntegrationCard = ({
       <nav className="flex gap-2">
         <SimpleButton
           className={`grow ${
-            isConnected ? "text-metal border-success bg-success hover:bg-success/30" : "text-metal"
+            isConnected
+              ? "text-metal border-success bg-success hover:bg-success/30"
+              : "text-metal"
           }`}
           onClick={getButtonAction()}
         >
@@ -219,10 +234,7 @@ export const IntegrationCard = ({
         </SimpleButton>
 
         {exists && !isPermanent && (
-          <SimpleButton
-            className="shrink-0 w-[40px] px-0"
-            onClick={onEdit}
-          >
+          <SimpleButton className="shrink-0 w-[40px] px-0" onClick={onEdit}>
             <img src="/assets/chat/notebook.svg" alt="Configurar" />
           </SimpleButton>
         )}
@@ -230,14 +242,14 @@ export const IntegrationCard = ({
         {isConnected && (
           <SimpleButton
             className={`shrink-0 w-[40px] px-0 ${
-              isPermanent 
-                ? "text-gray-400 cursor-not-allowed opacity-50" 
+              isPermanent
+                ? "text-gray-400 cursor-not-allowed opacity-50"
                 : "text-danger"
             }`}
             onClick={isPermanent ? undefined : onDisconnect}
             disabled={isPermanent}
           >
-          <VscDebugDisconnect className="text-2xl" />
+            <VscDebugDisconnect className="text-2xl" />
           </SimpleButton>
         )}
       </nav>

@@ -9,7 +9,11 @@ import { useChipTabs } from "~/components/chat/common/ChipTabs";
 import { db } from "../utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
-import { isUserInTrial, checkTrialExpiration, applyFreeRestrictions } from "server/chatbot/planLimits.server";
+import {
+  isUserInTrial,
+  checkTrialExpiration,
+  applyFreeRestrictions,
+} from "server/chatbot/planLimits.server";
 import { transformConversationsToUI } from "server/chatbot/conversationTransformer.server";
 import { Plans } from "@prisma/client";
 import { AIFlowCanvas } from "formmy-actions";
@@ -31,7 +35,11 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   });
 
   // Si no se encuentra por slug, intentar por ID (solo si es un ObjectID válido)
-  if (!chatbot && chatbotSlug.length === 24 && /^[a-f\d]{24}$/i.test(chatbotSlug)) {
+  if (
+    !chatbot &&
+    chatbotSlug.length === 24 &&
+    /^[a-f\d]{24}$/i.test(chatbotSlug)
+  ) {
     chatbot = await db.chatbot.findFirst({
       where: {
         id: chatbotSlug,
@@ -45,27 +53,30 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 
   // Validate chatbot access using the new validation system
   const accessValidation = await validateChatbotAccess(user.id, chatbot.id);
-  
+
   if (!accessValidation.canAccess) {
-    const errorMessage = accessValidation.restrictionReason || "No tienes acceso a este chatbot";
-    const status = accessValidation.restrictionReason?.includes("límite") ? 402 : 403;
+    const errorMessage =
+      accessValidation.restrictionReason || "No tienes acceso a este chatbot";
+    const status = accessValidation.restrictionReason?.includes("límite")
+      ? 402
+      : 403;
     throw new Response(errorMessage, { status });
   }
 
   // Verificar si el usuario TRIAL ha expirado y moverlo a FREE
   if (user.plan === Plans.TRIAL) {
     const { isExpired } = await checkTrialExpiration(user.id);
-    
+
     if (isExpired) {
       // Mover usuario a FREE automáticamente
       await db.user.update({
         where: { id: user.id },
         data: { plan: Plans.FREE },
       });
-      
+
       // Aplicar restricciones FREE: desactivar chatbots y formmys excedentes
       await applyFreeRestrictions(user.id);
-      
+
       // Actualizar el usuario local para reflejar el cambio
       user.plan = Plans.FREE;
     }
@@ -74,12 +85,12 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   // Verificar si el usuario FREE sin trial debería tener modelo null
   if (user.plan === Plans.FREE) {
     const { inTrial } = await isUserInTrial(user.id);
-    
-    // Si no está en trial y tiene un modelo asignado, actualizarlo a null
-    if (!inTrial && chatbot.aiModel !== null) {
+
+    // Si no está en trial y tiene un modelo activo, actualizarlo al modelo bloqueado
+    if (!inTrial && chatbot.aiModel !== "blocked") {
       chatbot = await db.chatbot.update({
         where: { id: chatbot.id },
-        data: { aiModel: null },
+        data: { aiModel: "blocked" }, // Usar "blocked" para indicar sin acceso
       });
     }
   }
@@ -94,27 +105,30 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const conversationsFromDB = await db.conversation.findMany({
     where: {
       chatbotId: chatbot.id,
-      status: { not: "DELETED" }
+      status: { not: "DELETED" },
     },
     include: {
       messages: {
-        orderBy: { createdAt: 'asc' },
-        where: { deleted: { not: true } }
-      }
+        orderBy: { createdAt: "asc" },
+        where: { deleted: { not: true } },
+      },
     },
-    orderBy: { updatedAt: 'desc' },
-    take: 50 // Limitar a las 50 conversaciones más recientes
+    orderBy: { updatedAt: "desc" },
+    take: 50, // Limitar a las 50 conversaciones más recientes
   });
 
   // Transformar a formato UI
-  const conversations = transformConversationsToUI(conversationsFromDB, chatbot.avatarUrl || undefined);
+  const conversations = transformConversationsToUI(
+    conversationsFromDB,
+    chatbot.avatarUrl || undefined
+  );
 
   return {
     user,
     chatbot,
     integrations,
     conversations,
-    accessInfo: accessValidation
+    accessInfo: accessValidation,
   };
 };
 
@@ -122,7 +136,10 @@ export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
   const { user, chatbot, integrations, conversations, accessInfo } = loaderData;
-  const { currentTab, setCurrentTab } = useChipTabs("Entrenamiento", `main_${chatbot.id}`);
+  const { currentTab, setCurrentTab } = useChipTabs(
+    "Entrenamiento",
+    `main_${chatbot.id}`
+  );
   const navigate = useNavigate();
 
   const handleTabChange = (tab: string) => {
@@ -135,29 +152,36 @@ export default function ChatbotDetailRoute({
 
     try {
       const response = await fetch(`/api/v1/conversations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          intent: 'toggle_manual',
-          conversationId
-        })
+          intent: "toggle_manual",
+          conversationId,
+        }),
       });
 
       console.log("📡 Toggle response:", response.status, response.statusText);
-      console.log("📡 Toggle response headers:", Object.fromEntries(response.headers.entries()));
+      console.log(
+        "📡 Toggle response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ Toggle error response:", errorText);
-        throw new Error(`Error toggling manual mode: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Error toggling manual mode: ${response.status} - ${errorText}`
+        );
       }
 
       // Check if response is actually JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
         const htmlText = await response.text();
         console.error("❌ Response is not JSON:", htmlText);
-        throw new Error('Server returned HTML instead of JSON - check API endpoint');
+        throw new Error(
+          "Server returned HTML instead of JSON - check API endpoint"
+        );
       }
 
       const result = await response.json();
@@ -170,27 +194,30 @@ export default function ChatbotDetailRoute({
       // Refresh conversations after toggle - trigger revalidation
       navigate(window.location.pathname, { replace: true });
     } catch (error) {
-      console.error('❌ Error toggling manual mode:', error);
+      console.error("❌ Error toggling manual mode:", error);
       alert(`Error al cambiar modo manual: ${error.message}`);
     }
   };
 
   // Send manual response
-  const handleSendManualResponse = async (conversationId: string, message: string) => {
+  const handleSendManualResponse = async (
+    conversationId: string,
+    message: string
+  ) => {
     console.log("🚀 Route handleSendManualResponse called:", {
       conversationId,
-      messageLength: message.length
+      messageLength: message.length,
     });
 
     try {
       const response = await fetch(`/api/v1/conversations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          intent: 'send_manual_response',
+          intent: "send_manual_response",
           conversationId,
-          message
-        })
+          message,
+        }),
       });
 
       console.log("📡 Send response:", response.status, response.statusText);
@@ -198,27 +225,33 @@ export default function ChatbotDetailRoute({
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ Send error response:", errorText);
-        throw new Error(`Error sending manual response: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Error sending manual response: ${response.status} - ${errorText}`
+        );
       }
 
       const result = await response.json();
       console.log("✅ Send result:", result);
 
       if (!result.success) {
-        throw new Error(result.error || "Unknown error sending manual response");
+        throw new Error(
+          result.error || "Unknown error sending manual response"
+        );
       }
 
       // Show success/warning based on WhatsApp delivery
       if (result.whatsappSent) {
         alert("✅ Respuesta enviada por WhatsApp exitosamente");
       } else {
-        alert(`⚠️ ${result.message}${result.whatsappError ? `\nError: ${result.whatsappError}` : ''}`);
+        alert(
+          `⚠️ ${result.message}${result.whatsappError ? `\nError: ${result.whatsappError}` : ""}`
+        );
       }
 
       // Refresh conversations after sending - trigger revalidation
       navigate(window.location.pathname, { replace: true });
     } catch (error) {
-      console.error('❌ Error sending manual response:', error);
+      console.error("❌ Error sending manual response:", error);
       alert(`Error al enviar respuesta manual: ${error.message}`);
     }
   };
@@ -252,9 +285,7 @@ export default function ChatbotDetailRoute({
         {currentTab === "Entrenamiento" && (
           <Entrenamiento chatbot={chatbot} user={user} />
         )}
-        {currentTab === "Tareas" && (
-          <Tareas />
-        )}
+        {currentTab === "Tareas" && <Tareas />}
         {currentTab === "Código" && (
           <Codigo chatbot={chatbot} user={user} integrations={integrations} />
         )}
@@ -266,11 +297,10 @@ export default function ChatbotDetailRoute({
   );
 }
 
-
 const Tareas = () => {
   return (
     <section className="h-full min-h-[60vh] p-4">
-      <AIFlowCanvas 
+      <AIFlowCanvas
         showToaster={false}
         isolateStyles={true}
         containerHeight="100%"

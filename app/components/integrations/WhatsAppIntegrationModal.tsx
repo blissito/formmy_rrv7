@@ -296,11 +296,9 @@ export default function WhatsAppIntegrationModal({
           </div>
         </div>
         <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-dark mb-2">💡 Obtener credenciales</h4>
-          <div className="text-sm text-metal">
-            <p>Ve a <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Meta Developers</a> → Tu app → WhatsApp → Getting Started</p>
-            <p className="text-xs mt-2 text-gray-600">O crea una <a href="https://developers.facebook.com/apps/create/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">nueva app</a> si no tienes una</p>
-          </div>
+          <p className="text-sm text-metal">
+            📱 Credenciales en <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Meta Developers</a> → WhatsApp → Getting Started
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -344,9 +342,6 @@ export default function WhatsAppIntegrationModal({
               placeholder="EAA..."
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
-              El token de acceso es sensible y se almacenará de forma segura.
-            </p>
           </div>
 
           <div className="space-y-1">
@@ -375,9 +370,6 @@ export default function WhatsAppIntegrationModal({
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Si lo dejas en blanco, se generará uno automáticamente.
-            </p>
           </div>
 
           {testResult && (
@@ -406,23 +398,20 @@ export default function WhatsAppIntegrationModal({
             </div>
           )}
 
-          {/* CONFIGURACIÓN WEBHOOK - COMPACTA */}
-          <div className="bg-orange-50 border-l-4 border-orange-400 p-3 mt-4">
-            <h4 className="font-semibold text-orange-800 mb-2 text-sm">
-              ⚠️ Configurar Webhook en Meta Developers
-            </h4>
+          {/* CONFIGURACIÓN WEBHOOK - SIMPLIFICADA */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+            <p className="text-sm text-orange-800 font-medium mb-2">
+              ⚠️ Configurar webhook en Meta Developers
+            </p>
 
             <div className="space-y-2">
-              <div>
-                <span className="font-medium text-orange-800">Callback URL para Meta Developers:</span>
-                <div className="bg-white p-1.5 rounded mt-1 border flex items-center justify-between">
-                  <span className="font-mono break-all flex-1 mr-2 text-xs">
-                    https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook
-                  </span>
+              <div className="bg-white p-2 rounded border text-xs">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium">Webhook URL:</span>
                   <button
                     type="button"
                     onClick={() => copyToClipboard('https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook', 'webhook-url')}
-                    className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
+                    className="p-1 hover:bg-gray-100 rounded"
                   >
                     {copiedItem === 'webhook-url' ? (
                       <FiCheck className="w-3 h-3 text-green-600" />
@@ -431,30 +420,25 @@ export default function WhatsAppIntegrationModal({
                     )}
                   </button>
                 </div>
+                <code className="break-all">https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook</code>
               </div>
 
-              <div className="text-xs text-orange-700 space-y-1">
-                <div>
-                  <span className="font-medium">Configurar en:</span> WhatsApp → Configuration → Webhooks
-                  <span className="ml-3 font-medium">Eventos:</span> messages, smb_message_echoes
-                </div>
-                <div className="bg-green-50 p-2 rounded border-l-2 border-green-400">
-                  <span className="font-medium text-green-800">✅ Verify Token:</span>
-                  <span className="font-mono text-xs ml-1 bg-gray-100 px-1 py-0.5 rounded">
-                    {formData.webhookVerifyToken}
-                  </span>
+              <div className="bg-white p-2 rounded border text-xs">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium">Verify Token:</span>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(formData.webhookVerifyToken, 'verify-token')}
-                    className="ml-2 p-1 hover:bg-green-100 rounded"
+                    className="p-1 hover:bg-gray-100 rounded"
                   >
                     {copiedItem === 'verify-token' ? (
                       <FiCheck className="w-3 h-3 text-green-600" />
                     ) : (
-                      <FiCopy className="w-3 h-3 text-green-600" />
+                      <FiCopy className="w-3 h-3 text-gray-500" />
                     )}
                   </button>
                 </div>
+                <code>{formData.webhookVerifyToken}</code>
               </div>
             </div>
           </div>
