@@ -10,8 +10,8 @@
  * - Lógica de tool detection está desconectada del streaming
  *
  * MIGRATION PATH:
- * - USAR: `/dashboard/ghosty` con LlamaIndex 2025 AgentWorkflow
- * - USAR: LlamaIndex Engine v2 (`/server/llamaindex-engine-v2/`) para chat básico
+ * - USAR: `/dashboard/ghosty` con AgentEngine_v0
+ * - USAR: Arquitectura multi-agente especializada
  * - NO USAR: Este endpoint para nuevas implementaciones
  *
  * RAZONES DE DEPRECACIÓN:
