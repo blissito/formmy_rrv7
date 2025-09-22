@@ -17,6 +17,7 @@ export default [
     route("chat/:chatbotSlug", "routes/dashboard.chat_.$chatbotSlug.tsx"),
     route("ghosty", "routes/dashboard.ghosty.tsx"),
     route("plan", "routes/dashboard.plan.tsx"),
+    route("uso", "routes/dashboard.uso.tsx"),
     route("formmys", "routes/dashboard.formmys.tsx"),
     route("formmys/new", "routes/dashboard.formmys.new.tsx"),
     route("formmys/:projectId", "routes/dashboard.formmys_.$projectId.tsx"),
