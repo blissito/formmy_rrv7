@@ -1,23 +1,14 @@
 /**
- * Tipos compartidos para el sistema de herramientas
- * Separado para evitar importaciones circulares
+ * Types for LlamaIndex Native Tools
+ * Simplified types without registry abstraction
  */
 
-import type { Tool } from "../chatbot/providers/types";
-
-export interface ToolDefinition {
-  tool: Tool;
-  handler: (input: any, context: ToolContext) => Promise<ToolResponse>;
-  requiredIntegrations?: string[];
-  requiredPlan?: string[];
-  enabled?: boolean;
-}
-
 export interface ToolContext {
-  chatbotId: string;
   userId: string;
-  message?: string;
-  integrations?: Record<string, any>;
+  userPlan: string;
+  chatbotId: string | null;
+  message: string;
+  integrations: Record<string, any>;
 }
 
 export interface ToolResponse {

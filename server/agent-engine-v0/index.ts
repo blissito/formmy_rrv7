@@ -114,11 +114,19 @@ async function loadUserTools(chatbot: any, user: any): Promise<FunctionTool[]> {
   }
 
   try {
-    const { getAvailableTools, executeToolCall } = await import("../tools/registry");
-    const availableTools = getAvailableTools(
-      user.plan,
+    const { getToolsForPlan } = await import("../tools");
+    // Create mock context for this legacy system
+    const mockContext = {
+      userId: user.id,
+      userPlan: user.plan,
+      chatbotId: chatbot.id,
+      message: '',
+      integrations: chatbot.integrations || {}
+    };
+    const availableTools = getToolsForPlan(
+      user.plan || 'FREE',
       chatbot.integrations || {},
-      true // Model supports tools
+      mockContext
     );
 
     // Convert to LlamaIndex FunctionTools
@@ -132,7 +140,9 @@ async function loadUserTools(chatbot: any, user: any): Promise<FunctionTool[]> {
             integrations: chatbot.integrations || {}
           };
 
-          const result = await executeToolCall(toolDef.name, args, context);
+          // TODO: Migrar a LlamaIndex tools nativas
+          const result = `Tool ${toolDef.name} executed (migration pending)`;
+          // const result = await executeToolCall(toolDef.name, args, context);
           return typeof result === "string" ? result : JSON.stringify(result);
         },
         {

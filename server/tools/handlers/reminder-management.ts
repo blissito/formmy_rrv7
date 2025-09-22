@@ -1,4 +1,4 @@
-import type { ToolContext, ToolResponse } from "../registry";
+import type { ToolContext, ToolResponse } from "../types";
 import { db } from "~/utils/db.server";
 
 // Listar recordatorios pendientes del usuario

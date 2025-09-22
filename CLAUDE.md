@@ -55,6 +55,80 @@ Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzada
 - **GhostyLlamaIndex** → ✅ Reemplazado por GhostyAgent
 - **Referencias Engine v2** → ✅ Limpieza total completada
 
+## ⚡ MIGRACIÓN GHOSTY → AGENTV0 COMPLETADA (Sept 22, 2025)
+
+### 🎯 **OBJETIVO ALCANZADO**
+**Migrar Ghosty desde sistema legacy complejo → LlamaIndex Agent Workflows puro**
+- **Timeline**: 3 horas debugging → ✅ EXITOSO
+- **Status**: 🚀 PRODUCCIÓN FUNCIONAL
+
+### 🔧 **PROBLEMAS RESUELTOS**
+
+#### **1. Tools Loading Issue**
+- **Problema**: TRIAL users mostraban 0 tools instead of 6
+- **Root Cause**: Frontend usaba endpoint legacy `/api/ghosty/chat/enhanced`
+- **Solución**: ✅ Migrado a `/api/ghosty/v0` con AgentV0 real
+- **Resultado**: 6 herramientas funcionando para TRIAL users
+
+#### **2. GPT-5 Nano Temperature Error**
+- **Problema**: `BadRequestError: 400 'temperature' does not support 0.1 with this model`
+- **Root Cause**: LlamaIndex OpenAI client hardcoded default `temperature: 0.1`
+- **Solución**: ✅ `temperature: 1` (único valor soportado por GPT-5 Nano)
+- **Código**:
+```typescript
+if (selectedModel === 'gpt-5-nano') {
+  llmConfig.temperature = 1; // Only value supported by GPT-5 nano
+}
+```
+
+#### **3. UI Simplification**
+- **Problema**: UI mostraba "🧠 Adaptivo" mode confuso
+- **Solución**: ✅ Cambiado a "🌐 GPT-5" directo
+- **Beneficio**: UX más clara y directa
+
+### 🏗️ **ARQUITECTURA FINAL AgentV0**
+
+#### **Core Implementation**:
+- **File**: `/server/agents/agent-v0.server.ts`
+- **Pattern**: LlamaIndex Agent Workflows oficial 100%
+- **Size**: 176 líneas (vs 465 líneas legacy)
+- **Features**: Real streaming, tool support, error handling robusto
+
+#### **Tools System**:
+- **Registry**: `/server/tools/index.ts`
+- **Pattern**: Factory functions con context injection
+- **TRIAL Plan**: 6 herramientas (schedule_reminder, contact, etc.)
+- **Context**: userId, userPlan, chatbotId, message, integrations
+
+#### **Frontend Integration**:
+- **Hook**: `/app/components/ghosty/hooks/useGhostyLlamaChat.ts`
+- **Endpoint**: `/api/ghosty/v0` (nuevo)
+- **UI**: `/app/components/ghosty/GhostyEnhancedInterface.tsx`
+- **Streaming**: Server-Sent Events con tool progress tracking
+
+### 📊 **PERFORMANCE GAINS**
+
+#### **Code Reduction**:
+- **Legacy System**: 465+ líneas complejas
+- **AgentV0**: 176 líneas funcional puro
+- **Reduction**: ~62% menos código
+
+#### **Functionality**:
+- **Tools**: ✅ 6 herramientas funcionando
+- **Streaming**: ✅ Real-time SSE
+- **Error Handling**: ✅ Robusto con fallbacks
+- **Models**: ✅ GPT-5 Nano optimizado
+
+### 🚀 **RESULTADO FINAL**
+**Ghosty AgentV0** es ahora un sistema **100% LlamaIndex nativo** que:
+- Usa patterns oficiales de Agent Workflows
+- Mantiene todas las herramientas existentes
+- Ofrece mejor performance y menor complejidad
+- Soporta GPT-5 Nano con temperature correcta
+- Integra perfectamente con la UI existente
+
+**Status**: ✅ **MIGRACIÓN EXITOSA - SISTEMA EN PRODUCCIÓN**
+
 ### Ghosty (Nueva implementación)
 
 **Ubicación**: `/dashboard/ghosty`

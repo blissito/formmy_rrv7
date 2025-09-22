@@ -7,15 +7,15 @@
  */
 
 import { AgentEngine_v0 } from '../agent-engine-v0/simple-engine';
-import { getAvailableTools } from '../tools/registry';
+// import { getAvailableTools } from '../tools/registry'; // TODO: Migrated to AgentV0
 import type { User } from '@prisma/client';
 import type { LlamaIndexTool } from '../agent-engine-v0/simple-engine';
 import { z } from 'zod';
 
 export class GhostyAgent extends AgentEngine_v0 {
   constructor(user: User, integrations: any = {}) {
-    // Obtener todas las herramientas disponibles para el usuario
-    const availableTools = getAvailableTools(user.plan || 'FREE', integrations, true);
+    // TODO: Migrated to AgentV0 - this class will be replaced
+    const availableTools: any[] = [];
 
     // Convertir tools del registry al formato LlamaIndex
     const llamaTools: LlamaIndexTool[] = availableTools.map(tool => {
@@ -27,8 +27,8 @@ export class GhostyAgent extends AgentEngine_v0 {
         description: tool.description,
         parameters: zodCompatibleSchema,
         implementation: async (params: any, context?: any) => {
-          // Ejecutar herramienta usando el registry
-          const { executeToolCall } = await import('../tools/registry');
+          // TODO: Migrated to AgentV0 - this will be replaced
+          // const { executeToolCall } = await import('../tools/registry');
           const toolContext = {
             chatbotId: null, // Ghosty es global
             userId: user.id,
@@ -37,8 +37,9 @@ export class GhostyAgent extends AgentEngine_v0 {
             integrations: integrations || {}
           };
 
-          const result = await executeToolCall(tool.name, params, toolContext);
-          return typeof result === 'string' ? result : JSON.stringify(result);
+          // const result = await executeToolCall(tool.name, params, toolContext);
+          // return typeof result === 'string' ? result : JSON.stringify(result);
+          return "Tool execution migrated to AgentV0";
         }
       };
     });

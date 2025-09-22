@@ -1,4 +1,4 @@
-import type { ToolContext, ToolResponse } from "../registry";
+import type { ToolContext, ToolResponse } from "../types";
 import { createQuickPaymentLink } from "../../integrations/stripe-payments";
 import { ToolUsageTracker } from "../../integrations/tool-usage-tracker";
 

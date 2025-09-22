@@ -42,7 +42,7 @@ import {
 } from "./chatbot/integrationModel.server";
 import { createQuickPaymentLink } from "./integrations/stripe-payments";
 import { ReminderService } from "./integrations/reminder-service";
-import { getAvailableTools, executeToolCall, generateToolPrompts } from "./tools/registry";
+import { getToolsForPlan } from "./tools";
 import { SimpleAgentLoop } from "./chatbot/agent-loop";
 import {
   validateUserAIModelAccess,
@@ -136,9 +136,9 @@ export {
   getActiveStripeIntegration,
   createQuickPaymentLink,
   ReminderService,
-  getAvailableTools,
-  executeToolCall,
-  generateToolPrompts,
+  getToolsForPlan as getAvailableTools,
+  // executeToolCall, // TODO: Migrar a LlamaIndex tools
+  // generateToolPrompts, // TODO: Migrar a LlamaIndex tools
   SimpleAgentLoop,
   validateUserAIModelAccess,
   getUserPlanFeatures,

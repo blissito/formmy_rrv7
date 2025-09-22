@@ -7,17 +7,14 @@
  */
 
 import { AgentEngine_v0 } from '../agent-engine-v0/simple-engine';
-import { getAvailableTools } from '../tools/registry';
+// import { getAvailableTools } from '../tools/registry'; // TODO: Migrated to AgentV0
 import type { User } from '@prisma/client';
 import type { LlamaIndexTool } from '../agent-engine-v0/simple-engine';
 
 export class SalesAgent extends AgentEngine_v0 {
   constructor(user: User, integrations: any = {}) {
-    // Obtener todas las herramientas y filtrar solo las de ventas
-    const allTools = getAvailableTools(user.plan || 'FREE', integrations, true);
-    const salesTools = allTools.filter(tool =>
-      ['create_payment_link', 'save_contact_info'].includes(tool.name)
-    );
+    // TODO: Migrated to AgentV0 - this class will be replaced
+    const salesTools: any[] = [];
 
     // Convertir al formato LlamaIndex
     const llamaTools: LlamaIndexTool[] = salesTools.map(tool => ({

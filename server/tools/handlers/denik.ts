@@ -1,4 +1,4 @@
-import type { ToolContext, ToolResponse } from "../registry";
+import type { ToolContext, ToolResponse } from "../types";
 import { Scheduler } from "../../integrations/scheduler";
 import { ToolUsageTracker } from "../../integrations/tool-usage-tracker";
 

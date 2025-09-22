@@ -205,16 +205,16 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
 
-      // Use enhanced Ghosty endpoint with LlamaIndex integration
-      const response = await fetch('/api/ghosty/chat/enhanced', {
+      // Use NEW AgentV0 endpoint with real LlamaIndex tools and GPT-5
+      const response = await fetch('/api/ghosty/v0', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           message: content.trim(),
-          history: conversationHistory,
           stream: true,
+          integrations: {} // TODO: Add real integrations
         }),
         signal: controller.signal,
       });

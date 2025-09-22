@@ -1,4 +1,4 @@
-import type { ToolContext, ToolResponse } from "../registry";
+import type { ToolContext, ToolResponse } from "../types";
 import { db } from "~/utils/db.server";
 import { ToolUsageTracker } from "../../integrations/tool-usage-tracker";
 

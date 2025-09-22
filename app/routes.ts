@@ -141,7 +141,11 @@ export default [
   // API Ghosty routes
   route("api/ghosty/chat", "routes/api.ghosty.chat.ts"),
   route("api/ghosty/chat/enhanced", "routes/api.ghosty.chat.enhanced.ts"),
+  route("api/ghosty/v0", "routes/api.ghosty.v0.ts"),
   route("api/ghosty/tools", "routes/api.ghosty.tools.ts"),
+
+  // API Agent routes - LlamaIndex Workflows
+  route("api/agent/v0", "routes/api.agent.v0.ts"),
 
   // API S3 routes
   route("api/s3/presigned-url", "routes/api.s3.presigned-url.ts"),

@@ -22,14 +22,14 @@ interface GhostyEnhancedInterfaceProps {
   onCollapseChat: () => void;
   onExportChat?: () => void;
   userImage?: string;
-  initialMode?: 'local' | 'remote' | 'adaptive';
+  initialMode?: 'local' | 'remote';
 }
 
 export const GhostyEnhancedInterface = ({
   onCollapseChat,
   onExportChat,
   userImage,
-  initialMode = 'adaptive'
+  initialMode = 'remote'
 }: GhostyEnhancedInterfaceProps) => {
   const {
     messages,
@@ -47,7 +47,7 @@ export const GhostyEnhancedInterface = ({
 
   const [inputValue, setInputValue] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const [agentMode, setAgentMode] = useState<'local' | 'remote' | 'adaptive'>(initialMode);
+  const [agentMode, setAgentMode] = useState<'local' | 'remote'>(initialMode);
   const [showStats, setShowStats] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -145,15 +145,13 @@ export const GhostyEnhancedInterface = ({
                   "text-xs px-2 py-0.5 rounded-full font-medium",
                   agentMode === 'local' && "bg-blue-100 text-blue-600",
                   agentMode === 'remote' && "bg-purple-100 text-purple-600", 
-                  agentMode === 'adaptive' && "bg-gradient-to-r from-blue-100 to-purple-100 text-blue-600"
                 )}>
                   {agentMode === 'local' && '🏠 Local'}
-                  {agentMode === 'remote' && '🌐 Remoto'}
-                  {agentMode === 'adaptive' && '🧠 Adaptivo'}
+                  {agentMode === 'remote' && '🌐 GPT-5'}
                 </span>
               </div>
               <p className="text-sm text-gray-600">
-                {getStateDisplayMessage(currentState) || 'Tu asistente potenciado con LlamaIndex'}
+                {getStateDisplayMessage(currentState) || 'Tu asistente potenciado con GPT-5 y herramientas avanzadas'}
               </p>
             </div>
           </div>
@@ -428,9 +426,6 @@ export const GhostyEnhancedInterface = ({
               )}>
                 {inputValue.length}/500
               </span>
-              {agentMode === 'adaptive' && (
-                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 animate-pulse" />
-              )}
             </div>
           </div>
 

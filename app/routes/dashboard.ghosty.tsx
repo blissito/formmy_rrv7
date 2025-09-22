@@ -37,7 +37,7 @@ export default function DashboardGhosty() {
         <GhostyEnhancedInterface 
           onCollapseChat={() => {}} // En dashboard no se colapsa
           userImage={user.picture || undefined}
-          initialMode="adaptive"
+          initialMode="remote"
           onExportChat={() => {
             console.log('Export chat functionality');
           }}
