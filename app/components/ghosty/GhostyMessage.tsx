@@ -1,22 +1,24 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from "~/lib/utils";
-import type { GhostyMessage } from './hooks/useGhostyChat';
+import type { GhostyLlamaMessage } from './hooks/useGhostyLlamaChat';
 import { useState } from 'react';
 import { formatReasoningContent } from '~/utils/formatReasoningContent';
 
 interface GhostyMessageProps {
-  message: GhostyMessage;
+  message: GhostyLlamaMessage;
   onCopy?: (content: string) => void | Promise<void>;
   onRegenerate?: (messageId: string) => void | Promise<void>;
+  onSuggestionClick?: (suggestion: string) => void;
   userImage?: string | null; // URL de la imagen del usuario
 }
 
-export const GhostyMessageComponent = ({ 
-  message, 
-  onCopy, 
+export const GhostyMessageComponent = ({
+  message,
+  onCopy,
   onRegenerate,
-  userImage 
+  onSuggestionClick,
+  userImage
 }: GhostyMessageProps) => {
   const [showCopied, setShowCopied] = useState(false);
 
@@ -356,6 +358,25 @@ export const GhostyMessageComponent = ({
           )}
         </div>
 
+        {/* Follow-up Suggestions */}
+        {!isUser && message.suggestedFollowUp && message.suggestedFollowUp.length > 0 && onSuggestionClick && (
+          <div className="mt-3 flex gap-2 flex-wrap">
+            {message.suggestedFollowUp.map((suggestion, index) => (
+              <button
+                key={index}
+                onClick={() => onSuggestionClick(suggestion)}
+                className={cn(
+                  "text-sm px-3 py-1.5 bg-gray-50 hover:bg-brand-50 rounded-full",
+                  "text-gray-600 hover:text-brand-600 transition-colors border border-gray-200 hover:border-brand-300",
+                  "hover:shadow-sm"
+                )}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Timestamp */}
         <div className={cn(
           "text-xs text-lightgray mt-1.5 flex items-center",
@@ -363,8 +384,8 @@ export const GhostyMessageComponent = ({
         )}>
           <span className="inline-flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-full">
             <span className="text-xs">
-              {message.timestamp.toLocaleTimeString('es-ES', { 
-                hour: '2-digit', 
+              {message.timestamp.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
                 minute: '2-digit'
               })}
             </span>
