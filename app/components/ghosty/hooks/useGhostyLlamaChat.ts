@@ -113,9 +113,25 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
 
   const getToolDisplayName = (toolName: string): string => {
     const toolDisplayNames: Record<string, string> = {
+      // Chatbot tools
       'query_chatbots': '🤖 Consultando chatbots',
-      'get_chatbot': '🔍 Obteniendo chatbot específico',
       'get_chatbot_stats': '📊 Analizando estadísticas',
+
+      // Reminder tools
+      'schedule_reminder': '📅 Programando recordatorio',
+      'list_reminders': '📋 Consultando recordatorios',
+      'update_reminder': '✏️ Actualizando recordatorio',
+      'cancel_reminder': '❌ Cancelando recordatorio',
+      'delete_reminder': '🗑️ Eliminando recordatorio',
+
+      // Payment tools
+      'create_payment_link': '💳 Creando link de pago',
+
+      // Contact tools
+      'save_contact_info': '👤 Guardando contacto',
+
+      // Legacy tools (mantenidos por compatibilidad)
+      'get_chatbot': '🔍 Obteniendo chatbot específico',
       'web_search': '🌐 Buscando en la web',
       'web_fetch': '📄 Obteniendo página web',
     };
@@ -146,12 +162,27 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
       suggestions.push('¿Puedes mostrar estadísticas de estos chatbots?');
       suggestions.push('¿Cómo puedo optimizar el rendimiento?');
     }
-    
+
     if (message.toolsUsed?.includes('get_chatbot_stats')) {
       suggestions.push('¿Cómo se compara con el mes anterior?');
       suggestions.push('¿Qué estrategias recomiendas para mejorar?');
     }
-    
+
+    if (message.toolsUsed?.includes('schedule_reminder')) {
+      suggestions.push('¿Puedes listar mis recordatorios pendientes?');
+      suggestions.push('¿Cómo configuro recordatorios recurrentes?');
+    }
+
+    if (message.toolsUsed?.includes('create_payment_link')) {
+      suggestions.push('¿Cómo personalizo el link de pago?');
+      suggestions.push('¿Puedo ver las estadísticas de pagos?');
+    }
+
+    if (message.toolsUsed?.includes('save_contact_info')) {
+      suggestions.push('¿Cómo organizo mis contactos por categorías?');
+      suggestions.push('¿Puedes exportar mi lista de contactos?');
+    }
+
     if (message.toolsUsed?.includes('web_search')) {
       suggestions.push('¿Puedes resumir los puntos más importantes?');
       suggestions.push('¿Cómo puedo aplicar esto a Formmy?');
@@ -265,8 +296,18 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
 
                 case 'tool-start':
                   const toolName = parsed.tool;
-                  setCurrentState(`tool-${toolName.replace('_', '-')}` as GhostyLlamaState);
-                  addToolProgress(toolName, 'running', parsed.message);
+                  // Mapeo inteligente de tool name a estado
+                  const getToolState = (tool: string): GhostyLlamaState => {
+                    if (tool.includes('chatbot') || tool.includes('query')) return 'tool-chatbots';
+                    if (tool.includes('stats') || tool.includes('analyz')) return 'tool-stats';
+                    if (tool.includes('web_search') || tool.includes('search')) return 'tool-web-search';
+                    if (tool.includes('web_fetch') || tool.includes('fetch')) return 'tool-web-fetch';
+                    // Para herramientas específicas, usar estado genérico 'tool-analyzing'
+                    return 'tool-analyzing';
+                  };
+
+                  setCurrentState(getToolState(toolName));
+                  addToolProgress(toolName, 'running', parsed.message || getToolDisplayName(toolName));
                   break;
 
                 case 'tool-progress':
@@ -275,10 +316,19 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
 
                 case 'tool-complete':
                   addToolProgress(parsed.tool, 'completed', 'Completado');
+                  // Después de completar una herramienta, volver a 'synthesizing' si hay más información
+                  if (toolProgress.filter(t => t.status === 'running').length === 0) {
+                    setCurrentState('synthesizing');
+                  }
                   break;
 
                 case 'tool-error':
-                  addToolProgress(parsed.tool, 'error', parsed.error);
+                  addToolProgress(parsed.tool, 'error', parsed.error || 'Error en la herramienta');
+                  // En caso de error de herramienta, continuar con síntesis si hay otras herramientas exitosas
+                  const hasSuccessfulTools = toolProgress.some(t => t.status === 'completed');
+                  if (hasSuccessfulTools) {
+                    setCurrentState('synthesizing');
+                  }
                   break;
 
                 case 'synthesizing':
