@@ -5,21 +5,22 @@
 
 import { agent, agentToolCallEvent, agentStreamEvent } from "@llamaindex/workflow";
 import { OpenAI } from "@llamaindex/openai";
+import { Anthropic } from "@llamaindex/anthropic";
 import { getToolsForPlan, type ToolContext } from '../tools';
 
-// Reutilizar función existente para modelo según plan
+// TEMPORARY FIX: Use Claude 3 Haiku for tool workflows until GPT-5 Nano issues resolved
 const getModelForUserPlan = (plan: string): string => {
   switch (plan) {
     case 'ENTERPRISE':
-      return 'gpt-5-mini'; // Máximo rendimiento para Enterprise
+      return 'claude-3-5-haiku-20241022'; // Premium model for Enterprise
     case 'PRO':
     case 'TRIAL':
-      return 'gpt-5-nano'; // Modelo optimizado para PRO
+      return 'claude-3-haiku-20240307'; // Stable model with excellent tool support
     case 'STARTER':
-      return 'gpt-5-nano'; // Modelo básico pero eficiente
+      return 'claude-3-haiku-20240307'; // Reliable for tool workflows
     case 'FREE':
     default:
-      return 'gpt-5-nano'; // Default para todos
+      return 'claude-3-haiku-20240307'; // Default fallback
   }
 };
 
@@ -37,23 +38,24 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
     integrations
   };
 
-  // Model configuration with GPT-5 Nano specific settings
+  // Model configuration - Using Claude 3 Haiku for reliable tool workflows
   const selectedModel = getModelForUserPlan(user.plan || 'FREE');
 
-  // GPT-5 Nano: Force temperature to 1 (the only supported value for GPT-5 nano)
-  let llmConfig: any;
-  if (selectedModel === 'gpt-5-nano') {
-    llmConfig = {
+  // Use Anthropic for Claude models, OpenAI for GPT models
+  let llmInstance: any;
+  if (selectedModel.startsWith('claude-')) {
+    llmInstance = new Anthropic({
       model: selectedModel,
-      apiKey: process.env.OPENAI_API_KEY,
-      temperature: 1 // Only value supported by GPT-5 nano per OpenAI error message
-    };
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      temperature: 0.7
+    });
   } else {
-    llmConfig = {
+    // Fallback to OpenAI if needed
+    llmInstance = new OpenAI({
       model: selectedModel,
       apiKey: process.env.OPENAI_API_KEY,
-      temperature: 0.3
-    };
+      temperature: selectedModel === 'gpt-5-nano' ? 1 : 0.3
+    });
   }
 
   // agent() function - pattern oficial LlamaIndex
@@ -61,7 +63,7 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
   const toolNames = availableTools.map(tool => tool.metadata?.name || 'unknown').join(', ');
 
   const agentInstance = agent({
-    llm: new OpenAI(llmConfig),
+    llm: llmInstance,
     tools: availableTools,
     systemPrompt: `Eres Ghosty 👻, el asistente IA EXPERTO de Formmy.
 
@@ -109,8 +111,8 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
   console.log('🚀 AgentV0 iniciado:', {
     userId: user.id,
     plan: user.plan || 'FREE',
-    model: getModelForUserPlan(user.plan || 'FREE'),
-    toolsCount: getToolsForPlan(user.plan || 'FREE', integrations, toolContext).length
+    model: selectedModel,
+    toolsCount: availableTools.length
   });
 
   // Thinking status inicial
@@ -188,7 +190,7 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
     yield {
       type: "done",
       metadata: {
-        model: getModelForUserPlan(user.plan || 'FREE'),
+        model: selectedModel,
         agent: 'AgentV0',
         userId: user.id
       }
