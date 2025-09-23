@@ -68,7 +68,7 @@ export const queryChatbotsHandler = async (
         },
         integrations: {
           select: {
-            type: true,
+            platform: true,
             isActive: true
           }
         }
