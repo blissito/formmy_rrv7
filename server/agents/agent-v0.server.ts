@@ -127,12 +127,18 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
     // Event-driven streaming siguiendo documentación oficial LlamaIndex
     // Pattern exacto de la documentación: https://next.ts.llamaindex.ai/docs/llamaindex/modules/agents/agent_workflow
     let hasStreamedContent = false;
+    let toolsExecuted = 0;
+    let lastEventTime = Date.now();
 
     try {
       for await (const event of events as any) {
+        lastEventTime = Date.now();
+        console.log(`📋 Event received:`, event.type || 'unknown', event.data?.toolName || '');
+
         // Tool call events - Pattern oficial
         if (agentToolCallEvent.include(event)) {
-          console.log(`🔧 Tool llamado: ${event.data.toolName}`);
+          toolsExecuted++;
+          console.log(`🔧 Tool llamado: ${event.data.toolName} (total: ${toolsExecuted})`);
           yield {
             type: "tool-start",
             tool: event.data.toolName,
@@ -143,6 +149,7 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
         // Stream content events - Pattern oficial
         if (agentStreamEvent.include(event)) {
           if (!hasStreamedContent) {
+            console.log('✍️ Starting content streaming...');
             yield {
               type: "status",
               status: "streaming",
@@ -157,11 +164,24 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
           };
         }
       }
+
+      console.log(`🏁 Stream completed. Tools executed: ${toolsExecuted}, Content streamed: ${hasStreamedContent}`);
+
     } catch (streamError) {
       console.error('❌ Stream iteration error:', streamError);
-
-      // Only throw error, no generic fallback
       throw new Error(`Streaming failed: ${streamError instanceof Error ? streamError.message : 'Unknown streaming error'}`);
+    }
+
+    // If tools were executed but no content was streamed, something went wrong
+    if (toolsExecuted > 0 && !hasStreamedContent) {
+      console.warn('⚠️ Tools were executed but no content was streamed. Possible AgentV0 stall.');
+
+      yield {
+        type: "error",
+        content: "Las herramientas se ejecutaron pero no se generó respuesta. Intenta de nuevo.",
+        error: "Agent stalled after tool execution"
+      };
+      return;
     }
 
     // Completion signal
