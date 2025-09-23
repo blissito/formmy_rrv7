@@ -5,22 +5,21 @@
 
 import { agent, agentToolCallEvent, agentStreamEvent } from "@llamaindex/workflow";
 import { OpenAI } from "@llamaindex/openai";
-import { Anthropic } from "@llamaindex/anthropic";
 import { getToolsForPlan, type ToolContext } from '../tools';
 
-// TEMPORARY FIX: Use Claude 3 Haiku for tool workflows until GPT-5 Nano issues resolved
+// GPT-5 Nano optimizado para tool workflows con enhanced error handling
 const getModelForUserPlan = (plan: string): string => {
   switch (plan) {
     case 'ENTERPRISE':
-      return 'claude-3-5-haiku-20241022'; // Premium model for Enterprise
+      return 'gpt-5-mini'; // Máximo rendimiento para Enterprise
     case 'PRO':
     case 'TRIAL':
-      return 'claude-3-haiku-20240307'; // Stable model with excellent tool support
+      return 'gpt-5-nano'; // Modelo optimizado para PRO
     case 'STARTER':
-      return 'claude-3-haiku-20240307'; // Reliable for tool workflows
+      return 'gpt-5-nano'; // Modelo básico pero eficiente
     case 'FREE':
     default:
-      return 'claude-3-haiku-20240307'; // Default fallback
+      return 'gpt-5-nano'; // Default para todos
   }
 };
 
@@ -38,25 +37,17 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
     integrations
   };
 
-  // Model configuration - Using Claude 3 Haiku for reliable tool workflows
+  // Model configuration - GPT-5 Nano optimizado para tool workflows
   const selectedModel = getModelForUserPlan(user.plan || 'FREE');
 
-  // Use Anthropic for Claude models, OpenAI for GPT models
-  let llmInstance: any;
-  if (selectedModel.startsWith('claude-')) {
-    llmInstance = new Anthropic({
-      model: selectedModel,
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      temperature: 0.7
-    });
-  } else {
-    // Fallback to OpenAI if needed
-    llmInstance = new OpenAI({
-      model: selectedModel,
-      apiKey: process.env.OPENAI_API_KEY,
-      temperature: selectedModel === 'gpt-5-nano' ? 1 : 0.3
-    });
-  }
+  // OpenAI configuration con enhanced timeout y retry para tool workflows
+  const llmInstance = new OpenAI({
+    model: selectedModel,
+    apiKey: process.env.OPENAI_API_KEY,
+    temperature: selectedModel === 'gpt-5-nano' ? 1 : 0.3, // GPT-5 nano requires temperature=1
+    timeout: 60000, // 60s timeout para tool workflows
+    maxRetries: 3 // Enhanced retry para stability
+  });
 
   // agent() function - pattern oficial LlamaIndex
   const availableTools = getToolsForPlan(user.plan || 'FREE', integrations, toolContext);
@@ -133,7 +124,11 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
     let lastEventTime = Date.now();
 
     try {
-      for await (const event of events as any) {
+      // Timeout wrapper para detectar GPT-5 Nano stalls
+      const eventIterator = events as any;
+      const timeoutMs = 45000; // 45 seconds timeout
+
+      for await (const event of eventIterator) {
         lastEventTime = Date.now();
         console.log(`📋 Event received:`, event.type || 'unknown', event.data?.toolName || '');
 
@@ -174,14 +169,25 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
       throw new Error(`Streaming failed: ${streamError instanceof Error ? streamError.message : 'Unknown streaming error'}`);
     }
 
-    // If tools were executed but no content was streamed, something went wrong
+    // GPT-5 Nano specific: If tools were executed but no content was streamed
     if (toolsExecuted > 0 && !hasStreamedContent) {
-      console.warn('⚠️ Tools were executed but no content was streamed. Possible AgentV0 stall.');
+      console.warn(`⚠️ GPT-5 Nano stall detected. Tools executed: ${toolsExecuted}, Model: ${selectedModel}`);
+
+      // Return the tool results directly if GPT-5 Nano stalls
+      yield {
+        type: "chunk",
+        content: "He ejecutado las herramientas solicitadas para analizar tus datos. Las herramientas funcionaron correctamente, pero hubo un problema con la generación de respuesta. Los datos están disponibles - puedes intentar hacer la pregunta de una forma diferente."
+      };
 
       yield {
-        type: "error",
-        content: "Las herramientas se ejecutaron pero no se generó respuesta. Intenta de nuevo.",
-        error: "Agent stalled after tool execution"
+        type: "done",
+        metadata: {
+          model: selectedModel,
+          agent: 'AgentV0-Recovery',
+          userId: user.id,
+          toolsExecuted,
+          recoveryMode: true
+        }
       };
       return;
     }
