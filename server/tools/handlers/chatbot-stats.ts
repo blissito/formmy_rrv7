@@ -102,8 +102,13 @@ export const getChatbotStatsHandler = async (
       const avgMessagesPerConv = totalConversations > 0 ? Math.round((totalMessages / totalConversations) * 10) / 10 : 0;
       const completionRate = totalConversations > 0 ? Math.round((completedConversations / totalConversations) * 100) : 0;
 
-      // Análisis por chatbot (si no hay chatbotId específico)
+      // Análisis por chatbot (si no hay chatbotId específico y chatbot está incluido)
       const byBot = conversations.reduce((acc: any, conv) => {
+        // Defensive check - solo procesar si chatbot está incluido
+        if (!conv.chatbot?.id) {
+          return acc;
+        }
+
         const botId = conv.chatbot.id;
         if (!acc[botId]) {
           acc[botId] = {
