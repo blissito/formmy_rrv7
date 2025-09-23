@@ -57,34 +57,53 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
   }
 
   // agent() function - pattern oficial LlamaIndex
+  const availableTools = getToolsForPlan(user.plan || 'FREE', integrations, toolContext);
+  const toolNames = availableTools.map(tool => tool.metadata?.name || 'unknown').join(', ');
+
   const agentInstance = agent({
     llm: new OpenAI(llmConfig),
-    tools: getToolsForPlan(user.plan || 'FREE', integrations, toolContext),
-    systemPrompt: `Eres Ghosty 👻, el asistente IA principal de Formmy.
+    tools: availableTools,
+    systemPrompt: `Eres Ghosty 👻, el asistente IA EXPERTO de Formmy.
 
-**TU MISIÓN**: Ayudar a usuarios de Formmy con:
-- Gestión de recordatorios y citas
-- Links de pago con Stripe
-- Captura de información de contactos
-- Optimización y insights
+🎯 **PRIORIDAD ABSOLUTA: USA HERRAMIENTAS INMEDIATAMENTE**
 
-**CONTEXTO DEL USUARIO**:
+**REGLA CRÍTICA**: NUNCA respondas sin usar herramientas relevantes primero.
+
+**HERRAMIENTAS DISPONIBLES**: ${toolNames}
+
+**PARA REPORTES/ESTADÍSTICAS**:
+- SIEMPRE usa query_chatbots + get_chatbot_stats
+- NUNCA inventes datos ni des plantillas
+- Proporciona números reales, tendencias, insights específicos
+
+**PARA RECORDATORIOS/CITAS**:
+- USA schedule_reminder inmediatamente
+- NO pidas confirmación adicional
+
+**PARA PAGOS**:
+- USA create_payment_link con datos exactos
+- Cantidad en números (ej: 500, 1000)
+
+**CONTEXTO USUARIO**:
 - Plan: ${user.plan || 'FREE'}
 - ID: ${user.id}
 
 **PERSONALIDAD**:
-- Profesional pero amigable
-- Proactivo en sugerir mejoras
-- Enfocado en ROI y resultados
+- Directo y eficiente
+- Orientado a datos reales
+- Proactivo con insights específicos
 
-**REGLAS DE RESPUESTA**:
-- Respuestas concisas y accionables
-- USA herramientas INMEDIATAMENTE cuando sean relevantes
-- NO pidas confirmación adicional para acciones obvias
-- Incluye métricas cuando sea relevante
-- Sugiere próximos pasos específicos
+**FORMATO RESPUESTA**:
+1. USAR HERRAMIENTAS PRIMERO
+2. Analizar resultados
+3. Respuesta concisa con números reales
+4. Insights accionables
+5. Próximos pasos específicos
 
-¡Listo para ayudar! 🚀`
+❌ PROHIBIDO: Respuestas genéricas, plantillas, "no tengo acceso a datos"
+✅ OBLIGATORIO: Datos reales, métricas específicas, análisis profundo
+
+🚀 **ACTÚA COMO EXPERTO CON ACCESO TOTAL A FORMMY**`
   });
 
   console.log('🚀 AgentV0 iniciado:', {
@@ -107,8 +126,9 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
 
     // Event-driven streaming siguiendo documentación oficial LlamaIndex
     // Pattern exacto de la documentación: https://next.ts.llamaindex.ai/docs/llamaindex/modules/agents/agent_workflow
+    let hasStreamedContent = false;
+
     try {
-      // Cast to any to avoid TypeScript asyncIterator issues while maintaining functionality
       for await (const event of events as any) {
         // Tool call events - Pattern oficial
         if (agentToolCallEvent.include(event)) {
@@ -122,11 +142,15 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
 
         // Stream content events - Pattern oficial
         if (agentStreamEvent.include(event)) {
-          yield {
-            type: "status",
-            status: "streaming",
-            message: "✍️ Generando respuesta..."
-          };
+          if (!hasStreamedContent) {
+            yield {
+              type: "status",
+              status: "streaming",
+              message: "✍️ Generando respuesta..."
+            };
+            hasStreamedContent = true;
+          }
+
           yield {
             type: "chunk",
             content: event.data.delta
@@ -135,14 +159,9 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
       }
     } catch (streamError) {
       console.error('❌ Stream iteration error:', streamError);
-      console.error('Stream type:', typeof events);
-      console.error('Stream constructor:', events?.constructor?.name);
 
-      // Fallback con respuesta básica
-      yield {
-        type: "chunk",
-        content: "AgentV0 respuesta básica mientras se arregla el streaming."
-      };
+      // Only throw error, no generic fallback
+      throw new Error(`Streaming failed: ${streamError instanceof Error ? streamError.message : 'Unknown streaming error'}`);
     }
 
     // Completion signal

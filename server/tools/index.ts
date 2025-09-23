@@ -139,6 +139,44 @@ export const createSaveContactTool = (context: ToolContext) => tool(
   }
 );
 
+// ===== CHATBOT TOOLS =====
+
+export const createQueryChatbotsTool = (context: ToolContext) => tool(
+  async ({ status, orderBy, limit, includeStats }) => {
+    const { queryChatbotsHandler } = await import('./handlers/chatbot-query');
+    const result = await queryChatbotsHandler({ status, orderBy, limit, includeStats }, context);
+    return result.message;
+  },
+  {
+    name: "query_chatbots",
+    description: "Consultar y listar los chatbots del usuario con filtros y estadísticas",
+    parameters: z.object({
+      status: z.enum(['all', 'active', 'inactive', 'draft']).optional().default('all').describe("Filtrar por estado del chatbot"),
+      orderBy: z.enum(['name', 'conversations', 'created', 'updated']).optional().default('updated').describe("Ordenar por campo"),
+      limit: z.number().optional().default(10).describe("Límite de resultados (máximo 20)"),
+      includeStats: z.boolean().optional().default(true).describe("Incluir estadísticas básicas")
+    })
+  }
+);
+
+export const createGetChatbotStatsTool = (context: ToolContext) => tool(
+  async ({ chatbotId, period, compareWithPrevious, includeHourlyBreakdown }) => {
+    const { getChatbotStatsHandler } = await import('./handlers/chatbot-stats');
+    const result = await getChatbotStatsHandler({ chatbotId, period, compareWithPrevious, includeHourlyBreakdown }, context);
+    return result.message;
+  },
+  {
+    name: "get_chatbot_stats",
+    description: "Obtener estadísticas detalladas de conversaciones de chatbots (métricas, comparaciones, análisis)",
+    parameters: z.object({
+      chatbotId: z.string().optional().describe("ID específico del chatbot (si no se provee, analiza todos)"),
+      period: z.enum(['week', 'month', 'quarter', 'year']).optional().default('week').describe("Período de análisis"),
+      compareWithPrevious: z.boolean().optional().default(true).describe("Comparar con período anterior"),
+      includeHourlyBreakdown: z.boolean().optional().default(false).describe("Incluir breakdown por horas del día")
+    })
+  }
+);
+
 /**
  * Función para obtener tools según plan del usuario con context injection
  * Plan-aware tool selection funcional
@@ -171,6 +209,14 @@ export const getToolsForPlan = (
     tools.push(createSaveContactTool(context));
   }
 
+  // Chatbot tools - disponibles para STARTER+ (core de Formmy)
+  if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+    tools.push(
+      createQueryChatbotsTool(context),
+      createGetChatbotStatsTool(context)
+    );
+  }
+
   return tools;
 };
 
@@ -184,5 +230,7 @@ export const getAllToolNames = () => [
   'cancel_reminder',
   'delete_reminder',
   'create_payment_link',
-  'save_contact_info'
+  'save_contact_info',
+  'query_chatbots',
+  'get_chatbot_stats'
 ];
