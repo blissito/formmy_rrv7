@@ -3,7 +3,7 @@
  * Para Ghosty Tools System
  */
 
-import { prisma } from "~/lib/prisma.server";
+import { db } from "~/utils/db.server";
 import type { ToolContext } from '../index';
 
 interface GetChatbotStatsParams {
@@ -43,7 +43,7 @@ export const getChatbotStatsHandler = async (
       : { chatbot: { userId } };
 
     // Conversaciones del período actual
-    const currentConversations = await prisma.conversation.findMany({
+    const currentConversations = await db.conversation.findMany({
       where: {
         ...whereClause,
         startedAt: {
@@ -71,7 +71,7 @@ export const getChatbotStatsHandler = async (
     });
 
     // Conversaciones del período anterior (para comparación)
-    const previousConversations = compareWithPrevious ? await prisma.conversation.findMany({
+    const previousConversations = compareWithPrevious ? await db.conversation.findMany({
       where: {
         ...whereClause,
         startedAt: {

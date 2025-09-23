@@ -3,7 +3,7 @@
  * Para Ghosty Tools System
  */
 
-import { prisma } from "~/lib/prisma.server";
+import { db } from "~/utils/db.server";
 import type { ToolContext } from '../index';
 
 interface QueryChatbotsParams {
@@ -45,7 +45,7 @@ export const queryChatbotsHandler = async (
     if (orderBy === 'created') orderByClause = { createdAt: 'desc' };
 
     // Query chatbots with conversations for stats
-    const chatbots = await prisma.chatbot.findMany({
+    const chatbots = await db.chatbot.findMany({
       where: whereClause,
       orderBy: orderByClause,
       take: limit,
