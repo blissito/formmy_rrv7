@@ -57,7 +57,7 @@ export const getChatbotStatsHandler = async (
             id: true,
             role: true,
             createdAt: true,
-            tokenCount: true
+            tokens: true
           }
         },
         chatbot: {
@@ -84,7 +84,7 @@ export const getChatbotStatsHandler = async (
           select: {
             id: true,
             role: true,
-            tokenCount: true
+            tokens: true
           }
         }
       }
@@ -95,7 +95,7 @@ export const getChatbotStatsHandler = async (
       const totalConversations = conversations.length;
       const totalMessages = conversations.reduce((sum, conv) => sum + conv.messages.length, 0);
       const totalTokens = conversations.reduce((sum, conv) =>
-        sum + conv.messages.reduce((msgSum: number, msg: any) => msgSum + (msg.tokenCount || 0), 0), 0
+        sum + conv.messages.reduce((msgSum: number, msg: any) => msgSum + (msg.tokens || 0), 0), 0
       );
 
       const completedConversations = conversations.filter(conv => conv.status === 'COMPLETED').length;
@@ -116,7 +116,7 @@ export const getChatbotStatsHandler = async (
         }
         acc[botId].conversations++;
         acc[botId].messages += conv.messages.length;
-        acc[botId].tokens += conv.messages.reduce((sum: number, msg: any) => sum + (msg.tokenCount || 0), 0);
+        acc[botId].tokens += conv.messages.reduce((sum: number, msg: any) => sum + (msg.tokens || 0), 0);
         return acc;
       }, {});
 
