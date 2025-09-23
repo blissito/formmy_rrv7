@@ -114,28 +114,28 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
   const getToolDisplayName = (toolName: string): string => {
     const toolDisplayNames: Record<string, string> = {
       // Chatbot tools
-      'query_chatbots': '🤖 Consultando chatbots',
-      'get_chatbot_stats': '📊 Analizando estadísticas',
+      'query_chatbots': '🤖 Consultando chatbots...',
+      'get_chatbot_stats': '📊 Analizando estadísticas...',
 
       // Reminder tools
-      'schedule_reminder': '📅 Programando recordatorio',
-      'list_reminders': '📋 Consultando recordatorios',
-      'update_reminder': '✏️ Actualizando recordatorio',
-      'cancel_reminder': '❌ Cancelando recordatorio',
-      'delete_reminder': '🗑️ Eliminando recordatorio',
+      'schedule_reminder': '📅 Programando recordatorio...',
+      'list_reminders': '📋 Consultando recordatorios...',
+      'update_reminder': '✏️ Actualizando recordatorio...',
+      'cancel_reminder': '❌ Cancelando recordatorio...',
+      'delete_reminder': '🗑️ Eliminando recordatorio...',
 
       // Payment tools
-      'create_payment_link': '💳 Creando link de pago',
+      'create_payment_link': '💳 Creando link de pago...',
 
       // Contact tools
-      'save_contact_info': '👤 Guardando contacto',
+      'save_contact_info': '👤 Guardando contacto...',
 
       // Legacy tools (mantenidos por compatibilidad)
-      'get_chatbot': '🔍 Obteniendo chatbot específico',
-      'web_search': '🌐 Buscando en la web',
-      'web_fetch': '📄 Obteniendo página web',
+      'get_chatbot': '🔍 Obteniendo chatbot...',
+      'web_search': '🌐 Buscando en la web...',
+      'web_fetch': '📄 Obteniendo página web...',
     };
-    return toolDisplayNames[toolName] || `🛠️ ${toolName}`;
+    return toolDisplayNames[toolName] || `🛠️ ${toolName}...`;
   };
 
   const getStateDisplayMessage = (state: GhostyLlamaState): string => {
@@ -156,48 +156,72 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
 
   const generateFollowUpSuggestions = (message: GhostyLlamaMessage): string[] => {
     const suggestions: string[] = [];
-    
-    // Based on tools used
+    const content = message.content.toLowerCase();
+
+    // Analizar el contenido específico para sugerencias contextuales
     if (message.toolsUsed?.includes('query_chatbots')) {
-      suggestions.push('¿Puedes mostrar estadísticas de estos chatbots?');
-      suggestions.push('¿Cómo puedo optimizar el rendimiento?');
+      // Si menciona nombres específicos de chatbots, preguntar por ellos
+      if (content.includes('activo') || content.includes('inactivo')) {
+        suggestions.push('¿Puedes activar/desactivar algún chatbot específico?');
+      } else {
+        suggestions.push('¿Puedes mostrar estadísticas detalladas de alguno?');
+      }
     }
 
     if (message.toolsUsed?.includes('get_chatbot_stats')) {
-      suggestions.push('¿Cómo se compara con el mes anterior?');
-      suggestions.push('¿Qué estrategias recomiendas para mejorar?');
+      // Basarse en números específicos mencionados
+      if (content.includes('conversaciones') || content.includes('mensajes')) {
+        suggestions.push('¿Cómo puedo aumentar el engagement?');
+      }
+      if (content.includes('token') || content.includes('costo')) {
+        suggestions.push('¿Cómo optimizo el consumo de tokens?');
+      }
+      if (!suggestions.length) {
+        suggestions.push('¿Qué periodo anterior quieres comparar?');
+      }
     }
 
     if (message.toolsUsed?.includes('schedule_reminder')) {
-      suggestions.push('¿Puedes listar mis recordatorios pendientes?');
-      suggestions.push('¿Cómo configuro recordatorios recurrentes?');
+      suggestions.push('¿Puedes listar todos mis recordatorios?');
     }
 
     if (message.toolsUsed?.includes('create_payment_link')) {
-      suggestions.push('¿Cómo personalizo el link de pago?');
-      suggestions.push('¿Puedo ver las estadísticas de pagos?');
+      suggestions.push('¿Cómo configurar recordatorio de pago?');
     }
 
     if (message.toolsUsed?.includes('save_contact_info')) {
-      suggestions.push('¿Cómo organizo mis contactos por categorías?');
-      suggestions.push('¿Puedes exportar mi lista de contactos?');
+      suggestions.push('¿Crear recordatorio de seguimiento?');
     }
 
-    if (message.toolsUsed?.includes('web_search')) {
-      suggestions.push('¿Puedes resumir los puntos más importantes?');
-      suggestions.push('¿Cómo puedo aplicar esto a Formmy?');
+    // Siempre asegurar 2 sugerencias específicas y útiles
+    if (suggestions.length === 0) {
+      // Sugerencias específicas basadas en el contexto real
+      if (content.includes('chatbot')) {
+        suggestions.push('¿Puedes crear un nuevo chatbot?');
+        suggestions.push('¿Cómo mejoro el entrenamiento?');
+      } else if (content.includes('recordatorio') || content.includes('reminder')) {
+        suggestions.push('¿Crear otro recordatorio?');
+        suggestions.push('¿Configurar recordatorio recurrente?');
+      } else if (content.includes('pago') || content.includes('payment')) {
+        suggestions.push('¿Crear link para otro monto?');
+        suggestions.push('¿Configurar descuentos?');
+      } else {
+        // Fallback con acciones útiles generales
+        suggestions.push('¿Ver mis estadísticas?');
+        suggestions.push('¿Crear un recordatorio?');
+      }
     }
-    
-    // Content-based suggestions
-    const content = message.content.toLowerCase();
-    if (content.includes('conversacion')) {
-      suggestions.push('¿Cómo mejorar la tasa de conversión?');
+
+    // Completar con segunda sugerencia si solo hay una
+    if (suggestions.length === 1) {
+      if (!suggestions[0].includes('estadísticas')) {
+        suggestions.push('¿Ver mis estadísticas?');
+      } else {
+        suggestions.push('¿Crear un recordatorio?');
+      }
     }
-    if (content.includes('costo') || content.includes('tokens')) {
-      suggestions.push('¿Cómo reducir los costos de AI?');
-    }
-    
-    return suggestions.slice(0, 3); // Max 3 suggestions
+
+    return suggestions.slice(0, 2); // Siempre exactamente 2 suggestions
   };
 
   const sendMessage = useCallback(async (content: string) => {
@@ -291,6 +315,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
                     setCurrentThought(parsed.message || 'Procesando...');
                   } else if (parsed.status === 'tool-analyzing') {
                     setCurrentState('tool-analyzing');
+                    setCurrentThought(''); // Limpiar para evitar acumulación
                   }
                   break;
 
@@ -307,6 +332,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
                   };
 
                   setCurrentState(getToolState(toolName));
+                  setCurrentThought(''); // Limpiar pensamiento anterior
                   addToolProgress(toolName, 'running', parsed.message || getToolDisplayName(toolName));
                   break;
 
@@ -338,6 +364,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
 
                 case 'chunk':
                   setCurrentState('streaming');
+                  setCurrentThought(''); // Limpiar para evitar interferencia con streaming
                   currentContent += parsed.content;
                   updateMessage(assistantMessage.id, {
                     content: currentContent,

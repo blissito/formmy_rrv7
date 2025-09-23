@@ -250,33 +250,13 @@ export const GhostyChatInterface = ({
                       <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
                     </div>
                     <span className="text-sm text-gray-600">
-                      {getSimpleStateMessage(currentState, currentThought)}
+                      {toolProgress.length > 0 && toolProgress.slice(-1)[0]?.status === 'running'
+                        ? getToolDisplayName(toolProgress.slice(-1)[0].toolName)
+                        : getSimpleStateMessage(currentState, currentThought)
+                      }
                     </span>
                   </div>
-                  {toolProgress.length > 0 && (
-                    <div className="text-xs text-gray-500 mt-1 space-y-1">
-                      {toolProgress.slice(-3).map((tool, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <div className={cn(
-                            "w-1.5 h-1.5 rounded-full",
-                            index === toolProgress.slice(-3).length - 1
-                              ? "bg-blue-500 animate-pulse"
-                              : "bg-green-500"
-                          )} />
-                          <span className={cn(
-                            index === toolProgress.slice(-3).length - 1
-                              ? "font-medium text-blue-600"
-                              : "text-green-600"
-                          )}>
-                            {getToolDisplayName(tool.toolName)}
-                          </span>
-                          {index === toolProgress.slice(-3).length - 1 && (
-                            <span className="text-gray-400">ejecutando...</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+{/* Tool progress ya se muestra en el mensaje principal, eliminando duplicación */}
                 </div>
               </div>
             )}

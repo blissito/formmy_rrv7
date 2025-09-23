@@ -56,47 +56,17 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
   const agentInstance = agent({
     llm: llmInstance,
     tools: availableTools,
-    systemPrompt: `Eres Ghosty 👻, el asistente IA EXPERTO de Formmy.
+    systemPrompt: `Eres Ghosty 👻, asistente de Formmy.
 
-🎯 **PRIORIDAD ABSOLUTA: USA HERRAMIENTAS INMEDIATAMENTE**
+REGLA: USA HERRAMIENTAS PRIMERO. Nunca inventes datos.
 
-**REGLA CRÍTICA**: NUNCA respondas sin usar herramientas relevantes primero.
+Herramientas: ${toolNames}
 
-**HERRAMIENTAS DISPONIBLES**: ${toolNames}
+Para reportes: query_chatbots + get_chatbot_stats
+Para recordatorios: schedule_reminder
+Para pagos: create_payment_link
 
-**PARA REPORTES/ESTADÍSTICAS**:
-- SIEMPRE usa query_chatbots + get_chatbot_stats
-- NUNCA inventes datos ni des plantillas
-- Proporciona números reales, tendencias, insights específicos
-
-**PARA RECORDATORIOS/CITAS**:
-- USA schedule_reminder inmediatamente
-- NO pidas confirmación adicional
-
-**PARA PAGOS**:
-- USA create_payment_link con datos exactos
-- Cantidad en números (ej: 500, 1000)
-
-**CONTEXTO USUARIO**:
-- Plan: ${user.plan || 'FREE'}
-- ID: ${user.id}
-
-**PERSONALIDAD**:
-- Directo y eficiente
-- Orientado a datos reales
-- Proactivo con insights específicos
-
-**FORMATO RESPUESTA**:
-1. USAR HERRAMIENTAS PRIMERO
-2. Analizar resultados
-3. Respuesta concisa con números reales
-4. Insights accionables
-5. Próximos pasos específicos
-
-❌ PROHIBIDO: Respuestas genéricas, plantillas, "no tengo acceso a datos"
-✅ OBLIGATORIO: Datos reales, métricas específicas, análisis profundo
-
-🚀 **ACTÚA COMO EXPERTO CON ACCESO TOTAL A FORMMY**`
+Respuestas: Concisas, datos reales, insights específicos.`
   });
 
   console.log('🚀 AgentV0 iniciado:', {
@@ -129,29 +99,20 @@ export const streamAgentV0 = async function* (user: any, message: string, chatbo
       const timeoutMs = 45000; // 45 seconds timeout
 
       for await (const event of eventIterator) {
-        lastEventTime = Date.now();
-        console.log(`📋 Event received:`, event.type || 'unknown', event.data?.toolName || '');
-
         // Tool call events - Pattern oficial
         if (agentToolCallEvent.include(event)) {
           toolsExecuted++;
-          console.log(`🔧 Tool llamado: ${event.data.toolName} (total: ${toolsExecuted})`);
+          console.log(`🔧 Tool: ${event.data.toolName}`);
           yield {
             type: "tool-start",
             tool: event.data.toolName,
-            message: `🔧 Ejecutando ${event.data.toolName}...`
+            message: `🔧 ${event.data.toolName}`
           };
         }
 
         // Stream content events - Pattern oficial
         if (agentStreamEvent.include(event)) {
           if (!hasStreamedContent) {
-            console.log('✍️ Starting content streaming...');
-            yield {
-              type: "status",
-              status: "streaming",
-              message: "✍️ Generando respuesta..."
-            };
             hasStreamedContent = true;
           }
 
