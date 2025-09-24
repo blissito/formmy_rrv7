@@ -8,8 +8,50 @@
  */
 
 import { db } from "~/utils/db.server";
-import { detectReminderIntentSync } from "../tools/toolsets/reminder-toolset";
-import { classifyReminderIntentCached } from "../tools/toolsets/reminder-intent-classifier";
+
+// Simple reminder intent detection functions (stubs for legacy compatibility)
+function detectReminderIntentSync(message: string) {
+  const messageLC = message.toLowerCase();
+  const reminderKeywords = [
+    'recordatorio', 'recordarme', 'agendar', 'cita', 'agenda',
+    'mis recordatorios', 'ver recordatorios', 'listar recordatorios',
+    'mostrar recordatorios', 'cuales son mis', 'que tengo agendado'
+  ];
+
+  const detected = reminderKeywords.some(keyword => messageLC.includes(keyword));
+  const confidence = detected ? 70 : 0;
+  let suggestedTool = null;
+
+  if (detected) {
+    if (messageLC.includes('ver') || messageLC.includes('listar') || messageLC.includes('mostrar')) {
+      suggestedTool = 'list_reminders';
+    } else if (messageLC.includes('recordarme') || messageLC.includes('agendar')) {
+      suggestedTool = 'schedule_reminder';
+    }
+  }
+
+  return {
+    needsTools: detected,
+    confidence,
+    keywords: detected ? reminderKeywords.filter(k => messageLC.includes(k)) : [],
+    suggestedTool
+  };
+}
+
+async function classifyReminderIntentCached(message: string) {
+  // Simple classification - in production this would use LLM
+  const messageLC = message.toLowerCase();
+
+  if (messageLC.includes('ver') || messageLC.includes('listar') || messageLC.includes('mostrar')) {
+    return { intent: 'list', confidence: 0.8, suggestedTool: 'list_reminders', entities: {} };
+  } else if (messageLC.includes('recordarme') || messageLC.includes('agendar') || messageLC.includes('crear')) {
+    return { intent: 'create', confidence: 0.8, suggestedTool: 'schedule_reminder', entities: {} };
+  } else if (messageLC.includes('recordatorio') || messageLC.includes('agenda')) {
+    return { intent: 'create', confidence: 0.6, suggestedTool: 'schedule_reminder', entities: {} };
+  }
+
+  return { intent: 'none', confidence: 0, suggestedTool: null, entities: {} };
+}
 
 // Types & Interfaces
 export interface AgentDecision {

@@ -1,9 +1,16 @@
-import { getAvailableTools } from '../tools/registry';
+import { getToolsForPlan, type ToolContext } from '../tools/index';
 import type { User, Chatbot } from '@prisma/client';
 
 export class SimpleAgentLoop {
   async run(message: string, user: User, chatbot: Chatbot, aiProvider: any): Promise<{ response: string; needsTools: boolean }> {
-    const tools = await getAvailableTools(user, chatbot);
+    const context: ToolContext = {
+      userId: user.id,
+      userPlan: user.plan || 'FREE',
+      chatbotId: chatbot.id,
+      message,
+      integrations: {}
+    };
+    const tools = getToolsForPlan(user.plan || 'FREE', {}, context);
     
     if (tools.length === 0) {
       return { response: await this.simpleChat(message, aiProvider), needsTools: false };
@@ -75,7 +82,7 @@ export class SimpleAgentLoop {
     }
     
     // Para otras herramientas, usar decisión del LLM
-    const toolsText = tools.map(t => `${t.name}: ${t.description}`).join('\n');
+    const toolsText = tools.map(t => `${t.metadata.name}: ${t.metadata.description}`).join('\n');
     
     const prompt = `Mensaje del usuario: "${message}"
 
@@ -107,11 +114,12 @@ Responde SOLO con JSON:
   }
 
   private async executeTool(toolName: string, args: any, tools: any[]): Promise<string> {
-    const tool = tools.find(t => t.name === toolName);
+    const tool = tools.find(t => t.metadata.name === toolName);
     if (!tool) return `Error: Herramienta ${toolName} no encontrada`;
-    
+
     try {
-      return await tool.handler(args);
+      const result = await tool.call(args);
+      return result.content || result.toString();
     } catch (error) {
       return `Error ejecutando ${toolName}: ${error.message}`;
     }
