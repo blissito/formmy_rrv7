@@ -11,6 +11,7 @@ import HomeCallToAction from "./HomeCallToAction";
 import HomeFooter from "./HomeFooter";
 import HomeHero from "./HomeHero";
 import { HomeFeatures } from "./HomeFeatures";
+import { Quote } from "./Quote";
 
 export function SectionFadeIn({
   children,
@@ -37,13 +38,12 @@ export function Home() {
     >
       <HomeHeader />
         <HomeHero />
-
       <SectionFadeIn delay={0.2}>
         <HomeFeatures />
       </SectionFadeIn>
-      {/* <SectionFadeIn delay={0.2}>
-        <HomeProducts />
-      </SectionFadeIn> */}
+      <SectionFadeIn delay={0.2}>
+        <Quote/>
+      </SectionFadeIn>
       <SectionFadeIn delay={0.3}>
         <HomeBenefits />
       </SectionFadeIn>

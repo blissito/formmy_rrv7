@@ -43,7 +43,7 @@ export default function HomeDemos() {
   ];
   return (
     <section className="relative w-full flex flex-col items-center my-20 md:my-40 overflow-hidden">
-      <h2 className="font-bold text-[#080923] text-3xl md:text-4xl lg:text-6xl text-center mb-10 md:mb-16 leading-tight px-4">
+      <h2 className="font-bold text-dark heading text-3xl md:text-4xl lg:text-6xl text-center mb-10 md:mb-16 leading-tight px-4">
         Formmy se adapta a lo que necesitas
       </h2>
       <Carrusel items={cards} direction="right" speed="slow" />

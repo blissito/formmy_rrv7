@@ -75,7 +75,7 @@ export default function HomeBenefits() {
   ];
   return (
     <section className="flex flex-col items-center mt-20 md:mt-40 max-w-7xl mx-auto px-4 md:px-[5%] xl:px-0">
-      <h2 className="heading font-bold text-[#080923] text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 leading-tight">
+      <h2 className="heading font-bold text-[#080923] max-w-6xl text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 leading-tight">
         Beneficios que notarás desde el primer día
       </h2>
       <p className="paragraph text-gray-600 font-light text-lg md:text-xl md:text-2xl text-center mb-10 md:mb-16">
