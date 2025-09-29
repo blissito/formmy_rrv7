@@ -177,6 +177,28 @@ function buildSystemPrompt(chatbot: any, tools: FunctionTool[]): string {
     prompt += chatbot.instructions + "\n\n";
   }
 
+  // Add custom instructions if exists
+  if (chatbot.customInstructions && chatbot.customInstructions.trim()) {
+    prompt += "=== INSTRUCCIONES ESPECÍFICAS ===\n";
+    prompt += chatbot.customInstructions + "\n";
+    prompt += "=== FIN INSTRUCCIONES ESPECÍFICAS ===\n\n";
+  }
+
+  // ✅ ADD CONTEXTS FROM TRAINING
+  if (chatbot.contexts && chatbot.contexts.length > 0) {
+    prompt += "=== CONTEXTO DE ENTRENAMIENTO ===\n";
+
+    for (const context of chatbot.contexts.slice(0, 5)) { // Limit to 5 contexts for preview
+      if (context.type === 'QUESTION' && context.question && context.answer) {
+        prompt += `P: ${context.question}\nR: ${context.answer}\n\n`;
+      } else if (context.type === 'TEXT' && context.content) {
+        prompt += `${context.title || 'Información'}: ${context.content.substring(0, 500)}...\n\n`;
+      }
+    }
+
+    prompt += "=== FIN CONTEXTO ===\n\n";
+  }
+
   // Add multi-step tool instructions if tools available
   if (tools.length > 0) {
     const toolList = tools.map(t => `- ${t.metadata.name}`).join("\n");

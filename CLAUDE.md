@@ -11,6 +11,106 @@
 
 Ejemplo: Para LlamaIndex streaming, leer https://docs.llamaindex.ai/en/stable/understanding/agent/streaming/ antes de implementar.
 
+## 📚 Patrones de Código Oficiales
+
+### LlamaIndex Agent Workflows (OBLIGATORIO)
+**Documentación oficial**: https://developers.llamaindex.ai/typescript/framework/modules/agents/agent_workflow/
+
+**REGLA**: TODO el código de agentes debe seguir EXACTAMENTE estos patrones:
+- Usar `agent()` para crear agentes
+- Usar `runStream()` para streaming
+- Usar `agentStreamEvent` y `agentToolCallEvent` para eventos
+- NO crear lógica custom, solo patrones oficiales LlamaIndex
+
+## 🛠️ Desarrollo de Herramientas LlamaIndex
+
+### Pattern Oficial para Nuevas Herramientas
+
+**Ubicación**: `/server/tools/handlers/[nombre].ts` + `/server/tools/index.ts`
+
+#### 1. Crear Handler
+```typescript
+// /server/tools/handlers/ejemplo.ts
+import type { ToolContext, ToolResponse } from "../types";
+
+export async function ejemploHandler(
+  input: { parametro: string },
+  context: ToolContext
+): Promise<ToolResponse> {
+  try {
+    // Lógica de la herramienta
+    const resultado = `Procesando: ${input.parametro}`;
+
+    return {
+      success: true,
+      message: `✅ **Herramienta ejecutada:** ${resultado}`,
+      data: {
+        resultado,
+        toolUsed: 'ejemplo_tool'
+      }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: "Error al ejecutar la herramienta."
+    };
+  }
+}
+```
+
+#### 2. Registrar en index.ts
+```typescript
+// /server/tools/index.ts
+export const createEjemploTool = (context: ToolContext) => tool(
+  async ({ parametro }) => {
+    const { ejemploHandler } = await import('./handlers/ejemplo');
+    const result = await ejemploHandler({ parametro }, context);
+    return result.message;
+  },
+  {
+    name: "ejemplo_tool",
+    description: "Descripción clara de qué hace la herramienta",
+    parameters: z.object({
+      parametro: z.string().describe("Descripción del parámetro")
+    })
+  }
+);
+```
+
+#### 3. Asignar por Plan
+```typescript
+// En getToolsForPlan()
+if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  tools.push(createEjemploTool(context));
+}
+```
+
+### Convenciones Importantes
+
+- **Imports dinámicos**: Siempre usar `await import()` en tools
+- **Context injection**: Todas las herramientas reciben `ToolContext`
+- **Zod schemas**: Usar `z.object()` para validación de parámetros
+- **Plan-based access**: Definir qué planes tienen acceso
+- **Error handling**: Siempre manejar errores y devolver `ToolResponse`
+- **Naming**: Nombres descriptivos en snake_case para tools
+
+### Types Disponibles
+```typescript
+interface ToolContext {
+  userId: string;
+  userPlan: string;
+  chatbotId: string | null;
+  message: string;
+  integrations: Record<string, any>;
+}
+
+interface ToolResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+```
+
 ## Overview
 
 Formmy es una plataforma SaaS de formularios y chatbots con capacidades avanzadas de AI y automatización, que posee un agente inteligente con acceso a herramientas avanzadas e integraciones.

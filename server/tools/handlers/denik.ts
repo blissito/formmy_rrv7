@@ -11,8 +11,6 @@ export async function scheduleReminderHandler(
   },
   context: ToolContext
 ): Promise<ToolResponse> {
-  console.log(`📅 DENIK HANDLER: Ejecutando tool con input:`, JSON.stringify(input, null, 2));
-  console.log(`📧 CONTEXT: chatbotId=${context.chatbotId} (length: ${context.chatbotId?.length}), message=${context.message}`);
   const { title, date, time, email } = input;
   
   // Validar que tenemos un chatbotId válido
@@ -34,8 +32,6 @@ export async function scheduleReminderHandler(
   }
   
   try {
-    // Debug: Log de fecha recibida
-    console.log(`📅 Denik handler - Fecha recibida: ${date}, Hora: ${time}`);
     
     // Validar formato de fecha antes de enviar
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -49,7 +45,6 @@ export async function scheduleReminderHandler(
     
     if (date.startsWith('2023') || date.startsWith('2024')) {
       correctedDate = date.replace(/^(2023|2024)/, currentYear);
-      console.log(`🔧 Auto-corrección: ${date} → ${correctedDate} (año actual: ${currentYear})`);
     }
     
     // Verificar que la fecha corregida esté en el futuro
@@ -58,7 +53,6 @@ export async function scheduleReminderHandler(
       // Si aún está en el pasado, usar mañana como fallback
       const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
       correctedDate = tomorrow.toISOString().split('T')[0];
-      console.log(`🔧 Fallback a mañana: ${correctedDate}`);
     }
     
     // Validar email - no permitir emails inventados
@@ -66,17 +60,11 @@ export async function scheduleReminderHandler(
     const suspiciousEmails = ['cliente@ejemplo.com', 'example@email.com', 'test@test.com', 'user@example.com'];
     
     if (email && suspiciousEmails.includes(email.toLowerCase())) {
-      console.log(`🚫 Email sospechoso detectado: ${email}, ignorando...`);
       finalEmail = undefined;
     }
 
-    console.log(`📧 DEBUG: finalEmail = ${finalEmail}`);
-
     // Schedule email reminder using ultra-simple scheduler
     const reminderDateTime = new Date(`${correctedDate}T${time}:00`);
-    console.log(`📅 DEBUG: reminderDateTime = ${reminderDateTime.toISOString()}`);
-    
-    console.log(`📅 DEBUG: Calling Scheduler.schedule...`);
     const scheduledAction = await Scheduler.schedule(
       context.chatbotId,
       'email',
@@ -88,7 +76,6 @@ export async function scheduleReminderHandler(
       },
       reminderDateTime
     );
-    console.log(`✅ DEBUG: Scheduler.schedule completed, ID: ${scheduledAction.id}`);
 
     // Track usage (sin awaitar para no bloquear respuesta)
     ToolUsageTracker.trackUsage({

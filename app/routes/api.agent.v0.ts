@@ -4,8 +4,10 @@
  */
 
 import type { Route } from "./+types/api.agent.v0";
-import { streamAgentV0 } from "server/agents/agent-v0.server";
+import { streamAgentWorkflow } from "server/agents/agent-workflow.server";
 import { getUserOrNull } from "server/getUserUtils.server";
+import { resolveChatbotConfig, createAgentExecutionContext } from "server/chatbot/configResolver.server";
+import { getChatbot } from "server/chatbot-v0/chatbot";
 
 export const action = async ({ request }: Route.ActionArgs): Promise<Response> => {
   try {
@@ -36,6 +38,43 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
       integrationsCount: Object.keys(integrations).length
     });
 
+    // Obtener chatbot o usar configuración por defecto
+    let targetChatbot;
+    if (chatbotId) {
+      targetChatbot = await getChatbot(chatbotId, user.id);
+      if (!targetChatbot) {
+        return Response.json(
+          { error: "Chatbot not found" },
+          { status: 404 }
+        );
+      }
+    } else {
+      // Configuración por defecto para AgentV0 genérico
+      targetChatbot = {
+        id: 'agent-v0-default',
+        name: 'AgentV0',
+        slug: 'agent-v0',
+        instructions: 'Eres un asistente AI avanzado con acceso a herramientas. Ayudas a los usuarios con cualquier tarea que requieran.',
+        customInstructions: '',
+        personality: 'professional',
+        aiModel: 'gpt-5-nano',
+        temperature: 1,
+        maxTokens: 4000,
+        welcomeMessage: '¡Hola! Soy tu asistente AI. ¿En qué puedo ayudarte?',
+        goodbyeMessage: '¡Hasta luego! Si necesitas más ayuda, no dudes en preguntar.',
+        primaryColor: '#63CFDE',
+        avatarUrl: '',
+        contexts: [],
+        isActive: true,
+        userId: user.id
+      };
+    }
+
+    const resolvedConfig = resolveChatbotConfig(targetChatbot as any, user);
+    const agentContext = createAgentExecutionContext(user, targetChatbot.id, message, {
+      integrations
+    });
+
     // Server-Sent Events streaming response
     const encoder = new TextEncoder();
 
@@ -44,7 +83,10 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
         async start(controller) {
           try {
             // runStream con eventos LlamaIndex oficiales y context completo
-            for await (const event of streamAgentV0(user, message, chatbotId, integrations)) {
+            for await (const event of streamAgentWorkflow(user, message, targetChatbot.id, {
+              resolvedConfig,
+              agentContext
+            })) {
               const data = JSON.stringify(event);
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));
             }

@@ -1,7 +1,14 @@
 /**
- * AgentEngine_v0 - Motor simple siguiendo LlamaIndex workflow patterns
- * Basado en: https://developers.llamaindex.ai/typescript/framework/modules/agents/agent-workflow/
- * Tools: https://developers.llamaindex.ai/typescript/framework/modules/agents/tool/
+ * @deprecated - USAR SOLO PARA REFERENCIA HISTÓRICA
+ *
+ * Este motor usa lógica custom y NO sigue patrones oficiales LlamaIndex.
+ * Para nuevas implementaciones usar: /server/agents/agent-v0.server.ts
+ *
+ * Documentación oficial obligatoria:
+ * https://developers.llamaindex.ai/typescript/framework/modules/agents/agent_workflow/
+ *
+ * AgentEngine_v0 - Motor simple con implementación custom
+ * NOTA: Este archivo se mantiene para referencia histórica pero NO debe usarse en producción
  */
 
 import OpenAI from 'openai';

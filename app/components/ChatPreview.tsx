@@ -167,7 +167,6 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     }
     if (!chatInput.trim()) return;
     
-    // DEBUG CRÍTICO: Verificar qué modelo tiene el chatbot
 
     const currentInput = chatInput.trim();
     setChatLoading(true);
@@ -232,10 +231,6 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
                 return newMsgs;
               });
               
-              // 🎯 LOG DEBUG para marketing/monitoring
-              if (jsonData.frameworkUsed === 'formmy-agent') {
-                console.log(`🤖 Formmy Agent: ${jsonData.iterations} iterations, tools: [${jsonData.toolsUsed?.join(', ') || 'none'}]`);
-              }
               
               clearTimeout(timeoutId);
               setChatLoading(false);
@@ -296,6 +291,45 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
                       });
                     }
 
+                    // ✅ Manejar tool events del AgentWorkflow
+                    if (data.type === 'tool-start' && data.tool) {
+                      // Mostrar indicador de herramienta ejecutándose
+                      fullContent += `\n\n🔧 Ejecutando: ${data.tool}...`;
+                      setChatMessages((msgs) => {
+                        const updated = [...msgs];
+                        let lastIdx = updated.length - 1;
+                        while (lastIdx >= 0 && updated[lastIdx].role !== "assistant")
+                          lastIdx--;
+                        if (lastIdx >= 0)
+                          updated[lastIdx] = { ...updated[lastIdx], content: fullContent };
+                        return updated;
+                      });
+                    }
+
+                    // ✅ Manejar metadata final
+                    if (data.type === 'metadata' && data.metadata) {
+                      // Log metadata para debugging (opcional)
+                      console.log('✅ AgentWorkflow completed:', data.metadata);
+                    }
+
+                    // ✅ Manejar errores del workflow
+                    if (data.type === 'error' && data.content) {
+                      clearTimeout(timeoutId);
+                      setChatLoading(false);
+                      setChatError(data.content);
+                      setChatMessages((msgs) => {
+                        const updated = [...msgs];
+                        let lastIdx = updated.length - 1;
+                        while (lastIdx >= 0 && updated[lastIdx].role !== "assistant")
+                          lastIdx--;
+                        if (lastIdx >= 0)
+                          updated[lastIdx] = { ...updated[lastIdx], content: data.content };
+                        return updated;
+                      });
+                      inputRef.current?.focus();
+                      return;
+                    }
+
                     // Manejar errores
                     if (data.type === 'error') {
                       clearTimeout(timeoutId);
@@ -320,9 +354,29 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         })
         .catch((err: unknown) => {
           clearTimeout(timeoutId);
-          setChatError(err instanceof Error ? err.message : String(err));
+
+          // Mensajes de error amigables para el usuario
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          let userFriendlyMessage = 'Hubo un problema procesando tu mensaje. Por favor intenta de nuevo.';
+
+          if (errorMessage.includes('rate') || errorMessage.includes('429')) {
+            userFriendlyMessage = 'Hemos alcanzado el límite de solicitudes. Por favor espera unos momentos e intenta de nuevo.';
+          } else if (errorMessage.includes('timeout') || errorMessage.includes('408')) {
+            userFriendlyMessage = 'La respuesta está tardando más de lo esperado. Por favor intenta de nuevo.';
+          } else if (errorMessage.includes('model') || errorMessage.includes('400')) {
+            userFriendlyMessage = 'Hay un problema con la configuración del asistente. Por favor contacta soporte.';
+          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+            userFriendlyMessage = 'Problema de conexión. Verifica tu internet e intenta de nuevo.';
+          } else if (errorMessage.includes('500') || errorMessage.includes('internal')) {
+            userFriendlyMessage = 'Estamos experimentando problemas técnicos. Por favor intenta más tarde.';
+          }
+
+          setChatError(userFriendlyMessage);
           setChatLoading(false);
           inputRef.current?.focus();
+
+          // Log básico para debugging
+          console.error('Chat error:', errorMessage);
         });
       }
     } else {
@@ -348,10 +402,6 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           // ✅ UNIFICADO: Soportar framework formmy-agent y respuestas legacy
           const botContent = result.message || result.response || result.content || "Respuesta vacía";
           
-          // 🎯 LOG DEBUG para marketing/monitoring
-          if (result.frameworkUsed === 'formmy-agent') {
-            console.log(`🤖 Formmy Agent: ${result.iterations} iterations, tools: [${result.toolsUsed?.join(', ') || 'none'}]`);
-          }
           
           setChatMessages((msgs) => [
             ...msgs,
@@ -361,9 +411,27 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           inputRef.current?.focus();
         })
         .catch((err: unknown) => {
-          setChatError(err instanceof Error ? err.message : String(err));
+          // Mensajes de error amigables para modo no-streaming
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          let userFriendlyMessage = 'Hubo un problema procesando tu mensaje. Por favor intenta de nuevo.';
+
+          if (errorMessage.includes('rate') || errorMessage.includes('429')) {
+            userFriendlyMessage = 'Límite de solicitudes alcanzado. Intenta en unos momentos.';
+          } else if (errorMessage.includes('timeout') || errorMessage.includes('408')) {
+            userFriendlyMessage = 'La respuesta está tardando. Por favor intenta de nuevo.';
+          } else if (errorMessage.includes('model') || errorMessage.includes('400')) {
+            userFriendlyMessage = 'Problema con la configuración. Contacta soporte.';
+          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+            userFriendlyMessage = 'Problema de conexión. Verifica tu internet.';
+          } else if (errorMessage.includes('500') || errorMessage.includes('internal')) {
+            userFriendlyMessage = 'Problemas técnicos temporales. Intenta más tarde.';
+          }
+
+          setChatError(userFriendlyMessage);
           setChatLoading(false);
           inputRef.current?.focus();
+
+          console.error('Chat error (non-streaming):', errorMessage);
         });
       }
     }

@@ -20,7 +20,6 @@ export async function saveContactInfoHandler(
   context: ToolContext
 ): Promise<ToolResponse> {
   try {
-    console.log(`📋 [Save Contact] Guardando contacto:`, JSON.stringify(input, null, 2));
 
     // Validar que al menos se proporcione nombre o email
     if (!input.name && !input.email) {
@@ -90,7 +89,6 @@ export async function saveContactInfoHandler(
         },
       });
 
-      console.log(`📋 [Save Contact] Contacto actualizado: ${updatedContact.id}`);
       
       // Track usage (sin awaitar)
       ToolUsageTracker.trackUsage({
@@ -139,7 +137,6 @@ export async function saveContactInfoHandler(
         },
       });
 
-      console.log(`📋 [Save Contact] Nuevo contacto creado: ${newContact.id}`);
       
       // Track usage (sin awaitar)
       ToolUsageTracker.trackUsage({

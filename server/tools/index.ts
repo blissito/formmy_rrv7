@@ -139,6 +139,21 @@ export const createSaveContactTool = (context: ToolContext) => tool(
   }
 );
 
+// ===== DATETIME TOOLS =====
+
+export const createGetCurrentDateTimeTool = (context: ToolContext) => tool(
+  async () => {
+    const { getCurrentDateTimeHandler } = await import('./handlers/datetime');
+    const result = await getCurrentDateTimeHandler({}, context);
+    return result.message;
+  },
+  {
+    name: "get_current_datetime",
+    description: "Obtener la fecha y hora actual (timezone México GMT-6) para contextualizar respuestas",
+    parameters: z.object({})
+  }
+);
+
 // ===== CHATBOT TOOLS =====
 
 export const createQueryChatbotsTool = (context: ToolContext) => tool(
@@ -209,6 +224,11 @@ export const getToolsForPlan = (
     tools.push(createSaveContactTool(context));
   }
 
+  // DateTime tools - disponibles para todos los planes
+  if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+    tools.push(createGetCurrentDateTimeTool(context));
+  }
+
   // Chatbot tools - disponibles para STARTER+ (core de Formmy)
   if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
     tools.push(
@@ -232,5 +252,6 @@ export const getAllToolNames = () => [
   'create_payment_link',
   'save_contact_info',
   'query_chatbots',
-  'get_chatbot_stats'
+  'get_chatbot_stats',
+  'get_current_datetime'
 ];

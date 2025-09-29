@@ -6,10 +6,8 @@ export async function listRemindersHandler(
   input: {},
   context: ToolContext
 ): Promise<ToolResponse> {
-  console.log(`📋 LIST REMINDERS: Starting execution for chatbotId: ${context.chatbotId}`);
   
   try {
-    console.log(`📋 LIST REMINDERS: Querying database...`);
     const pendingReminders = await db.scheduledAction.findMany({
       where: {
         chatbotId: context.chatbotId,
@@ -25,10 +23,8 @@ export async function listRemindersHandler(
       take: 10 // Máximo 10
     });
     
-    console.log(`📋 LIST REMINDERS: Found ${pendingReminders.length} pending reminders`);
 
     if (pendingReminders.length === 0) {
-      console.log(`📋 LIST REMINDERS: No reminders found, returning empty response`);
       return {
         success: true,
         message: "📅 No tienes recordatorios programados para el futuro.",
@@ -55,7 +51,6 @@ export async function listRemindersHandler(
       message += `   🔧 ID: ${reminder.id}\n\n`;
     });
 
-    console.log(`📋 LIST REMINDERS: Returning response with ${pendingReminders.length} reminders`);
     return {
       success: true,
       message,

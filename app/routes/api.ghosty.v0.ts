@@ -4,8 +4,9 @@
  */
 
 import type { Route } from "./+types/api.ghosty.v0";
-import { streamAgentV0 } from "server/agents/agent-v0.server";
+import { streamAgentWorkflow } from "server/agents/agent-workflow.server";
 import { getUserOrNull } from "server/getUserUtils.server";
+import { resolveChatbotConfig, createAgentExecutionContext } from "server/chatbot/configResolver.server";
 
 export const action = async ({ request }: Route.ActionArgs): Promise<Response> => {
   try {
@@ -36,6 +37,31 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
       streamMode: stream
     });
 
+    // Crear configuración Ghosty mock para AgentWorkflow
+    const ghostyChatbot = {
+      id: 'ghosty-main',
+      name: 'Ghosty',
+      slug: 'ghosty',
+      instructions: 'Eres Ghosty 👻, el asistente principal de Formmy. Ayudas a los usuarios con todas las funcionalidades de la plataforma.',
+      customInstructions: 'Eres amigable, directo y conoces perfectamente todas las herramientas disponibles.',
+      personality: 'friendly',
+      aiModel: 'gpt-5-nano',
+      temperature: 1,
+      maxTokens: 4000,
+      welcomeMessage: '¡Hola! Soy Ghosty 👻, tu asistente de Formmy. ¿En qué puedo ayudarte?',
+      goodbyeMessage: '¡Hasta la vista! Si necesitas ayuda, aquí estaré 👻',
+      primaryColor: '#63CFDE',
+      avatarUrl: '',
+      contexts: [],
+      isActive: true,
+      userId: user.id
+    };
+
+    const resolvedConfig = resolveChatbotConfig(ghostyChatbot as any, user);
+    const agentContext = createAgentExecutionContext(user, 'ghosty-main', message, {
+      integrations
+    });
+
     if (stream) {
       // Server-Sent Events streaming con AgentV0
       const encoder = new TextEncoder();
@@ -45,7 +71,10 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
           async start(controller) {
             try {
               // runStream con eventos LlamaIndex oficiales y context completo
-              for await (const event of streamAgentV0(user, message, null, integrations)) {
+              for await (const event of streamAgentWorkflow(user, message, 'ghosty-main', {
+                resolvedConfig,
+                agentContext
+              })) {
                 const data = JSON.stringify(event);
                 controller.enqueue(encoder.encode(`data: ${data}\n\n`));
               }
@@ -89,7 +118,10 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
       let toolsUsed: string[] = [];
       let metadata: any = {};
 
-      for await (const event of streamAgentV0(user, message, null, integrations)) {
+      for await (const event of streamAgentWorkflow(user, message, 'ghosty-main', {
+        resolvedConfig,
+        agentContext
+      })) {
         if (event.type === "chunk") {
           responses.push(event.content);
         } else if (event.type === "tool-start") {

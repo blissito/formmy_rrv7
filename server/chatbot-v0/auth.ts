@@ -4,7 +4,21 @@
 
 export async function authenticateRequest(request: Request, formData: FormData) {
   try {
-    // 🔑 Primero intentar API Key authentication
+    // 🛠️ Development Token Authentication (highest priority)
+    const devToken = request.headers.get('x-dev-token') || request.headers.get('x-dev-authorization');
+
+    if (devToken && process.env.DEVELOPMENT_TOKEN && devToken === process.env.DEVELOPMENT_TOKEN) {
+      console.log('🛠️ Development token authenticated - using mock PRO user');
+      return {
+        user: {
+          id: 'dev-user-mock-pro',
+          plan: 'PRO'
+        },
+        isTestUser: true
+      };
+    }
+
+    // 🔑 API Key authentication
     const apiKey = request.headers.get('x-api-key') || request.headers.get('authorization')?.replace('Bearer ', '');
 
     if (apiKey) {
