@@ -43,7 +43,7 @@ import {
 import { createQuickPaymentLink } from "./integrations/stripe-payments";
 import { ReminderService } from "./integrations/reminder-service";
 import { getToolsForPlan } from "./tools";
-import { SimpleAgentLoop } from "./chatbot/agent-loop";
+// import { SimpleAgentLoop } from "./chatbot/agent-loop"; // ❌ Legacy - removed
 import {
   validateUserAIModelAccess,
   getUserPlanFeatures,
@@ -57,7 +57,7 @@ import { generateFallbackModels, isAnthropicDirectModel } from "~/utils/aiModels
 import { buildEnrichedSystemPrompt, estimateTokens } from "./chatbot/promptBuilder.server";
 import { AIProviderManager } from "./chatbot/providers";
 import { addUserMessage, addAssistantMessage } from "./chatbot/messageModel.server";
-export { agentEngine } from "./chatbot/agent-decision-engine";
+// export { agentEngine } from "./chatbot/agent-decision-engine"; // ❌ Legacy - removed
 export { performanceMonitor } from "./chatbot/performance-monitor";
 
 // Utility functions
@@ -139,7 +139,7 @@ export {
   getToolsForPlan as getAvailableTools,
   // executeToolCall, // TODO: Migrar a LlamaIndex tools
   // generateToolPrompts, // TODO: Migrar a LlamaIndex tools
-  SimpleAgentLoop,
+  // SimpleAgentLoop, // ❌ Legacy - removed
   validateUserAIModelAccess,
   getUserPlanFeatures,
   DEFAULT_CHATBOT_CONFIG,

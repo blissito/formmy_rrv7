@@ -181,11 +181,11 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     setIsUserScrolling(false);
     setShouldAutoScroll(true);
 
-    if (stream) {
-      setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
-      
-      // 🚀 Usar endpoint moderno LlamaIndex V2 con AgentEngine_v0 (RECOMPILED)
-      {
+    // ✅ SIEMPRE STREAMING - Backend solo soporta SSE
+    setChatMessages((msgs) => [...msgs, { role: "assistant", content: "" }]);
+
+    // 🚀 Usar endpoint moderno AgentWorkflow simplificado
+    {
         const formData = new FormData();
         formData.append("intent", "chat");
         formData.append("chatbotId", chatbot.id);
@@ -205,10 +205,18 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           body: formData,
         })
         .then(async (response) => {
+          // ✅ Manejar errores del servidor con mensajes específicos
           if (!response.ok) {
-            throw new Error(`Error: ${response.status}`);
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await response.json();
+              // Usar el mensaje del servidor si está disponible
+              const serverMessage = errorData.userMessage || errorData.error || errorData.message;
+              throw new Error(serverMessage || `Error del servidor (${response.status})`);
+            }
+            throw new Error(`Error del servidor (${response.status})`);
           }
-          
+
           // ✅ ARREGLO: Verificar si es JSON (tools) o streaming
           const contentType = response.headers.get('content-type');
           
@@ -357,18 +365,30 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
 
           // Mensajes de error amigables para el usuario
           const errorMessage = err instanceof Error ? err.message : String(err);
-          let userFriendlyMessage = 'Hubo un problema procesando tu mensaje. Por favor intenta de nuevo.';
+          let userFriendlyMessage = errorMessage;
 
-          if (errorMessage.includes('rate') || errorMessage.includes('429')) {
-            userFriendlyMessage = 'Hemos alcanzado el límite de solicitudes. Por favor espera unos momentos e intenta de nuevo.';
-          } else if (errorMessage.includes('timeout') || errorMessage.includes('408')) {
-            userFriendlyMessage = 'La respuesta está tardando más de lo esperado. Por favor intenta de nuevo.';
-          } else if (errorMessage.includes('model') || errorMessage.includes('400')) {
-            userFriendlyMessage = 'Hay un problema con la configuración del asistente. Por favor contacta soporte.';
-          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-            userFriendlyMessage = 'Problema de conexión. Verifica tu internet e intenta de nuevo.';
-          } else if (errorMessage.includes('500') || errorMessage.includes('internal')) {
-            userFriendlyMessage = 'Estamos experimentando problemas técnicos. Por favor intenta más tarde.';
+          // ✅ Si el mensaje del servidor ya es claro, usarlo directamente
+          const isServerMessage =
+            errorMessage.includes('desactivado') ||
+            errorMessage.includes('disponible') ||
+            errorMessage.includes('permisos') ||
+            errorMessage.includes('plan no incluye');
+
+          // Solo traducir errores técnicos a mensajes amigables
+          if (!isServerMessage) {
+            if (errorMessage.includes('rate') || errorMessage.includes('429')) {
+              userFriendlyMessage = 'Hemos alcanzado el límite de solicitudes. Por favor espera unos momentos e intenta de nuevo.';
+            } else if (errorMessage.includes('timeout') || errorMessage.includes('408')) {
+              userFriendlyMessage = 'La respuesta está tardando más de lo esperado. Por favor intenta de nuevo.';
+            } else if (errorMessage.includes('model') || errorMessage.includes('400')) {
+              userFriendlyMessage = 'Hay un problema con la configuración del asistente. Por favor contacta soporte.';
+            } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+              userFriendlyMessage = 'Problema de conexión. Verifica tu internet e intenta de nuevo.';
+            } else if (errorMessage.includes('500') || errorMessage.includes('internal')) {
+              userFriendlyMessage = 'Estamos experimentando problemas técnicos. Por favor intenta más tarde.';
+            } else if (errorMessage.includes('Error del servidor')) {
+              userFriendlyMessage = 'Hubo un problema procesando tu mensaje. Por favor intenta de nuevo.';
+            }
           }
 
           setChatError(userFriendlyMessage);
@@ -378,62 +398,6 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           // Log básico para debugging
           console.error('Chat error:', errorMessage);
         });
-      }
-    } else {
-      // 🚀 Sin streaming - usar endpoint moderno LlamaIndex V2 con AgentEngine_v0
-      {
-        const formData = new FormData();
-        formData.append("intent", "chat");
-        formData.append("chatbotId", chatbot.id);
-        formData.append("message", currentInput);
-        formData.append("sessionId", sessionIdRef.current);
-        formData.append("conversationHistory", JSON.stringify(updatedMessages));
-        formData.append("stream", stream.toString()); // Usar valor real del toggle
-
-        fetch("/api/v0/chatbot", {
-          method: "POST",
-          body: formData,
-        })
-        .then(async (response) => {
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status}`);
-          }
-          const result = await response.json();
-          // ✅ UNIFICADO: Soportar framework formmy-agent y respuestas legacy
-          const botContent = result.message || result.response || result.content || "Respuesta vacía";
-          
-          
-          setChatMessages((msgs) => [
-            ...msgs,
-            { role: "assistant", content: botContent },
-          ]);
-          setChatLoading(false);
-          inputRef.current?.focus();
-        })
-        .catch((err: unknown) => {
-          // Mensajes de error amigables para modo no-streaming
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          let userFriendlyMessage = 'Hubo un problema procesando tu mensaje. Por favor intenta de nuevo.';
-
-          if (errorMessage.includes('rate') || errorMessage.includes('429')) {
-            userFriendlyMessage = 'Límite de solicitudes alcanzado. Intenta en unos momentos.';
-          } else if (errorMessage.includes('timeout') || errorMessage.includes('408')) {
-            userFriendlyMessage = 'La respuesta está tardando. Por favor intenta de nuevo.';
-          } else if (errorMessage.includes('model') || errorMessage.includes('400')) {
-            userFriendlyMessage = 'Problema con la configuración. Contacta soporte.';
-          } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-            userFriendlyMessage = 'Problema de conexión. Verifica tu internet.';
-          } else if (errorMessage.includes('500') || errorMessage.includes('internal')) {
-            userFriendlyMessage = 'Problemas técnicos temporales. Intenta más tarde.';
-          }
-
-          setChatError(userFriendlyMessage);
-          setChatLoading(false);
-          inputRef.current?.focus();
-
-          console.error('Chat error (non-streaming):', errorMessage);
-        });
-      }
     }
   };
 
@@ -461,7 +425,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
         "bg-chatPattern bg-cover rounded-3xl  ": !production,
       })}
     >
-      {!production && <StreamToggle stream={stream} onToggle={setStream} />}
+      {/* Stream toggle removed - usando AgentEngine V0 con streaming siempre activo */}
 
       <article
         className={cn(
