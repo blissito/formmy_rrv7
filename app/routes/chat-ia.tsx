@@ -56,7 +56,7 @@ const stepsWithImages = [
 
 export default function ChatIA() {
   return (
-    <section className="bg-clear pt-40 md:pt-64 overflow-hidden">
+    <section className="bg-clear  overflow-hidden">
       <HomeHeader />
       <ChatHero />
       {/* <CompaniesScroll /> */}

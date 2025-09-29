@@ -31,7 +31,7 @@ export const BigCTA = ({
       onClick={onClick}
       disabled={isLoading}
       className={cn(
-        "group bg-brand-500 hover:bg-brand-600 transition-all hover:-translate-y-2 text-white rounded-full px-6 py-3  text-base h-12 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed",
+        "group bg-brand-500 hover:bg-brand-600 transition-all hover:-translate-y-2 text-dark rounded-full px-6 py-3  text-base h-12 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed",
         containerClassName,
         className
       )}

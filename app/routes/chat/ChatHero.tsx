@@ -113,12 +113,12 @@ export const ChatHero = () => {
   const [current, setCurrent] = useState(0);
 
   return (
-    <div className="w-full mb-10   mx-auto px-4 md:px-[5%] xl:px-0 flex flex-col  items-center justify-start md:justify-between gap-0 md:gap-16 ">
-      <div className="w-full flex flex-col justify-center items-center">
-        <h1 className="font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 leading-tight text-center md:text-left">
+    <div className="max-w-7xl mb-10 min-h-svh pt-28  mx-auto px-4 md:px-[5%] xl:px-0 flex  items-center justify-start md:justify-between gap-0 md:gap-16 ">
+      <div className="w-full lg:w-[50%] flex flex-col ">
+        <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 !leading-[1.1] text-center md:text-left">
           Chat IA que conecta con tus clientes
         </h1>
-        <p className="text-metal text-lg md:text-2xl font-light   mb-0 max-w-4xl text-center ">
+        <p className="text-metal text-lg md:text-2xl font-light   text-left ">
           La forma más fácil de crear agentes de soporte con IA para tu sitio
           web. Responde preguntas, guía a tus clientes y capta leads
           automáticamente, 24/7.
@@ -128,7 +128,144 @@ export const ChatHero = () => {
         </Form>
  
       </div>
+      <div className=" flex justify-center items-start flex-nowrap gap-8 relative">
+ 
+   
+        {/* Configuration Cards - Stacked */}
+        <div className="hidden lg:flex flex-col items-start justify-start -mt-32 relative">
+          {/* Stats Card */}
+          <motion.div
+            className="relative z-10 -mb-52"
+            initial={{ opacity: 0, y: -80, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 0.9,
+              delay: 0.2,
+              type: "spring",
+              stiffness: 120,
+              damping: 12
+            }}
+          >
+            <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: -12 }}>
+              <div className="flex items-center gap-2 mb-3 ]">
+                <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">📊</div>
+                <span className="text-sm font-medium text-gray-600">Stats</span>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-2xl font-bold text-gray-800">50+</div>
+                  <div className="text-xs text-gray-500">Projects completed</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-800">7+</div>
+                  <div className="text-xs text-gray-500">Years experience</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-800">100+</div>
+                  <div className="text-xs text-gray-500">Customers</div>
+                </div>
+              </div>
+            </FeatureCardWithHover>
+          </motion.div>
 
+          {/* Resume Card */}
+          <motion.div
+            className="relative z-20 -mb-44 ml-16"
+            initial={{ opacity: 0, y: -100, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 1.0,
+              delay: 0.5,
+              type: "spring",
+              stiffness: 100,
+              damping: 10
+            }}
+          >
+            <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: 8 }}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 bg-gray-700 rounded flex items-center justify-center text-white text-xs">📄</div>
+                <span className="text-sm font-medium text-gray-600">Resume</span>
+              </div>
+              <div className="space-y-3">
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <div className="text-xs font-medium text-gray-700">Position or Role</div>
+                  <div className="text-xs text-gray-500">Company Name</div>
+                  <div className="text-xs text-gray-400">Mon, Year - Mon, Year</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <div className="text-xs font-medium text-gray-700">Position or Role</div>
+                  <div className="text-xs text-gray-500">Company Name</div>
+                  <div className="text-xs text-gray-400">Mon, Year - Mon, Year</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <div className="text-xs font-medium text-gray-700">Position or Role</div>
+                  <div className="text-xs text-gray-500">Company Name</div>
+                  <div className="text-xs text-gray-400">Mon, Year - Mon, Year</div>
+                </div>
+              </div>
+            </FeatureCardWithHover>
+          </motion.div>
+
+          {/* Contact Card */}
+          <motion.div
+            className="relative !z-20 ml-8"
+            initial={{ opacity: 0, y: -120, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 1.1,
+              delay: 0.8,
+              type: "spring",
+              stiffness: 80,
+              damping: 8
+            }}
+          >
+            <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: -6 }}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 bg-green-500 rounded flex items-center justify-center text-white text-xs">📞</div>
+                <span className="text-sm font-medium text-gray-600">Contact</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Name</div>
+                  <div className="h-8 bg-gray-50 rounded border"></div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Email</div>
+                  <div className="h-8 bg-gray-50 rounded border"></div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Phone</div>
+                  <div className="h-8 bg-gray-50 rounded border"></div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">Message</div>
+                  <div className="h-12 bg-gray-50 rounded border"></div>
+                </div>
+                <button className="w-full bg-gray-800 text-white py-2 rounded text-xs font-medium">
+                  Contact Me
+                </button>
+              </div>
+            </FeatureCardWithHover>
+          </motion.div>
+        </div>
+
+        <div className="relative px-6 py-3 z-40 -mr-28">
+          <ChatPreview
+            conversations={conversations}
+            current={current}
+            onPrev={() => setCurrent((c) => Math.max(0, c - 1))}
+            onNext={() => setCurrent((c) => Math.min(conversations.length - 1, c + 1))}
+            onRestart={() => setCurrent(0)}
+          />
+          <img
+            src="/mock.png"
+            alt="Mock overlay"
+            className="w-[300px] lg:w-[360px] h-[520px] lg:h-[680px] absolute top-0 z-20"
+          />
+        </div>
+
+     
+      </div>
     </div>
   );
 };
@@ -160,9 +297,9 @@ const FeatureCardWithHover = ({ children, className, initialRotation = { x: 0, y
   const [isHovered, setIsHovered] = useState(false);
 
   const cardStyle: React.CSSProperties = {
-    transform: isHovered 
-      ? `perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1.1)`
-      : `perspective(1000px) rotateX(${initialRotation.x}deg) rotateY(${initialRotation.y}deg) rotateZ(${initialRotation.z}deg)`,
+    transform: isHovered
+      ? `scale(1.1) translateY(-5px)`
+      : `scale(1) translateY(0px) rotate(${initialRotation.z}deg)`,
     transition: 'transform 0.3s ease-out',
     willChange: 'transform',
     boxShadow: '10px 20px 40px rgba(0,0,0,0.08)'
@@ -170,7 +307,7 @@ const FeatureCardWithHover = ({ children, className, initialRotation = { x: 0, y
 
   return (
     <div 
-      className={`bg-white overflow-hidden mt-40 relative z-10 rounded-2xl h-[220px] w-[180px] p-4 shadow-lg border border-gray-100 w-48 hover:shadow-xl transition-shadow duration-300 hover:z-20 cursor-pointer ${className || ''}`}
+      className={`bg-white overflow-hidden mt-40 -mr-8 relative z-10 rounded-2xl h-[220px] w-[240px] p-4 shadow-lg border border-gray-100 w-48 hover:shadow-xl transition-shadow duration-300 hover:z-20 cursor-pointer ${className || ''}`}
       style={cardStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
