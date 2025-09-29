@@ -21,13 +21,13 @@ const TestimonialCard = React.forwardRef<HTMLDivElement, TestimonialCardProps>(
       whileDrag={{ scale: 1.02, zIndex: 10 }}
       dragConstraints={dragConstraints}
       className={cn(
-        "cursor-grab bg-clear w-full md:w-[281px] h-fit rounded-3xl border border-outlines shadow p-6 flex flex-col justify-between",
+        "cursor-grab bg-clear w-full md:w-[281px] h-fit rounded-3xl border border-outlines shadow p-5 md:p-6 flex flex-col justify-between",
         "active:cursor-grabbing hover:shadow-lg hover:border-primary/20",
         className
       )}
     >
       <div>
-        <p className="paragraph text-metal text-[18px] mb-4">{comment}</p>
+        <p className="paragraph text-metal text-base md:text-lg mb-0 lg:mb-4">{comment}</p>
       </div>
       <div className="flex items-center gap-4 mt-4">
         <img 

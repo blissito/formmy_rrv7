@@ -38,7 +38,7 @@ export function Home() {
     >
       <HomeHeader />
         <HomeHero />
-      <SectionFadeIn delay={0.2}>
+      <SectionFadeIn delay={0.1}>
         <HomeFeatures />
       </SectionFadeIn>
       <SectionFadeIn delay={0.2}>

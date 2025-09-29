@@ -8,10 +8,25 @@ import { CompaniesScroll } from "~/components/home/CompaniesScroll";
 export default function HomeHero() {
   const [animationPhase, setAnimationPhase] = useState(0);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const text = "Chat IA para tu sitio web. Sin complicaciones.";
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Letters that will animate with different fonts - adjusted for new text
-  const animatedIndexes = [0, 4, 7, 12, 18, 22, 28, 32, 37, 42, 47, 15, 25, 40];
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const text = isMobile
+    ? "Chat IA para tu sitio web. Fácil y rápido."
+    : "Chat IA para tu sitio web. Sin complicaciones.";
+
+  // Letters that will animate with different fonts - responsive for both texts
+  const animatedIndexes = isMobile
+    ? [0, 5, 8, 13, 16, 19, 23, 29, 30, 33, 37, 1, 3, 11] // For "Fácil y rápido"
+    : [0, 5, 8, 13, 16, 19, 23, 29, 34, 38, 44, 1, 3, 11]; // For "Sin complicaciones"
 
   // Find the position of "A" in "IA"
   const iaPosition = text.indexOf(" IA ");
@@ -19,20 +34,20 @@ export default function HomeHero() {
 
   // Different font sequences for each animated letter to create variety
   const fontSequences = [
-    ['Kablammo', 'Rubik Wet Paint', 'Flavors'], // Index 0: Letter 0 (C)
-    ['Rubik Wet Paint', 'Flavors', 'Kablammo'], // Index 1: Letter 4 (t)
-    ['Flavors', 'Kablammo', 'Rubik Wet Paint'], // Index 2: Letter 7 (I)
-    ['Kablammo', 'Flavors', 'Rubik Wet Paint'], // Index 3: Letter 12 (p)
-    ['Rubik Wet Paint', 'Kablammo', 'Flavors'], // Index 4: Letter 18 (u)
-    ['Flavors', 'Rubik Wet Paint', 'Kablammo'], // Index 5: Letter 22 (s)
-    ['Kablammo', 'Rubik Wet Paint', 'Flavors'], // Index 6: Letter 28 (w)
-    ['Rubik Wet Paint', 'Flavors', 'Kablammo'], // Index 7: Letter 32 (S)
-    ['Flavors', 'Kablammo', 'Rubik Wet Paint'], // Index 8: Letter 37 (c)
-    ['Kablammo', 'Flavors', 'Rubik Wet Paint'], // Index 9: Letter 42 (l)
-    ['Rubik Wet Paint', 'Kablammo', 'Flavors'], // Index 10: Letter 47 (o)
-    ['Flavors', 'Rubik Wet Paint', 'Kablammo'], // Index 11: Letter 15 (a)
-    ['Kablammo', 'Flavors', 'Rubik Wet Paint'], // Index 12: Letter 25 (e)
-    ['Rubik Wet Paint', 'Kablammo', 'Flavors']  // Index 13: Letter 40 (i)
+    ['Kablammo', 'Rubik Wet Paint', 'Flavors'], // Index 0: Pos 0 = 'C'
+    ['Rubik Wet Paint', 'Flavors', 'Kablammo'], // Index 1: Pos 5 = 'I'
+    ['Flavors', 'Kablammo', 'Rubik Wet Paint'], // Index 2: Pos 8 = 'p'
+    ['Kablammo', 'Flavors', 'Rubik Wet Paint'], // Index 3: Pos 13 = 't'
+    ['Rubik Wet Paint', 'Kablammo', 'Flavors'], // Index 4: Pos 16 = 's'
+    ['Flavors', 'Rubik Wet Paint', 'Kablammo'], // Index 5: Pos 19 = 'i'
+    ['Kablammo', 'Rubik Wet Paint', 'Flavors'], // Index 6: Pos 23 = 'e'
+    ['Rubik Wet Paint', 'Flavors', 'Kablammo'], // Index 7: Pos 29 = 'n'
+    ['Flavors', 'Kablammo', 'Rubik Wet Paint'], // Index 8: Pos 34 = 'p'
+    ['Kablammo', 'Flavors', 'Rubik Wet Paint'], // Index 9: Pos 38 = 'a'
+    ['Rubik Wet Paint', 'Kablammo', 'Flavors'], // Index 10: Pos 44 = 's'
+    ['Flavors', 'Rubik Wet Paint', 'Kablammo'], // Index 11: Pos 1 = 'h'
+    ['Kablammo', 'Flavors', 'Rubik Wet Paint'], // Index 12: Pos 3 = 't'
+    ['Rubik Wet Paint', 'Kablammo', 'Flavors']  // Index 13: Pos 11 = 'a'
   ];
 
   useEffect(() => {
@@ -78,9 +93,9 @@ export default function HomeHero() {
   };
 
   return (
-    <section className="relative  flex flex-col items-center justify-center min-h-svh pt-32 md:pt-[240px] max-w-[1400px] px-4 md:px-[5%]  lg:px-0 mx-auto">
-      <div className="h-[140px] md:h-[160px] lg:h-[220px] flex items-center justify-center">
-        <h1 className="header text-dark text-4xl md:text-5xl lg:text-[112px] text-center leading-none md:leading-tight flex-wrap gap-2" style={{ lineHeight: '1', minHeight: '1em' }}>
+    <section className="relative overflow-hidden  flex flex-col items-center justify-center min-h-svh pt-32 md:pt-[240px] max-w-[1400px] px-4 md:px-[5%]  lg:px-0 mx-auto">
+      <div className="h-[180px]  md:h-[160px] lg:h-[220px] flex items-center justify-center">
+        <h1 className="header text-dark text-[3rem] md:text-5xl px-4 lg:text-[112px] text-center leading-none md:leading-tight flex-wrap gap-2" style={{ lineHeight: '1', minHeight: '1em' }}>
           {text.split('').map((char, index) => {
             const isAnimated = animatedIndexes.includes(index);
             const shouldAnimate = isAnimated && animationPhase > 0 && animationPhase < 4;
@@ -103,7 +118,7 @@ export default function HomeHero() {
                     <img
                       src="/dash/logo-full.svg"
                       alt="Formmy Logo"
-                      className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 mt-4"
+                      className="w-10 h-10 md:w-16 md:h-16 lg:w-20 lg:h-20 mt-2 lg:mt-4"
                       style={{
                         transition: 'all 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)',
                         transform: 'scale(1) rotate(0deg) translateY(0px)',
@@ -188,21 +203,21 @@ export default function HomeHero() {
           })}
         </h1>
       </div>
-      <p className="paragraph text-dark text-xl md:text-2xl text-center mt-4 ">
+      <span className="paragraph text-dark text-lg md:text-2xl text-center mt-0 lg:mt-8 ">
         Integra en minutos y sin dolores de cabeza.
-      </p>
+      </span>
       <div className="flex gap-4 mt-10">
         <Form method="post" action="/api/login" id="start_hero">
-          <BigCTA type="submit" name="intent" value="google-login" textClassName="text-base md:text-lg" className="h-14" />
+          <BigCTA type="submit" name="intent" value="google-login" textClassName="text-base md:text-lg text-dark" className="h-14" />
         </Form>
         <Link to="/planes">
-        <Button variant="secondary" className="mt-0 h-14 text-base md:text-lg">
+        <Button variant="secondary" className="mt-0 h-14 text-base md:text-lg hidden lg:block">
           Ver planes
         </Button>
         </Link>
       </div>
-      <div className="mt-16 mb-10 bg-outlines w-full h-[1px] flex justify-center items-center">
-      <p className="bg-white w-fit -mt-[3px] px-2"><strong>+500 usuarios usan Formmy</strong> para captar leads, automatizar procesos y atender a sus clientes. </p>
+      <div className="mt-16 mb-10 bg-outlines w-full h-[1px] flex justify-center items-center text-center">
+      <p className="bg-white w-fit -mt-[3px] px-2 text-sm lg:text-base"><strong>+500 usuarios usan Formmy</strong> para captar leads, <br className="lg:hidden" />automatizar procesos y atender a sus clientes. </p>
         </div>
       <CompaniesScroll />
     </section>

@@ -43,7 +43,7 @@ export default function HomeCallToAction() {
           </Button>
           </Form> */}
         </div>
-        <div className="flex-1 flex items-center justify-center mt-12 md:mt-0 relative">
+        <div className="flex-1 flex items-center justify-end w-full -mt-12 md:mt-0 relative ">
           {/* Mockup móvil */}
           <div className="w-[200px] md:w-[320px] h-[400px] md:h-[660px] bg-white rounded-[40px] shadow-2xl border-8 border-dark overflow-hidden flex items-end justify-center relative">
             <img
