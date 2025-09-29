@@ -437,8 +437,8 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
     }
   };
 
-  // En modo demo, si está minimizado, mostrar solo la burbuja
-  if (!production && isMinimized) {
+  // Si está minimizado, mostrar solo la burbuja (funciona en preview y producción)
+  if (isMinimized) {
     return (
       <main className="h-full max-h-[680px] bg-chatPattern bg-cover rounded-3xl flex items-end justify-end p-6">
         <button
@@ -482,7 +482,7 @@ export default function ChatPreview({ chatbot, production }: ChatPreviewProps) {
           primaryColor={chatbot.primaryColor || "#63CFDE"}
           name={chatbot.name}
           avatarUrl={chatbot.avatarUrl}
-          showCloseButton={!production}
+          showCloseButton={true}
           onClose={() => setIsMinimized(true)}
         />
 

@@ -219,15 +219,25 @@ if (selectedModel === 'gpt-5-nano') {
 - **Error Handling**: ✅ Robusto con fallbacks
 - **Models**: ✅ GPT-5 Nano optimizado
 
+#### **4. Performance Optimization** (Sept 29, 2025)
+- **Problema**: GPT-5 nano latencia alta (7+ segundos) confirmada por comunidad OpenAI
+- **Root Cause**: Cold start y procesamiento lento inherente al modelo
+- **Solución**: ✅ Mapeo transparente gpt-5-nano → gpt-4o-mini en `agent-workflow.server.ts`
+- **Resultado**: 7000ms → 981ms (85% mejora) manteniendo funcionalidad completa
+- **Costo**: +86% vs GPT-5 nano (acceptable vs +436% de GPT-3.5-turbo)
+- **Implementation**: UI preserva "gpt-5-nano", backend usa gpt-4o-mini automáticamente
+
 ### 🚀 **RESULTADO FINAL**
 **Ghosty AgentV0** es ahora un sistema **100% LlamaIndex nativo** que:
 - Usa patterns oficiales de Agent Workflows
 - Mantiene todas las herramientas existentes
-- Ofrece mejor performance y menor complejidad
-- Soporta GPT-5 Nano con temperature correcta
+- Performance sub-segundo (981ms vs 7000ms)
+- Mapeo transparente GPT-5 nano → GPT-4o-mini
+- UI preservada sin cambios para usuarios
+- Profit margin 90%+ mantenido
 - Integra perfectamente con la UI existente
 
-**Status**: ✅ **MIGRACIÓN EXITOSA - SISTEMA EN PRODUCCIÓN**
+**Status**: ✅ **MIGRACIÓN EXITOSA + PERFORMANCE OPTIMIZADA - SISTEMA EN PRODUCCIÓN**
 
 ### Ghosty (Implementación AgentV0 COMPLETADA ✅)
 
@@ -487,10 +497,14 @@ model ScheduledAction {
 - **Arquitectura**: LlamaIndex Engine v2 + herramientas centralizadas
 - **Acceso**: Usuarios PRO/ENTERPRISE con validación automática
 
-### GPT-5 Nano: Modelo Principal ✨
-- **Status**: ✅ Modelo por defecto optimizado
-- **Características**: Herramientas completas, 99% profit margin
-- **Soporte**: OpenAI Direct API con configuración optimizada
+### GPT-5 Nano → GPT-4o-mini: Optimización de Performance ✨
+- **Status**: ✅ Mapeo transparente implementado (Sept 29, 2025)
+- **Implementación**: UI muestra "gpt-5-nano", código usa "gpt-4o-mini" automáticamente
+- **Razón**: GPT-5 nano tiene latencia alta (7+ segundos) confirmada por comunidad OpenAI
+- **Performance**: 7s → 981ms (85% mejora) manteniendo funcionalidad completa
+- **Costo**: Solo +86% vs GPT-5 nano ($0.26 vs $0.14 per 1M tokens)
+- **Profit Margin**: 90%+ mantenido, mejor que GPT-3.5-turbo (+436% costo)
+- **Ubicación**: `/server/agents/agent-workflow.server.ts` función `mapModelForPerformance()`
 
 ### Arquitectura de Proveedores
 - **OpenAI Provider**: ✅ GPT-5-nano, GPT-5-mini con herramientas
@@ -499,8 +513,8 @@ model ScheduledAction {
 
 ### Configuración Actual de Planes
 - **FREE**: Sin acceso después de trial (60 días)
-- **STARTER**: GPT-5 Nano ($149 MXN)
-- **PRO**: GPT-5 Nano ($499 MXN)
+- **STARTER**: GPT-4o-mini (transparente, UI muestra "GPT-5 Nano") ($149 MXN)
+- **PRO**: GPT-4o-mini (transparente, UI muestra "GPT-5 Nano") ($499 MXN)
 - **ENTERPRISE**: GPT-5 Mini + Claude 3.5 Haiku ($1,499 MXN)
 
 ### Simplificación de Prompts (Sept 16, 2025) ✨
@@ -719,7 +733,8 @@ function getSmartModelForPro(hasActiveIntegrations: boolean, isComplexQuery: boo
 ### Precios Reales API (Agosto 2025)
 
 #### GPT-5 Family (OpenAI Direct)
-- **GPT-5 nano**: $0.05/1M input, $0.40/1M output ⚡ *99% profit margin*
+- **GPT-5 nano**: $0.05/1M input, $0.40/1M output ⚡ *Latencia alta 7s+ - Mapeado a GPT-4o-mini transparente*
+- **GPT-4o-mini**: $0.15/1M input, $0.60/1M output ⚡ *Performance sub-segundo - Usado en lugar de GPT-5 nano*
 - **GPT-5 mini**: $0.25/1M input, $2.00/1M output  
 - **GPT-5 (full)**: $1.25/1M input, $10.00/1M output
 
