@@ -22,6 +22,83 @@ Ejemplo: Para LlamaIndex streaming, leer https://docs.llamaindex.ai/en/stable/un
 - Usar `agentStreamEvent` y `agentToolCallEvent` para eventos
 - NO crear lógica custom, solo patrones oficiales LlamaIndex
 
+### 🚫 ANTI-PATTERNS PROHIBIDOS (Lecciones Aprendidas)
+
+**NUNCA implementar estos patterns - Han sido eliminados del codebase:**
+
+#### ❌ PROHIBIDO: Keyword Matching para Tool Selection
+```typescript
+// ❌ MAL: Lógica custom frágil que no escala
+function needsAdvancedTools(message: string) {
+  const keywords = ['recordatorio', 'pago', 'stats'];
+  return keywords.some(k => message.includes(k));
+}
+if (needsAdvancedTools(message)) { useToolAgent(); }
+```
+
+**Por qué está prohibido:**
+- Mantener keywords manualmente no escala con nuevas tools
+- El modelo AI clasifica intents mejor que regex
+- Fragilidad: Si falta keyword, tools no se usan
+- Requiere actualizar código cada vez que se agregan tools
+
+**✅ Solución correcta:**
+```typescript
+// Un agente con todas las tools del plan, modelo decide
+const agent = agent({
+  llm,
+  tools: getToolsForPlan(userPlan, integrations, context),
+  systemPrompt: "Usa herramientas cuando las necesites"
+});
+```
+
+#### ❌ PROHIBIDO: Dual-Agent Systems con Handoff Manual
+```typescript
+// ❌ MAL: Dos agentes + handoff logic complejo
+const mainAgent = agent({ tools: basicTools });
+const response = await mainAgent.run(message);
+if (response.includes('HANDOFF_TO_TOOLS')) {
+  const toolAgent = agent({ tools: allTools });
+  return await toolAgent.run(message);
+}
+```
+
+**Por qué está prohibido:**
+- Complejidad innecesaria (2x código)
+- String matching frágil para detectar handoff
+- No es pattern oficial de LlamaIndex
+- Duplicación de lógica de creación de agentes
+
+**✅ Solución correcta:**
+```typescript
+// Un solo agente simple - zero handoff logic
+const agent = agent({ llm, tools: allTools, systemPrompt });
+yield* agent.runStream(message);
+```
+
+#### ❌ PROHIBIDO: Intent Classification Custom
+```typescript
+// ❌ MAL: Clasificar intents manualmente
+if (message.includes('crear')) { return 'create'; }
+if (message.includes('listar')) { return 'list'; }
+if (message.includes('actualizar')) { return 'update'; }
+```
+
+**Por qué está prohibido:**
+- El modelo AI ya clasifica intents mejor que código custom
+- No maneja variaciones del lenguaje natural
+- Fragilidad con sinónimos y contextos
+
+**✅ Solución correcta:**
+Dejar que el modelo use las tools directamente según el contexto.
+
+---
+
+**Referencia de código limpio:**
+- ✅ `/server/agents/agent-workflow.server.ts` - Pattern oficial simplificado
+- ✅ `/server/tools/index.ts` - Tool registry funcional
+- ❌ Legacy eliminado: `formmy-agent/`, `llamaindex-engine/`, `agent-decision-engine.ts`
+
 ## 🛠️ Desarrollo de Herramientas LlamaIndex
 
 ### Pattern Oficial para Nuevas Herramientas
