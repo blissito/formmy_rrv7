@@ -130,54 +130,81 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
     }
   };
 
+  // Determinar colores del badge según el plan
+  const badgeColors = {
+    "Free": "bg-gray-100 text-gray-800",
+    "Starter": "bg-yellow-100 text-yellow-800",
+    "Pro ✨": "bg-brand-100 text-brand-800",
+    "Enterprise 🤖": "bg-cloud/20 text-cloud"
+  };
+
+  const buttonColors = {
+    "Free": "bg-gray-200 hover:bg-gray-300 text-gray-800",
+    "Starter": "bg-yellow-300 hover:bg-yellow-400 text-gray-900",
+    "Pro ✨": "bg-brand-500 hover:bg-brand-600 text-white",
+    "Enterprise 🤖": "bg-cloud hover:bg-cloud/90 text-white"
+  };
+
   return (
     <div
       className={cn(
-        "flex flex-col rounded-3xl p-8 w-full md:min-w-[280px] md:max-w-[340px] w-full border transition-all",
-        plan.cardClass,
-        plan.highlight && "scale-105 z-10 shadow-2xl"
+        "flex flex-col rounded-3xl p-6 w-full md:min-w-[280px] md:max-w-[340px] bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all",
+        plan.highlight && "shadow-lg"
       )}
     >
-      <h3 className={cn("text-3xl font-bold mb-2", plan.name === "Free" ? "text-white" : "text-black")}>{plan.name}</h3>
-      <p className={cn("mb-4 text-lg", plan.name === "Free" ? "text-white/90" : "text-gray-700")}>{plan.description}</p>
-      <div className="flex items-end gap-2 mb-4">
-        <span className={cn("text-4xl font-bold", plan.name === "Free" ? "text-white" : "text-black")}>{plan.price}</span>
-        <span className="font-semibold text-lg">MXN</span>
-        <span className={cn("text-lg", plan.name === "Free" ? "text-white/80" : "text-gray-500")}>{plan.priceNote}</span>
+      {/* Badge del plan */}
+      <div className="flex items-center gap-2 mb-6">
+        <span className={cn("px-4 py-2 rounded-full text-sm font-semibold", badgeColors[plan.name as keyof typeof badgeColors])}>
+          {plan.name}
+        </span>
+        {plan.highlight && plan.name === "Pro ✨" && (
+          <span className="text-purple-600 text-sm font-semibold">✨ Most popular</span>
+        )}
       </div>
-      
+
+      {/* Precio */}
+      <div className="mb-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
+          <span className="text-gray-500 text-sm">{plan.priceNote}</span>
+        </div>
+        {plan.arr && (
+          <p className="text-sm text-gray-500 mt-1">billed annually</p>
+        )}
+      </div>
+
+      {/* Descripción */}
+      <p className="text-gray-600 mb-6">{plan.description}</p>
+
+      {/* Botón */}
       <Button
         type="button"
         onClick={handleClick}
         disabled={isLoading}
         className={cn(
-          "w-full font-bold rounded-full py-3 mt-6",
-          plan.name === "Free" && "bg-white hover:bg-white/90 text-[#7574D6]",
-          plan.name === "Starter" && "bg-brand-500 hover:bg-brand-600 text-clear",
-          plan.name === "Pro ✨" && "bg-bird hover:bg-[#E5C059] text-dark",
-          plan.name === "Enterprise 🤖" && "bg-cloud hover:bg-[#5FAFA8] text-dark"
+          "w-full font-semibold rounded-full py-3 mb-8",
+          buttonColors[plan.name as keyof typeof buttonColors]
         )}
       >
         {isLoading ? <Spinner /> : plan.buttonText}
       </Button>
 
-      <div className={cn("mt-6 mb-2 font-semibold", plan.arrClass)}>{plan.arr}</div>
-      <div className="mt-2 mb-4">
-        <div className="font-bold mb-2">Incluye:</div>
-        <ul className="space-y-2">
-          {plan.includes.map((inc) => (
-            <li key={inc} className="flex items-center gap-2">
-              <span className={plan.name === "Free" ? "text-white" : "text-black"}>{inc}</span>
+      {/* Lista de features */}
+      <ul className="space-y-3">
+        {plan.includes.map((feature) => {
+          // Extraer emoji y texto
+          const emojiMatch = feature.match(/^(\p{Emoji}+)\s+(.+)$/u);
+          const emoji = emojiMatch ? emojiMatch[1] : "✓";
+          const text = emojiMatch ? emojiMatch[2] : feature;
+
+          return (
+            <li key={feature} className="flex items-start gap-3">
+              <span className="text-xl flex-shrink-0">{emoji}</span>
+              <span className="text-gray-700 text-sm">{text}</span>
             </li>
-          ))}
-        </ul>
-      </div>
-      {/* Sección extra solo si existe y tiene contenido */}
-      {Array.isArray(plan.extra) && plan.extra.length > 0 && (
-        <div className={cn("rounded-xl px-4 py-3 text-sm mt-auto border border-[#e5e5e5]", plan.arrBoxClass)}>
-          {plan.extra[0]}<br />{plan.extra[1]}
-        </div>
-      )}
+          );
+        })}
+      </ul>
     </div>
   );
 };
