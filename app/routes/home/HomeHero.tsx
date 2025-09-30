@@ -216,6 +216,24 @@ export default function HomeHero() {
         </Button>
         </Link>
       </div>
+      <ContainerScroll>
+          <img
+            src="/home/home.webp"
+            alt="hero"
+            height={400}
+            width={1400}
+            className="mx-auto rounded-2xl object-cover h-full object-left-top hidden md:block"
+            draggable={false}
+          />
+              <img
+            src="/home/home-xs.webp"
+            alt="hero"
+            height={400}
+            width={400}
+            className="mx-auto rounded-2xl object-cover h-full object-left-top md:hidden"
+            draggable={false}
+          />
+        </ContainerScroll>
       <div className="mt-16 mb-10 bg-outlines w-full h-[1px] flex justify-center items-center text-center">
       <p className="bg-white w-fit -mt-[3px] px-2 text-sm lg:text-base"><strong>+500 usuarios usan Formmy</strong> para captar leads, <br className="lg:hidden" />automatizar procesos y atender a sus clientes. </p>
         </div>

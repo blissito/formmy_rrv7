@@ -31,7 +31,7 @@ export const BigCTA = ({
       onClick={onClick}
       disabled={isLoading}
       className={cn(
-        "group bg-brand-500 hover:bg-brand-600 transition-all hover:-translate-y-2 text-dark rounded-full px-6 py-3  text-base h-12 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed",
+        "group bg-brand-500 hover:bg-brand-600 transition-all hover:-translate-y-2  rounded-full px-4 py-3  h-12 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed",
         containerClassName,
         className
       )}
@@ -41,7 +41,7 @@ export const BigCTA = ({
         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
       ) : (
         children ?? (
-          <p className={cn("text-base heading", textClassName)}>
+          <p className={cn("text-base heading text-dark", textClassName)}>
             Comenzar gratis 
           </p>
         )

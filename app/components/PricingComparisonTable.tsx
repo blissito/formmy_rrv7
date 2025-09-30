@@ -53,13 +53,11 @@ export function PricingComparisonTable() {
   // Define integrations data
   const integrations = [
     { name: "Deník Calendario ", key: "denik" },
-    { name: "Google Calendar ", key: "calendar" },
     { name: "WhatsApp ", key: "whatsapp" },
+    { name: "Google Calendar ", key: "calendar" },
+    { name: "Gmail (Proximamente)", key: "gmail" },
     { name: "Messenger (Proximamente)", key: "messenger" },
     { name: "Instagram (Proximamente)", key: "instagram" },
-    // { name: "Slack (Proximamente)", key: "slack" },
-    { name: "Shopify (Proximamente)", key: "shopify" },
-    { name: "Wordpress (Proximamente)", key: "wordpress" },
     { name: "Webhooks (Proximamente)", key: "webhooks" },
   ];
 
@@ -68,44 +66,38 @@ export function PricingComparisonTable() {
     "Free": {
       denik: false,
       calendar: false,
+      gmail: false,
       whatsapp: false,
       messenger: false,
       webhooks: false,
       instagram: false,
-      slack: false,
-      shopify: false,
     },
     "Starter": {
       denik: true,
       calendar: false,
+      gmail: false,
       whatsapp: false,
       messenger: false,
       webhooks: false,
       instagram: false,
-      slack: false,
-      shopify: false,
     },
     "Pro ✨": {
       denik: true,
       calendar: true,
+      gmail: true,
       whatsapp: true,
       messenger: true,
       webhooks: false,
       instagram: true,
-      slack: true,
-      shopify: true,
-      wordpress: true,
     },
     "Enterprise 🤖": {
       denik: true,
       calendar: true,
+      gmail: true,
       whatsapp: true,
       messenger: true,
       webhooks: true,
       instagram: true,
-      slack: true,
-      shopify: true,
-      wordpress: true,
     },
   };
 
@@ -121,7 +113,7 @@ export function PricingComparisonTable() {
     },
     // Configuración Section
     { 
-      name: "CONFIGURACIÓN", 
+      name: "Configuración", 
       key: "config_header",
       description: "Ajustes básicos de tu cuenta",
       isSectionHeader: true,
@@ -171,7 +163,7 @@ export function PricingComparisonTable() {
     
     // Modelos Section
     { 
-      name: "MODELOS DE IA", 
+      name: "Modelos de IA", 
       key: "ai_models_header",
       description: "Modelos de inteligencia artificial disponibles",
       isSectionHeader: true,
@@ -219,7 +211,7 @@ export function PricingComparisonTable() {
       isIntegration: false
     },
     { 
-      name: "INTEGRACIONES", 
+      name: "Integraciones", 
       key: "integrations_header",
       description: "Conexiones con otras plataformas",
       isSectionHeader: true,
@@ -280,7 +272,7 @@ export function PricingComparisonTable() {
       priceNote: "/mes",
       forms: "Ilimitados",
       chatbots: "Ilimitados",
-      training: "10MB",
+      training: "50MB",
       conversations: "1,000",
       analytics: "Sentimientos e Intenciones",
       basicModels: "GPT-5 Mini, Claude 3.5 Haiku",
@@ -344,13 +336,13 @@ export function PricingComparisonTable() {
 
   return (
     <div className="max-w-7xl mx-auto my-20 md:my-40 px-4">
-      <div className="text-center mb-12">
+      <div className="text-center mb-16">
         <h2 className="lg:text-6xl md:text-4xl text-3xl font-bold text-dark mb-4">Compara los Planes</h2>
-        <p className="text-lg text-metal max-w-2xl mx-auto">Encuentra el plan perfecto para tu negocio y compara todas las características incluidas</p>
+        <p className="text-lg text-gray-500 max-w-2xl mx-auto">Encuentra el plan perfecto para tu negocio y compara todas las características incluidas</p>
       </div>
 
-      <div className="overflow-x-auto shadow rounded-2xl border border-outlines bg-white">
-        <table className="min-w-[800px] md:min-w-full border-collapse">
+      <div className="overflow-x-auto">
+        <table className="min-w-[800px] md:min-w-full border-collapse bg-white rounded-3xl shadow-sm">
           <colgroup>
             <col className="w-[250px] md:w-1/3" />
             <col className="w-[150px] md:w-1/6" />
@@ -359,17 +351,21 @@ export function PricingComparisonTable() {
             <col className="w-[150px] md:w-1/6" />
           </colgroup>
         <thead>
-          <tr>
-            <th className="p-4 text-left border-b border-outlines w-1/3 bg-white">
-              <div className="font-bold text-lg">Características</div>
-              <div className="text-sm text-metal">Compara lo que incluye cada plan</div>
-            </th>
-            {planData.map((plan) => {
-              const colors = planColors[plan.name as keyof typeof planColors];
+          <tr className="bg-white border-b border-outlines/50" >
+            <th className="p-6 text-left w-1/3 bg-white"></th>
+            {planData.map((plan, index) => {
+              const badgeColors = {
+                "Free": "bg-gray-100 text-gray-700",
+                "Starter": "bg-yellow-100 text-yellow-700",
+                "Pro ✨": "bg-brand-100 text-brand-700",
+                "Enterprise 🤖": "bg-cloud/20 text-cloud"
+              };
+
               return (
-                <th key={plan.name} className={`p-4 text-center border-b ${colors.border} w-1/6 ${colors.bg} transition-all duration-200`}>
-                  <div className={`font-bold text-xl mb-1 whitespace-nowrap ${colors.text}`}>{plan.name}</div>
-                  <div className={`text-sm ${colors.text} opacity-70 font-regular`}>{plan.description}</div>
+                <th key={plan.name} className="p-6 text-center w-1/6">
+                  <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${badgeColors[plan.name as keyof typeof badgeColors]}`}>
+                    {plan.name}
+                  </span>
                 </th>
               );
             })}
@@ -380,12 +376,9 @@ export function PricingComparisonTable() {
             // Handle section headers
             if (feature.isSectionHeader) {
               return (
-                <tr key={feature.key} className="bg-dark/5">
-                  <td colSpan={planData.length + 1} className="p-4">
-                    <div className="font-bold text-xl text-dark">{feature.name}</div>
-                    {feature.description && (
-                      <div className="text-base text-metal mt-1 ">{feature.description}</div>
-                    )}
+                <tr key={feature.key} className="border-t border-outlines/50">
+                  <td colSpan={planData.length + 1} className="p-6 pt-12 pb-6">
+                    <div className="font-bold text-3xl text-gray-900 heading ">{feature.name}</div>
                   </td>
                 </tr>
               );
@@ -395,29 +388,32 @@ export function PricingComparisonTable() {
             if (feature.isModel || feature.isIntegration) {
               const modelKey = feature.key.replace('ai_model_', '').replace('integration_', '');
               return (
-                <tr key={feature.key} className="hover:bg-gray-50/50 transition-colors duration-150">
-                  <td className="p-4 border-b border-outlines bg-white">
-                    <div className="font-medium text-lg">
+                <tr key={feature.key} className="border-t border-outlines/50">
+                  <td className="p-5 py-4">
+                    <div className="font-normal text-sm text-dark heading">
                       {feature.name}
                     </div>
-                    <div className="text-sm text-irongray mt-1">{feature.description}</div>
                   </td>
                   {planData.map((plan) => {
-                    const colors = planColors[plan.name as keyof typeof planColors];
-                    const isIncluded = feature.isModel 
+                    const isIncluded = feature.isModel
                       ? planModelsIncluded[plan.name]?.[modelKey]
                       : planIntegrationsIncluded[plan.name]?.[modelKey];
-                    
+
+                    const checkColors = {
+                      "Free": "text-gray-500",
+                      "Starter": "text-yellow-600",
+                      "Pro ✨": "text-brand-600",
+                      "Enterprise 🤖": "text-cloud"
+                    };
+
                     return (
-                      <td key={`${plan.name}-${feature.key}`} className={`p-4 text-center border-b ${colors.border} ${colors.bg}/30 transition-all duration-150`}>
+                      <td key={`${plan.name}-${feature.key}`} className="p-5 py-4 text-center">
                         {isIncluded ? (
-                          <span className={`inline-flex w-7 h-7 ${colors.accent} rounded-full items-center justify-center text-white mx-auto shadow-sm`}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </span>
+                          <svg className={`w-6 h-6 mx-auto ${checkColors[plan.name as keyof typeof checkColors]}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
                         ) : (
-                          <span className="text-gray-400 font-medium">—</span>
+                          <span className="text-gray-300 text-sm">—</span>
                         )}
                       </td>
                     );
@@ -428,39 +424,38 @@ export function PricingComparisonTable() {
 
             // Handle regular features
             return (
-              <tr key={feature.key} className="hover:bg-gray-50/50 transition-colors duration-150">
-                <td className="p-4 border-b border-outlines bg-white">
-                  <div className="font-medium text-lg">{feature.name}</div>
+              <tr key={feature.key} className="border-t border-outlines/50">
+                <td className="p-5 py-4">
+                  <div className="font-medium text-sm text-dark heading">{feature.name}</div>
                   {feature.description && (
-                    <div className="text-sm text-irongray mt-1">{feature.description}</div>
+                    <div className="text-xs text-irongray mt-1">{feature.description}</div>
                   )}
                 </td>
                 {planData.map((plan) => {
-                  const colors = planColors[plan.name as keyof typeof planColors];
-                  const value = feature.key === 'price' 
-                    ? `${plan.price}${plan.priceNote}` 
+                  const value = feature.key === 'price'
+                    ? `${plan.price}${plan.priceNote}`
                     : plan[feature.key as keyof typeof plan] || '—';
-                  
+
                   const cleanValue = (val: any) => {
                     if (!val || val === '—') return null;
-                    return typeof val === 'string' 
-                      ? val.replace('📋', '').replace('🤖', '').trim() 
+                    return typeof val === 'string'
+                      ? val.replace('📋', '').replace('🤖', '').trim()
                       : val;
                   };
-                  
+
                   const displayValue = cleanValue(value);
                   const isPrice = feature.key === 'price';
-                  
+
                   return (
-                    <td key={`${plan.name}-${feature.key}`} className={`p-4 text-center border-b ${colors.border} ${colors.bg}/30 transition-all duration-150`}>
+                    <td key={`${plan.name}-${feature.key}`} className="p-5 py-4 text-center">
                       {displayValue ? (
-                        <div className={`font-semibold text-base md:text-xl ${
-                          isPrice ? `${colors.text} text-2xl md:text-3xl` : colors.text
+                        <div className={`${
+                          isPrice ? 'text-gray-900 text-xl font-bold' : 'text-gray-700 text-base font-medium'
                         }`}>
                           {displayValue}
                         </div>
                       ) : (
-                        <div className="text-gray-400 font-medium">—</div>
+                        <div className="text-gray-300 text-sm">—</div>
                       )}
                     </td>
                   );

@@ -126,7 +126,6 @@ export const ChatHero = () => {
         <Form method="post" className="mt-10 mx-auto md:mx-0" action="/api/login">
           <BigCTA type="submit" name="intent" value="google-login" />
         </Form>
- 
       </div>
       <div className=" flex justify-center items-start flex-nowrap gap-8 relative">
  
@@ -151,7 +150,7 @@ export const ChatHero = () => {
           >
               <h3 className="font-semibold text-dark ">Personaliza tu chat</h3>
               <div className="grid place-content-center h-full">
-              <div className=" w-12 h-12  rounded-full mx-auto border border-[#953AC6] overflow-hidden"><img src="/home/chat.png" /></div>
+              <div className=" w-12 h-12  rounded-full mx-auto border  overflow-hidden"><img src="/dash/logo-full.svg" /></div>
               <p className="text-base text-dark leading-relaxed mt-2 text-center">¡Hola, soy Ghosty!</p>
               <div className="w-12 mx-auto mt-2 h-5 rounded bg-brand-500"></div>
               </div>
@@ -322,9 +321,7 @@ const ChatPreview = ({ conversations, current, onPrev, onNext, onRestart }: {
     <motion.div 
       id="chat"
       className="border border-gray-300 bg-white rounded-[48px] p-4 md:px-5 ml-3 w-[280px] lg:w-[332px] lg:h-[650px] h-[500px] flex flex-col justify-end shadow-lg relative overflow-hidden"
-      initial={{ opacity: 0, y: -100 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+
     >
   
       <div className="absolute flex flex-col z-10 border-b border-outlines left-0 top-0 w-full h-16 text-white flex  items-center  text-xl font-medium">

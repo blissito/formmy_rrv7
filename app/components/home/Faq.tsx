@@ -220,7 +220,7 @@ export const Question = ({
           setOpen((o) => !o);
         }}
       >
-        <p className="w-[90%]  text-dark dark:text-[#D5D5D5] ">{question}</p>
+        <p className="w-[90%]  text-dark heading ">{question}</p>
         {open ? (
           <IoIosArrowDown className="rotate-180 transition-all text-dark dark:text-[#D5D5D5]" />
         ) : (
@@ -235,7 +235,7 @@ export const Question = ({
             exit={{ opacity: 0, height: 0 }}
             transition={{ type: "spring", duration: 0.4, bounce: 0 }}
           >
-            <p className="text-lg text-gray-600 dark:text-irongray font-extralight px-6 pb-8">
+            <p className="text-lg text-metal paragraph font-extralight px-6 pb-8">
               {answer}
             </p>
           </motion.div>

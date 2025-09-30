@@ -10,6 +10,9 @@ import getBasicMetaTags from "~/utils/getBasicMetaTags";
 import { Quote } from "./home/Quote";
 import { FormSteps } from "./forms/FormSteps";
 import { FormComments } from "./forms/FormComments";
+import { Form } from "react-router";
+import { BigCTA } from "~/components/BigCTA";
+import { ContainerScroll } from "~/components/home/ContainerScroll";
 
 export const meta = () =>
   getBasicMetaTags({
@@ -76,18 +79,41 @@ export default function Formularios() {
   ];
 
   return (
-    <main className="bg-clear pt-40 md:pt-64  ">
+    <main className="bg-clear  ">
       <HomeHeader />
-      <section className="max-w-4xl mx-auto px-4 md:px-[5%] xl:px-0">
-        <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 lg:leading-[1.2]">
+      <div className="max-w-7xl mb-10 min-h-svh pt-28  mx-auto px-4 md:px-[5%] xl:px-0 flex  items-center justify-start md:justify-between gap-0 md:gap-16 ">
+        <div className="w-full lg:w-[50%] flex flex-col ">
+          <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 !leading-[1.1] text-center md:text-left">
           Formmys para tu sitio web
-        </h1>
-        <p className="paragraph text-metal font-light text-lg md:text-2xl   text-center mb-4 md:mb-0">
-          Crea formularios personalizados para tu sitio web, recopila
-          información de tus usuarios y gestiona tus datos de manera sencilla y
-          segura con Formmy.
-        </p>
-      </section>
+          </h1>
+          <p className="text-metal text-lg md:text-2xl font-light   text-left ">
+          Crea formularios personalizados para tu sitio web, recopila información de tus usuarios y gestiona tus datos de manera sencilla y segura con Formmy.
+          </p>
+          <Form method="post" className="mt-10 mx-auto md:mx-0" action="/api/login">
+            <BigCTA type="submit" name="intent" value="google-login" />
+          </Form>
+        </div>
+        <div className="flex-1">
+        <ContainerScroll>
+        <img
+          src="/home/home.webp"
+          alt="hero"
+          height={400}
+          width={1400}
+          className="mx-auto rounded-2xl object-cover h-full object-left-top hidden md:block"
+          draggable={false}
+        />
+            <img
+          src="/home/home-xs.webp"
+          alt="hero"
+          height={400}
+          width={400}
+          className="mx-auto rounded-2xl object-cover h-full object-left-top md:hidden"
+          draggable={false}
+        />
+      </ContainerScroll>
+        </div>
+      </div>
       <section>
         <div className="flex flex-col items-center  max-w-7xl mx-auto w-full mt-4 mb-0 md:mb-10 px-4 md:px-[5%] xl:px-0">
           <div className="flex  flex-col md:flex-row items-center justify-around w-full gap-10 md:gap-20 relative">

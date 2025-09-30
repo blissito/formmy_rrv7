@@ -128,7 +128,7 @@ export const GeneralCallToAction = () => {
         </div>
         <Form method="post" action="/api/login" id="start_footer">
           <BigCTA
-            className="mx-auto w-[180px]"
+            className="mx-auto w-[200px]"
             type="submit"
             name="intent"
             value="google-login"

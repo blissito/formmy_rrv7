@@ -33,7 +33,7 @@ export const plans: Plan[] = [
     includes: [
       "📋 Hasta 3 formularios con respuestas ilimitadas",
       "🎨 Personalización básica de formularios",
-      "🤖 Chatbot por 30 días",
+      "🤖 Chatbot por 60 días",
     ],
     highlight: true,
     cardClass: "bg-[#7574D6] text-white border-none shadow-xl",
@@ -72,7 +72,7 @@ export const plans: Plan[] = [
     buttonAction: "/api/stripe",
     intent: "pro_plan",
     arr: "Ahorra 15% al pagar anualmente",
-    arrClass: "text-[#DAB23F] underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
+    arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
     includes: [
         "📋 Todo lo que incluye el plan Starter",
         "🤖 10 chatbots",
@@ -134,8 +134,8 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
   const badgeColors = {
     "Free": "bg-gray-100 text-gray-800",
     "Starter": "bg-yellow-100 text-yellow-800",
-    "Pro ✨": "bg-brand-100 text-brand-800",
-    "Enterprise 🤖": "bg-cloud/20 text-cloud"
+    "Pro ✨": "bg-brand-100 text-[#6463A3]",
+    "Enterprise 🤖": "bg-cloud/20 text-teal-800"
   };
 
   const buttonColors = {
@@ -145,11 +145,19 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
     "Enterprise 🤖": "bg-cloud hover:bg-cloud/90 text-white"
   };
 
+  const hoverBgColors = {
+    "Free": "hover:bg-gray-500/5",
+    "Starter": "hover:bg-yellow-500/10",
+    "Pro ✨": "hover:bg-brand-500/10",
+    "Enterprise 🤖": "hover:bg-cloud/10"
+  };
+
   return (
     <div
       className={cn(
-        "flex flex-col rounded-3xl p-6 w-full md:min-w-[280px] md:max-w-[340px] bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all",
-        plan.highlight && "shadow-lg"
+        "flex flex-col rounded-3xl p-6 w-full md:min-w-[280px] md:max-w-[340px] bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300",
+        plan.highlight && "shadow-lg",
+        hoverBgColors[plan.name as keyof typeof hoverBgColors]
       )}
     >
       {/* Badge del plan */}
@@ -158,7 +166,7 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
           {plan.name}
         </span>
         {plan.highlight && plan.name === "Pro ✨" && (
-          <span className="text-purple-600 text-sm font-semibold">✨ Most popular</span>
+          <span className="text-brand-600 text-sm font-semibold">✨ Más popular</span>
         )}
       </div>
 
@@ -168,9 +176,6 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
           <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
           <span className="text-gray-500 text-sm">{plan.priceNote}</span>
         </div>
-        {plan.arr && (
-          <p className="text-sm text-gray-500 mt-1">billed annually</p>
-        )}
       </div>
 
       {/* Descripción */}
@@ -192,14 +197,14 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
       {/* Lista de features */}
       <ul className="space-y-3">
         {plan.includes.map((feature) => {
-          // Extraer emoji y texto
-          const emojiMatch = feature.match(/^(\p{Emoji}+)\s+(.+)$/u);
-          const emoji = emojiMatch ? emojiMatch[1] : "✓";
-          const text = emojiMatch ? emojiMatch[2] : feature;
+          // Extraer emoji y texto - buscar hasta el primer espacio después de caracteres especiales
+          const parts = feature.trim().split(/\s+/);
+          const emoji = parts[0]; // Primer elemento (emoji)
+          const text = parts.slice(1).join(' '); // Resto del texto
 
           return (
-            <li key={feature} className="flex items-start gap-3">
-              <span className="text-xl flex-shrink-0">{emoji}</span>
+            <li key={feature} className="flex items-center gap-3">
+              <span className="text-xl flex-shrink-0 self-start">{emoji}</span>
               <span className="text-gray-700 text-sm">{text}</span>
             </li>
           );
