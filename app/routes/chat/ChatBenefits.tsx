@@ -4,92 +4,49 @@ import { CgWebsite } from "react-icons/cg";
 import { HiOutlineDocumentText } from "react-icons/hi";
 import { TbWritingSign } from "react-icons/tb";
 import { cn } from "~/lib/utils";
+import { IAModelCard } from "./IAModels";
 
 export const ChatBenefits = () => {
     return (
       <section
         id="cards"
-        className="w-full max-w-7xl mx-auto my-20 md:my-40 px-4"
+        className="w-full max-w-7xl mx-auto  py-16 lg:py-32  px-4"
       >
         <h2 className="text-3xl md:text-4xl lg:text-5xl  font-bold text-center mb-10 md:mb-16 text-dark">
           Por qué debes probar Formmy
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <BentoCard className="col-span-1 md:col-span-2 flex flex-col justify-between p-6 md:p-8 relative">
-            {/* Línea punteada SVG conectando los cuadrados */}
-            <svg
-              className="absolute left-1/2 top-0 -translate-x-1/2 z-10"
-              width="312"
-              height="180"
-              viewBox="0 0 312 100"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* Línea vertical más larga */}
-              <path
-                d="M156 0 V56"
-                stroke="#D1D5DB"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-              {/* Línea horizontal más abajo */}
-              <path
-                d="M28 56 H284"
-                stroke="#D1D5DB"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-              {/* Líneas cortas que bajan a cada cuadrado */}
-              <path
-                d="M28 56 V72"
-                stroke="#D1D5DB"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-              <path
-                d="M100 56 V72"
-                stroke="#D1D5DB"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-              <path
-                d="M184 56 V72"
-                stroke="#D1D5DB"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-              <path
-                d="M284 56 V72"
-                stroke="#D1D5DB"
-                strokeWidth="2"
-                strokeDasharray="6 6"
-              />
-            </svg>
-            <div className="flex items-center justify-center gap-4 mt-[78px] relative z-20">
-              <div className="rounded-xl bg-white shadow p-3 flex items-center justify-center w-14 h-14">
-                {/* AI Placeholder */}
-                <img className="w-10 h-10" src="/home/tropic.svg" alt="llama" />
-              </div>
-              <div className="rounded-xl bg-white shadow p-3 flex items-center justify-center w-14 h-14">
-                {/* Google Icon */}
-                <img className="w-10 h-10" src="/home/gemini.svg" alt="llama" />
-              </div>
-              <div className="rounded-xl bg-white shadow p-3 flex items-center justify-center w-14 h-14">
-                {/* OpenAI Icon */}
-                <img className="w-10 h-10" src="/home/chatgpt.svg" alt="llama" />
-              </div>
-              <div className="rounded-xl bg-white shadow p-3 flex items-center justify-center w-14 h-14">
-                {/* Figma Icon */}
-                <img className="w-10 h-10" src="/home/llama.svg" alt="llama" />
-              </div>
-            </div>
+               <div 
+                 style={{
+                     transformStyle: 'preserve-3d' as const,
+                     perspective: "1500px"
+                 }}
+                 className="grid grid-cols-4 gap-8 md:gap-4 lg:gap-8 mt-14 mx-auto px-4">
+                   <IAModelCard 
+                     img="/home/ollama.png"
+                     initialRotation={{ x: 25, y: 35, z: 2 }}
+                   />
+                   <IAModelCard 
+                     img="/home/gpt.webp"
+                     initialRotation={{ x: 25, y: -35, z: 2 }}
+                   />
+                   <IAModelCard 
+                     img="/home/claude.webp"
+                     initialRotation={{ x: 0, y: 0, z: 0 }}
+                   />
+                   <IAModelCard 
+                     img="/home/gmeini.webp"
+                     initialRotation={{ x: 25, y: 35, z: 2 }}
+                   />
+
+                 </div>
             <div>
               <h2 className="text-2xl heading ">
-                Está diseñado específicamente para LLM's
+          Usa los mejores modelos de IA
               </h2>
               <p className="text-metal">
-                Usa modelos de lenguaje con capacidades de razonamiento para
-                respuestas efectivas a consultas complejas.
+              Nuestros agentes utilizan modelos de inteligencia artificial de última generación para ofrecer respuestas precisas y naturales.
               </p>
             </div>
           </BentoCard>
@@ -169,8 +126,8 @@ export const ChatBenefits = () => {
             <div className="flex flex-col gap-6 items-start justify-center w-full pb-6">
               {/* Mensaje usuario */}
               <div className="flex justify-end w-full">
-                <div className="bg-clear border border-gray-200 rounded-2xl px-3 py-2 flex items-center gap-3 shadow-sm">
-                  <span className="text-gray-800">
+                <div className="bg-dark text-white font-light border border-gray-200 rounded-2xl px-3 py-2 flex items-center gap-3 shadow-sm">
+                  <span className="text-white/80">
                     Hola, no puedo acceder a mi cuenta y ya seguí los pasos
                   </span>
                   <img
@@ -182,7 +139,7 @@ export const ChatBenefits = () => {
               </div>
               {/* Mensaje IA */}
               <div className="flex justify-start w-full">
-                <div className="bg-brand-100 rounded-2xl px-3 py-2 flex items-center gap-3 shadow-sm">
+                <div className="bg-white rounded-2xl px-3 py-2 flex items-center gap-3 shadow-sm">
                   <span className="inline-flex items-center justify-center min-w-8 min-h-8 rounded-full bg-brand-500 text-clear text-lg">
                     ✨
                   </span>
@@ -192,10 +149,9 @@ export const ChatBenefits = () => {
                 </div>
               </div>
             </div>
-            <h2 className="text-2xl heading mt-0">Potencia la eficacia</h2>
+            <h2 className="text-2xl heading mt-0">Busca eficiencia</h2>
             <p className="text-metal">
-              Da instrucciones a tu agente sobre cuándo escalar consultas a un
-              agente humano.
+              Enseña a tu agente cuándo escalar consultas a un agente humano.
             </p>
           </BentoCard>
           <BentoCard className="p-6 md:p-8">
@@ -212,41 +168,41 @@ export const ChatBenefits = () => {
                 <div className="h-4 bg-gray-100 rounded-full w-4/5 mx-auto" />
               </div>
             </div>
-            <h2 className="text-2xl heading mt-6">
+            <h2 className="text-[22px] heading mt-10">
               {" "}
               69% de los usuarios prefieren hablar con un chatbot
             </h2>
           </BentoCard>
           <BentoCard className="col-span-1 md:col-span-2 p-6 md:p-8">
             <div className="grid grid-cols-12 gap-3">
-              <div className="bg-brand-100 h-10 rounded-full flex items-center gap-2 px-2 w-fit col-span-12 ">
+              <div className="bg-white border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-12 ">
                 <div className="w-8 h-8 bg-[#BBF0FF] rounded-full flex items-center justify-center">
                   <TbWritingSign />
                 </div>
                 Lenguaje natural (escribe directamente la información)
               </div>
   
-              <div className="bg-brand-100 h-10 rounded-full flex items-center gap-2 px-2 w-fit col-span-8 col-start-3">
+              <div className="bg-white border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-8 col-start-3">
                 <div className="w-8 h-8 bg-[#EDC75A] rounded-full flex items-center justify-center">
                   <CgWebsite />
                 </div>
                 Sitios web (tu propio website)
               </div>
   
-              <div className="bg-brand-100 h-10 rounded-full flex items-center gap-2 px-2 w-fit col-span-8 col-start-5">
+              <div className="bg-white border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-8 col-start-5">
                 <div className="w-8 h-8 bg-[#F4B9E7] rounded-full flex items-center justify-center">
                   <BsQuestion />
                 </div>
                 Preguntas específicas
               </div>
-              <div className="bg-brand-100 h-10 rounded-full flex items-center gap-2 px-2 w-fit col-span-8 col-start-7">
+              <div className="bg-white border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-8 col-start-7">
                 <div className="w-8 h-8 bg-[#B2E7CA] rounded-full flex items-center justify-center">
                   <HiOutlineDocumentText />
                 </div>
                 Documentos pdf, doc, csv
               </div>
             </div>
-            <h2 className="text-2xl heading mt-4">Es fácil de entrenar</h2>
+            <h2 className="text-2xl heading mt-8">Es muy fácil de entrenar</h2>
             <p className="text-metal">
               Integra diversas fuentes de información para enriquecer el
               conocimiento y las capacidades de tus agentes.
@@ -268,7 +224,7 @@ export const ChatBenefits = () => {
     return (
       <div
         className={cn(
-          "border border-gray-300 rounded-2xl bg-clear min-h-fit md:min-h-[340px] text-dark",
+          "border border-gray-300/50 rounded-2xl bg-clear min-h-fit md:min-h-[340px] text-dark bg-outlines/20",
           className
         )}
       >

@@ -90,7 +90,7 @@ export default function HomeTestimonials() {
     },
     {
       name: "Abraham González",
-      company: "Diseñador gráfico",
+      company: "Restaurante Mi ranchito",
       comment: "Agregar Formmy a mi website personal fue rápido y fácil. Me encantaron los formularios y el chat IA. .",
       img: "/home/abraham.webp",
     },
@@ -105,7 +105,7 @@ export default function HomeTestimonials() {
       <p className="paragraph text-gray-600 font-light text-lg md:text-xl md:text-2xl text-center mb-10 md:mb-16">
         Formularios + chat AI = menos trabajo, más resultados.
       </p>
-      <div className="flex flex-wrap items-start justify-center h-fit lg:h-[800px] gap-8 ">
+      <div className="flex flex-wrap items-start justify-center h-fit lg:h-[840px] gap-8 ">
         <div className="flex flex-col gap-8">
           <TestimonialCard 
             ref={constraintsRef}

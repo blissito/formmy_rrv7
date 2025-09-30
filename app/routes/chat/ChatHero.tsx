@@ -106,7 +106,7 @@ export const ChatHero = () => {
       },
       {
         from: "agent" as const,
-        text: "¡De nada! Si tienes más preguntas, no dudes en escribirme. ¡Que tengas un excelente día! 😊",
+        text: "Si tienes más preguntas, no dudes en escribirme. ¡Que tengas un excelente día! 😊",
       },
     ],
   ];
@@ -146,25 +146,16 @@ export const ChatHero = () => {
               damping: 12
             }}
           >
-            <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: -12 }}>
-              <div className="flex items-center gap-2 mb-3 ]">
-                <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">📊</div>
-                <span className="text-sm font-medium text-gray-600">Stats</span>
+            <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: -12 }}
+            className="flex flex-col" 
+          >
+              <h3 className="font-semibold text-dark ">Personaliza tu chat</h3>
+              <div className="grid place-content-center h-full">
+              <div className=" w-12 h-12  rounded-full mx-auto border border-[#953AC6] overflow-hidden"><img src="/home/chat.png" /></div>
+              <p className="text-base text-dark leading-relaxed mt-2 text-center">¡Hola, soy Ghosty!</p>
+              <div className="w-12 mx-auto mt-2 h-5 rounded bg-brand-500"></div>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <div className="text-2xl font-bold text-gray-800">50+</div>
-                  <div className="text-xs text-gray-500">Projects completed</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-800">7+</div>
-                  <div className="text-xs text-gray-500">Years experience</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-800">100+</div>
-                  <div className="text-xs text-gray-500">Customers</div>
-                </div>
-              </div>
+            
             </FeatureCardWithHover>
           </motion.div>
 
@@ -183,24 +174,44 @@ export const ChatHero = () => {
           >
             <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: 8 }}>
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 bg-gray-700 rounded flex items-center justify-center text-white text-xs">📄</div>
-                <span className="text-sm font-medium text-gray-600">Resume</span>
+                  <span className=" font-semibold text-dark">Centraliza tus mensajes</span>
               </div>
-              <div className="space-y-3">
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <div className="text-xs font-medium text-gray-700">Position or Role</div>
-                  <div className="text-xs text-gray-500">Company Name</div>
-                  <div className="text-xs text-gray-400">Mon, Year - Mon, Year</div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
+                  <div className="w-6 h-6 rounded-full bg-cloud flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                    JD
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-sm font-semibold text-gray-900">John Lenon</div>
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">¿Tienen disponibilidad para esta semana?</div>
+                  </div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <div className="text-xs font-medium text-gray-700">Position or Role</div>
-                  <div className="text-xs text-gray-500">Company Name</div>
-                  <div className="text-xs text-gray-400">Mon, Year - Mon, Year</div>
+
+                <div className="flex items-center gap-3 bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
+                  <div className="w-6 h-6 rounded-full bg-bird flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                    MR
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-sm font-semibold text-gray-900">María Rodríguez</div>
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">Gracias por la información 👍</div>
+                  </div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-2">
-                  <div className="text-xs font-medium text-gray-700">Position or Role</div>
-                  <div className="text-xs text-gray-500">Company Name</div>
-                  <div className="text-xs text-gray-400">Mon, Year - Mon, Year</div>
+
+                <div className="flex items-center gap-3 bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                    CS
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-sm font-semibold text-gray-900">Carlos Sánchez</div>
+                      <div className="text-xs text-gray-400">Monday</div>
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">Me interesa conocer más sobre el servicio</div>
+                  </div>
                 </div>
               </div>
             </FeatureCardWithHover>
@@ -220,31 +231,14 @@ export const ChatHero = () => {
             }}
           >
             <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: -6 }}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 bg-green-500 rounded flex items-center justify-center text-white text-xs">📞</div>
-                <span className="text-sm font-medium text-gray-600">Contact</span>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">Name</div>
-                  <div className="h-8 bg-gray-50 rounded border"></div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">Email</div>
-                  <div className="h-8 bg-gray-50 rounded border"></div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">Phone</div>
-                  <div className="h-8 bg-gray-50 rounded border"></div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">Message</div>
-                  <div className="h-12 bg-gray-50 rounded border"></div>
-                </div>
-                <button className="w-full bg-gray-800 text-white py-2 rounded text-xs font-medium">
-                  Contact Me
-                </button>
-              </div>
+            <h3 className="font-semibold text-dark  mb-3">Entrena a tu agente</h3>
+            <div className="w-full h-[80%] border border-dashed border-outlines  p-4 rounded-2xl grid place-content-center relative">
+              <div className="absolute w-8 h-8  rounded-full -top-3 right-3 overflow-hidden border-2 border-brand-500"> <img className="w-full h-full object-cover" src="https://images.pexels.com/photos/159519/back-to-school-paper-colored-paper-stationery-159519.jpeg" /></div>
+              <div className="absolute w-6 h-6  rounded-full left-2 bottom-4 overflow-hidden border-2 border-sky"> <img className="w-full h-full object-cover" src="https://images.pexels.com/photos/4792285/pexels-photo-4792285.jpeg" /></div>
+
+             <BsCloudUpload className="text-3xl text-metal mx-auto"/>
+              <p className="text-xs text-metal leading-relaxed text-center mt-2">Arrastra o selecciona los archivos </p>
+            </div>
             </FeatureCardWithHover>
           </motion.div>
         </div>
@@ -337,8 +331,8 @@ const ChatPreview = ({ conversations, current, onPrev, onNext, onRestart }: {
       <div className="w-full h-12 bg-dark py-2 px-8 text-xs flex justify-between "><p>10:30</p><div className="flex gap-2"><FaSignal />   <FaWifi /><IoBatteryFull /></div>
 
       </div>
-      <div className=" w-full bg-dark text-white flex gap-3 items-center px-6 text-xl font-medium px-6">
-        <img src="/home/ghosty-avatar.svg" />
+      <div className=" w-full bg-dark text-white flex gap-3 items-center px-6 text-xl font-medium px-6 py-2">
+        <img className="w-8" src="/home/ghosty-avatar.svg" />
         Ghosty
         </div>
       </div>

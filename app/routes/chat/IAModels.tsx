@@ -58,7 +58,7 @@ interface IAModelCardProps {
   };
 }
 
-const IAModelCard = ({className, img, style, initialRotation = { x: 0, y: 0, z: 0 }}: IAModelCardProps) => {
+export const IAModelCard = ({className, img, style, initialRotation = { x: 0, y: 0, z: 0 }}: IAModelCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [rotation, setRotation] = useState({ x: 0, y: 0 });

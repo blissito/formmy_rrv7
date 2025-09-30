@@ -5,9 +5,11 @@ import { CompaniesScroll } from "~/components/home/CompaniesScroll";
 import { WitoutFormmy } from "~/components/home/WithoutFormmy";
 import { FullBanner } from "./home/FullBanner";
 import { Registration, Suscription } from "~/components/home/FormmysTypes";
-import { Steper } from "~/components/Steper";
 import { FullComment } from "~/components/common/FullComment";
 import getBasicMetaTags from "~/utils/getBasicMetaTags";
+import { Quote } from "./home/Quote";
+import { FormSteps } from "./forms/FormSteps";
+import { FormComments } from "./forms/FormComments";
 
 export const meta = () =>
   getBasicMetaTags({
@@ -74,7 +76,7 @@ export default function Formularios() {
   ];
 
   return (
-    <main className="bg-clear pt-40 md:pt-64 overflow-hidden">
+    <main className="bg-clear pt-40 md:pt-64  ">
       <HomeHeader />
       <section className="max-w-4xl mx-auto px-4 md:px-[5%] xl:px-0">
         <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 lg:leading-[1.2]">
@@ -142,40 +144,15 @@ export default function Formularios() {
           />
         </div>
       </section>
-      <WitoutFormmy />
-        <section className="grid-cols-2 max-w-7xl mx-auto px-4 ">
-             <FullComment
-               className="bg-[#FBE05D]"
-               image="https://i.imgur.com/FwjZ8X2.jpg"
-               client="Mariana López"
-               comment={<div className="flex flex-col gap-2">
-               <p>Como desarrolladora, he implementado Formmy en varios sitios de clientes y la experiencia siempre ha sido excelente. La configuración es rápida, la integración es limpia y no requiere ningún grado de complejidad, lo cual es ideal para proyectos donde se busca eficiencia sin sacrificar funcionalidad.
-               </p>
-               <p>Mis clientes han quedado encantados con la facilidad de uso y la fiabilidad del servicio. Además, el diseño del dashboard es intuitivo y profesional.</p>
-              <p>Formmy destaca por su simplicidad bien pensada. Lo recomiendo totalmente para quienes buscan una solución sólida y rápida para formularios.</p>
-               </div>}
-               clientCompany="Pithaya Agency"
-             />
-      </section>
-      <section
-        id="steper"
-        className="w-full md:min-h-fit max-w-7xl mx-auto my-20 md:my-40 px-4 md:px-[5%] xl:px-0 min-h-[700px]"
-      >
-        <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center text-dark">
-          Crea tu primer Formmy con un par de clics
-        </h3>
-        <Steper
-          steps={stepsWithImages.map(({ title, desc }) => ({ title, desc }))}
-          renderRight={(selectedStep) => (
-            <img
-              src={stepsWithImages[selectedStep].image}
-              alt={stepsWithImages[selectedStep].title}
-              className=" max-h-fit md:max-h-[400px] max-w-full object-contain rounded-2xl shadow-lg"
-            />
-          )}
-          autoAdvanceMs={10000}
-        />
-      </section>
+     
+      <Quote highlightStyle={{backgroundColor: "#EDC75A"}} beforeHighlight="Mis clientes han quedado " afterHighlight="con la facilidad de uso y la fiabilidad del servicio. Además, el diseño del dashboard es intuitivo y profesional." highlightText="encantados" authorName="Mariana López" authorTitle="Pithaya Agency" authorImage="https://i.imgur.com/FwjZ8X2.jpg"/>
+
+      <FormSteps
+        steps={stepsWithImages}
+        title="Crea tu primer Formmy con un par de clics"
+      />
+            <WitoutFormmy />
+      <FormComments />
 
       <GeneralCallToAction />
       <HomeFooter />
