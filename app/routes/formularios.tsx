@@ -99,7 +99,7 @@ export default function Formularios() {
         <div className="w-full lg:w-[50%] relative mt-10 lg:mt-0">
             <Compare
                     firstImage="/assets/with-formmy.svg"
-                    secondImage="/home/contacto2.png"
+                    secondImage="/home/contacto2.webp"
                     firstImageClassName="object-cover object-left-top"
                     secondImageClassname="object-cover object-left-top"
                     className="h-[300px] md:h-[400px] lg:h-[500px] w-full mt-0 border border-outlines rounded-[24px] md:rounded-[32px] lg:rounded-[40px]"

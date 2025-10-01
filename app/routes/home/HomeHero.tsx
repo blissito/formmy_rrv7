@@ -218,7 +218,7 @@ export default function HomeHero() {
       </div>
       <ContainerScroll>
           <img
-            src="/home/ghosty.png"
+            src="/home/ghosty.webp"
             alt="hero"
             height={400}
             width={1400}
@@ -226,7 +226,7 @@ export default function HomeHero() {
             draggable={false}
           />
               <img
-            src="/home/ghosty-mobile.png"
+            src="/home/ghosty-mobile.webp"
             alt="hero"
             height={400}
             width={400}
