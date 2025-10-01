@@ -91,7 +91,7 @@ export const IAModelCard = ({className, img, style, initialRotation = { x: 0, y:
   return (
     <div 
       className={cn(
-        "col-span-1 rounded-3xl p-1 md:p-6 bg-white/80 backdrop-blur-sm grid place-items-center",
+        "col-span-1 rounded-3xl p-1 md:p-6 bg-white backdrop-blur-sm grid place-items-center",
         "relative hover:z-10 cursor-pointer",
         className
       )}

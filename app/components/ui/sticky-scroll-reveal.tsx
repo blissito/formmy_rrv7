@@ -1,12 +1,14 @@
 import { useInView, useMotionValueEvent, useScroll } from "framer-motion";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "~/lib/utils";
-import { ScrollReveal } from "~/routes/_index";
+import { ScrollReveal } from "../ScrollReveals";
 
 export const StickyScroll = ({
   items,
+  onIndexChange,
 }: {
   items: Record<string, ReactNode>[];
+  onIndexChange?: (index: number) => void;
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentImage, setCurrentImage] = useState(items[currentIndex].img);
@@ -22,6 +24,7 @@ export const StickyScroll = ({
     setCurrentImage(items[index].img);
     setCurrentBgColor(items[index].twColor);
     setCurrentIndex(index);
+    onIndexChange?.(index);
   };
 
   //   console.log("index", currentIndex);
@@ -34,28 +37,34 @@ export const StickyScroll = ({
           // className="flex px-[5%] gap-20 justify-center xl:flex-nowrap flex-wrap-reverse items-start relative py-10 lg:py-20 h-max max-w-7xl mx-auto "
           ref={targetRef}
         >
-          <div className="flex flex-col flex-none lg:flex-1 pb-0 md:py-40 gap-40 lg:gap-80 w-[90%] mx-auto lg:w-[50%] ">
-            {items.map(({ text, title, img }, index) => (
+          <div className="flex flex-col flex-none lg:flex-1 pb-0 md:py-28 gap-40 lg:gap-80 w-[90%] mx-auto lg:w-[50%] ">
+            {items.map(({ text, title, number, img }, index) => (
               <InViewDetector
                 onInView={handleEnterIntoView}
                 index={index}
                 key={String(index) + title}
                 className="h-full"
               >
-                <h3
-                  className={cn(
-                    "text-gray-400/50 font-sans font-bold text-2xl lg:text-4xl xl:text-5xl mb-4 md:mb-12 transition-all !leading-snug",
-
-                    {
-                      "text-dark dark:text-white": currentImage === img,
-                    }
+                <div className="flex flex-col items-start gap-4 mb-4 ">
+                  {number && (
+                    <span className="text-2xl lg:text-3xl xl:text-3xl font-bold bg-bird text-dark rounded-2xl px-4 py-2 flex-shrink-0">
+                      {number}
+                    </span>
                   )}
-                >
-                  {title}
-                </h3>
+                  <h3
+                    className={cn(
+                      "text-gray-400/50 font-sans font-bold text-2xl heading lg:text-4xl xl:text-5xl transition-all !leading-[1.15]",
+                      {
+                        "text-dark dark:text-white": currentImage === img,
+                      }
+                    )}
+                  >
+                    {title}
+                  </h3>
+                </div>
                 <div
                   className={cn(
-                    "text-lg lg:text-xl xl:text-2xl font-extralight  text-gray-600/50 dark:text-irongray transition-all",
+                    "text-lg lg:text-xl xl:text-2xl font-light text-gray-600/50 dark:text-irongray transition-all",
                     {
                       "text-gray-600 dark:text-irongray": currentImage === img,
                     }
@@ -88,10 +97,9 @@ export const InViewDetector = ({
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, {
-    // margin: "center",
-    amount: 1,
+    amount: 0.5,
+    margin: "-100px 0px -100px 0px",
   });
-  // margin: "100px 0px 0px 0px",
 
   useEffect(() => {
     if (isInView) {

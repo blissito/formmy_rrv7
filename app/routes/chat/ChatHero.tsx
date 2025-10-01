@@ -9,6 +9,7 @@ import { RiEmotionHappyLine } from "react-icons/ri";
 import { SiCodeforces } from "react-icons/si";
 import { HiOutlineChatBubbleBottomCenterText } from "react-icons/hi2";
 import { FaSignal, FaWifi } from "react-icons/fa";
+import { HighlightBadge } from "~/components/HighlightBadge";
 
 type MessageType = {
   from: "user" | "agent";
@@ -47,7 +48,7 @@ export const ChatHero = () => {
       },
       {
         from: "user" as const,
-        text: "Sí",
+        text: "Sí, mi correo es jessica@gmail.com",
         avatar: "https://randomuser.me/api/portraits/women/44.jpg",
       },
     ],
@@ -115,6 +116,8 @@ export const ChatHero = () => {
   return (
     <div className="max-w-7xl mb-10 min-h-svh pt-28  mx-auto px-4 md:px-[5%] xl:px-0 flex  items-center justify-start md:justify-between gap-0 md:gap-16 ">
       <div className="w-full lg:w-[50%] flex flex-col ">
+      <HighlightBadge highlightText="Tu propio agente IA." normalText="Sin complicaciones." />
+
         <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 !leading-[1.1] text-center md:text-left">
           Chat IA que conecta con tus clientes
         </h1>
@@ -135,8 +138,8 @@ export const ChatHero = () => {
           {/* Stats Card */}
           <motion.div
             className="relative z-10 -mb-52"
-            initial={{ opacity: 0, y: -80, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            initial={{ opacity: 0, scale: 2 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{
               duration: 0.9,
               delay: 0.2,
@@ -161,8 +164,8 @@ export const ChatHero = () => {
           {/* Resume Card */}
           <motion.div
             className="relative z-20 -mb-44 ml-16"
-            initial={{ opacity: 0, y: -100, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            initial={{ opacity: 0,  scale: 2}}
+            animate={{ opacity: 1,scale: 1 }}
             transition={{
               duration: 1.0,
               delay: 0.5,
@@ -177,39 +180,45 @@ export const ChatHero = () => {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-3 bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
-                  <div className="w-6 h-6 rounded-full bg-cloud flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-                    JD
-                  </div>
+                  <img
+                    src="https://randomuser.me/api/portraits/women/44.jpg"
+                    alt="Cliente"
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <div className="text-sm font-semibold text-gray-900">John Lenon</div>
+                      <div className="text-sm font-semibold text-gray-900">Jessica Islas</div>
                     </div>
-                    <div className="text-xs text-gray-500 truncate">¿Tienen disponibilidad para esta semana?</div>
+                    <div className="text-xs text-gray-500 truncate">Sí, mi correo es jessica@gmail.com</div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
-                  <div className="w-6 h-6 rounded-full bg-bird flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-                    MR
-                  </div>
+                  <img
+                    src="https://randomuser.me/api/portraits/men/32.jpg"
+                    alt="Cliente"
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <div className="text-sm font-semibold text-gray-900">María Rodríguez</div>
+                      <div className="text-sm font-semibold text-gray-900">Carlos Rodríguez</div>
                     </div>
-                    <div className="text-xs text-gray-500 truncate">Gracias por la información 👍</div>
+                    <div className="text-xs text-gray-500 truncate">Gracias. Ahora estás en la lista.</div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                    CS
-                  </div>
+                  <img
+                    src="https://randomuser.me/api/portraits/women/65.jpg"
+                    alt="Cliente"
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <div className="text-sm font-semibold text-gray-900">Carlos Sánchez</div>
-                      <div className="text-xs text-gray-400">Monday</div>
+                      <div className="text-sm font-semibold text-gray-900">Laura Martínez</div>
+                      <div className="text-xs text-gray-400">Ayer</div>
                     </div>
-                    <div className="text-xs text-gray-500 truncate">Me interesa conocer más sobre el servicio</div>
+                    <div className="text-xs text-gray-500 truncate">¡Perfecto, gracias!</div>
                   </div>
                 </div>
               </div>
@@ -219,8 +228,8 @@ export const ChatHero = () => {
           {/* Contact Card */}
           <motion.div
             className="relative !z-20 ml-8"
-            initial={{ opacity: 0, y: -120, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            initial={{ opacity: 0, scale: 2 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{
               duration: 1.1,
               delay: 0.8,

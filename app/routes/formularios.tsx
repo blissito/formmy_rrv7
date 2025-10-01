@@ -12,7 +12,9 @@ import { FormSteps } from "./forms/FormSteps";
 import { FormComments } from "./forms/FormComments";
 import { Form } from "react-router";
 import { BigCTA } from "~/components/BigCTA";
-import { ContainerScroll } from "~/components/home/ContainerScroll";
+import { Compare } from "~/components/ui/compare";
+import { motion } from "framer-motion";
+import { HighlightBadge } from "~/components/HighlightBadge";
 
 export const meta = () =>
   getBasicMetaTags({
@@ -83,53 +85,56 @@ export default function Formularios() {
       <HomeHeader />
       <div className="max-w-7xl mb-10 min-h-svh pt-28  mx-auto px-4 md:px-[5%] xl:px-0 flex  items-center justify-start md:justify-between gap-0 md:gap-16 ">
         <div className="w-full lg:w-[50%] flex flex-col ">
+          <HighlightBadge highlightText="Sin código." normalText="Copia, pega y listo." />
           <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 !leading-[1.1] text-center md:text-left">
           Formmys para tu sitio web
           </h1>
-          <p className="text-metal text-lg md:text-2xl font-light   text-left ">
+          <p className="text-metal text-lg md:text-2xl font-light text-center md:text-left">
           Crea formularios personalizados para tu sitio web, recopila información de tus usuarios y gestiona tus datos de manera sencilla y segura con Formmy.
           </p>
           <Form method="post" className="mt-10 mx-auto md:mx-0" action="/api/login">
             <BigCTA type="submit" name="intent" value="google-login" />
+
           </Form>
         </div>
-        <div className="flex-1">
-        <ContainerScroll>
-        <img
-          src="/home/home.webp"
-          alt="hero"
-          height={400}
-          width={1400}
-          className="mx-auto rounded-2xl object-cover h-full object-left-top hidden md:block"
-          draggable={false}
-        />
-            <img
-          src="/home/home-xs.webp"
-          alt="hero"
-          height={400}
-          width={400}
-          className="mx-auto rounded-2xl object-cover h-full object-left-top md:hidden"
-          draggable={false}
-        />
-      </ContainerScroll>
+        <div className="w-[50%] relative">
+            <Compare
+                    firstImage="/assets/with-formmy.svg"
+                    secondImage="/home/contacto2.png"
+                    firstImageClassName="object-cover object-left-top"
+                    secondImageClassname="object-cover object-left-top"
+                    className="h-[500px] w-full mt-0 border border-outlines rounded-[40px]"
+                    slideMode="hover"
+            />
+            <motion.div
+              className="absolute left-1/2 -bottom-8 z-50"
+              initial={{ opacity: 0, y: 20, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{
+                duration: 0.8,
+                delay: 0.3,
+                type: "spring",
+                stiffness: 100,
+                damping: 10
+              }}
+            >
+              <motion.img
+                src="/home/suscribers.svg"
+                alt="Subscribers"
+                className="w-40 h-auto shadow-lg rounded-2xl "
+                animate={{
+                  y: [0, -10, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            </motion.div>
         </div>
       </div>
-      <section>
-        <div className="flex flex-col items-center  max-w-7xl mx-auto w-full mt-4 mb-0 md:mb-10 px-4 md:px-[5%] xl:px-0">
-          <div className="flex  flex-col md:flex-row items-center justify-around w-full gap-10 md:gap-20 relative">
-            <div className="relative z-10 rotate-0 md:-rotate-3  ">
-              <Suscription />
-              <div className="absolute left-0 bottom-16 rotate-45 w-52 h-52 bg-brand-100 rounded-3xl -z-10" />
-            </div>
-            {/* Imagen central */}
-            <div className="relative z-10 rotate-0 md:rotate-3 hidden md:block ">
-              <Registration />
-              <div className="absolute left-1/2 top-40 rotate-45 w-52 h-52 bg-brand-100 rounded-3xl -z-10" />
-            </div>
-          </div>
-        </div>
-      </section>
-      <CompaniesScroll />
+   
       <section
         id="cards"
         className="w-full max-w-7xl mx-auto my-20 md:my-40 px-4"
@@ -177,7 +182,7 @@ export default function Formularios() {
         steps={stepsWithImages}
         title="Crea tu primer Formmy con un par de clics"
       />
-            <WitoutFormmy />
+      
       <FormComments />
 
       <GeneralCallToAction />

@@ -65,7 +65,7 @@ export default function ChatIA() {
       <HomeHeader />
       <ChatHero />
       <SectionFadeIn delay={0.4}>
-      <Quote   highlightStyle={{backgroundColor: "#8AD7C9"}} beforeHighlight="Nuestro chatbot es  " afterHighlight="Responde preguntas, delega cuando es necesario y sabe guiar a los clientes." highlightText="excelente." authorName="Abraham González" authorTitle="Restaurante Mi ranchito" authorImage="/home/abraham.webp" />
+      <Quote  highlightStyle={{backgroundColor: "#8AD7C9"}} beforeHighlight="Nuestro chatbot es  " afterHighlight="Responde preguntas, delega cuando es necesario y sabe guiar a los clientes." highlightText="excelente." authorName="Abraham González" authorTitle="Restaurante Mi ranchito" authorImage="/home/abraham.webp" />
       </SectionFadeIn>
       <ChatBenefits />
       <ChatSteps />

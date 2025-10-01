@@ -16,13 +16,13 @@ export const ChatBenefits = () => {
           Por qué debes probar Formmy
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <BentoCard className="col-span-1 md:col-span-2 flex flex-col justify-between p-6 md:p-8 relative">
+          <BentoCard className="col-span-1 md:col-span-2 flex flex-col justify-between p-6 md:p-8 relative bg-bird">
                <div 
                  style={{
                      transformStyle: 'preserve-3d' as const,
                      perspective: "1500px"
                  }}
-                 className="grid grid-cols-4 gap-8 md:gap-4 lg:gap-8 mt-14 mx-auto px-4">
+                 className="grid grid-cols-4 gap-8 md:gap-4 lg:gap-8 mt-8 mx-auto px-4">
                    <IAModelCard 
                      img="/home/ollama.png"
                      initialRotation={{ x: 25, y: 35, z: 2 }}
@@ -45,12 +45,12 @@ export const ChatBenefits = () => {
               <h2 className="text-2xl heading ">
           Usa los mejores modelos de IA
               </h2>
-              <p className="text-metal">
+              <p className="text-dark">
               Nuestros agentes utilizan modelos de inteligencia artificial de última generación para ofrecer respuestas precisas y naturales.
               </p>
             </div>
           </BentoCard>
-          <BentoCard className=" col-span-1 p-6 md:p-8 flex flex-col  min-h-[280px] justify-between overflow-hidden">
+          <BentoCard className=" col-span-1 p-6 md:p-8 flex flex-col  min-h-[280px] justify-between overflow-hidden bg-cloud">
             <div className="flex items-center justify-center relative">
               {/* Línea punteada circular de fondo */}
               <svg
@@ -64,7 +64,7 @@ export const ChatBenefits = () => {
                   cx="130"
                   cy="130"
                   r="120"
-                  stroke="#D1D5DB"
+                  stroke="#ffffff"
                   strokeWidth="2"
                   strokeDasharray="6 8"
                   fill="none"
@@ -99,35 +99,30 @@ export const ChatBenefits = () => {
                 ></span>
               </div>
               {/* Reply with AI abajo izquierda */}
-              <div className="absolute left-[12%] -top-[20px] bg-clear rounded-xl border border-gray-200 shadow px-4 py-2 flex items-center gap-2 text-gray-700">
+              <div className="absolute left-[12%] -top-[20px] bg-clear rounded-xl border border-gray-200 shadow px-4 py-2 flex items-center gap-2 text-dark">
                 <span className="text-lg">✨</span>
                 <span className="font-medium">Responder con IA</span>
               </div>
             </div>
             <div>
               <h2 className="text-2xl heading ">Es rápido y simple</h2>
-              <p className="text-metal">
+              <p className="text-dark">
                 Crea, administra e implementa agentes de IA fácilmente.
               </p>{" "}
             </div>
           </BentoCard>
-          <BentoCard className="overflow-hidden">
-            <h2 className="text-2xl heading p-6 md:p-8 ">
+          <BentoCard className="overflow-hidden bg-[#F4B9E7]">
+            <h2 className="text-3xl leading-[1.4] heading p-6 md:p-8 ">
               +50% de empresas en México planea integrar IA en los próximos 1 a 2
               años
             </h2>
-            <img
-              className=" h-auto md:h-[148px] w-full object-contain bg-top"
-              src="/home/data.webp"
-              alt="empresas ia"
-            />
           </BentoCard>
-          <BentoCard className="p-6 md:p-8">
+          <BentoCard className="p-6 md:p-8 bg-[#BFDD78]">
             <div className="flex flex-col gap-6 items-start justify-center w-full pb-6">
               {/* Mensaje usuario */}
               <div className="flex justify-end w-full">
                 <div className="bg-dark text-white font-light border border-gray-200 rounded-2xl px-3 py-2 flex items-center gap-3 shadow-sm">
-                  <span className="text-white/80">
+                  <span className="text-white">
                     Hola, no puedo acceder a mi cuenta y ya seguí los pasos
                   </span>
                   <img
@@ -150,11 +145,11 @@ export const ChatBenefits = () => {
               </div>
             </div>
             <h2 className="text-2xl heading mt-0">Busca eficiencia</h2>
-            <p className="text-metal">
+            <p className="text-dark">
               Enseña a tu agente cuándo escalar consultas a un agente humano.
             </p>
           </BentoCard>
-          <BentoCard className="p-6 md:p-8">
+          <BentoCard className="p-6 md:p-8 bg-[#E56565]">
             <div className="w-full flex flex-col items-center justify-center relative overflow-hidden">
               <img
                 src="https://randomuser.me/api/portraits/women/44.jpg"
@@ -165,7 +160,7 @@ export const ChatBenefits = () => {
                 Sandra Cuevas
               </div>
               <div className="w-full flex flex-col gap-2 mt-2">
-                <div className="h-4 bg-gray-100 rounded-full w-4/5 mx-auto" />
+                <div className="h-4 bg-white/20 rounded-full w-4/5 mx-auto" />
               </div>
             </div>
             <h2 className="text-[22px] heading mt-10">
@@ -173,7 +168,7 @@ export const ChatBenefits = () => {
               69% de los usuarios prefieren hablar con un chatbot
             </h2>
           </BentoCard>
-          <BentoCard className="col-span-1 md:col-span-2 p-6 md:p-8">
+          <BentoCard className="col-span-1 md:col-span-2 p-6 md:p-8 bg-[#C4B9F9]">
             <div className="grid grid-cols-12 gap-3">
               <div className="bg-white border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-12 ">
                 <div className="w-8 h-8 bg-[#BBF0FF] rounded-full flex items-center justify-center">
@@ -203,7 +198,7 @@ export const ChatBenefits = () => {
               </div>
             </div>
             <h2 className="text-2xl heading mt-8">Es muy fácil de entrenar</h2>
-            <p className="text-metal">
+            <p className="text-dark">
               Integra diversas fuentes de información para enriquecer el
               conocimiento y las capacidades de tus agentes.
             </p>

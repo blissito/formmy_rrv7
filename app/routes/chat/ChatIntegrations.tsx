@@ -6,7 +6,7 @@ import { LuListChecks } from "react-icons/lu";
 
 export const ChatIntegrations = () => {
     return (
-      <section className="flex flex-col items-center mt-20 md:mt-40 max-w-7xl mx-auto px-4 md:px-[5%] xl:px-0">
+      <section className="flex flex-col items-center py-20 lg:py-40 max-w-7xl mx-auto px-4 md:px-[5%] xl:px-0">
         <h2 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 leading-tight">
         Desbloquea el poder de los agentes IA
         </h2>
