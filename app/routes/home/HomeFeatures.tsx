@@ -4,6 +4,7 @@ import { FaClipboardList, FaProjectDiagram } from "react-icons/fa";
 import { PiChalkboardTeacherFill, PiPaintBrushBroadFill } from "react-icons/pi";
 import { RiWhatsappFill } from "react-icons/ri";
 import { cn } from "~/lib/utils";
+import { motion } from "framer-motion";
 
 export function HomeFeatures() {
   return (
@@ -12,8 +13,9 @@ export function HomeFeatures() {
       ¿Cansado de perder clientes por formularios rotos o chats complicados?
     </h2>
     <div>
-      <ProductCardForms />
-      <ProductCardChat />
+    <ProductCardChat />
+    <ProductCardForms />
+  
     </div>
   </section>
   );
@@ -22,8 +24,14 @@ export function HomeFeatures() {
 
 const ProductCardChat = () => {
     return(
-        <div className=" w-full h-fit lg:h-[580px] mb-6 mt-0 md:mt-32  gap-y-8 flex flex-wrap-reverse md:flex-nowrap items-center mt-20 md:mt-0">
-        <div className="pr-0 lg:pr-10 w-full md:w-[55%] relative z-[1] ">
+        <div className=" w-full h-fit lg:h-[580px] mb-6  mt-0 md:mt-16 gap-y-8 flex flex-wrap-reverse md:flex-nowrap items-center mt-20 md:mt-0">
+        <motion.div
+          className="pr-0 lg:pr-10 w-full md:w-[55%] relative z-[1]"
+          initial={{ opacity: 0, x: -50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
           <h3 className="heading font-bold text-black text-2xl md:text-3xl lg:text-5xl mb-4">Chat IA para tu negocio</h3>
           <p className="paragraph text-metal text-base md:text-lg lg:text-xl  mb-0 md:mb-8  ">Automatiza la atención y soporte con agentes inteligentes que responden 24/7. Mejora la experiencia de tus usuarios y dedica tu tiempo a lo que realmente importa.</p>
           <div className=" gap-x-6 gap-y-8 grid grid-cols-2 gap-y-4 mt-6">
@@ -32,21 +40,39 @@ const ProductCardChat = () => {
             <BulletPoint className="bg-bird" text="Integra WhatsApp, Instagram y Messenger " icon={<RiWhatsappFill />}  />
             <BulletPoint className="bg-bird" text="Asígnale tareas especiales a tus agentes (enviar correos o agendar citas)" icon={<FaProjectDiagram />}  />
           </div>
-        </div>
-        <div className="w-full lg:w-[50%] flex justify-center items-center h-[300px] lg:h-full relative z-10 bg-bird rounded-[40px]">
+        </motion.div>
+        <motion.div
+          className="w-full lg:w-[50%] flex justify-center items-center h-[300px] lg:h-full relative z-10 bg-bird rounded-[40px]"
+          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
           <img src="/home/video3.gif" alt="video1" className="h-[80%] rounded-2xl object-cover" />
-        </div>
+        </motion.div>
       </div>
     )
 }
 
 const ProductCardForms = () => {
   return (
-    <div className=" w-full h-fit lg:h-[580px] mb-6 mt-0 md:mt-16 gap-y-8 flex flex-wrap md:flex-nowrap items-center">
-      <div className=" w-full lg:w-[45%] flex justify-center items-center h-[300px] lg:h-full relative z-10 bg-cloud rounded-[40px]">
+    <div className=" w-full h-fit lg:h-[580px] mb-6 mt-0 md:mt-32 gap-y-8 flex flex-wrap md:flex-nowrap items-center">
+      <motion.div
+        className=" w-full lg:w-[45%] flex justify-center items-center h-[300px] lg:h-full relative z-10 bg-cloud rounded-[40px]"
+        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      >
         <img src="/home/video1.gif" alt="video1" className="h-[80%] rounded-2xl object-cover" />
-      </div>
-      <div className="pl-0 lg:pl-16 w-full md:w-[55%] relative z-[1]">
+      </motion.div>
+      <motion.div
+        className="pl-0 lg:pl-16 w-full md:w-[55%] relative z-[1]"
+        initial={{ opacity: 0, x: 50 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
         <h3 className="heading font-bold text-black text-2xl md:text-3xl lg:text-5xl mb-4">Formularios de contacto o suscripción</h3>
         <p className="paragraph text-metal text-base md:text-lg lg:text-xl  mb-0 md:mb-8 "> Agrega formularios a tu sitio web con un par de clics. Recibe mensajes y suscripciones de tus clientes sin perder ni uno solo.</p>
         <div className=" gap-x-6 gap-y-8 grid grid-cols-2 mt-6">
@@ -55,7 +81,7 @@ const ProductCardForms = () => {
           <BulletPoint text="Agrega un mensaje para tus clientes al enviar el formulario" icon={<BiSolidMessageMinus />} />
           <BulletPoint text="Invita a tu staff a administrar tus formularios" icon={<AiFillCode />} />
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -132,24 +132,36 @@ export const ChatHero = () => {
       </div>
       <div className=" flex justify-center items-start flex-nowrap gap-8 relative">
  
-   
+      <div className="relative px-6 py-3 z-20 -mr-12">
+          <ChatPreview
+            conversations={conversations}
+            current={current}
+            onPrev={() => setCurrent((c) => Math.max(0, c - 1))}
+            onNext={() => setCurrent((c) => Math.min(conversations.length - 1, c + 1))}
+            onRestart={() => setCurrent(0)}
+          />
+          <img
+            src="/mock.png"
+            alt="Mock overlay"
+            className="w-[300px] lg:w-[360px] h-[520px] lg:h-[680px] absolute top-0 z-20"
+          />
+        </div>
         {/* Configuration Cards - Stacked */}
-        <div className="hidden lg:flex flex-col items-start justify-start -mt-32 relative">
+        <div className="hidden lg:flex flex-col items-start justify-start -mt-32 relative" style={{ perspective: '1200px' }}>
           {/* Stats Card */}
           <motion.div
             className="relative z-10 -mb-52"
-            initial={{ opacity: 0, scale: 2 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, rotateY: -45, x: -80, scale: 0.8 }}
+            animate={{ opacity: 1, rotateY: 0, x: 0, scale: 1 }}
             transition={{
-              duration: 0.9,
-              delay: 0.2,
-              type: "spring",
-              stiffness: 120,
-              damping: 12
+              duration: 0.8,
+              delay: 0.3,
+              ease: [0.34, 1.56, 0.64, 1]
             }}
+            style={{ transformStyle: 'preserve-3d' }}
           >
             <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: -12 }}
-            className="flex flex-col" 
+            className="flex flex-col"
           >
               <h3 className="font-semibold text-dark ">Personaliza tu chat</h3>
               <div className="grid place-content-center h-full">
@@ -157,22 +169,21 @@ export const ChatHero = () => {
               <p className="text-base text-dark leading-relaxed mt-2 text-center">¡Hola, soy Ghosty!</p>
               <div className="w-12 mx-auto mt-2 h-5 rounded bg-brand-500"></div>
               </div>
-            
+
             </FeatureCardWithHover>
           </motion.div>
 
           {/* Resume Card */}
           <motion.div
             className="relative z-20 -mb-44 ml-16"
-            initial={{ opacity: 0,  scale: 2}}
-            animate={{ opacity: 1,scale: 1 }}
+            initial={{ opacity: 0, rotateY: -50, x: -100, scale: 0.75 }}
+            animate={{ opacity: 1, rotateY: 0, x: 0, scale: 1 }}
             transition={{
-              duration: 1.0,
+              duration: 0.9,
               delay: 0.5,
-              type: "spring",
-              stiffness: 100,
-              damping: 10
+              ease: [0.34, 1.56, 0.64, 1]
             }}
+            style={{ transformStyle: 'preserve-3d' }}
           >
             <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: 8 }}>
               <div className="flex items-center gap-2 mb-3">
@@ -228,15 +239,14 @@ export const ChatHero = () => {
           {/* Contact Card */}
           <motion.div
             className="relative !z-20 ml-8"
-            initial={{ opacity: 0, scale: 2 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, rotateY: -40, x: -70, scale: 0.85 }}
+            animate={{ opacity: 1, rotateY: 0, x: 0, scale: 1 }}
             transition={{
-              duration: 1.1,
-              delay: 0.8,
-              type: "spring",
-              stiffness: 80,
-              damping: 8
+              duration: 0.85,
+              delay: 0.7,
+              ease: [0.34, 1.56, 0.64, 1]
             }}
+            style={{ transformStyle: 'preserve-3d' }}
           >
             <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: -6 }}>
             <h3 className="font-semibold text-dark  mb-3">Entrena a tu agente</h3>
@@ -251,20 +261,7 @@ export const ChatHero = () => {
           </motion.div>
         </div>
 
-        <div className="relative px-6 py-3 z-40 -mr-28">
-          <ChatPreview
-            conversations={conversations}
-            current={current}
-            onPrev={() => setCurrent((c) => Math.max(0, c - 1))}
-            onNext={() => setCurrent((c) => Math.min(conversations.length - 1, c + 1))}
-            onRestart={() => setCurrent(0)}
-          />
-          <img
-            src="/mock.png"
-            alt="Mock overlay"
-            className="w-[300px] lg:w-[360px] h-[520px] lg:h-[680px] absolute top-0 z-20"
-          />
-        </div>
+      
 
      
       </div>
@@ -304,12 +301,11 @@ const FeatureCardWithHover = ({ children, className, initialRotation = { x: 0, y
       : `scale(1) translateY(0px) rotate(${initialRotation.z}deg)`,
     transition: 'transform 0.3s ease-out',
     willChange: 'transform',
-    boxShadow: '10px 20px 40px rgba(0,0,0,0.08)'
   };
 
   return (
     <div 
-      className={`bg-white overflow-hidden mt-40 -mr-8 relative z-10 rounded-2xl h-[220px] w-[240px] p-4 shadow-lg border border-gray-100 w-48 hover:shadow-xl transition-shadow duration-300 hover:z-20 cursor-pointer ${className || ''}`}
+      className={`bg-white overflow-hidden mt-40 -mr-32 relative z-10 rounded-2xl h-[220px] w-[240px] p-4  border border-outlines w-48 hover:z-20 cursor-pointer ${className || ''}`}
       style={cardStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

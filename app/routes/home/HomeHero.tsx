@@ -93,7 +93,7 @@ export default function HomeHero() {
   };
 
   return (
-    <section className="relative overflow-hidden  flex flex-col items-center justify-center min-h-svh pt-32 md:pt-[240px] max-w-[1400px] px-4 md:px-[5%]  lg:px-0 mx-auto">
+    <section className="relative overflow-hidden z-10 flex flex-col items-center justify-center min-h-svh pt-32 md:pt-[240px] max-w-[1400px] px-4 md:px-[5%]  lg:px-0 mx-auto">
       <div className="h-[180px]  md:h-[160px] lg:h-[220px] flex items-center justify-center">
         <h1 className="header text-dark text-[3rem] md:text-5xl px-4 lg:text-[112px] text-center leading-none md:leading-tight flex-wrap gap-2" style={{ lineHeight: '1', minHeight: '1em' }}>
           {text.split('').map((char, index) => {
@@ -211,14 +211,14 @@ export default function HomeHero() {
           <BigCTA type="submit" name="intent" value="google-login" textClassName="text-base md:text-lg text-dark" className="h-14" />
         </Form>
         <Link to="/planes">
-        <Button variant="secondary" className="mt-0 h-14 text-base md:text-lg hidden lg:block">
+        <Button variant="secondary" className="mt-0 h-14 text-base md:text-lg hidden lg:block font-semibold">
           Ver planes
         </Button>
         </Link>
       </div>
       <ContainerScroll>
           <img
-            src="/home/home.webp"
+            src="/home/ghosty.png"
             alt="hero"
             height={400}
             width={1400}
@@ -226,7 +226,7 @@ export default function HomeHero() {
             draggable={false}
           />
               <img
-            src="/home/home-xs.webp"
+            src="/home/ghosty-mobile.png"
             alt="hero"
             height={400}
             width={400}
@@ -234,8 +234,8 @@ export default function HomeHero() {
             draggable={false}
           />
         </ContainerScroll>
-      <div className="mt-16 mb-10 bg-outlines w-full h-[1px] flex justify-center items-center text-center">
-      <p className="bg-white w-fit -mt-[3px] px-2 text-sm lg:text-base"><strong>+500 usuarios usan Formmy</strong> para captar leads, <br className="lg:hidden" />automatizar procesos y atender a sus clientes. </p>
+      <div className="-mt-24 mb-10 bg-outlines w-full h-[1px] flex justify-center items-center text-center">
+        <p className="bg-white w-fit -mt-[3px] px-2 text-sm lg:text-base"><strong>+500 usuarios usan Formmy</strong> para captar leads, <br className="lg:hidden" />automatizar procesos y atender a sus clientes. </p>
         </div>
       <CompaniesScroll />
     </section>

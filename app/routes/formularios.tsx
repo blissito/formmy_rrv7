@@ -137,7 +137,7 @@ export default function Formularios() {
    
       <section
         id="cards"
-        className="w-full max-w-7xl mx-auto my-20 md:my-40 px-4"
+        className="w-full max-w-7xl mx-auto my-16 md:my-32 px-4"
       >
         <h2 className="text-3xl md:text-4xl lg:text-5xl  font-bold text-center mb-10 md:mb-16 text-dark">
           Por qué debes probar Formmy

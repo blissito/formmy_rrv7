@@ -41,7 +41,7 @@ export const BigCTA = ({
         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
       ) : (
         children ?? (
-          <p className={cn("text-base heading text-dark", textClassName)}>
+          <p className={cn("text-base font-semibold text-dark", textClassName)}>
             Comenzar gratis 
           </p>
         )

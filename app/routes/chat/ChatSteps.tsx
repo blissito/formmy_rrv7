@@ -100,12 +100,13 @@ export function ChatSteps() {
   }));
 
   return (
-    <section className="w-full py-16 md:py-24">
-      <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold text-center mb-10 text-dark dark:text-white px-4">
+    <section className="w-full py-16 md:py-24 relative ">
+
+      <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold text-center mb-10 text-dark dark:text-white px-4 relative z-10">
         Crea tu primer Chatbot en 5 minutos
       </h2>
 
-      <div ref={stepsContainerRef}>
+      <div ref={stepsContainerRef} className="relative z-10 ">
         <StickyScroll items={stickyItems} />
       </div>
     </section>

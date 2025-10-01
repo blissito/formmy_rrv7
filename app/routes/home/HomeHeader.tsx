@@ -25,7 +25,7 @@ export default function HomeHeader() {
   return (
     <>
       {/* Header mobile: oculto en desktop */}
-      <header className="md:hidden fixed bg-[#ffffff] h-16 w-[90vw] left-1/2 -translate-x-1/2 top-4 z-50 flex justify-between items-center px-4 rounded-[99px] shadow-[0px_2px_32px_0px_rgba(33,22,76,0.08)]">
+      <header className="md:hidden fixed bg-[#ffffff] h-16 w-[90vw] left-1/2 -translate-x-1/2 top-4 !z-50 flex justify-between items-center px-4 rounded-[99px] shadow-[0px_2px_32px_0px_rgba(33,22,76,0.08)]">
         <Link to="/">
           <img className="w-20" src={imgVector} alt="logo" />
         </Link>

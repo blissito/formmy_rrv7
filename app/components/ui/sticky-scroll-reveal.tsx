@@ -30,7 +30,7 @@ export const StickyScroll = ({
   //   console.log("index", currentIndex);
 
   return (
-    <article className={cn(currentBgColor, "transition-all")}>
+    <article className={cn(currentBgColor, "transition-all bg-lines bg-cover")}>
       <ScrollReveal>
         <section
           className="flex gap-20 justify-center flex-wrap-reverse lg:flex-nowrap items-start relative py-6 md:py-20 w-full lg:w-[90%] h-max max-w-7xl mx-auto"
@@ -75,7 +75,7 @@ export const StickyScroll = ({
               </InViewDetector>
             ))}
           </div>
-          <div className="sticky top-10 md:top-14 lg:mt-10 h-[320px] md:h-[380px] px-[5%] lg:px-0 lg:top-40 w-full  lg:max-w-[50%] flex-none lg:flex-1 bg-[#ffffff] dark:bg-hole	  overflow-hidden flex items-center justify-center   aspect-square">
+          <div className="sticky top-10 md:top-14 lg:mt-10 h-[320px] md:h-[380px] px-[5%] lg:px-0 lg:top-40 w-full  lg:max-w-[50%] flex-none lg:flex-1  overflow-hidden flex items-center justify-center   aspect-square">
             <div className="md:w-[80%] lg:w-full mx-auto">{currentImage}</div>
           </div>
         </section>
