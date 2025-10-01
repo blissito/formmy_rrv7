@@ -16,7 +16,7 @@ export function ChatBanner() {
   ];
 
   return (
-    <section className="w-full my-20">
+    <section className="w-full my-10 lg:my-20 px-4 md:px-[5%] xl:px-0">
       <div className="relative max-w-7xl mx-auto bg-gradient-to-br from-dark via-[#6969A5] to-dark text-white overflow-hidden rounded-3xl">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-30"
@@ -26,19 +26,19 @@ export function ChatBanner() {
         />
 
         <div className="relative px-4 md:px-[5%] xl:px-12 py-16 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="flex flex-col-reverse md:grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
               Aprovecha el kit<br />
               de herramientas.<br />
             </h2>
-            <p className="text-lg text-gray-300 max-w-md">
+            <p className="text-lg text-white/80 max-w-md">
               Integra mensajerías como WhatsApp, Messenger o Instagram. Y configura formmy actions para automatizar procesos como enviar emails, generar links de pago o enviar mensajes automáticos.
             </p>
           </div>
 
-          <div className="relative flex justify-center items-center min-h-[500px]">
-            <div className="relative w-[400px] h-[500px] flex flex-col items-center justify-center -mt-10">
+          <div className="relative flex justify-center items-center min-h-[260px] lg:min-h-[500px]">
+            <div className="relative w-[400px] h-[260px] scale-75 lg:h-[500px] flex flex-col items-center justify-center -mt-64 lg:-mt-10">
               {integrations.map((integration, index) => {
                 // Tamaño escalonado: primera más pequeña, luego más grandes
                 const sizes = [90, 100, 120, 140, 160];

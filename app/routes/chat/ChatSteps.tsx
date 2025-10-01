@@ -75,7 +75,7 @@ export function ChatSteps() {
         }
       }}
     >
-      <source src="/home/chat-steps2.mp4" type="video/mp4" />
+      <source src="https://formmy.t3.storage.dev/steps-chat.mp4" type="video/mp4" />
       Tu navegador no soporta el elemento de video.
     </video>
   );
@@ -102,7 +102,7 @@ export function ChatSteps() {
   return (
     <section className="w-full py-16 md:py-24 relative ">
 
-      <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold text-center mb-10 text-dark dark:text-white px-4 relative z-10">
+      <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold text-center mb-0 lg:mb-10 text-dark dark:text-white px-4 relative z-10">
         Crea tu primer Chatbot en 5 minutos
       </h2>
 

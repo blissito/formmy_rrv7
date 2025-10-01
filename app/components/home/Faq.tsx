@@ -235,7 +235,7 @@ export const Question = ({
             exit={{ opacity: 0, height: 0 }}
             transition={{ type: "spring", duration: 0.4, bounce: 0 }}
           >
-            <p className="text-lg text-metal paragraph font-extralight px-6 pb-8">
+            <p className="text-base lg:text-lg text-metal paragraph font-extralight px-6 pb-8">
               {answer}
             </p>
           </motion.div>

@@ -83,31 +83,30 @@ export default function Formularios() {
   return (
     <main className="bg-clear  ">
       <HomeHeader />
-      <div className="max-w-7xl mb-10 min-h-svh pt-28  mx-auto px-4 md:px-[5%] xl:px-0 flex  items-center justify-start md:justify-between gap-0 md:gap-16 ">
-        <div className="w-full lg:w-[50%] flex flex-col ">
+      <div className="max-w-7xl mb-0 lg:mb-10 min-h-svh pt-32 pb-20 md:pt-40 lg:pt-48   mx-auto px-4 md:px-[5%] xl:px-0 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-8 lg:gap-16">
+        <div className="w-full lg:w-[50%] flex flex-col items-center lg:items-start">
           <HighlightBadge highlightText="Sin código." normalText="Copia, pega y listo." />
           <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 !leading-[1.1] text-center md:text-left">
           Formmys para tu sitio web
           </h1>
-          <p className="text-metal text-lg md:text-2xl font-light text-center md:text-left">
+          <p className="text-metal text-base md:text-lg lg:text-2xl font-light text-center md:text-left">
           Crea formularios personalizados para tu sitio web, recopila información de tus usuarios y gestiona tus datos de manera sencilla y segura con Formmy.
           </p>
-          <Form method="post" className="mt-10 mx-auto md:mx-0" action="/api/login">
+          <Form method="post" className="mt-8 lg:mt-10 mx-auto md:mx-0" action="/api/login">
             <BigCTA type="submit" name="intent" value="google-login" />
-
           </Form>
         </div>
-        <div className="w-[50%] relative">
+        <div className="w-full lg:w-[50%] relative mt-10 lg:mt-0">
             <Compare
                     firstImage="/assets/with-formmy.svg"
                     secondImage="/home/contacto2.png"
                     firstImageClassName="object-cover object-left-top"
                     secondImageClassname="object-cover object-left-top"
-                    className="h-[500px] w-full mt-0 border border-outlines rounded-[40px]"
+                    className="h-[300px] md:h-[400px] lg:h-[500px] w-full mt-0 border border-outlines rounded-[24px] md:rounded-[32px] lg:rounded-[40px]"
                     slideMode="hover"
             />
             <motion.div
-              className="absolute left-1/2 -bottom-8 z-50"
+              className="absolute left-1/2 -translate-x-1/2 -bottom-4 md:-bottom-8 z-50"
               initial={{ opacity: 0, y: 20, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{
@@ -121,7 +120,7 @@ export default function Formularios() {
               <motion.img
                 src="/home/suscribers.svg"
                 alt="Subscribers"
-                className="w-40 h-auto shadow-lg rounded-2xl "
+                className="w-32 md:w-40 h-auto shadow-lg rounded-2xl"
                 animate={{
                   y: [0, -10, 0],
                 }}

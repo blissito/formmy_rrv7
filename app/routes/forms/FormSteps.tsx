@@ -50,7 +50,7 @@ export function FormSteps({ steps, title = "Crea tu primer Formmy en 5 minutos" 
         }
       }}
     >
-      <source src="/home/form-steps.mp4" type="video/mp4" />
+      <source src="https://formmy.t3.storage.dev/steps-chat.mp4" type="video/mp4" />
       Tu navegador no soporta el elemento de video.
     </video>
   );

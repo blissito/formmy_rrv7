@@ -41,8 +41,8 @@ export function FormComments() {
   return (
     <section className="flex flex-col items-center max-w-7xl px-4 md:px-[5%] xl:px-0 mx-auto py-20 lg:py-32 relative">
       {/* Título sticky */}
-      <div className="sticky top-[24vh] z-10 text-center mb-32 px-4 pointer-events-none">
-        <h2 className="text-5xl md:text-7xl font-bold">
+      <div className="sticky top-[18vh] md:top-[20vh] lg:top-[24vh] z-10 text-center mb-32 px-4 pointer-events-none">
+      <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold">
           Usuarios que aman
           <br />
           Formmy
@@ -56,7 +56,7 @@ export function FormComments() {
         return (
           <div
             key={index}
-            className="relative w-full max-w-4xl mb-6 mt-0 md:mt-16 rounded-3xl bg-dark text-white p-8 shadow-2xl transition-all duration-500 sticky top-[50vh] z-20"
+            className="relative w-full max-w-4xl mb-6 mt-0 md:mt-16 rounded-3xl bg-dark text-white p-8 shadow-2xl transition-all duration-500 sticky top-[32vh] lg:top-[50vh] z-20"
             style={{
               transform: `rotate(${rotation}deg)`,
             }}

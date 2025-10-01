@@ -114,25 +114,24 @@ export const ChatHero = () => {
   const [current, setCurrent] = useState(0);
 
   return (
-    <div className="max-w-7xl mb-10 min-h-svh pt-28  mx-auto px-4 md:px-[5%] xl:px-0 flex  items-center justify-start md:justify-between gap-0 md:gap-16 ">
-      <div className="w-full lg:w-[50%] flex flex-col ">
-      <HighlightBadge highlightText="Tu propio agente IA." normalText="Sin complicaciones." />
-
+    <div className="max-w-7xl mb-0 lg:mb-10 min-h-svh pt-32 pb-20 md:pt-40 lg:pt-48 mx-auto px-4 md:px-[5%] xl:px-0 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-8 lg:gap-16">
+      <div className="w-full lg:w-[50%] flex flex-col items-center lg:items-start">
+        <HighlightBadge highlightText="Tu propio agente IA." normalText="Sin complicaciones." />
         <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 !leading-[1.1] text-center md:text-left">
           Chat IA que conecta con tus clientes
         </h1>
-        <p className="text-metal text-lg md:text-2xl font-light   text-left ">
+        <p className="text-metal text-base md:text-lg lg:text-2xl font-light text-center md:text-left">
           La forma más fácil de crear agentes de soporte con IA para tu sitio
           web. Responde preguntas, guía a tus clientes y capta leads
           automáticamente, 24/7.
         </p>
-        <Form method="post" className="mt-10 mx-auto md:mx-0" action="/api/login">
+        <Form method="post" className="mt-8 lg:mt-10 mx-auto md:mx-0" action="/api/login">
           <BigCTA type="submit" name="intent" value="google-login" />
         </Form>
       </div>
-      <div className=" flex justify-center items-start flex-nowrap gap-8 relative">
+      <div className="w-full lg:w-[50%] flex justify-center items-center relative">
  
-      <div className="relative px-6 py-3 z-20 -mr-12">
+      <div className="relative px-3 md:px-6 py-3 z-20 lg:-mr-12">
           <ChatPreview
             conversations={conversations}
             current={current}
@@ -143,11 +142,11 @@ export const ChatHero = () => {
           <img
             src="/mock.png"
             alt="Mock overlay"
-            className="w-[300px] lg:w-[360px] h-[520px] lg:h-[680px] absolute top-0 z-20"
+            className="w-[280px] md:w-[300px] lg:w-[360px] h-[500px] md:h-[520px] lg:h-[680px] absolute top-0 left-0 md:left-auto z-20 pointer-events-none"
           />
         </div>
         {/* Configuration Cards - Stacked */}
-        <div className="hidden lg:flex flex-col items-start justify-start -mt-32 relative" style={{ perspective: '1200px' }}>
+        <div className="hidden xl:flex flex-col items-start justify-start -mt-32 relative" style={{ perspective: '1200px' }}>
           {/* Stats Card */}
           <motion.div
             className="relative z-10 -mb-52"
@@ -323,10 +322,9 @@ const ChatPreview = ({ conversations, current, onPrev, onNext, onRestart }: {
   onRestart: () => void;
 }) => {
   return (
-    <motion.div 
+    <motion.div
       id="chat"
-      className="border border-gray-300 bg-white rounded-[48px] p-4 md:px-5 ml-3 w-[280px] lg:w-[332px] lg:h-[650px] h-[500px] flex flex-col justify-end shadow-lg relative overflow-hidden"
-
+      className="border border-gray-300 bg-white rounded-[32px] md:rounded-[48px] p-3 md:p-4 lg:px-5 ml-0 md:ml-3 w-[260px] md:w-[280px] lg:w-[332px] h-[480px] md:h-[500px] lg:h-[650px] flex flex-col justify-end shadow-lg relative overflow-hidden"
     >
   
       <div className="absolute flex flex-col z-10 border-b border-outlines left-0 top-0 w-full h-16 text-white flex  items-center  text-xl font-medium">

@@ -25,7 +25,7 @@ export default function HomeHeader() {
   return (
     <>
       {/* Header mobile: oculto en desktop */}
-      <header className="md:hidden fixed bg-[#ffffff] h-16 w-[90vw] left-1/2 -translate-x-1/2 top-4 !z-50 flex justify-between items-center px-4 rounded-[99px] shadow-[0px_2px_32px_0px_rgba(33,22,76,0.08)]">
+      <header className="lg:hidden fixed bg-[#ffffff] h-16 w-[90vw] left-1/2 -translate-x-1/2 top-4 !z-50 flex justify-between items-center px-4 rounded-[99px] shadow-[0px_2px_32px_0px_rgba(33,22,76,0.08)]">
         <Link to="/">
           <img className="w-20" src={imgVector} alt="logo" />
         </Link>
@@ -112,7 +112,7 @@ export default function HomeHeader() {
           },
         }}
         transition={{ duration: 0.04, ease: "linear" }}
-        className="hidden md:flex fixed bg-[#ffffff] !h-20 top-6 left-1/2 rounded-[99px] -translate-x-1/2 z-30 items-center pl-8 pr-4 w-[810px]"
+        className="hidden lg:flex fixed bg-white !h-20 top-6 left-1/2 rounded-[99px] -translate-x-1/2 z-30 items-center pl-8 pr-4 w-[810px]"
         style={{
           transition: "width 0.3s, box-shadow 0.3s",
         }}

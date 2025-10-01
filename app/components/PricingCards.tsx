@@ -155,7 +155,7 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
   return (
     <div
       className={cn(
-        "flex flex-col rounded-3xl p-6 w-full md:min-w-[280px] md:max-w-[340px] bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300",
+        "flex flex-col rounded-3xl p-6 w-full md:min-w-[280px] md:max-w-[320px] bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300",
         plan.highlight && "shadow-lg",
         hoverBgColors[plan.name as keyof typeof hoverBgColors]
       )}
@@ -216,7 +216,7 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
 
 export const PricingCards = () => {
   return (
-    <div className="w-full flex flex-col md:flex-row gap-4 justify-center items-stretch">
+    <div className="w-full flex flex-wrap justify-center gap-4">
       {plans.map((plan) => (
         <PricingCard key={plan.name} plan={plan} />
       ))}

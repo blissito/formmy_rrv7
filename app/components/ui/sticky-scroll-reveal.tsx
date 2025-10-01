@@ -77,7 +77,7 @@ export const StickyScroll = ({
               </InViewDetector>
             ))}
           </div>
-          <div className="sticky top-10 md:top-14 lg:mt-10 h-[320px] md:h-[380px] px-[5%] lg:px-0 lg:top-80 w-full  lg:max-w-[50%] flex-none lg:flex-1  overflow-hidden flex items-center justify-center   aspect-square">
+          <div className="sticky top-20 bg-white md:top-14 lg:mt-10 h-[320px] md:h-[380px] px-[5%] lg:px-0 lg:top-80 w-full  lg:max-w-[50%] flex-none lg:flex-1  overflow-hidden flex items-center justify-center   aspect-square">
             <div className="md:w-[80%] lg:w-full mx-auto">{currentImage}</div>
           </div>
         </section>

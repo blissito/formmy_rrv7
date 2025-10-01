@@ -22,7 +22,7 @@ export const ChatBenefits = () => {
                      transformStyle: 'preserve-3d' as const,
                      perspective: "1500px"
                  }}
-                 className="grid grid-cols-4 gap-8 md:gap-4 lg:gap-8 mt-8 mx-auto px-4">
+                 className="grid grid-cols-4 gap-8 md:gap-4 lg:gap-8 mt-4 mb-6 lg:mb-0 lg:mt-8 mx-auto px-4">
                    <IAModelCard 
                      img="/home/ollama.png"
                      initialRotation={{ x: 25, y: 35, z: 2 }}
@@ -71,7 +71,7 @@ export const ChatBenefits = () => {
                 />
               </svg>
               {/* Editor arriba izquierda */}
-              <div className="absolute left-[10px] top-[100px] bg-clear rounded-xl border border-gray-200 shadow px-4 py-2 flex gap-2 items-center text-gray-700 text-xl">
+              <div className="absolute left-[10px] top-[80px] lg:top-[100px] bg-clear rounded-xl border border-gray-200 shadow px-4 py-2 flex gap-2 items-center text-gray-700 text-xl">
                 <span className="font-bold">B</span>
                 <span className="italic">I</span>
                 <span className="underline">U</span>
@@ -170,27 +170,27 @@ export const ChatBenefits = () => {
           </BentoCard>
           <BentoCard className="col-span-1 md:col-span-2 p-6 md:p-8 bg-[#C4B9F9]">
             <div className="grid grid-cols-12 gap-3">
-              <div className="bg-white border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-12 ">
+              <div className="bg-white text-xs lg:text-base  border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-12 ">
                 <div className="w-8 h-8 bg-[#BBF0FF] rounded-full flex items-center justify-center">
                   <TbWritingSign />
                 </div>
                 Lenguaje natural (escribe directamente la información)
               </div>
   
-              <div className="bg-white border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-8 col-start-3">
+              <div className="bg-white text-xs lg:text-base border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-8 col-start-3">
                 <div className="w-8 h-8 bg-[#EDC75A] rounded-full flex items-center justify-center">
                   <CgWebsite />
                 </div>
                 Sitios web (tu propio website)
               </div>
   
-              <div className="bg-white border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-8 col-start-5">
+              <div className="bg-white text-xs lg:text-base border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-8 col-start-5">
                 <div className="w-8 h-8 bg-[#F4B9E7] rounded-full flex items-center justify-center">
                   <BsQuestion />
                 </div>
                 Preguntas específicas
               </div>
-              <div className="bg-white border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-8 col-start-7">
+              <div className="bg-white text-xs lg:text-base border text-dark  h-10 rounded-full flex items-center gap-2 pl-1 pr-2 w-fit col-span-8 col-start-7">
                 <div className="w-8 h-8 bg-[#B2E7CA] rounded-full flex items-center justify-center">
                   <HiOutlineDocumentText />
                 </div>
