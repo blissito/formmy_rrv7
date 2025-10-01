@@ -13,6 +13,7 @@ export interface ToolContext {
   chatbotId: string | null;
   message: string;
   integrations: Record<string, any>;
+  isGhosty?: boolean; // Flag para distinguir Ghosty de chatbots públicos
 }
 
 // ===== TOOL FACTORIES WITH CONTEXT INJECTION =====
@@ -203,8 +204,9 @@ export const getToolsForPlan = (
 ) => {
   const tools = [];
 
-  // Reminder tools - disponibles para PRO+
-  if (['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  // Reminder tools - SOLO para Ghosty (gestión de agenda privada)
+  // ❌ Chatbots públicos NO deben acceder a la agenda personal del dueño
+  if (context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
     tools.push(
       createScheduleReminderTool(context),
       createListRemindersTool(context),
@@ -229,8 +231,9 @@ export const getToolsForPlan = (
     tools.push(createGetCurrentDateTimeTool(context));
   }
 
-  // Chatbot tools - disponibles para STARTER+ (core de Formmy)
-  if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  // Chatbot tools - SOLO para Ghosty (asistente interno)
+  // ❌ Chatbots públicos NO deben tener acceso a estadísticas privadas
+  if (context.isGhosty && ['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
     tools.push(
       createQueryChatbotsTool(context),
       createGetChatbotStatsTool(context)

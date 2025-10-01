@@ -105,7 +105,8 @@ function createSingleAgent(context: WorkflowContext) {
     userPlan,
     chatbotId: context.chatbotId,
     message: context.message,
-    integrations: context.integrations
+    integrations: context.integrations,
+    isGhosty: context.chatbotId === 'ghosty-main' // Ghosty tiene acceso a stats
   };
 
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
