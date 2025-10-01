@@ -9,8 +9,6 @@ import { authenticateRequest, createAuthError, createUnsupportedIntentError } fr
 import { validateModelForPlan, applyModelCorrection } from "../../server/chatbot/modelValidator.server";
 
 export async function handleChatbotV0Action({ request }: ActionFunctionArgs) {
-  console.log('🚀 Chatbot V0 API - Request received:', request.method, request.url);
-
   try {
     // Rate limiting removed - was causing critical blocking issues
     // Can be re-added later if needed with proper implementation
@@ -32,15 +30,12 @@ export async function handleChatbotV0Action({ request }: ActionFunctionArgs) {
 
     // 🔑 Autenticación
     const { user, isTestUser } = await authenticateRequest(request, formData);
-    console.log('🔑 Auth result:', { userId: user?.id, plan: user?.plan, isTestUser });
 
     if (!user) {
-      console.log('❌ No user found - returning 401');
       return createAuthError();
     }
 
     const intent = formData.get("intent") as string;
-    console.log('🎯 Chatbot V0 Intent:', intent);
 
     switch (intent) {
       case "chat": {
@@ -113,7 +108,6 @@ async function handleChatV0(params: {
 }): Promise<Response> {
 
   const { chatbotId, message, sessionId, conversationHistory, requestedStream, userId, user, isTestUser } = params;
-  console.log('💬 handleChatV0 called:', { chatbotId, messageLength: message.length, userId, plan: user.plan });
 
   // Validar parámetros requeridos con mensajes amigables
   if (!chatbotId || !message) {
@@ -144,10 +138,8 @@ async function handleChatV0(params: {
   }
 
   // Obtener chatbot
-  console.log('🔍 Fetching chatbot...');
   const { getChatbot } = await import("../../server/chatbot-v0/chatbot");
   const chatbot = await getChatbot(chatbotId, userId);
-  console.log('📦 Chatbot fetched:', { found: !!chatbot, name: chatbot?.name, isActive: chatbot?.isActive });
 
   if (!chatbot) {
     return new Response(
@@ -182,8 +174,6 @@ async function handleChatV0(params: {
     );
   }
 
-  console.log('✅ Validation passed:', { isOwner, isActive: chatbot.isActive, canUse: true });
-
   // Parsear historial conversacional
   let history: Array<{ role: "user" | "assistant"; content: string }> = [];
   if (conversationHistory) {
@@ -211,16 +201,9 @@ async function handleChatV0(params: {
   const modelCorrection = applyModelCorrection(user.plan, chatbot.aiModel, true);
 
   if (modelCorrection.wasCorreected) {
-    console.log('⚠️ Model auto-corrected:', {
-      original: chatbot.aiModel,
-      corrected: modelCorrection.finalModel,
-      reason: modelCorrection.warning
-    });
-
     // Actualizar el modelo en el objeto chatbot para esta sesión
     chatbot.aiModel = modelCorrection.finalModel;
   }
-
 
   try {
     // 🚀 AgentWorkflow - 100% Streaming como requiere CLAUDE.md

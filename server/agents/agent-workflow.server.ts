@@ -60,7 +60,6 @@ function createLLM(model: string, temperature?: number) {
  */
 function mapModelForPerformance(model: string): string {
   if (model === 'gpt-5-nano') {
-    console.log('🔄 Model mapping: gpt-5-nano → gpt-4o-mini (performance optimization)');
     return 'gpt-4o-mini';
   }
   return model;
@@ -111,12 +110,6 @@ function createSingleAgent(context: WorkflowContext) {
 
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
   const systemPrompt = buildSystemPrompt(resolvedConfig);
-
-  console.log('🤖 Creating single agent:', {
-    model: selectedModel,
-    plan: userPlan,
-    toolsCount: allTools.length
-  });
 
   return agent({
     llm,
@@ -188,9 +181,6 @@ export const streamAgentWorkflow = async function* (
     agentContext: any;
   } = {} as any
 ) {
-  const workflowStart = Date.now();
-  console.log('🚀 AgentWorkflow started:', { chatbotId, messageLength: message.length });
-
   const context: WorkflowContext = {
     userId: user.id,
     userPlan: user.plan || 'FREE',
@@ -204,8 +194,6 @@ export const streamAgentWorkflow = async function* (
     // Single agent con todas las tools - modelo decide
     const agent = createSingleAgent(context);
     yield* streamSingleAgent(agent, message);
-
-    console.log('✅ AgentWorkflow completed:', Date.now() - workflowStart + 'ms');
   } catch (error) {
     console.error('❌ AgentWorkflow error:', error);
     yield {
