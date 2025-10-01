@@ -6,6 +6,7 @@
 
 import { agent, agentToolCallEvent, agentStreamEvent } from "@llamaindex/workflow";
 import { OpenAI } from "@llamaindex/openai";
+import { Anthropic } from "@llamaindex/anthropic";
 import { getToolsForPlan, type ToolContext } from '../tools';
 import type { ResolvedChatbotConfig } from '../chatbot/configResolver.server';
 
@@ -17,6 +18,41 @@ interface WorkflowContext {
   message: string;
   integrations: Record<string, any>;
   resolvedConfig: ResolvedChatbotConfig;
+}
+
+/**
+ * Create LLM instance with correct provider (from agent-engine-v0)
+ */
+function createLLM(model: string, temperature?: number) {
+  const config: any = { model };
+
+  // Handle temperature based on model
+  if (model === "gpt-5-nano" || model === "gpt-4o-mini") {
+    // GPT-5 nano and 4o-mini work best with specific temperature
+    config.temperature = temperature !== undefined ? temperature : 0.3;
+  } else if (temperature !== undefined) {
+    config.temperature = temperature;
+  }
+
+  // Token limits
+  if (model.startsWith("gpt-5") || model.startsWith("gpt-4")) {
+    config.maxCompletionTokens = 1000;
+  } else {
+    config.maxTokens = 1000;
+  }
+
+  // Timeout and retries
+  config.timeout = 60000;
+  config.maxRetries = 3;
+
+  // Return appropriate provider based on model
+  if (model.includes("claude")) {
+    config.apiKey = process.env.ANTHROPIC_API_KEY;
+    return new Anthropic(config);
+  } else {
+    config.apiKey = process.env.OPENAI_API_KEY;
+    return new OpenAI(config);
+  }
 }
 
 /**
@@ -35,7 +71,7 @@ function mapModelForPerformance(model: string): string {
  */
 function buildSystemPrompt(config: ResolvedChatbotConfig): string {
   const personality = config.personality || 'professional';
-  const personalityMap = {
+  const personalityMap: Record<string, string> = {
     'customer_support': 'asistente de soporte profesional',
     'sales': 'asistente de ventas consultivo',
     'friendly': 'asistente amigable y cercano',
@@ -61,13 +97,8 @@ function createSingleAgent(context: WorkflowContext) {
   // Model selection con mapping transparente
   const selectedModel = mapModelForPerformance(resolvedConfig.aiModel || 'gpt-5-nano');
 
-  const llm = new OpenAI({
-    model: selectedModel,
-    apiKey: process.env.OPENAI_API_KEY,
-    temperature: selectedModel === 'gpt-4o-mini' ? 0.3 : (resolvedConfig.temperature || 0.3),
-    timeout: 60000,
-    maxRetries: 3
-  });
+  // Create LLM with correct provider (OpenAI or Anthropic)
+  const llm = createLLM(selectedModel, resolvedConfig.temperature || 0.3);
 
   // Todas las herramientas del plan - modelo decide cuáles usar
   const toolContext: ToolContext = {
