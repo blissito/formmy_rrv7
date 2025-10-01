@@ -10,6 +10,8 @@ import HomeFeaturedCards from "./HomeFeaturedCard";
 import HomeCallToAction from "./HomeCallToAction";
 import HomeFooter from "./HomeFooter";
 import HomeHero from "./HomeHero";
+import { HomeFeatures } from "./HomeFeatures";
+import { Quote } from "./Quote";
 
 export function SectionFadeIn({
   children,
@@ -35,11 +37,12 @@ export function Home() {
       id="node-1488_1172"
     >
       <HomeHeader />
-      <SectionFadeIn delay={0.1}>
         <HomeHero />
+      <SectionFadeIn delay={0.1}>
+          <HomeFeatures />
       </SectionFadeIn>
       <SectionFadeIn delay={0.2}>
-        <HomeProducts />
+        <Quote/>
       </SectionFadeIn>
       <SectionFadeIn delay={0.3}>
         <HomeBenefits />

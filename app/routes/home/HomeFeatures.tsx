@@ -1,0 +1,96 @@
+import { AiFillCode } from "react-icons/ai";
+import { BiSolidMessageMinus } from "react-icons/bi";
+import { FaClipboardList, FaProjectDiagram } from "react-icons/fa";
+import { PiChalkboardTeacherFill, PiPaintBrushBroadFill } from "react-icons/pi";
+import { RiWhatsappFill } from "react-icons/ri";
+import { cn } from "~/lib/utils";
+import { motion } from "framer-motion";
+
+export function HomeFeatures() {
+  return (
+    <section className="flex flex-col items-center  max-w-7xl px-4 md:px-[5%] xl:px-0 mx-auto 0 py-16 lg:py-32">
+    <h2 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-10 lg:mb-16 mt-0 lg:leading-[1.2]">
+      ¿Cansado de perder clientes por formularios rotos o chats complicados?
+    </h2>
+    <div >
+      <ProductCardChat />
+      <ProductCardForms />
+    </div>
+  </section>
+  );
+}
+
+
+const ProductCardChat = () => {
+    return(
+        <div className=" w-full h-fit lg:h-[580px] mb-6  mt-0 md:mt-16 gap-y-8 flex flex-wrap-reverse lg:flex-nowrap items-center mt-0">
+        <motion.div
+          className="pr-0 lg:pr-10 w-full lg:w-[55%] relative z-[1]"
+          initial={{ opacity: 0, x: -50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <h3 className="heading font-bold text-black text-2xl md:text-3xl lg:text-5xl mb-4">Chat IA para tu negocio</h3>
+          <p className="paragraph text-metal text-base md:text-lg lg:text-xl  mb-0 md:mb-8  ">Automatiza la atención y soporte con agentes inteligentes que responden 24/7. Mejora la experiencia de tus usuarios y dedica tu tiempo a lo que realmente importa.</p>
+          <div className=" gap-x-4 lg:gap-x-6 gap-y-6 lg:gap-y-8 grid grid-cols-2 mt-6">
+            <BulletPoint className="bg-bird" text="Personaliza tu chat con el color y estilo de tu marca" icon="/home/chaticon.svg" />
+            <BulletPoint className="bg-bird" text="Entrena a tu agente IA para responder tus clientes" icon="/home/chaticon2.svg" />
+            <BulletPoint className="bg-bird" text="Integra WhatsApp, Instagram y Messenger "  icon="/home/chaticon3.svg"  />
+            <BulletPoint className="bg-bird" text="Asígnale tareas especiales a tus agentes (enviar correos o agendar citas)" icon="/home/chaticon4.svg"  />
+          </div>
+        </motion.div>
+        <motion.div
+          className="w-full lg:w-[45%] flex justify-center items-center h-[300px] lg:h-full relative z-10 bg-bird rounded-[40px]"
+          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img src="/home/video3.gif" alt="video1" className="h-[80%] rounded-2xl object-cover" />
+        </motion.div>
+      </div>
+    )
+}
+
+const ProductCardForms = () => {
+  return (
+    <div className=" w-full h-fit lg:h-[580px] mb-6 mt-16 md:mt-32 gap-y-8 flex flex-wrap lg:flex-nowrap items-center overflow-hidden">
+      <motion.div
+        className=" w-full lg:w-[45%] flex justify-center items-center h-[300px] lg:h-full relative z-10 bg-cloud rounded-[40px]"
+        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        whileInView={{ opacity: 1, scale: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <img src="/home/video1.gif" alt="video1" className="h-[80%] rounded-2xl object-cover" />
+      </motion.div>
+      <motion.div
+        className="pl-0 lg:pl-16 w-full lg:w-[55%] relative z-[1] box-border"
+        initial={{ opacity: 0, x: 50 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <h3 className="heading font-bold text-black text-2xl md:text-3xl lg:text-5xl mb-4">Formularios de contacto o suscripción</h3>
+        <p className="paragraph text-metal text-base md:text-lg lg:text-xl  mb-0 md:mb-8 "> Agrega formularios a tu sitio web con un par de clics. Recibe mensajes y suscripciones de tus clientes sin perder ni uno solo.</p>
+        <div className=" gap-x-6 gap-y-8 grid grid-cols-2 mt-6">
+          <BulletPoint text="Personaliza tu formmy con el color y estilo de tu marca" icon="/home/formicon.svg"  />
+          <BulletPoint text="Selecciona o agrega campos personalizados para tus clientes" icon="/home/formchat2.svg" />
+          <BulletPoint text="Agrega un mensaje para tus clientes al enviar el formulario" icon="/home/formicon3.svg" />
+          <BulletPoint text="Invita a tu staff a administrar tus formularios" icon="/home/formicon4.svg" />
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+const BulletPoint = ({text, icon, className}: {text: string, icon: string, className?: string}) => {
+  return (
+    <div className="flex flex-col justify-start min-h-12 items-start gap-2">
+    <span className={cn("rounded-full grid place-items-center h-12 !min-w-12 text-2xl")}><img className="w-10 md:w-12 h-10 md:h-12 object-contain" src={icon} alt="" /></span>
+    <p className="paragraph text-metal text-base md:text-lg ">{text}</p>
+    </div>
+  );
+}
+  

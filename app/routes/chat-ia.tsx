@@ -14,6 +14,11 @@ import ChatTypes from "./chat/ChatTypes";
 import { SectionFadeIn } from "./home/home";
 import getBasicMetaTags from "~/utils/getBasicMetaTags";
 import ChatTypeSlider from "./chat/ChatTypeSlider";
+import { Quote } from "./home/Quote";
+import { ChatSteps } from "./chat/ChatSteps";
+import { ChatBanner } from "./chat/ChatBanner";
+import ChatComments from "./chat/ChatComments";
+import HomeProducts from "./home/HomeProducts";
 
 
 export const meta = () =>
@@ -56,50 +61,17 @@ const stepsWithImages = [
 
 export default function ChatIA() {
   return (
-    <section className="bg-clear pt-40 md:pt-64 overflow-hidden">
+    <section className="bg-clear  ">
       <HomeHeader />
       <ChatHero />
-      {/* <CompaniesScroll /> */}
-      <AIMotivation />
-      <section className="max-w-7xl w-full mx-auto px-4 md:px-[5%] xl:px-0">
-        <AiBanner />
-      </section>
-      <ChatBenefits />
-      <ChatTypeSlider />
-      {/* <ChatTypes /> */}    
-      <ChatIntegrations />
-      <IAModels/>
-        <SectionFadeIn delay={0.4}>
-      <section className="grid-cols-2 max-w-7xl mx-auto px-4 ">
-        <FullComment
-        ImageClassName="h-[400px]"
-          className=""
-          image="https://i.imgur.com/RAiyJBc.jpg"
-          client="Rosalba Flores"
-          comment="Como agencia de investigación, el chat de Formmy ha cambiado la interacción con los panelistas. Antes, nuestro tiempo se destinaba a resolver dudas sobre cómo completar encuestas. Ahora, hemos reducido ese tiempo en un 70%. Nuestros panelistas están más satisfechos y las tasas de finalización de encuestas han aumentado significativamente."
-          clientCompany="Collectum Datos"
-        />
-      </section>
+      <SectionFadeIn delay={0.4}>
+      <Quote  highlightStyle={{backgroundColor: "#8AD7C9"}} beforeHighlight="Nuestro chatbot es  " afterHighlight="Responde preguntas, delega cuando es necesario y sabe guiar a los clientes." highlightText="excelente." authorName="Abraham González" authorTitle="Restaurante Mi ranchito" authorImage="/home/abraham.webp" />
       </SectionFadeIn>
-      <section
-        id="steper"
-        className="w-full md:min-h-fit max-w-7xl mx-auto my-20 md:my-40 px-4 md:px-[5%] xl:px-0 min-h-[800px]"
-      >
-        <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center text-dark">
-          Crea tu primer Chatbot en 5 minutos
-        </h3>
-        <Steper
-          steps={stepsWithImages.map(({ title, desc }) => ({ title, desc }))}
-          renderRight={(selectedStep) => (
-            <img
-              src={stepsWithImages[selectedStep].image}
-              alt={stepsWithImages[selectedStep].title}
-              className=" max-h-fit md:max-h-[400px] max-w-full object-contain rounded-2xl shadow-lg"           
-            />
-          )}
-          autoAdvanceMs={10000}
-        />
-      </section>
+      <ChatBenefits />
+      <ChatSteps />
+      <ChatBanner/>
+      <ChatIntegrations />
+      <ChatComments/>
       <GeneralCallToAction />
       <HomeFooter />
     </section>

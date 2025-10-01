@@ -33,7 +33,7 @@ export const plans: Plan[] = [
     includes: [
       "📋 Hasta 3 formularios con respuestas ilimitadas",
       "🎨 Personalización básica de formularios",
-      "🤖 Chatbot por 30 días",
+      "🤖 Chatbot por 60 días",
     ],
     highlight: true,
     cardClass: "bg-[#7574D6] text-white border-none shadow-xl",
@@ -72,7 +72,7 @@ export const plans: Plan[] = [
     buttonAction: "/api/stripe",
     intent: "pro_plan",
     arr: "Ahorra 15% al pagar anualmente",
-    arrClass: "text-[#DAB23F] underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
+    arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
     includes: [
         "📋 Todo lo que incluye el plan Starter",
         "🤖 10 chatbots",
@@ -130,61 +130,93 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
     }
   };
 
+  // Determinar colores del badge según el plan
+  const badgeColors = {
+    "Free": "bg-gray-100 text-gray-800",
+    "Starter": "bg-yellow-100 text-yellow-800",
+    "Pro ✨": "bg-brand-100 text-[#6463A3]",
+    "Enterprise 🤖": "bg-cloud/20 text-teal-800"
+  };
+
+  const buttonColors = {
+    "Free": "bg-gray-200 hover:bg-gray-300 text-gray-800",
+    "Starter": "bg-yellow-300 hover:bg-yellow-400 text-gray-900",
+    "Pro ✨": "bg-brand-500 hover:bg-brand-600 text-white",
+    "Enterprise 🤖": "bg-cloud hover:bg-cloud/90 text-white"
+  };
+
+  const hoverBgColors = {
+    "Free": "hover:bg-gray-500/5",
+    "Starter": "hover:bg-yellow-500/10",
+    "Pro ✨": "hover:bg-brand-500/10",
+    "Enterprise 🤖": "hover:bg-cloud/10"
+  };
+
   return (
     <div
       className={cn(
-        "flex flex-col rounded-3xl p-8 w-full md:min-w-[280px] md:max-w-[340px] w-full border transition-all",
-        plan.cardClass,
-        plan.highlight && "scale-105 z-10 shadow-2xl"
+        "flex flex-col rounded-3xl p-6 w-full md:min-w-[280px] md:max-w-[320px] bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300",
+        plan.highlight && "shadow-lg",
+        hoverBgColors[plan.name as keyof typeof hoverBgColors]
       )}
     >
-      <h3 className={cn("text-3xl font-bold mb-2", plan.name === "Free" ? "text-white" : "text-black")}>{plan.name}</h3>
-      <p className={cn("mb-4 text-lg", plan.name === "Free" ? "text-white/90" : "text-gray-700")}>{plan.description}</p>
-      <div className="flex items-end gap-2 mb-4">
-        <span className={cn("text-4xl font-bold", plan.name === "Free" ? "text-white" : "text-black")}>{plan.price}</span>
-        <span className="font-semibold text-lg">MXN</span>
-        <span className={cn("text-lg", plan.name === "Free" ? "text-white/80" : "text-gray-500")}>{plan.priceNote}</span>
+      {/* Badge del plan */}
+      <div className="flex items-center gap-2 mb-6">
+        <span className={cn("px-4 py-2 rounded-full text-sm font-semibold", badgeColors[plan.name as keyof typeof badgeColors])}>
+          {plan.name}
+        </span>
+        {plan.highlight && plan.name === "Pro ✨" && (
+          <span className="text-brand-600 text-sm font-semibold">✨ Más popular</span>
+        )}
       </div>
-      
+
+      {/* Precio */}
+      <div className="mb-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
+          <span className="text-gray-500 text-sm">{plan.priceNote}</span>
+        </div>
+      </div>
+
+      {/* Descripción */}
+      <p className="text-gray-600 mb-6">{plan.description}</p>
+
+      {/* Botón */}
       <Button
         type="button"
         onClick={handleClick}
         disabled={isLoading}
         className={cn(
-          "w-full font-bold rounded-full py-3 mt-6",
-          plan.name === "Free" && "bg-white hover:bg-white/90 text-[#7574D6]",
-          plan.name === "Starter" && "bg-brand-500 hover:bg-brand-600 text-clear",
-          plan.name === "Pro ✨" && "bg-bird hover:bg-[#E5C059] text-dark",
-          plan.name === "Enterprise 🤖" && "bg-cloud hover:bg-[#5FAFA8] text-dark"
+          "w-full font-semibold rounded-full py-3 mb-8",
+          buttonColors[plan.name as keyof typeof buttonColors]
         )}
       >
         {isLoading ? <Spinner /> : plan.buttonText}
       </Button>
 
-      <div className={cn("mt-6 mb-2 font-semibold", plan.arrClass)}>{plan.arr}</div>
-      <div className="mt-2 mb-4">
-        <div className="font-bold mb-2">Incluye:</div>
-        <ul className="space-y-2">
-          {plan.includes.map((inc) => (
-            <li key={inc} className="flex items-center gap-2">
-              <span className={plan.name === "Free" ? "text-white" : "text-black"}>{inc}</span>
+      {/* Lista de features */}
+      <ul className="space-y-3">
+        {plan.includes.map((feature) => {
+          // Extraer emoji y texto - buscar hasta el primer espacio después de caracteres especiales
+          const parts = feature.trim().split(/\s+/);
+          const emoji = parts[0]; // Primer elemento (emoji)
+          const text = parts.slice(1).join(' '); // Resto del texto
+
+          return (
+            <li key={feature} className="flex items-center gap-3">
+              <span className="text-xl flex-shrink-0 self-start">{emoji}</span>
+              <span className="text-gray-700 text-sm">{text}</span>
             </li>
-          ))}
-        </ul>
-      </div>
-      {/* Sección extra solo si existe y tiene contenido */}
-      {Array.isArray(plan.extra) && plan.extra.length > 0 && (
-        <div className={cn("rounded-xl px-4 py-3 text-sm mt-auto border border-[#e5e5e5]", plan.arrBoxClass)}>
-          {plan.extra[0]}<br />{plan.extra[1]}
-        </div>
-      )}
+          );
+        })}
+      </ul>
     </div>
   );
 };
 
 export const PricingCards = () => {
   return (
-    <div className="w-full flex flex-col md:flex-row gap-4 justify-center items-stretch">
+    <div className="w-full flex flex-wrap justify-center gap-4">
       {plans.map((plan) => (
         <PricingCard key={plan.name} plan={plan} />
       ))}

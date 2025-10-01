@@ -21,13 +21,13 @@ const TestimonialCard = React.forwardRef<HTMLDivElement, TestimonialCardProps>(
       whileDrag={{ scale: 1.02, zIndex: 10 }}
       dragConstraints={dragConstraints}
       className={cn(
-        "cursor-grab bg-clear w-full md:w-[281px] h-fit rounded-3xl border border-outlines shadow p-6 flex flex-col justify-between",
+        "cursor-grab bg-clear w-full md:w-[281px] h-fit rounded-3xl border border-outlines shadow p-5 md:p-6 flex flex-col justify-between",
         "active:cursor-grabbing hover:shadow-lg hover:border-primary/20",
         className
       )}
     >
       <div>
-        <p className="paragraph text-metal text-[18px] mb-4">{comment}</p>
+        <p className="paragraph text-metal text-base md:text-lg mb-0 lg:mb-4">{comment}</p>
       </div>
       <div className="flex items-center gap-4 mt-4">
         <img 
@@ -90,7 +90,7 @@ export default function HomeTestimonials() {
     },
     {
       name: "Abraham González",
-      company: "Diseñador gráfico",
+      company: "Restaurante Mi ranchito",
       comment: "Agregar Formmy a mi website personal fue rápido y fácil. Me encantaron los formularios y el chat IA. .",
       img: "/home/abraham.webp",
     },
@@ -105,7 +105,7 @@ export default function HomeTestimonials() {
       <p className="paragraph text-gray-600 font-light text-lg md:text-xl md:text-2xl text-center mb-10 md:mb-16">
         Formularios + chat AI = menos trabajo, más resultados.
       </p>
-      <div className="flex flex-wrap items-start justify-center h-fit lg:h-[800px] gap-8 ">
+      <div className="flex flex-wrap items-start justify-center h-fit lg:h-[840px] gap-8 ">
         <div className="flex flex-col gap-8">
           <TestimonialCard 
             ref={constraintsRef}

@@ -86,12 +86,12 @@ export const FullBanner = () => {
   };
 
   return (
-    <div className="col-span-4 h-[400px] md:h-[400px] flex flex-col bg-[#15191E] flex flex-col md:flex-row rounded-3xl py-8 px-6 md:px-12 relative overflow-hidden ">
+    <div className="col-span-4 h-[300px] md:h-[400px] flex flex-col bg-[#15191E] flex flex-col md:flex-row rounded-3xl py-8 px-6 md:px-12 relative overflow-hidden ">
       {/* Fondo de estrellas decorativas */}
       <DecorativeStarsBackground />
       <DiscountBanner copied={copied} handleCopy={handleCopy} />
       <div className="absolute bottom-0 -right-14 md:right-0 z-10 flex gap-2 md:gap-4 w-auto h-auto">
-        <img className="h-[180px] md:h-[400px]" src="/home/figures.svg" />
+        <img className="h-[180px] xl:h-[400px]" src="/home/figures.svg" />
       </div>
     </div>
   );

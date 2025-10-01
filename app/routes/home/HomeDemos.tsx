@@ -4,7 +4,7 @@ const img = "https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg"
 
 function DemoCard({ label, backgroundImage, imageClassName,companybrand }: { label: string; backgroundImage?: string; imageClassName?: string, companybrand?:string }) {
   return (
-    <div className="bg-dark h-[280px] w-[420px] rounded-3xl relative overflow-hidden flex-shrink-0">
+    <div className="bg-dark h-[200px] lg:h-[280px] w-[280px] lg:w-[420px] rounded-3xl relative overflow-hidden flex-shrink-0">
       <div className="h-full w-full relative">
         <div
           className={cn(" w-full mx-auto h-full bg-top bg-no-repeat bg-cover rounded-3xl overflow-hidden", imageClassName)}
@@ -14,7 +14,7 @@ function DemoCard({ label, backgroundImage, imageClassName,companybrand }: { lab
           className="absolute bottom-0 left-0 w-full h-full"
           style={{ background: "linear-gradient(-5.9deg, rgba(0,0,0,0.5) 5%, rgba(0,0,0,0.0) 100%)" }}
         />
-        <div className="flex gap-2 items-center absolute bottom-6 left-6">
+        <div className="flex gap-2 items-center absolute bottom-3 lg:bottom-6 left-3 lg:left-6">
          <div className={cn("w-3 h-3 rounded-full bg-brand-500", companybrand)}></div>
           <div className=" text-white text-lg font-medium ">
             {label}
@@ -43,7 +43,7 @@ export default function HomeDemos() {
   ];
   return (
     <section className="relative w-full flex flex-col items-center my-20 md:my-40 overflow-hidden">
-      <h2 className="font-bold text-[#080923] text-3xl md:text-4xl lg:text-6xl text-center mb-10 md:mb-16 leading-tight px-4">
+      <h2 className="font-bold text-dark heading text-3xl md:text-4xl lg:text-6xl text-center mb-10 md:mb-16 leading-tight px-4">
         Formmy se adapta a lo que necesitas
       </h2>
       <Carrusel items={cards} direction="right" speed="slow" />

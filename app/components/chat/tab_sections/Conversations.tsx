@@ -9,180 +9,188 @@ const dev_conversations = [
   {
     messages: [
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
         role: "USER",
-        content: "Paso por ella mañana, ahorita no importa mucho realmente",
+        content: "Hola, estoy buscando a alguien que me ayude a crear un sitio web para mi negocio",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
         role: "ASSISTANT",
-        content: "Hola, ¿en qué puedo ayudarte?",
+        content: "¡Hola! Encantado de ayudarte. Cuéntame un poco más sobre tu negocio. ¿Qué tipo de empresa tienes y qué funcionalidades necesitas en tu sitio web?",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
         role: "USER",
-        content: "Hola",
+        content: "Tengo una cafetería en el centro y quiero un sitio para mostrar el menú, ubicación y poder recibir pedidos en línea",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
         role: "ASSISTANT",
-        content: "PErro! cómo andas?",
+        content: "Perfecto, entiendo. Para tu cafetería podemos crear un sitio con catálogo de productos, sistema de pedidos, integración con Google Maps y pasarela de pagos. ¿Cuál es tu presupuesto aproximado y en cuánto tiempo lo necesitas?",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
         role: "USER",
-        content: "Hola",
+        content: "Mi presupuesto es de unos $25,000 MXN y lo necesitaría en un mes máximo",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
-        role: "USER",
-        content: "ps ahí dos ods",
-      },
-      {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
-        role: "USER",
-        content: "Paso por ella mañana, ahorita no importa mucho realmente",
-      },
-      {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
         role: "ASSISTANT",
-        content: "Hola, ¿en qué puedo ayudarte?",
+        content: "Excelente, ese presupuesto es adecuado para lo que necesitas. Podemos entregarlo en 3-4 semanas. Te prepararé una propuesta detallada con diseño, funcionalidades y costos. ¿Prefieres que te la envíe por correo o agendamos una videollamada?",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
         role: "USER",
-        content: "Hola",
+        content: "Por correo está bien. Mi email es maria@cafeteriacentral.com",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
         role: "ASSISTANT",
-        content: "PErro! cómo andas?",
+        content: "Perfecto María. Te enviaré la propuesta hoy mismo a tu correo. ¿Hay alguna otra pregunta que tengas mientras tanto?",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
         role: "USER",
-        content: "Hola",
+        content: "¿También podrían ayudarme con el SEO para aparecer en búsquedas de Google?",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/16854007/pexels-photo-16854007.jpeg",
-        role: "USER",
-        content: "ps ahí dos ods",
+        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
+        role: "ASSISTANT",
+        content: "¡Por supuesto! Incluiremos optimización SEO básica en el desarrollo y podemos ofrecerte un plan de SEO continuo. Te lo detallo en la propuesta.",
       },
     ],
     isFavorite: true,
     id: "1",
-    userName: "Nombre",
-    userEmail: "email@example.com",
-    lastMessage: "Con gusto. Actualmente tenemos 5 mensajes",
-    time: "Ayer",
-    date: "21 de mayo de 2025",
+    userName: "María González",
+    userEmail: "maria@cafeteriacentral.com",
+    lastMessage: "¿También podrían ayudarme con el SEO para aparecer en búsquedas de Google?",
+    time: "Hace 2h",
+    date: "30 de septiembre de 2025",
     unread: 0,
     avatar: "/assets/chat/ghosty.svg",
-    tel: "+52 776 762 78 90",
+    tel: "+52 55 1234 5678",
     manualMode: false,
     isWhatsApp: true,
   },
   {
     messages: [
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
         role: "USER",
-        content: "Hemos confiscado tu bodega por falta de pago",
+        content: "Buenos días, necesito cotización para un e-commerce",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
         role: "ASSISTANT",
-        content: "Ayudame con esto que necesito hacer",
+        content: "¡Buenos días! Con gusto te ayudo. ¿Qué tipo de productos vas a vender y cuántos artículos aproximadamente tendrás en el catálogo?",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
         role: "USER",
-        content: "Me cuesta 100 dolares",
+        content: "Vendo ropa deportiva, tengo como 200 productos inicialmente pero quiero poder agregar más",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
         role: "ASSISTANT",
-        content: "ta re caro mano",
+        content: "Entendido. ¿Necesitas pasarela de pagos integrada? ¿Stripe, Mercado Pago u otra? ¿Y control de inventario?",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
         role: "USER",
-        content: "si vdd! chale",
+        content: "Sí, Mercado Pago y sí necesito control de inventario. ¿Cuánto costaría?",
+      },
+      {
+        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
+        role: "ASSISTANT",
+        content: "Para un e-commerce con esas características estaríamos hablando de $45,000-$60,000 MXN. Incluye diseño responsivo, carrito de compras, sistema de pagos, gestión de inventario y panel de administración. Tiempo de desarrollo: 6-8 semanas.",
+      },
+      {
+        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
+        role: "USER",
+        content: "Está dentro de mi presupuesto. ¿Qué tecnologías usan?",
+      },
+      {
+        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
+        role: "ASSISTANT",
+        content: "Trabajamos con React para el frontend, Node.js para el backend, y podemos usar Shopify o una solución custom. Para tu caso recomendaría una plataforma custom para mayor flexibilidad. ¿Te interesa agendar una llamada para discutir detalles?",
       },
     ],
     isFavorite: false,
     id: "2",
-    userName: "Nombre",
-    userEmail: "email@example.com",
-    lastMessage: "Ultimo mensaje",
-    time: "Ayer",
-    date: "21 de mayo de 2025",
-    unread: 0,
+    userName: "Carlos Ramírez",
+    userEmail: "carlos.r@sportswear.mx",
+    lastMessage: "Está dentro de mi presupuesto. ¿Qué tecnologías usan?",
+    time: "Hace 5h",
+    date: "29 de septiembre de 2025",
+    unread: 1,
     avatar: "/assets/chat/ghosty.svg",
-    tel: "+52 776 762 78 90",
+    tel: "+52 81 9876 5432",
     manualMode: false,
     isWhatsApp: true,
   },
   {
     messages: [
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
         role: "USER",
-        content: "Hemos confiscado tu bodega por falta de pago",
+        content: "Hola! Vi su trabajo en Instagram. Necesito una landing page",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
         role: "ASSISTANT",
-        content: "Ayudame con esto que necesito hacer",
+        content: "¡Hola! Gracias por contactarnos. ¿Para qué producto o servicio es la landing page?",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
         role: "USER",
-        content: "Me cuesta 100 dolares",
+        content: "Es para un curso online de fotografía que voy a lanzar el próximo mes",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
         role: "ASSISTANT",
-        content: "ta re caro mano",
+        content: "Perfecto. ¿Necesitas formulario de inscripción, integración con plataforma de pagos, contador regresivo o alguna otra funcionalidad específica?",
       },
       {
-        picture:
-          "https://images.pexels.com/photos/5958344/pexels-photo-5958344.jpeg",
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
         role: "USER",
-        content: "si vdd! chale",
+        content: "Sí a todo! También quisiera que tenga testimonios de alumnos y un video promocional",
+      },
+      {
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
+        role: "ASSISTANT",
+        content: "Excelente. Una landing page completa con esas secciones te costaría $15,000-$20,000 MXN y estaría lista en 2 semanas. Incluye diseño moderno, formularios, integración de pago y optimización para conversiones. ¿Te parece bien ese rango?",
+      },
+      {
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
+        role: "USER",
+        content: "Sí perfecto! ¿Cuándo podríamos empezar?",
+      },
+      {
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
+        role: "ASSISTANT",
+        content: "Podemos empezar esta misma semana. Necesitaría tu logo, paleta de colores (si la tienes), textos del contenido y el video. ¿Ya cuentas con todo ese material?",
+      },
+      {
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
+        role: "USER",
+        content: "Tengo el logo y video. Los textos los puedo tener en 2 días",
+      },
+      {
+        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
+        role: "ASSISTANT",
+        content: "Perfecto! Entonces arrancamos el lunes. Te envío contrato y forma de pago al correo. ¿Cuál es tu email?",
       },
     ],
-    isFavorite: false,
-    id: "2",
-    userName: "Nombre",
-    userEmail: "email@example.com",
-    lastMessage: "Ultimo mensaje",
+    isFavorite: true,
+    id: "3",
+    userName: "Ana Martínez",
+    userEmail: "ana.foto@gmail.com",
+    lastMessage: "Tengo el logo y video. Los textos los puedo tener en 2 días",
     time: "Ayer",
-    date: "21 de mayo de 2025",
+    date: "29 de septiembre de 2025",
     unread: 0,
     avatar: "/assets/chat/ghosty.svg",
-    tel: "+52 776 762 78 90",
+    tel: "+52 33 4567 8901",
     manualMode: false,
     isWhatsApp: true,
   },

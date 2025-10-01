@@ -9,6 +9,7 @@ import { RiEmotionHappyLine } from "react-icons/ri";
 import { SiCodeforces } from "react-icons/si";
 import { HiOutlineChatBubbleBottomCenterText } from "react-icons/hi2";
 import { FaSignal, FaWifi } from "react-icons/fa";
+import { HighlightBadge } from "~/components/HighlightBadge";
 
 type MessageType = {
   from: "user" | "agent";
@@ -47,7 +48,7 @@ export const ChatHero = () => {
       },
       {
         from: "user" as const,
-        text: "Sí",
+        text: "Sí, mi correo es jessica@gmail.com",
         avatar: "https://randomuser.me/api/portraits/women/44.jpg",
       },
     ],
@@ -106,175 +107,161 @@ export const ChatHero = () => {
       },
       {
         from: "agent" as const,
-        text: "¡De nada! Si tienes más preguntas, no dudes en escribirme. ¡Que tengas un excelente día! 😊",
+        text: "Si tienes más preguntas, no dudes en escribirme. ¡Que tengas un excelente día! 😊",
       },
     ],
   ];
   const [current, setCurrent] = useState(0);
 
   return (
-    <div className="w-full mb-10   mx-auto px-4 md:px-[5%] xl:px-0 flex flex-col  items-center justify-start md:justify-between gap-0 md:gap-16 ">
-      <div className="w-full flex flex-col justify-center items-center">
-        <h1 className="font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 leading-tight text-center md:text-left">
+    <div className="max-w-7xl mb-0 lg:mb-10 min-h-svh pt-32 pb-20 md:pt-40 lg:pt-48 mx-auto px-4 md:px-[5%] xl:px-0 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-8 lg:gap-16">
+      <div className="w-full lg:w-[50%] flex flex-col items-center lg:items-start">
+        <HighlightBadge highlightText="Tu propio agente IA." normalText="Sin complicaciones." />
+        <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl mb-4 !leading-[1.1] text-center md:text-left">
           Chat IA que conecta con tus clientes
         </h1>
-        <p className="text-metal text-lg md:text-2xl font-light   mb-0 max-w-4xl text-center ">
+        <p className="text-metal text-base md:text-lg lg:text-2xl font-light text-center md:text-left">
           La forma más fácil de crear agentes de soporte con IA para tu sitio
           web. Responde preguntas, guía a tus clientes y capta leads
           automáticamente, 24/7.
         </p>
-        <Form method="post" className="mt-10 mx-auto md:mx-0" action="/api/login">
+        <Form method="post" className="mt-8 lg:mt-10 mx-auto md:mx-0" action="/api/login">
           <BigCTA type="submit" name="intent" value="google-login" />
         </Form>
- 
       </div>
-      <div className="w-[1340px] mt-10 lg:mt-0 flex justify-center items-start flex-nowrap gap-8 relative" style={{ perspective: '1000px' }}>
-        {/* Flowing SVG background */}
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <svg 
-            className="w-full h-full" 
-            viewBox="0 0 1329 600" 
-            fill="none" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path 
-              d="M120 300 C250 50, 400 550, 600 300 C800 50, 950 550, 1150 300 C1200 50, 1210 550" 
-              fill="none" 
-              stroke="url(#flowGradient)" 
-              strokeWidth="120" 
-              strokeLinecap="round"
-              strokeDasharray="12 8"
-            />
-            <defs>
-              <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#F5F5FC"/>
-                <stop offset="50%" stopColor="#F5F5FC"/>
-                <stop offset="100%" stopColor="#F5F5FC"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-          <FeatureCardWithHover 
-            className="flex flex-col" 
-            initialRotation={{ x: 15, y: 25, z: 2 }}
-          >
-              <h3 className="font-semibold text-dark text-xl">Personalizalo</h3>
-              <div className="grid place-content-center h-full">
-              <div className=" w-12 h-12  rounded-full mx-auto border border-[#953AC6] overflow-hidden"><img src="/home/chat.png" /></div>
-              <p className="text-base text-dark leading-relaxed mt-2 text-center">¡Hola, soy Ghosty!</p>
-              <div className="w-12 mx-auto mt-2 h-5 rounded bg-brand-500"></div>
-              </div>
-          </FeatureCardWithHover>
-          <FeatureCardWithHover 
-            className="flex flex-col" 
-            initialRotation={{ x: 25, y: -35, z: 2 }}
-          >
-              <h3 className="font-semibold text-dark text-xl mb-1">Entrénalo</h3>
-            <div className="w-full h-full border border-dashed border-outlines p-4 rounded-2xl grid place-content-center relative">
-              <div className="absolute w-8 h-8  rounded-full -top-3 right-3 overflow-hidden border-2 border-brand-500"> <img className="w-full h-full object-cover" src="https://images.pexels.com/photos/159519/back-to-school-paper-colored-paper-stationery-159519.jpeg" /></div>
-              <div className="absolute w-10 h-10  rounded-full left-2 -bottom-3 overflow-hidden border-2 border-sky"> <img className="w-full h-full object-cover" src="https://images.pexels.com/photos/4792285/pexels-photo-4792285.jpeg" /></div>
-
-            <BsCloudUpload className="text-3xl text-metal mx-auto"/>
-              <p className="text-xs text-metal leading-relaxed text-center mt-2">Arrastra o selecciona los archivos </p>
-            </div>
-          </FeatureCardWithHover>
-   
-        <div className="relative px-6 py-3 z-10">
-          <ChatPreview 
+      <div className="w-full lg:w-[50%] flex justify-center items-center relative">
+ 
+      <div className="relative px-3 md:px-6 py-3 z-20 lg:-mr-12">
+          <ChatPreview
             conversations={conversations}
             current={current}
             onPrev={() => setCurrent((c) => Math.max(0, c - 1))}
             onNext={() => setCurrent((c) => Math.min(conversations.length - 1, c + 1))}
             onRestart={() => setCurrent(0)}
           />
-          <img 
-            src="/mock.png" 
-            alt="Mock overlay" 
-            className="w-[300px] lg:w-[360px] h-[520px] lg:h-[680px] absolute top-0 z-20"
+          <img
+            src="/mock.png"
+            alt="Mock overlay"
+            className="w-[280px] md:w-[300px] lg:w-[360px] h-[500px] md:h-[520px] lg:h-[680px] absolute top-0 left-0 md:left-auto z-20 pointer-events-none"
           />
         </div>
-        <FeatureCardWithHover 
-           className="p-0" 
-           initialRotation={{ x: 25, y: 35, z: 2 }}
+        {/* Configuration Cards - Stacked */}
+        <div className="hidden xl:flex flex-col items-start justify-start -mt-32 relative" style={{ perspective: '1200px' }}>
+          {/* Stats Card */}
+          <motion.div
+            className="relative z-10 -mb-52"
+            initial={{ opacity: 0, rotateY: -45, x: -80, scale: 0.8 }}
+            animate={{ opacity: 1, rotateY: 0, x: 0, scale: 1 }}
+            transition={{
+              duration: 0.8,
+              delay: 0.3,
+              ease: [0.34, 1.56, 0.64, 1]
+            }}
+            style={{ transformStyle: 'preserve-3d' }}
           >
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="font-semibold text-dark text-xl">Configúralo</h3>
-            </div>
-            <div className="h-full flex flex-col justify-center relative mt-2">
-           
-              {/* Área de destino - HTML del sitio */}
-              <div className="bg-gray-800 overflow-hidden  border-gray-500 rounded-lg p-2 text-xs font-mono relative">
-                <div className="text-gray-500 mb-1">&lt;body&gt;</div>
-                <div 
-                  className="ml-2 opacity-0 text-green-400"
-                  style={{
-                    animation: 'fadeInText 4s infinite'
-                  }}
-                >
-                  <div className="text-gray-500">&lt;a </div>
-                  <div className="ml-2 text-blue-300">href=<span className="text-yellow-300">"https://formmy.app</span></div>
-                  <div className="ml-2 text-yellow-300">/chat/embed?slug=mi-chatbot-HlSTR"</div>
-                  <div className="ml-2 text-blue-300">target=<span className="text-yellow-300">"_blank"</span></div>
-                  <div className="ml-2 text-blue-300">rel=<span className="text-yellow-300">"noopener noreferrer"</span>&gt;</div>
-                  <div className="ml-2 text-white">Chatear con Ghosty</div>
-                  <div className="text-gray-500">&lt;/a&gt;</div>
+            <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: -12 }}
+            className="flex flex-col"
+          >
+              <h3 className="font-semibold text-dark ">Personaliza tu chat</h3>
+              <div className="grid place-content-center h-full">
+              <div className=" w-12 h-12  rounded-full mx-auto border  overflow-hidden"><img src="/dash/logo-full.svg" /></div>
+              <p className="text-base text-dark leading-relaxed mt-2 text-center">¡Hola, soy Ghosty!</p>
+              <div className="w-12 mx-auto mt-2 h-5 rounded bg-brand-500"></div>
+              </div>
+
+            </FeatureCardWithHover>
+          </motion.div>
+
+          {/* Resume Card */}
+          <motion.div
+            className="relative z-20 -mb-44 ml-16"
+            initial={{ opacity: 0, rotateY: -50, x: -100, scale: 0.75 }}
+            animate={{ opacity: 1, rotateY: 0, x: 0, scale: 1 }}
+            transition={{
+              duration: 0.9,
+              delay: 0.5,
+              ease: [0.34, 1.56, 0.64, 1]
+            }}
+            style={{ transformStyle: 'preserve-3d' }}
+          >
+            <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: 8 }}>
+              <div className="flex items-center gap-2 mb-3">
+                  <span className=" font-semibold text-dark">Centraliza tus mensajes</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
+                  <img
+                    src="https://randomuser.me/api/portraits/women/44.jpg"
+                    alt="Cliente"
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-sm font-semibold text-gray-900">Jessica Islas</div>
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">Sí, mi correo es jessica@gmail.com</div>
+                  </div>
                 </div>
-                <div className="text-gray-500">&lt;/body&gt;</div>
-                <div 
-                  className="absolute top-1 right-2 text-green-500 opacity-0"
-                  style={{
-                    animation: 'fadeInCheck 4s infinite'
-                  }}
-                >
-                  ✓ Pegado
+
+                <div className="flex items-center gap-3 bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
+                  <img
+                    src="https://randomuser.me/api/portraits/men/32.jpg"
+                    alt="Cliente"
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-sm font-semibold text-gray-900">Carlos Rodríguez</div>
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">Gracias. Ahora estás en la lista.</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-white rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100">
+                  <img
+                    src="https://randomuser.me/api/portraits/women/65.jpg"
+                    alt="Cliente"
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-sm font-semibold text-gray-900">Laura Martínez</div>
+                      <div className="text-xs text-gray-400">Ayer</div>
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">¡Perfecto, gracias!</div>
+                  </div>
                 </div>
               </div>
-              
-              {/* Estilos CSS en línea */}
-              <style dangerouslySetInnerHTML={{
-                __html: `
-                @keyframes slideAcross {
-                  0% { transform: translateX(-100%); }
-                  50% { transform: translateX(100%); }
-                  100% { transform: translateX(100%); }
-                }
-                
-                @keyframes fadeInText {
-                  0%, 50% { opacity: 0; }
-                  60%, 90% { opacity: 1; }
-                  100% { opacity: 0; }
-                }
-                
-                @keyframes fadeInCheck {
-                  0%, 50% { opacity: 0; }
-                  60%, 75% { opacity: 1; }
-                  80%, 100% { opacity: 0; }
-                }
-                `
-              }} />
-            </div>
-          </FeatureCardWithHover>
-          <FeatureCardWithHover 
-      
-            initialRotation={{ x: -15, y: -25, z: 2 }}
+            </FeatureCardWithHover>
+          </motion.div>
+
+          {/* Contact Card */}
+          <motion.div
+            className="relative !z-20 ml-8"
+            initial={{ opacity: 0, rotateY: -40, x: -70, scale: 0.85 }}
+            animate={{ opacity: 1, rotateY: 0, x: 0, scale: 1 }}
+            transition={{
+              duration: 0.85,
+              delay: 0.7,
+              ease: [0.34, 1.56, 0.64, 1]
+            }}
+            style={{ transformStyle: 'preserve-3d' }}
           >
-           <h3 className="font-semibold text-dark text-xl">Visualiza</h3>
-           <div className="flex flex-col gap-2 mt-6">
-            <div className="flex items-center gap-2">
-            <div className=" p-2 rounded-full w-8 h-8 bg-brand-500 text-white"><SiCodeforces />
-            </div> Eficiencia
+            <FeatureCardWithHover initialRotation={{ x: 0, y: 0, z: -6 }}>
+            <h3 className="font-semibold text-dark  mb-3">Entrena a tu agente</h3>
+            <div className="w-full h-[80%] border border-dashed border-outlines  p-4 rounded-2xl grid place-content-center relative">
+              <div className="absolute w-8 h-8  rounded-full -top-3 right-3 overflow-hidden border-2 border-brand-500"> <img className="w-full h-full object-cover" src="https://images.pexels.com/photos/159519/back-to-school-paper-colored-paper-stationery-159519.jpeg" /></div>
+              <div className="absolute w-6 h-6  rounded-full left-2 bottom-4 overflow-hidden border-2 border-sky"> <img className="w-full h-full object-cover" src="https://images.pexels.com/photos/4792285/pexels-photo-4792285.jpeg" /></div>
+
+             <BsCloudUpload className="text-3xl text-metal mx-auto"/>
+              <p className="text-xs text-metal leading-relaxed text-center mt-2">Arrastra o selecciona los archivos </p>
             </div>
-            <div className="flex items-center gap-2">
-            <div className=" p-2 rounded-full w-8 h-8 bg-fiusha text-white"><RiEmotionHappyLine />
-            </div> Sentimientos
-            </div>
-            <div className="flex items-center gap-2">
-            <div className=" p-2 rounded-full w-8 h-8   bg-bird text-white"><HiOutlineChatBubbleBottomCenterText />
-            </div> Temas
-            </div>
-            
-            </div>
-          </FeatureCardWithHover>
+            </FeatureCardWithHover>
+          </motion.div>
+        </div>
+
+      
+
      
       </div>
     </div>
@@ -308,17 +295,16 @@ const FeatureCardWithHover = ({ children, className, initialRotation = { x: 0, y
   const [isHovered, setIsHovered] = useState(false);
 
   const cardStyle: React.CSSProperties = {
-    transform: isHovered 
-      ? `perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1.1)`
-      : `perspective(1000px) rotateX(${initialRotation.x}deg) rotateY(${initialRotation.y}deg) rotateZ(${initialRotation.z}deg)`,
+    transform: isHovered
+      ? `scale(1.1) translateY(-5px)`
+      : `scale(1) translateY(0px) rotate(${initialRotation.z}deg)`,
     transition: 'transform 0.3s ease-out',
     willChange: 'transform',
-    boxShadow: '10px 20px 40px rgba(0,0,0,0.08)'
   };
 
   return (
     <div 
-      className={`bg-white overflow-hidden mt-40 relative z-10 rounded-2xl h-[220px] w-[180px] p-4 shadow-lg border border-gray-100 w-48 hover:shadow-xl transition-shadow duration-300 hover:z-20 cursor-pointer ${className || ''}`}
+      className={`bg-white overflow-hidden mt-40 -mr-32 relative z-10 rounded-2xl h-[220px] w-[240px] p-4  border border-outlines w-48 hover:z-20 cursor-pointer ${className || ''}`}
       style={cardStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -336,20 +322,17 @@ const ChatPreview = ({ conversations, current, onPrev, onNext, onRestart }: {
   onRestart: () => void;
 }) => {
   return (
-    <motion.div 
+    <motion.div
       id="chat"
-      className="border border-gray-300 bg-white rounded-[48px] p-4 md:px-5 ml-3 w-[280px] lg:w-[332px] lg:h-[650px] h-[500px] flex flex-col justify-end shadow-lg relative overflow-hidden"
-      initial={{ opacity: 0, y: -100 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="border border-gray-300 bg-white rounded-[32px] md:rounded-[48px] p-3 md:p-4 lg:px-5 ml-0 md:ml-3 w-[260px] md:w-[280px] lg:w-[332px] h-[480px] md:h-[500px] lg:h-[650px] flex flex-col justify-end shadow-lg relative overflow-hidden"
     >
   
       <div className="absolute flex flex-col z-10 border-b border-outlines left-0 top-0 w-full h-16 text-white flex  items-center  text-xl font-medium">
       <div className="w-full h-12 bg-dark py-2 px-8 text-xs flex justify-between "><p>10:30</p><div className="flex gap-2"><FaSignal />   <FaWifi /><IoBatteryFull /></div>
 
       </div>
-      <div className=" w-full bg-dark text-white flex gap-3 items-center px-6 text-xl font-medium px-6">
-        <img src="/home/ghosty-avatar.svg" />
+      <div className=" w-full bg-dark text-white flex gap-3 items-center px-6 text-xl font-medium px-6 py-2">
+        <img className="w-8" src="/home/ghosty-avatar.svg" />
         Ghosty
         </div>
       </div>

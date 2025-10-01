@@ -26,9 +26,9 @@ export default function HomeCallToAction() {
           fill="none"
         />
       </svg>
-      <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-start  justify-between z-10">
+      <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-start  justify-between z-10 px-4 md:px-[5%] xl:px-0">
         <div className="flex-1 flex flex-col items-start justify-center mt-16">
-          <h2 className="text-white text-4xl md:text-6xl font-bold !leading-[1.3] mb-4 md:mb-8">
+          <h2 className="text-white text-4xl lg:text-6xl font-bold !leading-[1.3] mb-4 md:mb-8">
          Transforma tu web.
             <br />
             Házlo fácil, rápido y sin código con <span className="text-brand-500">Formmy</span>.
@@ -43,9 +43,9 @@ export default function HomeCallToAction() {
           </Button>
           </Form> */}
         </div>
-        <div className="flex-1 flex items-center justify-center mt-12 md:mt-0 relative">
+        <div className="flex-1 flex items-center justify-end w-full -mt-12 md:mt-0 relative ">
           {/* Mockup móvil */}
-          <div className="w-[200px] md:w-[320px] h-[400px] md:h-[660px] bg-white rounded-[40px] shadow-2xl border-8 border-dark overflow-hidden flex items-end justify-center relative">
+          <div className="w-[160px] lg:w-[320px] h-[300px] lg:h-[660px] bg-white rounded-[40px] shadow-2xl border-8 border-dark overflow-hidden flex items-end justify-center relative">
             <img
               src={imgCapturaDePantalla20250708ALaS35003PM1}
               alt="App preview"
@@ -128,7 +128,7 @@ export const GeneralCallToAction = () => {
         </div>
         <Form method="post" action="/api/login" id="start_footer">
           <BigCTA
-            className="mx-auto w-[180px]"
+            className="mx-auto w-[200px]"
             type="submit"
             name="intent"
             value="google-login"

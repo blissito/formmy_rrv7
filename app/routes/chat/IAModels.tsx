@@ -58,7 +58,7 @@ interface IAModelCardProps {
   };
 }
 
-const IAModelCard = ({className, img, style, initialRotation = { x: 0, y: 0, z: 0 }}: IAModelCardProps) => {
+export const IAModelCard = ({className, img, style, initialRotation = { x: 0, y: 0, z: 0 }}: IAModelCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
@@ -91,7 +91,7 @@ const IAModelCard = ({className, img, style, initialRotation = { x: 0, y: 0, z: 
   return (
     <div 
       className={cn(
-        "col-span-1 rounded-3xl p-1 md:p-6 bg-white/80 backdrop-blur-sm grid place-items-center",
+        "col-span-1 rounded-3xl p-1 md:p-6 bg-white backdrop-blur-sm grid place-items-center",
         "relative hover:z-10 cursor-pointer",
         className
       )}

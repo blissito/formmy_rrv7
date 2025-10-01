@@ -16,7 +16,7 @@ export default function DashboardGhosty() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-white p-4">
       <GhostyContainer userImage={user.picture || undefined} />
     </div>
   );
