@@ -91,7 +91,7 @@ export const FullBanner = () => {
       <DecorativeStarsBackground />
       <DiscountBanner copied={copied} handleCopy={handleCopy} />
       <div className="absolute bottom-0 -right-14 md:right-0 z-10 flex gap-2 md:gap-4 w-auto h-auto">
-        <img className="h-[180px] md:h-[400px]" src="/home/figures.svg" />
+        <img className="h-[180px] lg:h-[400px]" src="/home/figures.svg" />
       </div>
     </div>
   );

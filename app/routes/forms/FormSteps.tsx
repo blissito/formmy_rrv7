@@ -88,7 +88,7 @@ export function FormSteps({ steps, title = "Crea tu primer Formmy en 5 minutos" 
       </h2>
 
       <div ref={stepsContainerRef} className="relative z-10">
-        <StickyScroll items={stickyItems} />
+        <StickyScroll items={stickyItems} numberBgColor="bg-cloud" />
       </div>
     </section>
   );

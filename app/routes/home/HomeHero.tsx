@@ -79,7 +79,7 @@ export default function HomeHero() {
 
   const getFontFamily = (letterIndex: number, phase: number) => {
     const animatedPosition = animatedIndexes.indexOf(letterIndex);
-    if (animatedPosition === -1 || phase === 0 || phase >= 4) return 'Inter, system-ui, sans-serif';
+    if (animatedPosition === -1 || phase === 0 || phase >= 4) return 'Poppins, system-ui, sans-serif';
 
     // Quick cycling phase (0.1 to 0.6)
     if (phase < 1) {
@@ -95,7 +95,7 @@ export default function HomeHero() {
   return (
     <section className="relative overflow-hidden z-10 flex flex-col items-center justify-center min-h-svh pt-32 md:pt-[240px] max-w-[1400px] px-4 md:px-[5%]  lg:px-0 mx-auto">
       <div className="h-[180px]  md:h-[160px] lg:h-[220px] flex items-center justify-center">
-        <h1 className="header text-dark text-[3rem] md:text-5xl px-4 lg:text-[112px] text-center leading-none md:leading-tight flex-wrap gap-2" style={{ lineHeight: '1', minHeight: '1em' }}>
+        <h1 className=" text-dark heading text-[3rem] md:text-5xl lg:text-7xl px-4 xl:text-[106px] text-center leading-none md:leading-tight flex-wrap gap-2" style={{ lineHeight: '1', minHeight: '1em' }}>
           {text.split('').map((char, index) => {
             const isAnimated = animatedIndexes.includes(index);
             const shouldAnimate = isAnimated && animationPhase > 0 && animationPhase < 4;
@@ -106,7 +106,7 @@ export default function HomeHero() {
               return (
                 <span
                   key={index}
-                  className="inline-block transition-all duration-700 ease-out relative align-baseline"
+                  className=" inline-block transition-all duration-700 ease-out relative align-baseline"
                   style={{
                     animationDelay: `${index * 50}ms`,
                     width: animationPhase < 4 ? 'auto' : 'auto',
@@ -118,7 +118,7 @@ export default function HomeHero() {
                     <img
                       src="/dash/logo-full.svg"
                       alt="Formmy Logo"
-                      className="w-10 h-10 md:w-16 md:h-16 lg:w-20 lg:h-20 mt-2 lg:mt-4"
+                      className="w-10 h-10 md:w-12 md:h-12 xl:w-20 xl:h-20 mt-2 md:mt-0 xl:mt-4"
                       style={{
                         transition: 'all 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)',
                         transform: 'scale(1) rotate(0deg) translateY(0px)',
@@ -222,7 +222,7 @@ export default function HomeHero() {
             alt="hero"
             height={400}
             width={1400}
-            className="mx-auto rounded-2xl object-cover h-full object-left-top hidden md:block"
+            className="mx-auto rounded-2xl object-cover h-full object-left-top hidden lg:block"
             draggable={false}
           />
               <img
@@ -230,11 +230,11 @@ export default function HomeHero() {
             alt="hero"
             height={400}
             width={400}
-            className="mx-auto rounded-2xl object-cover h-full object-left-top md:hidden"
+            className="mx-auto rounded-2xl object-cover h-full object-left-top lg:hidden"
             draggable={false}
           />
         </ContainerScroll>
-      <div className="-mt-24 mb-10 bg-outlines w-full h-[1px] flex justify-center items-center text-center">
+      <div className="-mt-40 md:-mt-32 mb-10 bg-outlines w-full h-[1px] flex justify-center items-center text-center">
         <p className="bg-white w-fit -mt-[3px] px-2 text-sm lg:text-base"><strong>+500 usuarios usan Formmy</strong> para captar leads, <br className="lg:hidden" />automatizar procesos y atender a sus clientes. </p>
         </div>
       <CompaniesScroll />

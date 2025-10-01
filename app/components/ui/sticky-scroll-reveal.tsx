@@ -6,9 +6,11 @@ import { ScrollReveal } from "../ScrollReveals";
 export const StickyScroll = ({
   items,
   onIndexChange,
+  numberBgColor = "bg-bird",
 }: {
   items: Record<string, ReactNode>[];
   onIndexChange?: (index: number) => void;
+  numberBgColor?: string;
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentImage, setCurrentImage] = useState(items[currentIndex].img);
@@ -47,7 +49,7 @@ export const StickyScroll = ({
               >
                 <div className="flex flex-col items-start gap-4 mb-4 ">
                   {number && (
-                    <span className="text-2xl lg:text-3xl xl:text-3xl font-bold bg-bird text-dark rounded-2xl px-4 py-2 flex-shrink-0">
+                    <span className={cn("text-2xl lg:text-3xl xl:text-3xl font-bold text-dark rounded-2xl px-4 py-2 flex-shrink-0", numberBgColor)}>
                       {number}
                     </span>
                   )}
@@ -75,7 +77,7 @@ export const StickyScroll = ({
               </InViewDetector>
             ))}
           </div>
-          <div className="sticky top-10 md:top-14 lg:mt-10 h-[320px] md:h-[380px] px-[5%] lg:px-0 lg:top-40 w-full  lg:max-w-[50%] flex-none lg:flex-1  overflow-hidden flex items-center justify-center   aspect-square">
+          <div className="sticky top-10 md:top-14 lg:mt-10 h-[320px] md:h-[380px] px-[5%] lg:px-0 lg:top-80 w-full  lg:max-w-[50%] flex-none lg:flex-1  overflow-hidden flex items-center justify-center   aspect-square">
             <div className="md:w-[80%] lg:w-full mx-auto">{currentImage}</div>
           </div>
         </section>

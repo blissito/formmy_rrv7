@@ -165,16 +165,19 @@ body {
   }
 }
 
-.header{
-  font-family: "Poppins", sans-serif;
+h1{
+  font-family: "Poppins", sans-serif !important;
+}
 
+.header{
+  font-family: "Poppins", sans-serif !important;
   /* font-family: 'Athletics', 'Inter', ui-sans-serif, system-ui, sans-serif; */
   font-weight: 700;
 }
 
 /* Utilidades para títulos y párrafos */
 .heading {
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins", sans-serif !important;
 
   /* font-family: 'Athletics', 'Inter', ui-sans-serif, system-ui, sans-serif; */
   font-weight: 600;
