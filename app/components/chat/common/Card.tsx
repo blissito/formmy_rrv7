@@ -40,7 +40,7 @@ export const Card = ({
             {title}
           </h3>
           {text && (
-            <p className="text-metal mb-2 text-sm md:text-base">{text}</p>
+            <p className="text-metal mt-2 mb-2 text-sm font-normal md:text-base">{text}</p>
           )}
         </div>
         {!noSearch && !action && <SearchInput />}
@@ -217,7 +217,7 @@ export const IntegrationCard = ({
           </div>
         )} */}
       </div>
-      <p className="text-sm mb-2 text-metal leading-tight">{description}</p>
+      <p className="text-sm mb-2 text-metal font-normal">{description}</p>
 
       {/* Status indicator */}
 

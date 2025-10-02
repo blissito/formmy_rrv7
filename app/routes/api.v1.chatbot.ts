@@ -294,6 +294,60 @@ export async function action({ request }: any) {
         return await handleIntegrationManagement(intent, formData, userId);
       }
 
+      // Get conversations count
+      case "get_conversations_count": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Verificar que el chatbot existe y pertenece al usuario
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Verificar permisos (owner o colaborador con acceso)
+        const hasAccess = chatbot.userId === userId;
+        if (!hasAccess) {
+          // Verificar si tiene permisos como colaborador
+          const permission = await db.permission.findFirst({
+            where: {
+              chatbotId,
+              userId,
+              status: "active"
+            }
+          });
+          if (!permission) {
+            return new Response(
+              JSON.stringify({ error: "No tienes acceso a este chatbot" }),
+              { status: 403, headers: { "Content-Type": "application/json" } }
+            );
+          }
+        }
+
+        // Contar conversaciones (excluyendo las DELETED)
+        const count = await db.conversation.count({
+          where: {
+            chatbotId,
+            status: {
+              not: "DELETED"
+            }
+          }
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, count }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       default: {
         return new Response(
           JSON.stringify({ error: "Intent no soportado" }),

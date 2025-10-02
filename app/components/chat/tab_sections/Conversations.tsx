@@ -598,7 +598,7 @@ const ManualResponseInput = ({
   ];
 
   return (
-    <div className="border-l border-r border-b border-outlines bg-gradient-to-r from-blue-50 to-indigo-50 p-4 w-full rounded-b-3xl">
+    <div className="border-l border-r border-b border-outlines bg-brand-100 p-4 w-full rounded-b-3xl">
       {/* 🎯 QUICK RESPONSES */}
       <div className="flex flex-wrap gap-2 mb-3">
         {quickResponses.map((response, index) => (
@@ -620,7 +620,7 @@ const ManualResponseInput = ({
             onChange={handleAutoResize}
             onKeyDown={handleKeyDown}
             placeholder="💬 Responde al usuario aquí..."
-            className="w-full p-3 border-2 border-blue-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-3 border-2 border-blue-200 rounded-xl resize-none focus:outline-none focus:ring-0  focus:border-brand-500 transition-all"
             rows={2}
             maxLength={4096}
             style={{ minHeight: '60px' }}
@@ -634,11 +634,11 @@ const ManualResponseInput = ({
           onClick={handleSend}
           disabled={!message.trim() || isSending}
           className={cn(
-            "px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl transition-all transform",
-            "hover:from-blue-600 hover:to-blue-700 hover:scale-105 hover:shadow-lg",
+            "px-6 py-3 bg-brand-500 text-white rounded-full transition-all transform",
+            "hover:scale-105 hover:shadow-lg hover:bg-brand-600",
             "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
             "flex items-center gap-2 font-medium whitespace-nowrap",
-            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            "focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
           )}
         >
           {isSending ? (
@@ -648,7 +648,6 @@ const ManualResponseInput = ({
             </>
           ) : (
             <>
-              <span>🚀</span>
               Enviar
             </>
           )}

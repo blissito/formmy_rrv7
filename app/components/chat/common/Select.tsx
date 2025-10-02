@@ -21,10 +21,10 @@ export const Select = ({
 }) => {
   return (
     <div className="grid gap-1">
-      <span className="text-metal text-sm">{label}</span>
+      <span className="text-metal text-sm font-normal">{label}</span>
       <select
         className={cn(
-          "rounded-2xl border-gray-300 min-w-[220px] py-3 focus:ring-brand-500 focus:border-none",
+          "rounded-2xl border-gray-300 min-w-[220px] py-3 font-normal text-base text-dark focus:ring-brand-500 focus:border-none",
           {
             "bg-transparent border-none text-metal": mode === "ghost",
           },
