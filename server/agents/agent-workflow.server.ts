@@ -7,6 +7,7 @@
 import { agent, agentToolCallEvent, agentStreamEvent } from "@llamaindex/workflow";
 import { OpenAI } from "@llamaindex/openai";
 import { Anthropic } from "@llamaindex/anthropic";
+import { createMemory } from "@llamaindex/core/memory";
 import { getToolsForPlan, type ToolContext } from '../tools';
 import type { ResolvedChatbotConfig } from '../chatbot/configResolver.server';
 
@@ -87,10 +88,13 @@ Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu 
 }
 
 /**
- * Crea un agente con todas las herramientas del plan
+ * Crea un agente con todas las herramientas del plan + memoria conversacional
  * El modelo AI decide qué tools usar - zero custom routing
  */
-function createSingleAgent(context: WorkflowContext) {
+async function createSingleAgent(
+  context: WorkflowContext,
+  conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>
+) {
   const { resolvedConfig, userPlan } = context;
 
   // Model selection con mapping transparente
@@ -112,17 +116,35 @@ function createSingleAgent(context: WorkflowContext) {
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
   const systemPrompt = buildSystemPrompt(resolvedConfig);
 
+  // Crear memoria conversacional si hay historial
+  let memory;
+  if (conversationHistory && conversationHistory.length > 0) {
+    memory = createMemory({});
+
+    // Agregar mensajes del historial a la memoria
+    for (const msg of conversationHistory) {
+      await memory.add({
+        role: msg.role,
+        content: msg.content,
+        createdAt: new Date()
+      });
+    }
+  }
+
   return agent({
     llm,
     tools: allTools,
-    systemPrompt
+    systemPrompt,
+    ...(memory && { memory }) // Solo agregar memory si existe
   });
 }
 
 /**
  * Stream de un agente con tracking de eventos
+ * La memoria conversacional ya está en el agente, no se pasa aquí
  */
 async function* streamSingleAgent(agentInstance: any, message: string) {
+  // El agente ya tiene memoria configurada, solo pasamos el mensaje actual
   const events = agentInstance.runStream(message);
 
   let hasStreamedContent = false;
@@ -171,7 +193,7 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
 }
 
 /**
- * AgentWorkflow principal - Simplified
+ * AgentWorkflow principal - Simplified con memoria conversacional
  */
 export const streamAgentWorkflow = async function* (
   user: any,
@@ -192,9 +214,14 @@ export const streamAgentWorkflow = async function* (
   };
 
   try {
-    // Single agent con todas las tools - modelo decide
-    const agent = createSingleAgent(context);
-    yield* streamSingleAgent(agent, message);
+    // Extraer historial conversacional del agentContext
+    const conversationHistory = options.agentContext?.conversationHistory || [];
+
+    // Single agent con todas las tools + memoria conversacional
+    const agentInstance = await createSingleAgent(context, conversationHistory);
+
+    // Stream con memoria ya configurada en el agente
+    yield* streamSingleAgent(agentInstance, message);
   } catch (error) {
     console.error('❌ AgentWorkflow error:', error);
     yield {
