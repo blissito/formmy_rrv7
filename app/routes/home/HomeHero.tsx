@@ -235,7 +235,7 @@ export default function HomeHero() {
           />
         </ContainerScroll>
       <div className="-mt-40 md:-mt-32 mb-10 bg-outlines w-full h-[1px] flex justify-center items-center text-center">
-        <p className="bg-white w-fit -mt-[3px] px-2 text-sm lg:text-base"><strong>+500 usuarios usan Formmy</strong> para captar leads, <br className="lg:hidden" />automatizar procesos y atender a sus clientes. </p>
+        <p className="bg-white w-fit -mt-[3px] px-2 text-sm lg:text-base"><strong>+1,000 usuarios usan Formmy</strong> para captar leads, <br className="lg:hidden" />automatizar procesos y atender a sus clientes. </p>
         </div>
       <CompaniesScroll />
     </section>

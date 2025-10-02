@@ -22,33 +22,65 @@ const PricingCard = ({ plan, userPlan }: { plan: any, userPlan: string }) => {
     }
   };
 
+  const badgeColors = {
+    "Free": "bg-gray-100 text-gray-800",
+    "Starter": "bg-yellow-100 text-yellow-800",
+    "Pro ✨": "bg-brand-100 text-[#6463A3]",
+    "Enterprise 🤖": "bg-cloud/20 text-teal-800"
+  };
+
+  const buttonColors = {
+    "Free": "bg-gray-200 hover:bg-gray-300 text-gray-800",
+    "Starter": "bg-yellow-300 hover:bg-yellow-400 text-gray-900",
+    "Pro ✨": "bg-brand-500 hover:bg-brand-600 text-white",
+    "Enterprise 🤖": "bg-cloud hover:bg-cloud/90 text-white"
+  };
+
+  const hoverBgColors = {
+    "Free": "hover:bg-gray-500/5",
+    "Starter": "hover:bg-yellow-500/10",
+    "Pro ✨": "hover:bg-brand-500/10",
+    "Enterprise 🤖": "hover:bg-cloud/10"
+  };
+
   return (
     <div
       className={cn(
-        "flex flex-col rounded-3xl p-8 w-full md:min-w-[280px] md:max-w-[340px] w-full border transition-all",
-        plan.cardClass,
-        plan.highlight && "scale-105 z-10 shadow-2xl"
+        "flex flex-col rounded-3xl p-6 w-full md:min-w-[280px] md:max-w-[320px] bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300",
+        plan.highlight && "shadow-lg",
+        hoverBgColors[plan.name as keyof typeof hoverBgColors]
       )}
     >
-      <h3 className={cn("text-3xl font-bold mb-2")}>{plan.name}</h3>
-      <p className={cn("mb-4 text-lg", "text-gray-700")}>{plan.description}</p>
-      <div className="flex items-end gap-2 mb-4">
-        <span className={cn("text-4xl font-bold", "text-black")}>{plan.price}</span>
-        <span className="font-semibold text-lg">MXN</span>
-        <span className={cn("text-lg", "text-gray-500")}>{plan.priceNote}</span>
+      {/* Badge del plan */}
+      <div className="flex items-center gap-2 mb-6">
+        <span className={cn("px-4 py-2 rounded-full text-sm font-semibold", badgeColors[plan.name as keyof typeof badgeColors])}>
+          {plan.name}
+        </span>
+        {plan.highlight && plan.name === "Pro ✨" && (
+          <span className="text-brand-600 text-sm font-semibold">✨ Más popular</span>
+        )}
       </div>
-      
-      <Button 
+
+      {/* Precio */}
+      <div className="mb-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
+          <span className="text-gray-500 text-sm">{plan.priceNote}</span>
+        </div>
+      </div>
+
+      {/* Descripción */}
+      <p className="text-gray-600 mb-1">{plan.description}</p>
+
+
+      {/* Botón */}
+      <Button
         type="button"
         onClick={handleClick}
         disabled={userPlan.toLowerCase() === plan.name.split(' ')[0].toLowerCase() || isLoading}
         className={cn(
-          "w-full font-bold rounded-full py-3 mt-6",
-          plan.name === 'Pro ✨' 
-            ? 'bg-yellow-400 hover:bg-yellow-500 text-dark' 
-            : plan.name === 'Enterprise 🤖' 
-              ? 'bg-cloud hover:bg-[#5FAFA8] text-dark'
-              : 'bg-brand-500 hover:bg-brand-600 text-white',
+          "w-full font-semibold rounded-full py-3 mb-4",
+          buttonColors[plan.name as keyof typeof buttonColors],
           userPlan.toLowerCase() === plan.name.split(' ')[0].toLowerCase() && 'opacity-70 cursor-not-allowed'
         )}
       >
@@ -58,39 +90,35 @@ const PricingCard = ({ plan, userPlan }: { plan: any, userPlan: string }) => {
           'Tu plan actual ✅'
         ) : (
           plan.buttonText || (
-            plan.name === 'Pro ✨' 
+            plan.name === 'Pro ✨'
               ? '¡Hazte imparable con Pro!'
-              : plan.name === 'Enterprise 🤖' 
+              : plan.name === 'Enterprise 🤖'
                 ? '¡Crece tu negocio con Enterprise!'
                 : '¡Empieza ahora!'
           )
         )}
       </Button>
+      <p className={cn("mt-3 text-xs mb-4", plan.arrClass)}>{plan.arr}</p>
+      {/* Lista de features */}
+      <ul className="space-y-3 mb-3">
+        {plan.includes.map((feature: string) => {
+          const parts = feature.trim().split(/\s+/);
+          const emoji = parts[0];
+          const text = parts.slice(1).join(' ');
 
-      {plan.arr && (
-        <div className={cn("mt-6 mb-2 font-semibold text-sm", plan.arrClass)}>
-          {plan.arr}
-        </div>
-      )}
-      <div className="mt-2 mb-4">
-        <div className="font-bold mb-2">Incluye:</div>
-        <ul className="space-y-2 text-sm">
-          {plan.includes.map((inc, idx) => (
-            <li key={idx} className="flex items-start gap-2">
-              <span className="text-black dark:text-white">{inc}</span>
+          return (
+            <li key={feature} className="flex items-center gap-3">
+              <span className="text-xl flex-shrink-0 self-start">{emoji}</span>
+              <span className="text-gray-700 text-sm">{text}</span>
             </li>
-          ))}
-        </ul>
+          );
+        })}
+      </ul>
+      <div className={cn("mt-auto px-2 rounded-xl", plan.arrBoxClass)}>
+        {plan.extra && (
+          <p className="mt-3 text-xs mb-4">{plan.extra}</p>
+        )}
       </div>
-      {plan.extra && plan.extra.length > 0 && (
-        <div className="mt-auto">
-          {plan.arrBoxClass && (
-            <div className={cn("rounded-xl px-4 py-3 text-sm mt-4 border", plan.arrBoxClass)}>
-              {plan.extra[0]}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };

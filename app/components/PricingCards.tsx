@@ -38,6 +38,7 @@ export const plans: Plan[] = [
     highlight: true,
     cardClass: "bg-[#7574D6] text-white border-none shadow-xl",
     arrBoxClass: "bg-[#7574D6] text-white",
+    
   },
   {
     name: "Starter",
@@ -48,7 +49,7 @@ export const plans: Plan[] = [
     buttonAction: "/api/stripe",
     intent: "starter_plan",
     arr: "Ahorra 10% al pagar anualmente",
-    arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-brand-600",
+    arrClass: "text-[#DAB23F] underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
     includes: [
       "📋 Formularios ilimitados",
       "👨‍👩‍👦‍👦 Administración básica de usuarios",
@@ -61,7 +62,8 @@ export const plans: Plan[] = [
       "¡$149 MXN por cada 100 conversaciones extra!",
     ],
     cardClass: "bg-clear text-black border border-outlines",
-    arrBoxClass: "bg-[#f6f3ff] text-[#7574D6]",
+    arrBoxClass: "bg-amber-300/20 text-[#C79D26]",
+
   },
   {
     name: "Pro ✨",
@@ -72,7 +74,7 @@ export const plans: Plan[] = [
     buttonAction: "/api/stripe",
     intent: "pro_plan",
     arr: "Ahorra 15% al pagar anualmente",
-    arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-[#DAB23F]",
+    arrClass: "text-brand-600 underline underline-offset-4 decoration-2 decoration-brand-600",
     includes: [
         "📋 Todo lo que incluye el plan Starter",
         "🤖 10 chatbots",
@@ -86,8 +88,9 @@ export const plans: Plan[] = [
       "¡$99 MXN por cada 100 conversaciones extra!",
     ],
     cardClass: "bg-gradient-to-br from-yellow-50 to-orange-50 text-black border-2 border-yellow-400 shadow-xl",
-    arrBoxClass: "bg-gradient-to-r from-yellow-100 to-orange-100 text-[#C79D26] border border-yellow-400",
     highlight: true,
+    arrBoxClass: "bg-brand-600/10 text-[#7574D6]",
+
   },
   {
     name: "Enterprise 🤖",
@@ -141,8 +144,8 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
   const buttonColors = {
     "Free": "bg-gray-200 hover:bg-gray-300 text-gray-800",
     "Starter": "bg-yellow-300 hover:bg-yellow-400 text-gray-900",
-    "Pro ✨": "bg-brand-500 hover:bg-brand-600 text-white",
-    "Enterprise 🤖": "bg-cloud hover:bg-cloud/90 text-white"
+    "Pro ✨": "bg-brand-500 hover:bg-brand-600 text-dark",
+    "Enterprise 🤖": "bg-cloud hover:bg-cloud/90 text-dark"
   };
 
   const hoverBgColors = {
@@ -179,7 +182,8 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
       </div>
 
       {/* Descripción */}
-      <p className="text-gray-600 mb-6">{plan.description}</p>
+      <p className="text-gray-600 mb-1">{plan.description}</p>
+    
 
       {/* Botón */}
       <Button
@@ -187,15 +191,15 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
         onClick={handleClick}
         disabled={isLoading}
         className={cn(
-          "w-full font-semibold rounded-full py-3 mb-8",
+          "w-full font-semibold rounded-full py-3 mb-4",
           buttonColors[plan.name as keyof typeof buttonColors]
         )}
       >
         {isLoading ? <Spinner /> : plan.buttonText}
       </Button>
-
+      <p className={cn("mt-3 text-xs mb-4", plan.arrClass)}>{plan.arr}</p>
       {/* Lista de features */}
-      <ul className="space-y-3">
+      <ul className="space-y-3 mb-3">
         {plan.includes.map((feature) => {
           // Extraer emoji y texto - buscar hasta el primer espacio después de caracteres especiales
           const parts = feature.trim().split(/\s+/);
@@ -210,6 +214,11 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
           );
         })}
       </ul>
+      <div className={cn("mt-auto px-2 rounded-xl", plan.arrBoxClass)}>
+        {plan.extra && (
+          <p className="mt-3 text-xs mb-4">{plan.extra}</p>
+        )}
+      </div>
     </div>
   );
 };

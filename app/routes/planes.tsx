@@ -17,7 +17,7 @@ export const meta = () =>
 
 export default function Planes() {
   return (
-    <section className="bg-clear pt-32 pb-20 md:pt-40 lg:pt-64 lg:pb-28 overflow-hidden">
+    <section className="bg-clear pt-32 pb-0 md:pt-40 lg:pt-64  overflow-hidden">
       <HomeHeader />
       <section className="flex flex-col items-center  px-4 md:px-[5%] xl:px-0 mx-auto ">
         <h1 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 lg:leading-[1.2]">
