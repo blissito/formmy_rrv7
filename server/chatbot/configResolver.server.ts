@@ -102,7 +102,7 @@ export function resolveAnonymousChatbotConfig(chatbot: Chatbot): ResolvedChatbot
     personality: chatbot.personality || "customer_support",
 
     // UI
-    primaryColor: chatbot.primaryColor || "#63CFDE",
+    primaryColor: chatbot.primaryColor || "#9A99EA",
     avatarUrl: chatbot.avatarUrl || "",
     welcomeMessage: chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?",
     goodbyeMessage: chatbot.goodbyeMessage || "¡Gracias por usar nuestro servicio!",
@@ -236,7 +236,7 @@ export function resolveChatbotConfig(
     personality: finalPersonality,
 
     // UI
-    primaryColor: chatbot.primaryColor || "#63CFDE",
+    primaryColor: chatbot.primaryColor || "#9A99EA",
     avatarUrl: chatbot.avatarUrl || "",
     welcomeMessage: finalWelcomeMessage,
     goodbyeMessage: finalGoodbyeMessage,
