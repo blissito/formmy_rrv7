@@ -19,7 +19,6 @@ import {
   ConversationsPreview,
 } from "./tab_sections/Conversations";
 import ChatPreview from "../ChatPreview";
-import FloatingChatWidget from "../FloatingChatWidget";
 import DeleteIcon from "../ui/icons/Delete";
 import CodeIcon from "../ui/icons/Code";
 import OpenTabIcon from "../ui/icons/OpenTab";
@@ -462,7 +461,7 @@ export const EditionPair = ({
   );
   const [name, setName] = useState(chatbot.name || "Geeki");
   const [primaryColor, setPrimaryColor] = useState(
-    chatbot.primaryColor || "#63CFDE"
+    chatbot.primaryColor || "#9A99EA"
   );
   const [welcomeMessage, setWelcomeMessage] = useState(
     chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?"
@@ -487,7 +486,7 @@ export const EditionPair = ({
         "Eres un asistente virtual útil y amigable. Responde de manera profesional y clara a las preguntas de los usuarios."
     );
     setName(chatbot.name || "Geeki");
-    setPrimaryColor(chatbot.primaryColor || "#63CFDE");
+    setPrimaryColor(chatbot.primaryColor || "#9A99EA");
     setWelcomeMessage(
       chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?"
     );

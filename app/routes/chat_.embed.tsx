@@ -1,6 +1,5 @@
 import { useLoaderData } from "react-router";
 import ChatPreview from "~/components/ChatPreview";
-import FloatingChatWidget from "~/components/FloatingChatWidget";
 import type { Chatbot } from "@prisma/client";
 import { db } from "~/utils/db.server";
 
@@ -32,6 +31,8 @@ export async function loader({ request }: { request: Request }) {
         status: 404,
       };
     }
+
+    console.log(chatbot, 'chatbot');
 
     return { chatbot };
   } catch (error) {

@@ -5,7 +5,7 @@ export async function loader({ request }: { request: Request }) {
 
   const moduleContent = `
 const FormMyWidget = {
-  init: function(config) {
+  init: async function(config) {
     if (!config || !config.chatbotSlug) {
       console.error('FormMyWidget: chatbotSlug is required');
       return;
@@ -18,6 +18,19 @@ const FormMyWidget = {
     if (window.__formmy_widget_loaded) return;
     window.__formmy_widget_loaded = true;
 
+    // Obtener configuración del chatbot desde la API
+    let primaryColor = config.primaryColor || '#9A99EA'; // Fallback default
+    try {
+      const response = await fetch(\`\${apiHost}/api/chatbot/public/\${chatbotSlug}\`);
+      if (response.ok) {
+        const data = await response.json();
+        // Usar primaryColor del chatbot, permitir override con config
+        primaryColor = config.primaryColor || data.chatbot?.primaryColor || '#9A99EA';
+      }
+    } catch (error) {
+      console.warn('FormMyWidget: Could not fetch chatbot config, using default color');
+    }
+
     // Crear estilos
     const style = document.createElement('style');
     style.textContent = \`
@@ -28,7 +41,7 @@ const FormMyWidget = {
         width: 64px;
         height: 64px;
         border-radius: 50%;
-        background-color: \${config.primaryColor || '#63CFDE'};
+        background-color: \${primaryColor};
         border: none;
         cursor: pointer;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
