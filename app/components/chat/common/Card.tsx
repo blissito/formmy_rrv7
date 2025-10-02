@@ -225,7 +225,7 @@ export const IntegrationCard = ({
         <SimpleButton
           className={`grow ${
             isConnected
-              ? "text-metal border-success bg-success hover:bg-success/30"
+              ? "text-metal border-success bg-success/30 hover:bg-success/40"
               : "text-metal"
           }`}
           onClick={getButtonAction()}

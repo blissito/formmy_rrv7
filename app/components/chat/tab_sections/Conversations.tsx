@@ -408,7 +408,7 @@ const Conversation = ({
         }
       )}
     >
-      <Avatar className="w-10" src={pic || "/assets/chat/user-placeholder.svg"} />
+      <Avatar className="w-10" src={conversation.pic} />
       <div className="flex-1 truncate">
         <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
         <p className="text-xs text-irongray truncate -mt-[2px]">
@@ -495,7 +495,7 @@ const ChatHeader = ({
       <Avatar className="h-10 w-10" src={conversation.messages[0]?.picture || "/assets/chat/ghosty.svg"} />
       <div>
         <div className="flex items-center gap-1">
-          <h3 className="text-base font-medium text-dark">{tel}</h3>
+          <h3 className="text-base font-medium text-dark">{tel === "N/A" ? "Usuario web" : tel}</h3>
           {/* Solo mostrar logo WhatsApp si es conversación legítima de WhatsApp */}
           {isWhatsAppConversation && (
             <img src="/assets/chat/whatsapp.svg" alt="whatsapp icon" />
@@ -779,7 +779,7 @@ const UserMessage = ({ message }: { message: Message }) => {
       <div className="text-base p-3 bg-dark text-white rounded-xl max-w-[80%] break-words">
         {message.content}
       </div>
-      <Avatar className="w-8 h-8 flex-shrink-0" src={message.picture || "/assets/chat/user-placeholder.svg"} />
+      <Avatar className="w-8 h-8 flex-shrink-0" src={message.picture} />
     </div>
   );
 };
