@@ -21,6 +21,7 @@ export const meta = () =>
     title: "Crea formularios para tu sitio web sin código | Formmy",
     description:
       "Genera formularios de contacto, registro o listas de espera y agrégalos fácilmente a tu sitio web sin programar",
+      image: "/forms-metaimg.webp",
   });
 
 function CardDemoIA({

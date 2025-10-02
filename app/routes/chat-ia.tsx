@@ -26,6 +26,7 @@ export const meta = () =>
     title: "Chatbot IA para tu sitio web | Formmy",
     description:
       "Activa un chatbot con inteligencia artificial en tu sitio web en minutos. Sin código, personalizable y disponible 24/7.",
+      image: "/chat-metaimg.webp",
   });
 
 
