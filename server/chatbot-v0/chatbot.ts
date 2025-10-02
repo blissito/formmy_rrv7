@@ -1,8 +1,9 @@
 /**
  * Módulo de chatbot real para V0 - Sin mocks
+ * Soporta usuarios anónimos (acceso público)
  */
 
-export async function getChatbot(chatbotId: string, userId: string) {
+export async function getChatbot(chatbotId: string, userId: string, isAnonymous = false) {
   try {
     // 🛠️ Development mode - Use REAL chatbot for testing
     if (userId === 'dev-user-mock-pro' && process.env.DEVELOPMENT_TOKEN) {
@@ -38,20 +39,22 @@ export async function getChatbot(chatbotId: string, userId: string) {
 
     const { db } = await import("../../app/utils/db.server");
 
+    // 🔓 Usuarios anónimos: buscar solo por chatbotId (sin validar ownership)
+    // La validación de isActive se hace en el endpoint
+    const where = isAnonymous
+      ? { id: chatbotId }
+      : { id: chatbotId, userId: userId };
+
     const chatbot = await db.chatbot.findFirst({
-      where: {
-        id: chatbotId,
-        userId: userId
-      }
+      where
       // ⚡ OPTIMIZACIÓN: No incluir contextos por defecto para mejorar performance
       // Los contextos se cargan solo cuando son necesarios (no include contexts)
     });
 
     if (!chatbot) {
-      console.log('❌ Chatbot not found:', { chatbotId, userId });
+      console.log('❌ Chatbot not found:', { chatbotId, userId, isAnonymous });
       return null;
     }
-
 
     return chatbot;
   } catch (error) {

@@ -55,14 +55,94 @@ export interface AgentExecutionContext {
 }
 
 /**
+ * Resuelve la configuración para usuarios ANÓNIMOS (sin validaciones de plan)
+ * Usa la configuración del chatbot directamente sin restricciones
+ *
+ * 🛡️ IMPORTANTE: Aunque son anónimos, SIEMPRE validar temperature para evitar alucinaciones
+ */
+export function resolveAnonymousChatbotConfig(chatbot: Chatbot): ResolvedChatbotConfig {
+  const validationWarnings: string[] = [];
+
+  // 🛡️ VALIDACIÓN CRÍTICA: Temperature segura
+  let safeTemperature = chatbot.temperature || 1;
+
+  // NUNCA permitir temperature > 1.5 (causa alucinaciones multilenguaje)
+  if (safeTemperature > 1.5) {
+    console.warn(`⚠️ Temperature ${safeTemperature} DEMASIADO ALTA para chatbot ${chatbot.id}. Forzando a 1.0`);
+    safeTemperature = 1.0;
+    validationWarnings.push(`Temperature reducida de ${chatbot.temperature} a 1.0 por seguridad`);
+  }
+
+  // Para GPT-5 nano y gpt-4o-mini, forzar temperature=1 (óptimo)
+  const model = chatbot.aiModel;
+  if (model === 'gpt-5-nano' || model === 'gpt-4o-mini') {
+    if (safeTemperature !== 1) {
+      console.log(`🔧 Ajustando temperature a 1 para ${model} (requerido/óptimo)`);
+      safeTemperature = 1;
+    }
+  }
+
+  // 🛡️ Límite de tokens razonable (evitar loops infinitos)
+  const safeMaxTokens = Math.min(chatbot.maxTokens || 800, 1000);
+
+  return {
+    // Core
+    id: chatbot.id,
+    name: chatbot.name,
+    slug: chatbot.slug,
+
+    // AI Config - CON validaciones de seguridad
+    aiModel: chatbot.aiModel,
+    temperature: safeTemperature,
+    maxTokens: safeMaxTokens,
+
+    // Prompts
+    instructions: chatbot.instructions || "Eres un asistente virtual útil y profesional.",
+    customInstructions: chatbot.customInstructions || "",
+    personality: chatbot.personality || "customer_support",
+
+    // UI
+    primaryColor: chatbot.primaryColor || "#63CFDE",
+    avatarUrl: chatbot.avatarUrl || "",
+    welcomeMessage: chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?",
+    goodbyeMessage: chatbot.goodbyeMessage || "¡Gracias por usar nuestro servicio!",
+
+    // Context - usar todos los contextos del chatbot
+    contexts: (chatbot.contexts && Array.isArray(chatbot.contexts)) ? chatbot.contexts : [],
+
+    // Metadata
+    validationWarnings,
+    modelCorrected: false,
+    originalModel: chatbot.temperature !== safeTemperature ? `temp=${chatbot.temperature}` : undefined,
+    planLimits: {
+      maxTokensPerQuery: safeMaxTokens,
+      maxContextSizeKB: 10000, // Sin límite efectivo para públicos
+      availableModels: [chatbot.aiModel]
+    }
+  };
+}
+
+/**
  * Resuelve la configuración completa del chatbot aplicando business rules
  */
 export function resolveChatbotConfig(
   chatbot: Chatbot,
-  user: User,
+  user: User | { id: string; plan: string },
   context: Partial<AgentExecutionContext> = {}
 ): ResolvedChatbotConfig {
+  // 👤 Usuarios anónimos: usar configuración simple sin validaciones
+  if (user.plan === 'ANONYMOUS') {
+    return resolveAnonymousChatbotConfig(chatbot);
+  }
+
   const planLimits = PLAN_LIMITS[user.plan];
+
+  // Si el plan no existe, usar configuración anónima
+  if (!planLimits) {
+    console.warn(`⚠️ Plan desconocido: ${user.plan}, usando configuración anónima`);
+    return resolveAnonymousChatbotConfig(chatbot);
+  }
+
   const validationWarnings: string[] = [];
 
   // 1. Resolver modelo AI con validaciones
@@ -74,11 +154,21 @@ export function resolveChatbotConfig(
   }
 
   // 2. Resolver temperatura según modelo
-  let finalTemperature = chatbot.temperature || 1;
-  if (finalModel === "gpt-5-nano") {
-    finalTemperature = 1; // GPT-5 nano solo soporta temperature=1
-    if (chatbot.temperature && chatbot.temperature !== 1) {
-      validationWarnings.push("Temperature ajustada a 1 (requerido por GPT-5 nano)");
+  let finalTemperature = chatbot.temperature || 0.7;
+
+  // 🛡️ PROTECCIÓN CRÍTICA: Temperature > 1.5 causa alucinaciones severas
+  if (finalTemperature > 1.5) {
+    console.warn(`⚠️ Temperature ${finalTemperature} DEMASIADO ALTA - causó alucinaciones multilenguaje. Reducida a 1.0`);
+    validationWarnings.push(`⚠️ Temperature ${finalTemperature} es DEMASIADO ALTA (causa basura). Reducida a 1.0`);
+    finalTemperature = 1.0;
+  }
+
+  // Para GPT-5 nano y gpt-4o-mini, FORZAR temperature=1 (óptimo/requerido)
+  if (finalModel === "gpt-5-nano" || finalModel === "gpt-4o-mini") {
+    if (finalTemperature !== 1) {
+      console.log(`🔧 Ajustando temperature a 1 para ${finalModel} (óptimo)`);
+      validationWarnings.push(`Temperature ajustada a 1 para ${finalModel}`);
+      finalTemperature = 1;
     }
   }
 
@@ -170,7 +260,7 @@ export function resolveChatbotConfig(
  * Crea el contexto de ejecución para el agente
  */
 export function createAgentExecutionContext(
-  user: User,
+  user: User | { id: string; plan: string },
   chatbotId: string,
   message: string,
   options: {

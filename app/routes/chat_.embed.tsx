@@ -53,6 +53,7 @@ function GlobalStyles() {
         padding: 0;
         height: 100%;
         background-color: transparent !important;
+        overflow: hidden !important;
       }
     `}} />
   );
@@ -80,11 +81,13 @@ export default function ChatEmbedRoute() {
     );
   }
 
-  // Si todo está bien, mostrar el widget flotante con fondo transparente
+  // Si todo está bien, mostrar el chat directamente (para iframe)
   return (
     <>
       <GlobalStyles />
-      <FloatingChatWidget chatbot={data.chatbot as Chatbot} />
+      <div className="h-screen w-full">
+        <ChatPreview production chatbot={data.chatbot as Chatbot} />
+      </div>
     </>
   );
 }

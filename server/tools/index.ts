@@ -239,18 +239,18 @@ export const getToolsForPlan = (
     tools.push(createPaymentLinkTool(context));
   }
 
-  // Contact tools - disponibles para STARTER+
-  if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  // Contact tools - disponibles para ANONYMOUS/STARTER+
+  if (['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
     tools.push(createSaveContactTool(context));
   }
 
-  // DateTime tools - disponibles para todos los planes
-  if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  // DateTime tools - disponibles para ANONYMOUS/STARTER+
+  if (['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
     tools.push(createGetCurrentDateTimeTool(context));
   }
 
-  // Google Search tools - disponibles para STARTER+ con API configurada
-  if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) &&
+  // Google Search tools - disponibles para ANONYMOUS/STARTER+ con API configurada
+  if (['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) &&
       process.env.GOOGLE_SEARCH_API_KEY &&
       process.env.GOOGLE_SEARCH_ENGINE_ID) {
     tools.push(createGoogleSearchTool(context));

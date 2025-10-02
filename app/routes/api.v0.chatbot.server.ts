@@ -28,8 +28,8 @@ export async function handleChatbotV0Action({ request }: ActionFunctionArgs) {
       );
     }
 
-    // 🔑 Autenticación
-    const { user, isTestUser } = await authenticateRequest(request, formData);
+    // 🔑 Autenticación (permite usuarios anónimos)
+    const { user, isTestUser, isAnonymous } = await authenticateRequest(request, formData);
 
     if (!user) {
       return createAuthError();
@@ -41,15 +41,62 @@ export async function handleChatbotV0Action({ request }: ActionFunctionArgs) {
       case "chat": {
         // 💬 Solo manejar chat con AgentEngine_v0
         return await handleChatV0({
+          request,
           chatbotId: formData.get("chatbotId") as string,
           message: formData.get("message") as string,
           sessionId: formData.get("sessionId") as string,
-          conversationHistory: formData.get("conversationHistory") as string,
+          visitorId: formData.get("visitorId") as string,
           requestedStream: formData.get("stream") === "true",
           userId: user.id,
           user: user,
-          isTestUser: isTestUser
+          isTestUser: isTestUser,
+          isAnonymous: isAnonymous || false
         });
+      }
+
+      case "get_history": {
+        // 📚 Cargar historial de conversación
+        const chatbotId = formData.get("chatbotId") as string;
+
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ messages: [], error: "chatbotId requerido" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const { findLastActiveConversation } = await import("../../server/chatbot/conversationModel.server");
+        const { getMessagesByConversationId } = await import("../../server/chatbot/messageModel.server");
+
+        const conversation = await findLastActiveConversation({
+          chatbotId,
+          visitorId: user.id
+        });
+
+        if (!conversation) {
+          return new Response(
+            JSON.stringify({ messages: [], sessionId: null }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const allMessages = await getMessagesByConversationId(conversation.id);
+
+        // Filtrar mensajes system (solo para UI)
+        const formattedMessages = allMessages
+          .filter(msg => msg.role.toLowerCase() !== 'system')
+          .map(msg => ({
+            role: msg.role.toLowerCase() as "user" | "assistant",
+            content: msg.content
+          }));
+
+        return new Response(
+          JSON.stringify({
+            messages: formattedMessages,
+            sessionId: conversation.sessionId
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
       }
 
       default: {
@@ -95,19 +142,23 @@ export async function handleChatbotV0Action({ request }: ActionFunctionArgs) {
 
 /**
  * Manejar chat específicamente con AgentEngine_v0
+ * Historial se carga desde DB, no desde cliente
+ * Soporta usuarios anónimos para widgets públicos
  */
 async function handleChatV0(params: {
+  request: Request;
   chatbotId: string;
   message: string;
   sessionId?: string;
-  conversationHistory?: string;
+  visitorId?: string;
   requestedStream: boolean;
   userId: string;
   user: { id: string; plan: string };
   isTestUser: boolean;
+  isAnonymous: boolean;
 }): Promise<Response> {
 
-  const { chatbotId, message, sessionId, conversationHistory, requestedStream, userId, user, isTestUser } = params;
+  const { request, chatbotId, message, sessionId, visitorId, requestedStream, userId, user, isTestUser, isAnonymous } = params;
 
   // Validar parámetros requeridos con mensajes amigables
   if (!chatbotId || !message) {
@@ -137,9 +188,9 @@ async function handleChatV0(params: {
     );
   }
 
-  // Obtener chatbot
+  // Obtener chatbot (pasar flag isAnonymous)
   const { getChatbot } = await import("../../server/chatbot-v0/chatbot");
-  const chatbot = await getChatbot(chatbotId, userId);
+  const chatbot = await getChatbot(chatbotId, userId, isAnonymous);
 
   if (!chatbot) {
     return new Response(
@@ -151,61 +202,179 @@ async function handleChatV0(params: {
     );
   }
 
-  // 🛠️ Development token bypass - Skip ownership check for test users
+  // 🔓 Validación de acceso público (patrón Flowise)
   const isOwner = chatbot.userId === userId;
-  if (!isOwner && !isTestUser) {
-    return new Response(
-      JSON.stringify({
-        error: "Acceso denegado",
-        userMessage: "No tienes permisos para usar este asistente."
-      }),
-      { status: 403, headers: { "Content-Type": "application/json" } }
-    );
-  }
 
-  // ✅ Validar isActive solo en producción (no en preview del owner)
-  if (chatbot.isActive === false && !isOwner && !isTestUser) {
-    return new Response(
-      JSON.stringify({
-        error: "Chatbot desactivado",
-        userMessage: "Este asistente está temporalmente desactivado. Por favor intenta más tarde."
-      }),
-      { status: 503, headers: { "Content-Type": "application/json" } }
-    );
-  }
+  // Si el usuario es anónimo, validar que el chatbot esté activo
+  if (isAnonymous) {
+    // ✅ Permitir preview desde el dashboard de Formmy (owner preview)
+    const origin = new URL(request.url).origin;
+    const isFormmyDashboard = origin.includes('formmy-v2.fly.dev') ||
+                              origin.includes('localhost') ||
+                              origin.includes('formmy.app');
 
-  // Parsear historial conversacional
-  let history: Array<{ role: "user" | "assistant"; content: string }> = [];
-  if (conversationHistory) {
-    try {
-      history = JSON.parse(conversationHistory);
-    } catch (e) {
-      console.warn("Error parsing conversation history:", e);
+    if (!chatbot.isActive && !isFormmyDashboard) {
+      return new Response(
+        JSON.stringify({
+          error: "Chatbot inactivo",
+          userMessage: "Este asistente no está disponible en este momento."
+        }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (isFormmyDashboard) {
+      console.log('👁️ Permitiendo preview desde dashboard de Formmy (sin autenticación)');
+    }
+
+    // Opcional: Validar allowedDomains si está configurado (patrón Flowise)
+    const allowedDomains = chatbot.settings?.security?.allowedDomains;
+    if (allowedDomains && allowedDomains.length > 0) {
+      const origin = request.headers.get('origin');
+      if (origin) {
+        try {
+          const originHost = new URL(origin).host;
+          const isDomainAllowed = allowedDomains.some(domain => {
+            try {
+              const allowedHost = new URL(domain).host;
+              return originHost === allowedHost;
+            } catch {
+              return false;
+            }
+          });
+
+          if (!isDomainAllowed) {
+            return new Response(
+              JSON.stringify({
+                error: "Dominio no autorizado",
+                userMessage: "Este asistente no está disponible desde tu sitio web."
+              }),
+              { status: 403, headers: { "Content-Type": "application/json" } }
+            );
+          }
+        } catch {
+          // Si no se puede parsear el origin, permitir acceso
+        }
+      }
+    }
+
+    console.log('👤 Usuario anónimo accediendo a chatbot público:', chatbotId);
+  } else {
+    // Usuario autenticado - validar ownership
+    if (!isOwner && !isTestUser) {
+      return new Response(
+        JSON.stringify({
+          error: "Acceso denegado",
+          userMessage: "No tienes permisos para usar este asistente."
+        }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Owner preview - permitir incluso si está inactivo
+    if (chatbot.isActive === false && !isOwner && !isTestUser) {
+      return new Response(
+        JSON.stringify({
+          error: "Chatbot desactivado",
+          userMessage: "Este asistente está temporalmente desactivado. Por favor intenta más tarde."
+        }),
+        { status: 503, headers: { "Content-Type": "application/json" } }
+      );
     }
   }
 
-  // Validar modelo según plan del usuario
-  const modelValidation = validateModelForPlan(user.plan, chatbot.aiModel, chatbotId);
+  // Validar modelo según plan del usuario (excepto anónimos)
+  if (!isAnonymous) {
+    const modelValidation = validateModelForPlan(user.plan, chatbot.aiModel, chatbotId);
 
-  if (!modelValidation.isValid && user.plan === 'FREE') {
-    return new Response(
-      JSON.stringify({
-        error: "Acceso denegado",
-        userMessage: modelValidation.userMessage || "Tu plan no incluye acceso a modelos AI."
-      }),
-      { status: 403, headers: { "Content-Type": "application/json" } }
-    );
-  }
+    if (!modelValidation.isValid && user.plan === 'FREE') {
+      return new Response(
+        JSON.stringify({
+          error: "Acceso denegado",
+          userMessage: modelValidation.userMessage || "Tu plan no incluye acceso a modelos AI."
+        }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-  // Aplicar corrección automática de modelo si es necesario
-  const modelCorrection = applyModelCorrection(user.plan, chatbot.aiModel, true);
+    // Aplicar corrección automática de modelo si es necesario
+    const modelCorrection = applyModelCorrection(user.plan, chatbot.aiModel, true);
 
-  if (modelCorrection.wasCorreected) {
-    // Actualizar el modelo en el objeto chatbot para esta sesión
-    chatbot.aiModel = modelCorrection.finalModel;
+    if (modelCorrection.wasCorreected) {
+      // Actualizar el modelo en el objeto chatbot para esta sesión
+      chatbot.aiModel = modelCorrection.finalModel;
+    }
+  } else {
+    // Usuarios anónimos: usar el modelo configurado del chatbot sin validaciones
+    console.log('👤 Usuario anónimo usando modelo:', chatbot.aiModel);
   }
 
   try {
+    // 💾 Guardar mensaje del usuario en la base de datos
+    const { addUserMessage } = await import("../../server/chatbot/messageModel.server");
+    const {
+      getConversationBySessionId,
+      createConversation,
+      findLastActiveConversation
+    } = await import("../../server/chatbot/conversationModel.server");
+
+    // 🔑 Industry-standard session management (ChatGPT/Intercom pattern):
+    // 1. Si hay sessionId: buscar esa conversación específica
+    // 2. Si NO hay sessionId: buscar última conversación ACTIVA del usuario/visitor
+    // 3. Si no existe ninguna: crear nueva conversación
+
+    // Para usuarios anónimos, usar visitorId; para autenticados, usar userId
+    const effectiveVisitorId = isAnonymous ? (visitorId || userId) : userId;
+
+    let conversation = null;
+
+    if (sessionId) {
+      // Cliente envió sessionId explícito → buscar esa conversación
+      conversation = await getConversationBySessionId(sessionId);
+    }
+
+    if (!conversation && effectiveVisitorId) {
+      // No hay sessionId O la conversación no existe → buscar última activa del visitor
+      console.log(`🔍 Buscando última conversación activa para visitorId: ${effectiveVisitorId}, chatbotId: ${chatbotId} ${isAnonymous ? '(anónimo)' : '(autenticado)'}`);
+      conversation = await findLastActiveConversation({
+        chatbotId,
+        visitorId: effectiveVisitorId
+      });
+
+      if (conversation) {
+        console.log(`✅ Conversación activa encontrada: ${conversation.sessionId} (recuperada automáticamente)`);
+      }
+    }
+
+    if (!conversation) {
+      // No existe conversación previa → crear nueva
+      console.log(`🆕 Creando nueva conversación para visitorId: ${effectiveVisitorId}, chatbotId: ${chatbotId} ${isAnonymous ? '(anónimo)' : '(autenticado)'}`);
+      conversation = await createConversation({
+        chatbotId,
+        visitorId: effectiveVisitorId
+      });
+    }
+
+    // 📚 Cargar historial desde DB ANTES de guardar el mensaje actual
+    const { getMessagesByConversationId } = await import("../../server/chatbot/messageModel.server");
+    const allMessages = await getMessagesByConversationId(conversation.id);
+
+    console.log(`📚 Historial cargado: ${allMessages.length} mensajes totales (ANTES del mensaje actual)`);
+
+    // Truncar a últimos 50 mensajes (todos los planes)
+    const recentMessages = allMessages.slice(-50);
+
+    // Formatear historial para el agente (SOLO mensajes anteriores)
+    const history = recentMessages.map(msg => ({
+      role: msg.role.toLowerCase() as "user" | "assistant",
+      content: msg.content
+    }));
+
+    console.log(`🔹 Historial para agente: ${history.length} mensajes (truncado a 50, SIN mensaje actual)`);
+
+    // Ahora sí guardar mensaje del usuario (después de cargar historial)
+    await addUserMessage(conversation.id, message, undefined, "web");
+
     // 🚀 AgentWorkflow - 100% Streaming como requiere CLAUDE.md
 
     const { streamAgentWorkflow } = await import("../../server/agents/agent-workflow.server");
@@ -214,10 +383,18 @@ async function handleChatV0(params: {
     const { resolveChatbotConfig, createAgentExecutionContext } = await import("../../server/chatbot/configResolver.server");
 
     const resolvedConfig = resolveChatbotConfig(chatbot, user);
+
+    console.log(`🎯 Pasando historial al agentContext: ${history.length} mensajes`);
+    if (history.length > 0) {
+      console.log(`  Primera mensaje: ${history[0].role} - "${history[0].content.substring(0, 60)}..."`);
+    }
+
     const agentContext = createAgentExecutionContext(user, chatbotId, message, {
-      sessionId,
-      conversationHistory: history
+      sessionId: conversation.sessionId,
+      conversationHistory: history // Desde DB, no desde cliente
     });
+
+    console.log(`✅ AgentContext creado con conversationHistory:`, agentContext.conversationHistory?.length || 0);
 
     // ✅ SIEMPRE STREAMING - CLAUDE.md compliance
     // Eliminado modo JSON - SOLO SSE streaming
@@ -236,11 +413,13 @@ async function handleChatV0(params: {
 
             let hasContent = false;
             let toolsUsed: string[] = [];
+            let fullResponse = ""; // Acumular respuesta completa
 
             // Consumir stream del AgentWorkflow
             for await (const event of streamGenerator) {
               if (event.type === "chunk" && event.content) {
                 hasContent = true;
+                fullResponse += event.content; // Acumular contenido
                 // Emitir chunk como SSE event
                 const data = JSON.stringify({
                   type: "chunk",
@@ -279,7 +458,7 @@ async function handleChatV0(params: {
                   encoder.encode(`data: ${data}\n\n`)
                 );
               } else if (event.type === "done") {
-                // Metadata final
+                // 🔑 Metadata final - SIEMPRE incluir sessionId (industry-standard pattern)
                 const data = JSON.stringify({
                   type: "metadata",
                   metadata: {
@@ -287,7 +466,7 @@ async function handleChatV0(params: {
                     toolsUsed,
                     model: chatbot.aiModel,
                     engine: "agentworkflow-llamaindex",
-                    sessionId,
+                    sessionId: conversation.sessionId, // ✅ SIEMPRE enviar sessionId real de la conversación
                     timestamp: new Date().toISOString()
                   }
                 });
@@ -300,6 +479,7 @@ async function handleChatV0(params: {
             // Si no hubo contenido, enviar welcome message
             if (!hasContent) {
               const welcomeMessage = resolvedConfig.welcomeMessage || "¡Hola! ¿En qué puedo ayudarte?";
+              fullResponse = welcomeMessage;
               const defaultData = JSON.stringify({
                 type: "chunk",
                 content: welcomeMessage
@@ -307,6 +487,25 @@ async function handleChatV0(params: {
               controller.enqueue(
                 encoder.encode(`data: ${defaultData}\n\n`)
               );
+            }
+
+            // 💾 Guardar respuesta del asistente en la base de datos
+            if (fullResponse) {
+              console.log(`💾 Guardando respuesta del asistente (${fullResponse.length} caracteres)`);
+              const { addAssistantMessage } = await import("../../server/chatbot/messageModel.server");
+              await addAssistantMessage(
+                conversation.id,
+                fullResponse,
+                undefined, // tokens (por ahora)
+                undefined, // responseTime
+                undefined, // firstTokenLatency
+                chatbot.aiModel,
+                "web"
+              ).then(() => {
+                console.log(`✅ Mensaje del asistente guardado exitosamente`);
+              }).catch(err => {
+                console.error("❌ Error guardando mensaje del asistente:", err);
+              });
             }
 
             // Señal de finalización
@@ -359,6 +558,13 @@ async function handleChatV0(params: {
 
   } catch (error) {
     console.error('❌ Agent-v0 error:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('❌ Error details:', {
+      chatbotId,
+      userId,
+      isAnonymous,
+      message: message.substring(0, 100)
+    });
 
     const errorMessage = error instanceof Error ? error.message : String(error);
     let userMessage = 'El servicio del asistente no está disponible. Por favor intenta más tarde.';
@@ -370,6 +576,9 @@ async function handleChatV0(params: {
     } else if (errorMessage.includes('auth')) {
       userMessage = 'Problema de autenticación. Por favor recarga la página.';
       statusCode = 401;
+    } else if (errorMessage.includes('model') || errorMessage.includes('API')) {
+      userMessage = 'Error en la configuración del modelo AI. Por favor contacta al administrador.';
+      statusCode = 500;
     }
 
     return new Response(
@@ -377,6 +586,7 @@ async function handleChatV0(params: {
         error: userMessage,
         userMessage: userMessage,
         engine: "agent-v0-llamaindex",
+        debugInfo: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
         retryAfter: statusCode === 429 ? 60 : undefined
       }),
       {

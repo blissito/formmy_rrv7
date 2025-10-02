@@ -99,42 +99,33 @@ Dejar que el modelo use las tools directamente según el contexto.
 - ✅ `/server/tools/index.ts` - Tool registry funcional
 - ❌ Legacy eliminado: `formmy-agent/`, `llamaindex-engine/`, `agent-decision-engine.ts`
 
-## 🏗️ ARQUITECTURA: Agentes Separados (Decisión Pendiente)
+## 🔧 Sistema de Herramientas (Tools)
 
-### ⚠️ ESTADO ACTUAL: Flag `isGhosty` (Temporal)
-**Implementación**: `/server/tools/index.ts` usa `context.isGhosty` para discriminar herramientas.
+### Acceso por Plan/Usuario
 
-```typescript
-// ACTUAL (temporal con flag)
-if (context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
-  tools.push(createQueryChatbotsTool(context)); // Stats privadas
-}
-```
+**Usuarios Autenticados** (plan del usuario):
+- `FREE`: Sin tools
+- `STARTER`: `save_contact`, `get_datetime`, `web_search`
+- `PRO/ENTERPRISE`: + `create_payment_link` (si Stripe activo)
+- `TRIAL`: Acceso completo
 
-### ✅ ARQUITECTURA OBJETIVO: Dos Agentes Separados
+**Usuarios Anónimos (Chatbots Públicos)**:
+- **Plan**: `ANONYMOUS`
+- **Tools actuales**: Mismas que STARTER (`save_contact`, `get_datetime`, `web_search`)
+- **🔍 TODO CRÍTICO**: ¿Debe heredar tools del plan del DUEÑO del chatbot en lugar de STARTER fijo?
+  - **Pros**: Chatbot refleja capacidades del plan del creador
+  - **Cons**: Complica lógica, puede exponer tools premium sin pago
+  - **Decisión pendiente**: Evaluar si vale la pena complejidad vs valor agregado
 
-**Razones para separar**:
-1. **Desarrollo paralelo**: Ghosty y chatbots públicos evolucionan independientemente
-2. **Seguridad**: Separación física de herramientas sensibles vs públicas
-3. **Performance**: Optimizaciones específicas por tipo de agente
-4. **Testing**: Unit tests aislados por agente
-5. **Claridad**: Zero ambigüedad sobre qué agente ejecuta qué
+**Tools Privadas** (Solo Ghosty):
+- `schedule_reminder`, `list_reminders`, `query_chatbots`, `get_chatbot_stats`
+- **Razón**: Datos sensibles del dueño, NO exponer en chatbots públicos
+- **Flag**: `context.isGhosty = chatbotId === 'ghosty-main'`
 
-**Estructura propuesta**:
-```
-/server/agents/
-  ghosty-agent.ts          # Agente interno (stats, reminders, admin tools)
-  public-chatbot-agent.ts  # Agente público (payments, contacts, datetime)
-  agent-workflow.server.ts # Orquestador que delega al agente correcto
-```
-
-**Beneficios adicionales**:
-- Prompts específicos optimizados por contexto
-- Rate limits diferentes por tipo de agente
-- Logs y analytics separados
-- Rollback independiente en caso de bugs
-
-**TODO**: Migrar de flag `isGhosty` a arquitectura de agentes separados cuando tengamos capacidad.
+### Ubicación Código
+- **Registry**: `/server/tools/index.ts` → `getToolsForPlan()`
+- **Handlers**: `/server/tools/handlers/[nombre].ts`
+- **Agent**: `/server/agents/agent-workflow.server.ts` → `createSingleAgent()`
 
 ---
 
@@ -342,6 +333,29 @@ if (selectedModel === 'gpt-5-nano') {
 - **Resultado**: 7000ms → 981ms (85% mejora) manteniendo funcionalidad completa
 - **Costo**: +86% vs GPT-5 nano (acceptable vs +436% de GPT-3.5-turbo)
 - **Implementation**: UI preserva "gpt-5-nano", backend usa gpt-4o-mini automáticamente
+
+#### **5. Temperature=2 Bug - Alucinaciones Multilenguaje** (Oct 1, 2025)
+- **Síntoma**: Respuestas con basura en múltiples idiomas (árabe, thai, hindi, ruso, chino), loop infinito
+- **Root Cause**: `resolveAnonymousChatbotConfig()` agregado para usuarios anónimos usaba `chatbot.temperature` sin validar → temperature=2 del chatbot en BD causó caos total
+- **Por qué temperature=2 es letal**:
+  - 0.0-0.7: Coherente ✅
+  - 1.0: Creativo pero funcional ✅
+  - 1.5-2.0: Caótico, tokens al azar, sin coherencia ❌
+- **Solución**: ✅ Validación estricta en ambas funciones resolve:
+  ```typescript
+  if (safeTemperature > 1.5) {
+    safeTemperature = 1.0; // NUNCA permitir > 1.5
+  }
+  if (model === 'gpt-5-nano' || model === 'gpt-4o-mini') {
+    safeTemperature = 1; // Forzar óptimo
+  }
+  ```
+- **Protecciones adicionales streaming**:
+  - Timeout 45s
+  - Máximo 1000 chunks
+  - Detección contenido corrupto multilenguaje
+  - maxTokens=500 hard limit
+- **Lección**: NUNCA confiar en valores de BD sin sanitizar parámetros críticos como temperature
 
 ### 🚀 **RESULTADO FINAL**
 **Ghosty AgentV0** es ahora un sistema **100% LlamaIndex nativo** que:
@@ -1003,3 +1017,5 @@ integrations.map(int => ({
 - **Typecheck**: `npm run typecheck`
 - **Lint**: `npm run lint` (verificar si existe)
 - no me gustan los adjetivos bobos y agringados como "felicidades champion"
+- recuerda que cuando se crean rutas se añaden a routes.ts siempre
+- no se usa json, está deprecado, se usa {} directo
