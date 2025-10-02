@@ -7,6 +7,7 @@
 import { agent, agentToolCallEvent, agentStreamEvent } from "@llamaindex/workflow";
 import { OpenAI } from "@llamaindex/openai";
 import { Anthropic } from "@llamaindex/anthropic";
+import { createMemory } from "llamaindex";
 import { getToolsForPlan, type ToolContext } from '../tools';
 import type { ResolvedChatbotConfig } from '../chatbot/configResolver.server';
 
@@ -34,11 +35,11 @@ function createLLM(model: string, temperature?: number) {
     config.temperature = temperature;
   }
 
-  // Token limits
+  // 🛡️ Token limits ESTRICTOS (reducidos para evitar loops infinitos)
   if (model.startsWith("gpt-5") || model.startsWith("gpt-4")) {
-    config.maxCompletionTokens = 1000;
+    config.maxCompletionTokens = 500; // Reducido de 1000 a 500
   } else {
-    config.maxTokens = 1000;
+    config.maxTokens = 500; // Reducido de 1000 a 500
   }
 
   // Timeout and retries
@@ -87,10 +88,20 @@ Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu 
 }
 
 /**
- * Crea un agente con todas las herramientas del plan
+ * Crea un agente con todas las herramientas del plan + memoria conversacional
  * El modelo AI decide qué tools usar - zero custom routing
+ *
+ * ✅ Patrón oficial LlamaIndex TypeScript Agent Workflows:
+ * 1. Crear memoria con createMemory({})
+ * 2. Agregar mensajes del historial con memory.add({ role, content })
+ * 3. Pasar memoria al agente en la configuración
+ *
+ * Documentación oficial: https://developers.llamaindex.ai/typescript/framework/modules/data/memory
  */
-function createSingleAgent(context: WorkflowContext) {
+async function createSingleAgent(
+  context: WorkflowContext,
+  conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>
+) {
   const { resolvedConfig, userPlan } = context;
 
   // Model selection con mapping transparente
@@ -112,46 +123,146 @@ function createSingleAgent(context: WorkflowContext) {
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
   const systemPrompt = buildSystemPrompt(resolvedConfig);
 
-  return agent({
+  // ✅ Crear memoria conversacional según patrón oficial LlamaIndex
+  let memory = undefined;
+
+  if (conversationHistory && conversationHistory.length > 0) {
+    console.log(`🧠 Creando memoria con ${conversationHistory.length} mensajes del historial`);
+
+    // Crear memoria vacía (sin memoryBlocks por ahora, solo mensajes directos)
+    memory = createMemory({
+      tokenLimit: 8000 // Límite razonable para contexto conversacional
+    });
+
+    // Agregar cada mensaje del historial a la memoria
+    for (const msg of conversationHistory) {
+      await memory.add({
+        role: msg.role,
+        content: msg.content
+      });
+    }
+
+    console.log(`✅ Memoria creada exitosamente con ${conversationHistory.length} mensajes`);
+    console.log(`  📝 Primer mensaje: ${conversationHistory[0].role} - "${conversationHistory[0].content.substring(0, 50)}..."`);
+    console.log(`  📝 Último mensaje: ${conversationHistory[conversationHistory.length - 1].role} - "${conversationHistory[conversationHistory.length - 1].content.substring(0, 50)}..."`);
+  } else {
+    console.log(`⚠️ NO hay historial conversacional - agente iniciará sin contexto previo`);
+  }
+
+  // ✅ Patrón oficial LlamaIndex TypeScript: pasar memoria en configuración del agente
+  const agentConfig: any = {
     llm,
     tools: allTools,
-    systemPrompt
-  });
+    systemPrompt,
+    verbose: true // Para debugging de herramientas
+  };
+
+  // Solo agregar memoria si existe
+  if (memory) {
+    agentConfig.memory = memory;
+  }
+
+  return agent(agentConfig);
 }
 
 /**
  * Stream de un agente con tracking de eventos
+ * El historial conversacional ya está en el agente via memoria (memory)
+ *
+ * ✅ Patrón oficial LlamaIndex: el agente mantiene el contexto completo automáticamente
+ * mediante el sistema de memoria integrado
+ *
+ * 🛡️ PROTECCIONES DE SEGURIDAD:
+ * - Timeout máximo: 45 segundos
+ * - Máximo 1000 chunks
+ * - Detección de contenido corrupto
  */
 async function* streamSingleAgent(agentInstance: any, message: string) {
+  console.log(`🚀 Iniciando stream con mensaje: "${message.substring(0, 100)}..."`);
+
+  const MAX_CHUNKS = 1000;
+  const MAX_DURATION_MS = 45000; // 45 segundos
+  const startTime = Date.now();
+
+  // El agente ya tiene memoria configurada con el historial, solo pasamos el mensaje actual
   const events = agentInstance.runStream(message);
 
   let hasStreamedContent = false;
   let toolsExecuted = 0;
   let toolsUsed: string[] = [];
+  let chunkCount = 0;
+  let totalChars = 0;
 
-  for await (const event of events as any) {
-    // Tool call events
-    if (agentToolCallEvent.include(event)) {
-      toolsExecuted++;
-      toolsUsed.push(event.data.toolName);
-      yield {
-        type: "tool-start",
-        tool: event.data.toolName,
-        message: `🔧 ${event.data.toolName}`
-      };
-    }
-
-    // Stream content events
-    if (agentStreamEvent.include(event)) {
-      if (event.data.delta) {
-        hasStreamedContent = true;
+  try {
+    for await (const event of events as any) {
+      // 🛡️ PROTECCIÓN 1: Timeout
+      const elapsed = Date.now() - startTime;
+      if (elapsed > MAX_DURATION_MS) {
+        console.error(`⏱️ Stream timeout después de ${elapsed}ms`);
         yield {
-          type: "chunk",
-          content: event.data.delta
+          type: "error",
+          content: "⏱️ Respuesta demasiado larga. Por favor intenta reformular tu pregunta."
+        };
+        break;
+      }
+
+      // 🛡️ PROTECCIÓN 2: Máximo de chunks
+      if (chunkCount >= MAX_CHUNKS) {
+        console.error(`🚫 Máximo de chunks alcanzado: ${chunkCount}`);
+        yield {
+          type: "error",
+          content: "La respuesta es demasiado extensa. Por favor sé más específico."
+        };
+        break;
+      }
+
+      // Tool call events
+      if (agentToolCallEvent.include(event)) {
+        toolsExecuted++;
+        const toolName = event.data.toolName || 'unknown_tool';
+        toolsUsed.push(toolName);
+        console.log(`🔧 Herramienta ejecutada: ${toolName}`);
+        yield {
+          type: "tool-start",
+          tool: toolName,
+          message: `🔧 ${toolName}`
         };
       }
+
+      // Stream content events
+      if (agentStreamEvent.include(event)) {
+        if (event.data.delta) {
+          chunkCount++;
+          totalChars += event.data.delta.length;
+
+          // 🛡️ PROTECCIÓN 3: Detectar contenido corrupto (múltiples scripts)
+          const hasMultipleScripts = /[\u0400-\u04FF].*[\u0E00-\u0E7F]|[\u0600-\u06FF].*[\u4E00-\u9FFF]|[\u0900-\u097F].*[\u0400-\u04FF]/.test(event.data.delta);
+          if (hasMultipleScripts && event.data.delta.length > 100) {
+            console.error(`🚫 Contenido corrupto detectado en chunk ${chunkCount}`);
+            yield {
+              type: "error",
+              content: "Error de generación detectado. Por favor intenta de nuevo."
+            };
+            break;
+          }
+
+          hasStreamedContent = true;
+          yield {
+            type: "chunk",
+            content: event.data.delta
+          };
+        }
+      }
     }
+  } catch (streamError) {
+    console.error(`❌ Error en streaming:`, streamError);
+    yield {
+      type: "error",
+      content: "Error durante la generación de respuesta."
+    };
   }
+
+  console.log(`✅ Stream completado - Tools: ${toolsExecuted}, Content: ${hasStreamedContent}`);
 
   // Fallback para casos donde tools ejecutan pero no stream
   if (toolsExecuted > 0 && !hasStreamedContent) {
@@ -171,7 +282,7 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
 }
 
 /**
- * AgentWorkflow principal - Simplified
+ * AgentWorkflow principal - Simplified con memoria conversacional
  */
 export const streamAgentWorkflow = async function* (
   user: any,
@@ -192,9 +303,19 @@ export const streamAgentWorkflow = async function* (
   };
 
   try {
-    // Single agent con todas las tools - modelo decide
-    const agent = createSingleAgent(context);
-    yield* streamSingleAgent(agent, message);
+    // Extraer historial conversacional del agentContext
+    const conversationHistory = options.agentContext?.conversationHistory || [];
+
+    console.log(`⚡ streamAgentWorkflow recibió conversationHistory: ${conversationHistory.length} mensajes`);
+    if (conversationHistory.length > 0) {
+      console.log(`  Primer mensaje del historial: ${conversationHistory[0].role} - "${conversationHistory[0].content.substring(0, 60)}..."`);
+    }
+
+    // Single agent con todas las tools + memoria conversacional
+    const agentInstance = await createSingleAgent(context, conversationHistory);
+
+    // Stream con memoria ya configurada en el agente
+    yield* streamSingleAgent(agentInstance, message);
   } catch (error) {
     console.error('❌ AgentWorkflow error:', error);
     yield {

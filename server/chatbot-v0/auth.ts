@@ -1,5 +1,6 @@
 /**
  * Autenticación simple para Chatbot V0
+ * Soporta acceso público sin autenticación (patrón Flowise)
  */
 
 export async function authenticateRequest(request: Request, formData: FormData) {
@@ -14,7 +15,8 @@ export async function authenticateRequest(request: Request, formData: FormData) 
           id: 'dev-user-mock-pro',
           plan: 'PRO'
         },
-        isTestUser: true
+        isTestUser: true,
+        isAnonymous: false
       };
     }
 
@@ -30,25 +32,55 @@ export async function authenticateRequest(request: Request, formData: FormData) 
             id: user.id,
             plan: user.plan || 'FREE'
           },
-          isTestUser: false
+          isTestUser: false,
+          isAnonymous: false
         };
       }
     }
 
-    // 🍪 Fallback to cookie authentication
-    const { getUserOrRedirect } = await import("../getUserUtils.server");
-    const user = await getUserOrRedirect(request);
+    // 🍪 Cookie authentication
+    try {
+      const { getUserOrRedirect } = await import("../getUserUtils.server");
+      const user = await getUserOrRedirect(request);
 
-    return {
-      user: {
-        id: user.id,
-        plan: user.plan || 'FREE'
-      },
-      isTestUser: false
-    };
+      return {
+        user: {
+          id: user.id,
+          plan: user.plan || 'FREE'
+        },
+        isTestUser: false,
+        isAnonymous: false
+      };
+    } catch (authError) {
+      // Si falla la autenticación por cookie, permitir acceso anónimo
+      console.log('👤 No authenticated user - creating anonymous visitor');
+
+      // Generar visitorId único o usar el existente del cliente
+      const visitorId = formData.get('visitorId') as string ||
+                        `anon-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+      return {
+        user: {
+          id: visitorId,
+          plan: 'ANONYMOUS' // Plan especial para usuarios anónimos
+        },
+        isTestUser: false,
+        isAnonymous: true
+      };
+    }
   } catch (error) {
     console.error('❌ Auth error:', error);
-    return { user: null, isTestUser: false };
+
+    // Fallback a usuario anónimo en caso de error crítico
+    const visitorId = `anon-error-${Date.now()}`;
+    return {
+      user: {
+        id: visitorId,
+        plan: 'ANONYMOUS'
+      },
+      isTestUser: false,
+      isAnonymous: true
+    };
   }
 }
 

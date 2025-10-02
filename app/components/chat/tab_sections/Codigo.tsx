@@ -795,26 +795,17 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
       : "https://formmy-v2.fly.dev";
 
   const codeToCopy = `
-<!-- Widget de chat flotante - Inicia cerrado y se abre al hacer clic -->
-<iframe
-  src="${baseUrl}/chat/embed?slug=${chatbot.slug}"
-  width="100%"
-  height="100%"
-  frameborder="0"
-  style="position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none; background: transparent;"
-  allow="clipboard-write"
-></iframe>
-
-<style>
-  /* Permite interacción solo con el widget flotante */
-  iframe[src*="/chat/embed"] {
-    pointer-events: auto;
-  }
-</style>
+<script type="module">
+  import Chatbot from "${baseUrl}/widget.js"
+  Chatbot.init({
+    chatbotSlug: "${chatbot.slug}",
+    apiHost: "${baseUrl}"
+  })
+</script>
 `;
 
   const instructions = [
-    { step: "1", description: "Copia el código del widget flotante" },
+    { step: "1", description: "Copia el código del widget" },
     {
       step: "2",
       description:
@@ -828,16 +819,16 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
     {
       step: "4",
       description:
-        "Inicia CERRADO - los usuarios deben hacer clic para abrir el chat",
+        "Funciona en CodePen, JSFiddle y cualquier sitio web",
     },
     {
       step: "5",
-      description: "Incluye botón X para cerrar y volver al estado de burbuja",
+      description: "Sin conflictos - no bloquea tu sitio",
     },
     {
       step: "6",
       description:
-        "Es completamente responsive y no afecta el diseño de tu sitio",
+        "Responsive y optimizado para todos los dispositivos",
     },
   ];
 

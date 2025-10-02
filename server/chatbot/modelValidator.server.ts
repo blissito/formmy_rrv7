@@ -18,11 +18,27 @@ interface ModelValidationResult {
  * Valida si un usuario puede usar un modelo específico según su plan
  */
 export function validateModelForPlan(
-  userPlan: Plans,
+  userPlan: Plans | string,
   requestedModel: string,
   chatbotId: string
 ): ModelValidationResult {
-  const planLimits = PLAN_LIMITS[userPlan];
+  // 👤 Usuarios anónimos: usar el modelo configurado sin validación
+  if (userPlan === 'ANONYMOUS') {
+    return {
+      isValid: true
+    };
+  }
+
+  const planLimits = PLAN_LIMITS[userPlan as Plans];
+
+  // Si el plan no existe en PLAN_LIMITS, permitir el modelo
+  if (!planLimits) {
+    console.warn(`⚠️ Plan desconocido: ${userPlan}, permitiendo modelo por defecto`);
+    return {
+      isValid: true
+    };
+  }
+
   const availableModels = planLimits.availableModels;
 
   // Caso especial: usuarios FREE no tienen acceso a modelos
@@ -56,14 +72,22 @@ export function validateModelForPlan(
  * Aplica correcciones automáticas al modelo según el plan
  */
 export function applyModelCorrection(
-  userPlan: Plans,
+  userPlan: Plans | string,
   requestedModel: string,
   autoCorrect: boolean = true
 ): {
   finalModel: string;
-  wascorrected: boolean;
+  wasCorreected: boolean;
   warning?: string;
 } {
+  // 👤 Usuarios anónimos: usar el modelo configurado sin corrección
+  if (userPlan === 'ANONYMOUS') {
+    return {
+      finalModel: requestedModel,
+      wasCorreected: false
+    };
+  }
+
   const validation = validateModelForPlan(userPlan, requestedModel, "validation");
 
   if (validation.isValid) {
@@ -82,7 +106,7 @@ export function applyModelCorrection(
   }
 
   // Si no hay corrección disponible, usar el modelo por defecto
-  const defaultModel = getDefaultModelForPlan(userPlan);
+  const defaultModel = getDefaultModelForPlan(userPlan as Plans);
   return {
     finalModel: defaultModel,
     wasCorreected: true,

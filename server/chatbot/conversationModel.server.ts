@@ -151,6 +151,31 @@ export async function deleteConversation(id: string): Promise<Conversation> {
   });
 }
 /**
+ * Finds the last ACTIVE conversation for a specific chatbot and visitor
+ * Used for session recovery - if user reloads page, we find their last active conversation
+ */
+export async function findLastActiveConversation({
+  chatbotId,
+  visitorId,
+}: {
+  chatbotId: string;
+  visitorId?: string;
+}): Promise<Conversation | null> {
+  if (!visitorId) return null;
+
+  return db.conversation.findFirst({
+    where: {
+      chatbotId,
+      visitorId,
+      status: ConversationStatus.ACTIVE,
+    },
+    orderBy: {
+      updatedAt: "desc", // Most recently updated conversation
+    },
+  });
+}
+
+/**
  * Marks conversations as timed out if they've been inactive for a certain period
  * This function should be called periodically by a cron job or similar
  */

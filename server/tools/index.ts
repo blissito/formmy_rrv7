@@ -155,6 +155,24 @@ export const createGetCurrentDateTimeTool = (context: ToolContext) => tool(
   }
 );
 
+// ===== WEB SEARCH TOOLS =====
+
+export const createGoogleSearchTool = (context: ToolContext) => tool(
+  async ({ query, numResults = 5 }) => {
+    const { googleSearchHandler } = await import('./handlers/google-search');
+    const result = await googleSearchHandler({ query, numResults }, context);
+    return result.message;
+  },
+  {
+    name: "web_search_google",
+    description: "Buscar información actualizada en Google. Útil para responder preguntas sobre eventos actuales, noticias, datos recientes o información que no está en el contexto del chatbot",
+    parameters: z.object({
+      query: z.string().describe("Consulta de búsqueda en Google (keywords o pregunta)"),
+      numResults: z.number().optional().default(5).describe("Número de resultados a obtener (1-10, default: 5)")
+    })
+  }
+);
+
 // ===== CHATBOT TOOLS =====
 
 export const createQueryChatbotsTool = (context: ToolContext) => tool(
@@ -221,14 +239,21 @@ export const getToolsForPlan = (
     tools.push(createPaymentLinkTool(context));
   }
 
-  // Contact tools - disponibles para STARTER+
-  if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  // Contact tools - disponibles para ANONYMOUS/STARTER+
+  if (['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
     tools.push(createSaveContactTool(context));
   }
 
-  // DateTime tools - disponibles para todos los planes
-  if (['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  // DateTime tools - disponibles para ANONYMOUS/STARTER+
+  if (['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
     tools.push(createGetCurrentDateTimeTool(context));
+  }
+
+  // Google Search tools - disponibles para ANONYMOUS/STARTER+ con API configurada
+  if (['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) &&
+      process.env.GOOGLE_SEARCH_API_KEY &&
+      process.env.GOOGLE_SEARCH_ENGINE_ID) {
+    tools.push(createGoogleSearchTool(context));
   }
 
   // Chatbot tools - SOLO para Ghosty (asistente interno)
@@ -256,5 +281,6 @@ export const getAllToolNames = () => [
   'save_contact_info',
   'query_chatbots',
   'get_chatbot_stats',
-  'get_current_datetime'
+  'get_current_datetime',
+  'web_search_google'
 ];
