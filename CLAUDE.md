@@ -99,6 +99,45 @@ Dejar que el modelo use las tools directamente según el contexto.
 - ✅ `/server/tools/index.ts` - Tool registry funcional
 - ❌ Legacy eliminado: `formmy-agent/`, `llamaindex-engine/`, `agent-decision-engine.ts`
 
+## 🏗️ ARQUITECTURA: Agentes Separados (Decisión Pendiente)
+
+### ⚠️ ESTADO ACTUAL: Flag `isGhosty` (Temporal)
+**Implementación**: `/server/tools/index.ts` usa `context.isGhosty` para discriminar herramientas.
+
+```typescript
+// ACTUAL (temporal con flag)
+if (context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  tools.push(createQueryChatbotsTool(context)); // Stats privadas
+}
+```
+
+### ✅ ARQUITECTURA OBJETIVO: Dos Agentes Separados
+
+**Razones para separar**:
+1. **Desarrollo paralelo**: Ghosty y chatbots públicos evolucionan independientemente
+2. **Seguridad**: Separación física de herramientas sensibles vs públicas
+3. **Performance**: Optimizaciones específicas por tipo de agente
+4. **Testing**: Unit tests aislados por agente
+5. **Claridad**: Zero ambigüedad sobre qué agente ejecuta qué
+
+**Estructura propuesta**:
+```
+/server/agents/
+  ghosty-agent.ts          # Agente interno (stats, reminders, admin tools)
+  public-chatbot-agent.ts  # Agente público (payments, contacts, datetime)
+  agent-workflow.server.ts # Orquestador que delega al agente correcto
+```
+
+**Beneficios adicionales**:
+- Prompts específicos optimizados por contexto
+- Rate limits diferentes por tipo de agente
+- Logs y analytics separados
+- Rollback independiente en caso de bugs
+
+**TODO**: Migrar de flag `isGhosty` a arquitectura de agentes separados cuando tengamos capacidad.
+
+---
+
 ## 🛠️ Desarrollo de Herramientas LlamaIndex
 
 ### Pattern Oficial para Nuevas Herramientas
