@@ -498,7 +498,7 @@ export default function ChatPreview({
         )}
       >
         <ChatHeader
-          primaryColor={chatbot.primaryColor || "#63CFDE"}
+          primaryColor={chatbot.primaryColor || "#9A99EA"}
           name={chatbot.name}
           avatarUrl={chatbot.avatarUrl}
           onClear={handleClearConversation}
@@ -517,7 +517,7 @@ export default function ChatPreview({
               <MessageBubble
                 key={idx}
                 message={msg}
-                primaryColor={chatbot.primaryColor || "#63CFDE"}
+                primaryColor={chatbot.primaryColor || "#9A99EA"}
                 avatarUrl={chatbot.avatarUrl}
               />
             ))}
@@ -528,7 +528,7 @@ export default function ChatPreview({
           {chatLoading && (
             <MessageBubble
               role="assistant"
-              primaryColor={chatbot.primaryColor || "#63CFDE"}
+              primaryColor={chatbot.primaryColor || "#9A99EA"}
               avatarUrl={chatbot.avatarUrl}
             >
               <LoadingIndicator />

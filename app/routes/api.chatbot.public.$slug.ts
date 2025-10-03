@@ -28,7 +28,7 @@ export async function loader({ params }: { params: { slug: string } }) {
     return Response.json({ chatbot }, {
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=300',
+        'Cache-Control': 'public, max-age=60',
       }
     });
   } catch (error) {

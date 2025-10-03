@@ -160,6 +160,7 @@ html,
 body {
   @apply bg-clear dark:bg-dark;
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-weight: normal;
   @media (prefers-color-scheme: dark) {
     color-scheme: light;
   }

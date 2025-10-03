@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 
 // Estilos unificados para el contenido markdown con bloques de código mejorados
-const PROSE_STYLES = "prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-li:text-sm prose-code:bg-slate-800 prose-code:text-green-400 prose-code:dark:bg-slate-900 prose-code:dark:text-green-300 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-xs prose-pre:bg-slate-800 prose-pre:text-green-400 prose-pre:dark:bg-slate-900 prose-pre:dark:text-green-300 prose-pre:p-3 prose-pre:rounded-lg prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-2 prose-pre:border prose-pre:border-slate-600 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:dark:border-gray-500 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:dark:text-gray-400 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:dark:text-blue-400 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0";
+const PROSE_STYLES = "prose prose-sm max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-li:text-sm prose-code:bg-slate-800 prose-code:text-green-400 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-xs prose-pre:bg-slate-800 prose-pre:text-green-400 prose-pre:p-3 prose-pre:rounded-lg prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-2 prose-pre:border prose-pre:border-slate-600 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0";
 
 interface MessageBubbleProps {
   message?: {
@@ -15,7 +15,6 @@ interface MessageBubbleProps {
   };
   role?: "user" | "assistant";
   children?: ReactNode;
-  primaryColor?: string;
   avatarUrl?: string;
 }
 
@@ -62,7 +61,6 @@ const ReasoningSection = ({ content }: { content: string }) => {
 export const MessageBubble = ({
   message = { role: "assistant", content: "..." },
   children: nodes,
-  primaryColor,
   avatarUrl,
 }: MessageBubbleProps) => {
   if (message.role === "user" && message.content) {
@@ -80,8 +78,8 @@ export const MessageBubble = ({
   if (nodes) {
     return (
       <main className="px-4 flex items-start gap-3 ">
-        {/* <Avatar primaryColor={primaryColor} /> */}
-        <div className="bg-white border dark:bg-space-700 rounded-xl p-3 max-w-md">
+        <Avatar className="w-8 h-8" src={avatarUrl} />
+        <div className="bg-white border border-outlines rounded-xl p-3 max-w-md">
           <div
             className={PROSE_STYLES}
             style={{ whiteSpace: "pre-line", lineHeight: "1" }}
@@ -98,7 +96,7 @@ export const MessageBubble = ({
   return (
     <main className="px-4 flex items-start gap-3 max-w-[90%] ">
       <Avatar className="w-8 h-8" src={avatarUrl} />
-      <div className="bg-white border border-outlines rounded-tr-lg rounded-xl  p-3 max-w-md ">
+      <div className="bg-white border border-outlines rounded-tr-lg rounded-xl p-3 max-w-md">
         {/* Indicador de Echo Message */}
         {isWhatsAppEcho && (
           <div className="flex items-center gap-1 mb-2 pb-2 border-b border-gray-200 dark:border-gray-600">

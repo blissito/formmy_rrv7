@@ -109,7 +109,7 @@ export const ChatForm = ({
                 alt="Avatar del chatbot"
                 style={{
                   filter: `hue-rotate(${
-                    primaryColor === "#63CFDE" ? "0" : "180"
+                    primaryColor === "#9A99EA" ? "0" : "180"
                   }deg)`,
                 }}
                 className="object-cover p-4 w-full h-full"

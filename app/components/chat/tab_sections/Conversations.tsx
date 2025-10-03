@@ -408,7 +408,7 @@ const Conversation = ({
         }
       )}
     >
-      <Avatar className="w-10" src={pic || "/assets/chat/user-placeholder.svg"} />
+      <Avatar className="w-10" src={conversation.pic} />
       <div className="flex-1 truncate">
         <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
         <p className="text-xs text-irongray truncate -mt-[2px]">
@@ -495,7 +495,7 @@ const ChatHeader = ({
       <Avatar className="h-10 w-10" src={conversation.messages[0]?.picture || "/assets/chat/ghosty.svg"} />
       <div>
         <div className="flex items-center gap-1">
-          <h3 className="text-base font-medium text-dark">{tel}</h3>
+          <h3 className="text-base font-medium text-dark">{tel === "N/A" ? "Usuario web" : tel}</h3>
           {/* Solo mostrar logo WhatsApp si es conversación legítima de WhatsApp */}
           {isWhatsAppConversation && (
             <img src="/assets/chat/whatsapp.svg" alt="whatsapp icon" />
@@ -598,7 +598,7 @@ const ManualResponseInput = ({
   ];
 
   return (
-    <div className="border-l border-r border-b border-outlines bg-gradient-to-r from-blue-50 to-indigo-50 p-4 w-full rounded-b-3xl">
+    <div className="border-l border-r border-b border-outlines bg-brand-100 p-4 w-full rounded-b-3xl">
       {/* 🎯 QUICK RESPONSES */}
       <div className="flex flex-wrap gap-2 mb-3">
         {quickResponses.map((response, index) => (
@@ -620,7 +620,7 @@ const ManualResponseInput = ({
             onChange={handleAutoResize}
             onKeyDown={handleKeyDown}
             placeholder="💬 Responde al usuario aquí..."
-            className="w-full p-3 border-2 border-blue-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-3 border-2 border-blue-200 rounded-xl resize-none focus:outline-none focus:ring-0  focus:border-brand-500 transition-all"
             rows={2}
             maxLength={4096}
             style={{ minHeight: '60px' }}
@@ -634,11 +634,11 @@ const ManualResponseInput = ({
           onClick={handleSend}
           disabled={!message.trim() || isSending}
           className={cn(
-            "px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl transition-all transform",
-            "hover:from-blue-600 hover:to-blue-700 hover:scale-105 hover:shadow-lg",
+            "px-6 py-3 bg-brand-500 text-white rounded-full transition-all transform",
+            "hover:scale-105 hover:shadow-lg hover:bg-brand-600",
             "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
             "flex items-center gap-2 font-medium whitespace-nowrap",
-            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            "focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
           )}
         >
           {isSending ? (
@@ -648,7 +648,6 @@ const ManualResponseInput = ({
             </>
           ) : (
             <>
-              <span>🚀</span>
               Enviar
             </>
           )}
@@ -779,7 +778,7 @@ const UserMessage = ({ message }: { message: Message }) => {
       <div className="text-base p-3 bg-dark text-white rounded-xl max-w-[80%] break-words">
         {message.content}
       </div>
-      <Avatar className="w-8 h-8 flex-shrink-0" src={message.picture || "/assets/chat/user-placeholder.svg"} />
+      <Avatar className="w-8 h-8 flex-shrink-0" src={message.picture} />
     </div>
   );
 };

@@ -571,7 +571,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
             title="Embebe tu chatbot en tu sitio web"
             text={
               <div>
-                <p className="text-metal font-light">
+                <p className="text-metal font-normal">
                   Elige la forma de embebido que más te convenga.{" "}
                   <a href="#!" className="underline">
                     Más información

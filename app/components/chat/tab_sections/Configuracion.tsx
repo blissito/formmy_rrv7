@@ -245,7 +245,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
         <section className="grid gap-5 w-full">
           <Card title="General">
             <div className="mb-4">
-              <span className="text-sm text-gray-600 block mb-1">
+              <span className="text-sm text-gray-600 block mb-1 font-normal">
                 Id de tu chatbot
               </span>
               <nav className="flex gap-2 items-center">
@@ -281,14 +281,14 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
               </nav>
             </div>
             <div className="mb-4">
-              <span className="text-sm text-gray-600 block mb-1">Tamaño</span>
-              <p>{chatbot.contextSizeKB || 400} KB</p>
+              <span className="text-sm text-gray-600 block mb-1 font-normal">Tamaño</span>
+              <p className="font-normal">{chatbot.contextSizeKB || 400} KB</p>
             </div>
             <div className="mb-0">
-              <span className="text-sm text-gray-600 block mb-1">
+              <span className="text-sm text-gray-600 block mb-1 font-normal">
                 Historial del chat
               </span>
-              <p>7 días</p>
+              <p className="font-normal">7 días</p>
             </div>
           </Card>
           <Card
@@ -296,7 +296,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     
           >
            <div className="flex flex-col md:flex-row gap-6">
-            <p className="text-metal max-w-[700px]">Una vez que elimines tu chatbot, tu agente será eliminado al igual que toda la información que subiste. Está acción es irreversible, así que asegúrate de que está es la acción que quieres tomar.</p>
+            <p className="text-metal font-normal max-w-[700px]">Una vez que elimines tu chatbot, tu agente será eliminado al igual que toda la información que subiste. Está acción es irreversible, así que asegúrate de que está es la acción que quieres tomar.</p>
             <button
               onClick={() => setShowDeleteModal(true)}
               className="block max-w-full md:max-w-[220px] ml-auto w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 h-10 rounded-full transition-colors"
@@ -399,7 +399,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
 
       {currentTab === "seguridad" && (
         <section className="">
-          <Card title="Configura tu seguridad" text="Aumenta la seguridad de tu chatbot permitiendo la conexión desde dominios específicos y estableciendo un límite de mensajes por minuto.">
+          <Card title="Configura la seguridad de tu chatbot" text="Aumenta la seguridad de tu chatbot permitiendo la conexión desde dominios específicos y estableciendo un límite de mensajes por minuto.">
             <main className="flex flex-col gap-4">
               <Input
                 label="Ingresa el o los dominios separados por coma"
@@ -407,6 +407,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                 value={security.allowedDomains}
                 onChange={(value) => setSecurity({...security, allowedDomains: value})}
               />
+             
               <section>
                 <Select
                   options={[
@@ -530,7 +531,7 @@ export const Toggler = ({
     <div className="flex gap-2 items-center justify-between">
       <div className="flex flex-col">
       <h4 className="dark font-medium">{title}</h4>
-      <p className="text-sm text-gray-600">{text}</p>
+      <p className="text-sm text-gray-600 font-normal">{text}</p>
       </div>
       <Toggle value={value} onChange={onChange} />
     </div>

@@ -5,10 +5,12 @@ export const Avatar = ({
   primaryColor = "brand-500",
   className,
 }: {
-  src?: string;
+  src?: string | null;
   primaryColor?: string;
   className?: string;
 }) => {
+  const defaultImage = "/assets/chat/user-placeholder.svg";
+
   return (
     <img
       className={cn(
@@ -16,8 +18,14 @@ export const Avatar = ({
         "w-10 h-10",
         className
       )}
-      src={src || "/assets/chat/ghosty.svg"}
+      src={src || defaultImage}
       alt="avatar"
+      onError={(e) => {
+        const target = e.currentTarget;
+        if (target.src !== defaultImage) {
+          target.src = defaultImage;
+        }
+      }}
     />
   );
 };

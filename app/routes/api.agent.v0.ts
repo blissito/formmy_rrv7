@@ -62,7 +62,7 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
         maxTokens: 4000,
         welcomeMessage: '¡Hola! Soy tu asistente AI. ¿En qué puedo ayudarte?',
         goodbyeMessage: '¡Hasta luego! Si necesitas más ayuda, no dudes en preguntar.',
-        primaryColor: '#63CFDE',
+        primaryColor: '#9A99EA',
         avatarUrl: '',
         contexts: [],
         isActive: true,
