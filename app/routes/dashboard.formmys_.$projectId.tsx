@@ -426,7 +426,7 @@ export const ConfirmationToast = ({
 
             <button
               onClick={onClose}
-              className="h-8 text-sm mt-4 rounded-full text-gray-600 mr-6 "
+              className="h-8 text-sm mt-4 rounded-full text-gray-600 mr-6 hover:bg-outlines/30 px-4 transition-colors"
             >
               <p>Cancelar</p>
             </button>

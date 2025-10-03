@@ -72,13 +72,13 @@ export default function HomeFooter() {
                 </button>
               </Form>
               <li>
-                <a href="/formularios" className="hover:underline">
-                  Formularios
+                <a href="/chat-ia" className="hover:underline">
+                  Chat IA
                 </a>
               </li>
               <li>
-                <a href="/chat-ia" className="hover:underline">
-                  Chat IA
+                <a href="/formularios" className="hover:underline">
+                  Formularios
                 </a>
               </li>
               <li>

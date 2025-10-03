@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useScroll, useMotionValueEvent } from "framer-motion";
 import { StickyScroll } from "~/components/ui/sticky-scroll-reveal";
+import { Form } from "react-router";
 
 interface Step {
   number: string;
@@ -72,9 +73,14 @@ export function FormSteps({ steps, title = "Crea tu primer Formmy en 5 minutos" 
           {step.description}
         </p>
         {index === formattedSteps.length - 1 && step.buttonText && (
-          <button className="mt-8 text-base px-8 py-3 bg-dark hover:bg-dark/90 hover:-translate-y-1 transition-all duration-200 text-white rounded-full font-medium">
+             <Form method="post" action="/api/login" id="start_steps_forms">
+          <button   type="submit"
+               name="intent"
+               value="google-login"
+                className="mt-8 text-base px-8 py-3 bg-dark hover:bg-dark/90 hover:-translate-y-1 transition-all duration-200 text-white rounded-full font-medium">
             {step.buttonText}
           </button>
+        </Form>
         )}
       </div>
     ),
@@ -83,7 +89,7 @@ export function FormSteps({ steps, title = "Crea tu primer Formmy en 5 minutos" 
 
   return (
     <section className="w-full py-16 md:py-24 relative">
-      <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold text-center mb-10 text-dark dark:text-white px-4 relative z-10">
+      <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold text-center mb-0 md:mb-10 text-dark dark:text-white px-4 relative z-10">
         {title}
       </h2>
 

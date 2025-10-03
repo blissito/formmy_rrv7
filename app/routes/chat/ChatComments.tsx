@@ -69,15 +69,15 @@ export default function ChatComments() {
                 className="w-16 h-16 rounded-full border-2 border-cloud"
               />
               <div>
-                <h3 className="text-xl font-bold">{testimonial.name}</h3>
-                <p className="text-gray-400 text-sm">
+                <h3 className="text-lg md:text-xl font-bold">{testimonial.name}</h3>
+                <p className="text-gray-400 text-xs md:text-sm">
                   {testimonial.role} at {testimonial.company}
                 </p>
               </div>
             </div>
 
             {/* Quote */}
-            <blockquote className="text-lg leading-relaxed text-gray-300">
+            <blockquote className="text-base md:text-lg leading-relaxed text-gray-300">
               "{testimonial.quote}"
             </blockquote>
 

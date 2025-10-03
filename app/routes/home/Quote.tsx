@@ -33,7 +33,7 @@ export function Quote({
 
   return (
     <section className={`flex flex-col items-center text-center max-w-6xl px-4 md:px-[5%] xl:px-0 mx-auto 0 py-16 lg:py-32 ${className}`}>
-      <h3 className="text-4xl md:text-5xl lg:text-7xl heading leading-[1.2]">
+      <h3 className="text-3xl md:text-5xl lg:text-7xl heading leading-[1.2]">
         "{beforeHighlight}{" "}
         <span style={{ ...defaultHighlightStyle, ...highlightStyle }}>
           {highlightText}

@@ -95,7 +95,7 @@ export default function HomeHero() {
   return (
     <section className="relative overflow-hidden z-10 flex flex-col items-center justify-center min-h-svh pt-32 md:pt-[240px] max-w-[1400px] px-4 md:px-[5%]  lg:px-0 mx-auto">
       <div className="h-[180px]  md:h-[160px] lg:h-[220px] flex items-center justify-center">
-        <h1 className=" text-dark heading text-[3rem] md:text-5xl lg:text-7xl px-4 xl:text-[106px] text-center leading-none md:leading-tight flex-wrap gap-2" style={{ lineHeight: '1', minHeight: '1em' }}>
+        <h1 className=" text-dark heading text-[2.7rem] md:text-5xl lg:text-7xl px-0 md:px-4 xl:text-[106px] text-center leading-none md:leading-tight flex-wrap gap-2" style={{ lineHeight: '1', minHeight: '1em' }}>
           {text.split('').map((char, index) => {
             const isAnimated = animatedIndexes.includes(index);
             const shouldAnimate = isAnimated && animationPhase > 0 && animationPhase < 4;
@@ -206,7 +206,7 @@ export default function HomeHero() {
       <span className="paragraph text-dark text-lg md:text-2xl text-center mt-0 lg:mt-8 ">
         Integra en minutos y sin dolores de cabeza.
       </span>
-      <div className="flex gap-4 mt-10">
+      <div className="flex gap-0 md:gap-4 mt-6 md:mt-10">
         <Form method="post" action="/api/login" id="start_hero">
           <BigCTA type="submit" name="intent" value="google-login" textClassName="text-base md:text-lg text-dark" className="h-14" />
         </Form>

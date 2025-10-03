@@ -277,12 +277,7 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
           emojis="✋🏻⛔️🤖"
           footer={
             <div className="flex justify-center gap-4 md:gap-6 ">
-              <button
-                onClick={handleDelete}
-                className="bg-danger text-white block  cursor-pointer rounded-full py-3 px-6"
-              >
-                Sí, quiero eliminarlo
-              </button>
+           
               <Button
                 onClick={() => {
                   setShouldDelete("");
@@ -292,6 +287,12 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
               >
                 Cancelar
               </Button>
+              <button
+                onClick={handleDelete}
+                className="bg-danger hover:bg-[#DF4D42] text-white block  cursor-pointer rounded-full py-3 px-6"
+              >
+                Sí, quiero eliminarlo
+              </button>
             </div>
           }
         />

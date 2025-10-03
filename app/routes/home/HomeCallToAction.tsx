@@ -8,7 +8,7 @@ const imgCapturaDePantalla20250708ALaS35003PM1 =
 
 export default function HomeCallToAction() {
   return (
-    <section className="relative w-full rounded-t-[40px] bg-dark overflow-hidden flex flex-col md:flex-row items-center justify-between min-h-[500px] py-0 pb-10  md:py-24 px-4 md:px-0">
+    <section className="relative w-full rounded-t-[40px] bg-dark overflow-hidden flex flex-col md:flex-row items-center justify-between min-h-[300px] md:min-h-[500px] py-0 pb-10  md:py-24 px-4 md:px-0">
       {/* SVG decorativo en la esquina superior izquierda */}
       <svg
         className="absolute left-0 top-0 z-0 rotate-[180deg]"
@@ -28,13 +28,13 @@ export default function HomeCallToAction() {
       </svg>
       <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-start  justify-between z-10 px-4 md:px-[5%] xl:px-0">
         <div className="flex-1 flex flex-col items-start justify-center mt-16">
-          <h2 className="text-white text-4xl lg:text-6xl font-bold !leading-[1.3] mb-4 md:mb-8">
+          <h2 className="text-white text-3xl lg:text-6xl font-bold !leading-[1.3] mb-4 md:mb-8">
          Transforma tu web.
             <br />
             Házlo fácil, rápido y sin código con <span className="text-brand-500">Formmy</span>.
           </h2>
           <Form method="post" action="/api/login" id="start_footer">
-          <BigCTA type="submit" name="intent" value="google-login"   containerClassName="bg-white hover:bg-[#E1E3E7] heading text-dark text-lg">Empezar gratis <span className="ml-2">→</span></BigCTA>
+          <BigCTA type="submit" name="intent" value="google-login"   containerClassName="bg-white hover:bg-[#E1E3E7] heading text-dark text-base md:text-lg">Empezar gratis <span className="ml-2">→</span></BigCTA>
         </Form>
           {/* <Form method="post" action="/api/login">
           <Button className="ml-0 h-14 bg-white text-dark font-semibold rounded-full px-8 text-base md:text-lg flex items-center gap-2 shadow hover:scale-105 transition">
@@ -43,7 +43,7 @@ export default function HomeCallToAction() {
           </Button>
           </Form> */}
         </div>
-        <div className="flex-1 flex items-center justify-end w-full -mt-12 md:mt-0 relative ">
+        <div className="flex-1 md:flex items-center justify-end w-full -mt-12 md:mt-0 relative hidden">
           {/* Mockup móvil */}
           <div className="w-[160px] lg:w-[320px] h-[300px] lg:h-[660px] bg-white rounded-[40px] shadow-2xl border-8 border-dark overflow-hidden flex items-end justify-center relative">
             <img
@@ -94,7 +94,7 @@ const people = [
 
 export const GeneralCallToAction = () => {
   return (
-    <section className="relative w-full rounded-t-[40px] bg-dark overflow-hidden flex flex-col md:flex-row items-center justify-center  h-[320px] md:h-[500px]  px-4 md:px-0">
+    <section className="relative w-full rounded-t-[40px] bg-dark overflow-hidden flex flex-col md:flex-row items-center justify-center  h-[380px] md:h-[500px]  px-4 md:px-0">
       {/* SVG decorativo en la esquina superior izquierda */}
       <svg
         className="absolute left-0 top-0 z-0 rotate-[180deg]"
@@ -113,7 +113,7 @@ export const GeneralCallToAction = () => {
         />
       </svg>
 
-      <section className="w-full flex flex-col justify-center items-center relative z-10">
+      <section className="w-full flex flex-col justify-center items-center relative z-10 ">
         <h2 className=" text-white text-3xl lg:text-5xl font-bold text-center">
           Usa Formmy. Ahorra tiempo.
           <span className="block lg:hidden"> Y reduce costos.</span>

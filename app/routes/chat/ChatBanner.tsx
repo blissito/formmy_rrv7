@@ -38,7 +38,7 @@ export function ChatBanner() {
           </div>
 
           <div className="relative flex justify-center items-center min-h-[260px] lg:min-h-[500px]">
-            <div className="relative w-[400px] h-[260px] scale-75 lg:h-[500px] flex flex-col items-center justify-center -mt-64 lg:-mt-10">
+            <div className="relative w-[400px] h-[260px] scale-75 md:scale-100 lg:h-[500px] flex flex-col items-center justify-center -mt-64 lg:-mt-10">
               {integrations.map((integration, index) => {
                 // Tamaño escalonado: primera más pequeña, luego más grandes
                 const sizes = [90, 100, 120, 140, 160];

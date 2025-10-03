@@ -299,7 +299,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
             <p className="text-metal font-normal max-w-[700px]">Una vez que elimines tu chatbot, tu agente será eliminado al igual que toda la información que subiste. Está acción es irreversible, así que asegúrate de que está es la acción que quieres tomar.</p>
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="block max-w-full md:max-w-[220px] ml-auto w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 h-10 rounded-full transition-colors"
+              className="block max-w-full md:max-w-[220px] ml-auto w-full bg-danger hover:bg-[#DF4D42] text-white py-2 px-4 h-12 rounded-full transition-colors"
             >
               Eliminar
             </button>
@@ -312,13 +312,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                 emojis="✋🏻⛔️🤖"
                 footer={
                   <div className="flex justify-center gap-4 md:gap-6">
-                    <button
-                      onClick={handleDeleteChatbot}
-                      disabled={isDeleting}
-                      className="bg-danger text-white block cursor-pointer rounded-full py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isDeleting ? 'Eliminando...' : 'Sí, quiero eliminarlo'}
-                    </button>
+                
                     <Button
                       onClick={() => setShowDeleteModal(false)}
                       variant="secondary"
@@ -327,6 +321,13 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                     >
                       Cancelar
                     </Button>
+                    <button
+                      onClick={handleDeleteChatbot}
+                      disabled={isDeleting}
+                      className="bg-danger hover:bg-[#DF4D42] text-white block cursor-pointer rounded-full py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isDeleting ? 'Eliminando...' : 'Sí, quiero eliminarlo'}
+                    </button>
                   </div>
                 }
               />

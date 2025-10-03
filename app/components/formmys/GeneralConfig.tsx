@@ -129,6 +129,7 @@ export const GeneralConfig = ({
           <TextField
             onChange={(value) => onSetMatch(value)}
             name="name"
+            border="rounded-full"
             label={`Escribe el nombre del Formmy: ${project.name}`}
             type="text"
             placeholder={project.name}

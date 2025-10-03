@@ -157,7 +157,7 @@ export default function Formularios() {
             gradient="bg-[#76D3CB]"
             content={
               <div className="w-full h-full grid place-content-center">
-                <img className="h-full" src="/home/bento2.webp" />
+                <img className="h-auto" src="/home/bento2.webp" />
               </div>
             }
             title="Fácil y rápido de configurar"

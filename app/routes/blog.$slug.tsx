@@ -45,13 +45,13 @@ export default function BlogPost() {
   return (
     <div className="min-h-screen bg-white">
       {/* Back button */}
-      <div className="bg-white o sticky top-0 z-50 h-16  ">
-        <div className="max-w-5xl mx-auto  flex justify-start items-center h-full px-4 md:px-[5%] xl:px-0"> 
+      <div className="bg-dark o sticky top-0 z-50 h-16  ">
+        <div className="max-w-7xl mx-auto  flex justify-start items-center h-full px-4 md:px-[5%] xl:px-0"> 
           <Link 
             to="/blog" 
-            className="grid place-items-center text-metal  transition-colors text-sm font-medium"
+            className="grid place-items-center text-white/50  transition-colors text-sm font-medium"
           >
-            <div className="px-4 h-10 rounded-xl  w-fit border border-outlines hover:bg-brand-100 flex gap-1 items-center">
+            <div className="px-4 h-10 rounded-xl  w-fit border border-outlines/10 hover:bg-brand-100/10 flex gap-1 items-center">
 
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -64,25 +64,26 @@ export default function BlogPost() {
       </div>
 
       {/* Header */}
-      <div>
-        <div className="max-w-4xl mx-auto px-4 py-8 md:py-16">
-          <div className="max-w-3xl mx-auto text-left">
-          <h1 className="text-4xl md:text-5xl font-bold text-dark  mb-6 leading-tight">
+      <div className="relative">
+        <div className="bg-dark w-full h-[600px] absolute top-0 left-0"></div>
+        <div className="max-w-5xl mx-auto px-4 py-8 md:py-16 relative z-10">
+          <div className="max-w-4xl mx-auto text-left">
+          <h1 className="text-4xl md:text-5xl font-bold text-white  mb-6 !leading-[1.2]">
               {post.title}
             </h1>
             <div className="inline-flex items-center gap-2 mb-6">
               {post.tags && post.tags.map((tag, index) => (
                 <span 
                   key={index}
-                  className="bg-outlines/30 text-metal px-3 py-1 rounded-full text-xs font-medium"
+                  className="bg-white/10 text-white/60 px-3 py-1 rounded-full text-xs font-medium"
                 >
                   {tag}
                 </span>
               ))}
-              <span className="text-sm text-gray-500">•</span>
+              <span className="text-sm text-gray-400">•</span>
               <time 
                 dateTime={post.date} 
-                className="text-sm text-gray-500"
+                className="text-sm text-gray-400"
               >
                 {new Date(post.date).toLocaleDateString('es-ES', {
                   day: 'numeric',
@@ -90,8 +91,8 @@ export default function BlogPost() {
                   year: 'numeric',
                 })}
               </time>
-              <span className="text-sm text-gray-500">•</span>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-400">•</span>
+              <span className="text-sm text-gray-400">
                 {readingTime} min de lectura
               </span>
             </div>
@@ -101,7 +102,7 @@ export default function BlogPost() {
 
       {/* Featured Image */}
       {post.image && (
-        <div className="max-w-5xl mx-auto px-4 -mt-12 mb-12 ">
+        <div className="max-w-6xl mx-auto px-4 -mt-12 mb-12 relative z-10">
           <div className="rounded-2xl overflow-hidden shadow-lg">
             <img
               src={post.image}
@@ -118,7 +119,7 @@ export default function BlogPost() {
           <BlogMarkdown content={post.content} />
         </article>
       </div>
-      <HomeFooter />
+      {/* <HomeFooter /> */}
     </div>
   );
 }

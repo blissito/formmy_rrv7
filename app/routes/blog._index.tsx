@@ -235,12 +235,14 @@ export default function BlogIndex() {
   return (
     <div className="min-h-screen bg-white">
       {!showOverlay && <HomeHeader />}
-      <div 
-        className={`sticky -top-96 w-full  transition-all duration-300 ${
-          showOverlay ? 'bg-black/40' : 'bg-transparent'
-        }`}
-      >
-        <div className="pt-40 md:pt-64 pb-16 max-w-7xl mx-auto ">
+      <div className="sticky -top-96 w-full">
+        {/* Overlay separado sobre el contenido */}
+        <div
+          className={`absolute inset-0 z-20 pointer-events-none transition-all duration-300 ${
+            showOverlay ? 'bg-black/40 backdrop-blur' : 'bg-transparent'
+          }`}
+        />
+        <div className="pt-40 md:pt-64 pb-16 max-w-7xl mx-auto relative z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-12">
           <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold text-gray-900 mb-4">Blog</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -303,7 +305,7 @@ export default function BlogIndex() {
       </div>
       
       {/* Posts List */}
-      <div className="relative bg-white pb-20 md:pb-40">
+      <div className="relative bg-white z-30 pb-20 md:pb-40">
         <div className="sticky top-0 z-50 bg-white border-b border-outlines ">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div id="filters" className="flex flex-wrap gap-3  py-8 justify-center">

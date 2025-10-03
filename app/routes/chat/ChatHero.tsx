@@ -142,7 +142,7 @@ export const ChatHero = () => {
           <img
             src="/mock.png"
             alt="Mock overlay"
-            className="w-[280px] md:w-[300px] lg:w-[360px] h-[500px] md:h-[520px] lg:h-[680px] absolute top-0 left-0 md:left-auto z-20 pointer-events-none"
+            className="w-[290px] md:w-[300px] lg:w-[360px] h-[500px] md:h-[520px] lg:h-[680px] absolute top-0 left-0 md:left-auto z-20 pointer-events-none"
           />
         </div>
         {/* Configuration Cards - Stacked */}
@@ -259,10 +259,6 @@ export const ChatHero = () => {
             </FeatureCardWithHover>
           </motion.div>
         </div>
-
-      
-
-     
       </div>
     </div>
   );
@@ -331,8 +327,8 @@ const ChatPreview = ({ conversations, current, onPrev, onNext, onRestart }: {
       <div className="w-full h-12 bg-dark py-2 px-8 text-xs flex justify-between "><p>10:30</p><div className="flex gap-2"><FaSignal />   <FaWifi /><IoBatteryFull /></div>
 
       </div>
-      <div className=" w-full bg-dark text-white flex gap-3 items-center px-6 text-xl font-medium px-6 py-2">
-        <img className="w-8" src="/home/ghosty-avatar.svg" />
+      <div className=" w-full bg-dark text-white flex gap-3 items-center px-6 text-sm md:text-xl font-medium px-6 py-2">
+        <img className="w-6 md:w-8" src="/home/ghosty-avatar.svg" />
         Ghosty
         </div>
       </div>
@@ -388,7 +384,7 @@ function AnimatedChat({
   }, [visible, messages.length, current, conversations.length, onNext]);
 
   return (
-    <div className="flex flex-col justify-end h-full w-full relative">
+    <div className="flex flex-col justify-end h-full w-full relative scale-[95%]">
       <motion.div
         key={current}
         initial={{ opacity: 0 }}
@@ -425,16 +421,16 @@ function AnimatedChat({
               }`}
             >
               {msg.from === "agent" && (
-                <span className="inline-block bg-dark text-white rounded-full !min-w-8 !h-8 flex items-center justify-center font-bold mr-2">
+                <span className="inline-block  bg-dark text-white rounded-full !min-w-6 md:!min-w-8 !h-6 md:!h-8 flex items-center justify-center font-bold mr-2">
                   <img src="/home/ghosty-avatar.svg" />
                 </span>
               )}
-              <span className="text-sm">{msg.text}</span>
+              <span className="text-xs md:text-sm">{msg.text}</span>
               {msg.from === "user" && (
                 <img
                   src={msg.avatar}
                   alt="user"
-                  className="!w-8 !h-8 rounded-full object-cover"
+                  className="!w-6 md:!w-8 !h-6 md:!h-8 rounded-full object-cover"
                 />
               )}
             </div>
@@ -443,7 +439,7 @@ function AnimatedChat({
       </motion.div>
       {/* Caja de texto del chatbot */}
       <div className="absolute -bottom-4 left-0 right-0 z-10 ">
-        <div className="bg-white  rounded-full px-4 py-3 flex items-center gap-3 shadow-sm">
+        <div className="bg-white  rounded-full px-0 md:px-4 py-3 flex items-center gap-3 shadow-sm">
           <input 
             type="text" 
             placeholder="Escribe tu mensaje..."

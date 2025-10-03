@@ -9,8 +9,8 @@ export default function DashboardAyuda() {
     <div className="max-w-4xl py-8">
     <h2 className="text-2xl md:text-4xl heading text-center mb-8">¿Necesitas ayuda? 
     </h2>
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-      <HelpCard link="/blog/lanzamiento-septiembre-2025" index={0} title="¡Lo nuevo de Formmy!" image="/blogposts/launch.webp"/>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 ">
+      <HelpCard link="/blog/lanzamiento-septiembre-2025"  index={0} title="¡Lo nuevo de Formmy!" image="/blogposts/launch.webp"/>
       <HelpCard link="/blog/como-crear-formularios-efectivos" index={1} title="5 claves para formularios" image="/blogposts/tips.webp"/>
       <HelpCard link="/blog/entrenar-agente-ia-formmy" index={2} className="col-span-1 md:col-span-2" title="Cómo entrenar a tu agente" image="/blogposts/training.webp"/>
       <HelpCard link="/blog/integrar-whatsapp" index={3} title="Integra WhatsApp a tu chatbot "  className="col-span-1 md:col-span-2" image="https://mintlify.s3.us-west-1.amazonaws.com/chatbase/user-guides/quick-start/images/introduction/introduction-image-1.png"/>
@@ -29,7 +29,7 @@ export default function DashboardAyuda() {
 
 export const HelpCard=({title,image,className,index = 0,link = ""}: {title: string, image: string, className?: string, index?: number,link?: string})=>{
   return(
-    <Link className={cn("flex flex-col justify-center h-full group", className)} to={link}>
+    <Link className={cn("flex flex-col justify-start h-full group", className)} to={link}>
     <motion.section 
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}

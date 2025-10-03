@@ -6,7 +6,7 @@ import { LuListChecks } from "react-icons/lu";
 
 export const ChatIntegrations = () => {
     return (
-      <section className="flex flex-col items-center py-16 lg:py-40 max-w-7xl mx-auto px-4 md:px-[5%] xl:px-0">
+      <section className="flex flex-col items-center py-16 lg:py-32 max-w-7xl mx-auto px-4 md:px-[5%] xl:px-0">
         <h2 className="heading font-bold text-dark text-3xl md:text-4xl lg:text-6xl text-center mb-4 mt-0 leading-tight">
         Desbloquea el poder de los agentes IA
         </h2>
@@ -72,7 +72,7 @@ export const ChatIntegrations = () => {
         <div className="flex gap-4 items-center  mb-4 md:mb-6 ">
         <div
           className={cn(
-            "w-10 lg:w-12 h-10 lg:h-12 md:min-w-16 md:min-h-16 text-4xl rounded-xl flex items-center justify-center text-black ml-0 -mt-8 lg:-ml-14 lg-mt-14",
+            "w-10 lg:w-12 h-10 lg:h-12 md:min-w-16 md:min-h-16 text-4xl rounded-xl flex items-center justify-center text-black ml-0 -mt-8 lg:-ml-14 lg:-mt-14",
             // color
           )}
         >
@@ -80,7 +80,7 @@ export const ChatIntegrations = () => {
         </div>
       
         </div>
-        <h3 className="heading font-bold text-dark text-2xl mb-2 ">
+        <h3 className="heading font-bold text-dark text-xl lg:text-2xl  mb-2 ">
           {title}
         </h3>
         <p className="paragraph text-gray-600 text-base md:text-lg col-span-12 mt-0 md:col-span-8">

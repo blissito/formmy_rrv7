@@ -1,5 +1,5 @@
 ---
-title: "¡Revolucionamos Formmy! Lanzamiento 13 de Octubre 2025"
+title: "¡Revolucionamos Formmy! Lanzamiento 15 de Octubre 2025"
 excerpt: "Descubre las innovadoras características que llegarán a Formmy, incluyendo un nuevo dashboard, Ghosty tu asistente virtual, y potentes chatbots IA para tu sitio web."
 date: "2025-08-20"
 tags: ["Lanzamiento", "Novedades", "IA", "Ghosty", "Dashboard"]
@@ -11,9 +11,15 @@ highlight: "main"
 
 # La Revolución de Formmy llega el 8 de Septiembre
 
-Estamos emocionados de presentarte la mayor actualización en la historia de Formmy. El 13 de octubre, lanzaremos una nueva versión que transformará completamente cómo interactúas con nuestra plataforma.
+Hace unos meses decidimos aceptar un gran desafío: hacer que la IA deje de ser complicada y se convierta en una herramienta fácil y poderosa para que cada negocio pueda conectar mejor con sus clientes.
 
-## 🔥 Novedades Principales
+Después de escuchar feedback, probar ideas y trabajar en cada detalle, hoy podemos decir que Formmy está listo para dar un gran salto.
+
+Esta nueva versión no es solo una actualización: es una transformación completa pensada para que tu web no sea un espacio estático, sino un lugar donde las conversaciones fluyen, las respuestas llegan en segundos y la experiencia del usuario marca la diferencia.
+
+Sabemos que los negocios que adoptan herramientas inteligentes se adelantan al futuro. Por eso, queremos que tengas acceso a todo lo que necesitas para automatizar, personalizar y crecer sin complicarte la vida.
+
+## 🔥 Lo nuevo en Formmy
 
 ### 🚀 Nuevo Dashboard Intuitivo
 - Diseño moderno y limpio
@@ -30,6 +36,7 @@ Estamos emocionados de presentarte la mayor actualización en la historia de For
 - Fácil integración con un par de clics
 - Entrenamiento automático con tu contenido
 - Personalización de colores y logo
+- Integraciones con WhatsApp, Calendar, Gmial y más
 
 ### 🎨 Interfaz Renovada
 - Navegación simplificada
@@ -37,7 +44,7 @@ Estamos emocionados de presentarte la mayor actualización en la historia de For
 - Totalmente responsive
 
 ## 📅 Calendario del Lanzamiento
-- **13 de Octubre**: Acceso anticipado para usuarios premium
-- **3 de Noviembre**: Lanzamiento general
+- **15 de Octubre**: Acceso anticipado para usuarios premium
+- **15 de Noviembre**: Lanzamiento general
 
 ¡Prepárate para una experiencia completamente nueva con Formmy! El futuro de los formularios inteligentes está a punto de comenzar.
