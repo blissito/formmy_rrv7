@@ -115,8 +115,6 @@ export async function vectorizeContext(
     // Dividir en chunks si es necesario
     const chunks = chunkText(fullText);
 
-    console.log(`📝 Vectorizando contexto "${context.title || context.id}": ${chunks.length} chunks`);
-
     // Generar embeddings para cada chunk
     let created = 0;
     for (let i = 0; i < chunks.length; i++) {

@@ -156,8 +156,6 @@ async function createSingleAgent(
   let memory = undefined;
 
   if (conversationHistory && conversationHistory.length > 0) {
-    console.log(`🧠 Creando memoria con ${conversationHistory.length} mensajes del historial`);
-
     // Crear memoria vacía (sin memoryBlocks por ahora, solo mensajes directos)
     memory = createMemory({
       tokenLimit: 8000 // Límite razonable para contexto conversacional
@@ -170,12 +168,6 @@ async function createSingleAgent(
         content: msg.content
       });
     }
-
-    console.log(`✅ Memoria creada exitosamente con ${conversationHistory.length} mensajes`);
-    console.log(`  📝 Primer mensaje: ${conversationHistory[0].role} - "${conversationHistory[0].content.substring(0, 50)}..."`);
-    console.log(`  📝 Último mensaje: ${conversationHistory[conversationHistory.length - 1].role} - "${conversationHistory[conversationHistory.length - 1].content.substring(0, 50)}..."`);
-  } else {
-    console.log(`⚠️ NO hay historial conversacional - agente iniciará sin contexto previo`);
   }
 
   // ✅ Patrón oficial LlamaIndex TypeScript: pasar memoria en configuración del agente
@@ -207,8 +199,6 @@ async function createSingleAgent(
  * - Detección de contenido corrupto
  */
 async function* streamSingleAgent(agentInstance: any, message: string) {
-  console.log(`🚀 Iniciando stream con mensaje: "${message.substring(0, 100)}..."`);
-
   const MAX_CHUNKS = 1000;
   const MAX_DURATION_MS = 45000; // 45 segundos
   const startTime = Date.now();
@@ -250,7 +240,6 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
         toolsExecuted++;
         const toolName = event.data.toolName || 'unknown_tool';
         toolsUsed.push(toolName);
-        console.log(`🔧 Herramienta ejecutada: ${toolName}`);
         yield {
           type: "tool-start",
           tool: toolName,
@@ -290,8 +279,6 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
       content: "Error durante la generación de respuesta."
     };
   }
-
-  console.log(`✅ Stream completado - Tools: ${toolsExecuted}, Content: ${hasStreamedContent}`);
 
   // Fallback para casos donde tools ejecutan pero no stream
   if (toolsExecuted > 0 && !hasStreamedContent) {
@@ -334,11 +321,6 @@ export const streamAgentWorkflow = async function* (
   try {
     // Extraer historial conversacional del agentContext
     const conversationHistory = options.agentContext?.conversationHistory || [];
-
-    console.log(`⚡ streamAgentWorkflow recibió conversationHistory: ${conversationHistory.length} mensajes`);
-    if (conversationHistory.length > 0) {
-      console.log(`  Primer mensaje del historial: ${conversationHistory[0].role} - "${conversationHistory[0].content.substring(0, 60)}..."`);
-    }
 
     // Single agent con todas las tools + memoria conversacional
     const agentInstance = await createSingleAgent(context, conversationHistory);
