@@ -347,23 +347,9 @@ export default function ChatPreview({
 
                     // ✅ Manejar tool events del AgentWorkflow
                     if (data.type === "tool-start" && data.tool) {
-                      // Mostrar indicador de herramienta ejecutándose
-                      fullContent += `\n\n🔧 Ejecutando: ${data.tool}...`;
-                      setChatMessages((msgs) => {
-                        const updated = [...msgs];
-                        let lastIdx = updated.length - 1;
-                        while (
-                          lastIdx >= 0 &&
-                          updated[lastIdx].role !== "assistant"
-                        )
-                          lastIdx--;
-                        if (lastIdx >= 0)
-                          updated[lastIdx] = {
-                            ...updated[lastIdx],
-                            content: fullContent,
-                          };
-                        return updated;
-                      });
+                      // Actualizar estado de loading para mostrar tool siendo ejecutado
+                      // NO agregar al fullContent para que no se quede en el mensaje final
+                      setChatLoading(true);
                     }
 
                     // ✅ Manejar metadata final
