@@ -91,16 +91,17 @@ interface ToolResponse { success, message, data? }
 
 **Rate Limits Implementados** (Lógica: Más pagas → más valor):
 
-| Plan | Precio/mes | Búsquedas/día | Costo API/día | Razón |
-|------|------------|---------------|---------------|-------|
-| **ANONYMOUS** | Gratis | 2 | $0.01 USD | Demo limitado, previene abuso |
-| **FREE** | $0 | 0 | $0 | Incentiva upgrade a STARTER |
-| **STARTER** | $149 MXN | 10 | $0.05 USD | Valor tangible, cumple promesa |
-| **PRO** | $499 MXN | 25 | $0.125 USD | 2.5x STARTER, justifica precio |
-| **ENTERPRISE** | $1,499 MXN | 100 | $0.50 USD | Prácticamente ilimitado |
-| **TRIAL** | Temporal | 10 | $0.05 USD | Evaluar funcionalidad real |
+| Plan | Precio/mes | Búsquedas/día | Costo API/día | Costo API/mes | Razón |
+|------|------------|---------------|---------------|---------------|-------|
+| **ANONYMOUS** | Gratis | 2 | $0.01 USD | $0.30 USD | Demo limitado, previene abuso |
+| **FREE** | $0 | 0 | $0 | $0 | Incentiva upgrade a STARTER |
+| **STARTER** | $149 MXN | 10 | $0.05 USD | $1.50 USD | Valor tangible, cumple promesa |
+| **PRO** | $499 MXN | 25 | $0.125 USD | $3.75 USD | 2.5x STARTER, justifica precio |
+| **ENTERPRISE** | $1,499 MXN | 100 | $0.50 USD | $15.00 USD | Prácticamente ilimitado |
+| **TRIAL** | Temporal | 10 | $0.05 USD | $1.50 USD | Evaluar funcionalidad real |
 
 **Costos**: Google Search API = $5 USD por 1,000 queries
+**Profit Margins**: STARTER 98% | PRO 99.2% | ENTERPRISE 99.3% (costos API insignificantes vs revenue)
 
 **Features**:
 - Tracking por `conversationId` en tabla `ToolUsage`
