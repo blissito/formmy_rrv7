@@ -74,6 +74,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
         return await handleManualResponse(conversationId, { message }, conversation);
 
+      case "delete_conversation":
+        return await handleDeleteConversation(conversationId);
+
       default:
         return json({ error: "Intent no reconocido" }, {
           status: 400,
@@ -262,4 +265,38 @@ async function sendManualWhatsAppMessage(
     messageId: result.messages?.[0]?.id,
     success: true
   };
+}
+
+/**
+ * Soft delete de conversación (marca como DELETED)
+ */
+async function handleDeleteConversation(conversationId: string) {
+  console.log("🗑️ Deleting conversation:", conversationId);
+
+  const conversation = await db.conversation.findUnique({
+    where: { id: conversationId }
+  });
+
+  if (!conversation) {
+    console.log("❌ Conversation not found:", conversationId);
+    return json({ error: "Conversación no encontrada" }, {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Soft delete: marcar como DELETED en vez de eliminar
+  const updatedConversation = await db.conversation.update({
+    where: { id: conversationId },
+    data: { status: "DELETED" }
+  });
+
+  console.log("✅ Conversation marked as deleted:", updatedConversation.id);
+
+  return json({
+    success: true,
+    message: "Conversación eliminada exitosamente"
+  }, {
+    headers: { 'Content-Type': 'application/json' }
+  });
 }

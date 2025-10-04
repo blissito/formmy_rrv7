@@ -4,12 +4,16 @@
  * Model decides which tools to use
  */
 
-import { agent, agentToolCallEvent, agentStreamEvent } from "@llamaindex/workflow";
+import {
+  agent,
+  agentToolCallEvent,
+  agentStreamEvent,
+} from "@llamaindex/workflow";
 import { OpenAI } from "@llamaindex/openai";
 import { Anthropic } from "@llamaindex/anthropic";
 import { createMemory } from "llamaindex";
-import { getToolsForPlan, type ToolContext } from '../tools';
-import type { ResolvedChatbotConfig } from '../chatbot/configResolver.server';
+import { getToolsForPlan, type ToolContext } from "../tools";
+import type { ResolvedChatbotConfig } from "../chatbot/configResolver.server";
 
 // Types para el workflow
 interface WorkflowContext {
@@ -60,8 +64,8 @@ function createLLM(model: string, temperature?: number) {
  * Mapeo transparente de modelos para performance
  */
 function mapModelForPerformance(model: string): string {
-  if (model === 'gpt-5-nano') {
-    return 'gpt-4o-mini';
+  if (model === "gpt-5-nano") {
+    return "gpt-4o-mini";
   }
   return model;
 }
@@ -69,20 +73,23 @@ function mapModelForPerformance(model: string): string {
 /**
  * Construye system prompt personalizado
  */
-function buildSystemPrompt(config: ResolvedChatbotConfig, hasContextSearch: boolean): string {
-  const personality = config.personality || 'professional';
+function buildSystemPrompt(
+  config: ResolvedChatbotConfig,
+  hasContextSearch: boolean
+): string {
+  const personality = config.personality || "friendly";
   const personalityMap: Record<string, string> = {
-    'customer_support': 'asistente de soporte profesional',
-    'sales': 'asistente de ventas consultivo',
-    'friendly': 'asistente amigable y cercano',
-    'professional': 'asistente profesional'
+    customer_support: "asistente de soporte profesional",
+    sales: "asistente de ventas consultivo",
+    friendly: "asistente amigable y cercano",
+    professional: "asistente profesional",
   };
 
-  let basePrompt = `Eres ${config.name || 'asistente'}, ${personalityMap[personality] || 'profesional'}.
+  let basePrompt = `Eres ${config.name || "asistente"}, ${personalityMap[personality] || "friendly"}.
 
-${config.instructions || 'Asistente útil.'}
+${config.instructions || "Asistente útil."}
 
-${config.customInstructions || ''}
+${config.customInstructions || ""}
 
 Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu personalidad.`;
 
@@ -130,7 +137,9 @@ async function createSingleAgent(
   const { resolvedConfig, userPlan } = context;
 
   // Model selection con mapping transparente
-  const selectedModel = mapModelForPerformance(resolvedConfig.aiModel || 'gpt-5-nano');
+  const selectedModel = mapModelForPerformance(
+    resolvedConfig.aiModel || "gpt-5-nano"
+  );
 
   // Create LLM with correct provider (OpenAI or Anthropic)
   const llm = createLLM(selectedModel, resolvedConfig.temperature || 0.3);
@@ -142,13 +151,15 @@ async function createSingleAgent(
     chatbotId: context.chatbotId,
     message: context.message,
     integrations: context.integrations,
-    isGhosty: context.chatbotId === 'ghosty-main' // Ghosty tiene acceso a stats
+    isGhosty: context.chatbotId === "ghosty-main", // Ghosty tiene acceso a stats
   };
 
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
 
   // Detectar si tiene acceso a search_context tool
-  const hasContextSearch = allTools.some((tool: any) => tool.metadata?.name === 'search_context');
+  const hasContextSearch = allTools.some(
+    (tool: any) => tool.metadata?.name === "search_context"
+  );
 
   const systemPrompt = buildSystemPrompt(resolvedConfig, hasContextSearch);
 
@@ -158,14 +169,14 @@ async function createSingleAgent(
   if (conversationHistory && conversationHistory.length > 0) {
     // Crear memoria vacía (sin memoryBlocks por ahora, solo mensajes directos)
     memory = createMemory({
-      tokenLimit: 8000 // Límite razonable para contexto conversacional
+      tokenLimit: 8000, // Límite razonable para contexto conversacional
     });
 
     // Agregar cada mensaje del historial a la memoria
     for (const msg of conversationHistory) {
       await memory.add({
         role: msg.role,
-        content: msg.content
+        content: msg.content,
       });
     }
   }
@@ -175,7 +186,7 @@ async function createSingleAgent(
     llm,
     tools: allTools,
     systemPrompt,
-    verbose: true // Para debugging de herramientas
+    verbose: true, // Para debugging de herramientas
   };
 
   // Solo agregar memoria si existe
@@ -220,7 +231,8 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
         console.error(`⏱️ Stream timeout después de ${elapsed}ms`);
         yield {
           type: "error",
-          content: "⏱️ Respuesta demasiado larga. Por favor intenta reformular tu pregunta."
+          content:
+            "⏱️ Respuesta demasiado larga. Por favor intenta reformular tu pregunta.",
         };
         break;
       }
@@ -230,7 +242,8 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
         console.error(`🚫 Máximo de chunks alcanzado: ${chunkCount}`);
         yield {
           type: "error",
-          content: "La respuesta es demasiado extensa. Por favor sé más específico."
+          content:
+            "La respuesta es demasiado extensa. Por favor sé más específico.",
         };
         break;
       }
@@ -238,12 +251,12 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
       // Tool call events
       if (agentToolCallEvent.include(event)) {
         toolsExecuted++;
-        const toolName = event.data.toolName || 'unknown_tool';
+        const toolName = event.data.toolName || "unknown_tool";
         toolsUsed.push(toolName);
         yield {
           type: "tool-start",
           tool: toolName,
-          message: `🔧 ${toolName}`
+          message: `🔧 ${toolName}`,
         };
       }
 
@@ -254,12 +267,18 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
           totalChars += event.data.delta.length;
 
           // 🛡️ PROTECCIÓN 3: Detectar contenido corrupto (múltiples scripts)
-          const hasMultipleScripts = /[\u0400-\u04FF].*[\u0E00-\u0E7F]|[\u0600-\u06FF].*[\u4E00-\u9FFF]|[\u0900-\u097F].*[\u0400-\u04FF]/.test(event.data.delta);
+          const hasMultipleScripts =
+            /[\u0400-\u04FF].*[\u0E00-\u0E7F]|[\u0600-\u06FF].*[\u4E00-\u9FFF]|[\u0900-\u097F].*[\u0400-\u04FF]/.test(
+              event.data.delta
+            );
           if (hasMultipleScripts && event.data.delta.length > 100) {
-            console.error(`🚫 Contenido corrupto detectado en chunk ${chunkCount}`);
+            console.error(
+              `🚫 Contenido corrupto detectado en chunk ${chunkCount}`
+            );
             yield {
               type: "error",
-              content: "Error de generación detectado. Por favor intenta de nuevo."
+              content:
+                "Error de generación detectado. Por favor intenta de nuevo.",
             };
             break;
           }
@@ -267,7 +286,7 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
           hasStreamedContent = true;
           yield {
             type: "chunk",
-            content: event.data.delta
+            content: event.data.delta,
           };
         }
       }
@@ -276,7 +295,7 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
     console.error(`❌ Error en streaming:`, streamError);
     yield {
       type: "error",
-      content: "Error durante la generación de respuesta."
+      content: "Error durante la generación de respuesta.",
     };
   }
 
@@ -284,7 +303,7 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
   if (toolsExecuted > 0 && !hasStreamedContent) {
     yield {
       type: "chunk",
-      content: "He ejecutado las herramientas solicitadas correctamente."
+      content: "He ejecutado las herramientas solicitadas correctamente.",
     };
   }
 
@@ -292,8 +311,8 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
     type: "done",
     metadata: {
       toolsExecuted,
-      toolsUsed
-    }
+      toolsUsed,
+    },
   };
 }
 
@@ -311,11 +330,11 @@ export const streamAgentWorkflow = async function* (
 ) {
   const context: WorkflowContext = {
     userId: user.id,
-    userPlan: user.plan || 'FREE',
+    userPlan: user.plan || "FREE",
     chatbotId: chatbotId || null,
     message,
     integrations: options.agentContext?.integrations || {},
-    resolvedConfig: options.resolvedConfig
+    resolvedConfig: options.resolvedConfig,
   };
 
   try {
@@ -328,10 +347,11 @@ export const streamAgentWorkflow = async function* (
     // Stream con memoria ya configurada en el agente
     yield* streamSingleAgent(agentInstance, message);
   } catch (error) {
-    console.error('❌ AgentWorkflow error:', error);
+    console.error("❌ AgentWorkflow error:", error);
     yield {
       type: "error",
-      content: "Lo siento, hubo un problema procesando tu mensaje. Por favor intenta de nuevo."
+      content:
+        "Lo siento, hubo un problema procesando tu mensaje. Por favor intenta de nuevo.",
     };
   }
 };
@@ -347,6 +367,6 @@ export const clearAgentWorkflowCache = () => {
 
 export const getAgentWorkflowStats = () => {
   return {
-    cachedAgents: agentCache.size
+    cachedAgents: agentCache.size,
   };
 };

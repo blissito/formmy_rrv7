@@ -1,6 +1,6 @@
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { PageContainer } from "~/components/chat/PageContainer";
-import { useNavigate } from "react-router";
+import { useNavigate, useFetcher, useRevalidator } from "react-router";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
@@ -141,6 +141,8 @@ export default function ChatbotDetailRoute({
     `main_${chatbot.id}`
   );
   const navigate = useNavigate();
+  const fetcher = useFetcher();
+  const revalidator = useRevalidator();
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);
@@ -256,6 +258,42 @@ export default function ChatbotDetailRoute({
     }
   };
 
+  // Delete conversation
+  const handleDeleteConversation = async (conversationId: string) => {
+    console.log("🗑️ Route handleDeleteConversation called:", conversationId);
+
+    try {
+      const response = await fetch(`/api/v1/conversations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "delete_conversation",
+          conversationId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Delete error response:", errorText);
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("✅ Delete result:", result);
+
+      if (!result.success) {
+        throw new Error(result.error || "Error desconocido");
+      }
+
+      // Trigger revalidation explicitly
+      console.log("🔄 Triggering revalidation...");
+      revalidator.revalidate();
+    } catch (error) {
+      console.error("❌ Error deleting conversation:", error);
+      alert(`Error al eliminar conversación: ${error.message}`);
+    }
+  };
+
   return (
     <PageContainer>
       <PageContainer.Title className="!mb-2 md:!mb-4" back="/dashboard/chat">
@@ -280,6 +318,7 @@ export default function ChatbotDetailRoute({
             conversations={conversations}
             onToggleManual={handleToggleManual}
             onSendManualResponse={handleSendManualResponse}
+            onDeleteConversation={handleDeleteConversation}
           />
         )}
         {currentTab === "Entrenamiento" && (

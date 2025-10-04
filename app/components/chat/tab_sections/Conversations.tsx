@@ -202,6 +202,7 @@ type ConversationsProps = {
   conversations?: Conversation[];
   onToggleManual?: (conversationId: string) => void;
   onSendManualResponse?: (conversationId: string, message: string) => void;
+  onDeleteConversation?: (conversationId: string) => void;
 };
 
 interface Conversation {
@@ -227,11 +228,13 @@ export const Conversations = ({
   user,
   onToggleManual,
   onSendManualResponse,
+  onDeleteConversation,
 }: ConversationsProps) => {
   console.log("🔍 DEBUG - Conversations Props:", {
     conversationsCount: conversations.length,
     hasToggleManual: !!onToggleManual,
     hasSendManual: !!onSendManualResponse,
+    hasDeleteConversation: !!onDeleteConversation,
     firstConversationId: conversations.length > 0 ? conversations[0].id : 'none',
     conversationIDs: conversations.map(c => c.id)
   });
@@ -277,6 +280,10 @@ export const Conversations = ({
           manualMode: updated.manualMode
         });
         setConversation(updated);
+      } else {
+        // Si la conversación seleccionada ya no existe (fue eliminada), seleccionar la primera
+        console.log("⚠️ Selected conversation no longer exists, selecting first available");
+        setConversation(actualConversations[0]);
       }
     }
   }, [actualConversations, conversation?.id]);
@@ -348,6 +355,7 @@ export const Conversations = ({
           chatbot={chatbot}
           onToggleManual={handleToggleManual}
           onSendManualResponse={handleSendManualResponse}
+          onDeleteConversation={onDeleteConversation}
           localManualMode={localManualModes[conversation?.id] || false}
         />
       </section>
@@ -431,12 +439,14 @@ const ChatHeader = ({
   onToggleManual,
   onSendManualResponse,
   localManualMode = false,
+  onDeleteConversation,
 }: {
   conversation: Conversation;
   primaryColor?: string;
   onToggleManual?: (conversationId: string) => void;
   onSendManualResponse?: (conversationId: string, message: string) => void;
   localManualMode?: boolean;
+  onDeleteConversation?: (conversationId: string) => void;
 }) => {
   const { date, tel } = conversation;
   const [manualMessage, setManualMessage] = useState("");
@@ -459,6 +469,26 @@ const ChatHeader = ({
     console.log("🔄 Local toggle clicked:", conversation.id);
     if (onToggleManual) {
       onToggleManual(conversation.id);
+    }
+  };
+
+  const handleDeleteConversation = () => {
+    console.log("🗑️ ChatHeader delete clicked", {
+      conversationId: conversation.id,
+      hasDeleteFunction: !!onDeleteConversation
+    });
+
+    if (!onDeleteConversation) {
+      console.error("❌ No onDeleteConversation function provided");
+      alert("Error: Función de eliminar no disponible");
+      return;
+    }
+
+    if (confirm("¿Estás seguro de que deseas eliminar esta conversación? Esta acción no se puede deshacer.")) {
+      console.log("✅ User confirmed deletion, calling onDeleteConversation");
+      onDeleteConversation(conversation.id);
+    } else {
+      console.log("❌ User cancelled deletion");
     }
   };
 
@@ -508,7 +538,11 @@ const ChatHeader = ({
         onClick={handleToggleManual}
         disabled={false}
       />
-      <button className="mr-3">
+      <button
+        onClick={handleDeleteConversation}
+        className="mr-3 hover:bg-red-50 rounded-full p-1 transition-colors"
+        title="Eliminar conversación"
+      >
         <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
       </button>
     </header>
@@ -699,6 +733,7 @@ export const ConversationsPreview = ({
   chatbot,
   onToggleManual,
   onSendManualResponse,
+  onDeleteConversation,
   localManualMode = false,
 }: {
   conversation: Conversation | undefined;
@@ -706,6 +741,7 @@ export const ConversationsPreview = ({
   chatbot?: Chatbot;
   onToggleManual?: (conversationId: string) => void;
   onSendManualResponse?: (conversationId: string, message: string) => void;
+  onDeleteConversation?: (conversationId: string) => void;
   localManualMode?: boolean;
 }) => {
   // Log conversation state for debugging
@@ -725,6 +761,7 @@ export const ConversationsPreview = ({
             conversation={conversation}
             onToggleManual={onToggleManual}
             onSendManualResponse={onSendManualResponse}
+            onDeleteConversation={onDeleteConversation}
             localManualMode={localManualMode}
           />
         )}
