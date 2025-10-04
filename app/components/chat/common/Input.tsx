@@ -41,7 +41,7 @@ export const Input = ({
   const TextField = type === "textarea" ? "textarea" : "input";
   return (
     <section className={cn("grid gap-1 grow", className)}>
-      {label && <p className="text-metal font-normal text-sm">{label}</p>}
+      {label && <div className="text-metal font-normal text-sm">{label}</div>}
       <main
         className={cn(
           "flex items-stretch border border-outlines rounded-xl",

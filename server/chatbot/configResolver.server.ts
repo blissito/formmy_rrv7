@@ -51,6 +51,7 @@ export interface AgentExecutionContext {
   message: string;
   integrations: Record<string, any>;
   sessionId?: string;
+  conversationId?: string; // Para rate limiting de herramientas
   conversationHistory?: Array<{ role: string; content: string }>;
 }
 
@@ -265,6 +266,7 @@ export function createAgentExecutionContext(
   message: string,
   options: {
     sessionId?: string;
+    conversationId?: string;
     conversationHistory?: Array<{ role: string; content: string }>;
     integrations?: Record<string, any>;
   } = {}
@@ -276,6 +278,7 @@ export function createAgentExecutionContext(
     message,
     integrations: options.integrations || {},
     sessionId: options.sessionId,
+    conversationId: options.conversationId,
     conversationHistory: options.conversationHistory || []
   };
 }

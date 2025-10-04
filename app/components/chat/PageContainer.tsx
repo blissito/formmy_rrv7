@@ -569,8 +569,7 @@ export const EditionPair = ({
         </article>
       );
     default:
-      content = null;
-      preview = null;
+      return null;
   }
 };
 
@@ -687,7 +686,6 @@ export const TabButton = ({
       className={cn(
         "relative",
         "text-base",
-        "text-gray-600",
         "p-3 px-3 md:px-6",
         "hover:text-black transition-all duration-200",
         "focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-none",
@@ -695,6 +693,7 @@ export const TabButton = ({
         "select-none",
         {
           "text-black font-medium": isActive,
+          "text-gray-600": !isActive,
         },
         className
       )}

@@ -82,6 +82,32 @@ interface ToolResponse { success, message, data? }
 2. **Context compression** - Optimizar prompts del sistema
 3. Completar herramientas CRUD Ghosty
 
+### Seguridad Web Search (IMPLEMENTADO ✅)
+**Problema**: Chatbots públicos pueden abusar de Google Search API con queries off-topic
+**Soluciones**:
+1. ✅ Scoped search via system prompt - Restricciones en `buildSystemPrompt()` cuando `web_search_google` disponible
+2. ✅ Rate limiting per conversation - Max búsquedas diarias por plan implementado en `google-search.ts`
+3. ⏳ Behavioral analytics - Flagear anomalías (cambios súbitos de tema, queries sospechosas) (futuro)
+
+**Rate Limits Implementados** (Lógica: Más pagas → más valor):
+
+| Plan | Precio/mes | Búsquedas/día | Costo API/día | Razón |
+|------|------------|---------------|---------------|-------|
+| **ANONYMOUS** | Gratis | 2 | $0.01 USD | Demo limitado, previene abuso |
+| **FREE** | $0 | 0 | $0 | Incentiva upgrade a STARTER |
+| **STARTER** | $149 MXN | 10 | $0.05 USD | Valor tangible, cumple promesa |
+| **PRO** | $499 MXN | 25 | $0.125 USD | 2.5x STARTER, justifica precio |
+| **ENTERPRISE** | $1,499 MXN | 100 | $0.50 USD | Prácticamente ilimitado |
+| **TRIAL** | Temporal | 10 | $0.05 USD | Evaluar funcionalidad real |
+
+**Costos**: Google Search API = $5 USD por 1,000 queries
+
+**Features**:
+- Tracking por `conversationId` en tabla `ToolUsage`
+- Mensajes de upgrade automáticos al alcanzar límite
+- Contador de búsquedas restantes en respuesta
+- Fail-open en caso de error de BD (no bloquear UX)
+
 
 ## Pricing y Monetización
 

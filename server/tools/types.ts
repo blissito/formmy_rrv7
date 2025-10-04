@@ -7,6 +7,7 @@ export interface ToolContext {
   userId: string;
   userPlan: string;
   chatbotId: string | null;
+  conversationId?: string; // Para rate limiting y tracking
   message: string;
   integrations: Record<string, any>;
 }

@@ -140,8 +140,68 @@ class GoogleCustomSearchService {
 }
 
 /**
+ * Rate limiting por plan y conversación
+ * Lógica: Más pagas → más valor
+ * Costos: Google Search API = $5 USD por 1,000 queries
+ *
+ * ANONYMOUS: Visitantes de chatbots públicos (mínimo para demo sin abuso)
+ * FREE: Sin acceso post-trial (incentiva upgrade)
+ * STARTER: $149/mes → valor tangible, cumple promesa del plan
+ * PRO: $499/mes → 2.5x más búsquedas que STARTER
+ * ENTERPRISE: $1,499/mes → casi ilimitado para uso profesional
+ */
+const SEARCH_LIMITS = {
+  ANONYMOUS: 2,      // Suficiente para demo, previene abuso | Costo: $0.01 USD
+  FREE: 0,           // Sin acceso, incentiva compra | Costo: $0
+  STARTER: 10,       // Valor real por $149/mes | Costo: $0.05 USD
+  PRO: 25,           // 2.5x STARTER, justifica $499/mes | Costo: $0.125 USD
+  ENTERPRISE: 100,   // Prácticamente ilimitado | Costo: $0.50 USD
+  TRIAL: 10          // Mismas que STARTER para evaluar | Costo: $0.05 USD
+} as const;
+
+async function checkRateLimit(context: ToolContext): Promise<{ allowed: boolean; remaining: number; limit: number }> {
+  const limit = SEARCH_LIMITS[context.userPlan as keyof typeof SEARCH_LIMITS] || 0;
+
+  if (limit === 0) {
+    return { allowed: false, remaining: 0, limit: 0 };
+  }
+
+  // Si no hay conversationId, permitir (fallback)
+  if (!context.conversationId) {
+    return { allowed: true, remaining: limit, limit };
+  }
+
+  try {
+    const { db } = await import("~/utils/db.server");
+
+    // Contar búsquedas en las últimas 24 horas para esta conversación
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const searchCount = await db.toolUsage.count({
+      where: {
+        conversationId: context.conversationId,
+        toolName: 'web_search_google',
+        createdAt: { gte: startOfDay }
+      }
+    });
+
+    const remaining = Math.max(0, limit - searchCount);
+    return {
+      allowed: searchCount < limit,
+      remaining,
+      limit
+    };
+  } catch (error) {
+    // En caso de error de BD, permitir (fail-open para no bloquear experiencia)
+    return { allowed: true, remaining: limit, limit };
+  }
+}
+
+/**
  * Handler para búsqueda web con Google Custom Search API
  * Siguiendo patrón oficial LlamaIndex Agent Workflows
+ * 🛡️ Con rate limiting por conversación y plan
  */
 export async function googleSearchHandler(
   input: {
@@ -157,6 +217,19 @@ export async function googleSearchHandler(
     return {
       success: false,
       message: "❌ Error: La búsqueda requiere una consulta válida"
+    };
+  }
+
+  // 🛡️ RATE LIMITING - Verificar límites diarios
+  const rateLimit = await checkRateLimit(context);
+  if (!rateLimit.allowed) {
+    const upgradeMessage = context.userPlan === 'FREE' || context.userPlan === 'ANONYMOUS'
+      ? "\n\n💡 Actualiza a plan STARTER ($149/mes) para obtener 10 búsquedas diarias."
+      : "\n\n💡 Actualiza tu plan para más búsquedas diarias.";
+
+    return {
+      success: false,
+      message: `⚠️ Has alcanzado el límite de búsquedas web para hoy (${rateLimit.limit} búsquedas/día).${upgradeMessage}`
     };
   }
 
@@ -177,9 +250,10 @@ export async function googleSearchHandler(
     const searchResponse = await searchService.search(query, validNumResults);
 
     // Track usage (sin awaitar para no bloquear respuesta)
-    if (context.chatbotId) {
+    if (context.conversationId) {
       ToolUsageTracker.trackUsage({
-        chatbotId: context.chatbotId,
+        chatbotId: context.chatbotId || 'unknown',
+        conversationId: context.conversationId,
         toolName: 'web_search_google',
         success: true,
         userMessage: context.message,
@@ -187,39 +261,48 @@ export async function googleSearchHandler(
           query,
           numResults: validNumResults,
           resultsFound: searchResponse.results.length,
-          totalResults: searchResponse.totalResults
+          totalResults: searchResponse.totalResults,
+          remainingSearches: rateLimit.remaining - 1
         }
-      }).catch(console.error);
+      }).catch(() => {}); // Silent fail
     }
 
     // Formatear resultados para el LLM
     const formattedResults = searchService.formatForLLM(searchResponse);
 
+    // Agregar info de búsquedas restantes
+    const remainingInfo = rateLimit.remaining > 1
+      ? `\n\n📊 Búsquedas restantes hoy: ${rateLimit.remaining - 1}/${rateLimit.limit}`
+      : `\n\n⚠️ Última búsqueda del día (${rateLimit.limit} máximo)`;
+
     return {
       success: true,
-      message: formattedResults,
+      message: formattedResults + remainingInfo,
       data: {
         query,
         results: searchResponse.results,
         totalResults: searchResponse.totalResults,
         timestamp: searchResponse.timestamp,
-        toolUsed: 'web_search_google'
+        toolUsed: 'web_search_google',
+        rateLimitInfo: {
+          remaining: rateLimit.remaining - 1,
+          limit: rateLimit.limit
+        }
       }
     };
 
   } catch (error) {
-    console.error("Error ejecutando búsqueda en Google:", error);
-
     // Track error (sin awaitar)
-    if (context.chatbotId) {
+    if (context.conversationId) {
       ToolUsageTracker.trackUsage({
-        chatbotId: context.chatbotId,
+        chatbotId: context.chatbotId || 'unknown',
+        conversationId: context.conversationId,
         toolName: 'web_search_google',
         success: false,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
         userMessage: context.message,
         metadata: { query, numResults: validNumResults }
-      }).catch(console.error);
+      }).catch(() => {}); // Silent fail
     }
 
     return {

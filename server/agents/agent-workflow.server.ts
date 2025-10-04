@@ -23,6 +23,7 @@ interface WorkflowContext {
   message: string;
   integrations: Record<string, any>;
   resolvedConfig: ResolvedChatbotConfig;
+  agentContext?: any; // Incluye conversationId para rate limiting
 }
 
 /**
@@ -75,7 +76,8 @@ function mapModelForPerformance(model: string): string {
  */
 function buildSystemPrompt(
   config: ResolvedChatbotConfig,
-  hasContextSearch: boolean
+  hasContextSearch: boolean,
+  hasWebSearch: boolean
 ): string {
   const personality = config.personality || "friendly";
   const personalityMap: Record<string, string> = {
@@ -116,6 +118,34 @@ EJEMPLOS DE COMPORTAMIENTO CORRECTO:
 Tu trabajo es ser EXHAUSTIVO usando la base de conocimiento. No te limites a una sola búsqueda.`;
   }
 
+  // 🛡️ Agregar restricciones de seguridad para web_search_google
+  if (hasWebSearch) {
+    const businessDomain = config.businessDomain || config.name || "este negocio";
+    basePrompt += `
+
+🛡️ RESTRICCIONES CRÍTICAS PARA web_search_google:
+Esta herramienta de búsqueda web está LIMITADA ESTRICTAMENTE al dominio de negocio: ${businessDomain}
+
+REGLAS DE SEGURIDAD (NUNCA VIOLARLAS):
+1. SOLO buscar si la pregunta está DIRECTAMENTE relacionada con: ${businessDomain}
+2. PROHIBIDO buscar: noticias generales, deportes, entretenimiento, política, temas personales, chismes
+3. Si el usuario pide buscar algo off-topic, responde: "Mi búsqueda web está limitada a temas relacionados con ${businessDomain}"
+
+EJEMPLOS DE BÚSQUEDAS VÁLIDAS:
+- "precios de la competencia en [industria]"
+- "horarios de servicio actuales en [ciudad]"
+- "reseñas de [producto específico del negocio]"
+- "tendencias del mercado en [industria]"
+
+EJEMPLOS PROHIBIDOS (NUNCA EJECUTAR):
+- ❌ "quién ganó el partido de fútbol"
+- ❌ "noticias del día"
+- ❌ "cómo hacer [algo no relacionado al negocio]"
+- ❌ "últimos chismes de celebridades"
+
+Si detectas una solicitud fuera de alcance, RECHAZALA educadamente y redirige la conversación al negocio.`;
+  }
+
   return basePrompt;
 }
 
@@ -149,6 +179,7 @@ async function createSingleAgent(
     userId: context.userId,
     userPlan,
     chatbotId: context.chatbotId,
+    conversationId: context.agentContext?.conversationId, // Para rate limiting
     message: context.message,
     integrations: context.integrations,
     isGhosty: context.chatbotId === "ghosty-main", // Ghosty tiene acceso a stats
@@ -156,12 +187,15 @@ async function createSingleAgent(
 
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
 
-  // Detectar si tiene acceso a search_context tool
+  // Detectar si tiene acceso a search_context y web_search_google tools
   const hasContextSearch = allTools.some(
     (tool: any) => tool.metadata?.name === "search_context"
   );
+  const hasWebSearch = allTools.some(
+    (tool: any) => tool.metadata?.name === "web_search_google"
+  );
 
-  const systemPrompt = buildSystemPrompt(resolvedConfig, hasContextSearch);
+  const systemPrompt = buildSystemPrompt(resolvedConfig, hasContextSearch, hasWebSearch);
 
   // ✅ Crear memoria conversacional según patrón oficial LlamaIndex
   let memory = undefined;
@@ -335,6 +369,7 @@ export const streamAgentWorkflow = async function* (
     message,
     integrations: options.agentContext?.integrations || {},
     resolvedConfig: options.resolvedConfig,
+    agentContext: options.agentContext, // Incluir agentContext completo
   };
 
   try {

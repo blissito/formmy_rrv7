@@ -391,6 +391,7 @@ async function handleChatV0(params: {
 
     const agentContext = createAgentExecutionContext(user, chatbotId, message, {
       sessionId: conversation.sessionId,
+      conversationId: conversation.id, // Para rate limiting de herramientas
       conversationHistory: history // Desde DB, no desde cliente
     });
 
