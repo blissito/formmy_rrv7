@@ -34,9 +34,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 export default function Compartir({ loaderData }: Route.ComponentProps) {
   const { user, referralLink } = loaderData;
   const [copied, setCopied] = useState(false);
-  const shareText = `¡Únete a FormMy y obtén descuento usando mi enlace de referido! ${referralLink}`;
+  const shareText = `¡Únete a Formmy y obtén descuento usando mi enlace de referido! ${referralLink}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-  const emailUrl = `mailto:?subject=Únete a FormMy&body=${encodeURIComponent(
+  const emailUrl = `mailto:?subject=Únete a Formmy&body=${encodeURIComponent(
     shareText
   )}`;
 
@@ -62,7 +62,7 @@ export default function Compartir({ loaderData }: Route.ComponentProps) {
               />
               {/* <CreditsBox /> */}
             </div>
-            <h2 className="text-3xl text-dark heading text-center mb-2">
+            <h2 className="text-2xl md:text-3xl text-dark heading text-center mb-2">
               Comparte con tus amigos y{" "}
               <span className="text-brand-500">
                 gana meses de suscripción PRO gratis!

@@ -52,7 +52,9 @@ export function useS3Upload() {
       });
 
       if (!presignedResponse.ok) {
-        throw new Error("Failed to get presigned URL");
+        const errorData = await presignedResponse.json();
+        console.error("Presigned URL error:", errorData);
+        throw new Error(errorData.error || "Failed to get presigned URL");
       }
 
       const { uploadUrl, publicUrl, key } = await presignedResponse.json();
@@ -67,7 +69,9 @@ export function useS3Upload() {
       });
 
       if (!uploadResponse.ok) {
-        throw new Error("Failed to upload file to S3");
+        const errorText = await uploadResponse.text();
+        console.error("S3 upload error:", errorText);
+        throw new Error(`Failed to upload file to S3: ${uploadResponse.statusText}`);
       }
 
       setUploadState({ isUploading: false, progress: 100, error: null });

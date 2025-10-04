@@ -105,7 +105,7 @@ export const ChatForm = ({
               />
             ) : (
               <img
-                src="/assets/chat/earth.svg"
+                src="/assets/chat/user-placeholder.svg"
                 alt="Avatar del chatbot"
                 style={{
                   filter: `hue-rotate(${

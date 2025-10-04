@@ -144,9 +144,9 @@ export const TopMenu = ({ user }: { user: User }) => {
             <Usage className="w-8 h-8 ml-1 mt-1" /> Uso
           </Button>
         </Link>
-        <Button className="h-10 px-4 md:px-6" variant="ghost">
+        {/* <Button className="h-10 px-4 md:px-6" variant="ghost">
           Docs
-        </Button>
+        </Button> */}
         {user ? (
           <Menu as="div" className="relative z-20 inline-block text-left">
             <Menu.Button className="inline-flex w-full justify-center py-2 rounded-md text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">

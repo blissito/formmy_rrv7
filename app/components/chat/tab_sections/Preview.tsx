@@ -109,9 +109,15 @@ export const PreviewForm = ({
         );
         if (!imageResult?.publicUrl) {
           toast.error("Error al subir la imagen");
+          setIsSaving(false);
+          return;
         }
       } catch (error) {
-        toast.error("Error al subir la imagen");
+        const message = error instanceof Error ? error.message : "Error al subir la imagen";
+        console.error("Upload error:", error);
+        toast.error(message);
+        setIsSaving(false);
+        return;
       }
     }
 
