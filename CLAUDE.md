@@ -91,17 +91,24 @@ interface ToolResponse { success, message, data? }
 
 **Rate Limits Implementados** (Lógica: Más pagas → más valor):
 
-| Plan | Precio/mes | Búsquedas/día | Costo API/día | Costo API/mes | Razón |
-|------|------------|---------------|---------------|---------------|-------|
-| **ANONYMOUS** | Gratis | 2 | $0.01 USD | $0.30 USD | Demo limitado, previene abuso |
-| **FREE** | $0 | 0 | $0 | $0 | Incentiva upgrade a STARTER |
-| **STARTER** | $149 MXN | 10 | $0.05 USD | $1.50 USD | Valor tangible, cumple promesa |
-| **PRO** | $499 MXN | 25 | $0.125 USD | $3.75 USD | 2.5x STARTER, justifica precio |
-| **ENTERPRISE** | $1,499 MXN | 100 | $0.50 USD | $15.00 USD | Prácticamente ilimitado |
-| **TRIAL** | Temporal | 10 | $0.05 USD | $1.50 USD | Evaluar funcionalidad real |
+| Plan | Precio/mes | Modelo IA | Conv/mes | Búsquedas/día | Costo IA/mes | Costo Search/mes | Costo Total/mes | Profit Margin |
+|------|------------|-----------|----------|---------------|--------------|------------------|-----------------|---------------|
+| **ANONYMOUS** | Gratis | GPT-4o-mini | ∞ | 2 | Variable | $0.30 | Variable | N/A |
+| **FREE** | $0 | - | 0 | 0 | $0 | $0 | $0 | N/A |
+| **STARTER** | $149 MXN (~$8 USD) | GPT-4o-mini | 50 | 10 | ~$1.50 | $1.50 | ~$3.00 | **62.5%** |
+| **PRO** | $499 MXN (~$27 USD) | GPT-4o-mini | 250 | 25 | ~$7.50 | $3.75 | ~$11.25 | **58.3%** |
+| **ENTERPRISE** | $1,499 MXN (~$81 USD) | GPT-4o-mini/Claude | 1000 | 100 | ~$30.00 | $15.00 | ~$45.00 | **44.4%** |
+| **TRIAL** | Temporal | GPT-4o-mini | 50 | 10 | ~$1.50 | $1.50 | ~$3.00 | N/A |
 
-**Costos**: Google Search API = $5 USD por 1,000 queries
-**Profit Margins**: STARTER 98% | PRO 99.2% | ENTERPRISE 99.3% (costos API insignificantes vs revenue)
+**Costos API**:
+- **Google Search**: $5 USD por 1,000 queries
+- **GPT-4o-mini**: $0.15 input / $0.60 output por 1M tokens
+- **Estimación**: ~300 tokens input + 200 output por conversación = ~$0.03 USD/conversación
+
+**Profit Margins Reales**: 44-62% (incluyendo costos IA + Search)
+- STARTER sigue siendo muy rentable con 62.5% margin
+- ENTERPRISE con mayor volumen mantiene 44.4% profit saludable
+- Principal costo es el modelo IA, no Google Search (Search representa solo ~25-33% del costo total)
 
 **Features**:
 - Tracking por `conversationId` en tabla `ToolUsage`
