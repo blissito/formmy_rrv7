@@ -173,6 +173,49 @@ export const createGoogleSearchTool = (context: ToolContext) => tool(
   }
 );
 
+// ===== CONTEXT SEARCH TOOLS (RAG) =====
+
+export const createContextSearchTool = (context: ToolContext) => tool(
+  async ({ query, topK = 5 }) => {
+    const { contextSearchHandler } = await import('./handlers/context-search');
+    const result = await contextSearchHandler({ query, topK }, context);
+    return result.message;
+  },
+  {
+    name: "search_context",
+    description: `Herramienta de búsqueda semántica en la base de conocimiento del chatbot.
+
+CUÁNDO USAR:
+- Usuario pregunta sobre productos, precios, servicios, políticas, documentación
+- Necesitas datos específicos que podrían estar en archivos subidos al chatbot
+- Usuario solicita información que NO conoces de memoria
+- Antes de decir "no sé" sobre información del negocio
+
+ESTRATEGIA AGÉNTICA (MUY IMPORTANTE):
+1. Descompón preguntas complejas en consultas específicas separadas
+2. Ejecuta MÚLTIPLES búsquedas si la pregunta tiene varios temas
+3. Ajusta tu query y reintenta si los primeros resultados no son relevantes
+4. Combina resultados de varias búsquedas para responder completamente
+
+EJEMPLOS DE USO AGÉNTICO:
+- User: "¿Cuánto cuestan los planes y qué formas de pago aceptan?"
+  → Acción 1: search_context("precios planes suscripción")
+  → Acción 2: search_context("métodos formas de pago")
+  → Combinar ambos en respuesta coherente
+
+- User: "Compara plan Starter vs Pro"
+  → Acción 1: search_context("plan starter características precio")
+  → Acción 2: search_context("plan pro características precio")
+  → Hacer tabla comparativa
+
+NO ADIVINES: Si la pregunta requiere datos específicos (precios, fechas, políticas), SIEMPRE busca primero.`,
+    parameters: z.object({
+      query: z.string().describe("Consulta específica para buscar. Sé preciso y usa keywords relevantes del tema."),
+      topK: z.number().optional().default(5).describe("Número de resultados (1-10). Usa 3 para búsquedas específicas, 5-7 para temas amplios, 10 para investigación exhaustiva.")
+    })
+  }
+);
+
 // ===== CHATBOT TOOLS =====
 
 export const createQueryChatbotsTool = (context: ToolContext) => tool(
@@ -256,6 +299,12 @@ export const getToolsForPlan = (
     tools.push(createGoogleSearchTool(context));
   }
 
+  // Context Search (RAG) - disponible para PRO/ENTERPRISE/TRIAL con embeddings configurados
+  // Requiere vector search index en MongoDB Atlas
+  if (['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) && context.chatbotId) {
+    tools.push(createContextSearchTool(context));
+  }
+
   // Chatbot tools - SOLO para Ghosty (asistente interno)
   // ❌ Chatbots públicos NO deben tener acceso a estadísticas privadas
   if (context.isGhosty && ['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
@@ -282,5 +331,6 @@ export const getAllToolNames = () => [
   'query_chatbots',
   'get_chatbot_stats',
   'get_current_datetime',
-  'web_search_google'
+  'web_search_google',
+  'search_context'
 ];

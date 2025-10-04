@@ -69,7 +69,7 @@ function mapModelForPerformance(model: string): string {
 /**
  * Construye system prompt personalizado
  */
-function buildSystemPrompt(config: ResolvedChatbotConfig): string {
+function buildSystemPrompt(config: ResolvedChatbotConfig, hasContextSearch: boolean): string {
   const personality = config.personality || 'professional';
   const personalityMap: Record<string, string> = {
     'customer_support': 'asistente de soporte profesional',
@@ -78,13 +78,38 @@ function buildSystemPrompt(config: ResolvedChatbotConfig): string {
     'professional': 'asistente profesional'
   };
 
-  return `Eres ${config.name || 'asistente'}, ${personalityMap[personality] || 'profesional'}.
+  let basePrompt = `Eres ${config.name || 'asistente'}, ${personalityMap[personality] || 'profesional'}.
 
 ${config.instructions || 'Asistente útil.'}
 
 ${config.customInstructions || ''}
 
 Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu personalidad.`;
+
+  // Agregar instrucciones específicas de RAG si tiene acceso a search_context
+  if (hasContextSearch) {
+    basePrompt += `
+
+IMPORTANTE - BASE DE CONOCIMIENTO:
+Tienes acceso a una base de conocimiento via la herramienta search_context.
+
+REGLAS CRÍTICAS:
+1. USA search_context SIEMPRE que el usuario pregunte por información específica del negocio
+2. NUNCA adivines precios, características de productos, políticas o fechas - BÚSCALAS
+3. Para preguntas complejas, ejecuta MÚLTIPLES búsquedas (descompón en sub-consultas)
+4. Si la primera búsqueda no es suficiente, ajusta tu query y reintenta
+5. CITA las fuentes cuando uses información de documentos (ej: "Según [nombre archivo]...")
+6. Si después de buscar NO encuentras algo, dilo honestamente
+
+EJEMPLOS DE COMPORTAMIENTO CORRECTO:
+- User pregunta precio → search_context("precio [producto]") ANTES de responder
+- User compara productos → 2 búsquedas separadas, luego comparar resultados
+- User pregunta compleja → dividir en 2-3 búsquedas específicas
+
+Tu trabajo es ser EXHAUSTIVO usando la base de conocimiento. No te limites a una sola búsqueda.`;
+  }
+
+  return basePrompt;
 }
 
 /**
@@ -121,7 +146,11 @@ async function createSingleAgent(
   };
 
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
-  const systemPrompt = buildSystemPrompt(resolvedConfig);
+
+  // Detectar si tiene acceso a search_context tool
+  const hasContextSearch = allTools.some((tool: any) => tool.metadata?.name === 'search_context');
+
+  const systemPrompt = buildSystemPrompt(resolvedConfig, hasContextSearch);
 
   // ✅ Crear memoria conversacional según patrón oficial LlamaIndex
   let memory = undefined;

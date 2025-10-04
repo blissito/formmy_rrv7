@@ -98,6 +98,108 @@ interface ToolResponse { success, message, data? }
 
 **create_payment_link**: Links Stripe seguros (PRO/ENTERPRISE)
 **schedule_reminder**: Recordatorios con email automático, schema `ScheduledAction` (type, data, runAt, status)
+**search_context**: RAG agéntico - búsqueda semántica en base de conocimiento (PRO/ENTERPRISE/TRIAL)
+
+## RAG Agéntico (Producción ✅)
+
+**Status**: Operativo Oct 4, 2025 | **Index**: `vector_index_2` en MongoDB Atlas
+**Embeddings**: text-embedding-3-small (768 dimensiones) | **Chunking**: 2000 chars, overlap 200
+
+### Features
+- ✅ **Búsqueda semántica** con similitud coseno
+- ✅ **Auto-vectorización** en background (FILE/URL/TEXT/QUESTION contexts)
+- ✅ **Agentic behavior**: Agente ejecuta múltiples búsquedas iterativas para preguntas complejas
+- ✅ **System prompt optimizado**: Instruye al agente CUÁNDO y CÓMO usar RAG
+- ✅ **Cita fuentes**: Agente referencia documentos/archivos en respuestas
+
+### Acceso por Plan
+- **FREE/STARTER**: ❌ No RAG (prompts estáticos únicamente)
+- **PRO**: ✅ RAG ilimitado, max 50MB contexto total
+- **ENTERPRISE**: ✅ RAG ilimitado, contexto ilimitado
+- **TRIAL**: ✅ Acceso completo temporal
+
+### Tool: `search_context`
+```typescript
+search_context({
+  query: string,  // Consulta específica con keywords relevantes
+  topK?: number   // Resultados (1-10, default: 5)
+})
+```
+
+**Estrategia Agéntica** (definida en tool description):
+1. Descomponer preguntas complejas en consultas específicas
+2. Ejecutar MÚLTIPLES búsquedas si la pregunta tiene varios temas
+3. Ajustar query y reintentar si resultados no son relevantes
+4. Combinar resultados coherentemente
+
+**Ejemplo de uso agéntico**:
+```
+User: "¿Cuánto cuestan los planes y qué formas de pago aceptan?"
+Agent:
+  1. search_context("precios planes suscripción") → obtiene pricing
+  2. search_context("métodos formas de pago") → obtiene payment methods
+  3. Combina ambos resultados en respuesta coherente
+```
+
+### Implementación Técnica
+**Vectorización**: `/server/vector/auto-vectorize.service.ts`
+- Se ejecuta automáticamente al añadir/editar contextos (PRO+)
+- Chunking inteligente con overlap para preservar contexto
+- Metadata: contextId, contextType, title, fileName, url, chunkIndex
+
+**Búsqueda**: `/server/vector/vector-search.service.ts`
+- MongoDB `$vectorSearch` aggregation con filtro por chatbotId
+- Score threshold mínimo recomendado: 60%
+- Resultados ordenados por relevancia (similitud coseno)
+
+**Tool Handler**: `/server/tools/handlers/context-search.ts`
+- Validación de chatbotId (no disponible para anónimos sin chatbot)
+- Formateo de resultados con fuentes y scores
+- Error handling para índice no configurado
+
+### System Prompt RAG
+El agente recibe instrucciones específicas cuando tiene acceso a `search_context`:
+- Reglas sobre CUÁNDO buscar (preguntas específicas, precios, políticas)
+- Prohibición de adivinar datos que deben buscarse
+- Estrategia de múltiples búsquedas para preguntas complejas
+- Obligación de citar fuentes
+
+Implementado en `/server/agents/agent-workflow.server.ts:72` - `buildSystemPrompt()`
+
+### Migración de Contextos Legacy
+**Scripts disponibles**:
+```bash
+# Auditar chatbots con contextos sin embeddings
+npx tsx scripts/audit-chatbot-embeddings.ts
+
+# Migrar (dry-run primero)
+npx tsx scripts/migrate-contexts-to-embeddings.ts --all --dry-run
+npx tsx scripts/migrate-contexts-to-embeddings.ts --all
+
+# Testing agéntico
+npx tsx scripts/test-agentic-rag.ts
+```
+
+### Monitoreo
+**Señales de RAG agéntico funcionando**:
+- ✅ Ejecuta 2+ búsquedas para preguntas multi-tema
+- ✅ Cita fuentes: "Según [archivo]..." o "De acuerdo a..."
+- ✅ Dice "no encontré" si búsqueda falla (no adivina)
+- ✅ Ajusta queries si primera búsqueda no es suficiente
+
+**Métricas** (tabla `ToolUsage`):
+- Búsquedas por conversación
+- Top queries más frecuentes
+- % conversaciones que usan RAG
+
+### Límites y Costos
+**Embeddings API** (OpenAI text-embedding-3-small):
+- $0.02 por 1M tokens
+- ~1 contexto promedio = 500 tokens = $0.00001
+
+**Storage** (MongoDB Atlas):
+- 768 float32 por embedding = 3KB
+- 1000 embeddings ≈ 3MB storage
 
 ## Modelos AI
 

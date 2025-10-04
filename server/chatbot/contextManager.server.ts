@@ -8,6 +8,7 @@ import {
 import { db } from "~/utils/db.server";
 import { validateTextContext } from "./contextValidator.server";
 import { stripHtmlTagsServer } from "~/utils/textUtils";
+import { vectorizeContext, revectorizeContext } from "../vector/auto-vectorize.service";
 
 /**
  * Helper function to clean HTML from content
@@ -142,7 +143,27 @@ export async function addFileContext(
   };
 
   // Añadir el contexto al chatbot
-  return addContextItem(chatbotId, contextItem);
+  const updatedChatbot = await addContextItem(chatbotId, contextItem);
+
+  // Auto-vectorizar el contexto añadido (async en background) - solo PRO+
+  const chatbotWithUser = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: {
+      userId: true,
+      user: { select: { plan: true } }
+    }
+  });
+
+  if (chatbotWithUser?.user.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(chatbotWithUser.user.plan)) {
+    const addedContext = updatedChatbot.contexts[updatedChatbot.contexts.length - 1];
+    if (addedContext) {
+      vectorizeContext(chatbotId, addedContext as ContextItem).catch(err => {
+        console.error('Error auto-vectorizando FILE context:', err);
+      });
+    }
+  }
+
+  return updatedChatbot;
 }
 
 /**
@@ -221,7 +242,27 @@ export async function addUrlContext(
 
 
   // Añadir el contexto al chatbot
-  return addContextItem(chatbotId, contextItem);
+  const updatedChatbot = await addContextItem(chatbotId, contextItem);
+
+  // Auto-vectorizar el contexto añadido (async en background) - solo PRO+
+  const chatbotWithUser = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: {
+      userId: true,
+      user: { select: { plan: true } }
+    }
+  });
+
+  if (chatbotWithUser?.user.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(chatbotWithUser.user.plan)) {
+    const addedContext = updatedChatbot.contexts[updatedChatbot.contexts.length - 1];
+    if (addedContext) {
+      vectorizeContext(chatbotId, addedContext as ContextItem).catch(err => {
+        console.error('Error auto-vectorizando URL context:', err);
+      });
+    }
+  }
+
+  return updatedChatbot;
 }
 
 /**
@@ -281,7 +322,27 @@ export async function addTextContext(
   };
 
   // Añadir el contexto al chatbot
-  return addContextItem(chatbotId, contextItem);
+  const updatedChatbot = await addContextItem(chatbotId, contextItem);
+
+  // Auto-vectorizar el contexto añadido (async en background) - solo PRO+
+  const chatbotWithUser = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: {
+      userId: true,
+      user: { select: { plan: true } }
+    }
+  });
+
+  if (chatbotWithUser?.user.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(chatbotWithUser.user.plan)) {
+    const addedContext = updatedChatbot.contexts[updatedChatbot.contexts.length - 1];
+    if (addedContext) {
+      vectorizeContext(chatbotId, addedContext as ContextItem).catch(err => {
+        console.error('Error auto-vectorizando TEXT context:', err);
+      });
+    }
+  }
+
+  return updatedChatbot;
 }
 
 /**
@@ -344,7 +405,27 @@ export async function addQuestionContext(
   };
 
   // Añadir el contexto al chatbot
-  return addContextItem(chatbotId, contextItem);
+  const updatedChatbot = await addContextItem(chatbotId, contextItem);
+
+  // Auto-vectorizar el contexto añadido (async en background) - solo PRO+
+  const chatbotWithUser = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: {
+      userId: true,
+      user: { select: { plan: true } }
+    }
+  });
+
+  if (chatbotWithUser?.user.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(chatbotWithUser.user.plan)) {
+    const addedContext = updatedChatbot.contexts[updatedChatbot.contexts.length - 1];
+    if (addedContext) {
+      vectorizeContext(chatbotId, addedContext as ContextItem).catch(err => {
+        console.error('Error auto-vectorizando QUESTION context:', err);
+      });
+    }
+  }
+
+  return updatedChatbot;
 }
 
 /**
@@ -430,11 +511,22 @@ export async function updateQuestionContext(
   // Actualizar el chatbot con los contextos modificados
   const updatedChatbot = await db.chatbot.update({
     where: { id: chatbotId },
-    data: { 
+    data: {
       contexts: updatedContexts,
       contextSizeKB: totalNewSize
     },
   });
+
+  // Re-vectorizar el contexto actualizado (async en background) - solo PRO+
+  const user = await db.user.findUnique({ where: { id: chatbot.userId } });
+  if (user?.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(user.plan)) {
+    const updatedContext = updatedChatbot.contexts.find((ctx: any) => ctx.id === contextId);
+    if (updatedContext) {
+      revectorizeContext(chatbotId, updatedContext as ContextItem).catch(err => {
+        console.error('Error re-vectorizando QUESTION context:', err);
+      });
+    }
+  }
 
   return updatedChatbot;
 }
@@ -518,11 +610,22 @@ export async function updateTextContext(
   // Actualizar el chatbot con los contextos modificados
   const updatedChatbot = await db.chatbot.update({
     where: { id: chatbotId },
-    data: { 
+    data: {
       contexts: updatedContexts,
       contextSizeKB: totalNewSize
     },
   });
+
+  // Re-vectorizar el contexto actualizado (async en background) - solo PRO+
+  const user = await db.user.findUnique({ where: { id: chatbot.userId } });
+  if (user?.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(user.plan)) {
+    const updatedContext = updatedChatbot.contexts.find((ctx: any) => ctx.id === contextId);
+    if (updatedContext) {
+      revectorizeContext(chatbotId, updatedContext as ContextItem).catch(err => {
+        console.error('Error re-vectorizando TEXT context:', err);
+      });
+    }
+  }
 
   return updatedChatbot;
 }

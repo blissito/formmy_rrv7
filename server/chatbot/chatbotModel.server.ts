@@ -94,7 +94,7 @@ export async function createChatbot({
       temperature,
       instructions,
       status: ChatbotStatus.DRAFT,
-      isActive: false,
+      isActive: true, // Chatbots creados como activos por defecto
       conversationCount: 0,
       monthlyUsage: 0,
       contextSizeKB: 0,
@@ -246,13 +246,21 @@ export async function removeContextItem(
     : chatbot.contextSizeKB || 0;
 
   // Update the chatbot with the new contexts and size
-  return db.chatbot.update({
+  const updatedChatbot = await db.chatbot.update({
     where: { id: chatbotId },
     data: {
       contexts: updatedContexts,
       contextSizeKB: Math.max(0, newContextSizeKB), // Ensure we don't go below 0
     },
   });
+
+  // Eliminar embeddings asociados al contexto eliminado (async en background)
+  const { removeContextEmbeddings } = await import('../vector/auto-vectorize.service');
+  removeContextEmbeddings(chatbotId, contextItemId).catch(err => {
+    console.error('Error eliminando embeddings de contexto:', err);
+  });
+
+  return updatedChatbot;
 }
 
 /**

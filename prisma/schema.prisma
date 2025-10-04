@@ -82,26 +82,26 @@ enum ResourceType {
 }
 
 model Permission {
-  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
   email         String
-  status        Statuses      @default(pending)
-  role          Role          @default(VIEWER)
+  status        Statuses     @default(pending)
+  role          Role         @default(VIEWER)
   can           Rights?
-  notifications Boolean?      @default(true)
-  resourceType  ResourceType  @default(PROJECT)
-  
+  notifications Boolean?     @default(true)
+  resourceType  ResourceType @default(PROJECT)
+
   // Usuario relacionado
-  user          User?         @relation("UserPermissions", fields: [userId], references: [id])
-  userId        String?       @db.ObjectId
-  
+  user   User?   @relation("UserPermissions", fields: [userId], references: [id])
+  userId String? @db.ObjectId
+
   // Recurso relacionado (uno u otro)
-  project       Project?      @relation(fields: [projectId], references: [id])
-  projectId     String?       @db.ObjectId
-  chatbot       Chatbot?      @relation(fields: [chatbotId], references: [id])
-  chatbotId     String?       @db.ObjectId
-  
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime?     @updatedAt
+  project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?  @db.ObjectId
+  chatbot   Chatbot? @relation(fields: [chatbotId], references: [id])
+  chatbotId String?  @db.ObjectId
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 enum FormmyTypes {
@@ -149,7 +149,7 @@ model User {
   provider        String?
   refresh_token   String?
   plan            Plans        @default(FREE)
-  trialStartedAt  DateTime?    // Fecha específica de inicio del trial (para marketing/promociones)
+  trialStartedAt  DateTime? // Fecha específica de inicio del trial (para marketing/promociones)
   customerId      String?      @unique
   subscriptionIds String[]
   projects        Project[]
@@ -177,8 +177,8 @@ type ChatbotNotifications {
 
 type ChatbotSecurity {
   allowedDomains String[]
-  rateLimit      Int     @default(100)
-  status         String  @default("public")
+  rateLimit      Int      @default(100)
+  status         String   @default("public")
 }
 
 type ChatbotSettings {
@@ -203,72 +203,73 @@ type ContextItem {
   title     String?
   sizeKB    Int?
   content   String?
-  routes    String[]  @default([])
+  routes    String[]    @default([])
   questions String?
   answer    String?
   createdAt DateTime
 }
 
 model Chatbot {
-  id                String           @id @default(auto()) @map("_id") @db.ObjectId
-  slug              String           @unique
-  name              String
-  description       String?
-  personality       String?
-  welcomeMessage    String?
-  goodbyeMessage    String?
-  aiModel           String           @default("mistralai/mistral-small-3.2-24b-instruct")
-  temperature       Float            @default(1)
-  instructions      String?
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
+  slug               String            @unique
+  name               String
+  description        String?
+  personality        String?
+  welcomeMessage     String?
+  goodbyeMessage     String?
+  aiModel            String            @default("mistralai/mistral-small-3.2-24b-instruct")
+  temperature        Float             @default(1)
+  instructions       String?
   customInstructions String?
-  contexts          ContextItem[]
-  primaryColor      String?
-  avatarUrl         String?
-  theme             String?          @default("light")
-  enableStreaming   Boolean          @default(false) // 🚨 STREAMING DESHABILITADO por defecto - problema crítico resuelto
-  streamingSpeed    Int              @default(50)
-  status            ChatbotStatus    @default(DRAFT)
-  isActive          Boolean          @default(false)
-  conversationCount Int              @default(0)
-  monthlyUsage      Int              @default(0)
-  contextSizeKB     Int              @default(0)
-  settings          ChatbotSettings?
-  userId            String           @db.ObjectId
-  user              User             @relation(fields: [userId], references: [id])
-  permissions       Permission[]
-  conversations     Conversation[]
-  integrations      Integration[]
-  apiKeys           ApiKey[]
-  scheduledActions  ScheduledAction[]
-  contacts          Contact[]
-  toolUsages        ToolUsage[]
+  contexts           ContextItem[]
+  primaryColor       String?
+  avatarUrl          String?
+  theme              String?           @default("light")
+  enableStreaming    Boolean           @default(false) // 🚨 STREAMING DESHABILITADO por defecto - problema crítico resuelto
+  streamingSpeed     Int               @default(50)
+  status             ChatbotStatus     @default(DRAFT)
+  isActive           Boolean           @default(true)
+  conversationCount  Int               @default(0)
+  monthlyUsage       Int               @default(0)
+  contextSizeKB      Int               @default(0)
+  settings           ChatbotSettings?
+  userId             String            @db.ObjectId
+  user               User              @relation(fields: [userId], references: [id])
+  permissions        Permission[]
+  conversations      Conversation[]
+  integrations       Integration[]
+  apiKeys            ApiKey[]
+  scheduledActions   ScheduledAction[]
+  contacts           Contact[]
+  toolUsages         ToolUsage[]
+  embeddings         Embedding[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Contact {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String?  // Nombre completo
-  email       String?  // Email de contacto
-  phone       String?  // Teléfono
-  company     String?  // Empresa/organización
-  position    String?  // Cargo/posición
-  website     String?  // Sitio web
-  notes       String?  // Notas adicionales o contexto
-  source      String   @default("chatbot") // Fuente: chatbot, whatsapp, etc.
-  
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  name     String? // Nombre completo
+  email    String? // Email de contacto
+  phone    String? // Teléfono
+  company  String? // Empresa/organización
+  position String? // Cargo/posición
+  website  String? // Sitio web
+  notes    String? // Notas adicionales o contexto
+  source   String  @default("chatbot") // Fuente: chatbot, whatsapp, etc.
+
   // Relaciones
-  chatbotId   String   @db.ObjectId
-  chatbot     Chatbot  @relation(fields: [chatbotId], references: [id])
-  
-  conversationId String? @db.ObjectId
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
+
+  conversationId String?       @db.ObjectId
   conversation   Conversation? @relation(fields: [conversationId], references: [id])
-  
+
   // Metadatos
   capturedAt  DateTime @default(now())
   lastUpdated DateTime @updatedAt
-  
+
   // Índices para búsqueda eficiente
   @@index([email])
   @@index([chatbotId])
@@ -276,19 +277,39 @@ model Contact {
 }
 
 model ScheduledAction {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  chatbotId String   @db.ObjectId
-  chatbot   Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
-  
-  type      String   // 'email', 'webhook', 'sms'
-  data      Json     // everything needed to execute
-  runAt     DateTime @map("run_at")
-  status    String   @default("pending") // 'pending', 'done', 'failed'
-  
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  type   String // 'email', 'webhook', 'sms'
+  data   Json // everything needed to execute
+  runAt  DateTime @map("run_at")
+  status String   @default("pending") // 'pending', 'done', 'failed'
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("scheduled_actions")
+}
+
+// Vector embeddings para RAG semántico
+model Embedding {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  // Contenido y vector
+  content   String // Chunk de texto original
+  embedding Float[] // Vector de 768 dimensiones (text-embedding-3-small)
+
+  // Metadata para retrieval
+  metadata Json // { contextId, contextType, title, fileName, url, chunkIndex }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chatbotId])
+  @@map("embeddings")
 }
 
 enum ConversationStatus {
@@ -332,15 +353,15 @@ model Message {
   picture           String?
   channel           String?
   externalMessageId String?
-  tokens            Int?         // Tokens totales (deprecated, usar inputTokens + outputTokens)
-  inputTokens       Int?         // Tokens de entrada (input)
-  outputTokens      Int?         // Tokens de salida (output/completion)
-  cachedTokens      Int?         // Cached input tokens (GPT-5-nano: 90% descuento)
-  totalCost         Float?       // Costo total en USD
-  provider          String?      // Proveedor: openai, anthropic, openrouter
+  tokens            Int? // Tokens totales (deprecated, usar inputTokens + outputTokens)
+  inputTokens       Int? // Tokens de entrada (input)
+  outputTokens      Int? // Tokens de salida (output/completion)
+  cachedTokens      Int? // Cached input tokens (GPT-5-nano: 90% descuento)
+  totalCost         Float? // Costo total en USD
+  provider          String? // Proveedor: openai, anthropic, openrouter
   responseTime      Int?
   firstTokenLatency Int?
-  aiModel           String?      // Modelo de IA usado para generar esta respuesta (solo para ASSISTANT messages)
+  aiModel           String? // Modelo de IA usado para generar esta respuesta (solo para ASSISTANT messages)
   conversationId    String       @db.ObjectId
   conversation      Conversation @relation(fields: [conversationId], references: [id])
 
@@ -354,35 +375,35 @@ enum IntegrationType {
 }
 
 model Integration {
-  id                 String          @id @default(auto()) @map("_id") @db.ObjectId
-  platform           IntegrationType
-  token              String?         // Token de acceso para la API
-  refreshToken       String?         // Token de actualización para OAuth
-  isActive           Boolean         @default(true)
-  
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  platform     IntegrationType
+  token        String? // Token de acceso para la API
+  refreshToken String? // Token de actualización para OAuth
+  isActive     Boolean         @default(true)
+
   // Campos específicos de WhatsApp
-  phoneNumberId      String?         // ID del número de teléfono en WhatsApp
-  businessAccountId  String?         // ID de la cuenta de negocio en WhatsApp
-  webhookVerifyToken String?         // Token para verificar el webhook de WhatsApp
-  
+  phoneNumberId      String? // ID del número de teléfono en WhatsApp
+  businessAccountId  String? // ID de la cuenta de negocio en WhatsApp
+  webhookVerifyToken String? // Token para verificar el webhook de WhatsApp
+
   // Campos específicos de Google Calendar
-  calendarId         String?         // ID del calendario (por defecto 'primary')
-  clientId           String?         // Client ID de OAuth 2.0
-  clientSecret       String?         // Client Secret de OAuth 2.0
-  redirectUri        String?         // URI de redirección para OAuth
-  
+  calendarId   String? // ID del calendario (por defecto 'primary')
+  clientId     String? // Client ID de OAuth 2.0
+  clientSecret String? // Client Secret de OAuth 2.0
+  redirectUri  String? // URI de redirección para OAuth
+
   // Campos específicos de Stripe
-  stripeApiKey       String?         // API Key de Stripe (secret key)
-  stripePublishableKey String?       // Publishable Key de Stripe
-  stripeWebhookSecret String?        // Secret para validar webhooks de Stripe
-  
+  stripeApiKey         String? // API Key de Stripe (secret key)
+  stripePublishableKey String? // Publishable Key de Stripe
+  stripeWebhookSecret  String? // Secret para validar webhooks de Stripe
+
   // Campos de auditoría
-  lastActivity       DateTime?       // Última actividad registrada
-  errorMessage       String?         // Último mensaje de error
-  
+  lastActivity DateTime? // Última actividad registrada
+  errorMessage String? // Último mensaje de error
+
   // Relaciones
-  chatbotId          String          @db.ObjectId
-  chatbot            Chatbot         @relation(fields: [chatbotId], references: [id])
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -425,20 +446,20 @@ model Referral {
 }
 
 model ToolUsage {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  chatbotId   String   @db.ObjectId
-  chatbot     Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
-  
-  toolName    String   // create_payment_link, schedule_reminder, etc.
-  success     Boolean  @default(true)
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  toolName     String // create_payment_link, schedule_reminder, etc.
+  success      Boolean @default(true)
   errorMessage String?
-  
+
   // Metadata para analytics
-  userMessage String?  // Mensaje original del usuario
-  response    String?  // Respuesta generada
-  
+  userMessage String? // Mensaje original del usuario
+  response    String? // Respuesta generada
+
   // Datos específicos según herramienta (JSON flexible)
-  metadata    Json?    // { amount: 500, currency: "mxn" } para stripe, { date: "2024-08-22" } para reminder
-  
-  createdAt   DateTime @default(now())
+  metadata Json? // { amount: 500, currency: "mxn" } para stripe, { date: "2024-08-22" } para reminder
+
+  createdAt DateTime @default(now())
 }
