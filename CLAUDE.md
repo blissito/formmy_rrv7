@@ -244,17 +244,28 @@ npx tsx scripts/migrate-contexts-to-embeddings.ts --all
 npx tsx scripts/test-agentic-rag.ts
 ```
 
-### Monitoreo
+### Monitoreo y Tests
 **Señales de RAG agéntico funcionando**:
 - ✅ Ejecuta 2+ búsquedas para preguntas multi-tema
-- ✅ Cita fuentes: "Según [archivo]..." o "De acuerdo a..."
-- ✅ Dice "no encontré" si búsqueda falla (no adivina)
+- ✅ Usa fallback automático a web_search cuando RAG falla
+- ✅ Dice "busqué pero no encontré" si ambas búsquedas fallan (no adivina)
 - ✅ Ajusta queries si primera búsqueda no es suficiente
 
-**Métricas** (tabla `ToolUsage`):
+**Test automatizado** (`scripts/test-rag-prompts.ts`):
+```bash
+DEVELOPMENT_TOKEN=FORMMY_DEV_TOKEN_2025 npx tsx scripts/test-rag-prompts.ts
+```
+
+**Últimos resultados** (Oct 4, 2025 - 3/3 tests pasados ✅):
+- Test 1 (características nuevas): 2x search_context + 1x web_search → 7 créditos
+- Test 2 (planes y formas de pago): 4x search_context + 2x web_search → 14 créditos
+- Test 3 (compara Starter vs Pro): 4x search_context + 4x web_search → 20 créditos
+
+**Métricas de uso** (tabla `ToolUsage`):
 - Búsquedas por conversación
 - Top queries más frecuentes
 - % conversaciones que usan RAG
+- Promedio de búsquedas por pregunta (target: 2-4)
 
 ### Límites y Costos
 **Embeddings API** (OpenAI text-embedding-3-small):
