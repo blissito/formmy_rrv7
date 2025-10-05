@@ -40,9 +40,18 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   if (intent === "enterprise_plan") {
+    // Usar price_data para custom price en vez de price ID
     const url = await createCheckoutSessionURL({
       user: null,
-      price: PRICES.enterprise,
+      priceData: {
+        currency: 'mxn',
+        unit_amount: 249900, // $2,499.00 MXN (en centavos)
+        recurring: { interval: 'month' },
+        product_data: {
+          name: 'Plan Enterprise',
+          description: 'Chatbots ilimitados, 1000 conversaciones, 5000 tool credits'
+        }
+      },
       origin: new URL(request.url).origin,
     });
     if (url) return Response.redirect(url);

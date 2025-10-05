@@ -112,11 +112,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // User metrics
-    const [totalUsers, thisWeekUsers, thisMonthUsers, activeUsers] = await Promise.all([
+    const [totalUsers, thisWeekUsers, thisMonthUsers, activeUsers, paidUsers] = await Promise.all([
       db.user.count(),
       db.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
       db.user.count({ where: { createdAt: { gte: startOfMonth } } }),
       db.user.count({ where: { plan: { in: ["TRIAL", "STARTER", "PRO", "ENTERPRISE"] } } }),
+      db.user.count({ where: { plan: { in: ["STARTER", "PRO", "ENTERPRISE"] } } }), // Solo usuarios de pago
     ]);
 
     // Chatbot & conversation metrics
@@ -268,17 +269,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         where: { createdAt: { gte: thirtyDaysAgo } },
       });
 
-      // Calcular créditos y obtener plan principal por tool
+      // Calcular créditos y costos monetarios por tool
       const toolUsage = await Promise.all(
         toolUsageRaw.map(async (usage) => {
           const credits = getToolCreditCost(usage.toolName) * usage._count.id;
+          const costData = calculateToolCostFull(usage.toolName, usage._count.id, credits);
 
-          // Obtener chatbots que usan esta tool y su plan (filtrar nulls)
+          // Obtener chatbots que usan esta tool y su plan
           const chatbotsUsingTool = await db.toolUsage.findMany({
             where: {
               toolName: usage.toolName,
               createdAt: { gte: thirtyDaysAgo },
-              chatbotId: { not: null }, // Solo toolUsages con chatbot existente
             },
             select: {
               chatbot: {
@@ -290,24 +291,32 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             take: 100,
           });
 
-          const planCounts = chatbotsUsingTool.reduce((acc: any, t) => {
-            const plan = t.chatbot?.user?.plan || 'FREE';
-            acc[plan] = (acc[plan] || 0) + 1;
-            return acc;
-          }, {});
+          // Filtrar solo los que tienen chatbot y contar por plan
+          const planCounts = chatbotsUsingTool
+            .filter(t => t.chatbot?.user?.plan) // Solo los que tienen chatbot y plan
+            .reduce((acc: any, t) => {
+              const plan = t.chatbot?.user?.plan || 'FREE';
+              acc[plan] = (acc[plan] || 0) + 1;
+              return acc;
+            }, {});
 
-          const topPlan = Object.entries(planCounts).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'UNKNOWN';
+          const topPlan = Object.entries(planCounts).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'TRIAL';
 
           return {
             toolName: usage.toolName,
             count: usage._count.id,
             credits,
+            costUSD: costData.costUSD,
+            costMXN: costData.costMXN,
+            pricePerUseUSD: costData.pricePerUseUSD,
             topPlan,
           };
         })
       );
 
       const totalCredits = toolUsage.reduce((sum, u) => sum + u.credits, 0);
+      const totalCostUSD = toolUsage.reduce((sum, u) => sum + u.costUSD, 0);
+      const totalCostMXN = toolUsage.reduce((sum, u) => sum + u.costMXN, 0);
 
       // Detectar usuarios cerca del límite (>80% usado)
       const usersNearLimit: any[] = [];
@@ -346,7 +355,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
       }
 
-      toolCreditsData = { toolUsage, totalCredits, usersNearLimit };
+      toolCreditsData = { toolUsage, totalCredits, totalCostUSD, totalCostMXN, usersNearLimit };
     } catch (error) {
       console.error('Error loading tool credits data:', error);
     }
@@ -452,7 +461,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const USD_TO_MXN = 20;
       const totalCostMXN = costMetrics.totalCost * USD_TO_MXN;
       const estimatedRevenue = planDistribution.reduce((acc, plan) => {
-        const rates: any = { STARTER: 149, PRO: 499, ENTERPRISE: 1499 };
+        const rates: any = { STARTER: 149, PRO: 499, ENTERPRISE: 2499 };
         return acc + (rates[plan.plan] || 0) * plan._count.plan;
       }, 0);
       const profitMargin = estimatedRevenue > 0 ? ((estimatedRevenue - totalCostMXN) / estimatedRevenue) * 100 : 0;
@@ -493,6 +502,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         thisWeek: thisWeekUsers,
         thisMonth: thisMonthUsers,
         active: activeUsers,
+        paid: paidUsers, // Usuarios de pago (STARTER, PRO, ENTERPRISE)
       },
       chatbots: {
         total: totalChatbots,
@@ -564,7 +574,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     // Return fallback data structure to prevent crashes
     return {
-      users: { total: 0, thisWeek: 0, thisMonth: 0, active: 0 },
+      users: { total: 0, thisWeek: 0, thisMonth: 0, active: 0, paid: 0 },
       chatbots: { total: 0, active: 0, conversations: 0, thisMonthConversations: 0 },
       plans: [],
       aiUsage: [],
@@ -572,7 +582,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       topChatbots: [],
       integrations: [],
       contacts: { total: 0, thisWeek: 0, thisMonth: 0, bySource: [] },
-      toolCredits: { toolUsage: [], totalCredits: 0, usersNearLimit: [] },
+      toolCredits: { toolUsage: [], totalCredits: 0, totalCostUSD: 0, totalCostMXN: 0, usersNearLimit: [] },
       ragMetrics: { ragSearches: 0, webSearches: 0, conversationsWithRAG: 0 },
       systemHealth: { avgLatency: 0, maxLatency: 0, toolErrors: [], alerts: [] },
       error: 'Error cargando datos del dashboard. Intenta refrescar la página.',
@@ -584,7 +594,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 const PLAN_RATES: Record<string, number> = {
   STARTER: 149,
   PRO: 499,
-  ENTERPRISE: 1499,
+  ENTERPRISE: 2499,
 } as const;
 
 export default function AdminDashboard() {
@@ -641,6 +651,8 @@ export default function AdminDashboard() {
       <ToolCreditsTable
         toolUsage={data.toolCredits.toolUsage}
         totalCredits={data.toolCredits.totalCredits}
+        totalCostUSD={data.toolCredits.totalCostUSD}
+        totalCostMXN={data.toolCredits.totalCostMXN}
         usersNearLimit={data.toolCredits.usersNearLimit}
       />
 

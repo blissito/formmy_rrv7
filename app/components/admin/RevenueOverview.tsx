@@ -8,6 +8,7 @@ interface RevenueOverviewProps {
     thisWeek: number;
     thisMonth: number;
     active: number;
+    paid: number;
   };
   chatbots: {
     total: number;
@@ -38,7 +39,7 @@ export function RevenueOverview({ estimatedRevenue, totalCost, users, chatbots }
         title="Revenue Estimado"
         value={`$${estimatedRevenue.toLocaleString()} MXN`}
         subtitle="Mensual (solo planes de pago)"
-        trend={`${users.active} usuarios activos`}
+        trend={`${users.paid} usuarios de pago`}
       />
       <MetricCard
         title="Profit Margin"

@@ -14,7 +14,7 @@ async function checkUsersByPlan() {
     const PLAN_RATES: Record<string, number> = {
       STARTER: 149,
       PRO: 499,
-      ENTERPRISE: 1499,
+      ENTERPRISE: 2499,
       TRIAL: 0, // TRIAL no genera revenue real
       FREE: 0,
     };

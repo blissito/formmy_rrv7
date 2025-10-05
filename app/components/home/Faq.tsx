@@ -106,7 +106,7 @@ export const Faq = () => (
                     incluye 10 chatbots, 250 conversaciones con Claude 3 Haiku.
                   </li>
                   <li>
-                    <strong>Enterprise ($1,499 MXN/mes):</strong> Acceso ilimitado,
+                    <strong>Enterprise ($2,499 MXN/mes):</strong> Acceso ilimitado,
                     1000 conversaciones con GPT-5 Mini y Claude 3.5 Haiku.
                   </li>
                 </ul>

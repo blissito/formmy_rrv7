@@ -95,7 +95,7 @@ export const plans: Plan[] = [
   {
     name: "Enterprise 🤖",
     description: "Solución corporativa",
-    price: "$1,499",
+    price: "$2,499",
     priceNote: "/mes",
     buttonText: "¡Potencia total!",
     buttonAction: "/api/stripe",

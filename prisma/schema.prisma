@@ -446,9 +446,10 @@ model Referral {
 }
 
 model ToolUsage {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  chatbotId String  @db.ObjectId
-  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId      String  @db.ObjectId
+  chatbot        Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  conversationId String? // Para rate limiting y tracking por conversación
 
   toolName     String // create_payment_link, schedule_reminder, etc.
   success      Boolean @default(true)

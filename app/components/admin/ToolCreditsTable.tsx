@@ -7,28 +7,38 @@ interface ToolUsageEntry {
   toolName: string;
   count: number;
   credits: number;
+  costUSD: number;
+  costMXN: number;
+  pricePerUseUSD: number;
   topPlan: string;
 }
 
 interface ToolCreditsTableProps {
   toolUsage: ToolUsageEntry[];
   totalCredits: number;
+  totalCostUSD: number;
+  totalCostMXN: number;
   usersNearLimit: Array<{ plan: string; count: number }>;
 }
 
-export function ToolCreditsTable({ toolUsage, totalCredits, usersNearLimit }: ToolCreditsTableProps) {
-  // Ordenar por credits descendente
-  const sortedUsage = [...toolUsage].sort((a, b) => b.credits - a.credits);
+export function ToolCreditsTable({ toolUsage, totalCredits, totalCostUSD, totalCostMXN, usersNearLimit }: ToolCreditsTableProps) {
+  // Ordenar por costo descendente (más relevante que credits)
+  const sortedUsage = [...toolUsage].sort((a, b) => b.costMXN - a.costMXN);
 
   return (
     <section className="bg-white rounded-lg shadow p-6 mb-8">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Tool Credits Usage (30 días)</h2>
+        <h2 className="text-xl font-semibold">Tool Usage & Costs (30 días)</h2>
         <div className="text-right">
           <div className="text-2xl font-bold text-purple-600">
-            {totalCredits.toLocaleString()}
+            {totalCredits.toLocaleString()} credits
           </div>
-          <div className="text-sm text-gray-500">Credits Totales</div>
+          <div className="text-lg font-semibold text-red-600">
+            ${totalCostMXN.toFixed(2)} MXN
+          </div>
+          <div className="text-xs text-gray-500">
+            (${totalCostUSD.toFixed(4)} USD)
+          </div>
         </div>
       </div>
 
@@ -56,8 +66,9 @@ export function ToolCreditsTable({ toolUsage, totalCredits, usersNearLimit }: To
               <th className="text-left p-2">Herramienta</th>
               <th className="text-right p-2">Usos</th>
               <th className="text-right p-2">Credits</th>
-              <th className="text-right p-2">Costo/Uso</th>
-              <th className="text-left p-2">Plan Principal</th>
+              <th className="text-right p-2">Costo MXN</th>
+              <th className="text-right p-2">$/Uso</th>
+              <th className="text-left p-2">Más usado por</th>
             </tr>
           </thead>
           <tbody>
@@ -66,8 +77,25 @@ export function ToolCreditsTable({ toolUsage, totalCredits, usersNearLimit }: To
                 <td className="p-2 font-mono text-xs">{entry.toolName}</td>
                 <td className="p-2 text-right">{entry.count.toLocaleString()}</td>
                 <td className="p-2 text-right font-semibold">{entry.credits.toLocaleString()}</td>
-                <td className="p-2 text-right text-gray-600">
-                  {(entry.credits / entry.count).toFixed(1)}
+                <td className="p-2 text-right">
+                  {entry.costMXN > 0 ? (
+                    <div>
+                      <div className="font-bold text-red-600">${entry.costMXN.toFixed(2)}</div>
+                      <div className="text-xs text-gray-500">({entry.count} × ${(entry.pricePerUseUSD * 20).toFixed(1)})</div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
+                <td className="p-2 text-right text-gray-600 text-xs">
+                  {entry.pricePerUseUSD > 0 ? (
+                    <div>
+                      <div>${(entry.pricePerUseUSD * 20).toFixed(1)} MXN</div>
+                      <div className="text-gray-400">${entry.pricePerUseUSD.toFixed(4)} USD</div>
+                    </div>
+                  ) : (
+                    'Gratis'
+                  )}
                 </td>
                 <td className="p-2">
                   <span
@@ -88,7 +116,7 @@ export function ToolCreditsTable({ toolUsage, totalCredits, usersNearLimit }: To
             ))}
             {toolUsage.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-4 text-center text-gray-500">
+                <td colSpan={6} className="p-4 text-center text-gray-500">
                   No hay datos de uso de herramientas
                 </td>
               </tr>
@@ -102,7 +130,10 @@ export function ToolCreditsTable({ toolUsage, totalCredits, usersNearLimit }: To
                   {sortedUsage.reduce((sum, e) => sum + e.count, 0).toLocaleString()}
                 </td>
                 <td className="p-2 text-right">{totalCredits.toLocaleString()}</td>
-                <td className="p-2 text-right" colSpan={2}>
+                <td className="p-2 text-right text-red-600">
+                  ${totalCostMXN.toFixed(2)}
+                </td>
+                <td className="p-2 text-right text-xs text-gray-600" colSpan={2}>
                   {sortedUsage.length} herramientas activas
                 </td>
               </tr>

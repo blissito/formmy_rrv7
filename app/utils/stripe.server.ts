@@ -146,11 +146,18 @@ export const createCheckoutSessionURL = async ({
   origin,
   coupon,
   price, // anual by default
+  priceData, // custom price data (para precios custom sin crear price ID)
 }: {
   origin: string;
   coupon?: string;
   user: User | null;
   price?: string;
+  priceData?: {
+    currency: string;
+    unit_amount: number;
+    recurring: { interval: 'month' | 'year' };
+    product_data: { name: string; description?: string };
+  };
 }) => {
   const isDevelopment = process.env.NODE_ENV === "development";
   const DOMAIN = origin;
@@ -164,15 +171,14 @@ export const createCheckoutSessionURL = async ({
     ? "price_1OinFxDtYmGT70YtW9UbUdpM"
     : "price_1OgF7RDtYmGT70YtJB3kRl9T"; // prod
 
+  const lineItem: any = priceData
+    ? { price_data: priceData, quantity: 1 }
+    : { price: price || ANUAL_PRICE, quantity: 1 };
+
   const sessionConfig: any = {
     mode: "subscription",
     success_url: `${DOMAIN}/profile?success=1`,
-    line_items: [
-      {
-        price: price || ANUAL_PRICE,
-        quantity: 1,
-      },
-    ],
+    line_items: [lineItem],
   };
 
   if (user) {

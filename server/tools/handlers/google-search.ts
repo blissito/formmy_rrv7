@@ -148,7 +148,7 @@ class GoogleCustomSearchService {
  * FREE: Sin acceso post-trial (incentiva upgrade)
  * STARTER: $149/mes → valor tangible, cumple promesa del plan
  * PRO: $499/mes → 2.5x más búsquedas que STARTER
- * ENTERPRISE: $1,499/mes → casi ilimitado para uso profesional
+ * ENTERPRISE: $2,499/mes → casi ilimitado para uso profesional
  */
 const SEARCH_LIMITS = {
   ANONYMOUS: 2,      // Suficiente para demo, previene abuso | Costo: $0.01 USD

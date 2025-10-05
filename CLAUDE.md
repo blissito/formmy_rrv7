@@ -138,7 +138,7 @@ interface ToolResponse { success, message, data? }
 ### Planes (MXN/mes)
 - **Free**: Trial 60 días | **Starter**: $149 (2 chatbots, 50 conv, 200 credits) `price_1S5AqXDtYmGT70YtepLAzwk4`
 - **Pro**: $499 (10 chatbots, 250 conv, 1000 credits) `price_1S5CqADtYmGT70YtTZUtJOiS`
-- **Enterprise**: $1,499 (∞ chatbots, 1000 conv, 5000 credits) `price_1S5Cm2DtYmGT70YtwzUlp99P`
+- **Enterprise**: $2,499 (∞ chatbots, 1000 conv, 5000 credits) - Usa `price_data` custom (sin price ID)
 
 **Tool Credits**: Básicas 1, Intermedias 2-3, Avanzadas 4-6 | PRO activo ~305/mes
 **Proyección Año 1** (150 clientes): $640K MXN → $610K profit (~$34K USD)

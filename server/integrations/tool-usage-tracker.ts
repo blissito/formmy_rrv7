@@ -2,6 +2,7 @@ import { db } from "~/utils/db.server";
 
 export interface ToolUsageData {
   chatbotId: string;
+  conversationId?: string;
   toolName: string;
   success: boolean;
   errorMessage?: string;
@@ -19,6 +20,7 @@ export class ToolUsageTracker {
       const usage = await db.toolUsage.create({
         data: {
           chatbotId: data.chatbotId,
+          conversationId: data.conversationId,
           toolName: data.toolName,
           success: data.success,
           errorMessage: data.errorMessage,
