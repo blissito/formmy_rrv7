@@ -2,8 +2,10 @@ import { useEffect } from "react";
 
 export default () => {
   useEffect(() => {
-    const script = document.createElement("script");
-    script.innerText = `
+    // Solo cargar Hotjar en producción (HTTPS)
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+      const script = document.createElement("script");
+      script.innerText = `
         (function(h,o,t,j,a,r){
             h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
             h._hjSettings={hjid:3688898,hjsv:6};
@@ -13,6 +15,7 @@ export default () => {
             a.appendChild(r);
         })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
             `;
-    document.head.appendChild(script);
+      document.head.appendChild(script);
+    }
   }, []);
 };

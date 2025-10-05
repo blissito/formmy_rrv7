@@ -48,20 +48,9 @@ export const ChipTabs = ({
 export const useChipTabs = (initial: string = "", context?: string) => {
   // Crear una clave única para localStorage usando el contexto (ej: chatbotId)
   const storageKey = context ? `activeTab_${context}` : 'activeTab_default';
-  
-  // Función para obtener el tab desde localStorage
-  const getStoredTab = (): string => {
-    if (typeof window !== 'undefined') {
-      try {
-        return localStorage.getItem(storageKey) || initial;
-      } catch {
-        return initial;
-      }
-    }
-    return initial;
-  };
 
-  const [currentTab, set] = useState(getStoredTab);
+  // Siempre inicializar con 'initial' para evitar hydration mismatch
+  const [currentTab, set] = useState(initial);
 
   // Sincronizar con localStorage cuando cambie el tab
   const setCurrentTab = (val: string) => {
@@ -77,13 +66,19 @@ export const useChipTabs = (initial: string = "", context?: string) => {
 
   const catchCurrentTab = (val: string) => setCurrentTab(val);
 
-  // Cargar desde localStorage al montar el componente
+  // Cargar desde localStorage DESPUÉS de la hidratación
   useEffect(() => {
-    const stored = getStoredTab();
-    if (stored !== currentTab) {
-      set(stored);
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored && stored !== currentTab) {
+          set(stored);
+        }
+      } catch {
+        // Ignorar errores de localStorage
+      }
     }
-  }, [context]); // Re-ejecutar si cambia el contexto
+  }, [storageKey]); // Re-ejecutar si cambia el contexto
 
   return {
     currentTab,

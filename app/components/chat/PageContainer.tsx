@@ -523,54 +523,32 @@ export const EditionPair = ({
     setAvatarFile,
   };
 
-  let content;
-  let preview;
-
-  if (currentTab === "Preview") {
-    return (
-      <PreviewContext.Provider value={contextValue}>
-        <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
-          <section className="col-span-12 md:col-span-4">
-            <PreviewForm chatbot={chatbot} user={user} />
-          </section>
-          <section className="col-span-12 md:col-span-8">
-            <ChatPreview
-              chatbot={{
-                ...chatbot,
-                name,
-                primaryColor,
-                welcomeMessage,
-                goodbyeMessage,
-                avatarUrl,
-                aiModel: selectedModel,
-                temperature,
-                instructions,
-                personality: selectedAgent,
-              }}
-            />
-          </section>
-        </article>
-      </PreviewContext.Provider>
-    );
-  }
-
-  switch (currentTab) {
-    case "Conversaciones":
-      content = <Conversations chatbot={chatbot} user={user} />;
-      preview = (
-        <ConversationsPreview conversation={undefined} chatbot={chatbot} />
-      ); // No preview for conversations tab
-      return (
-        <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
-          <section className="col-span-12 md:col-span-4">{content}</section>
-          {preview && (
-            <section className="col-span-12 md:col-span-8">{preview}</section>
-          )}
-        </article>
-      );
-    default:
-      return null;
-  }
+  // EditionPair solo se usa para el tab Preview
+  return (
+    <PreviewContext.Provider value={contextValue}>
+      <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
+        <section className="col-span-12 md:col-span-4">
+          <PreviewForm chatbot={chatbot} user={user} />
+        </section>
+        <section className="col-span-12 md:col-span-8">
+          <ChatPreview
+            chatbot={{
+              ...chatbot,
+              name,
+              primaryColor,
+              welcomeMessage,
+              goodbyeMessage,
+              avatarUrl,
+              aiModel: selectedModel,
+              temperature,
+              instructions,
+              personality: selectedAgent,
+            }}
+          />
+        </section>
+      </article>
+    </PreviewContext.Provider>
+  );
 };
 
 export const TabSelector = ({
