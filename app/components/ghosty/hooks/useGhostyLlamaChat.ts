@@ -154,74 +154,227 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
     return stateMessages[state];
   };
 
-  const generateFollowUpSuggestions = (message: GhostyLlamaMessage): string[] => {
+  const generateFollowUpSuggestions = (message: GhostyLlamaMessage, availableTools: string[] = []): string[] => {
     const suggestions: string[] = [];
     const content = message.content.toLowerCase();
+    const toolsUsed = message.toolsUsed || [];
 
-    // Analizar el contenido específico para sugerencias contextuales
-    if (message.toolsUsed?.includes('query_chatbots')) {
-      // Si menciona nombres específicos de chatbots, preguntar por ellos
-      if (content.includes('activo') || content.includes('inactivo')) {
-        suggestions.push('¿Puedes activar/desactivar algún chatbot específico?');
+    // 🛡️ Helper para verificar si una herramienta está disponible
+    const hasToolAccess = (toolName: string) => availableTools.includes(toolName);
+
+    // 🎯 Obtener últimas 3 preguntas del usuario para NO repetir
+    const recentQuestions = messages
+      .filter(m => m.role === 'user')
+      .slice(-3)
+      .map(m => m.content.toLowerCase());
+
+    const isDuplicate = (suggestion: string) => {
+      const lower = suggestion.toLowerCase();
+      return recentQuestions.some(q =>
+        q.includes(lower.substring(0, 20)) || // Primeras 20 chars
+        lower.includes(q.substring(0, 20)) ||
+        (q.includes('quedan') && lower.includes('quedan')) ||
+        (q.includes('plan') && lower.includes('plan'))
+      );
+    };
+
+    // 🎯 Sugerencias INTELIGENTES basadas en contexto real
+
+    // Usage limits - detectar plan específico y sugerir upgrade o acciones
+    if (toolsUsed.includes('get_usage_limits')) {
+      if (content.includes('trial')) {
+        suggestions.push('¿Qué obtengo si cambio a STARTER?');
+        suggestions.push('¿Cuánto cuesta el plan PRO?');
+      } else if (content.includes('free')) {
+        suggestions.push('Activa mi trial de 365 días');
+        suggestions.push('¿Qué planes tienen chatbots?');
+      } else if (content.includes('starter')) {
+        suggestions.push('Compara STARTER vs PRO');
+        suggestions.push('¿Qué herramientas extra tiene PRO?');
+      } else if (content.includes('pro')) {
+        suggestions.push('¿Vale la pena ENTERPRISE?');
+        suggestions.push('Muéstrame estadísticas de uso');
+      } else if (content.includes('90%') || content.includes('advertencia')) {
+        suggestions.push('¿Cómo upgrade a siguiente plan?');
+        suggestions.push('¿Puedo comprar conversaciones extra?');
       } else {
-        suggestions.push('¿Puedes mostrar estadísticas detalladas de alguno?');
+        suggestions.push('¿Qué herramientas tengo disponibles?');
+        suggestions.push('Muéstrame mis chatbots activos');
       }
     }
 
-    if (message.toolsUsed?.includes('get_chatbot_stats')) {
-      // Basarse en números específicos mencionados
-      if (content.includes('conversaciones') || content.includes('mensajes')) {
-        suggestions.push('¿Cómo puedo aumentar el engagement?');
+    // Chatbot queries - acciones específicas
+    if (toolsUsed.includes('query_chatbots')) {
+      const hasActiveBot = content.match(/\d+\s*(chatbot|activo)/);
+      if (hasActiveBot) {
+        suggestions.push('Estadísticas del chatbot más usado');
+        suggestions.push('¿Cómo optimizar respuestas?');
+      } else if (content.includes('no tienes') || content.includes('sin chatbots')) {
+        suggestions.push('Créame un chatbot de soporte');
+        suggestions.push('¿Qué necesito para crear chatbot?');
+      } else {
+        suggestions.push('Desactiva chatbots con bajo uso');
+        suggestions.push('¿Cómo mejorar tasa de conversión?');
       }
-      if (content.includes('token') || content.includes('costo')) {
-        suggestions.push('¿Cómo optimizo el consumo de tokens?');
+    }
+
+    // Chatbot stats - análisis numérico
+    if (toolsUsed.includes('get_chatbot_stats')) {
+      if (content.match(/\d+\s*conversaciones/)) {
+        suggestions.push('Compara con semana pasada');
+        suggestions.push('¿Cómo aumentar conversaciones?');
+      } else {
+        suggestions.push('Top 3 días con más tráfico');
+        suggestions.push('Exportar reporte PDF');
       }
-      if (!suggestions.length) {
-        suggestions.push('¿Qué periodo anterior quieres comparar?');
+    }
+
+    // Recordatorios - flujo completo (solo si tiene acceso)
+    if (toolsUsed.includes('schedule_reminder')) {
+      if (hasToolAccess('list_reminders')) {
+        suggestions.push('Ver todos mis recordatorios');
+      }
+      if (hasToolAccess('schedule_reminder')) {
+        suggestions.push('Crear otro para la próxima semana');
+      }
+    }
+    if (toolsUsed.includes('list_reminders')) {
+      if (content.includes('no tienes') || content.includes('0')) {
+        if (hasToolAccess('schedule_reminder')) {
+          suggestions.push('Crear recordatorio de seguimiento');
+        }
+      } else {
+        if (hasToolAccess('delete_reminder')) {
+          suggestions.push('Eliminar recordatorios vencidos');
+        }
+        if (hasToolAccess('update_reminder')) {
+          suggestions.push('Reprogramar para mañana');
+        }
       }
     }
 
-    if (message.toolsUsed?.includes('schedule_reminder')) {
-      suggestions.push('¿Puedes listar todos mis recordatorios?');
+    // Pagos - seguimiento (solo si tiene acceso a create_payment_link)
+    if (toolsUsed.includes('create_payment_link')) {
+      suggestions.push('¿Cómo rastrear si pagaron?');
+      if (hasToolAccess('create_payment_link')) {
+        suggestions.push('Crear link de $1,000 MXN');
+      }
     }
 
-    if (message.toolsUsed?.includes('create_payment_link')) {
-      suggestions.push('¿Cómo configurar recordatorio de pago?');
+    // Contactos - CRM flow
+    if (toolsUsed.includes('save_contact_info')) {
+      if (hasToolAccess('schedule_reminder')) {
+        suggestions.push('Crear recordatorio en 3 días');
+      }
+      suggestions.push('¿Cómo exportar contactos?');
     }
 
-    if (message.toolsUsed?.includes('save_contact_info')) {
-      suggestions.push('¿Crear recordatorio de seguimiento?');
+    // Web search - profundizar
+    if (toolsUsed.includes('web_search_google')) {
+      if (hasToolAccess('web_search_google')) {
+        suggestions.push('Busca más info sobre esto');
+      }
+      if (hasToolAccess('get_usage_limits')) {
+        suggestions.push('¿Cuántas búsquedas me quedan?');
+      }
     }
 
-    // Siempre asegurar 2 sugerencias específicas y útiles
+    // RAG Context search
+    if (toolsUsed.includes('search_context')) {
+      suggestions.push('¿Qué más puedo preguntarte?');
+      suggestions.push('Optimiza mi base de conocimiento');
+    }
+
+    // 🔍 Si NO usó tools, sugerencias basadas en intención del usuario
     if (suggestions.length === 0) {
-      // Sugerencias específicas basadas en el contexto real
-      if (content.includes('chatbot')) {
-        suggestions.push('¿Puedes crear un nuevo chatbot?');
-        suggestions.push('¿Cómo mejoro el entrenamiento?');
-      } else if (content.includes('recordatorio') || content.includes('reminder')) {
-        suggestions.push('¿Crear otro recordatorio?');
-        suggestions.push('¿Configurar recordatorio recurrente?');
-      } else if (content.includes('pago') || content.includes('payment')) {
-        suggestions.push('¿Crear link para otro monto?');
-        suggestions.push('¿Configurar descuentos?');
+      // Detectar intención y sugerir siguiente paso
+      if (content.includes('conversaciones') && content.includes('quedan')) {
+        if (hasToolAccess('get_usage_limits')) {
+          suggestions.push('¿Qué herramientas tengo disponibles?');
+        }
+        if (hasToolAccess('query_chatbots')) {
+          suggestions.push('Muestra mis chatbots activos');
+        }
+      } else if (content.includes('plan') && (content.includes('actual') || content.includes('funciona'))) {
+        suggestions.push('Compara mi plan con otros');
+        if (hasToolAccess('get_usage_limits')) {
+          suggestions.push('¿Cuántas conversaciones me quedan?');
+        }
+      } else if (content.includes('chatbot')) {
+        if (hasToolAccess('get_chatbot_stats')) {
+          suggestions.push('Estadísticas de esta semana');
+        }
+        suggestions.push('¿Cómo mejorar conversiones?');
+      } else if (content.includes('recordatorio')) {
+        if (hasToolAccess('list_reminders')) {
+          suggestions.push('Lista recordatorios pendientes');
+        }
+        if (hasToolAccess('schedule_reminder')) {
+          suggestions.push('Crear uno para mañana a las 10am');
+        }
+      } else if (content.includes('pago')) {
+        if (hasToolAccess('create_payment_link')) {
+          suggestions.push('Crear link de pago de $500');
+        }
+        suggestions.push('¿Cómo configurar Stripe?');
+      } else if (content.includes('optimizar') || content.includes('mejorar')) {
+        if (hasToolAccess('get_chatbot_stats')) {
+          suggestions.push('Analiza mis métricas');
+        }
+        suggestions.push('Tips para aumentar conversiones');
       } else {
-        // Fallback con acciones útiles generales
-        suggestions.push('¿Ver mis estadísticas?');
-        suggestions.push('¿Crear un recordatorio?');
+        // Default: acciones útiles y variadas basadas en herramientas disponibles
+        const defaults = [];
+        if (hasToolAccess('get_chatbot_stats')) {
+          defaults.push('Muéstrame estadísticas de la semana');
+        }
+        if (hasToolAccess('query_chatbots')) {
+          defaults.push('Crea un chatbot de ventas');
+        }
+        if (hasToolAccess('get_usage_limits')) {
+          defaults.push('¿Qué herramientas tengo disponibles?');
+        }
+        if (hasToolAccess('schedule_reminder')) {
+          defaults.push('Recordatorio para seguimiento mañana');
+        }
+        defaults.push('Compara mis planes disponibles'); // Siempre disponible
+
+        // Si no hay defaults por herramientas, usar genéricos
+        if (defaults.length === 0) {
+          defaults.push('¿Qué puedes hacer por mí?', '¿Cómo funciona Formmy?');
+        }
+
+        // Rotar defaults para variedad
+        const offset = messages.length % defaults.length;
+        const selectedDefaults = [
+          defaults[offset],
+          defaults[(offset + 1) % defaults.length]
+        ].filter(Boolean);
+
+        suggestions.push(...selectedDefaults);
       }
     }
 
-    // Completar con segunda sugerencia si solo hay una
-    if (suggestions.length === 1) {
-      if (!suggestions[0].includes('estadísticas')) {
-        suggestions.push('¿Ver mis estadísticas?');
-      } else {
-        suggestions.push('¿Crear un recordatorio?');
-      }
+    // 🚫 Filtrar duplicados de conversación reciente
+    const uniqueSuggestions = suggestions.filter(s => !isDuplicate(s));
+
+    // Si todo quedó filtrado, usar fallbacks inteligentes
+    if (uniqueSuggestions.length === 0) {
+      const smartFallbacks = [
+        '¿Qué más puedes ayudarme?',
+        'Muestra resumen de mi cuenta',
+        'Tips para optimizar Formmy',
+        '¿Cómo integrar WhatsApp?'
+      ];
+      uniqueSuggestions.push(...smartFallbacks.slice(0, 2));
     }
 
-    return suggestions.slice(0, 2); // Siempre exactamente 2 suggestions
+    // Asegurar exactamente 2 sugerencias
+    while (uniqueSuggestions.length < 2) {
+      uniqueSuggestions.push('¿Qué otras herramientas tienes?');
+    }
+
+    return uniqueSuggestions.slice(0, 2);
   };
 
   const sendMessage = useCallback(async (content: string) => {
@@ -290,6 +443,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
       let currentContent = '';
       let sources: LlamaSource[] = [];
       let toolsUsed: string[] = [];
+      let availableTools: string[] = [];
       let metadata: any = {};
 
       while (true) {
@@ -384,12 +538,20 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
                   if (parsed.toolsUsed) {
                     toolsUsed = parsed.toolsUsed;
                   }
+                  if (parsed.availableTools) {
+                    availableTools = parsed.availableTools;
+                  }
                   if (parsed.tokens) {
                     metadata.tokensUsed = parsed.tokens;
                   }
                   break;
 
                 case 'done':
+                  // Extraer availableTools del metadata si está disponible
+                  if (parsed.metadata?.availableTools) {
+                    availableTools = parsed.metadata.availableTools;
+                  }
+
                   // Generate follow-up suggestions
                   const finalMessage = {
                     content: currentContent,
@@ -406,7 +568,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
                   const suggestions = generateFollowUpSuggestions({
                     ...assistantMessage,
                     ...finalMessage,
-                  });
+                  }, availableTools);
 
                   updateMessage(assistantMessage.id, {
                     ...finalMessage,

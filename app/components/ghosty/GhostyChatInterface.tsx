@@ -42,6 +42,11 @@ export const GhostyChatInterface = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Compute isProcessing early so it can be used in effects
+  const isProcessing = ['thinking', 'tool-analyzing', 'tool-chatbots', 'tool-stats',
+                      'tool-web-search', 'tool-web-fetch', 'synthesizing', 'streaming']
+                      .includes(currentState);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -51,6 +56,17 @@ export const GhostyChatInterface = ({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Re-focus input after processing completes
+  useEffect(() => {
+    if (!isProcessing) {
+      // Small delay to ensure DOM updates are complete
+      const timeoutId = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isProcessing]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,9 +98,6 @@ export const GhostyChatInterface = ({
     }
   };
 
-  const isProcessing = ['thinking', 'tool-analyzing', 'tool-chatbots', 'tool-stats',
-                      'tool-web-search', 'tool-web-fetch', 'synthesizing', 'streaming']
-                      .includes(currentState);
   const hasMessages = messages.length > 0;
 
   // Map advanced states to simple display messages

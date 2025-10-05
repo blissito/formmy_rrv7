@@ -275,6 +275,53 @@ export const createGetChatbotStatsTool = (context: ToolContext) => tool(
   }
 );
 
+// ===== REPORT GENERATION TOOLS =====
+
+export const createGenerateChatbotReportTool = (context: ToolContext) => tool(
+  async ({ format, includeMetrics }) => {
+    const { handleGenerateChatbotReport } = await import('./handlers/generate-chatbot-report');
+    const result = await handleGenerateChatbotReport({ format, includeMetrics }, context);
+
+    // Si fue exitoso, retornar estructura con datos de descarga
+    if (result.success && result.data) {
+      return `✅ Reporte generado exitosamente
+
+📊 **Detalles:**
+- Chatbots analizados: ${result.data.chatbotsCount}
+- Total conversaciones: ${result.data.totalConversations}
+- Total mensajes: ${result.data.totalMessages}
+- Tamaño archivo: ${result.data.size}
+
+📥 **Descarga:** ${result.data.downloadUrl}
+⏱️ **Expira en:** ${result.data.expiresIn}
+
+Haz clic en el enlace de descarga para obtener tu reporte en formato PDF.`;
+    }
+
+    return result.message;
+  },
+  {
+    name: "generate_chatbot_report",
+    description: `Genera un reporte PDF profesional con todos los chatbots del usuario, incluyendo métricas detalladas.
+
+El reporte incluye:
+- Resumen ejecutivo con totales (chatbots, conversaciones, mensajes)
+- Tabla detallada de cada chatbot con nombre, número de conversaciones y fecha de creación
+- Métricas agregadas y promedios
+- Formato profesional listo para presentación
+
+Útil cuando el usuario pide:
+- "dame un reporte de mis chatbots"
+- "genera un PDF con mis estadísticas"
+- "quiero ver un resumen de mis bots"
+- "exporta mis chatbots a PDF"`,
+    parameters: z.object({
+      format: z.enum(['pdf']).optional().default('pdf').describe("Formato del reporte (actualmente solo PDF)"),
+      includeMetrics: z.boolean().optional().default(true).describe("Incluir métricas agregadas (totales, promedios)")
+    })
+  }
+);
+
 /**
  * Función para obtener tools según plan del usuario con context injection
  * Plan-aware tool selection funcional
@@ -340,6 +387,13 @@ export const getToolsForPlan = (
     );
   }
 
+  // Report generation tools - SOLO para Ghosty (reportes privados del usuario)
+  if (context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+    tools.push(
+      createGenerateChatbotReportTool(context)
+    );
+  }
+
   return tools;
 };
 
@@ -359,5 +413,6 @@ export const getAllToolNames = () => [
   'get_chatbot_stats',
   'get_current_datetime',
   'web_search_google',
-  'search_context'
+  'search_context',
+  'generate_chatbot_report'
 ];

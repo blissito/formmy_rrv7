@@ -340,22 +340,6 @@ export const GhostyMessageComponent = ({
             )}
             <span>{showCopied ? "Copiado" : "Copiar"}</span>
           </button>
-
-          {/* Regenerate button (only for assistant) */}
-          {!isUser && onRegenerate && !isStreaming && (
-            <button
-              onClick={handleRegenerate}
-              className={cn(
-                "text-xs px-2.5 py-1 rounded-md text-irongray hover:text-dark",
-                "hover:bg-brand-100/40 transition-all duration-200 flex items-center gap-1",
-                "border border-outlines/50 hover:border-outlines/70"
-              )}
-              aria-label="Regenerar respuesta"
-            >
-              <span className="text-xs">🔄</span>
-              <span>Regenerar</span>
-            </button>
-          )}
         </div>
 
         {/* Follow-up Suggestions */}

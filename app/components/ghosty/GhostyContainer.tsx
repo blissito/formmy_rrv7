@@ -104,7 +104,6 @@ export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
       }));
       setInitialMessages(convertedMessages);
       setIsLoaded(true);
-      console.log('Loaded messages from storage:', convertedMessages.length);
     }
   }, [isClient, loadFromStorage]);
 

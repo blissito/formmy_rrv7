@@ -14,6 +14,7 @@ export const PLAN_LIMITS = {
     availableModels: [], // Sin acceso a modelos
     showBranding: true,
     trialDays: 0, // FREE no tiene trial propio
+    toolCreditsPerMonth: 0, // Sin créditos de herramientas
   },
   [Plans.TRIAL]: {
     maxChatbots: 10, // Todas las funcionalidades PRO
@@ -29,6 +30,7 @@ export const PLAN_LIMITS = {
     ], // Todos los modelos STARTER + PRO disponibles
     showBranding: false, // Sin branding como PRO
     trialDays: 365, // 365 días de trial para revisión de Meta App (Sept-Oct 2025)
+    toolCreditsPerMonth: 1000, // Créditos generosos como PRO
   },
   [Plans.STARTER]: {
     maxChatbots: 2,
@@ -42,6 +44,7 @@ export const PLAN_LIMITS = {
     ], // Solo GPT-3.5 Turbo para STARTER
     showBranding: true,
     trialDays: 0,
+    toolCreditsPerMonth: 200, // 200 créditos mensuales según CLAUDE.md
   },
   [Plans.PRO]: {
     maxChatbots: 10,
@@ -57,6 +60,7 @@ export const PLAN_LIMITS = {
     ], // GPT-5 Nano + GPT-3.5 Turbo + Claude 3 Haiku
     showBranding: false,
     trialDays: 0,
+    toolCreditsPerMonth: 1000, // 1000 créditos mensuales según CLAUDE.md
   },
   [Plans.ENTERPRISE]: {
     maxChatbots: Infinity,
@@ -68,6 +72,7 @@ export const PLAN_LIMITS = {
     availableModels: ALL_MODELS, // Acceso a todos los modelos incluyendo Sonnet
     showBranding: false,
     trialDays: 0,
+    toolCreditsPerMonth: 5000, // 5000 créditos mensuales según CLAUDE.md
   },
 };
 
