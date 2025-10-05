@@ -7,8 +7,6 @@
  * 3. NO redirige al usuario a "buscar en el sitio web"
  */
 
-import { EventSourceParserStream } from 'eventsource-parser/stream';
-
 const API_URL = process.env.API_URL || 'http://localhost:3001';
 const DEV_TOKEN = process.env.DEVELOPMENT_TOKEN || 'FORMMY_DEV_TOKEN_2025';
 
@@ -61,32 +59,37 @@ async function testGhostyRAG(testCase: typeof testCases[0]) {
   let toolCalls: string[] = [];
   let searchQueries: string[] = [];
 
-  const stream = response.body!
-    .pipeThrough(new TextDecoderStream())
-    .pipeThrough(new EventSourceParserStream());
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
 
-  for await (const event of stream) {
-    if (event.type === 'event' && event.data) {
-      try {
-        const data = JSON.parse(event.data);
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
 
-        if (data.type === 'tool-start') {
-          console.log(`\n🔧 Herramienta ejecutada: ${data.tool}`);
-          toolCalls.push(data.tool);
+    buffer += decoder.decode(value, { stream: true });
 
-          if (data.tool === 'search_context') {
-            // No tenemos acceso directo a los parámetros aquí,
-            // pero podemos inferir que se está buscando
-            searchQueries.push(data.tool);
+    // Procesar líneas completas
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || ''; // Guardar línea incompleta
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const data = JSON.parse(line.slice(6));
+
+          if (data.type === 'tool-start') {
+            console.log(`\n🔧 Herramienta ejecutada: ${data.tool}`);
+            toolCalls.push(data.tool);
+          } else if (data.type === 'chunk') {
+            fullResponse += data.content;
+            process.stdout.write(data.content);
+          } else if (data.type === 'done') {
+            console.log(`\n\n📊 Metadata: ${JSON.stringify(data.metadata, null, 2)}`);
           }
-        } else if (data.type === 'chunk') {
-          fullResponse += data.content;
-          process.stdout.write(data.content);
-        } else if (data.type === 'done') {
-          console.log(`\n\n📊 Metadata: ${JSON.stringify(data.metadata, null, 2)}`);
+        } catch (e) {
+          // Ignorar errores de parsing
         }
-      } catch (e) {
-        // Ignorar errores de parsing
       }
     }
   }
