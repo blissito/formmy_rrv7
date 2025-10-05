@@ -11,6 +11,7 @@ export interface ToolContext {
   userId: string;
   userPlan: string;
   chatbotId: string | null;
+  conversationId?: string; // Para rate limiting y tracking
   message: string;
   integrations: Record<string, any>;
   isGhosty?: boolean; // Flag para distinguir Ghosty de chatbots públicos
@@ -183,36 +184,56 @@ export const createContextSearchTool = (context: ToolContext) => tool(
   },
   {
     name: "search_context",
-    description: `Herramienta de búsqueda semántica en la base de conocimiento del chatbot.
+    description: `🔍 HERRAMIENTA PRINCIPAL - Búsqueda semántica en la base de conocimiento del chatbot.
 
-CUÁNDO USAR:
-- Usuario pregunta sobre productos, precios, servicios, políticas, documentación
-- Necesitas datos específicos que podrían estar en archivos subidos al chatbot
-- Usuario solicita información que NO conoces de memoria
-- Antes de decir "no sé" sobre información del negocio
+⚠️ REGLA CRÍTICA: Esta herramienta debe ser tu PRIMERA OPCIÓN para responder preguntas sobre el negocio.
 
-ESTRATEGIA AGÉNTICA (MUY IMPORTANTE):
-1. Descompón preguntas complejas en consultas específicas separadas
-2. Ejecuta MÚLTIPLES búsquedas si la pregunta tiene varios temas
-3. Ajusta tu query y reintenta si los primeros resultados no son relevantes
-4. Combina resultados de varias búsquedas para responder completamente
+📋 USAR OBLIGATORIAMENTE cuando el usuario pregunta sobre:
+- Productos, servicios, características, actualizaciones, roadmap
+- Precios, planes, costos, políticas de pago
+- Documentación, tutoriales, guías, FAQs
+- Políticas de la empresa, términos, condiciones
+- Información del equipo, empresa, historia
+- CUALQUIER dato específico del negocio
 
-EJEMPLOS DE USO AGÉNTICO:
-- User: "¿Cuánto cuestan los planes y qué formas de pago aceptan?"
-  → Acción 1: search_context("precios planes suscripción")
-  → Acción 2: search_context("métodos formas de pago")
-  → Combinar ambos en respuesta coherente
+🚫 PROHIBIDO responder SIN buscar sobre estos temas. Si no buscas, fallas.
 
-- User: "Compara plan Starter vs Pro"
-  → Acción 1: search_context("plan starter características precio")
-  → Acción 2: search_context("plan pro características precio")
-  → Hacer tabla comparativa
+🎯 ESTRATEGIA AGÉNTICA (OBLIGATORIA):
+1. Ejecuta search_context ANTES de formular respuesta
+2. Si pregunta compleja → DIVIDE en sub-preguntas → BUSCA CADA UNA
+3. Si resultados insuficientes → REFORMULA query → BUSCA DE NUEVO
+4. Haz MÍNIMO 2 búsquedas para preguntas multi-tema
+5. Combina resultados para respuesta completa
 
-NO ADIVINES: Si la pregunta requiere datos específicos (precios, fechas, políticas), SIEMPRE busca primero.`,
+📊 EJEMPLOS CORRECTOS:
+✅ User: "características nuevas" → search_context("características nuevas actualizaciones features")
+✅ User: "planes y precios" → search_context("planes") + search_context("precios") → combinar
+✅ User: "compara X vs Y" → search_context("X") + search_context("Y") → tabla comparativa
+
+❌ ERRORES CRÍTICOS A EVITAR:
+- No buscar antes de responder sobre el negocio
+- Decir "no tengo información" sin intentar buscar
+- Una sola búsqueda genérica para pregunta compleja
+- Redirigir al usuario a "buscar en el sitio" en lugar de buscar tú mismo`,
     parameters: z.object({
-      query: z.string().describe("Consulta específica para buscar. Sé preciso y usa keywords relevantes del tema."),
-      topK: z.number().optional().default(5).describe("Número de resultados (1-10). Usa 3 para búsquedas específicas, 5-7 para temas amplios, 10 para investigación exhaustiva.")
+      query: z.string().describe("Consulta específica y precisa. Usa keywords relevantes. Ejemplo: 'características nuevas actualizaciones 2025' mejor que solo 'novedades'"),
+      topK: z.number().optional().default(5).describe("Resultados a obtener (1-10). Usa 3 para búsqueda específica, 5-7 para tema amplio, 10 para investigación exhaustiva.")
     })
+  }
+);
+
+// ===== USAGE LIMITS TOOLS =====
+
+export const createGetUsageLimitsTool = (context: ToolContext) => tool(
+  async () => {
+    const { getUsageLimitsHandler } = await import('./handlers/usage-limits');
+    const result = await getUsageLimitsHandler({}, context);
+    return result.message;
+  },
+  {
+    name: "get_usage_limits",
+    description: "Consultar límites del plan y uso actual (conversaciones restantes, créditos, fecha de reset). Útil cuando el usuario pregunta cuántas conversaciones le quedan, cuál es su límite mensual, o cuándo se reinicia su contador.",
+    parameters: z.object({})
   }
 );
 
@@ -305,6 +326,11 @@ export const getToolsForPlan = (
     tools.push(createContextSearchTool(context));
   }
 
+  // Usage Limits - SOLO para Ghosty (información del plan del usuario)
+  if (context.isGhosty && ['FREE', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+    tools.push(createGetUsageLimitsTool(context));
+  }
+
   // Chatbot tools - SOLO para Ghosty (asistente interno)
   // ❌ Chatbots públicos NO deben tener acceso a estadísticas privadas
   if (context.isGhosty && ['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
@@ -328,6 +354,7 @@ export const getAllToolNames = () => [
   'delete_reminder',
   'create_payment_link',
   'save_contact_info',
+  'get_usage_limits',
   'query_chatbots',
   'get_chatbot_stats',
   'get_current_datetime',

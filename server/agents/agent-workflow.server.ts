@@ -99,28 +99,44 @@ Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu 
   if (hasContextSearch) {
     basePrompt += `
 
-IMPORTANTE - BASE DE CONOCIMIENTO:
-Tienes acceso a una base de conocimiento via la herramienta search_context.
+🔍 REGLA CRÍTICA - BÚSQUEDA OBLIGATORIA:
+Tienes acceso a search_context, tu base de conocimiento principal.
 
-REGLAS CRÍTICAS:
-1. USA search_context SIEMPRE que el usuario pregunte por información específica del negocio
-2. NUNCA adivines precios, características de productos, políticas o fechas - BÚSCALAS
-3. Para preguntas complejas, ejecuta MÚLTIPLES búsquedas (descompón en sub-consultas)
-4. Si la primera búsqueda no es suficiente, ajusta tu query y reintenta
-5. CITA las fuentes cuando uses información de documentos (ej: "Según [nombre archivo]...")
-6. Si después de buscar NO encuentras algo, dilo honestamente
+⛔ PROHIBICIONES ABSOLUTAS:
+1. NUNCA respondas preguntas sobre el negocio sin buscar PRIMERO
+2. NUNCA digas "no sé" o "no tengo información" sin intentar search_context
+3. NUNCA inventes o adivines datos específicos (precios, fechas, políticas, features)
+4. NUNCA redirijas al usuario a "buscar en el sitio web" - ESA ES TU TAREA
 
-EJEMPLOS DE COMPORTAMIENTO CORRECTO:
-- User pregunta precio → search_context("precio [producto]") ANTES de responder
-- User compara productos → 2 búsquedas separadas, luego comparar resultados
-- User pregunta compleja → dividir en 2-3 búsquedas específicas
+✅ PROTOCOLO OBLIGATORIO:
+Cuando el usuario pregunta CUALQUIER cosa sobre:
+- Productos, servicios, características, actualizaciones
+- Precios, planes, políticas, términos
+- Información del negocio, empresa, equipo
+- Documentación, tutoriales, guías
 
-Tu trabajo es ser EXHAUSTIVO usando la base de conocimiento. No te limites a una sola búsqueda.`;
+DEBES seguir estos pasos EN ORDEN:
+1. EJECUTAR search_context con query específica
+2. Si resultados insuficientes → AJUSTAR query y BUSCAR DE NUEVO (mínimo 2 intentos)
+3. Para preguntas multi-tema → MÚLTIPLES búsquedas separadas
+4. SOLO después de buscar exhaustivamente, si NO hay resultados → decir honestamente "Busqué pero no encontré información sobre [tema]"
+
+📊 EJEMPLOS DE COMPORTAMIENTO OBLIGATORIO:
+❌ MAL: "No tengo información sobre características nuevas"
+✅ BIEN: search_context("características nuevas actualizaciones recientes") → responder
+
+❌ MAL: "No sé los precios, revisa el sitio web"
+✅ BIEN: search_context("precios planes") → si no encuentra → search_context("costos suscripción") → responder
+
+❌ MAL: Una sola búsqueda genérica
+✅ BIEN: search_context("plan starter") → search_context("plan pro") → comparar
+
+🎯 Tu prioridad #1 es USAR la base de conocimiento antes de responder. Sé insistente.`;
   }
 
   // 🛡️ Agregar restricciones de seguridad para web_search_google
   if (hasWebSearch) {
-    const businessDomain = config.businessDomain || config.name || "este negocio";
+    const businessDomain = config.name || "este negocio";
     basePrompt += `
 
 🛡️ RESTRICCIONES CRÍTICAS PARA web_search_google:
@@ -232,6 +248,30 @@ async function createSingleAgent(
 }
 
 /**
+ * Definición de créditos por herramienta según pricing CLAUDE.md
+ */
+const TOOL_CREDITS: Record<string, number> = {
+  // Básicas (1 crédito)
+  'save_contact_info': 1,
+  'get_current_datetime': 1,
+
+  // Intermedias (2-3 créditos)
+  'schedule_reminder': 2,
+  'list_reminders': 2,
+  'update_reminder': 2,
+  'cancel_reminder': 2,
+  'delete_reminder': 2,
+  'web_search_google': 3,
+  'search_context': 2,
+
+  // Avanzadas (4-6 créditos)
+  'create_payment_link': 4,
+  'get_usage_limits': 2,
+  'query_chatbots': 3,
+  'get_chatbot_stats': 5,
+};
+
+/**
  * Stream de un agente con tracking de eventos
  * El historial conversacional ya está en el agente via memoria (memory)
  *
@@ -243,7 +283,7 @@ async function createSingleAgent(
  * - Máximo 1000 chunks
  * - Detección de contenido corrupto
  */
-async function* streamSingleAgent(agentInstance: any, message: string) {
+async function* streamSingleAgent(agentInstance: any, message: string, availableTools: string[] = []) {
   const MAX_CHUNKS = 1000;
   const MAX_DURATION_MS = 45000; // 45 segundos
   const startTime = Date.now();
@@ -256,6 +296,8 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
   let toolsUsed: string[] = [];
   let chunkCount = 0;
   let totalChars = 0;
+  let totalTokens = 0; // Tracking de tokens
+  let creditsUsed = 0; // Tracking de créditos
 
   try {
     for await (const event of events as any) {
@@ -287,6 +329,11 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
         toolsExecuted++;
         const toolName = event.data.toolName || "unknown_tool";
         toolsUsed.push(toolName);
+
+        // Calcular créditos consumidos por esta tool
+        const toolCredits = TOOL_CREDITS[toolName] || 1; // Default 1 crédito
+        creditsUsed += toolCredits;
+
         yield {
           type: "tool-start",
           tool: toolName,
@@ -299,6 +346,9 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
         if (event.data.delta) {
           chunkCount++;
           totalChars += event.data.delta.length;
+
+          // Estimar tokens basado en caracteres (regla aproximada: ~4 chars por token)
+          totalTokens += Math.ceil(event.data.delta.length / 4);
 
           // 🛡️ PROTECCIÓN 3: Detectar contenido corrupto (múltiples scripts)
           const hasMultipleScripts =
@@ -346,6 +396,16 @@ async function* streamSingleAgent(agentInstance: any, message: string) {
     metadata: {
       toolsExecuted,
       toolsUsed,
+      availableTools, // 🔧 Lista de herramientas disponibles para el usuario
+      tokensUsed: totalTokens,
+      creditsUsed,
+      estimatedCost: {
+        tokens: totalTokens,
+        credits: creditsUsed,
+        // Estimación aproximada: GPT-4o-mini = $0.15 input + $0.60 output por 1M tokens
+        // Asumiendo 50/50 input/output para simplificar
+        usdCost: ((totalTokens / 1_000_000) * 0.375).toFixed(6)
+      }
     },
   };
 }
@@ -379,8 +439,21 @@ export const streamAgentWorkflow = async function* (
     // Single agent con todas las tools + memoria conversacional
     const agentInstance = await createSingleAgent(context, conversationHistory);
 
-    // Stream con memoria ya configurada en el agente
-    yield* streamSingleAgent(agentInstance, message);
+    // 🔧 Obtener lista de herramientas disponibles para el usuario
+    const toolContext: ToolContext = {
+      userId: context.userId,
+      userPlan: context.userPlan,
+      chatbotId: context.chatbotId,
+      conversationId: context.agentContext?.conversationId,
+      message: context.message,
+      integrations: context.integrations,
+      isGhosty: context.chatbotId === "ghosty-main",
+    };
+    const availableToolsObjects = getToolsForPlan(context.userPlan, context.integrations, toolContext);
+    const availableTools = availableToolsObjects.map((tool: any) => tool.metadata?.name || 'unknown');
+
+    // Stream con memoria ya configurada en el agente + lista de tools disponibles
+    yield* streamSingleAgent(agentInstance, message, availableTools);
   } catch (error) {
     console.error("❌ AgentWorkflow error:", error);
     yield {

@@ -9,6 +9,22 @@
 
 **Pattern**: Usar `agent()`, `runStream()`, `agentStreamEvent`, `agentToolCallEvent` - NO lógica custom
 
+### 🌊 Streaming y Generación de Archivos
+**REGLA ABSOLUTA**: 100% streaming SIEMPRE en respuestas de agentes
+- ✅ Archivos generados EN MEMORIA (Buffer) y enviados como descarga directa
+- ✅ Endpoint dedicado `/api/ghosty/download/{reportId}` retorna archivo con headers apropiados
+- ❌ NUNCA escribir al filesystem del servidor (Fly.io es efímero)
+- ❌ NUNCA guardar en S3/storage externo (overhead innecesario)
+- ❌ NUNCA retornar archivos binarios en respuesta streaming
+
+**Pattern para reportes/exports**:
+1. Tool genera archivo en memoria (PDF/Excel/CSV con librerías como `pdfkit`, `exceljs`)
+2. Tool guarda Buffer temporalmente en Redis/memoria con TTL 5min
+3. Tool retorna `{ downloadUrl: "/api/ghosty/download/{id}", expiresIn: "5m" }`
+4. Agent hace streaming de mensaje: "Tu reporte está listo: [link]"
+5. Usuario hace GET al link → descarga directa del Buffer
+6. Cleanup automático después de descarga o timeout
+
 ### 🚫 ANTI-PATTERNS PROHIBIDOS
 **Eliminados del codebase:**
 - ❌ Keyword matching para tool selection (usar `getToolsForPlan()`)
@@ -191,14 +207,18 @@ Agent:
 - Formateo de resultados con fuentes y scores
 - Error handling para índice no configurado
 
-### System Prompt RAG
-El agente recibe instrucciones específicas cuando tiene acceso a `search_context`:
-- Reglas sobre CUÁNDO buscar (preguntas específicas, precios, políticas)
-- Prohibición de adivinar datos que deben buscarse
-- Estrategia de múltiples búsquedas para preguntas complejas
-- Obligación de citar fuentes
+### System Prompt RAG (Actualizado Oct 4)
+El agente recibe **instrucciones ultra-enfáticas** cuando tiene acceso a `search_context`:
 
-Implementado en `/server/agents/agent-workflow.server.ts:72` - `buildSystemPrompt()`
+**🔍 REGLA CRÍTICA - BÚSQUEDA OBLIGATORIA:**
+- ⛔ **Prohibiciones absolutas**: NUNCA responder sin buscar primero, NUNCA decir "no sé" sin intentar search_context, NUNCA redirigir al usuario a "buscar en el sitio web"
+- ✅ **Protocolo obligatorio**: Para CUALQUIER pregunta sobre negocio → EJECUTAR search_context → si insuficiente → AJUSTAR query → BUSCAR DE NUEVO (mínimo 2 intentos)
+- 📊 **Ejemplos explícitos**: Incluye casos ❌ MAL vs ✅ BIEN para reforzar comportamiento
+- 🎯 **Prioridad #1**: USAR base de conocimiento antes de responder
+
+**Mejora crítica**: Prompts anteriores eran débiles ("USA cuando...", "Si no encuentras...") → **Ahora son imperativos absolutos** ("NUNCA", "PROHIBIDO", "DEBES") para forzar uso consistente de RAG.
+
+Implementado en `/server/agents/agent-workflow.server.ts:99-135` y tool description en `/server/tools/index.ts:186-217`
 
 ### Migración de Contextos Legacy
 **Scripts disponibles**:
