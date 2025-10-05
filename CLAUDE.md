@@ -207,18 +207,28 @@ Agent:
 - Formateo de resultados con fuentes y scores
 - Error handling para índice no configurado
 
-### System Prompt RAG (Actualizado Oct 4)
-El agente recibe **instrucciones ultra-enfáticas** cuando tiene acceso a `search_context`:
+### System Prompt RAG (Actualizado Oct 4, v2)
+El agente recibe **instrucciones ultra-enfáticas** con estrategia de cascada y chain-of-thought:
 
-**🔍 REGLA CRÍTICA - BÚSQUEDA OBLIGATORIA:**
-- ⛔ **Prohibiciones absolutas**: NUNCA responder sin buscar primero, NUNCA decir "no sé" sin intentar search_context, NUNCA redirigir al usuario a "buscar en el sitio web"
-- ✅ **Protocolo obligatorio**: Para CUALQUIER pregunta sobre negocio → EJECUTAR search_context → si insuficiente → AJUSTAR query → BUSCAR DE NUEVO (mínimo 2 intentos)
-- 📊 **Ejemplos explícitos**: Incluye casos ❌ MAL vs ✅ BIEN para reforzar comportamiento
-- 🎯 **Prioridad #1**: USAR base de conocimiento antes de responder
+**🔍 PROTOCOLO DE BÚSQUEDA EN CASCADA:**
+1. **PASO 1** - Base de conocimiento (`search_context`): mínimo 2 intentos con queries reformuladas
+2. **PASO 2** - Fallback a web (`web_search_google`): si PASO 1 falla Y pregunta sobre info reciente
+3. **PASO 3** - Último recurso: decir "Busqué en [lugares] pero no encontré..."
 
-**Mejora crítica**: Prompts anteriores eran débiles ("USA cuando...", "Si no encuentras...") → **Ahora son imperativos absolutos** ("NUNCA", "PROHIBIDO", "DEBES") para forzar uso consistente de RAG.
+**⛔ Prohibiciones absolutas**: NUNCA responder sin buscar, NUNCA decir "no sé" sin AGOTAR todas las herramientas
 
-Implementado en `/server/agents/agent-workflow.server.ts:99-135` y tool description en `/server/tools/index.ts:186-217`
+**📊 Chain-of-thought examples**:
+- Incluye razonamiento paso a paso ("🤔 Razonamiento → ✅ Acción correcta")
+- Ejemplo completo: search_context → sin resultados → web_search_google → responder
+- Por qué funciona: Modelos imitan el patrón de razonamiento que ven en ejemplos
+
+**🐛 Bug crítico resuelto (Oct 4)**:
+- Problema: Ghosty no usaba web_search como fallback por conflicto de seguridad
+- Causa: `businessDomain = config.name` ("Ghosty") pero el negocio es "Formmy"
+- Fix: Detectar `if (config.name === 'Ghosty') businessDomain = 'Formmy'`
+- Resultado: Restricciones de seguridad ahora permiten búsquedas sobre el negocio real
+
+Implementado en `/server/agents/agent-workflow.server.ts:99-189` y `/server/tools/index.ts:186-223`
 
 ### Migración de Contextos Legacy
 **Scripts disponibles**:
