@@ -160,7 +160,9 @@ EJEMPLO 2: "¿Cuánto cuestan los planes?"
 
   // 🛡️ Agregar restricciones de seguridad para web_search_google
   if (hasWebSearch) {
-    const businessDomain = config.name || "este negocio";
+    // Detectar dominio de negocio: Si es Ghosty, el negocio es Formmy
+    const businessDomain = config.name === 'Ghosty' ? 'Formmy' : (config.name || "este negocio");
+
     basePrompt += `
 
 🛡️ RESTRICCIONES CRÍTICAS PARA web_search_google:
@@ -171,11 +173,11 @@ REGLAS DE SEGURIDAD (NUNCA VIOLARLAS):
 2. PROHIBIDO buscar: noticias generales, deportes, entretenimiento, política, temas personales, chismes
 3. Si el usuario pide buscar algo off-topic, responde: "Mi búsqueda web está limitada a temas relacionados con ${businessDomain}"
 
-EJEMPLOS DE BÚSQUEDAS VÁLIDAS:
-- "precios de la competencia en [industria]"
-- "horarios de servicio actuales en [ciudad]"
-- "reseñas de [producto específico del negocio]"
-- "tendencias del mercado en [industria]"
+EJEMPLOS DE BÚSQUEDAS VÁLIDAS para ${businessDomain}:
+- "${businessDomain} características nuevas actualizaciones"
+- "${businessDomain} precios planes"
+- "${businessDomain} documentación tutoriales"
+- "comparación ${businessDomain} vs competencia"
 
 EJEMPLOS PROHIBIDOS (NUNCA EJECUTAR):
 - ❌ "quién ganó el partido de fútbol"

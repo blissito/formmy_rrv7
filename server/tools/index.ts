@@ -302,19 +302,26 @@ Haz clic en el enlace de descarga para obtener tu reporte en formato PDF.`;
   },
   {
     name: "generate_chatbot_report",
-    description: `Genera un reporte PDF profesional con todos los chatbots del usuario, incluyendo métricas detalladas.
+    description: `🎯 USA ESTA TOOL para generar y DESCARGAR un archivo PDF profesional.
 
-El reporte incluye:
+⚠️ DIFERENCIA CLAVE:
+- Esta tool → Genera ARCHIVO PDF descargable con link
+- get_chatbot_stats → Solo retorna TEXTO con estadísticas (no archivo)
+
+El PDF incluye:
 - Resumen ejecutivo con totales (chatbots, conversaciones, mensajes)
-- Tabla detallada de cada chatbot con nombre, número de conversaciones y fecha de creación
+- Tabla detallada de cada chatbot con nombre, conversaciones y fecha de creación
 - Métricas agregadas y promedios
 - Formato profesional listo para presentación
 
-Útil cuando el usuario pide:
-- "dame un reporte de mis chatbots"
-- "genera un PDF con mis estadísticas"
-- "quiero ver un resumen de mis bots"
-- "exporta mis chatbots a PDF"`,
+🔍 USA cuando el usuario solicita explícitamente:
+- "genera/crea un PDF"
+- "quiero descargar un reporte"
+- "exporta a PDF"
+- "archivo con mis chatbots"
+- "documento/reporte descargable"
+
+❌ NO USAR si solo piden ver estadísticas sin mencionar archivo/PDF/descarga`,
     parameters: z.object({
       format: z.enum(['pdf']).optional().default('pdf').describe("Formato del reporte (actualmente solo PDF)"),
       includeMetrics: z.boolean().optional().default(true).describe("Incluir métricas agregadas (totales, promedios)")
