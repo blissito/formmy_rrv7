@@ -112,36 +112,48 @@ Tienes acceso a search_context (base de conocimiento)${hasWebSearch ? ' y web_se
 Cuando el usuario pregunta sobre el negocio:
 
 PASO 1 - Base de conocimiento (search_context):
-→ EJECUTAR search_context con query específica
+→ EJECUTAR search_context con query específica INMEDIATAMENTE
 → Si resultados insuficientes → AJUSTAR query → BUSCAR DE NUEVO (mínimo 2 intentos)
 → Para preguntas multi-tema → MÚLTIPLES búsquedas separadas
 ${hasWebSearch ? `
-PASO 2 - Fallback a Web (solo si PASO 1 falla):
+PASO 2 - Fallback a Web (AUTOMÁTICO si PASO 1 falla):
+⚠️ NO PREGUNTES al usuario si quiere que busques - HAZLO DIRECTAMENTE
 → Si search_context NO tiene resultados después de 2+ intentos
 → Y la pregunta es sobre novedades/actualizaciones/información reciente
-→ EJECUTAR web_search_google con query optimizada (ej: "Formmy características nuevas 2025")
-→ Combinar resultados web con contexto del negocio
+→ EJECUTAR web_search_google INMEDIATAMENTE con query optimizada
+→ Query debe incluir: "${config.name === 'Ghosty' ? 'Formmy' : config.name} [tema] 2025"
+→ Combinar resultados web con contexto del negocio en tu respuesta
 ` : ''}
 PASO 3 - Último recurso:
 → SOLO si ambas búsquedas fallan → decir "Busqué en [lugares donde buscaste] pero no encontré información sobre [tema]"
 
+⛔ PROHIBIDO:
+- "¿Te gustaría que busque...?" - NO PREGUNTES, BUSCA DIRECTAMENTE
+- "Vamos a hacer una búsqueda..." - NO ANUNCIES, EJECUTA LA HERRAMIENTA
+- Ofrecer buscar en lugar de buscar
+
 📊 EJEMPLOS CON RAZONAMIENTO PASO A PASO:
 
 EJEMPLO 1: "¿Qué características nuevas se han añadido a Formmy recientemente?"
-🤔 Razonamiento:
+🤔 Razonamiento interno (NO compartir con usuario):
    1. Pregunta sobre características nuevas del negocio
    2. Debo buscar PRIMERO en base de conocimiento
-   3. Si no encuentro → buscar en web (es información reciente)
+   3. Si no encuentro → buscar en web AUTOMÁTICAMENTE (es información reciente)
    4. NO puedo decir "no sé" sin intentar ambas
+   5. NO debo preguntar al usuario si quiere que busque - DEBO HACERLO
 
-✅ Acción correcta:
+✅ Acción correcta (ejecución silenciosa):
    → search_context("características nuevas actualizaciones features recientes")
    → [Sin resultados relevantes]
    → search_context("novedades Formmy últimas funcionalidades")
    → [Sin resultados relevantes]${hasWebSearch ? `
-   → web_search_google("Formmy características nuevas actualizaciones 2025")
+   → web_search_google("Formmy características nuevas actualizaciones 2025") ← EJECUTAR AUTOMÁTICAMENTE
    → [Encuentra artículo en la web]
-   → Respuesta: "Encontré que las últimas actualizaciones incluyen..."` : `
+   → Respuesta directa: "Las últimas actualizaciones de Formmy incluyen..."
+
+❌ Respuesta INCORRECTA:
+   "Parece que he tenido dificultades... ¿Te gustaría que busque?"
+   "Vamos a hacer una búsqueda más optimizada"` : `
    → Respuesta: "Busqué exhaustivamente en la base de conocimiento pero no encontré información sobre características nuevas recientes"`}
 
 EJEMPLO 2: "¿Cuánto cuestan los planes?"
