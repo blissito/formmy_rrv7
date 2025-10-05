@@ -7,8 +7,10 @@ import {
   ErrorDisplay,
   RevenueOverview,
   PlansDistribution,
-  TokenUsageTable,
-  CostUsageTable,
+  AIProviderTable,
+  ToolCreditsTable,
+  RAGMetrics,
+  SystemHealth,
   TopChatbots,
   ActiveIntegrations,
   ContactsOverview,
@@ -17,15 +19,86 @@ import {
 // Helper function to safely parse AI model provider
 function parseAiModelProvider(aiModel: string | null | undefined): string {
   if (!aiModel) return 'unknown';
-  
-  // Handle direct provider names (e.g., "openai", "anthropic")
-  if (!aiModel.includes('/')) {
-    return aiModel;
-  }
-  
+
+  if (aiModel.startsWith('gpt-')) return 'openai';
+  if (aiModel.startsWith('claude-')) return 'anthropic';
+  if (aiModel.startsWith('gemini-')) return 'openrouter';
+
   // Handle provider/model format (e.g., "openai/gpt-4", "anthropic/claude-3-haiku")
-  const parts = aiModel.split('/');
-  return parts.length > 0 ? parts[0] : 'unknown';
+  if (aiModel.includes('/')) {
+    const parts = aiModel.split('/');
+    return parts.length > 0 ? parts[0] : 'unknown';
+  }
+
+  return 'unknown';
+}
+
+// Helper function to map model aliases to display names
+function getModelDisplayName(model: string): string {
+  const modelNames: Record<string, string> = {
+    'gpt-5-nano': 'GPT-4o-mini',
+    'gpt-4o-mini': 'GPT-4o-mini',
+    'gpt-3.5-turbo': 'GPT-3.5 Turbo',
+    'gpt-5-mini': 'GPT-4.5 Mini',
+    'claude-3-5-haiku-20241022': 'Claude 3.5 Haiku',
+    'claude-3-haiku-20240307': 'Claude 3 Haiku',
+    'claude-3-5-sonnet-20241022': 'Claude 3.5 Sonnet',
+    'gemini-2.0-flash-exp': 'Gemini 2.0 Flash',
+  };
+
+  return modelNames[model] || model;
+}
+
+// Helper function to calculate costs with proper input/output token pricing
+function calculateModelCost(model: string, tokens: number): number {
+  // Asumimos 60% input tokens, 40% output tokens (más realista que 50/50)
+  const inputRatio = 0.6;
+  const outputRatio = 0.4;
+
+  // Precios por 1M tokens en USD (input/output separados)
+  const modelPricing: Record<string, { input: number; output: number }> = {
+    'gpt-5-nano': { input: 0.15, output: 0.60 }, // Se mapea a gpt-4o-mini
+    'gpt-4o-mini': { input: 0.15, output: 0.60 },
+    'gpt-3.5-turbo': { input: 0.50, output: 1.50 },
+    'gpt-5-mini': { input: 0.25, output: 2.00 },
+    'claude-3-5-haiku-20241022': { input: 1.00, output: 5.00 },
+    'claude-3-haiku-20240307': { input: 0.25, output: 1.25 },
+    'claude-3-5-sonnet-20241022': { input: 3.00, output: 15.00 },
+  };
+
+  const pricing = modelPricing[model] || { input: 0.15, output: 0.60 }; // Default a gpt-4o-mini
+
+  const inputTokens = tokens * inputRatio;
+  const outputTokens = tokens * outputRatio;
+
+  const inputCostUSD = (inputTokens / 1000000) * pricing.input;
+  const outputCostUSD = (outputTokens / 1000000) * pricing.output;
+
+  // Convertir a MXN (1 USD = 20 MXN)
+  const totalCostMXN = (inputCostUSD + outputCostUSD) * 20;
+
+  return totalCostMXN;
+}
+
+// Helper function to get price per 1M tokens in MXN (for display)
+function getPricePerMillionMXN(model: string): string {
+  const modelPricing: Record<string, { input: number; output: number }> = {
+    'gpt-5-nano': { input: 0.15, output: 0.60 },
+    'gpt-4o-mini': { input: 0.15, output: 0.60 },
+    'gpt-3.5-turbo': { input: 0.50, output: 1.50 },
+    'gpt-5-mini': { input: 0.25, output: 2.00 },
+    'claude-3-5-haiku-20241022': { input: 1.00, output: 5.00 },
+    'claude-3-haiku-20240307': { input: 0.25, output: 1.25 },
+    'claude-3-5-sonnet-20241022': { input: 3.00, output: 15.00 },
+  };
+
+  const pricing = modelPricing[model] || { input: 0.15, output: 0.60 };
+
+  // Promedio ponderado (60% input, 40% output) en MXN
+  const avgUSD = (pricing.input * 0.6) + (pricing.output * 0.4);
+  const avgMXN = avgUSD * 20;
+
+  return `$${avgMXN.toFixed(2)}`;
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -60,14 +133,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       _count: { plan: true },
     });
 
-    // Token usage by provider (from messages with AI model info)
-    const tokenUsageByProvider = await db.message.groupBy({
+    // AI usage by model (excluir 'manual' que son respuestas humanas, no AI)
+    const aiUsageByModel = await db.message.groupBy({
       by: ['aiModel'],
-      _count: { aiModel: true },
-      _sum: { tokens: true },
+      _count: { id: true },
+      _sum: {
+        tokens: true,
+        totalCost: true,
+      },
       where: {
         role: 'ASSISTANT',
-        tokens: { not: null },
+        aiModel: {
+          not: null,
+          notIn: ['manual'] // Filtrar respuestas manuales
+        },
         createdAt: { gte: thirtyDaysAgo },
       },
     });
@@ -168,6 +247,246 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       console.error('Error loading cost metrics:', error);
     }
 
+    // Tool Credits Analytics (NUEVO)
+    let toolCreditsData = {
+      toolUsage: [],
+      totalCredits: 0,
+      totalCostUSD: 0,
+      totalCostMXN: 0,
+      usersNearLimit: [],
+    };
+
+    try {
+      const { getToolCreditCost } = await import('server/tools/toolCosts');
+      const { calculateToolCostFull } = await import('server/tools/toolPricing.server');
+      const { PLAN_LIMITS } = await import('server/chatbot/planLimits.server');
+
+      // Agrupar tool usages por toolName (últimos 30 días)
+      const toolUsageRaw = await db.toolUsage.groupBy({
+        by: ['toolName'],
+        _count: { id: true },
+        where: { createdAt: { gte: thirtyDaysAgo } },
+      });
+
+      // Calcular créditos y obtener plan principal por tool
+      const toolUsage = await Promise.all(
+        toolUsageRaw.map(async (usage) => {
+          const credits = getToolCreditCost(usage.toolName) * usage._count.id;
+
+          // Obtener chatbots que usan esta tool y su plan (filtrar nulls)
+          const chatbotsUsingTool = await db.toolUsage.findMany({
+            where: {
+              toolName: usage.toolName,
+              createdAt: { gte: thirtyDaysAgo },
+              chatbotId: { not: null }, // Solo toolUsages con chatbot existente
+            },
+            select: {
+              chatbot: {
+                select: {
+                  user: { select: { plan: true } },
+                },
+              },
+            },
+            take: 100,
+          });
+
+          const planCounts = chatbotsUsingTool.reduce((acc: any, t) => {
+            const plan = t.chatbot?.user?.plan || 'FREE';
+            acc[plan] = (acc[plan] || 0) + 1;
+            return acc;
+          }, {});
+
+          const topPlan = Object.entries(planCounts).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'UNKNOWN';
+
+          return {
+            toolName: usage.toolName,
+            count: usage._count.id,
+            credits,
+            topPlan,
+          };
+        })
+      );
+
+      const totalCredits = toolUsage.reduce((sum, u) => sum + u.credits, 0);
+
+      // Detectar usuarios cerca del límite (>80% usado)
+      const usersNearLimit: any[] = [];
+      const userPlans = await db.user.findMany({
+        where: { plan: { in: ['STARTER', 'PRO', 'ENTERPRISE'] } },
+        select: { id: true, plan: true },
+      });
+
+      for (const user of userPlans) {
+        const userChatbots = await db.chatbot.findMany({
+          where: { userId: user.id },
+          select: { id: true },
+        });
+
+        const chatbotIds = userChatbots.map((c) => c.id);
+
+        const userToolUsage = await db.toolUsage.count({
+          where: {
+            chatbotId: { in: chatbotIds },
+            createdAt: { gte: startOfMonth },
+          },
+        });
+
+        // Estimar créditos usados (promedio 2 credits/tool)
+        const estimatedCredits = userToolUsage * 2;
+        const limit = PLAN_LIMITS[user.plan].toolCreditsPerMonth;
+        const percentageUsed = limit > 0 ? (estimatedCredits / limit) * 100 : 0;
+
+        if (percentageUsed > 80) {
+          const existing = usersNearLimit.find((u) => u.plan === user.plan);
+          if (existing) {
+            existing.count++;
+          } else {
+            usersNearLimit.push({ plan: user.plan, count: 1 });
+          }
+        }
+      }
+
+      toolCreditsData = { toolUsage, totalCredits, usersNearLimit };
+    } catch (error) {
+      console.error('Error loading tool credits data:', error);
+    }
+
+    // RAG Metrics (NUEVO)
+    let ragMetrics = {
+      ragSearches: 0,
+      webSearches: 0,
+      conversationsWithRAG: 0,
+    };
+
+    try {
+      const [ragCount, webCount] = await Promise.all([
+        db.toolUsage.count({
+          where: {
+            toolName: 'search_context',
+            createdAt: { gte: thirtyDaysAgo },
+          },
+        }),
+        db.toolUsage.count({
+          where: {
+            toolName: 'web_search_google',
+            createdAt: { gte: thirtyDaysAgo },
+          },
+        }),
+      ]);
+
+      // Contar conversaciones con al menos 1 búsqueda
+      const conversationsWithSearch = await db.conversation.findMany({
+        where: {
+          createdAt: { gte: thirtyDaysAgo },
+          chatbot: {
+            toolUsages: {
+              some: {
+                toolName: { in: ['search_context', 'web_search_google'] },
+              },
+            },
+          },
+        },
+        select: { id: true },
+      });
+
+      ragMetrics = {
+        ragSearches: ragCount,
+        webSearches: webCount,
+        conversationsWithRAG: conversationsWithSearch.length,
+      };
+    } catch (error) {
+      console.error('Error loading RAG metrics:', error);
+    }
+
+    // System Health (NUEVO)
+    let systemHealth = {
+      avgLatency: 0,
+      maxLatency: 0,
+      toolErrors: [],
+      alerts: [],
+    };
+
+    try {
+      // Latencia promedio y máxima (de Message.responseTime)
+      const latencyStats = await db.message.aggregate({
+        _avg: { responseTime: true },
+        _max: { responseTime: true },
+        where: {
+          role: 'ASSISTANT',
+          responseTime: { not: null },
+          createdAt: { gte: sevenDaysAgo },
+        },
+      });
+
+      // Error rate por tool
+      const toolUsageStats = await db.toolUsage.groupBy({
+        by: ['toolName', 'success'],
+        _count: { id: true },
+        where: { createdAt: { gte: sevenDaysAgo } },
+      });
+
+      // Calcular error rates
+      const toolErrorsMap = new Map();
+      toolUsageStats.forEach((stat) => {
+        const existing = toolErrorsMap.get(stat.toolName) || { total: 0, errors: 0 };
+        if (stat.success === false) {
+          existing.errors += stat._count.id;
+        }
+        existing.total += stat._count.id;
+        toolErrorsMap.set(stat.toolName, existing);
+      });
+
+      const toolErrors = Array.from(toolErrorsMap.entries())
+        .map(([toolName, data]: any) => ({
+          toolName,
+          errorRate: data.total > 0 ? (data.errors / data.total) * 100 : 0,
+          errorCount: data.errors,
+          totalCount: data.total,
+        }))
+        .filter((e) => e.errorCount > 0);
+
+      // Generar alertas
+      const alerts: any[] = [];
+
+      // Alert: Profit margin bajo
+      const USD_TO_MXN = 20;
+      const totalCostMXN = costMetrics.totalCost * USD_TO_MXN;
+      const estimatedRevenue = planDistribution.reduce((acc, plan) => {
+        const rates: any = { STARTER: 149, PRO: 499, ENTERPRISE: 1499 };
+        return acc + (rates[plan.plan] || 0) * plan._count.plan;
+      }, 0);
+      const profitMargin = estimatedRevenue > 0 ? ((estimatedRevenue - totalCostMXN) / estimatedRevenue) * 100 : 0;
+
+      if (profitMargin < 40) {
+        alerts.push({
+          type: 'danger',
+          message: `Profit margin bajo: ${profitMargin.toFixed(1)}% (target 44-62%)`,
+        });
+      } else if (profitMargin < 50) {
+        alerts.push({
+          type: 'warning',
+          message: `Profit margin aceptable: ${profitMargin.toFixed(1)}% (target 50%+)`,
+        });
+      }
+
+      // Alert: High error rate
+      if (toolErrors.some((e) => e.errorRate > 5)) {
+        alerts.push({
+          type: 'danger',
+          message: 'Herramientas con error rate >5% detectadas',
+        });
+      }
+
+      systemHealth = {
+        avgLatency: latencyStats._avg.responseTime || 0,
+        maxLatency: latencyStats._max.responseTime || 0,
+        toolErrors,
+        alerts,
+      };
+    } catch (error) {
+      console.error('Error loading system health:', error);
+    }
+
     return {
       users: {
         total: totalUsers,
@@ -182,14 +501,49 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         thisMonthConversations,
       },
       plans: planDistribution.map(p => ({ plan: p.plan, count: p._count.plan })),
-      tokens: tokenUsageByProvider.map(t => ({
-        provider: parseAiModelProvider(t.aiModel),
-        model: t.aiModel || 'unknown',
-        count: t._count.aiModel || 0,
-        tokens: t._sum.tokens || 0,
-      })),
+      aiUsage: aiUsageByModel.map(usage => {
+        const model = usage.aiModel || 'unknown';
+        const requests = usage._count.id || 0;
+        const actualTokens = usage._sum.tokens || 0;
+        const actualCostUSD = usage._sum.totalCost || 0;
+
+        // Estimaciones si no hay datos reales
+        let estimatedTokens = actualTokens;
+        let costMXN = actualCostUSD * 20; // Convertir USD a MXN
+
+        if (estimatedTokens === 0 && requests > 0) {
+          // Estimación conservadora: ~500 tokens por request
+          estimatedTokens = requests * 500;
+        }
+
+        // Calcular costo en MXN con pricing input/output correcto
+        if (actualCostUSD === 0 && estimatedTokens > 0) {
+          costMXN = calculateModelCost(model, estimatedTokens);
+        }
+
+        return {
+          provider: parseAiModelProvider(model),
+          model,
+          modelDisplay: getModelDisplayName(model),
+          requests,
+          tokens: estimatedTokens,
+          cost: costMXN,
+          pricePerMillion: getPricePerMillionMXN(model),
+        };
+      }),
       costs: {
-        totalCost: costMetrics.totalCost,
+        // Total en MXN (convertir desde USD o calcular estimado)
+        totalCost: costMetrics.totalCost > 0
+          ? costMetrics.totalCost * 20 // Convertir USD a MXN
+          : aiUsageByModel.reduce((sum, usage) => {
+              const model = usage.aiModel || 'unknown';
+              const requests = usage._count.id || 0;
+              if (requests === 0) return sum;
+
+              const estimatedTokens = requests * 500;
+              const costMXN = calculateModelCost(model, estimatedTokens);
+              return sum + costMXN;
+            }, 0),
         byProvider: costMetrics.costByProvider,
         byModel: costMetrics.costByModel,
       },
@@ -201,20 +555,26 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         thisMonth: thisMonthContacts,
         bySource: contactsBySource.map(c => ({ source: c.source, count: c._count.source })),
       },
+      toolCredits: toolCreditsData,
+      ragMetrics,
+      systemHealth,
     };
   } catch (error) {
     console.error('Error loading admin dashboard data:', error);
-    
+
     // Return fallback data structure to prevent crashes
     return {
       users: { total: 0, thisWeek: 0, thisMonth: 0, active: 0 },
       chatbots: { total: 0, active: 0, conversations: 0, thisMonthConversations: 0 },
       plans: [],
-      tokens: [],
+      aiUsage: [],
       costs: { totalCost: 0, byProvider: [], byModel: [] },
       topChatbots: [],
       integrations: [],
       contacts: { total: 0, thisWeek: 0, thisMonth: 0, bySource: [] },
+      toolCredits: { toolUsage: [], totalCredits: 0, usersNearLimit: [] },
+      ragMetrics: { ragSearches: 0, webSearches: 0, conversationsWithRAG: 0 },
+      systemHealth: { avgLatency: 0, maxLatency: 0, toolErrors: [], alerts: [] },
       error: 'Error cargando datos del dashboard. Intenta refrescar la página.',
     };
   }
@@ -248,8 +608,9 @@ export default function AdminDashboard() {
       </header>
 
       {/* Revenue & Users Overview */}
-      <RevenueOverview 
+      <RevenueOverview
         estimatedRevenue={estimatedRevenue}
+        totalCost={data.costs.totalCost}
         users={data.users}
         chatbots={data.chatbots}
       />
@@ -257,17 +618,37 @@ export default function AdminDashboard() {
       {/* Plans Distribution */}
       <PlansDistribution plans={data.plans} />
 
-      {/* Token Usage by Provider */}
-      <TokenUsageTable tokens={data.tokens} />
+      {/* System Health Dashboard */}
+      <SystemHealth
+        avgLatency={data.systemHealth.avgLatency}
+        maxLatency={data.systemHealth.maxLatency}
+        toolErrors={data.systemHealth.toolErrors}
+        alerts={data.systemHealth.alerts}
+      />
 
-      {/* Cost Usage by Provider */}
-      <CostUsageTable costs={data.costs.byModel} totalCost={data.costs.totalCost} />
+      {/* RAG Performance Metrics */}
+      <RAGMetrics
+        ragSearches={data.ragMetrics.ragSearches}
+        webSearches={data.ragMetrics.webSearches}
+        totalConversations={data.chatbots.thisMonthConversations}
+        conversationsWithRAG={data.ragMetrics.conversationsWithRAG}
+      />
+
+      {/* AI Provider Usage (consolidado) */}
+      <AIProviderTable usage={data.aiUsage} totalCost={data.costs.totalCost} />
+
+      {/* Tool Credits Analytics */}
+      <ToolCreditsTable
+        toolUsage={data.toolCredits.toolUsage}
+        totalCredits={data.toolCredits.totalCredits}
+        usersNearLimit={data.toolCredits.usersNearLimit}
+      />
 
       {/* Contacts Overview */}
       <ContactsOverview contacts={data.contacts} />
 
       {/* Top Chatbots & Integrations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <TopChatbots topChatbots={data.topChatbots} />
         <ActiveIntegrations integrations={data.integrations} />
       </div>

@@ -17,46 +17,50 @@ interface ContactsOverviewProps {
 }
 
 export function ContactsOverview({ contacts }: ContactsOverviewProps) {
+  // Obtener fuente principal
+  const topSource = contacts.bySource.length > 0
+    ? contacts.bySource.reduce((max, s) => s.count > max.count ? s : max, contacts.bySource[0])
+    : null;
+
   return (
-    <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-      <MetricCard
-        title="Total Contactos"
-        value={contacts.total.toLocaleString()}
-        subtitle="Leads capturados"
-        trend={contacts.thisWeek > 0 ? 'positive' : 'neutral'}
-      />
-      <MetricCard
-        title="Esta Semana"
-        value={contacts.thisWeek.toLocaleString()}
-        subtitle="Nuevos contactos"
-        trend={contacts.thisWeek > 0 ? 'positive' : 'neutral'}
-      />
-      <MetricCard
-        title="Este Mes"
-        value={contacts.thisMonth.toLocaleString()}
-        subtitle="Contactos del mes"
-        trend={contacts.thisMonth > 0 ? 'positive' : 'neutral'}
-      />
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-sm font-medium text-gray-500 mb-2">Por Fuente</h3>
-        <div className="space-y-2">
-          {contacts.bySource.map((source, i) => (
-            <div key={i} className="flex justify-between items-center">
-              <span className="text-sm text-gray-700 capitalize">
-                {source.source}
-              </span>
-              <span className="text-sm font-semibold text-gray-900">
-                {source.count}
-              </span>
-            </div>
-          ))}
-          {contacts.bySource.length === 0 && (
-            <div className="text-sm text-gray-500 italic">
-              Sin contactos aún
-            </div>
-          )}
+    <section className="bg-white rounded-lg shadow p-6 mb-8">
+      <h2 className="text-xl font-semibold mb-4">Contactos Capturados</h2>
+      <div className="flex flex-wrap gap-6 text-sm">
+        <div>
+          <span className="text-gray-600">Total: </span>
+          <span className="font-bold text-2xl text-gray-900">{contacts.total.toLocaleString()}</span>
         </div>
+        <div className="border-l pl-6">
+          <span className="text-gray-600">Esta semana: </span>
+          <span className="font-semibold text-green-600">+{contacts.thisWeek.toLocaleString()}</span>
+        </div>
+        <div className="border-l pl-6">
+          <span className="text-gray-600">Este mes: </span>
+          <span className="font-semibold text-blue-600">+{contacts.thisMonth.toLocaleString()}</span>
+        </div>
+        {topSource && (
+          <div className="border-l pl-6">
+            <span className="text-gray-600">Top fuente: </span>
+            <span className="font-semibold text-gray-900 capitalize">
+              {topSource.source} ({topSource.count})
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Mostrar todas las fuentes si hay más de 1 */}
+      {contacts.bySource.length > 1 && (
+        <div className="mt-4 pt-4 border-t">
+          <div className="flex gap-4 text-xs text-gray-600">
+            {contacts.bySource.map((source, i) => (
+              <div key={i}>
+                <span className="capitalize">{source.source}:</span>{' '}
+                <span className="font-semibold text-gray-900">{source.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
