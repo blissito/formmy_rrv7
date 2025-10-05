@@ -77,7 +77,8 @@ function mapModelForPerformance(model: string): string {
 function buildSystemPrompt(
   config: ResolvedChatbotConfig,
   hasContextSearch: boolean,
-  hasWebSearch: boolean
+  hasWebSearch: boolean,
+  hasReportGeneration: boolean
 ): string {
   const personality = config.personality || "friendly";
   const personalityMap: Record<string, string> = {
@@ -200,6 +201,35 @@ EJEMPLOS PROHIBIDOS (NUNCA EJECUTAR):
 Si detectas una solicitud fuera de alcance, RECHAZALA educadamente y redirige la conversación al negocio.`;
   }
 
+  // 📄 Agregar instrucciones de generación de reportes si tiene acceso
+  if (hasReportGeneration) {
+    basePrompt += `
+
+📄 GENERACIÓN DE REPORTES PDF:
+Tienes acceso a la herramienta generate_chatbot_report para crear reportes PDF descargables.
+
+✅ USA ESTA HERRAMIENTA CUANDO:
+- Usuario pide explícitamente: "genera un reporte", "dame un PDF", "quiero un documento"
+- Usuario pregunta: "¿puedes darme un resumen descargable?", "exporta mis chatbots"
+- Frases clave: reporte, PDF, archivo, documento, descarga, export, exportar
+
+⚠️ REGLAS CRÍTICAS:
+1. COPIA Y PEGA el mensaje completo que retorna la tool - NO lo modifiques
+2. El link de descarga ya viene en formato markdown correcto [TEXTO](URL)
+3. NO agregues prefijos al URL como "sandbox:", "http:", o cualquier otro
+4. NO cambies el formato del link - úsalo EXACTAMENTE como viene
+5. Puedes agregar texto adicional ANTES o DESPUÉS del bloque de la tool, pero NUNCA modifiques el bloque mismo
+
+EJEMPLO CORRECTO:
+Tool retorna: "✅ **Reporte generado...** 📥 **[DESCARGAR REPORTE PDF →](/api/ghosty/download_123)**"
+Tu respuesta: "¡Listo! ✅ **Reporte generado...** 📥 **[DESCARGAR REPORTE PDF →](/api/ghosty/download_123)**"
+
+EJEMPLO INCORRECTO:
+❌ Agregar prefijos: "📥 **[DESCARGAR REPORTE PDF →](sandbox:/api/...)**"
+❌ Cambiar formato: "Descarga aquí: /api/ghosty/download_123"
+❌ Modificar el bloque de respuesta de la tool`;
+  }
+
   return basePrompt;
 }
 
@@ -241,15 +271,18 @@ async function createSingleAgent(
 
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
 
-  // Detectar si tiene acceso a search_context y web_search_google tools
+  // Detectar si tiene acceso a search_context, web_search_google, y generate_chatbot_report tools
   const hasContextSearch = allTools.some(
     (tool: any) => tool.metadata?.name === "search_context"
   );
   const hasWebSearch = allTools.some(
     (tool: any) => tool.metadata?.name === "web_search_google"
   );
+  const hasReportGeneration = allTools.some(
+    (tool: any) => tool.metadata?.name === "generate_chatbot_report"
+  );
 
-  const systemPrompt = buildSystemPrompt(resolvedConfig, hasContextSearch, hasWebSearch);
+  const systemPrompt = buildSystemPrompt(resolvedConfig, hasContextSearch, hasWebSearch, hasReportGeneration);
 
   // ✅ Crear memoria conversacional según patrón oficial LlamaIndex
   let memory = undefined;

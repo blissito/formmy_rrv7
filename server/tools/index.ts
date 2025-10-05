@@ -284,44 +284,37 @@ export const createGenerateChatbotReportTool = (context: ToolContext) => tool(
 
     // Si fue exitoso, retornar estructura con datos de descarga
     if (result.success && result.data) {
-      return `✅ Reporte generado exitosamente
+      return `✅ **Reporte generado exitosamente**
 
-📊 **Detalles:**
-- Chatbots analizados: ${result.data.chatbotsCount}
-- Total conversaciones: ${result.data.totalConversations}
-- Total mensajes: ${result.data.totalMessages}
-- Tamaño archivo: ${result.data.size}
+📊 **Resumen:**
+• Chatbots analizados: **${result.data.chatbotsCount}**
+• Total conversaciones: **${result.data.totalConversations}**
+• Total mensajes: **${result.data.totalMessages}**
+• Tamaño del archivo: **${result.data.size}**
 
-📥 **Descarga:** ${result.data.downloadUrl}
-⏱️ **Expira en:** ${result.data.expiresIn}
+📥 **[DESCARGAR REPORTE PDF →](${result.data.downloadUrl})**
 
-Haz clic en el enlace de descarga para obtener tu reporte en formato PDF.`;
+⏱️ El enlace expira en ${result.data.expiresIn}. Descárgalo ahora para guardarlo.`;
     }
 
     return result.message;
   },
   {
     name: "generate_chatbot_report",
-    description: `🎯 USA ESTA TOOL para generar y DESCARGAR un archivo PDF profesional.
+    description: `Genera un archivo PDF descargable con la lista completa de chatbots del usuario y sus métricas detalladas.
 
-⚠️ DIFERENCIA CLAVE:
-- Esta tool → Genera ARCHIVO PDF descargable con link
-- get_chatbot_stats → Solo retorna TEXTO con estadísticas (no archivo)
+**CUÁNDO USAR ESTA HERRAMIENTA:**
+- Usuario pide explícitamente: "genera un reporte", "dame un PDF", "quiero un documento", "exporta mis chatbots"
+- Usuario pregunta: "¿puedes darme un resumen descargable?", "quiero ver mis stats en PDF"
+- Frases clave: reporte, PDF, archivo, documento, descarga, export, exportar
 
-El PDF incluye:
-- Resumen ejecutivo con totales (chatbots, conversaciones, mensajes)
-- Tabla detallada de cada chatbot con nombre, conversaciones y fecha de creación
-- Métricas agregadas y promedios
-- Formato profesional listo para presentación
+**QUÉ GENERA:**
+- Archivo PDF profesional descargable
+- Lista de todos los chatbots con nombres, fechas de creación, conversaciones
+- Métricas agregadas: totales, promedios, estadísticas generales
+- Válido por 5 minutos (one-time download)
 
-🔍 USA cuando el usuario solicita explícitamente:
-- "genera/crea un PDF"
-- "quiero descargar un reporte"
-- "exporta a PDF"
-- "archivo con mis chatbots"
-- "documento/reporte descargable"
-
-❌ NO USAR si solo piden ver estadísticas sin mencionar archivo/PDF/descarga`,
+**IMPORTANTE:** Después de generar el reporte, SIEMPRE retorna el link de descarga en formato markdown para que sea clicable.`,
     parameters: z.object({
       format: z.enum(['pdf']).optional().default('pdf').describe("Formato del reporte (actualmente solo PDF)"),
       includeMetrics: z.boolean().optional().default(true).describe("Incluir métricas agregadas (totales, promedios)")
@@ -396,10 +389,14 @@ export const getToolsForPlan = (
 
   // Report generation tools - SOLO para Ghosty (reportes privados del usuario)
   if (context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+    console.log("📄 [getToolsForPlan] Agregando generate_chatbot_report tool");
     tools.push(
       createGenerateChatbotReportTool(context)
     );
   }
+
+  const toolNames = tools.map((t: any) => t?.metadata?.name || t?.name || "unknown");
+  console.log(`🛠️  [getToolsForPlan] ${tools.length} tools disponibles para ${userPlan}:`, toolNames);
 
   return tools;
 };

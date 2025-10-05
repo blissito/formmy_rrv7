@@ -142,6 +142,7 @@ export default [
   route("api/ghosty/chat", "routes/api.ghosty.chat.ts"),
   route("api/ghosty/v0", "routes/api.ghosty.v0.ts"),
   route("api/ghosty/tools", "routes/api.ghosty.tools.ts"),
+  route("api/ghosty/download/:reportId", "routes/api.ghosty.download.$reportId.ts"),
 
   // API Agent routes - LlamaIndex Workflows
   route("api/agent/v0", "routes/api.agent.v0.ts"),
