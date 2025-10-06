@@ -235,26 +235,41 @@ async function createSingleAgent(
   // ✅ Crear memoria conversacional según patrón oficial LlamaIndex
   let memory = undefined;
 
+  console.log(`\n${'='.repeat(80)}`);
+  console.log(`🧠 [createSingleAgent] INICIANDO CREACIÓN DE MEMORIA`);
+  console.log(`   Historial recibido: ${conversationHistory ? conversationHistory.length : 0} mensajes`);
+  console.log(`${'='.repeat(80)}\n`);
+
   if (conversationHistory && conversationHistory.length > 0) {
-    console.log(`🧠 [createSingleAgent] Creando memoria con ${conversationHistory.length} mensajes`);
+    console.log(`🧠 Historial NO está vacío - procediendo a crear memoria`);
 
     // Crear memoria vacía (sin memoryBlocks por ahora, solo mensajes directos)
     memory = createMemory({
       tokenLimit: 8000, // Límite razonable para contexto conversacional
     });
 
+    console.log(`✅ createMemory() ejecutado exitosamente`);
+    console.log(`   Tipo de memoria: ${typeof memory}`);
+    console.log(`   Memoria creada: ${memory ? 'SÍ' : 'NO'}\n`);
+
     // Agregar cada mensaje del historial a la memoria
     for (const msg of conversationHistory) {
-      console.log(`  📝 Agregando a memoria: ${msg.role} - "${msg.content.substring(0, 50)}..."`);
+      console.log(`  📝 Agregando mensaje a memoria:`);
+      console.log(`     Role: ${msg.role}`);
+      console.log(`     Content: "${msg.content.substring(0, 80)}..."`);
+
       await memory.add({
         role: msg.role,
         content: msg.content,
       });
     }
 
-    console.log(`✅ Memoria creada con ${conversationHistory.length} mensajes`);
+    console.log(`\n✅ Memoria completada - ${conversationHistory.length} mensajes agregados`);
+    console.log(`   Memoria final existe: ${memory ? 'SÍ' : 'NO'}`);
   } else {
-    console.log(`ℹ️  [createSingleAgent] Sin historial conversacional - memoria no creada`);
+    console.log(`⚠️  [createSingleAgent] Sin historial - memoria NO creada`);
+    console.log(`   conversationHistory: ${conversationHistory}`);
+    console.log(`   length: ${conversationHistory?.length}`);
   }
 
   // ✅ Patrón oficial LlamaIndex TypeScript: pasar memoria en configuración del agente
@@ -265,13 +280,27 @@ async function createSingleAgent(
     verbose: true, // Para debugging de herramientas
   };
 
+  console.log(`\n${'='.repeat(80)}`);
+  console.log(`🎯 [createSingleAgent] CONFIGURANDO AGENTE`);
+  console.log(`   LLM: ${llm.model || llm.constructor.name}`);
+  console.log(`   Tools: ${allTools.length}`);
+  console.log(`   System prompt: ${systemPrompt.substring(0, 80)}...`);
+  console.log(`${'='.repeat(80)}\n`);
+
   // Solo agregar memoria si existe
   if (memory) {
     agentConfig.memory = memory;
-    console.log(`✅ Memoria agregada a agentConfig`);
+    console.log(`✅ MEMORIA AGREGADA A AGENT CONFIG`);
+    console.log(`   agentConfig.memory existe: ${!!agentConfig.memory}`);
+    console.log(`   Tipo: ${typeof agentConfig.memory}`);
   } else {
-    console.log(`⚠️  Sin memoria en agentConfig`);
+    console.log(`❌ SIN MEMORIA - agentConfig NO incluye memoria`);
+    console.log(`   Esto significa que el agente NO recordará nada`);
   }
+
+  console.log(`\n${'='.repeat(80)}`);
+  console.log(`🚀 Llamando a agent() con config...`);
+  console.log(`${'='.repeat(80)}\n`);
 
   return agent(agentConfig);
 }
@@ -464,6 +493,22 @@ export const streamAgentWorkflow = async function* (
   try {
     // Extraer historial conversacional del agentContext
     const conversationHistory = options.agentContext?.conversationHistory || [];
+
+    console.log(`\n${'🔥'.repeat(40)}`);
+    console.log(`🚀 [streamAgentWorkflow] INICIO`);
+    console.log(`   agentContext recibido: ${!!options.agentContext}`);
+    console.log(`   conversationHistory extraído: ${conversationHistory.length} mensajes`);
+
+    if (conversationHistory.length > 0) {
+      console.log(`\n   📚 HISTORIAL EXTRAÍDO DEL AGENTCONTEXT:`);
+      conversationHistory.forEach((msg, i) => {
+        console.log(`   [${i + 1}] ${msg.role}: "${msg.content.substring(0, 60)}..."`);
+      });
+    } else {
+      console.log(`   ⚠️  conversationHistory está VACÍO`);
+      console.log(`   agentContext completo:`, JSON.stringify(options.agentContext, null, 2));
+    }
+    console.log(`${'🔥'.repeat(40)}\n`);
 
     // Single agent con todas las tools + memoria conversacional
     const agentInstance = await createSingleAgent(context, conversationHistory);
