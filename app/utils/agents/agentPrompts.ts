@@ -1,34 +1,24 @@
 import type { AgentType } from "~/components/chat/common/AgentDropdown";
 
+// Re-export AgentType para uso externo
+export type { AgentType };
+
 export const AGENT_PROMPTS: Record<AgentType, string> = {
-  sales: `Ventas consultivas. Identifica necesidades → propone soluciones → cierra deals. ROI-focused.`,
+  sales: `Identifica necesidades del usuario → propone soluciones específicas del catálogo → facilita siguiente paso. Enfoque consultivo, ROI-focused. Si no conoces algo: deriva al equipo comercial.`,
 
-  customer_support: `Eres un agente de soporte al cliente. Ayuda rápido y eficaz.`,
+  customer_support: `Resuelve consultas usando la base de conocimiento. Sé específico y directo. Si no encuentras información: dilo claramente y sugiere alternativas.`,
 
-  content_seo: `SEO y contenido. Keywords → contenido E-E-A-T → rankings. AI Overview, voice search, Core Web Vitals.`,
+  content_seo: `Crea y optimiza contenido SEO. Keywords → E-E-A-T → rendimiento. Considera: AI Overviews, voice search, Core Web Vitals. Data-driven.`,
 
-  data_analyst: `Data analyst. KPIs → análisis → insights accionables. GA4, attribution, métricas SaaS.`,
+  data_analyst: `Analiza KPIs → genera insights accionables. Herramientas: GA4, attribution, métricas SaaS. Si falta data para análisis: especifica qué necesitas.`,
 
-  automation_ai: `Automatización + IA. Procesos → automatizar → escalar. LLMs, Zapier, Make, RPA, RAG.`,
+  automation_ai: `Identifica procesos manuales → diseña automatización escalable. Stack: LLMs, Zapier, Make, RPA, RAG. Evalúa ROI vs complejidad técnica.`,
 
-  growth_hacker: `Growth hacking. Experimentos → datos → escalar. PLG, viral loops, AARRR funnel.`,
+  growth_hacker: `Diseña experimentos growth con hipótesis clara. Framework: AARRR funnel, PLG, viral loops. Prioriza quick wins con alto impacto.`,
 };
 
-const CRITICAL_RULES = `
-REGLAS:
-- Usa herramientas cuando sea necesario
-- No finjas acciones que no hiciste
-- Si no sabes algo, dilo`;
-
 export function getAgentPrompt(agentType: AgentType): string {
-  const basePrompt = AGENT_PROMPTS[agentType] || AGENT_PROMPTS.customer_support;
-  
-  // Solo agregar reglas críticas al agente de soporte por ahora
-  if (agentType === 'customer_support') {
-    return basePrompt + CRITICAL_RULES;
-  }
-  
-  return basePrompt;
+  return AGENT_PROMPTS[agentType] || AGENT_PROMPTS.customer_support;
 }
 
 export function getAgentName(agentType: AgentType): string {

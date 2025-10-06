@@ -4,7 +4,7 @@ import { AgentDropdown, type AgentType } from "../common/AgentDropdown";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useState, useEffect } from "react";
 import { getAgentPrompt, getAgentName } from "~/utils/agents/agentPrompts";
-import { FiCopy, FiCheck, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiCopy, FiCheck, FiEye, FiEyeOff, FiMaximize2 } from "react-icons/fi";
 import { HiSparkles } from "react-icons/hi2";
 
 interface AgentFormProps {
@@ -36,21 +36,32 @@ export const AgentForm = ({
 }: AgentFormProps) => {
   const [showBasePrompt, setShowBasePrompt] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const basePrompt = getAgentPrompt(selectedAgent);
-  
-  // Actualizar el prompt cuando cambia el agente
+
+  // Sincronizar instructions solo para preview (no se combina con customInstructions)
   useEffect(() => {
-    const finalPrompt = customInstructions 
-      ? `${basePrompt}\n\n## INSTRUCCIONES ADICIONALES:\n${customInstructions}`
-      : basePrompt;
-    
     // Solo actualizar si es diferente para evitar loops
-    if (instructions !== finalPrompt) {
-      handleInstructionsChange({ 
-        target: { value: finalPrompt } 
+    if (instructions !== basePrompt) {
+      handleInstructionsChange({
+        target: { value: basePrompt }
       } as React.ChangeEvent<HTMLTextAreaElement>);
     }
-  }, [selectedAgent, customInstructions]);
+  }, [selectedAgent]);
+
+  // Cerrar modal con tecla Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showModal) {
+        setShowModal(false);
+      }
+    };
+
+    if (showModal) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [showModal]);
 
   const handleCustomInstructionsChangeLocal = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -168,33 +179,29 @@ export const AgentForm = ({
             <h3 className="text-sm font-medium text-gray-700">
               Personalización adicional (opcional)
             </h3>
-            <span className="text-xs text-gray-500">
-              {customInstructions.length}/500 caracteres
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500">
+                {customInstructions.length}/1500 caracteres
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowModal(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <FiMaximize2 />
+                Expandir
+              </button>
+            </div>
           </div>
+
           <textarea
             value={customInstructions}
             onChange={handleCustomInstructionsChangeLocal}
-            placeholder="Añade instrucciones específicas para tu negocio, productos, tono de voz, restricciones, etc."
-            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
-            rows={4}
-            maxLength={500}
+            placeholder="Añade contexto específico de tu negocio: nombre, productos, horarios, políticas, tono de voz, etc."
+            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
+            rows={8}
+            maxLength={1500}
           />
-          
-          {/* Variables Dinámicas Sugeridas */}
-          <div className="mt-2 flex flex-wrap gap-2">
-            <span className="text-xs text-gray-500">Sugerencias:</span>
-            {["Nombre empresa", "Horario atención", "Enlaces importantes", "Políticas"].map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => handleCustomInstructionsChange?.(customInstructions + ` [${tag}]`)}
-                className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors"
-              >
-                + {tag}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Preview del Prompt Final (Oculto) */}
@@ -206,17 +213,70 @@ export const AgentForm = ({
             readOnly
           />
         </div>
-        
-        {/* Indicador de Prompt Combinado */}
-        {customInstructions && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <p className="text-xs text-green-700 flex items-center gap-2">
-              <FiCheck className="text-green-600" />
-              Prompt personalizado activo: Base + tus instrucciones adicionales
-            </p>
-          </div>
-        )}
       </div>
+
+      {/* Modal para textarea expandido */}
+      {showModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-medium text-gray-900">
+                Personalización adicional
+              </h3>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-500">
+                  {customInstructions.length}/1500 caracteres
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="p-4 flex-1 overflow-auto flex flex-col gap-3">
+              {/* Tooltip educativo en modal */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-gray-700">
+                <p className="font-medium mb-1">💡 ¿Qué añadir aquí?</p>
+                <ul className="ml-4 space-y-1 list-disc text-gray-600">
+                  <li>Nombre de tu empresa/producto y qué ofreces</li>
+                  <li>Políticas específicas (devoluciones, horarios, precios)</li>
+                  <li>Tono de voz y personalidad única de tu marca</li>
+                  <li>Restricciones o temas que NO debe tratar</li>
+                </ul>
+                <p className="mt-2 text-gray-500">
+                  <strong>Importante:</strong> Este texto se añade al prompt base del agente para personalizarlo a tu negocio.
+                </p>
+              </div>
+
+              <textarea
+                value={customInstructions}
+                onChange={handleCustomInstructionsChangeLocal}
+                placeholder="Ejemplo: 'Somos TechStore, vendemos laptops y accesorios. Horario: Lun-Vie 9-18h. Envíos gratis en compras >$1000. Tono amigable pero profesional.'"
+                className="w-full flex-1 min-h-[400px] px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+                maxLength={1500}
+              />
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

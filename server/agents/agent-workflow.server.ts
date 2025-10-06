@@ -14,6 +14,7 @@ import { Anthropic } from "@llamaindex/anthropic";
 import { createMemory } from "llamaindex";
 import { getToolsForPlan, type ToolContext } from "../tools";
 import type { ResolvedChatbotConfig } from "../chatbot/configResolver.server";
+import { getAgentPrompt, type AgentType } from "~/utils/agents/agentPrompts";
 
 // Types para el workflow
 interface WorkflowContext {
@@ -81,153 +82,92 @@ function buildSystemPrompt(
   hasReportGeneration: boolean
 ): string {
   const personality = config.personality || "friendly";
-  const personalityMap: Record<string, string> = {
-    customer_support: "asistente de soporte profesional",
-    sales: "asistente de ventas consultivo",
-    friendly: "asistente amigable y cercano",
-    professional: "asistente profesional",
-  };
 
-  let basePrompt = `Eres ${config.name || "asistente"}, ${personalityMap[personality] || "friendly"}.
+  // Agent types válidos
+  const agentTypes: AgentType[] = ['sales', 'customer_support', 'content_seo', 'data_analyst', 'automation_ai', 'growth_hacker'];
 
-${config.instructions || "Asistente útil."}
+  let basePrompt: string;
 
-${config.customInstructions || ""}
+  // Si personality es un AgentType válido, usar prompt optimizado
+  if (agentTypes.includes(personality as AgentType)) {
+    // Solo usar customInstructions (instructions se ignora para AgentTypes)
+    basePrompt = `${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}${config.customInstructions ? '\n\n' + config.customInstructions : ''}`;
+  } else {
+    // Fallback a personalidades genéricas (friendly, professional)
+    const personalityMap: Record<string, string> = {
+      friendly: "asistente amigable y cercano",
+      professional: "asistente profesional",
+    };
+
+    // Solo usar customInstructions (NO duplicar con instructions)
+    basePrompt = `Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
+
+${config.instructions || "Asistente útil."}${config.customInstructions ? '\n\n' + config.customInstructions : ''}
 
 Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu personalidad.`;
+  }
 
-  // Agregar instrucciones específicas de RAG si tiene acceso a search_context
+  // Instrucciones de búsqueda si tiene acceso a search_context
   if (hasContextSearch) {
     basePrompt += `
 
-🔍 REGLA CRÍTICA - BÚSQUEDA OBLIGATORIA:
-Tienes acceso a search_context (base de conocimiento)${hasWebSearch ? ' y web_search_google (búsqueda web)' : ''}.
+🔍 BÚSQUEDA OBLIGATORIA:
+Cuando usuario pregunta sobre el negocio:
 
-⛔ PROHIBICIONES ABSOLUTAS:
-1. NUNCA respondas preguntas sobre el negocio sin buscar PRIMERO
-2. NUNCA digas "no sé" o "no tengo información" sin AGOTAR todas las herramientas de búsqueda
-3. NUNCA inventes o adivines datos específicos (precios, fechas, políticas, features)
-4. NUNCA redirijas al usuario a "buscar en el sitio web" - ESA ES TU TAREA
+1. Base de conocimiento (search_context):
+   → Ejecuta con query específica INMEDIATAMENTE
+   → Si insuficiente: ajusta query y busca de nuevo (mín 2 intentos)
+   → Preguntas multi-tema: múltiples búsquedas${hasWebSearch ? `
 
-✅ PROTOCOLO OBLIGATORIO (ESTRATEGIA DE CASCADA):
-Cuando el usuario pregunta sobre el negocio:
+2. Fallback web (AUTOMÁTICO si #1 falla):
+   → Ejecuta web_search_google: "${config.name === 'Ghosty' ? 'Formmy' : config.name} [tema] 2025"
+   → NO preguntes, HAZLO DIRECTAMENTE` : ''}
 
-PASO 1 - Base de conocimiento (search_context):
-→ EJECUTAR search_context con query específica INMEDIATAMENTE
-→ Si resultados insuficientes → AJUSTAR query → BUSCAR DE NUEVO (mínimo 2 intentos)
-→ Para preguntas multi-tema → MÚLTIPLES búsquedas separadas
-${hasWebSearch ? `
-PASO 2 - Fallback a Web (AUTOMÁTICO si PASO 1 falla):
-⚠️ NO PREGUNTES al usuario si quiere que busques - HAZLO DIRECTAMENTE
-→ Si search_context NO tiene resultados después de 2+ intentos
-→ Y la pregunta es sobre novedades/actualizaciones/información reciente
-→ EJECUTAR web_search_google INMEDIATAMENTE con query optimizada
-→ Query debe incluir: "${config.name === 'Ghosty' ? 'Formmy' : config.name} [tema] 2025"
-→ Combinar resultados web con contexto del negocio en tu respuesta
-` : ''}
-PASO 3 - Último recurso:
-→ SOLO si ambas búsquedas fallan → decir "Busqué en [lugares donde buscaste] pero no encontré información sobre [tema]"
+3. Si todo falla:
+   → "Busqué en [lugares] pero no encontré información sobre [tema]"
 
-⛔ PROHIBIDO:
-- "¿Te gustaría que busque...?" - NO PREGUNTES, BUSCA DIRECTAMENTE
-- "Vamos a hacer una búsqueda..." - NO ANUNCIES, EJECUTA LA HERRAMIENTA
+Prohibido:
+- Responder sin buscar primero
+- Inventar datos (precios, fechas, features)
 - Ofrecer buscar en lugar de buscar
 
-📊 EJEMPLOS CON RAZONAMIENTO PASO A PASO:
-
-EJEMPLO 1: "¿Qué características nuevas se han añadido a Formmy recientemente?"
-🤔 Razonamiento interno (NO compartir con usuario):
-   1. Pregunta sobre características nuevas del negocio
-   2. Debo buscar PRIMERO en base de conocimiento
-   3. Si no encuentro → buscar en web AUTOMÁTICAMENTE (es información reciente)
-   4. NO puedo decir "no sé" sin intentar ambas
-   5. NO debo preguntar al usuario si quiere que busque - DEBO HACERLO
-
-✅ Acción correcta (ejecución silenciosa):
-   → search_context("características nuevas actualizaciones features recientes")
-   → [Sin resultados relevantes]
-   → search_context("novedades Formmy últimas funcionalidades")
-   → [Sin resultados relevantes]${hasWebSearch ? `
-   → web_search_google("Formmy características nuevas actualizaciones 2025") ← EJECUTAR AUTOMÁTICAMENTE
-   → [Encuentra artículo en la web]
-   → Respuesta directa: "Las últimas actualizaciones de Formmy incluyen..."
-
-❌ Respuesta INCORRECTA:
-   "Parece que he tenido dificultades... ¿Te gustaría que busque?"
-   "Vamos a hacer una búsqueda más optimizada"` : `
-   → Respuesta: "Busqué exhaustivamente en la base de conocimiento pero no encontré información sobre características nuevas recientes"`}
-
-EJEMPLO 2: "¿Cuánto cuestan los planes?"
-🤔 Razonamiento:
-   1. Pregunta sobre precios → dato específico del negocio
-   2. Debo buscar en base de conocimiento
-   3. Los precios DEBEN estar ahí, ajustar query si no encuentro
-
-✅ Acción correcta:
-   → search_context("precios planes costos")
-   → [Encuentra resultados]
-   → Respuesta con datos de la base de conocimiento
-
-🎯 REGLA DE ORO: Antes de decir "no sé", pregúntate: "¿Intenté TODAS las búsquedas posibles?"`;
+Ejemplo:
+User: "¿Precios de planes?"
+→ search_context("precios planes costos")${hasWebSearch ? `
+→ [Sin resultados] → web_search_google("Formmy precios planes 2025")` : ''}
+→ Responde con datos encontrados`;
   }
 
-  // 🛡️ Agregar restricciones de seguridad para web_search_google
+  // 🛡️ Restricciones de seguridad para web_search_google
   if (hasWebSearch) {
-    // Detectar dominio de negocio: Si es Ghosty, el negocio es Formmy
     const businessDomain = config.name === 'Ghosty' ? 'Formmy' : (config.name || "este negocio");
 
     basePrompt += `
 
-🛡️ RESTRICCIONES CRÍTICAS PARA web_search_google:
-Esta herramienta de búsqueda web está LIMITADA ESTRICTAMENTE al dominio de negocio: ${businessDomain}
+🛡️ WEB_SEARCH LIMITADO A: ${businessDomain}
+SOLO búsquedas relacionadas con ${businessDomain}
+PROHIBIDO: noticias generales, deportes, entretenimiento, temas off-topic
 
-REGLAS DE SEGURIDAD (NUNCA VIOLARLAS):
-1. SOLO buscar si la pregunta está DIRECTAMENTE relacionada con: ${businessDomain}
-2. PROHIBIDO buscar: noticias generales, deportes, entretenimiento, política, temas personales, chismes
-3. Si el usuario pide buscar algo off-topic, responde: "Mi búsqueda web está limitada a temas relacionados con ${businessDomain}"
+Válido: "${businessDomain} precios", "${businessDomain} features", "comparación ${businessDomain} vs competencia"
+Inválido: noticias del día, deportes, celebridades
 
-EJEMPLOS DE BÚSQUEDAS VÁLIDAS para ${businessDomain}:
-- "${businessDomain} características nuevas actualizaciones"
-- "${businessDomain} precios planes"
-- "${businessDomain} documentación tutoriales"
-- "comparación ${businessDomain} vs competencia"
-
-EJEMPLOS PROHIBIDOS (NUNCA EJECUTAR):
-- ❌ "quién ganó el partido de fútbol"
-- ❌ "noticias del día"
-- ❌ "cómo hacer [algo no relacionado al negocio]"
-- ❌ "últimos chismes de celebridades"
-
-Si detectas una solicitud fuera de alcance, RECHAZALA educadamente y redirige la conversación al negocio.`;
+Si pregunta off-topic: "Mi búsqueda web está limitada a ${businessDomain}"`;
   }
 
-  // 📄 Agregar instrucciones de generación de reportes si tiene acceso
+  // 📄 Instrucciones de reportes PDF si tiene acceso
   if (hasReportGeneration) {
     basePrompt += `
 
-📄 GENERACIÓN DE REPORTES PDF:
-Tienes acceso a la herramienta generate_chatbot_report para crear reportes PDF descargables.
+📄 REPORTES PDF (generate_chatbot_report):
+Usa cuando usuario pida: reporte, PDF, documento, descarga, exportar
 
-✅ USA ESTA HERRAMIENTA CUANDO:
-- Usuario pide explícitamente: "genera un reporte", "dame un PDF", "quiero un documento"
-- Usuario pregunta: "¿puedes darme un resumen descargable?", "exporta mis chatbots"
-- Frases clave: reporte, PDF, archivo, documento, descarga, export, exportar
+CRÍTICO:
+- COPIA EXACTA del mensaje que retorna la tool
+- NO modifiques el link de descarga
+- NO agregues prefijos al URL (sandbox:, http:, etc)
 
-⚠️ REGLAS CRÍTICAS:
-1. COPIA Y PEGA el mensaje completo que retorna la tool - NO lo modifiques
-2. El link de descarga ya viene en formato markdown correcto [TEXTO](URL)
-3. NO agregues prefijos al URL como "sandbox:", "http:", o cualquier otro
-4. NO cambies el formato del link - úsalo EXACTAMENTE como viene
-5. Puedes agregar texto adicional ANTES o DESPUÉS del bloque de la tool, pero NUNCA modifiques el bloque mismo
-
-EJEMPLO CORRECTO:
-Tool retorna: "✅ **Reporte generado...** 📥 **[DESCARGAR REPORTE PDF →](/api/ghosty/download_123)**"
-Tu respuesta: "¡Listo! ✅ **Reporte generado...** 📥 **[DESCARGAR REPORTE PDF →](/api/ghosty/download_123)**"
-
-EJEMPLO INCORRECTO:
-❌ Agregar prefijos: "📥 **[DESCARGAR REPORTE PDF →](sandbox:/api/...)**"
-❌ Cambiar formato: "Descarga aquí: /api/ghosty/download_123"
-❌ Modificar el bloque de respuesta de la tool`;
+Correcto: "✅ Reporte generado... [DESCARGAR PDF](/api/ghosty/download_123)"
+Incorrecto: "Descarga: sandbox:/api/ghosty/download_123"`;
   }
 
   return basePrompt;
