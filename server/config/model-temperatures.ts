@@ -57,6 +57,53 @@ export function sanitizeTemperature(temperature: number): number {
 }
 
 /**
+ * Configuración de rangos de temperatura para el frontend
+ * Define min, max, óptimo y step por modelo para el input range
+ */
+export interface TemperatureRange {
+  min: number;
+  max: number;
+  optimal: number;
+  step: number;
+  fixed?: boolean; // Si es true, no se puede modificar
+}
+
+export const MODEL_TEMPERATURE_RANGES: Record<string, TemperatureRange> = {
+  // OpenAI models
+  'gpt-5-nano': { min: 1, max: 1, optimal: 1, step: 0, fixed: true }, // Fijo en 1.0
+  'gpt-4o-mini': { min: 0.5, max: 1.5, optimal: 1, step: 0.1 },
+  'gpt-5-mini': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gpt-4o': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gpt-5': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gpt-3.5-turbo': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+
+  // Anthropic models
+  'claude-3-haiku-20240307': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'claude-3-5-haiku-20241022': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'claude-3-sonnet-20240229': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'claude-3-5-sonnet-20241022': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'claude-3-opus-20240229': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+
+  // Gemini models
+  'gemini-2.0-flash': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gemini-1.5-pro': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+};
+
+/**
+ * Obtiene el rango de temperatura para un modelo específico
+ * @param model - ID del modelo AI
+ * @returns TemperatureRange para el modelo (o default si no está configurado)
+ */
+export function getTemperatureRange(model: string): TemperatureRange {
+  return MODEL_TEMPERATURE_RANGES[model] ?? {
+    min: 0,
+    max: 1.5,
+    optimal: 0.7,
+    step: 0.1,
+  };
+}
+
+/**
  * Resuelve la temperature final para un chatbot
  * Prioridad:
  * 1. Temperature configurada por usuario (si es válida)
