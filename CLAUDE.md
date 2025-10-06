@@ -301,18 +301,20 @@ DEVELOPMENT_TOKEN=FORMMY_DEV_TOKEN_2025 npx tsx scripts/test-rag-prompts.ts
 - **ENTERPRISE**: GPT-5 Mini + Claude 3.5 Haiku ($1,499 MXN)
 
 ### Temperatures Óptimas (Centralizado en `/server/config/model-temperatures.ts`)
+**Filosofía**: 0.7 para conversacional + tools, 1.0 solo para gpt-4o-mini (óptimo empírico)
+
 **OpenAI Models:**
-- gpt-5-nano: **1.0** (óptimo según testing Sept 29)
-- gpt-4o-mini: **1.0** (óptimo según testing)
-- gpt-5-mini: **0.3** (precisión para tareas complejas)
+- gpt-5-nano → gpt-4o-mini: **1.0** (mapeo transparente, óptimo según testing Sept 29)
+- gpt-5-mini → gpt-4o: **0.7** (conversacional natural + precisión con tools)
+- gpt-5: **0.7** (conversacional)
 - gpt-3.5-turbo: **0.7** (balance creatividad/precisión)
 
 **Anthropic Models:**
-- claude-3-haiku: **0.7**
-- claude-3.5-haiku: **0.5** (más preciso que 3)
-- claude-3-sonnet: **0.7**
-- claude-3.5-sonnet: **0.7**
-- claude-3-opus: **0.5** (máxima precisión)
+- claude-3-haiku: **0.7** (conversacional)
+- claude-3.5-haiku: **0.7** (conversacional)
+- claude-3-sonnet: **0.7** (conversacional)
+- claude-3.5-sonnet: **0.7** (conversacional)
+- claude-3-opus: **0.7** (conversacional)
 
 **Validación**: Temperature > 1.5 sanitizada automáticamente a 1.0 (evita alucinaciones severas)
 

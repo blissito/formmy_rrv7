@@ -7,18 +7,19 @@
 
 export const OPTIMAL_TEMPERATURES: Record<string, number> = {
   // OpenAI models
-  'gpt-5-nano': 1,           // Óptimo según testing (Sept 29, 2025)
-  'gpt-4o-mini': 1,          // Óptimo según testing
-  'gpt-5-mini': 0.3,         // Más preciso para tareas complejas
-  'gpt-5': 0.3,              // Modelo avanzado, temperature baja
+  'gpt-5-nano': 1,           // Maps to gpt-4o-mini - Óptimo según testing (Sept 29, 2025)
+  'gpt-4o-mini': 1,          // Óptimo para agentes conversacionales con tools
+  'gpt-5-mini': 0.7,         // Maps to gpt-4o - Balance conversación natural + precisión
+  'gpt-4o': 0.7,             // Balance conversación natural + precisión con tools
+  'gpt-5': 0.7,              // Modelo avanzado - conversacional
   'gpt-3.5-turbo': 0.7,      // Balance entre creatividad y precisión
 
   // Anthropic models
-  'claude-3-haiku-20240307': 0.7,        // Claude 3 Haiku
-  'claude-3-5-haiku-20241022': 0.5,      // Claude 3.5 Haiku (más preciso)
+  'claude-3-haiku-20240307': 0.7,        // Claude 3 Haiku - conversacional
+  'claude-3-5-haiku-20241022': 0.7,      // Claude 3.5 Haiku - conversacional (igualado a 3)
   'claude-3-sonnet-20240229': 0.7,       // Sonnet clásico
   'claude-3-5-sonnet-20241022': 0.7,     // Sonnet 3.5
-  'claude-3-opus-20240229': 0.5,         // Opus requiere más precisión
+  'claude-3-opus-20240229': 0.7,         // Opus - conversacional (aumentado de 0.5)
 
   // Gemini models (via OpenRouter)
   'gemini-2.0-flash': 0.7,
