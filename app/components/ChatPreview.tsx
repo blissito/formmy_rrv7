@@ -59,7 +59,8 @@ export default function ChatPreview({
   const [isConversationEnded, setIsConversationEnded] = useState(false);
   const inactivityTimerRef = useRef<number | null>(null);
 
-  // 🔄 SessionId con TTL de 24h - se regenera automáticamente después de 24h
+  // 🔄 SessionId con TTL de 24h - ÚNICA FUENTE DE VERDAD: localStorage
+  // NO usar useRef - se elimina para evitar problemas de sincronización
   const getOrCreateSessionId = () => {
     if (typeof window === "undefined")
       return `${production ? "prod" : "preview"}-${chatbot.id}-${Date.now()}`;
@@ -75,6 +76,7 @@ export default function ChatPreview({
 
         // Si la sesión tiene menos de 24h, reutilizarla
         if (age < MAX_AGE) {
+          console.log(`♻️ Reutilizando sessionId existente: ${sessionId.substring(0, 20)}...`);
           return sessionId;
         }
       } catch (e) {
@@ -89,11 +91,9 @@ export default function ChatPreview({
       timestamp: Date.now()
     }));
 
+    console.log(`🆕 Nuevo sessionId creado: ${newSessionId.substring(0, 20)}...`);
     return newSessionId;
   };
-
-  // SessionId persistente con reset automático cada 24h
-  const sessionIdRef = useRef<string>(getOrCreateSessionId());
 
   // VisitorId persistente para usuarios anónimos (público)
   const getOrCreateVisitorId = () => {
@@ -229,7 +229,6 @@ export default function ChatPreview({
 
     // 🆕 Regenerar sessionId para forzar nueva conversación (memoria limpia)
     const newSessionId = `${production ? "prod" : "preview"}-${chatbot.id}-${Date.now()}`;
-    sessionIdRef.current = newSessionId;
 
     // Actualizar localStorage con nueva sesión
     const storageKey = `formmy-session-${chatbot.id}`;
@@ -237,6 +236,8 @@ export default function ChatPreview({
       sessionId: newSessionId,
       timestamp: Date.now()
     }));
+
+    console.log(`🗑️ Conversación limpiada - Nuevo sessionId: ${newSessionId.substring(0, 20)}...`);
   };
 
   const handleChatSend = async () => {
@@ -264,28 +265,15 @@ export default function ChatPreview({
 
     // 🚀 Usar endpoint moderno AgentWorkflow simplificado
     {
-      // 🔑 CRÍTICO: Leer sessionId directamente desde localStorage (no useRef)
-      // Esto previene que el sessionId se regenere si el componente se remonta
-      const storageKey = `formmy-session-${chatbot.id}`;
-      const stored = localStorage.getItem(storageKey);
-      let currentSessionId = sessionIdRef.current;
-
-      if (stored) {
-        try {
-          const { sessionId } = JSON.parse(stored);
-          currentSessionId = sessionId;
-          // Sincronizar ref con localStorage
-          sessionIdRef.current = sessionId;
-        } catch (e) {
-          // Si falla, usar el ref actual
-        }
-      }
+      // 🔑 CRÍTICO: Obtener sessionId SIEMPRE de localStorage (fuente única de verdad)
+      const currentSessionId = getOrCreateSessionId();
+      console.log(`📤 Enviando mensaje con sessionId: ${currentSessionId.substring(0, 20)}...`);
 
       const formData = new FormData();
       formData.append("intent", "chat");
       formData.append("chatbotId", chatbot.id);
       formData.append("message", currentInput);
-      formData.append("sessionId", currentSessionId); // Usar sessionId de localStorage
+      formData.append("sessionId", currentSessionId); // SIEMPRE desde localStorage
       formData.append("visitorId", visitorIdRef.current); // Para usuarios anónimos (público)
       // ❌ ELIMINADO: conversationHistory desde cliente (backend usa BD como fuente de verdad)
       formData.append("stream", stream.toString()); // Usar valor real del toggle
