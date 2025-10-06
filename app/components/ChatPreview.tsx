@@ -264,13 +264,30 @@ export default function ChatPreview({
 
     // 🚀 Usar endpoint moderno AgentWorkflow simplificado
     {
+      // 🔑 CRÍTICO: Leer sessionId directamente desde localStorage (no useRef)
+      // Esto previene que el sessionId se regenere si el componente se remonta
+      const storageKey = `formmy-session-${chatbot.id}`;
+      const stored = localStorage.getItem(storageKey);
+      let currentSessionId = sessionIdRef.current;
+
+      if (stored) {
+        try {
+          const { sessionId } = JSON.parse(stored);
+          currentSessionId = sessionId;
+          // Sincronizar ref con localStorage
+          sessionIdRef.current = sessionId;
+        } catch (e) {
+          // Si falla, usar el ref actual
+        }
+      }
+
       const formData = new FormData();
       formData.append("intent", "chat");
       formData.append("chatbotId", chatbot.id);
       formData.append("message", currentInput);
-      formData.append("sessionId", sessionIdRef.current);
+      formData.append("sessionId", currentSessionId); // Usar sessionId de localStorage
       formData.append("visitorId", visitorIdRef.current); // Para usuarios anónimos (público)
-      formData.append("conversationHistory", JSON.stringify(updatedMessages));
+      // ❌ ELIMINADO: conversationHistory desde cliente (backend usa BD como fuente de verdad)
       formData.append("stream", stream.toString()); // Usar valor real del toggle
 
       // Timeout de seguridad para evitar loading infinito
