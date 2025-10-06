@@ -495,22 +495,57 @@ async function handleChatV0(params: {
             }
 
             // 💾 Guardar respuesta del asistente en la base de datos
-            if (fullResponse) {
-              console.log(`💾 Guardando respuesta del asistente (${fullResponse.length} caracteres)`);
+            // ✅ CRÍTICO: Guardar ANTES de cerrar el stream
+            if (fullResponse && fullResponse.trim().length > 0) {
+              console.log(`💾 Guardando respuesta del asistente (${fullResponse.length} caracteres) para conversación ${conversation.id}`);
+
               const { addAssistantMessage } = await import("../../server/chatbot/messageModel.server");
-              await addAssistantMessage(
-                conversation.id,
-                fullResponse,
-                undefined, // tokens (por ahora)
-                undefined, // responseTime
-                undefined, // firstTokenLatency
-                chatbot.aiModel,
-                "web"
-              ).then(() => {
-                console.log(`✅ Mensaje del asistente guardado exitosamente`);
-              }).catch(err => {
-                console.error("❌ Error guardando mensaje del asistente:", err);
-              });
+
+              // Reintentar hasta 3 veces si falla
+              let saved = false;
+              let lastError = null;
+
+              for (let attempt = 1; attempt <= 3 && !saved; attempt++) {
+                try {
+                  await addAssistantMessage(
+                    conversation.id,
+                    fullResponse,
+                    undefined, // tokens (por ahora)
+                    undefined, // responseTime
+                    undefined, // firstTokenLatency
+                    chatbot.aiModel,
+                    "web"
+                  );
+
+                  console.log(`✅ Mensaje del asistente guardado exitosamente (intento ${attempt})`);
+                  saved = true;
+                } catch (err) {
+                  lastError = err;
+                  console.error(`❌ Error guardando mensaje del asistente (intento ${attempt}/3):`, err);
+
+                  if (attempt < 3) {
+                    // Esperar 100ms antes de reintentar
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                  }
+                }
+              }
+
+              if (!saved) {
+                console.error(`🚨 CRÍTICO: No se pudo guardar mensaje del asistente después de 3 intentos`);
+                console.error(`   Conversación ID: ${conversation.id}`);
+                console.error(`   Longitud respuesta: ${fullResponse.length}`);
+                console.error(`   Último error:`, lastError);
+                // No fallar el stream, pero enviar advertencia
+                const warningData = JSON.stringify({
+                  type: "warning",
+                  content: "Respuesta generada pero hubo un problema al guardarla. Por favor contacta soporte si esto persiste."
+                });
+                controller.enqueue(
+                  encoder.encode(`data: ${warningData}\n\n`)
+                );
+              }
+            } else {
+              console.warn(`⚠️  No se guardó mensaje del asistente: respuesta vacía`);
             }
 
             // Señal de finalización
