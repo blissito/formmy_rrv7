@@ -236,6 +236,8 @@ async function createSingleAgent(
   let memory = undefined;
 
   if (conversationHistory && conversationHistory.length > 0) {
+    console.log(`🧠 [createSingleAgent] Creando memoria con ${conversationHistory.length} mensajes`);
+
     // Crear memoria vacía (sin memoryBlocks por ahora, solo mensajes directos)
     memory = createMemory({
       tokenLimit: 8000, // Límite razonable para contexto conversacional
@@ -243,11 +245,16 @@ async function createSingleAgent(
 
     // Agregar cada mensaje del historial a la memoria
     for (const msg of conversationHistory) {
+      console.log(`  📝 Agregando a memoria: ${msg.role} - "${msg.content.substring(0, 50)}..."`);
       await memory.add({
         role: msg.role,
         content: msg.content,
       });
     }
+
+    console.log(`✅ Memoria creada con ${conversationHistory.length} mensajes`);
+  } else {
+    console.log(`ℹ️  [createSingleAgent] Sin historial conversacional - memoria no creada`);
   }
 
   // ✅ Patrón oficial LlamaIndex TypeScript: pasar memoria en configuración del agente
@@ -261,6 +268,9 @@ async function createSingleAgent(
   // Solo agregar memoria si existe
   if (memory) {
     agentConfig.memory = memory;
+    console.log(`✅ Memoria agregada a agentConfig`);
+  } else {
+    console.log(`⚠️  Sin memoria en agentConfig`);
   }
 
   return agent(agentConfig);
