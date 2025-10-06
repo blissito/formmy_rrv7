@@ -11,7 +11,7 @@ import {
 } from "@llamaindex/workflow";
 import { OpenAI } from "@llamaindex/openai";
 import { Anthropic } from "@llamaindex/anthropic";
-import { createMemory } from "llamaindex";
+import { createMemory, staticBlock } from "llamaindex";
 import { getToolsForPlan, type ToolContext } from "../tools";
 import type { ResolvedChatbotConfig } from "../chatbot/configResolver.server";
 import { getAgentPrompt, type AgentType } from "~/utils/agents/agentPrompts";
@@ -241,31 +241,28 @@ async function createSingleAgent(
   console.log(`${'='.repeat(80)}\n`);
 
   if (conversationHistory && conversationHistory.length > 0) {
-    console.log(`🧠 Historial NO está vacío - procediendo a crear memoria`);
+    console.log(`🧠 Historial NO está vacío - procediendo a crear memoria con staticBlock`);
 
-    // Crear memoria vacía (sin memoryBlocks por ahora, solo mensajes directos)
+    // 🔧 Formatear historial como texto para staticBlock
+    const historyText = conversationHistory.map((msg) => {
+      const roleLabel = msg.role === 'user' ? 'Usuario' : msg.role === 'assistant' ? 'Asistente' : 'Sistema';
+      return `${roleLabel}: ${msg.content}`;
+    }).join('\n\n');
+
+    console.log(`📝 Historial formateado para staticBlock:\n${historyText.substring(0, 200)}...\n`);
+
+    // 🚀 Crear memoria con staticBlock (patrón oficial LlamaIndex)
     memory = createMemory({
-      tokenLimit: 8000, // Límite razonable para contexto conversacional
+      tokenLimit: 8000,
+      memoryBlocks: [
+        staticBlock({
+          content: `Historial de la conversación:\n\n${historyText}`,
+        }),
+      ],
     });
 
-    console.log(`✅ createMemory() ejecutado exitosamente`);
-    console.log(`   Tipo de memoria: ${typeof memory}`);
-    console.log(`   Memoria creada: ${memory ? 'SÍ' : 'NO'}\n`);
-
-    // Agregar cada mensaje del historial a la memoria
-    for (const msg of conversationHistory) {
-      console.log(`  📝 Agregando mensaje a memoria:`);
-      console.log(`     Role: ${msg.role}`);
-      console.log(`     Content: "${msg.content.substring(0, 80)}..."`);
-
-      await memory.add({
-        role: msg.role,
-        content: msg.content,
-      });
-    }
-
-    console.log(`\n✅ Memoria completada - ${conversationHistory.length} mensajes agregados`);
-    console.log(`   Memoria final existe: ${memory ? 'SÍ' : 'NO'}`);
+    console.log(`✅ Memoria creada con staticBlock`);
+    console.log(`   ${conversationHistory.length} mensajes en el bloque estático`);
   } else {
     console.log(`⚠️  [createSingleAgent] Sin historial - memoria NO creada`);
     console.log(`   conversationHistory: ${conversationHistory}`);
@@ -290,12 +287,9 @@ async function createSingleAgent(
   // Solo agregar memoria si existe
   if (memory) {
     agentConfig.memory = memory;
-    console.log(`✅ MEMORIA AGREGADA A AGENT CONFIG`);
-    console.log(`   agentConfig.memory existe: ${!!agentConfig.memory}`);
-    console.log(`   Tipo: ${typeof agentConfig.memory}`);
+    console.log(`✅ MEMORIA AGREGADA A AGENT CONFIG (staticBlock)`);
   } else {
-    console.log(`❌ SIN MEMORIA - agentConfig NO incluye memoria`);
-    console.log(`   Esto significa que el agente NO recordará nada`);
+    console.log(`⚠️  SIN MEMORIA - agente NO recordará conversaciones previas`);
   }
 
   console.log(`\n${'='.repeat(80)}`);
