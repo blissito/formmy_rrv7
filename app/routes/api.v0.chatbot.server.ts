@@ -327,14 +327,18 @@ async function handleChatV0(params: {
     const effectiveVisitorId = isAnonymous ? (visitorId || userId) : userId;
 
     let conversation = null;
+    let sessionIdProvided = false;
 
     if (sessionId) {
       // Cliente envió sessionId explícito → buscar esa conversación
+      sessionIdProvided = true;
       conversation = await getConversationBySessionId(sessionId);
     }
 
-    if (!conversation && effectiveVisitorId) {
-      // No hay sessionId O la conversación no existe → buscar última activa del visitor
+    // 🔑 CRÍTICO: Solo buscar última conversación si NO se proporcionó sessionId
+    // Si se proporcionó sessionId pero no existe → crear NUEVA conversación (no recuperar antigua)
+    if (!conversation && !sessionIdProvided && effectiveVisitorId) {
+      // No hay sessionId → buscar última activa del visitor (recuperación de sesión)
       console.log(`🔍 Buscando última conversación activa para visitorId: ${effectiveVisitorId}, chatbotId: ${chatbotId} ${isAnonymous ? '(anónimo)' : '(autenticado)'}`);
       conversation = await findLastActiveConversation({
         chatbotId,

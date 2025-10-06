@@ -58,10 +58,42 @@ export default function ChatPreview({
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [isConversationEnded, setIsConversationEnded] = useState(false);
   const inactivityTimerRef = useRef<number | null>(null);
-  // SessionId persistente para mantener contexto conversacional
-  const sessionIdRef = useRef<string>(
-    `${production ? "prod" : "preview"}-${chatbot.id}-${Date.now()}`
-  );
+
+  // 🔄 SessionId con TTL de 24h - se regenera automáticamente después de 24h
+  const getOrCreateSessionId = () => {
+    if (typeof window === "undefined")
+      return `${production ? "prod" : "preview"}-${chatbot.id}-${Date.now()}`;
+
+    const storageKey = `formmy-session-${chatbot.id}`;
+    const stored = localStorage.getItem(storageKey);
+
+    if (stored) {
+      try {
+        const { sessionId, timestamp } = JSON.parse(stored);
+        const age = Date.now() - timestamp;
+        const MAX_AGE = 24 * 60 * 60 * 1000; // 24 horas
+
+        // Si la sesión tiene menos de 24h, reutilizarla
+        if (age < MAX_AGE) {
+          return sessionId;
+        }
+      } catch (e) {
+        // Si hay error parseando, crear nueva sesión
+      }
+    }
+
+    // Crear nueva sesión
+    const newSessionId = `${production ? "prod" : "preview"}-${chatbot.id}-${Date.now()}`;
+    localStorage.setItem(storageKey, JSON.stringify({
+      sessionId: newSessionId,
+      timestamp: Date.now()
+    }));
+
+    return newSessionId;
+  };
+
+  // SessionId persistente con reset automático cada 24h
+  const sessionIdRef = useRef<string>(getOrCreateSessionId());
 
   // VisitorId persistente para usuarios anónimos (público)
   const getOrCreateVisitorId = () => {
@@ -194,6 +226,17 @@ export default function ChatPreview({
     ]);
     setChatError(null);
     setIsConversationEnded(false);
+
+    // 🆕 Regenerar sessionId para forzar nueva conversación (memoria limpia)
+    const newSessionId = `${production ? "prod" : "preview"}-${chatbot.id}-${Date.now()}`;
+    sessionIdRef.current = newSessionId;
+
+    // Actualizar localStorage con nueva sesión
+    const storageKey = `formmy-session-${chatbot.id}`;
+    localStorage.setItem(storageKey, JSON.stringify({
+      sessionId: newSessionId,
+      timestamp: Date.now()
+    }));
   };
 
   const handleChatSend = async () => {
