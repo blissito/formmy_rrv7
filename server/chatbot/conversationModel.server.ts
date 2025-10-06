@@ -14,10 +14,12 @@ export async function createConversation({
   chatbotId,
   visitorIp,
   visitorId,
+  sessionId: clientSessionId,
 }: {
   chatbotId: string;
   visitorIp?: string;
   visitorId?: string;
+  sessionId?: string; // ✅ NUEVO: Aceptar sessionId del cliente
 }): Promise<Conversation> {
   // Validar límites mensuales de conversaciones
   const limitValidation = await validateMonthlyConversationLimit(chatbotId);
@@ -27,8 +29,9 @@ export async function createConversation({
     );
   }
 
-  // Generate a unique session ID
-  const sessionId = nanoid();
+  // ✅ Usar sessionId del cliente si se proporciona, sino generar uno nuevo
+  const sessionId = clientSessionId || nanoid();
+  console.log(`🆕 Creando conversación con sessionId: ${clientSessionId ? 'del cliente' : 'generado'} → ${sessionId.substring(0, 20)}...`);
 
   // Create the conversation
   const conversation = await db.conversation.create({

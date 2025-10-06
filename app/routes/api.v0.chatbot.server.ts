@@ -355,7 +355,8 @@ async function handleChatV0(params: {
       console.log(`🆕 Creando nueva conversación para visitorId: ${effectiveVisitorId}, chatbotId: ${chatbotId} ${isAnonymous ? '(anónimo)' : '(autenticado)'}`);
       conversation = await createConversation({
         chatbotId,
-        visitorId: effectiveVisitorId
+        visitorId: effectiveVisitorId,
+        sessionId: sessionId || undefined // ✅ CRÍTICO: Pasar sessionId del cliente
       });
     }
 
