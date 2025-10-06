@@ -30,9 +30,75 @@
 - ❌ Keyword matching para tool selection (usar `getToolsForPlan()`)
 - ❌ Dual-agent systems con handoff manual (un agente con todas las tools)
 - ❌ Intent classification custom (dejar que AI decida)
+- ❌ **memory.add() para historial conversacional** (NO es usado por agent workflow)
 
 **✅ Pattern correcto**: `agent({ llm, tools: getToolsForPlan(), systemPrompt })`
 **Código limpio**: `/server/agents/agent-workflow.server.ts`, `/server/tools/index.ts`
+
+### 🧠 LlamaIndex Memory (CRÍTICO - Leer antes de tocar memoria)
+
+**⚠️ REGLA FUNDAMENTAL**: Para historial de conversación, SIEMPRE usar `staticBlock`, NUNCA `memory.add()`
+
+**Patrón CORRECTO** (implementado Oct 6, 2025):
+```typescript
+import { createMemory, staticBlock } from "llamaindex";
+
+// Formatear historial como texto
+const historyText = conversationHistory.map((msg) => {
+  const roleLabel = msg.role === 'user' ? 'Usuario' : 'assistant' ? 'Asistente' : 'Sistema';
+  return `${roleLabel}: ${msg.content}`;
+}).join('\n\n');
+
+// Crear memoria con staticBlock
+const memory = createMemory({
+  tokenLimit: 8000,
+  memoryBlocks: [
+    staticBlock({
+      content: `Historial de la conversación:\n\n${historyText}`
+    })
+  ]
+});
+
+// Pasar a agent config
+const agentConfig = {
+  llm,
+  tools,
+  systemPrompt,
+  memory, // ✅ LlamaIndex usará staticBlock como contexto directo al LLM
+};
+```
+
+**Patrón INCORRECTO** ❌ (NO hacer esto):
+```typescript
+// ❌ ESTO NO FUNCIONA - El agente IGNORA memory.add()
+const memory = createMemory({ tokenLimit: 8000 });
+for (const msg of conversationHistory) {
+  await memory.add({ role: msg.role, content: msg.content });
+}
+// Aunque memory.get() muestra los mensajes, el agente NO los usa
+```
+
+**¿Por qué?**
+- `staticBlock`: Contexto estático que se pasa DIRECTAMENTE al LLM ✅
+- `memory.add()`: Para que el agente agregue info DURANTE ejecución ✅
+- `memory.add()` para historial previo: El agent workflow NO lo lee ❌
+
+**Evidencia del bug (Oct 6):**
+- Test: Usuario dice "soy bliss" → Agente dice "Hola Bliss" ✅
+- Siguiente mensaje: "quien soy?" → Agente: "No sé quién eres" ❌
+- `memory.get()` mostraba 3 mensajes correctos en logs
+- Pero agente los ignoraba completamente
+- Fix: Cambiar a `staticBlock` → funcionó inmediatamente
+
+**Cuándo usar cada uno:**
+- **Historial conversacional**: `staticBlock` (contexto previo)
+- **Facts extraction**: `factExtractionBlock` (durante conversación)
+- **Vector search**: `vectorBlock` (RAG semántico)
+- **Memory.add()**: Solo para que el AGENTE agregue info durante su ejecución
+
+**Referencias:**
+- Docs oficiales: https://developers.llamaindex.ai/typescript/framework/modules/data/memory
+- Implementación: `/server/agents/agent-workflow.server.ts` línea 244-262
 
 ## 🛠️ Sistema de Herramientas (Tools)
 
