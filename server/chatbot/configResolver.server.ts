@@ -7,6 +7,7 @@ import type { Chatbot, User } from "@prisma/client";
 import { validateChatbotConfig, applyModelCorrection } from "./modelValidator.server";
 import { PLAN_LIMITS } from "./planLimits.server";
 import { getDefaultModelForPlan } from "~/utils/aiModels";
+import { resolveTemperature } from "../config/model-temperatures";
 
 export interface ResolvedChatbotConfig {
   // Core config
@@ -64,23 +65,14 @@ export interface AgentExecutionContext {
 export function resolveAnonymousChatbotConfig(chatbot: Chatbot): ResolvedChatbotConfig {
   const validationWarnings: string[] = [];
 
-  // 🛡️ VALIDACIÓN CRÍTICA: Temperature segura
-  let safeTemperature = chatbot.temperature || 1;
-
-  // NUNCA permitir temperature > 1.5 (causa alucinaciones multilenguaje)
-  if (safeTemperature > 1.5) {
-    console.warn(`⚠️ Temperature ${safeTemperature} DEMASIADO ALTA para chatbot ${chatbot.id}. Forzando a 1.0`);
-    safeTemperature = 1.0;
-    validationWarnings.push(`Temperature reducida de ${chatbot.temperature} a 1.0 por seguridad`);
-  }
-
-  // Para GPT-5 nano y gpt-4o-mini, forzar temperature=1 (óptimo)
+  // 🛡️ VALIDACIÓN CRÍTICA: Temperature segura y óptima por modelo
   const model = chatbot.aiModel;
-  if (model === 'gpt-5-nano' || model === 'gpt-4o-mini') {
-    if (safeTemperature !== 1) {
-      console.log(`🔧 Ajustando temperature a 1 para ${model} (requerido/óptimo)`);
-      safeTemperature = 1;
-    }
+  const tempResolution = resolveTemperature(model, chatbot.temperature);
+  const safeTemperature = tempResolution.temperature;
+
+  if (tempResolution.wasOverridden && tempResolution.reason) {
+    console.warn(`⚠️ Temperature override para ${model}:`, tempResolution.reason);
+    validationWarnings.push(tempResolution.reason);
   }
 
   // 🛡️ Límite de tokens razonable (evitar loops infinitos)
@@ -154,23 +146,13 @@ export function resolveChatbotConfig(
     validationWarnings.push(modelCorrection.warning || "Modelo corregido por restricciones del plan");
   }
 
-  // 2. Resolver temperatura según modelo
-  let finalTemperature = chatbot.temperature || 0.7;
+  // 2. Resolver temperatura según modelo (centralizado)
+  const tempResolution = resolveTemperature(finalModel, chatbot.temperature);
+  const finalTemperature = tempResolution.temperature;
 
-  // 🛡️ PROTECCIÓN CRÍTICA: Temperature > 1.5 causa alucinaciones severas
-  if (finalTemperature > 1.5) {
-    console.warn(`⚠️ Temperature ${finalTemperature} DEMASIADO ALTA - causó alucinaciones multilenguaje. Reducida a 1.0`);
-    validationWarnings.push(`⚠️ Temperature ${finalTemperature} es DEMASIADO ALTA (causa basura). Reducida a 1.0`);
-    finalTemperature = 1.0;
-  }
-
-  // Para GPT-5 nano y gpt-4o-mini, FORZAR temperature=1 (óptimo/requerido)
-  if (finalModel === "gpt-5-nano" || finalModel === "gpt-4o-mini") {
-    if (finalTemperature !== 1) {
-      console.log(`🔧 Ajustando temperature a 1 para ${finalModel} (óptimo)`);
-      validationWarnings.push(`Temperature ajustada a 1 para ${finalModel}`);
-      finalTemperature = 1;
-    }
+  if (tempResolution.wasOverridden && tempResolution.reason) {
+    console.warn(`⚠️ Temperature override para ${finalModel}:`, tempResolution.reason);
+    validationWarnings.push(tempResolution.reason);
   }
 
   // 3. Resolver límites de tokens

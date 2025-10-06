@@ -15,6 +15,7 @@ import { createMemory } from "llamaindex";
 import { getToolsForPlan, type ToolContext } from "../tools";
 import type { ResolvedChatbotConfig } from "../chatbot/configResolver.server";
 import { getAgentPrompt, type AgentType } from "~/utils/agents/agentPrompts";
+import { getOptimalTemperature } from "../config/model-temperatures";
 
 // Types para el workflow
 interface WorkflowContext {
@@ -33,13 +34,9 @@ interface WorkflowContext {
 function createLLM(model: string, temperature?: number) {
   const config: any = { model };
 
-  // Handle temperature based on model
-  if (model === "gpt-5-nano" || model === "gpt-4o-mini") {
-    // GPT-5 nano and 4o-mini work best with specific temperature
-    config.temperature = temperature !== undefined ? temperature : 0.3;
-  } else if (temperature !== undefined) {
-    config.temperature = temperature;
-  }
+  // Use centralized temperature resolution
+  // Si no se proporciona temperature, usar la óptima del modelo
+  config.temperature = temperature !== undefined ? temperature : getOptimalTemperature(model);
 
   // 🛡️ Token limits ESTRICTOS (reducidos para evitar loops infinitos)
   if (model.startsWith("gpt-5") || model.startsWith("gpt-4")) {
@@ -86,12 +83,45 @@ function buildSystemPrompt(
   // Agent types válidos
   const agentTypes: AgentType[] = ['sales', 'customer_support', 'content_seo', 'data_analyst', 'automation_ai', 'growth_hacker'];
 
+  // 🔍 PRIORIDAD MÁXIMA: Instrucciones de búsqueda PRIMERO (antes de custom instructions)
+  let searchInstructions = '';
+  if (hasContextSearch) {
+    searchInstructions = `⚠️ REGLA FUNDAMENTAL - SIEMPRE EJECUTAR PRIMERO:
+
+CUANDO EL USUARIO PREGUNTA SOBRE:
+- Productos, servicios, características, precios, planes, costos
+- Información del negocio, empresa, documentación
+- Políticas, términos, condiciones, FAQs
+- CUALQUIER información específica del negocio
+
+PROTOCOLO OBLIGATORIO:
+1. EJECUTAR search_context("query específica") INMEDIATAMENTE - NO OPCIONAL
+2. Si no encuentras: REFORMULAR query y BUSCAR DE NUEVO (mínimo 2 intentos)
+3. Si múltiples temas: EJECUTAR MÚLTIPLES BÚSQUEDAS${hasWebSearch ? `
+4. Si todo falla: EJECUTAR web_search_google("${config.name === 'Ghosty' ? 'Formmy' : config.name} [tema]")
+5. Solo si todo falla: "Busqué pero no encontré información sobre [tema]"` : `
+4. Solo si todo falla: "Busqué en la base de conocimiento pero no encontré información sobre [tema]"`}
+
+❌ PROHIBIDO ABSOLUTAMENTE:
+- Responder "no tengo información" SIN buscar primero
+- Inventar o adivinar precios, fechas, features
+- Decir "no sé" sin AGOTAR todas las búsquedas
+
+✅ EJEMPLO CORRECTO:
+User: "¿Tienen planes más baratos que $5,000?"
+→ EJECUTAR: search_context("precios planes baratos económicos")
+→ LEER resultados y RESPONDER con datos encontrados
+
+`;
+  }
+
+  // Construir prompt base con personalidad
   let basePrompt: string;
 
   // Si personality es un AgentType válido, usar prompt optimizado
   if (agentTypes.includes(personality as AgentType)) {
-    // Solo usar customInstructions (instructions se ignora para AgentTypes)
-    basePrompt = `${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}${config.customInstructions ? '\n\n' + config.customInstructions : ''}`;
+    // NUEVO ORDEN: searchInstructions PRIMERO, luego personality y custom instructions
+    basePrompt = `${searchInstructions}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}${config.customInstructions ? '\n\n' + config.customInstructions : ''}`;
   } else {
     // Fallback a personalidades genéricas (friendly, professional)
     const personalityMap: Record<string, string> = {
@@ -99,43 +129,12 @@ function buildSystemPrompt(
       professional: "asistente profesional",
     };
 
-    // Solo usar customInstructions (NO duplicar con instructions)
-    basePrompt = `Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
+    // NUEVO ORDEN: searchInstructions PRIMERO
+    basePrompt = `${searchInstructions}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
 
 ${config.instructions || "Asistente útil."}${config.customInstructions ? '\n\n' + config.customInstructions : ''}
 
 Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu personalidad.`;
-  }
-
-  // Instrucciones de búsqueda si tiene acceso a search_context
-  if (hasContextSearch) {
-    basePrompt += `
-
-🔍 BÚSQUEDA OBLIGATORIA:
-Cuando usuario pregunta sobre el negocio:
-
-1. Base de conocimiento (search_context):
-   → Ejecuta con query específica INMEDIATAMENTE
-   → Si insuficiente: ajusta query y busca de nuevo (mín 2 intentos)
-   → Preguntas multi-tema: múltiples búsquedas${hasWebSearch ? `
-
-2. Fallback web (AUTOMÁTICO si #1 falla):
-   → Ejecuta web_search_google: "${config.name === 'Ghosty' ? 'Formmy' : config.name} [tema] 2025"
-   → NO preguntes, HAZLO DIRECTAMENTE` : ''}
-
-3. Si todo falla:
-   → "Busqué en [lugares] pero no encontré información sobre [tema]"
-
-Prohibido:
-- Responder sin buscar primero
-- Inventar datos (precios, fechas, features)
-- Ofrecer buscar en lugar de buscar
-
-Ejemplo:
-User: "¿Precios de planes?"
-→ search_context("precios planes costos")${hasWebSearch ? `
-→ [Sin resultados] → web_search_google("Formmy precios planes 2025")` : ''}
-→ Responde con datos encontrados`;
   }
 
   // 🛡️ Restricciones de seguridad para web_search_google

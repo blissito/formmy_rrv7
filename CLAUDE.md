@@ -207,8 +207,10 @@ Agent:
 - Formateo de resultados con fuentes y scores
 - Error handling para índice no configurado
 
-### System Prompt RAG (Actualizado Oct 4, v2)
+### System Prompt RAG (Actualizado Oct 6, v3 - Prioridad Máxima)
 El agente recibe **instrucciones ultra-enfáticas** con estrategia de cascada y chain-of-thought:
+
+**🚨 CAMBIO CRÍTICO (Oct 6)**: Instrucciones de búsqueda ahora van PRIMERO (antes de custom instructions) para evitar conflictos con prompts del usuario como "Si no conoces algo: deriva al equipo comercial"
 
 **🔍 PROTOCOLO DE BÚSQUEDA EN CASCADA:**
 1. **PASO 1** - Base de conocimiento (`search_context`): mínimo 2 intentos con queries reformuladas
@@ -222,13 +224,26 @@ El agente recibe **instrucciones ultra-enfáticas** con estrategia de cascada y 
 - Ejemplo completo: search_context → sin resultados → web_search_google → responder
 - Por qué funciona: Modelos imitan el patrón de razonamiento que ven en ejemplos
 
+**✅ Ejemplo de prompt mejorado**:
+```
+User: "¿Tienen planes más baratos que $5,000?"
+→ EJECUTAR: search_context("precios planes baratos económicos")
+→ LEER resultados y RESPONDER con datos encontrados
+```
+
 **🐛 Bug crítico resuelto (Oct 4)**:
 - Problema: Ghosty no usaba web_search como fallback por conflicto de seguridad
 - Causa: `businessDomain = config.name` ("Ghosty") pero el negocio es "Formmy"
 - Fix: Detectar `if (config.name === 'Ghosty') businessDomain = 'Formmy'`
 - Resultado: Restricciones de seguridad ahora permiten búsquedas sobre el negocio real
 
-Implementado en `/server/agents/agent-workflow.server.ts:99-189` y `/server/tools/index.ts:186-223`
+**🐛 Bug crítico resuelto (Oct 6)**:
+- Problema: Agentes NO usaban search_context en chatbots con custom instructions fuertes
+- Causa: Custom instructions del usuario ("deriva al equipo") sobrescribían instrucciones de búsqueda
+- Fix: Instrucciones de búsqueda ahora van PRIMERO en el system prompt (línea 88-116)
+- Resultado: REGLA FUNDAMENTAL aparece antes de personalidad/custom instructions
+
+Implementado en `/server/agents/agent-workflow.server.ts:75-138` y `/server/tools/index.ts:186-223`
 
 ### Migración de Contextos Legacy
 **Scripts disponibles**:
@@ -284,6 +299,22 @@ DEVELOPMENT_TOKEN=FORMMY_DEV_TOKEN_2025 npx tsx scripts/test-rag-prompts.ts
 **Por Plan**:
 - **FREE**: Sin acceso post-trial | **STARTER/PRO**: GPT-4o-mini ($149/$499 MXN)
 - **ENTERPRISE**: GPT-5 Mini + Claude 3.5 Haiku ($1,499 MXN)
+
+### Temperatures Óptimas (Centralizado en `/server/config/model-temperatures.ts`)
+**OpenAI Models:**
+- gpt-5-nano: **1.0** (óptimo según testing Sept 29)
+- gpt-4o-mini: **1.0** (óptimo según testing)
+- gpt-5-mini: **0.3** (precisión para tareas complejas)
+- gpt-3.5-turbo: **0.7** (balance creatividad/precisión)
+
+**Anthropic Models:**
+- claude-3-haiku: **0.7**
+- claude-3.5-haiku: **0.5** (más preciso que 3)
+- claude-3-sonnet: **0.7**
+- claude-3.5-sonnet: **0.7**
+- claude-3-opus: **0.5** (máxima precisión)
+
+**Validación**: Temperature > 1.5 sanitizada automáticamente a 1.0 (evita alucinaciones severas)
 
 ## API v1 Chatbot - Modular (Sept 16) ✅
 
