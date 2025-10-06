@@ -86,7 +86,24 @@ function buildSystemPrompt(
   // 🔍 PRIORIDAD MÁXIMA: Instrucciones de búsqueda PRIMERO (antes de custom instructions)
   let searchInstructions = '';
   if (hasContextSearch) {
-    searchInstructions = `⚠️ REGLA FUNDAMENTAL - SIEMPRE EJECUTAR PRIMERO:
+    searchInstructions = `⚠️ REGLA CRÍTICA - REVISAR HISTORIAL PRIMERO:
+
+Si el usuario pregunta sobre información que ÉL MISMO mencionó en esta conversación:
+- Su nombre, empresa, rol, preferencias
+- Problemas o necesidades que ya comentó
+- Cualquier dato personal que compartió
+→ RESPONDE DIRECTAMENTE usando esa información del historial
+→ NO uses search_context (esa herramienta es para info del NEGOCIO, no del USUARIO)
+
+Ejemplo:
+Usuario: "me llamo Juan y trabajo en marketing"
+Usuario: "cómo me llamo?"
+→ CORRECTO: "Te llamas Juan" ✅
+→ INCORRECTO: search_context("Juan cliente") ❌
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ REGLA FUNDAMENTAL - BÚSQUEDA EN BASE DE CONOCIMIENTO:
 
 CUANDO EL USUARIO PREGUNTA SOBRE:
 - Productos, servicios, características, precios, planes, costos
