@@ -237,13 +237,24 @@ User: "¿Tienen planes más baratos que $5,000?"
 - Fix: Detectar `if (config.name === 'Ghosty') businessDomain = 'Formmy'`
 - Resultado: Restricciones de seguridad ahora permiten búsquedas sobre el negocio real
 
-**🐛 Bug crítico resuelto (Oct 6)**:
+**🐛 Bug crítico resuelto (Oct 6 - RAG Priority)**:
 - Problema: Agentes NO usaban search_context en chatbots con custom instructions fuertes
 - Causa: Custom instructions del usuario ("deriva al equipo") sobrescribían instrucciones de búsqueda
-- Fix: Instrucciones de búsqueda ahora van PRIMERO en el system prompt (línea 88-116)
+- Fix: Instrucciones de búsqueda ahora van PRIMERO en el system prompt (línea 88-124)
 - Resultado: REGLA FUNDAMENTAL aparece antes de personalidad/custom instructions
 
-Implementado en `/server/agents/agent-workflow.server.ts:75-138` y `/server/tools/index.ts:186-223`
+**🐛 Bug crítico resuelto (Oct 6 - Verbosidad)**:
+- Problema: Agentes daban respuestas muy largas y exhaustivas (oversharing)
+- Causa 1: Temperature = 0 en chatbots antiguos (determinístico → exhaustivo)
+- Causa 2: System prompt no incluía instrucciones de concisión
+- Fix 1: Migración masiva de temperatures a óptimas por modelo (script migrate-temperatures.ts)
+- Fix 2: Agregadas "REGLAS DE CONCISIÓN" al system prompt RAG
+  - "Responde SOLO lo que se preguntó"
+  - "Si preguntan por UN servicio, NO enumeres TODOS"
+  - Ejemplo correcto vs incorrecto incluido
+- Resultado: Respuestas más concisas y relevantes sin perder precisión
+
+Implementado en `/server/agents/agent-workflow.server.ts:86-124` y `/server/tools/index.ts:186-223`
 
 ### Migración de Contextos Legacy
 **Scripts disponibles**:
