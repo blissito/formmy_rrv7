@@ -71,7 +71,7 @@ export const MessageBubble = ({
             {nodes || message?.content}
           </p>
         </div>
-        <Avatar className="w-8 h-8" />
+        <Avatar className="min-w-8  min-h-8 max-w-8 max-h-8" />
       </div>
     );
   }
@@ -95,7 +95,7 @@ export const MessageBubble = ({
 
   return (
     <main className="px-4 flex items-start gap-3 max-w-[90%] ">
-      <Avatar className="w-8 h-8" src={avatarUrl} />
+      <Avatar className="min-w-8 max-w-8 h-8" src={avatarUrl} />
       <div className="bg-white border border-outlines rounded-tr-lg rounded-xl p-3 max-w-md">
         {/* Indicador de Echo Message */}
         {isWhatsAppEcho && (

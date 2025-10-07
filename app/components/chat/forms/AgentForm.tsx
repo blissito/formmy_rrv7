@@ -158,10 +158,10 @@ export const AgentForm = ({
       {/* Sistema de Prompts Mejorado */}
       <div className="space-y-4">
         {/* Prompt Base del Agente */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+        <div className="bg-cloud/20 rounded-lg p-4 border border-cloud">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <HiSparkles className="text-blue-600" />
+              <HiSparkles className="text-cloud" />
               <h3 className="text-sm font-medium text-gray-900">
                 Prompt Base: {getAgentName(selectedAgent)}
               </h3>
@@ -169,7 +169,7 @@ export const AgentForm = ({
             <button
               type="button"
               onClick={() => setShowBasePrompt(!showBasePrompt)}
-              className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              className="text-sm text-teal-500 hover:text-teal-700 flex items-center gap-1"
             >
               {showBasePrompt ? <FiEyeOff /> : <FiEye />}
               {showBasePrompt ? "Ocultar" : "Ver prompt"}
@@ -192,13 +192,11 @@ export const AgentForm = ({
               Personalización adicional (opcional)
             </h3>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-500">
-                {customInstructions.length}/1500 caracteres
-              </span>
+             
               <button
                 type="button"
                 onClick={() => setShowModal(true)}
-                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                className="text-sm text-brand-500 hover:text-brand-600 flex items-center gap-1"
               >
                 <FiMaximize2 />
                 Expandir
@@ -210,10 +208,13 @@ export const AgentForm = ({
             value={customInstructions}
             onChange={handleCustomInstructionsChangeLocal}
             placeholder="Añade contexto específico de tu negocio: nombre, productos, horarios, políticas, tono de voz, etc."
-            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
+            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-0 focus:border-brand-500 resize-y text-sm"
             rows={8}
             maxLength={1500}
           />
+           <p className="text-xs text-gray-500 text-end">
+                {customInstructions.length}/1500 caracteres
+              </p>
         </div>
 
         {/* Preview del Prompt Final (Oculto) */}
@@ -234,37 +235,40 @@ export const AgentForm = ({
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col"
+            className="bg-white p-6 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-medium text-gray-900">
+            <div className="flex items-center justify-between p-4">
+              <h3 className="text-2xl font-semibold text-dark">
                 Personalización adicional
               </h3>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-500">
                   {customInstructions.length}/1500 caracteres
                 </span>
-                <button
-                  type="button"
+          
+                <button    type="button"
                   onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
+                   className="text-gray-400 hover:text-gray-600 text-2xl"
+                  >
+                  <img
+                    alt="close"
+                    src="/assets/close.svg"
+                  />
                 </button>
               </div>
             </div>
             <div className="p-4 flex-1 overflow-auto flex flex-col gap-3">
               {/* Tooltip educativo en modal */}
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-gray-700">
+              <div className="p-3 bg-cloud/20 border border-cloud rounded-lg text-xs text-dark">
                 <p className="font-medium mb-1">💡 ¿Qué añadir aquí?</p>
-                <ul className="ml-4 space-y-1 list-disc text-gray-600">
+                <ul className="ml-4 space-y-1 list-disc text-dark">
                   <li>Nombre de tu empresa/producto y qué ofreces</li>
                   <li>Políticas específicas (devoluciones, horarios, precios)</li>
                   <li>Tono de voz y personalidad única de tu marca</li>
                   <li>Restricciones o temas que NO debe tratar</li>
                 </ul>
-                <p className="mt-2 text-gray-500">
+                <p className="mt-2 text-metal">
                   <strong>Importante:</strong> Este texto se añade al prompt base del agente para personalizarlo a tu negocio.
                 </p>
               </div>
@@ -281,7 +285,7 @@ export const AgentForm = ({
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="h-12 rounded-full border bg-outlines px-6 text-metal"
               >
                 Cerrar
               </button>

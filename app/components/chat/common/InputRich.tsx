@@ -30,7 +30,7 @@ export function InputRich({
   if (typeof window === "undefined") {
     return (
       <div
-        className={`rounded-lg border border-gray-300  p-2 bg-purple-400 shadow-sm ${className}`}
+        className={`rounded-lg border border-gray-300  p-2 bg-purple-400  ${className}`}
       >
         <div className="min-h-[100px] w-full p-2">
           <p className="text-gray-400 ">{placeholder}</p>
@@ -42,7 +42,7 @@ export function InputRich({
   const editor = useEditor({
     editorProps: {
       attributes: {
-        class: "prose prose-sm sm:prose lg:prose-lg mx-auto focus:outline-none",
+        class: "prose prose-sm sm:prose lg:prose-base mx-auto focus:outline-none",
       },
     },
     // Configuración para evitar problemas de hidratación
