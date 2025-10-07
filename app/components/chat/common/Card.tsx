@@ -189,7 +189,7 @@ export const IntegrationCard = ({
   const isConnected = isPermanent || (exists && isActive);
 
   return (
-    <div className="grid shadow-standard border border-outlines p-3 rounded-2xl">
+    <div className="grid shadow-standard border border-outlines p-3 rounded-2xl min-h-[202px]">
       <img className="w-8 aspect-square mb-2" src={logo} alt="logo" />
       <div className="flex items-center justify-between mb-1">
         <h5 className="font-medium text-md mb-0">{name}</h5>
@@ -221,7 +221,7 @@ export const IntegrationCard = ({
 
       {/* Status indicator */}
 
-      <nav className="flex gap-2">
+      <nav className="flex gap-2 mt-auto">
         <SimpleButton
           className={`grow ${
             isConnected

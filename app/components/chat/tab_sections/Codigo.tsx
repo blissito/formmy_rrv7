@@ -28,11 +28,20 @@ const availableIntegrations = [
     isPermanent: true, // Integración permanente, siempre activa
   },
   {
+    id: "SAVE_CONTACT",
+    name: "Gestión de Contactos",
+    logo: "/assets/chat/users.svg",
+    description:
+      "Sistema de captura y gestión de contactos. Tu agente guarda información de clientes y prospectos durante las conversaciones.",
+    isPermanent: true, // Integración permanente, siempre activa
+  },
+  {
     id: "STRIPE",
     name: "Stripe",
     logo: "/assets/chat/stripe.png",
     description:
       "Permite que tu agente genere links de pago automáticamente para cobrar productos y servicios.",
+    isPermanent: false,
   },
   {
     id: "GOOGLE_CALENDAR",
@@ -40,6 +49,7 @@ const availableIntegrations = [
     logo: "/assets/chat/calendar.png",
     description:
       "Conecta tu agente a Google Calendar para que pueda programar citas y recordatorios automáticamente.",
+    isPermanent: false,
   },
   {
     id: "WHATSAPP",
@@ -47,6 +57,7 @@ const availableIntegrations = [
     logo: "/assets/chat/whatsapp.svg",
     description:
       "Conecta a tu agente a un número de WhatsApp y deja que responda los mensajes de tus clientes.",
+    isPermanent: false,
   },
   {
     id: "INSTAGRAM",
@@ -54,6 +65,7 @@ const availableIntegrations = [
     logo: "/assets/chat/instagram.svg",
     description:
       "Conecta a tu agente a una página de Instagram y deja que responda los mensajes de tus clientes.",
+    isPermanent: false,
   },
   {
     id: "MESSENGER",
@@ -61,6 +73,7 @@ const availableIntegrations = [
     logo: "/assets/chat/messenger.svg",
     description:
       "Conecta a tu agente a tu fan page y deja que responda los mensajes de tus clientes.",
+    isPermanent: false,
   },
   {
     id: "SHOPIFY",
@@ -68,6 +81,7 @@ const availableIntegrations = [
     logo: "/assets/chat/shopify.svg",
     description:
       "Deje que tu agente interactúe con sus clientes, responda a sus consultas, ayude con los pedidos y más.",
+    isPermanent: false,
   },
   {
     id: "WORDPRESS",
@@ -75,6 +89,7 @@ const availableIntegrations = [
     logo: "/assets/chat/wordpress.svg",
     description:
       "Utiliza el plugin para Wordpress para agregar el widget de chat a su sitio web.",
+    isPermanent: false,
   },
   {
     id: "SLACK",
@@ -82,6 +97,7 @@ const availableIntegrations = [
     logo: "/assets/chat/slack.svg",
     description:
       "Conecta a tu agente a Slack, menciónalo y haz que responda cualquier mensaje.",
+    isPermanent: false,
   },
 ] as const;
 
