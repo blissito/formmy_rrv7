@@ -246,6 +246,7 @@ if (contact.chatbot.userId !== user.id) {
 **Protección**: Usuarios no pueden modificar contactos de chatbots ajenos (403 Forbidden)
 
 #### 3. **Exportación a CSV Client-Side**
+**Contactos** (`Contactos.tsx`):
 ```typescript
 const handleExportCSV = () => {
   const headers = ["Nombre", "Email", "Teléfono", "Empresa", "Cargo", "Estatus", "Origen", "Fecha"];
@@ -260,11 +261,40 @@ const handleExportCSV = () => {
 };
 ```
 
+**Conversaciones** (`Conversations.tsx` - IMPLEMENTADO Oct 7, 2025):
+```typescript
+const handleDownloadCSV = () => {
+  if (!conversation) return;
+
+  const headers = ["Fecha/Hora", "Rol", "Mensaje"];
+  const rows = conversation.messages.map(message => {
+    const timestamp = new Date(message.createdAt).toLocaleString('es-MX', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    const role = message.role === "USER" ? "Usuario" : "Asistente";
+    const content = `"${message.content.replace(/"/g, '""')}"`;
+    return [timestamp, role, content].join(",");
+  });
+
+  const csvContent = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  const date = new Date().toISOString().split('T')[0];
+  const userName = conversation.userName.replace(/[^a-zA-Z0-9]/g, '_');
+  link.download = `conversacion_${userName}_${date}.csv`;
+  link.click();
+};
+```
+
 **Ventajas**:
 - Sin roundtrip al servidor (generación instantánea)
-- Nombre descriptivo con slug y fecha
+- Nombre descriptivo con slug/usuario y fecha
 - Soporte UTF-8 para caracteres especiales
-- Respeta filtros de búsqueda actuales
+- Escape de comillas dobles para compatibilidad CSV estándar
+- Formato de fecha localizado (es-MX)
+- Respeta filtros de búsqueda actuales (contactos)
 
 #### 4. **Query Params Reactivos (Navegación)**
 **Problema resuelto**: `useState` con `window.location.search` no es reactivo → URL cambia pero UI no se actualiza
