@@ -614,9 +614,9 @@ const ActionButtons = ({ conversation }: { conversation?: Conversation }) => {
   };
 
   return (
-    <nav className="flex items-center gap-2">
-      <SimpleButton src="/assets/chat/tuning.svg" />
-      <SimpleButton src="/assets/chat/refresh.svg" />
+    <nav className="flex items-center gap-2 w-full justify-end mb-6">
+      <SimpleButton src="/assets/chat/tuning.svg" disabled />
+      <SimpleButton src="/assets/chat/refresh.svg" disabled />
       <SimpleButton src="/assets/chat/download.svg" onClick={handleDownloadCSV} />
     </nav>
   );
@@ -626,10 +626,12 @@ const SimpleButton = ({
   src,
   onClick,
   className,
+  disabled = false,
 }: {
   src: string;
   onClick?: () => void;
   className?: string;
+  disabled?: boolean;
 }) => {
   return (
     <button
@@ -637,10 +639,11 @@ const SimpleButton = ({
         "enabled:cursor-pointer enabled:active:scale-95",
         "enabled:hover:bg-gray-50 enabled:hover:shadow-sm transition-all",
         "rounded-xl p-1 border border-gray-300",
-
+        "disabled:opacity-50 disabled:cursor-not-allowed",
         className
       )}
       onClick={onClick}
+      disabled={disabled}
     >
       <img className="pointer-events-none" src={src} alt="icon" />
     </button>
@@ -676,7 +679,6 @@ export const ConversationsPreview = ({
     <div className="h-full flex flex-col max-h-[calc(100vh-320px)]">
       <div className="flex-shrink-0">
         <ActionButtons conversation={conversation} />
-        <hr className="my-3" />
         {conversation && (
           <ChatHeader
             conversation={conversation}
