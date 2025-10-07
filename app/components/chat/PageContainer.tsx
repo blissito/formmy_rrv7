@@ -566,6 +566,7 @@ export const TabSelector = ({
   const tabs = [
     "Preview",
     "Conversaciones",
+    "Contactos",
     "Entrenamiento",
     "Tareas",
     "Código",

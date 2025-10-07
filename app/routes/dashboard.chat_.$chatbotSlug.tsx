@@ -2,6 +2,7 @@ import { getUserOrRedirect } from "server/getUserUtils.server";
 import { PageContainer } from "~/components/chat/PageContainer";
 import { useNavigate, useFetcher, useRevalidator } from "react-router";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
+import { Contactos } from "~/components/chat/tab_sections/Contactos";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
 import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
@@ -320,6 +321,9 @@ export default function ChatbotDetailRoute({
             onSendManualResponse={handleSendManualResponse}
             onDeleteConversation={handleDeleteConversation}
           />
+        )}
+        {currentTab === "Contactos" && (
+          <Contactos chatbot={chatbot} user={user} />
         )}
         {currentTab === "Entrenamiento" && (
           <Entrenamiento chatbot={chatbot} user={user} />
