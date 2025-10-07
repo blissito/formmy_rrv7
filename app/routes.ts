@@ -104,6 +104,7 @@ export default [
 
   // API v1 routes
   route("api/v1/chatbot", "routes/api.v1.chatbot.ts"),
+  route("api/v1/contacts", "routes/api.v1.contacts.ts"),
   route("api/v1/conversations", "routes/api.v1.conversations.tsx"),
 
   // API v0 routes - Motor AgentEngine_v0

@@ -109,6 +109,16 @@ enum FormmyTypes {
   subscription
 }
 
+enum ContactStatus {
+  NEW
+  CONTACTED
+  SCHEDULED
+  NEGOTIATING
+  ON_HOLD
+  CLOSED_WON
+  CLOSED_LOST
+}
+
 model Project {
   isActive    Boolean          @default(true)
   slug        String           @unique
@@ -249,7 +259,7 @@ model Chatbot {
 }
 
 model Contact {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  id       String        @id @default(auto()) @map("_id") @db.ObjectId
   name     String? // Nombre completo
   email    String? // Email de contacto
   phone    String? // Teléfono
@@ -257,7 +267,8 @@ model Contact {
   position String? // Cargo/posición
   website  String? // Sitio web
   notes    String? // Notas adicionales o contexto
-  source   String  @default("chatbot") // Fuente: chatbot, whatsapp, etc.
+  source   String        @default("chatbot") // Fuente: chatbot, whatsapp, etc.
+  status   ContactStatus @default(NEW) // Estado del lead en el embudo
 
   // Relaciones
   chatbotId String  @db.ObjectId

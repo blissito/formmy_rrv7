@@ -1,7 +1,7 @@
 import type { Chatbot, Message, User } from "@prisma/client";
 import { ChipTabs, useChipTabs } from "../common/ChipTabs";
 import { Avatar } from "../Avatar";
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode, forwardRef } from "react";
 import { useNavigate } from "react-router";
 import { cn } from "~/lib/utils";
 
@@ -203,6 +203,7 @@ type ConversationsProps = {
   onToggleManual?: (conversationId: string) => void;
   onSendManualResponse?: (conversationId: string, message: string) => void;
   onDeleteConversation?: (conversationId: string) => void;
+  selectedConversationId?: string;
 };
 
 interface Conversation {
@@ -229,6 +230,7 @@ export const Conversations = ({
   onToggleManual,
   onSendManualResponse,
   onDeleteConversation,
+  selectedConversationId,
 }: ConversationsProps) => {
   console.log("🔍 DEBUG - Conversations Props:", {
     conversationsCount: conversations.length,
@@ -254,9 +256,13 @@ export const Conversations = ({
     (conversation) => conversation.isFavorite
   );
   const allConversations = actualConversations;
-  const [conversation, setConversation] = useState<Conversation>(
-    actualConversations[0] || dev_conversations[0]
-  );
+
+  // Seleccionar conversación inicial (desde query param o la primera disponible)
+  const initialConversation = selectedConversationId
+    ? actualConversations.find(c => c.id === selectedConversationId) || actualConversations[0]
+    : actualConversations[0] || dev_conversations[0];
+
+  const [conversation, setConversation] = useState<Conversation>(initialConversation);
 
   // Estado local para toggle manual (inicializado con valores reales)
   const [localManualModes, setLocalManualModes] = useState<Record<string, boolean>>({});
@@ -270,7 +276,18 @@ export const Conversations = ({
     setLocalManualModes(initialModes);
   }, [actualConversations]);
 
-  // 🔄 Actualizar conversación seleccionada cuando cambian las props
+  // 🔄 Actualizar conversación cuando cambia selectedConversationId (desde URL)
+  useEffect(() => {
+    if (selectedConversationId && actualConversations.length > 0) {
+      const targetConv = actualConversations.find(c => c.id === selectedConversationId);
+      if (targetConv && targetConv.id !== conversation?.id) {
+        console.log("🔗 Navigating to conversation from URL:", selectedConversationId);
+        setConversation(targetConv);
+      }
+    }
+  }, [selectedConversationId, actualConversations, conversation?.id]);
+
+  // 🔄 Actualizar conversación seleccionada cuando cambian las props (para revalidación)
   useEffect(() => {
     if (actualConversations.length > 0 && conversation) {
       const updated = actualConversations.find(c => c.id === conversation.id);
@@ -347,6 +364,7 @@ export const Conversations = ({
               : allConversations
           }
           currentConversation={conversation}
+          selectedConversationId={selectedConversationId}
         />
       </article>
       <section className="col-span-12 md:col-span-9 pb-4 ">
@@ -367,16 +385,42 @@ const ConversationsList = ({
   conversations = dev_conversations,
   onConversationSelect,
   currentConversation,
+  selectedConversationId,
 }: {
   conversations: Conversation[];
   onConversationSelect: (conversation: Conversation) => void;
   currentConversation: Conversation;
+  selectedConversationId?: string;
 }) => {
+  const conversationRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  // Hacer scroll a la conversación seleccionada cuando cambie
+  useEffect(() => {
+    if (selectedConversationId && conversationRefs.current[selectedConversationId]) {
+      // Pequeño delay para asegurar que el elemento esté renderizado
+      const timeoutId = setTimeout(() => {
+        const element = conversationRefs.current[selectedConversationId];
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedConversationId]);
+
   return (
     <section className="flex flex-col gap-1 max-h-[264px] md:max-h-[616px] overflow-y-scroll ">
       {conversations.map((conversation) => (
         <Conversation
           key={conversation.id}
+          ref={(el) => {
+            if (el) conversationRefs.current[conversation.id] = el;
+          }}
           conversation={conversation}
           onClick={() => onConversationSelect(conversation)}
           isActive={conversation.id === currentConversation.id}
@@ -386,15 +430,14 @@ const ConversationsList = ({
   );
 };
 
-const Conversation = ({
-  conversation,
-  onClick,
-  isActive,
-}: {
-  conversation: Conversation;
-  onClick?: () => void;
-  isActive?: boolean;
-}) => {
+const Conversation = forwardRef<
+  HTMLElement,
+  {
+    conversation: Conversation;
+    onClick?: () => void;
+    isActive?: boolean;
+  }
+>(({ conversation, onClick, isActive }, ref) => {
   const pic = conversation.messages.filter(
     (message) => message.role === "USER"
   )[0].picture;
@@ -403,6 +446,7 @@ const Conversation = ({
   );
   return (
     <section
+      ref={ref}
       onClick={onClick}
       className={cn(
         "px-2 py-3 rounded-2xl transition-colors",
@@ -431,7 +475,9 @@ const Conversation = ({
       </div>
     </section>
   );
-};
+});
+
+Conversation.displayName = "Conversation";
 
 const ChatHeader = ({
   conversation,

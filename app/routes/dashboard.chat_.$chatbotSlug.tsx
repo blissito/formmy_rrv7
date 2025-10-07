@@ -1,6 +1,7 @@
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { PageContainer } from "~/components/chat/PageContainer";
-import { useNavigate, useFetcher, useRevalidator } from "react-router";
+import { useNavigate, useFetcher, useRevalidator, useSearchParams } from "react-router";
+import { useEffect } from "react";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
 import { Contactos } from "~/components/chat/tab_sections/Contactos";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
@@ -124,11 +125,38 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     chatbot.avatarUrl || undefined
   );
 
+  // Obtener contactos del chatbot
+  const contacts = await db.contact.findMany({
+    where: {
+      chatbotId: chatbot.id,
+    },
+    orderBy: {
+      capturedAt: "desc",
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      company: true,
+      position: true,
+      website: true,
+      notes: true,
+      source: true,
+      status: true,
+      capturedAt: true,
+      lastUpdated: true,
+      conversationId: true,
+      chatbotId: true,
+    },
+  });
+
   return {
     user,
     chatbot,
     integrations,
     conversations,
+    contacts,
     accessInfo: accessValidation,
   };
 };
@@ -136,14 +164,26 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
-  const { user, chatbot, integrations, conversations, accessInfo } = loaderData;
+  const { user, chatbot, integrations, conversations, contacts, accessInfo } = loaderData;
+  const navigate = useNavigate();
+  const fetcher = useFetcher();
+  const revalidator = useRevalidator();
+
+  // Leer query params de forma reactiva
+  const [searchParams] = useSearchParams();
+  const tabFromQuery = searchParams.get('tab');
+
   const { currentTab, setCurrentTab } = useChipTabs(
     "Entrenamiento",
     `main_${chatbot.id}`
   );
-  const navigate = useNavigate();
-  const fetcher = useFetcher();
-  const revalidator = useRevalidator();
+
+  // Actualizar tab cuando cambien los query params
+  useEffect(() => {
+    if (tabFromQuery && tabFromQuery !== currentTab) {
+      setCurrentTab(tabFromQuery);
+    }
+  }, [tabFromQuery, currentTab, setCurrentTab]);
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);
@@ -320,10 +360,11 @@ export default function ChatbotDetailRoute({
             onToggleManual={handleToggleManual}
             onSendManualResponse={handleSendManualResponse}
             onDeleteConversation={handleDeleteConversation}
+            selectedConversationId={searchParams.get('conversation') || undefined}
           />
         )}
         {currentTab === "Contactos" && (
-          <Contactos chatbot={chatbot} user={user} />
+          <Contactos chatbot={chatbot} user={user} contacts={contacts} />
         )}
         {currentTab === "Entrenamiento" && (
           <Entrenamiento chatbot={chatbot} user={user} />

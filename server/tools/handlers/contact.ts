@@ -21,11 +21,11 @@ export async function saveContactInfoHandler(
 ): Promise<ToolResponse> {
   try {
 
-    // Validar que al menos se proporcione nombre o email
-    if (!input.name && !input.email) {
+    // Validar que al menos se proporcione email o teléfono (forma de contacto)
+    if (!input.email && !input.phone) {
       return {
         success: false,
-        message: "Se requiere al menos un nombre o email para guardar el contacto.",
+        message: "Se requiere al menos un email o teléfono para guardar el contacto. Por favor, proporciona una forma de contactarte.",
       };
     }
 
