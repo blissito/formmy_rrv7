@@ -15,13 +15,23 @@ const STATUS_LABELS: Record<ContactStatus, string> = {
 };
 
 const STATUS_COLORS: Record<ContactStatus, string> = {
-  NEW: "bg-brand-100 text-brand-600",
-  CONTACTED: "bg-yellow-100 text-yellow-700",
+  NEW: "bg-brand-500/20 text-brand-700",
+  CONTACTED: "bg-yellow-500/20 text-yellow-700",
   SCHEDULED: "bg-sky/20 text-sky",
-  NEGOTIATING: "bg-salmon/30 text-orange-700",
-  ON_HOLD: "bg-gray-200 text-metal",
-  CLOSED_WON: "bg-success/30 text-grass",
+  NEGOTIATING: "bg-orange-500/20 text-orange-700",
+  ON_HOLD: "bg-gray-400/20 text-gray-700",
+  CLOSED_WON: "bg-grass/20 text-grass",
   CLOSED_LOST: "bg-danger/20 text-danger",
+};
+
+const STATUS_SOLID_COLORS: Record<ContactStatus, string> = {
+  NEW: "bg-brand-500",
+  CONTACTED: "bg-yellow-500",
+  SCHEDULED: "bg-sky",
+  NEGOTIATING: "bg-orange-500",
+  ON_HOLD: "bg-gray-400",
+  CLOSED_WON: "bg-grass",
+  CLOSED_LOST: "bg-danger",
 };
 
 // Dropdown de estatus personalizado
@@ -54,12 +64,12 @@ const StatusDropdown = ({
   };
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={dropdownRef} className="relative flex items-center justify-start" >
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all ${STATUS_COLORS[value]} ${
+        className={`flex items-center justify-start gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all ${STATUS_COLORS[value]} ${
           disabled ? "opacity-50 cursor-wait" : "hover:opacity-80 cursor-pointer"
         }`}
       >
@@ -75,10 +85,10 @@ const StatusDropdown = ({
               type="button"
               onClick={() => handleSelect(statusValue as ContactStatus)}
               className={`w-full px-4 py-2 text-left text-sm hover:bg-surfaceFour transition-colors flex items-center gap-2 ${
-                value === statusValue ? "bg-brand-100/50" : ""
+                value === statusValue ? "bg-outlines/10" : ""
               }`}
             >
-              <span className={`w-2 h-2 rounded-full ${STATUS_COLORS[statusValue as ContactStatus].split(" ")[0]}`}></span>
+              <span className={`w-2 h-2 rounded-full ${STATUS_SOLID_COLORS[statusValue as ContactStatus]}`}></span>
               {label}
             </button>
           ))}
@@ -282,31 +292,31 @@ export const Contactos = ({
 
       <div className="bg-white rounded-3xl border border-outlines overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full table-fixed">
             <thead className="bg-surfaceTwo border-b border-outlines">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark ">
+                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[22%]">
                   Contacto
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark ">
+                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[12%]">
                   Teléfono
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark ">
+                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[14%]">
                   Empresa
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark ">
+                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[12%]">
                   Cargo
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark ">
+                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[11%]">
                   Fecha
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark ">
+                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[9%]">
                   Origen
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark ">
+                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[12%]">
                   Estatus
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark ">
+                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[8%]">
                   Acciones
                 </th>
               </tr>
@@ -318,30 +328,30 @@ export const Contactos = ({
                   className="hover:bg-brand-100/50 transition-colors"
                 >
                   <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <div className="text-sm font-medium text-dark">
+                    <div className="flex flex-col overflow-hidden">
+                      <div className="text-sm font-medium text-dark truncate">
                         {contact.name || "-"}
                       </div>
-                      <div className="text-xs text-irongray mt-1">
+                      <div className="text-xs text-irongray mt-1 truncate">
                         {contact.email || "-"}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-metal">{contact.phone || "-"}</div>
+                    <div className="text-sm text-metal truncate">{contact.phone || "-"}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-metal">
+                    <div className="text-sm text-metal truncate">
                       {contact.company || "-"}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-metal">
+                    <div className="text-sm text-metal truncate">
                       {contact.position || "-"}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-irongray">
+                    <div className="text-sm text-irongray truncate">
                       {new Date(contact.capturedAt).toLocaleDateString("es-MX", {
                         year: "numeric",
                         month: "short",
@@ -350,29 +360,33 @@ export const Contactos = ({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      contact.source.toLowerCase() === 'whatsapp'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {contact.source.toLowerCase() === 'whatsapp' ? 'WhatsApp' : 'Web'}
-                    </span>
+                    <div className="flex justify-center">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        contact.source.toLowerCase() === 'whatsapp'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-cloud/20 text-teal-700'
+                      }`}>
+                        {contact.source.toLowerCase() === 'whatsapp' ? 'WhatsApp' : 'Web'}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusDropdown
-                      value={optimisticStatuses[contact.id] || contact.status || "NEW"}
-                      onChange={(newStatus) => handleStatusChange(contact.id, newStatus)}
-                      disabled={statusFetcher.state !== "idle"}
-                    />
+                    <div className="flex justify-start">
+                      <StatusDropdown
+                        value={optimisticStatuses[contact.id] || contact.status || "NEW"}
+                        onChange={(newStatus) => handleStatusChange(contact.id, newStatus)}
+                        disabled={statusFetcher.state !== "idle"}
+                      />
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => handleViewConversation(contact.conversationId)}
                         disabled={!contact.conversationId}
                         className={`p-2 rounded-lg transition-colors ${
                           contact.conversationId
-                            ? 'hover:bg-blue-100 text-blue-600 hover:text-blue-700'
+                            ? 'hover:bg-surfaceThree text-metal '
                             : 'text-gray-300 cursor-not-allowed'
                         }`}
                         title={contact.conversationId ? "Ver conversación" : "Sin conversación"}
@@ -382,7 +396,7 @@ export const Contactos = ({
                       <button
                         onClick={() => handleDeleteContact(contact.id)}
                         disabled={deleteFetcher.state !== "idle"}
-                        className="p-2 rounded-lg hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+                        className="p-2 rounded-lg  text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
                         title="Eliminar contacto"
                       >
                         <HiOutlineTrash className="w-5 h-5" />
