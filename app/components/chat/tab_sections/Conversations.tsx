@@ -7,197 +7,6 @@ import { cn } from "~/lib/utils";
 import Empty from "~/SVGs/Empty";
 import EmptyDark from "~/SVGs/EmptyDark";
 
-const dev_conversations = [
-  {
-    messages: [
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "USER",
-        content: "Hola, estoy buscando a alguien que me ayude a crear un sitio web para mi negocio",
-      },
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "ASSISTANT",
-        content: "¡Hola! Encantado de ayudarte. Cuéntame un poco más sobre tu negocio. ¿Qué tipo de empresa tienes y qué funcionalidades necesitas en tu sitio web?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "USER",
-        content: "Tengo una cafetería en el centro y quiero un sitio para mostrar el menú, ubicación y poder recibir pedidos en línea",
-      },
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "ASSISTANT",
-        content: "Perfecto, entiendo. Para tu cafetería podemos crear un sitio con catálogo de productos, sistema de pedidos, integración con Google Maps y pasarela de pagos. ¿Cuál es tu presupuesto aproximado y en cuánto tiempo lo necesitas?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "USER",
-        content: "Mi presupuesto es de unos $25,000 MXN y lo necesitaría en un mes máximo",
-      },
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "ASSISTANT",
-        content: "Excelente, ese presupuesto es adecuado para lo que necesitas. Podemos entregarlo en 3-4 semanas. Te prepararé una propuesta detallada con diseño, funcionalidades y costos. ¿Prefieres que te la envíe por correo o agendamos una videollamada?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "USER",
-        content: "Por correo está bien. Mi email es maria@cafeteriacentral.com",
-      },
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "ASSISTANT",
-        content: "Perfecto María. Te enviaré la propuesta hoy mismo a tu correo. ¿Hay alguna otra pregunta que tengas mientras tanto?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "USER",
-        content: "¿También podrían ayudarme con el SEO para aparecer en búsquedas de Google?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg",
-        role: "ASSISTANT",
-        content: "¡Por supuesto! Incluiremos optimización SEO básica en el desarrollo y podemos ofrecerte un plan de SEO continuo. Te lo detallo en la propuesta.",
-      },
-    ],
-    isFavorite: true,
-    id: "1",
-    userName: "María González",
-    userEmail: "maria@cafeteriacentral.com",
-    lastMessage: "¿También podrían ayudarme con el SEO para aparecer en búsquedas de Google?",
-    time: "Hace 2h",
-    date: "30 de septiembre de 2025",
-    unread: 0,
-    avatar: "/assets/chat/ghosty.svg",
-    tel: "+52 55 1234 5678",
-    manualMode: false,
-    isWhatsApp: true,
-  },
-  {
-    messages: [
-      {
-        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-        role: "USER",
-        content: "Buenos días, necesito cotización para un e-commerce",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-        role: "ASSISTANT",
-        content: "¡Buenos días! Con gusto te ayudo. ¿Qué tipo de productos vas a vender y cuántos artículos aproximadamente tendrás en el catálogo?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-        role: "USER",
-        content: "Vendo ropa deportiva, tengo como 200 productos inicialmente pero quiero poder agregar más",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-        role: "ASSISTANT",
-        content: "Entendido. ¿Necesitas pasarela de pagos integrada? ¿Stripe, Mercado Pago u otra? ¿Y control de inventario?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-        role: "USER",
-        content: "Sí, Mercado Pago y sí necesito control de inventario. ¿Cuánto costaría?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-        role: "ASSISTANT",
-        content: "Para un e-commerce con esas características estaríamos hablando de $45,000-$60,000 MXN. Incluye diseño responsivo, carrito de compras, sistema de pagos, gestión de inventario y panel de administración. Tiempo de desarrollo: 6-8 semanas.",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-        role: "USER",
-        content: "Está dentro de mi presupuesto. ¿Qué tecnologías usan?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg",
-        role: "ASSISTANT",
-        content: "Trabajamos con React para el frontend, Node.js para el backend, y podemos usar Shopify o una solución custom. Para tu caso recomendaría una plataforma custom para mayor flexibilidad. ¿Te interesa agendar una llamada para discutir detalles?",
-      },
-    ],
-    isFavorite: false,
-    id: "2",
-    userName: "Carlos Ramírez",
-    userEmail: "carlos.r@sportswear.mx",
-    lastMessage: "Está dentro de mi presupuesto. ¿Qué tecnologías usan?",
-    time: "Hace 5h",
-    date: "29 de septiembre de 2025",
-    unread: 1,
-    avatar: "/assets/chat/ghosty.svg",
-    tel: "+52 81 9876 5432",
-    manualMode: false,
-    isWhatsApp: true,
-  },
-  {
-    messages: [
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "USER",
-        content: "Hola! Vi su trabajo en Instagram. Necesito una landing page",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "ASSISTANT",
-        content: "¡Hola! Gracias por contactarnos. ¿Para qué producto o servicio es la landing page?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "USER",
-        content: "Es para un curso online de fotografía que voy a lanzar el próximo mes",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "ASSISTANT",
-        content: "Perfecto. ¿Necesitas formulario de inscripción, integración con plataforma de pagos, contador regresivo o alguna otra funcionalidad específica?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "USER",
-        content: "Sí a todo! También quisiera que tenga testimonios de alumnos y un video promocional",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "ASSISTANT",
-        content: "Excelente. Una landing page completa con esas secciones te costaría $15,000-$20,000 MXN y estaría lista en 2 semanas. Incluye diseño moderno, formularios, integración de pago y optimización para conversiones. ¿Te parece bien ese rango?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "USER",
-        content: "Sí perfecto! ¿Cuándo podríamos empezar?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "ASSISTANT",
-        content: "Podemos empezar esta misma semana. Necesitaría tu logo, paleta de colores (si la tienes), textos del contenido y el video. ¿Ya cuentas con todo ese material?",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "USER",
-        content: "Tengo el logo y video. Los textos los puedo tener en 2 días",
-      },
-      {
-        picture: "https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg",
-        role: "ASSISTANT",
-        content: "Perfecto! Entonces arrancamos el lunes. Te envío contrato y forma de pago al correo. ¿Cuál es tu email?",
-      },
-    ],
-    isFavorite: true,
-    id: "3",
-    userName: "Ana Martínez",
-    userEmail: "ana.foto@gmail.com",
-    lastMessage: "Tengo el logo y video. Los textos los puedo tener en 2 días",
-    time: "Ayer",
-    date: "29 de septiembre de 2025",
-    unread: 0,
-    avatar: "/assets/chat/ghosty.svg",
-    tel: "+52 33 4567 8901",
-    manualMode: false,
-    isWhatsApp: true,
-  },
-];
-
 type ConversationsProps = {
   chatbot: Chatbot;
   user: User;
@@ -243,15 +52,9 @@ export const Conversations = ({
     conversationIDs: conversations.map(c => c.id)
   });
 
-  // Use real conversations if provided, fallback to dev data for development
-  const actualConversations = conversations.length > 0 ? conversations : dev_conversations;
+  const actualConversations = conversations;
 
-  console.log("🔍 Using conversations:", {
-    source: conversations.length > 0 ? 'real' : 'dev',
-    count: actualConversations.length,
-    ids: actualConversations.map(c => c.id)
-  });
-  const { currentTab, setCurrentTab } = useChipTabs("Todos", `conversations_${chatbot?.id || 'default'}`);
+  const { currentTab, setCurrentTab} = useChipTabs("Todos", `conversations_${chatbot?.id || 'default'}`);
   const navigate = useNavigate();
 
   const favoriteConversations = actualConversations.filter(
@@ -262,7 +65,7 @@ export const Conversations = ({
   // Seleccionar conversación inicial (desde query param o la primera disponible)
   const initialConversation = selectedConversationId
     ? actualConversations.find(c => c.id === selectedConversationId) || actualConversations[0]
-    : actualConversations[0] || dev_conversations[0];
+    : actualConversations[0];
 
   const [conversation, setConversation] = useState<Conversation>(initialConversation);
 
@@ -350,6 +153,11 @@ export const Conversations = ({
     alert("⚠️ Función de envío no disponible");
   });
 
+  // Mostrar empty state si no hay conversaciones
+  if (conversations.length === 0) {
+    return <EmptyConversations />;
+  }
+
   return (
     <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
       <article className={cn("col-span-12 md:col-span-3 overflow-y-scroll", "flex flex-col h-full gap-4 md:gap-6")}>
@@ -383,6 +191,22 @@ export const Conversations = ({
   );
 };
 
+const EmptyConversations = () => {
+  return (
+    <div className="text-center mt-12 flex flex-col items-center justify-center min-h-[400px]">
+      <Empty className="w-[200px] md:w-[240px] dark:hidden flex" />
+      <EmptyDark className="w-[240px] hidden dark:flex" />
+      <h3 className="font-bold text-lg text-space-800 dark:text-clear mt-6">
+        Aún no tienes conversaciones
+      </h3>
+      <p className="text-gray-600 text-sm dark:text-gray-400 font-light mt-2 max-w-md">
+        Las conversaciones con tus clientes aparecerán aquí.<br />
+        Agrega el chatbot a tu sitio web para empezar a recibir mensajes.
+      </p>
+    </div>
+  );
+};
+
 const EmptyFavorites = () => {
   return (
     <div className="text-center mt-0 md:mt-12 flex flex-col items-center ">
@@ -399,7 +223,7 @@ const EmptyFavorites = () => {
 };
 
 const ConversationsList = ({
-  conversations = dev_conversations,
+  conversations = [],
   onConversationSelect,
   currentConversation,
   selectedConversationId,
@@ -758,12 +582,42 @@ const ManualResponseInput = ({
   );
 };
 
-const ActionButtons = () => {
+const ActionButtons = ({ conversation }: { conversation?: Conversation }) => {
+  const handleDownloadCSV = () => {
+    if (!conversation) return;
+
+    const headers = ["Fecha/Hora", "Rol", "Mensaje"];
+    const rows = conversation.messages.map(message => {
+      const timestamp = new Date(message.createdAt).toLocaleString('es-MX', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      const role = message.role === "USER" ? "Usuario" : "Asistente";
+      const content = `"${message.content.replace(/"/g, '""')}"`;
+
+      return [timestamp, role, content].join(",");
+    });
+
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+
+    const date = new Date().toISOString().split('T')[0];
+    const userName = conversation.userName.replace(/[^a-zA-Z0-9]/g, '_');
+    link.download = `conversacion_${userName}_${date}.csv`;
+    link.click();
+  };
+
   return (
     <nav className="flex items-center gap-2">
       <SimpleButton src="/assets/chat/tuning.svg" />
       <SimpleButton src="/assets/chat/refresh.svg" />
-      <SimpleButton src="/assets/chat/download.svg" />
+      <SimpleButton src="/assets/chat/download.svg" onClick={handleDownloadCSV} />
     </nav>
   );
 };
@@ -821,7 +675,7 @@ export const ConversationsPreview = ({
   return (
     <div className="h-full flex flex-col max-h-[calc(100vh-320px)]">
       <div className="flex-shrink-0">
-        <ActionButtons />
+        <ActionButtons conversation={conversation} />
         <hr className="my-3" />
         {conversation && (
           <ChatHeader
