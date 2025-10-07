@@ -4,7 +4,7 @@ import { AgentDropdown, type AgentType } from "../common/AgentDropdown";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useState, useEffect, useMemo } from "react";
 import { getAgentPrompt, getAgentName } from "~/utils/agents/agentPrompts";
-import { FiCopy, FiCheck, FiEye, FiEyeOff, FiMaximize2 } from "react-icons/fi";
+import { FiCopy, FiCheck, FiEye, FiMaximize2 } from "react-icons/fi";
 import { HiSparkles } from "react-icons/hi2";
 import { getTemperatureRange } from "server/config/model-temperatures";
 
@@ -35,7 +35,7 @@ export const AgentForm = ({
   customInstructions = "",
   handleCustomInstructionsChange,
 }: AgentFormProps) => {
-  const [showBasePrompt, setShowBasePrompt] = useState(false);
+  const [showBasePromptModal, setShowBasePromptModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const basePrompt = getAgentPrompt(selectedAgent);
@@ -50,19 +50,20 @@ export const AgentForm = ({
     }
   }, [selectedAgent]);
 
-  // Cerrar modal con tecla Escape
+  // Cerrar modales con tecla Escape
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showModal) {
-        setShowModal(false);
+      if (e.key === 'Escape') {
+        if (showModal) setShowModal(false);
+        if (showBasePromptModal) setShowBasePromptModal(false);
       }
     };
 
-    if (showModal) {
+    if (showModal || showBasePromptModal) {
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
     }
-  }, [showModal]);
+  }, [showModal, showBasePromptModal]);
 
   const handleCustomInstructionsChangeLocal = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -168,21 +169,13 @@ export const AgentForm = ({
             </div>
             <button
               type="button"
-              onClick={() => setShowBasePrompt(!showBasePrompt)}
+              onClick={() => setShowBasePromptModal(true)}
               className="text-sm text-teal-500 hover:text-teal-700 flex items-center gap-1"
             >
-              {showBasePrompt ? <FiEyeOff /> : <FiEye />}
-              {showBasePrompt ? "Ocultar" : "Ver prompt"}
+              <FiEye />
+              Ver prompt
             </button>
           </div>
-
-          {showBasePrompt && (
-            <div className="mt-3 p-3 bg-white/70 rounded border border-blue-100">
-              <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono">
-                {basePrompt}
-              </pre>
-            </div>
-          )}
         </div>
 
         {/* Personalización Adicional */}
@@ -285,6 +278,71 @@ export const AgentForm = ({
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
+                className="h-12 rounded-full border bg-outlines px-6 text-metal"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Base Prompt */}
+      {showBasePromptModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowBasePromptModal(false)}
+        >
+          <div
+            className="bg-white p-6 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4">
+              <h3 className="text-2xl font-semibold text-dark">
+                Prompt Base: {getAgentName(selectedAgent)}
+              </h3>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={copyToClipboard}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  {copied ? <FiCheck className="text-green-600" /> : <FiCopy />}
+                  {copied ? "Copiado" : "Copiar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowBasePromptModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  <img
+                    alt="close"
+                    src="/assets/close.svg"
+                  />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 flex-1 overflow-auto flex flex-col gap-3">
+              {/* Info sobre el prompt base */}
+              <div className="p-3 bg-cloud/20 border border-cloud rounded-lg text-xs text-dark">
+                <p className="font-medium mb-1">ℹ️ Acerca de este prompt</p>
+                <p className="text-metal">
+                  Este es el prompt base del agente <strong>{getAgentName(selectedAgent)}</strong>.
+                  Define su personalidad, tono y comportamiento principal.
+                  Tus instrucciones personalizadas se añaden a este prompt para adaptarlo a tu negocio.
+                </p>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-4 flex-1 overflow-auto">
+                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">
+                  {basePrompt}
+                </pre>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t">
+              <button
+                type="button"
+                onClick={() => setShowBasePromptModal(false)}
                 className="h-12 rounded-full border bg-outlines px-6 text-metal"
               >
                 Cerrar
