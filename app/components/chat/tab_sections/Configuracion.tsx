@@ -277,7 +277,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
             <p className="text-metal font-normal max-w-[700px]">Una vez que elimines tu chatbot, tu agente será eliminado al igual que toda la información que subiste. Está acción es irreversible, así que asegúrate de que está es la acción que quieres tomar.</p>
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="block max-w-full md:max-w-[220px] ml-auto w-full bg-danger hover:bg-[#DF4D42] text-white py-2 px-4 h-12 rounded-full transition-colors"
+              className="block max-w-full md:max-w-[220px] ml-auto w-full bg-danger hover:bg-[#DF4D42] text-white py-2 px-4 h-10 rounded-full transition-colors"
             >
               Eliminar
             </button>

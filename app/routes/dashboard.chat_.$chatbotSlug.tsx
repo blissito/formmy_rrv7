@@ -174,7 +174,7 @@ export default function ChatbotDetailRoute({
   const tabFromQuery = searchParams.get('tab');
 
   const { currentTab, setCurrentTab } = useChipTabs(
-    "Entrenamiento",
+    tabFromQuery || "Preview",
     `main_${chatbot.id}`
   );
 
@@ -337,6 +337,7 @@ export default function ChatbotDetailRoute({
 
   return (
     <PageContainer>
+      <div className="bg-white sticky top-0 z-10">
       <PageContainer.Title className="!mb-2 md:!mb-4" back="/dashboard/chat">
         {chatbot.name}
       </PageContainer.Title>
@@ -344,6 +345,7 @@ export default function ChatbotDetailRoute({
         activeTab={currentTab}
         onTabChange={handleTabChange}
       />
+      </div>
       <div className="mt-0 overflow-hidden h-full">
         {currentTab === "Preview" && (
           <PageContainer.EditionPair

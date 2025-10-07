@@ -573,6 +573,13 @@ export const TabSelector = ({
     "Configuración",
   ];
 
+  // Sincronizar estado local con prop activeTab
+  useEffect(() => {
+    if (activeTab && activeTab !== selectedTab) {
+      setSelectedTab(activeTab);
+    }
+  }, [activeTab]);
+
   const activeIndex = tabs.indexOf(selectedTab);
 
   useEffect(() => {
@@ -671,8 +678,8 @@ export const TabButton = ({
         "border-none outline-none",
         "select-none",
         {
-          "text-black font-medium": isActive,
-          "text-gray-600": !isActive,
+          "text-dark font-medium": isActive,
+          "text-irongray font-normal": !isActive,
         },
         className
       )}
@@ -683,6 +690,10 @@ export const TabButton = ({
       }}
       {...props}
     >
+      {/* Elemento invisible para reservar espacio del font-medium */}
+      <span className="invisible font-medium h-0 overflow-hidden block" aria-hidden="true">
+        {children}
+      </span>
       <span className="relative z-10">
         {isLoading && <Spinner />}
         {!isLoading && children}
