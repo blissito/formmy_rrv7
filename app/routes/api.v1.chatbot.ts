@@ -348,6 +348,62 @@ export async function action({ request }: any) {
         );
       }
 
+      // Update security settings
+      case "update_security": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso para modificar este chatbot" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Parse allowedDomains (comma-separated string → array)
+        const allowedDomainsStr = formData.get("allowedDomains") as string;
+        const allowedDomains = allowedDomainsStr
+          ? allowedDomainsStr.split(',').map(d => d.trim()).filter(Boolean)
+          : [];
+
+        const rateLimit = parseInt(formData.get("rateLimit") as string) || 100;
+        const status = formData.get("status") as string || "public";
+
+        // Update settings.security
+        const updatedChatbot = await updateChatbot(chatbotId, {
+          settings: {
+            notifications: chatbot.settings?.notifications || {
+              weeklyDigest: true,
+              usageLimit: true,
+              configChanges: false
+            },
+            security: {
+              allowedDomains,
+              rateLimit,
+              status
+            }
+          }
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, chatbot: updatedChatbot }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       default: {
         return new Response(
           JSON.stringify({ error: "Intent no soportado" }),
@@ -360,7 +416,7 @@ export async function action({ request }: any) {
     return new Response(
       JSON.stringify({
         error: "Error interno del servidor",
-        details: error?.message || "Error desconocido"
+        details: error instanceof Error ? error.message : "Error desconocido"
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
