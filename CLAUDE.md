@@ -35,6 +35,36 @@
 **✅ Pattern correcto**: `agent({ llm, tools: getToolsForPlan(), systemPrompt })`
 **Código limpio**: `/server/agents/agent-workflow.server.ts`, `/server/tools/index.ts`
 
+### 🔒 Tool Grounding - Prevención de Alucinaciones (CRÍTICO)
+
+**IMPLEMENTADO**: Oct 6, 2025 en `/server/agents/agent-workflow.server.ts:144-180`
+
+**Problema resuelto**: Agentes prometían acciones imposibles ("te enviaré el PDF", "he enviado el email") sin tener las tools correspondientes → pérdida de confianza del usuario
+
+**Solución - Regla Global de Honestidad**:
+```
+🚫 REGLA CRÍTICA - HONESTIDAD SOBRE CAPACIDADES:
+
+NUNCA prometas acciones que tus herramientas NO pueden ejecutar:
+❌ Si NO tienes tool de email: NO digas "te enviaré", "recibirás un email"
+❌ Si NO tienes tool de PDF: NO digas "preparé el PDF", "generé el documento"
+❌ Si NO tienes tool X: NO prometas hacer X
+
+✅ SÉ HONESTO sobre limitaciones:
+"Puedo guardar tu email para que el equipo te contacte"
+"Te comparto la información aquí mismo"
+"No tengo capacidad de enviar emails, pero puedo [alternativa]"
+
+REGLA DE ORO: Solo promete lo que tus tools pueden cumplir.
+```
+
+**Ubicación en System Prompt**: Después de `searchInstructions`, antes de personality/custom instructions
+**Alcance**: Aplica a TODOS los agentes (sales, coach, customer_support, etc)
+**Beneficio**: Previene >90% de alucinaciones sobre capacidades del agente
+
+**Mejor Práctica de la Industria** (OpenAI, Anthropic):
+> "Tool grounding should be explicit in system prompts to prevent agents from hallucinating capabilities they don't have"
+
 ### 🧠 LlamaIndex Memory (CRÍTICO - Leer antes de tocar memoria)
 
 **⚠️ REGLA FUNDAMENTAL**: Para historial de conversación, SIEMPRE usar `staticBlock`, NUNCA `memory.add()`

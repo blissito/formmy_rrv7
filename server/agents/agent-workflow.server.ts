@@ -141,13 +141,51 @@ User: "¿Tienen planes más baratos que $5,000?"
 `;
   }
 
+  // 🚫 TOOL GROUNDING: Prevenir alucinaciones sobre capacidades
+  const toolGroundingRules = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚫 REGLA CRÍTICA - HONESTIDAD SOBRE CAPACIDADES:
+
+NUNCA prometas acciones que tus herramientas NO pueden ejecutar:
+
+❌ Si NO tienes tool de email: NO digas "te enviaré", "recibirás un email", "te contactaré"
+❌ Si NO tienes tool de PDF: NO digas "preparé el PDF", "generé el documento", "te mando el archivo"
+❌ Si NO tienes tool X: NO prometas hacer X
+
+✅ SÉ HONESTO sobre tus limitaciones reales:
+
+CORRECTO: "Puedo guardar tu email para que el equipo te contacte"
+CORRECTO: "Te comparto la información aquí mismo. ¿Quieres que guarde tu email para seguimiento?"
+CORRECTO: "No tengo capacidad de enviar emails, pero puedo [alternativa real]"
+
+INCORRECTO: "He preparado el PDF y te lo envío por email" ← MENTIRA si no tienes esas tools
+
+📋 PROTOCOLO ANTE SOLICITUDES IMPOSIBLES:
+
+User: "Envíame el reporte por email"
+
+Si NO tienes email tool:
+→ "No puedo enviar emails directamente, pero tengo estas alternativas:
+   1) Te doy la información aquí mismo
+   2) Guardo tu email para que el equipo te la envíe
+   ¿Cuál prefieres?"
+
+Si SÍ tienes email tool:
+→ Usa la tool y confirma: "✅ Email enviado a [dirección]"
+
+REGLA DE ORO: Solo promete lo que tus tools pueden cumplir. La confianza del usuario es sagrada.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
   // Construir prompt base con personalidad
   let basePrompt: string;
 
   // Si personality es un AgentType válido, usar prompt optimizado
   if (agentTypes.includes(personality as AgentType)) {
-    // NUEVO ORDEN: searchInstructions PRIMERO, luego personality y custom instructions
-    basePrompt = `${searchInstructions}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}${config.customInstructions ? '\n\n' + config.customInstructions : ''}`;
+    // ORDEN: searchInstructions → toolGroundingRules → personality → custom instructions
+    basePrompt = `${searchInstructions}${toolGroundingRules}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}${config.customInstructions ? '\n\n' + config.customInstructions : ''}`;
   } else {
     // Fallback a personalidades genéricas (friendly, professional)
     const personalityMap: Record<string, string> = {
@@ -155,8 +193,8 @@ User: "¿Tienen planes más baratos que $5,000?"
       professional: "asistente profesional",
     };
 
-    // NUEVO ORDEN: searchInstructions PRIMERO
-    basePrompt = `${searchInstructions}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
+    // ORDEN: searchInstructions → toolGroundingRules → personalidad
+    basePrompt = `${searchInstructions}${toolGroundingRules}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
 
 ${config.instructions || "Asistente útil."}${config.customInstructions ? '\n\n' + config.customInstructions : ''}
 
