@@ -4,10 +4,10 @@ import { IconDropdown, type DropdownOption } from "./IconDropdown";
 export type AgentType =
   | "sales"
   | "customer_support"
-  | "content_seo"
   | "data_analyst"
-  | "automation_ai"
-  | "growth_hacker";
+  | "coach"
+  | "medical_receptionist"
+  | "educational_assistant";
 
 // Opciones de agentes predefinidas
 const AGENT_OPTIONS: DropdownOption[] = [
@@ -24,28 +24,28 @@ const AGENT_OPTIONS: DropdownOption[] = [
     iconSrc: "/assets/chat/agents/sales.svg",
   },
   {
-    value: "content_seo",
-    label: "Contenido y SEO",
-    description: "Estratega de contenido y posicionamiento",
-    iconSrc: "/assets/chat/agents/content.svg",
-  },
-  {
     value: "data_analyst",
     label: "Analista de Datos",
     description: "Insights y visualización de métricas",
     iconSrc: "/assets/chat/agents/analytics.svg",
   },
   {
-    value: "automation_ai",
-    label: "Automatización e IA",
-    description: "Workflows inteligentes y procesos RPA",
-    iconSrc: "/assets/chat/agents/automation.svg",
+    value: "coach",
+    label: "Coach Personal",
+    description: "Desarrollo personal y profesional",
+    iconSrc: "/assets/chat/agents/coach.svg",
   },
   {
-    value: "growth_hacker",
-    label: "Growth Hacker",
-    description: "Crecimiento viral y experimentación",
-    iconSrc: "/assets/chat/agents/growth.svg",
+    value: "medical_receptionist",
+    label: "Recepcionista Médico",
+    description: "Gestión de citas y consultas médicas",
+    iconSrc: "/assets/chat/agents/medical.svg",
+  },
+  {
+    value: "educational_assistant",
+    label: "Asistente Educativo",
+    description: "Apoyo personalizado en aprendizaje",
+    iconSrc: "/assets/chat/agents/education.svg",
   },
 ];
 
@@ -63,13 +63,13 @@ const getAgentBg = (agentValue: string) => {
       return "bg-gradient-to-br from-emerald-50 to-green-50 border-l-2 border-emerald-300";
     case "customer_support":
       return "bg-gradient-to-br from-blue-50 to-indigo-50 border-l-2 border-blue-300";
-    case "content_seo":
-      return "bg-gradient-to-br from-purple-50 to-violet-50 border-l-2 border-purple-300";
     case "data_analyst":
-      return "bg-gradient-to-br from-cyan-50 to-blue-50 border-l-2 border-cyan-300";
-    case "automation_ai":
       return "bg-gradient-to-br from-amber-50 to-yellow-50 border-l-2 border-amber-300";
-    case "growth_hacker":
+    case "coach":
+      return "bg-gradient-to-br from-purple-50 to-violet-50 border-l-2 border-purple-300";
+    case "medical_receptionist":
+      return "bg-gradient-to-br from-cyan-50 to-blue-50 border-l-2 border-cyan-300";
+    case "educational_assistant":
       return "bg-gradient-to-br from-red-50 to-pink-50 border-l-2 border-red-300";
     default:
       return "bg-gradient-to-br from-gray-50 to-slate-50 border-l-2 border-gray-300";
@@ -86,7 +86,7 @@ export const AgentDropdown = ({
   selectedAgent,
   onChange,
   className,
-  label = "Elige a tu agente",
+  label = "Personalidad del agente",
 }: AgentDropdownProps) => {
   return (
     <IconDropdown

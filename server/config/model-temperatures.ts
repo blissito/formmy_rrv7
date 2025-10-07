@@ -9,17 +9,17 @@ export const OPTIMAL_TEMPERATURES: Record<string, number> = {
   // OpenAI models
   'gpt-5-nano': 1,           // Maps to gpt-4o-mini - Óptimo según testing (Sept 29, 2025)
   'gpt-4o-mini': 1,          // Óptimo para agentes conversacionales con tools
-  'gpt-5-mini': 0.7,         // Maps to gpt-4o - Balance conversación natural + precisión
-  'gpt-4o': 0.7,             // Balance conversación natural + precisión con tools
+  'gpt-5-mini': 1,           // Maps to gpt-4o - FIJO en 1.0 para evitar alucinaciones
+  'gpt-4o': 1,               // FIJO en 1.0 para evitar alucinaciones
   'gpt-5': 0.7,              // Modelo avanzado - conversacional
   'gpt-3.5-turbo': 0.7,      // Balance entre creatividad y precisión
 
   // Anthropic models
-  'claude-3-haiku-20240307': 0.7,        // Claude 3 Haiku - conversacional
-  'claude-3-5-haiku-20241022': 0.7,      // Claude 3.5 Haiku - conversacional (igualado a 3)
+  'claude-3-haiku-20240307': 0.8,        // Claude 3 Haiku - punto medio (evita alucinaciones de temp muy baja)
+  'claude-3-5-haiku-20241022': 0.8,      // Claude 3.5 Haiku - punto medio
   'claude-3-sonnet-20240229': 0.7,       // Sonnet clásico
   'claude-3-5-sonnet-20241022': 0.7,     // Sonnet 3.5
-  'claude-3-opus-20240229': 0.7,         // Opus - conversacional (aumentado de 0.5)
+  'claude-3-opus-20240229': 0.7,         // Opus - conversacional
 
   // Gemini models (via OpenRouter)
   'gemini-2.0-flash': 0.7,
@@ -71,15 +71,15 @@ export interface TemperatureRange {
 export const MODEL_TEMPERATURE_RANGES: Record<string, TemperatureRange> = {
   // OpenAI models
   'gpt-5-nano': { min: 1, max: 1, optimal: 1, step: 0, fixed: true }, // Fijo en 1.0
-  'gpt-4o-mini': { min: 0.5, max: 1.5, optimal: 1, step: 0.1 },
-  'gpt-5-mini': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
-  'gpt-4o': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gpt-4o-mini': { min: 1, max: 1, optimal: 1, step: 0, fixed: true }, // Fijo en 1.0
+  'gpt-5-mini': { min: 1, max: 1, optimal: 1, step: 0, fixed: true }, // Fijo en 1.0
+  'gpt-4o': { min: 1, max: 1, optimal: 1, step: 0, fixed: true }, // Fijo en 1.0
   'gpt-5': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
   'gpt-3.5-turbo': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
 
   // Anthropic models
-  'claude-3-haiku-20240307': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
-  'claude-3-5-haiku-20241022': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'claude-3-haiku-20240307': { min: 0.8, max: 0.8, optimal: 0.8, step: 0, fixed: true },
+  'claude-3-5-haiku-20241022': { min: 0.8, max: 0.8, optimal: 0.8, step: 0, fixed: true },
   'claude-3-sonnet-20240229': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
   'claude-3-5-sonnet-20241022': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
   'claude-3-opus-20240229': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },

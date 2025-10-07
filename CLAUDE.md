@@ -378,22 +378,31 @@ DEVELOPMENT_TOKEN=FORMMY_DEV_TOKEN_2025 npx tsx scripts/test-rag-prompts.ts
 - **ENTERPRISE**: GPT-5 Mini + Claude 3.5 Haiku ($1,499 MXN)
 
 ### Temperatures Óptimas (Centralizado en `/server/config/model-temperatures.ts`)
-**Filosofía**: 0.7 para conversacional + tools, 1.0 solo para gpt-4o-mini (óptimo empírico)
+**Actualizado**: Oct 6, 2025 - Opción Conservadora (previene alucinaciones)
 
-**OpenAI Models:**
-- gpt-5-nano → gpt-4o-mini: **1.0** (mapeo transparente, óptimo según testing Sept 29)
-- gpt-5-mini → gpt-4o: **0.7** (conversacional natural + precisión con tools)
+**Filosofía**: Temperatures fijas por modelo, basadas en testing empírico. GPT models @ 1.0, Claude Haiku @ 0.8, resto @ 0.7
+
+**OpenAI Models (Fixed):**
+- gpt-5-nano → gpt-4o-mini: **1.0** ✅ (mapeo transparente, óptimo testing Sept 29)
+- gpt-4o-mini: **1.0** ✅ (fixed - previene alucinaciones)
+- gpt-5-mini → gpt-4o: **1.0** ✅ (fixed - previene alucinaciones, antes 0.7)
+- gpt-4o: **1.0** ✅ (fixed - previene alucinaciones, antes 0.7)
 - gpt-5: **0.7** (conversacional)
 - gpt-3.5-turbo: **0.7** (balance creatividad/precisión)
 
 **Anthropic Models:**
-- claude-3-haiku: **0.7** (conversacional)
-- claude-3.5-haiku: **0.7** (conversacional)
+- claude-3-haiku: **0.8** ✅ (fixed - punto medio, antes 0.7. Evita alucinaciones de temp muy baja)
+- claude-3.5-haiku: **0.8** ✅ (fixed - punto medio, antes 0.7)
 - claude-3-sonnet: **0.7** (conversacional)
 - claude-3.5-sonnet: **0.7** (conversacional)
 - claude-3-opus: **0.7** (conversacional)
 
+**Gemini Models:**
+- gemini-2.0-flash: **0.7**
+- gemini-1.5-pro: **0.7**
+
 **Validación**: Temperature > 1.5 sanitizada automáticamente a 1.0 (evita alucinaciones severas)
+**UI**: Temperature input comentado en AgentForm.tsx (líneas 106-156) - modelos usan temp fija optimizada
 
 ## API v1 Chatbot - Modular (Sept 16) ✅
 
@@ -402,7 +411,10 @@ DEVELOPMENT_TOKEN=FORMMY_DEV_TOKEN_2025 npx tsx scripts/test-rag-prompts.ts
 - **Management**: `/server/chatbot/management-handler.server.ts` (CRUD chatbots)
 - **Integration**: `/server/chatbot/integration-handler.server.ts` (gestión integraciones)
 
-**Prompts simplificados** (90% reducción tokens): Sales, SEO, Analyst, Automation, Growth → 1 línea cada uno
+**Personalidades de Agentes** (Oct 6, 2025): 6 agentes activos con LFPDPPP compliance
+- `sales`, `customer_support`, `data_analyst`, `coach`, `medical_receptionist`, `educational_assistant`
+- Todos incluyen disclaimers de uso de datos personales (propósito + right to deletion)
+- Implementación: `/app/utils/agents/agentPrompts.ts`
 
 
 ## Roadmap
@@ -425,9 +437,77 @@ DEVELOPMENT_TOKEN=FORMMY_DEV_TOKEN_2025 npx tsx scripts/test-rag-prompts.ts
 - Rutas nuevas: agregar a `routes.ts`
 - NO usar `json`, usar `{}` directo
 
-## Configuración Modelos AI
+## Personalidades de Agentes (AgentType)
 
-**Temperature por modelo**: gpt-5-nano (undefined), claude-3-haiku (0.7), claude-3.5-haiku (0.5), gpt-5-mini (0.3)
+**Actualizado**: Oct 6, 2025 - Sistema unificado con LFPDPPP compliance
+
+### Agentes Disponibles (6)
+
+**1. Sales (`sales`)** 🟢
+- **Propósito**: Ventas consultivas B2B/B2C, generación de leads
+- **Disclaimer**: ✅ Cotizaciones y seguimiento comercial
+- **Color**: Verde esmeralda (#10B981)
+- **Ícono**: `/public/assets/chat/agents/sales.svg`
+
+**2. Customer Support (`customer_support`)** 🔵
+- **Propósito**: Resolución de consultas, escalación a humanos
+- **Disclaimer**: ✅ Seguimiento de casos
+- **Color**: Azul (#3B82F6)
+- **Ícono**: `/public/assets/chat/agents/customer-service.svg`
+
+**3. Data Analyst (`data_analyst`)** 🟡
+- **Propósito**: Análisis de KPIs, insights accionables
+- **Disclaimer**: ⚠️ No aplica (no solicita datos personales)
+- **Color**: Ámbar (#F59E0B)
+- **Ícono**: `/public/assets/chat/agents/analytics.svg`
+
+**4. Coach (`coach`)** 🟣
+- **Propósito**: Coaching de vida/negocios, frameworks GROW/OKRs
+- **Disclaimer**: ✅ Ejercicios y accountability
+- **Color**: Violeta (#8B5CF6)
+- **Ícono**: `/public/assets/chat/agents/coach.svg`
+
+**5. Medical Receptionist (`medical_receptionist`)** 🔵
+- **Propósito**: Gestión de citas médicas, recordatorios
+- **Disclaimer**: ✅ Datos médicos y coordinación de citas
+- **Color**: Cian (#06B6D4)
+- **Ícono**: `/public/assets/chat/agents/medical.svg`
+
+**6. Educational Assistant (`educational_assistant`)** 🔴
+- **Propósito**: Aprendizaje personalizado, Socratic questioning
+- **Disclaimer**: ✅ Envío de materiales educativos
+- **Color**: Rojo (#EF4444)
+- **Ícono**: `/public/assets/chat/agents/education.svg`
+
+### Disclaimers LFPDPPP (Oct 6, 2025)
+
+**Patrón estándar** en todos los prompts:
+```typescript
+📋 AL PEDIR DATOS, DI EXACTAMENTE:
+"[Pregunta por datos]? Tu información solo se usará para [propósito]
+y puedes solicitar su eliminación cuando quieras."
+```
+
+**Compliance logrado**:
+- ✅ Transparencia (propósito específico declarado)
+- ✅ Data minimization (solo email cuando necesario)
+- ✅ Right to deletion (mención explícita)
+- ✅ Consentimiento informado (antes de recolectar)
+
+**Referencia**: Industry best practices (OpenAI, Anthropic, Google Dialogflow)
+
+### Agentes Eliminados (Oct 6, 2025)
+- ❌ `content_seo` - Estratega de contenido SEO
+- ❌ `automation_ai` - Automatización e IA
+- ❌ `growth_hacker` - Experimentos de growth
+
+**Razón**: Simplificación del catálogo, enfoque en casos de uso mainstream
+
+## Configuración Legacy (Deprecado)
+
+**⚠️ Esta sección está desactualizada - Ver secciones actualizadas arriba**
+
+~~Temperature por modelo: gpt-5-nano (undefined), claude-3-haiku (0.7), claude-3.5-haiku (0.5), gpt-5-mini (0.3)~~
 **Context limits**: 3500-5000 tokens según modelo
 **Smart routing PRO**: Claude para integraciones críticas, GPT-5-nano para chat normal
 

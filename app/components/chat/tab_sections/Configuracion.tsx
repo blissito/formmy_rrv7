@@ -53,7 +53,6 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
   // Estado para configuración de streaming
   const [streaming, setStreaming] = useState({
     enableStreaming: chatbot.enableStreaming ?? true,
-    streamingSpeed: chatbot.streamingSpeed ?? 50,
   });
   
   const handleNotificationChange = async (field: string, value: boolean) => {
@@ -156,27 +155,6 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     }
   };
 
-  const handleStreamingUpdate = async () => {
-    setIsUpdating(true);
-    const formData = new FormData();
-    formData.append("intent", "update_streaming");
-    formData.append("chatbotId", chatbot.id);
-    formData.append("enableStreaming", String(streaming.enableStreaming));
-    formData.append("streamingSpeed", String(streaming.streamingSpeed));
-    
-    try {
-      await fetch("/api/v1/chatbot", {
-        method: "POST",
-        body: formData,
-      });
-      alert("Configuración de streaming actualizada");
-    } catch (error) {
-      console.error("Error updating streaming:", error);
-      alert("Error al actualizar la configuración de streaming");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   const handleDeleteChatbot = async () => {
     try {
@@ -470,45 +448,14 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
 
       {currentTab === "streaming" && (
         <section className="">
-          <Card title="Configuración de Streaming" text="Controla cómo se muestran las respuestas de tu chatbot en tiempo real.">
+          <Card title="Configuración de Streaming" text="Las respuestas de tu chatbot se muestran en tiempo real a medida que se generan.">
             <main className="flex flex-col gap-4">
-              <Toggler 
-                title="Habilitar Streaming" 
-                text="Las respuestas aparecen palabra por palabra en tiempo real"
-                value={streaming.enableStreaming}
-                onChange={() => setStreaming({...streaming, enableStreaming: !streaming.enableStreaming})}
+              <Toggler
+                title="Habilitar Streaming"
+                text="El streaming está siempre habilitado para ofrecer la mejor experiencia (esta función podría reactivarse en el futuro)"
+                value={true}
+                disabled={true}
               />
-              <section>
-                <Select
-                  value={String(streaming.streamingSpeed)}
-                  options={[
-                    { value: "25", label: "Muy rápido (25ms)" },
-                    { value: "50", label: "Rápido (50ms)" },
-                    { value: "100", label: "Normal (100ms)" },
-                    { value: "200", label: "Lento (200ms)" },
-                  ]}
-                  label="Velocidad de Streaming"
-                  placeholder="Selecciona una velocidad"
-                  onChange={(value) => setStreaming({...streaming, streamingSpeed: parseInt(value)})}
-                />
-                <div className="flex gap-1 items-start text-[12px] text-irongray">
-                  <span className="mt-[2px]">
-                    <IoInformationCircleOutline />
-                  </span>
-                  <p>
-                    Controla qué tan rápido aparecen las palabras en el chat. Menor número = más rápido.
-                  </p>
-                </div>
-              </section>
-              <div className="flex w-full justify-end">
-                <Button 
-                  className="w-full md:w-fit h-10 !mr-0"
-                  onClick={handleStreamingUpdate}
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? "Actualizando..." : "Actualizar"}
-                </Button>
-              </div>
             </main>
           </Card>
         </section>
@@ -522,11 +469,13 @@ export const Toggler = ({
   title,
   value,
   onChange,
+  disabled,
 }: {
   text: string;
   title?: string;
   value?: boolean;
   onChange?: () => void;
+  disabled?: boolean;
 }) => {
   return (
     <div className="flex gap-2 items-center justify-between">
@@ -534,7 +483,7 @@ export const Toggler = ({
       <h4 className="dark font-medium">{title}</h4>
       <p className="text-sm text-gray-600 font-normal">{text}</p>
       </div>
-      <Toggle value={value} onChange={onChange} />
+      <Toggle value={value} onChange={onChange} isDisabled={disabled} />
     </div>
   );
 };

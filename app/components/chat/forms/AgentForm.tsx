@@ -94,16 +94,17 @@ export const AgentForm = ({
         />
       </div>
 
-      {/* Selector de tipo de agente */}
+      {/* Selector de personalidad de agente */}
       <div>
         <AgentDropdown
           selectedAgent={selectedAgent}
           onChange={handleAgentChange}
-          label="Elige a tu agente"
+          label="Personalidad del agente"
         />
       </div>
 
-      <div>
+      {/* Temperature control - Comentado temporalmente (modelos usan temperatura fija optimizada) */}
+      {/* <div>
         <label className="text-sm text-metal mb-2 flex items-center gap-1">
           Creatividad
           <button type="button" className="group relative flex items-center">
@@ -127,7 +128,7 @@ export const AgentForm = ({
             className={`w-full ${isFixedTemp ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           />
           {/* Marcador visual del valor óptimo */}
-          {!isFixedTemp && tempRange.optimal !== tempRange.min && (
+          {/* {!isFixedTemp && tempRange.optimal !== tempRange.min && (
             <div
               className="absolute top-0 w-0.5 h-full bg-blue-500 pointer-events-none"
               style={{
@@ -152,51 +153,35 @@ export const AgentForm = ({
             Recomendado: <span className="font-medium text-blue-600">{tempRange.optimal}</span> para balance óptimo
           </p>
         )}
-      </div>
+      </div> */}
 
       {/* Sistema de Prompts Mejorado */}
       <div className="space-y-4">
         {/* Prompt Base del Agente */}
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <HiSparkles className="text-blue-600" />
               <h3 className="text-sm font-medium text-gray-900">
                 Prompt Base: {getAgentName(selectedAgent)}
               </h3>
             </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowBasePrompt(!showBasePrompt)}
-                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-              >
-                {showBasePrompt ? <FiEyeOff /> : <FiEye />}
-                {showBasePrompt ? "Ocultar" : "Ver prompt"}
-              </button>
-              <button
-                type="button"
-                onClick={copyToClipboard}
-                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-              >
-                {copied ? <FiCheck className="text-green-600" /> : <FiCopy />}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowBasePrompt(!showBasePrompt)}
+              className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            >
+              {showBasePrompt ? <FiEyeOff /> : <FiEye />}
+              {showBasePrompt ? "Ocultar" : "Ver prompt"}
+            </button>
           </div>
-          
+
           {showBasePrompt && (
             <div className="mt-3 p-3 bg-white/70 rounded border border-blue-100">
               <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono">
                 {basePrompt}
               </pre>
             </div>
-          )}
-          
-          {!showBasePrompt && (
-            <p className="text-xs text-gray-600">
-              Este agente está preconfigurado con mejores prácticas de la industria.
-              Puedes personalizarlo añadiendo instrucciones adicionales abajo.
-            </p>
           )}
         </div>
 

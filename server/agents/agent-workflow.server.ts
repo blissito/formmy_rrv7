@@ -81,7 +81,7 @@ function buildSystemPrompt(
   const personality = config.personality || "friendly";
 
   // Agent types válidos
-  const agentTypes: AgentType[] = ['sales', 'customer_support', 'content_seo', 'data_analyst', 'automation_ai', 'growth_hacker'];
+  const agentTypes: AgentType[] = ['sales', 'customer_support', 'data_analyst', 'coach', 'medical_receptionist', 'educational_assistant'];
 
   // 🔍 PRIORIDAD MÁXIMA: Instrucciones de búsqueda PRIMERO (antes de custom instructions)
   let searchInstructions = '';
@@ -221,7 +221,8 @@ async function createSingleAgent(
   );
 
   // Create LLM with correct provider (OpenAI or Anthropic)
-  const llm = createLLM(selectedModel, resolvedConfig.temperature || 0.3);
+  // Use nullish coalescing to avoid overriding valid values like 0
+  const llm = createLLM(selectedModel, resolvedConfig.temperature ?? getOptimalTemperature(selectedModel));
 
   // Todas las herramientas del plan - modelo decide cuáles usar
   const toolContext: ToolContext = {

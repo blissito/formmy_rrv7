@@ -1,0 +1,20 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="coachGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="12" cy="12" r="11" fill="url(#coachGrad)" stroke="#FFFFFF" stroke-width="0.5"/>
+  <rect x="6" y="7" width="12" height="10" rx="1" fill="white" fill-opacity="0.9"/>
+  <!-- Persona con brazos arriba (crecimiento) -->
+  <circle cx="12" cy="10" r="1.5" fill="url(#coachGrad)"/>
+  <path d="M12 11.5V14.5" stroke="url(#coachGrad)" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M12 14.5L10.5 16.5" stroke="url(#coachGrad)" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M12 14.5L13.5 16.5" stroke="url(#coachGrad)" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M12 12L9.5 13.5" stroke="url(#coachGrad)" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M12 12L14.5 13.5" stroke="url(#coachGrad)" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Flecha de crecimiento -->
+  <path d="M15.5 10L16.5 9L15.5 8" stroke="url(#coachGrad)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.5 9H16.5" stroke="url(#coachGrad)" stroke-width="1" stroke-linecap="round"/>
+</svg>

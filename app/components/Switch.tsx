@@ -34,7 +34,7 @@ export const Toggle = ({
     }
     onChange?.(newValue);
   };
-  const isActive = isDisabled ? false : currentValue;
+  const isActive = currentValue;
   return (
     <Switch
       checked={isActive}
@@ -43,7 +43,7 @@ export const Toggle = ({
         `${
           isActive ? "bg-brand-500" : " dark:bg-[#22232A] bg-[#EFEFF0]"
         } relative inline-flex h-6 w-11 items-center rounded-full ${
-          isDisabled ? "bg-gray-400 cursor-not-allowed" : ""
+          isDisabled ? "opacity-60 cursor-not-allowed" : ""
         }`,
         "min-w-[44px]",
         className ?? ""
