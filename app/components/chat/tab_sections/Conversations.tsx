@@ -4,6 +4,8 @@ import { Avatar } from "../Avatar";
 import { useState, useEffect, useRef, type ReactNode, forwardRef } from "react";
 import { useNavigate } from "react-router";
 import { cn } from "~/lib/utils";
+import Empty from "~/SVGs/Empty";
+import EmptyDark from "~/SVGs/EmptyDark";
 
 const dev_conversations = [
   {
@@ -367,7 +369,7 @@ export const Conversations = ({
           selectedConversationId={selectedConversationId}
         />
       </article>
-      <section className="col-span-12 md:col-span-9 pb-4 ">
+      <section className="col-span-12 md:col-span-9 pb-4 b  min-h-[calc(100vh-310px)] ">
         <ConversationsPreview
           conversation={conversation}
           chatbot={chatbot}
@@ -378,6 +380,21 @@ export const Conversations = ({
         />
       </section>
     </main>
+  );
+};
+
+const EmptyFavorites = () => {
+  return (
+    <div className="text-center mt-0 md:mt-12 flex flex-col items-center ">
+      <Empty className="w-[160px] md:w-[200px] dark:hidden flex" />
+      <EmptyDark className="w-[200px] hidden dark:flex" />
+      <h3 className="font-bold text-sm text-space-800 dark:text-clear">
+        ¡No tienes favoritos!
+      </h3>
+      <p className="text-gray-600 text-sm dark:text-gray-400 font-light mt-2">
+        Marca como favoritos <br /> tus mensajes más importantes.
+      </p>
+    </div>
   );
 };
 
@@ -415,17 +432,21 @@ const ConversationsList = ({
 
   return (
     <section className="flex flex-col gap-1 max-h-[264px] md:max-h-[616px] overflow-y-scroll ">
-      {conversations.map((conversation) => (
-        <Conversation
-          key={conversation.id}
-          ref={(el) => {
-            if (el) conversationRefs.current[conversation.id] = el;
-          }}
-          conversation={conversation}
-          onClick={() => onConversationSelect(conversation)}
-          isActive={conversation.id === currentConversation.id}
-        />
-      ))}
+      {conversations.length > 0 ? (
+        conversations.map((conversation) => (
+          <Conversation
+            key={conversation.id}
+            ref={(el) => {
+              if (el) conversationRefs.current[conversation.id] = el;
+            }}
+            conversation={conversation}
+            onClick={() => onConversationSelect(conversation)}
+            isActive={conversation.id === currentConversation.id}
+          />
+        ))
+      ) : (
+        <EmptyFavorites />
+      )}
     </section>
   );
 };

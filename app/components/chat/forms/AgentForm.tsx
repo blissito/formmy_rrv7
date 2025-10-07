@@ -253,7 +253,7 @@ export const AgentForm = ({
             </div>
             <div className="p-4 flex-1 overflow-auto flex flex-col gap-3">
               {/* Tooltip educativo en modal */}
-              <div className="p-3 bg-cloud/20 border border-cloud rounded-lg text-xs text-dark">
+              <div className="p-3 bg-brand-500/20 border border-brand-500 rounded-lg text-xs text-dark">
                 <p className="font-medium mb-1">💡 ¿Qué añadir aquí?</p>
                 <ul className="ml-4 space-y-1 list-disc text-dark">
                   <li>Nombre de tu empresa/producto y qué ofreces</li>
@@ -274,7 +274,7 @@ export const AgentForm = ({
                 maxLength={1500}
               />
             </div>
-            <div className="flex justify-end gap-2 p-4 border-t">
+            <div className="flex justify-end gap-2 p-4 ">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
@@ -333,13 +333,13 @@ export const AgentForm = ({
                 </p>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-4 flex-1 overflow-auto">
+              <div className="bg-white border border-outlines rounded-2xl p-4 flex-1 overflow-auto">
                 <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">
                   {basePrompt}
                 </pre>
               </div>
             </div>
-            <div className="flex justify-end gap-2 p-4 border-t">
+            <div className="flex justify-end gap-2 p-4">
               <button
                 type="button"
                 onClick={() => setShowBasePromptModal(false)}

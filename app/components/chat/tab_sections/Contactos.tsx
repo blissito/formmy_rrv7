@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { HiOutlineSearch, HiChevronDown, HiOutlineDownload } from "react-icons/hi";
 import { HiOutlineTrash, HiOutlineChat } from "react-icons/hi";
 import { useNavigate, useFetcher, useRevalidator } from "react-router";
+import { cn } from "~/lib/utils";
 
 const STATUS_LABELS: Record<ContactStatus, string> = {
   NEW: "Nuevo",
@@ -15,10 +16,10 @@ const STATUS_LABELS: Record<ContactStatus, string> = {
 };
 
 const STATUS_COLORS: Record<ContactStatus, string> = {
-  NEW: "bg-brand-500/20 text-brand-700",
+  NEW: "bg-brand-500/20 text-brand-600",
   CONTACTED: "bg-yellow-500/20 text-yellow-700",
-  SCHEDULED: "bg-sky/20 text-sky",
-  NEGOTIATING: "bg-orange-500/20 text-orange-700",
+  SCHEDULED: "bg-teal-500/20 text-teal-700",
+  NEGOTIATING: "bg-orange-500/20 text-amber-600",
   ON_HOLD: "bg-gray-400/20 text-gray-700",
   CLOSED_WON: "bg-grass/20 text-grass",
   CLOSED_LOST: "bg-danger/20 text-danger",
@@ -272,10 +273,13 @@ export const Contactos = ({
           <button
             onClick={handleExportCSV}
             disabled={filteredContacts.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-full hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <HiOutlineDownload className="w-5 h-5" />
-            <span className="text-sm font-medium">Exportar CSV</span>
+        className={cn(
+                "enabled:cursor-pointer enabled:active:scale-95 w-10 h-10 grid place-items-center",
+                "enabled:hover:bg-gray-50 enabled:hover:shadow-sm transition-all",
+                "rounded-xl p-1 border border-gray-300",
+              )}          
+              >
+          <img className="pointer-events-none" src="/assets/chat/download.svg" alt="download" />
           </button>
           <div className="relative w-80">
             <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-metal w-5 h-5" />
@@ -295,28 +299,28 @@ export const Contactos = ({
           <table className="w-full table-fixed">
             <thead className="bg-surfaceTwo border-b border-outlines">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[22%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[22%]">
                   Contacto
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[12%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
                   Teléfono
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[14%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[14%]">
                   Empresa
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[12%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
                   Cargo
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[11%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[11%]">
                   Fecha
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[9%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[9%]">
                   Origen
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[12%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
                   Estatus
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-medium text-dark w-[8%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[8%]">
                   Acciones
                 </th>
               </tr>
@@ -327,7 +331,7 @@ export const Contactos = ({
                   key={contact.id}
                   className="hover:bg-brand-100/50 transition-colors"
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4">
                     <div className="flex flex-col overflow-hidden">
                       <div className="text-sm font-medium text-dark truncate">
                         {contact.name || "-"}
@@ -337,20 +341,20 @@ export const Contactos = ({
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-metal truncate">{contact.phone || "-"}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-metal truncate">
                       {contact.company || "-"}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-metal truncate">
                       {contact.position || "-"}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-irongray truncate">
                       {new Date(contact.capturedAt).toLocaleDateString("es-MX", {
                         year: "numeric",
@@ -359,8 +363,8 @@ export const Contactos = ({
                       })}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex justify-center">
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="flex justify-start">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         contact.source.toLowerCase() === 'whatsapp'
                           ? 'bg-green-100 text-green-700'
@@ -370,7 +374,7 @@ export const Contactos = ({
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex justify-start">
                       <StatusDropdown
                         value={optimisticStatuses[contact.id] || contact.status || "NEW"}
@@ -379,7 +383,7 @@ export const Contactos = ({
                       />
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => handleViewConversation(contact.conversationId)}
