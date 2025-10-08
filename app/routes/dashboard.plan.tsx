@@ -110,7 +110,7 @@ export const TaxesInfo=()=>{
     return(
         <section className="border border-outlines rounded-3xl py-8 px-6 mt-6 ">
             <h2 className="text-dark text-xl heading">Facturación</h2>
-            <p className="text-metal font-light mt-1">Si requieres factura fiscal mexicana, envía tu información fiscal a <a href="mailto:hola@formmy.app" className="text-brand-600 underline">hola@formmy.app</a>. Si la información fiscal es correcta, la factura será enviada a tu correo en las próximas 72 hrs.</p>
+            <p className="text-metal  mt-1">Si requieres factura fiscal mexicana, envía tu información fiscal a <a href="mailto:hola@formmy.app" className="text-brand-600 underline">hola@formmy.app</a>. Si la información fiscal es correcta, la factura será enviada a tu correo en las próximas 72 hrs.</p>
             
         </section>
     )
@@ -134,11 +134,11 @@ export const CardFree = () => {
           <h3 className="text-dark text-2xl font-semibold">
             Free
           </h3>
-          <p className="font-light text-metal">
-            Perfecto para empezar con tu website
+          <p className=" text-metal">
+          Perfecto para empezar
           </p>
           <h4 className="md:mt-0 mt-4 text-[32px] text-dark font-bold">
-            $ 0 <span className="text-metal font-light text-base">/mes</span>
+            $ 0 <span className="text-metal  text-base">/mes</span>
           </h4>
           <Link to="/planes">
           <button
@@ -156,7 +156,7 @@ export const CardFree = () => {
           <h4 className="font-semibold text-dark mb-2">
             Incluye
           </h4>
-          <div className="text-metal font-light flex flex-col gap-3">
+          <div className="text-metal  flex flex-col gap-3">
             <p>📋 3 formmys</p>
             <p>💬 Mensajes ilimitados</p>
             <p>📪 Notificaciones vía email</p>
@@ -186,12 +186,12 @@ export const CardFree = () => {
           <h3 className="text-pro text-2xl font-semibold">
             Pro
           </h3>
-          <p className="font-light text-metal">
-            Ideal para tu negocio 
+          <p className=" text-metal">
+          El plan más completo
           </p>
           <h4 className="mt-4 md:mt-12 text-[32px] text-space-800 dark:text-white font-bold">
             $ 499  
-            <span className="text-metal font-light text-base ml-2">
+            <span className="text-metal  text-base ml-2">
               MXN /mes
             </span>
           </h4>
@@ -211,7 +211,7 @@ export const CardFree = () => {
           <h4 className="font-semibold text-lg  text-dark">
             Renovación
           </h4>
-          <p className="text-metal font-light my-2">
+          <p className="text-metal  my-2">
             Siguiente fecha de facturación{" "}
             <strong className="font-bold">
               {endDate ? new Date(endDate).toLocaleDateString("es-MX", {
@@ -223,14 +223,14 @@ export const CardFree = () => {
             </strong>
             .
           </p>
-          <p className="text-metal font-light">
+          <p className="text-metal ">
             Si no quieres que tu suscripción se renueve, cancélala al menos{" "}
             <strong className="font-bold">1 día antes</strong>.
           </p>
           <h4 className="font-bold text-lg text-dark mt-10 mb-2">
             Incluye
           </h4>
-          <div className="text-metal font-light flex flex-col gap-3">
+          <div className="text-metal  flex flex-col gap-3">
             <p>📋 Todo lo que incluye el plan Starter
             </p>
             <p>🤖 10 Chatbots
@@ -267,12 +267,12 @@ export const CardFree = () => {
           <h3 className="text-[#5FAFA8] text-2xl font-semibold">
             Enterprise 
           </h3>
-          <p className="font-light text-metal">
-            Ideal para tu negocio 
+          <p className=" text-metal">
+          Solución corporativa
           </p>
           <h4 className="mt-4 md:mt-12 text-[32px] text-space-800 dark:text-white font-bold">
            $ 1,499  
-            <span className="text-metal font-light text-base ml-2">
+            <span className="text-metal  text-base ml-2">
               MXN /mes
             </span>
           </h4>
@@ -292,7 +292,7 @@ export const CardFree = () => {
           <h4 className="font-semibold text-lg  text-dark">
             Renovación
           </h4>
-          <p className="text-metal font-light my-2">
+          <p className="text-metal  my-2">
             Siguiente fecha de facturación{" "}
             <strong className="font-bold">
               {endDate ? new Date(endDate).toLocaleDateString("es-MX", {
@@ -304,14 +304,14 @@ export const CardFree = () => {
             </strong>
             .
           </p>
-          <p className="text-metal font-light">
+          <p className="text-metal ">
             Si no quieres que tu suscripción se renueve, cancélala al menos{" "}
             <strong className="font-bold">1 día antes</strong>.
           </p>
           <h4 className="font-bold text-lg text-dark mt-10 mb-2">
             Incluye
           </h4>
-          <div className="text-metal font-light flex flex-col gap-3">
+          <div className="text-metal  flex flex-col gap-3">
             <p>📋 Todo lo que incluye el plan Starter
             </p>
             <p>🤖 Chatbots ilimitados
@@ -351,12 +351,12 @@ export const CardFree = () => {
           <h3 className="text-brand-500 dark:text-white text-2xl font-semibold">
             Starter 
           </h3>
-          <p className="font-light text-metal">
-          Perfecto para ti y tu sitio web
+          <p className=" text-metal">
+          La opción entrepreneur
           </p>
           <h4 className="mt-4 md:mt-12 text-[32px] text-space-800 dark:text-white font-bold">
           $ 149 
-            <span className="text-metal font-light text-base ml-2">
+            <span className="text-metal  text-base ml-2">
               MXN /mes
             </span>
           </h4>
@@ -376,7 +376,7 @@ export const CardFree = () => {
           <h4 className="font-semibold text-lg  text-dark">
             Renovación
           </h4>
-          <p className="text-metal font-light my-2">
+          <p className="text-metal  my-2">
             Siguiente fecha de facturación{" "}
             <strong className="font-bold">
               {endDate ? new Date(endDate).toLocaleDateString("es-MX", {
@@ -388,14 +388,14 @@ export const CardFree = () => {
             </strong>
             .
           </p>
-          <p className="text-metal font-light">
+          <p className="text-metal ">
             Si no quieres que tu suscripción se renueve, cancélala al menos{" "}
             <strong className="font-bold">1 día antes</strong>.
           </p>
           <h4 className="font-bold text-lg text-dark mt-10 mb-2">
             Incluye
           </h4>
-          <div className="text-metal font-light flex flex-col gap-3">
+          <div className="text-metal  flex flex-col gap-3">
           <p>📋 Formularios ilimitados con respuestas ilimitadas            </p>
             <p>👨‍👩‍👦‍👦 Administración de usuarios</p>
             <p>🎨 Personalización avanzada de formmys

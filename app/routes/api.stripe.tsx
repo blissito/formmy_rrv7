@@ -17,7 +17,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       : "price_1S5CqADtYmGT70YtTZUtJOiS", 
     enterprise: isDevelopment 
       ? process.env.STRIPE_ENTERPRISE_PRICE_TEST || "price_test_enterprise"
-      : "price_1S5Cm2DtYmGT70YtwzUlp99P"
+      :"price_1S5Cm2DtYmGT70YtwzUlp99P"
   };
 
   // New plan intents
@@ -40,18 +40,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   if (intent === "enterprise_plan") {
-    // Usar price_data para custom price en vez de price ID
     const url = await createCheckoutSessionURL({
       user: null,
-      priceData: {
-        currency: 'mxn',
-        unit_amount: 149900, // $2,499.00 MXN (en centavos)
-        recurring: { interval: 'month' },
-        product_data: {
-          name: 'Plan Enterprise',
-          description: 'Chatbots ilimitados, 1000 conversaciones, 5000 tool credits'
-        }
-      },
+      price: PRICES.enterprise,
       origin: new URL(request.url).origin,
     });
     if (url) return Response.redirect(url);
@@ -59,3 +50,22 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   return new Response(null);
 };
+
+// Comentado: Versión anterior de enterprise_plan con priceData custom
+// if (intent === "enterprise_plan") {
+//   // Usar price_data para custom price en vez de price ID
+//   const url = await createCheckoutSessionURL({
+//     user: null,
+//     priceData: {
+//       currency: 'mxn',
+//       unit_amount: 149900, // $1,499.00 MXN (en centavos)
+//       recurring: { interval: 'month' },
+//       product_data: {
+//         name: 'Plan Enterprise',
+//         description: 'Chatbots ilimitados, 1000 conversaciones, 5000 tool credits'
+//       }
+//     },
+//     origin: new URL(request.url).origin,
+//   });
+//   if (url) return Response.redirect(url);
+// }
