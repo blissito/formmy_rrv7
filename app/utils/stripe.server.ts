@@ -178,6 +178,7 @@ export const createCheckoutSessionURL = async ({
   const sessionConfig: any = {
     mode: "subscription",
     success_url: `${DOMAIN}/profile?success=1`,
+    cancel_url: `${DOMAIN}/planes`,
     line_items: [lineItem],
   };
 
