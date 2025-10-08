@@ -1,5 +1,5 @@
 ---
-title: "MongoDB Atlas Vector Search: Guía Práctica para Implementar RAG"
+title: "MongoDB Atlas Vector Search: Guía práctica para implementar RAG"
 excerpt: "Aprende cómo implementar búsqueda semántica y sistemas RAG con MongoDB Atlas Vector Search. Incluye ejemplos reales de código y mejores prácticas."
 date: "2025-10-04"
 tags: ["MongoDB", "Vector Search", "RAG", "IA", "Tutorial"]

@@ -271,7 +271,7 @@ export const CardFree = () => {
             Ideal para tu negocio 
           </p>
           <h4 className="mt-4 md:mt-12 text-[32px] text-space-800 dark:text-white font-bold">
-           $ 2,499  
+           $ 1,499  
             <span className="text-metal font-light text-base ml-2">
               MXN /mes
             </span>

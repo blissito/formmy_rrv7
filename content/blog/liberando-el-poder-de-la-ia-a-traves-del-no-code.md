@@ -1,5 +1,5 @@
 ---
-title: "Liberando el Poder de la IA a Través del No-Code"
+title: "Liberando el poder de la IA a través del no-code"
 excerpt: "En formmy.app, creemos que la inteligencia artificial no debería ser un privilegio exclusivo de los desarrolladores. Descubre nuestra visión para democratizar la creación de agentes avanzados."
 date: "2025-01-05"
 tags: ["ia", "no-code", "agentes", "futuro", "democratizacion"]

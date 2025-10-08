@@ -1,5 +1,5 @@
 ---
-title: "Por Qué Construimos Nuestro Propio Framework De Agentes IA"
+title: "Por qué construimos nuestro propio framework de agentes IA"
 excerpt: "La historia directa de por qué decidimos evitar frameworks pesados y construir algo simple que realmente entendemos."
 date: "2024-08-24"
 tags: ["Framework", "TypeScript", "IA", "Desarrollo"]

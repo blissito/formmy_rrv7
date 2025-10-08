@@ -23,7 +23,7 @@ export default function FormmyCodeRoute() {
         <h3 className="md:text-2xl text-xl font-bold text-center mb-2">¡Tu formmy está listo!</h3>
         <p className="text-center text-metal mb-4 md:mb-6">
           Elige la forma de embebido que más te convenga. {""}
-          <a href="#" className="underline">Más información</a>
+          {/* <a href="#" className="underline">Más información</a> */}
         </p>
         <section>
           <MiniCardGroup selectedMinicard={miniCard} onSelect={setMiniCard}>

@@ -45,7 +45,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       user: null,
       priceData: {
         currency: 'mxn',
-        unit_amount: 249900, // $2,499.00 MXN (en centavos)
+        unit_amount: 149900, // $2,499.00 MXN (en centavos)
         recurring: { interval: 'month' },
         product_data: {
           name: 'Plan Enterprise',

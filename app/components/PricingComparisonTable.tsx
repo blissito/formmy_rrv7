@@ -268,7 +268,7 @@ export function PricingComparisonTable() {
       integrations: "Calendario, Webhooks, WhatsApp, Instagram, Messenger"
     },
     "Enterprise 🤖": {
-      price: "$2,499",
+      price: "$1,499",
       priceNote: "/mes",
       forms: "Ilimitados",
       chatbots: "Ilimitados",

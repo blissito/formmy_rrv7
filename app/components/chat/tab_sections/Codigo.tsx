@@ -589,7 +589,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
               <div>
                 <p className="text-metal font-normal">
                   Elige la forma de embebido que más te convenga.{" "}
-                  <a href="#!" className="underline">
+                  <a href="/blog/como-embeber-chatbot-formmy-sitio-web" className="underline" target="_blank">
                     Más información
                   </a>
                 </p>

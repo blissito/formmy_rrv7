@@ -1,5 +1,5 @@
 ---
-title: "AgentEngine V0: Cuando la Simplicidad Gana"
+title: "AgentEngine V0: Cuando la simplicidad gana"
 excerpt: "Cómo construimos un motor de agentes funcional en 231 líneas, derrotando a implementaciones de 2000+ líneas con programación funcional pura"
 date: "2024-09-16"
 tags: ["AI", "LlamaIndex", "Agents", "TypeScript"]
