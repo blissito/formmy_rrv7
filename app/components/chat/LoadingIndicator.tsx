@@ -2,7 +2,7 @@ import { cn } from "~/lib/utils";
 
 export const LoadingIndicator = () => {
   return (
-    <div className="items-center justify-center flex text-3xl">
+    <div className="items-center justify-center flex text-3xl h-3">
       <div className={cn("animate-bounce", "brand-500")}>.</div>
       <div
         className={cn("animate-bounce", "brand-500")}

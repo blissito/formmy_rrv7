@@ -512,7 +512,7 @@ export default function ChatPreview({
 
   return (
     <main
-      className={cn("h-full max-h-[680px] ", {
+      className={cn("h-full max-h-[700px] bg-red-500", {
         "bg-chatPattern bg-cover rounded-3xl  pt-6": !production,
       })}
     >
@@ -522,12 +522,11 @@ export default function ChatPreview({
         className={cn(
           "border border-gray-200",
           "bg-white",
-          "rounded-2xl",
           "flex flex-col",
           "overflow-hidden",
           {
-            "h-full w-full shadow-2xl": production,
-            "h-svh max-h-[600px] mb-6 max-w-lg mx-auto": !production,
+            "h-full w-full": production,
+            "h-svh max-h-[600px] mb-6 max-w-lg mx-auto rounded-2xl shadow-2xl": !production,
           }
         )}
       >

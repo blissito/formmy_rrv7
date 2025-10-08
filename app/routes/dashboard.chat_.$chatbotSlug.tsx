@@ -103,7 +103,15 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     },
   });
 
-  // Obtener conversaciones reales con mensajes
+  // Contar total de conversaciones
+  const totalConversations = await db.conversation.count({
+    where: {
+      chatbotId: chatbot.id,
+      status: { not: "DELETED" },
+    },
+  });
+
+  // Obtener conversaciones reales con mensajes (primeras 50)
   const conversationsFromDB = await db.conversation.findMany({
     where: {
       chatbotId: chatbot.id,
@@ -116,7 +124,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       },
     },
     orderBy: { updatedAt: "desc" },
-    take: 50, // Limitar a las 50 conversaciones más recientes
+    take: 50, // Limitar a las 50 conversaciones más recientes (primera carga)
   });
 
   // Transformar a formato UI
@@ -156,6 +164,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     chatbot,
     integrations,
     conversations,
+    totalConversations,
     contacts,
     accessInfo: accessValidation,
   };
@@ -164,7 +173,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
-  const { user, chatbot, integrations, conversations, contacts, accessInfo } = loaderData;
+  const { user, chatbot, integrations, conversations, totalConversations, contacts, accessInfo } = loaderData;
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
@@ -359,6 +368,7 @@ export default function ChatbotDetailRoute({
             chatbot={chatbot}
             user={user}
             conversations={conversations}
+            totalConversations={totalConversations}
             onToggleManual={handleToggleManual}
             onSendManualResponse={handleSendManualResponse}
             onDeleteConversation={handleDeleteConversation}

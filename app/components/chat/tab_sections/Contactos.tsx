@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { HiOutlineSearch, HiChevronDown, HiOutlineDownload } from "react-icons/hi";
 import { HiOutlineTrash, HiOutlineChat } from "react-icons/hi";
 import { useNavigate, useFetcher, useRevalidator } from "react-router";
+import DeleteIcon from "~/components/ui/icons/Delete";
 import { cn } from "~/lib/utils";
 
 const STATUS_LABELS: Record<ContactStatus, string> = {
@@ -403,7 +404,7 @@ export const Contactos = ({
                         className="p-2 rounded-lg  text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
                         title="Eliminar contacto"
                       >
-                        <HiOutlineTrash className="w-5 h-5" />
+                        <DeleteIcon className="w-5 h-5" />
                       </button>
                     </div>
                   </td>

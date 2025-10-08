@@ -395,6 +395,60 @@ if (!input.email && !input.phone) {
 
 **Razón**: Un contacto sin forma de contacto es inútil para el negocio → validación a nivel de tool
 
+#### 8. **Paginación de Conversaciones con Botón "Cargar más"** (IMPLEMENTADO Oct 8, 2025)
+**Ubicación**: `Conversations.tsx` + `/api/v1/conversations/load-more`
+
+**Problema resuelto**: Lista de conversaciones limitada a 50 items → usuarios con 79+ conversaciones no podían ver todas
+
+**Implementación**:
+1. **Endpoint API** (`/api/v1/conversations/load-more.ts`):
+   - Carga 50 conversaciones adicionales por request
+   - Usa `skip` y `take` para paginación en Prisma
+   - Retorna `{ conversations, hasMore }` con transformación UI
+
+2. **State Management**:
+```typescript
+const [allLoadedConversations, setAllLoadedConversations] = useState(conversations);
+const [isLoadingMore, setIsLoadingMore] = useState(false);
+const hasMore = allLoadedConversations.length < totalConversations;
+
+const loadMoreConversations = async () => {
+  const response = await fetch(
+    `/api/v1/conversations/load-more?chatbotId=${chatbot.id}&skip=${allLoadedConversations.length}`
+  );
+  const data = await response.json();
+  setAllLoadedConversations(prev => [...prev, ...data.conversations]);
+};
+```
+
+3. **UI - Botón con estados**:
+   - Estado normal: "Cargar más (50 de muchas)"
+   - Estado loading: Spinner + "Cargando..."
+   - Estado final: "✓ Todas las conversaciones cargadas (79)"
+   - Botón se oculta cuando `hasMore === false`
+
+4. **Registro de ruta** (`routes.ts`):
+```typescript
+route("api/v1/conversations/load-more", "routes/api.v1.conversations.load-more.ts"),
+```
+
+**Por qué botón en lugar de scroll infinito**:
+- Scroll infinito tenía bug con IntersectionObserver en este layout
+- Botón da control explícito al usuario (mejor UX para este caso)
+- Performance: cargas bajo demanda, no automáticas
+
+**Archivos modificados**:
+- `/app/routes/api.v1.conversations.load-more.ts` (nuevo)
+- `/app/components/chat/tab_sections/Conversations.tsx` (state + botón)
+- `/app/routes/dashboard.chat_.$chatbotSlug.tsx` (totalConversations prop)
+- `/app/routes.ts` (registro de ruta)
+
+**Ventajas**:
+- Carga inicial rápida (50 conversaciones)
+- Escalable a miles de conversaciones
+- UX clara con feedback visual (spinner, contador)
+- Sin problemas de performance con listas grandes
+
 ### ContactStatus Enum (7 Estados)
 
 ```prisma

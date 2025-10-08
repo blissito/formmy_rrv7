@@ -101,7 +101,7 @@ const FormMyWidget = {
     chatContainer.innerHTML = \`
       <iframe
         src="\${apiHost}/chat/embed?slug=\${chatbotSlug}"
-        style="width: 100%; height: 100%; border: none; border-radius: 16px; background: white;"
+        style="width: 100%; height: 100%; border: none; border-radius: 16px; background: transparent;"
         allow="clipboard-write"
       ></iframe>
     \`;

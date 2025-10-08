@@ -11,6 +11,7 @@ type ConversationsProps = {
   chatbot: Chatbot;
   user: User;
   conversations?: Conversation[];
+  totalConversations?: number;
   onToggleManual?: (conversationId: string) => void;
   onSendManualResponse?: (conversationId: string, message: string) => void;
   onDeleteConversation?: (conversationId: string) => void;
@@ -36,6 +37,7 @@ interface Conversation {
 
 export const Conversations = ({
   conversations = [],
+  totalConversations = 0,
   chatbot,
   user,
   onToggleManual,
@@ -43,8 +45,14 @@ export const Conversations = ({
   onDeleteConversation,
   selectedConversationId,
 }: ConversationsProps) => {
+  // Estado para scroll infinito
+  const [allLoadedConversations, setAllLoadedConversations] = useState(conversations);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const hasMore = allLoadedConversations.length < totalConversations;
+
   console.log("🔍 DEBUG - Conversations Props:", {
     conversationsCount: conversations.length,
+    totalConversations,
     hasToggleManual: !!onToggleManual,
     hasSendManual: !!onSendManualResponse,
     hasDeleteConversation: !!onDeleteConversation,
@@ -52,7 +60,52 @@ export const Conversations = ({
     conversationIDs: conversations.map(c => c.id)
   });
 
-  const actualConversations = conversations;
+  console.log("📊 Pagination state:", {
+    allLoadedCount: allLoadedConversations.length,
+    totalConversations,
+    hasMore,
+    isLoadingMore
+  });
+
+  // Actualizar cuando cambien las props
+  useEffect(() => {
+    setAllLoadedConversations(conversations);
+  }, [conversations]);
+
+  // Función para cargar más conversaciones
+  const loadMoreConversations = async () => {
+    console.log("🔄 loadMoreConversations called", { isLoadingMore, hasMore, currentCount: allLoadedConversations.length });
+
+    if (isLoadingMore || !hasMore) {
+      console.log("⏸️ Skipping load - already loading or no more to load");
+      return;
+    }
+
+    setIsLoadingMore(true);
+    try {
+      const url = `/api/v1/conversations/load-more?chatbotId=${chatbot.id}&skip=${allLoadedConversations.length}`;
+      console.log("📡 Fetching:", url);
+
+      const response = await fetch(url);
+      console.log("📡 Response status:", response.status);
+
+      const data = await response.json();
+      console.log("📦 Data received:", data);
+
+      if (data.conversations && data.conversations.length > 0) {
+        console.log("✅ Adding conversations:", data.conversations.length);
+        setAllLoadedConversations(prev => [...prev, ...data.conversations]);
+      } else {
+        console.log("⚠️ No conversations in response");
+      }
+    } catch (error) {
+      console.error("❌ Error loading more conversations:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const actualConversations = allLoadedConversations;
 
   const { currentTab, setCurrentTab} = useChipTabs("Todos", `conversations_${chatbot?.id || 'default'}`);
   const navigate = useNavigate();
@@ -175,6 +228,9 @@ export const Conversations = ({
           }
           currentConversation={conversation}
           selectedConversationId={selectedConversationId}
+          isLoadingMore={isLoadingMore}
+          hasMore={hasMore && currentTab === "Todos"}
+          onLoadMore={loadMoreConversations}
         />
       </article>
       <section className="col-span-12 md:col-span-9 pb-4 b  min-h-[calc(100vh-310px)] ">
@@ -227,11 +283,17 @@ const ConversationsList = ({
   onConversationSelect,
   currentConversation,
   selectedConversationId,
+  isLoadingMore = false,
+  hasMore = false,
+  onLoadMore,
 }: {
   conversations: Conversation[];
   onConversationSelect: (conversation: Conversation) => void;
   currentConversation: Conversation;
   selectedConversationId?: string;
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }) => {
   const conversationRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -255,19 +317,53 @@ const ConversationsList = ({
   }, [selectedConversationId]);
 
   return (
-    <section className="flex flex-col gap-1 max-h-[264px] md:max-h-[616px] overflow-y-scroll ">
+    <section className="flex flex-col gap-1 max-h-[264px] md:max-h-[616px] pb-6 overflow-y-scroll  ">
       {conversations.length > 0 ? (
-        conversations.map((conversation) => (
-          <Conversation
-            key={conversation.id}
-            ref={(el) => {
-              if (el) conversationRefs.current[conversation.id] = el;
-            }}
-            conversation={conversation}
-            onClick={() => onConversationSelect(conversation)}
-            isActive={conversation.id === currentConversation.id}
-          />
-        ))
+        <>
+          {conversations.map((conversation) => (
+            <Conversation
+              key={conversation.id}
+              ref={(el) => {
+                if (el) conversationRefs.current[conversation.id] = el;
+              }}
+              conversation={conversation}
+              onClick={() => onConversationSelect(conversation)}
+              isActive={conversation.id === currentConversation.id}
+            />
+          ))}
+
+          {/* Botón para cargar más */}
+          {hasMore && (
+            <div className="py-3 grid place-items-center">
+              <button
+                onClick={onLoadMore}
+                disabled={isLoadingMore}
+                className={cn(
+                  "w-fit py-2 px-4 rounded-full mx-auto text-sm font-medium transition-colors",
+                  "bg-perl text-metal hover:bg-[#E1E3E7]",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "flex items-center justify-center gap-2"
+                )}
+              >
+                {isLoadingMore ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                    Cargando...
+                  </>
+                ) : (
+                  `Cargar más (${conversations.length} de muchas)`
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Indicador de fin de lista */}
+          {!hasMore && conversations.length > 20 && (
+            <div className="py-3 text-center text-xs text-gray-400">
+              ✓ Todas las conversaciones cargadas ({conversations.length})
+            </div>
+          )}
+        </>
       ) : (
         <EmptyFavorites />
       )}
@@ -283,9 +379,10 @@ const Conversation = forwardRef<
     isActive?: boolean;
   }
 >(({ conversation, onClick, isActive }, ref) => {
-  const pic = conversation.messages.filter(
+  const userMessage = conversation.messages.find(
     (message) => message.role === "USER"
-  )[0].picture;
+  );
+  const pic = userMessage?.picture || conversation.avatar;
   const lastUserMessage = conversation.messages.find(
     (message) => message.role === "USER"
   );
@@ -305,7 +402,7 @@ const Conversation = forwardRef<
         }
       )}
     >
-      <Avatar className="w-10" src={conversation.pic} />
+      <Avatar className="w-10" src={pic} />
       <div className="flex-1 truncate">
         <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
         <p className="text-xs text-irongray truncate -mt-[2px]">
@@ -701,7 +798,7 @@ export const ConversationsPreview = ({
         <div className="p-4">
           {conversation?.messages?.map((message, index) => (
             <div key={index} className="mb-4 last:mb-8">
-              <SingleMessage message={message} chatbotAvatarUrl={chatbot?.avatarUrl} />
+              <SingleMessage message={message} chatbotAvatarUrl={chatbot?.avatarUrl || undefined} />
             </div>
           )) || (
             <div className="text-center text-gray-500 p-8">
@@ -712,7 +809,7 @@ export const ConversationsPreview = ({
       </div>
 
       {/* Manual Response Input - Flex shrink */}
-      {localManualMode && onSendManualResponse && (
+      {localManualMode && onSendManualResponse && conversation && (
         <div className="flex-shrink-0">
           <ManualResponseInput
             conversationId={conversation.id}
