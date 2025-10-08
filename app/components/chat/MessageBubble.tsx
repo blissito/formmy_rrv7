@@ -5,7 +5,62 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 
 // Estilos unificados para el contenido markdown con bloques de código mejorados
-const PROSE_STYLES = "prose prose-base max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-li:text-base prose-code:bg-slate-800 prose-code:text-green-400 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-xs prose-pre:bg-slate-800 prose-pre:text-green-400 prose-pre:p-3 prose-pre:rounded-lg prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-2 prose-pre:border prose-pre:border-slate-600 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0";
+const PROSE_STYLES = "message-bubble-prose prose prose-base max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:!my-0 prose-ol:!my-0 prose-li:!my-0 prose-code:bg-slate-800 prose-code:text-green-400 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-xs prose-pre:bg-slate-800 prose-pre:text-green-400 prose-pre:p-3 prose-pre:rounded-lg prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-2 prose-pre:border prose-pre:border-slate-600 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0";
+
+// CSS personalizado para listas
+const LIST_STYLES = `
+  .message-bubble-prose ul {
+    list-style: none !important;
+    padding-left: 0 !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .message-bubble-prose ol {
+    list-style: none !important;
+    padding-left: 0 !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    counter-reset: list-counter;
+  }
+  .message-bubble-prose li {
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    font-size: 1rem;
+    line-height: 1.3;
+    padding-left: 1.25rem;
+    position: relative;
+  }
+  .message-bubble-prose li p {
+    margin: 0 !important;
+  }
+  .message-bubble-prose p + ul,
+  .message-bubble-prose p + ol {
+    margin-top: 0 !important;
+  }
+  .message-bubble-prose ul + p,
+  .message-bubble-prose ol + p {
+    margin-top: 0 !important;
+  }
+  .message-bubble-prose ul li::before {
+    content: "• ";
+    color: #374151;
+    position: absolute;
+    left: 0;
+  }
+  .message-bubble-prose ol li {
+    counter-increment: list-counter;
+  }
+  .message-bubble-prose ol li::before {
+    content: counter(list-counter) ". ";
+    color: #374151;
+    font-weight: 500;
+    position: absolute;
+    left: 0;
+  }
+`;
 
 interface MessageBubbleProps {
   message?: {
@@ -77,26 +132,31 @@ export const MessageBubble = ({
   }
   if (nodes) {
     return (
-      <main className="px-4 flex items-start gap-3 ">
-        <Avatar className="w-8 h-8" src={avatarUrl} />
-        <div className="bg-white border border-outlines rounded-xl p-3 max-w-md">
-          <div
-            className={PROSE_STYLES}
-            style={{ whiteSpace: "pre-line", lineHeight: "1" }}
-          >
-            {nodes}
+      <>
+        <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
+        <main className="px-4 flex items-start gap-3 ">
+          <Avatar className="w-8 h-8" src={avatarUrl} />
+          <div className="bg-white border border-outlines rounded-xl p-3 max-w-md">
+            <div
+              className={PROSE_STYLES}
+              style={{ whiteSpace: "pre-line" }}
+            >
+              {nodes}
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </>
     );
   }
   // Detectar si es un echo message de WhatsApp
   const isWhatsAppEcho = message?.channel === "whatsapp_echo";
 
   return (
-    <main className="px-4 flex items-start gap-3 max-w-[90%] ">
-      <Avatar className="min-w-8 max-w-8 h-8" src={avatarUrl} />
-      <div className="bg-white border border-outlines rounded-tr-lg rounded-xl p-3 max-w-md">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
+      <main className="px-4 flex items-start gap-3 max-w-[90%] ">
+        <Avatar className="min-w-8 max-w-8 h-8" src={avatarUrl} />
+        <div className="bg-white border border-outlines rounded-tr-lg rounded-xl p-3 max-w-md">
         {/* Indicador de Echo Message */}
         {isWhatsAppEcho && (
           <div className="flex items-center gap-1 mb-2 pb-2 border-b border-gray-200 dark:border-gray-600">
@@ -109,7 +169,7 @@ export const MessageBubble = ({
         )}
         <div
           className={PROSE_STYLES}
-          style={{ whiteSpace: "pre-line", lineHeight: "1" }}
+          style={{ whiteSpace: "pre-line" }}
         >
 {(() => {
             const content = String(message.content);
@@ -203,6 +263,7 @@ export const MessageBubble = ({
           })()}
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 };
