@@ -44,21 +44,9 @@ export default function DashboardPlan() {
         <h2 className="text-2xl md:text-3xl text-space-800 dark:text-white font-semibold mb-8">
           Administra tu plan
         </h2>
-        {user.plan === "FREE" && (
+        {(user.plan === "FREE" || user.plan === "TRIAL") && (
             <>
               <CardFree />
-              <CardStarter
-                isLoading={navigation.state === "submitting"}
-                endDate={subscription.endDate}
-              />
-              <CardPro
-                isLoading={navigation.state === "submitting"}
-                endDate={subscription.endDate}
-              />
-              <CardEnterprise
-                isLoading={navigation.state === "submitting"}
-                endDate={subscription.endDate}
-              />
               <TaxesInfo/>
             </>
           )}
@@ -68,24 +56,12 @@ export default function DashboardPlan() {
                 isLoading={navigation.state === "submitting"}
                 endDate={subscription.endDate}
               />
-              <CardPro
-                isLoading={navigation.state === "submitting"}
-                endDate={subscription.endDate}
-              />
-              <CardEnterprise
-                isLoading={navigation.state === "submitting"}
-                endDate={subscription.endDate}
-              />
               <TaxesInfo/>
             </>
           )}
           {user.plan === "PRO" && (
             <>
               <CardPro
-                isLoading={navigation.state === "submitting"}
-                endDate={subscription.endDate}
-              />
-              <CardEnterprise
                 isLoading={navigation.state === "submitting"}
                 endDate={subscription.endDate}
               />
@@ -160,7 +136,7 @@ export const CardFree = () => {
             <p>📋 3 formmys</p>
             <p>💬 Mensajes ilimitados</p>
             <p>📪 Notificaciones vía email</p>
-            <p>🎨 Personalización básica formularios</p>
+            <p>🎨 Personalización básica de formularios</p>
             <p>🤖 Chatbot por 30 días</p>
           </div>
         </div>
@@ -181,16 +157,16 @@ export const CardFree = () => {
       >
           <img className="h-80 opacity-10 absolute bottom-0 right-0" src="/dash/pro.svg" alt="pro"/>
         <Form method="post" action="/api/stripe" className="min-w-[320px]  pb-16 md:pb-0 relative">
-          <img className="h-16" src="/dash/pro.svg" alt="pro"/>
+          <img className="h-16" src="/dash/starter.svg" alt="pro"/>
         
-          <h3 className="text-pro text-2xl font-semibold">
+          <h3 className="text-brand-500 text-2xl font-semibold">
             Pro
           </h3>
           <p className=" text-metal">
           El plan más completo
           </p>
           <h4 className="mt-4 md:mt-12 text-[32px] text-space-800 dark:text-white font-bold">
-            $ 499  
+            $ 499
             <span className="text-metal  text-base ml-2">
               MXN /mes
             </span>
@@ -201,7 +177,7 @@ export const CardFree = () => {
             value="manage-stripe"
             type="submit"
             className={twMerge(
-              "absolute bottom-0 left-0 mt-4 md:mt-8 bg-pro text-dark h-[48px] rounded-full  px-8 hover:bg-[#D9B958] transition-all mb-1 block  disabled:bg-gray-600"
+              "absolute bottom-0 left-0 mt-4 md:mt-8 bg-brand-500 text-[#fff] h-[48px] rounded-full  px-8 hover:bg-brand-600 transition-all mb-1 block  disabled:bg-gray-600"
             )}
           >
             {isLoading ? <Spinner /> : <span>Administrar mi plan &rarr; </span>}
@@ -347,15 +323,15 @@ export const CardFree = () => {
       >
       <img className="h-80 opacity-10 absolute bottom-0 right-0" src="/dash/starter.svg" alt="pro"/>
         <Form method="post" action="/api/stripe" className="min-w-[320px]  pb-16 md:pb-0 relative">
-          <img className="h-16" src="/dash/starter.svg" alt="pro"/>
-          <h3 className="text-brand-500 dark:text-white text-2xl font-semibold">
-            Starter 
+          <img className="h-16" src="/dash/pro.svg" alt="starter"/>
+          <h3 className="text-pro dark:text-white text-2xl font-semibold">
+            Starter
           </h3>
           <p className=" text-metal">
           La opción entrepreneur
           </p>
           <h4 className="mt-4 md:mt-12 text-[32px] text-space-800 dark:text-white font-bold">
-          $ 149 
+          $ 149
             <span className="text-metal  text-base ml-2">
               MXN /mes
             </span>
@@ -366,7 +342,7 @@ export const CardFree = () => {
             value="manage-stripe"
             type="submit"
             className={twMerge(
-              "absolute bottom-0 left-0 mt-8 bg-brand-500 text-base font-normal h-[48px] rounded-full text-[#fff]  px-8 hover:bg-brand-600 transition-all mb-1 block  disabled:bg-gray-600"
+              "absolute bottom-0 left-0 mt-8 bg-pro text-dark h-[48px] rounded-full  px-8 hover:bg-[#D9B958] transition-all mb-1 block  disabled:bg-gray-600"
             )}
           >
             {isLoading ? <Spinner /> : <span>Administrar mi plan &rarr; </span>}
