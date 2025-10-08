@@ -12,7 +12,7 @@ export const UploadFiles = ({
         <span>
           La pestaña Archivos te permite cargar y administrar varios tipos de
           documentos para entrenar a tus agentes de IA.{" "}
-          <a className="underline" href="!#">
+          <a className="underline" href="/blog/entrenar-agente-ia-formmy" target="_blank">
             Más información
           </a>
         </span>

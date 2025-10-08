@@ -92,7 +92,7 @@ La IA analizará tus documentos y extraerá:
 
 ## 🔄 Técnicas Avanzadas de Entrenamiento
 
-### 1. Entrenamiento por Intenciones
+### Entrenamiento por Intenciones
 Agrupa preguntas similares bajo la misma intención:
 
 ```
@@ -102,21 +102,6 @@ preguntas:
   - "Quiero saber el estado de mi compra"
   - "¿Cuándo llegará mi paquete?"
 respuesta: "Puedo ayudarte con el estado de tu pedido. Por favor, proporcióname tu número de seguimiento o correo electrónico asociado a la compra."
-```
-
-### 2. Flujos de Conversación
-Crea diálogos guiados para procesos complejos:
-
-```
-flujo: "soporte_tecnico"
-pasos:
-  1: "¿En qué puedo ayudarte con [producto]?"
-  2: "¿Podrías describir el problema que estás experimentando?"
-  3: "¿Ya intentaste reiniciar el dispositivo?"
-  soluciones:
-    - "Reinicio del sistema"
-    - "Actualización de software"
-    - "Contacto con soporte técnico"
 ```
 
 ## 📊 Monitoreo y Mejora Continua

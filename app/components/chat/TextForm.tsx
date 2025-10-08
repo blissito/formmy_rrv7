@@ -37,7 +37,7 @@ export const TextForm = ({
           <p>
             Agrega y procesa fuentes de texto sin formato para entrenar a su
             agente de IA con información precisa.{" "}
-            <a href="#!" className="underline">
+            <a className="underline" href="/blog/entrenar-agente-ia-formmy" target="_blank">
               Más información
             </a>
           </p>

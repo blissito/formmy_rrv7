@@ -134,7 +134,7 @@ export const Website = ({
             Rastrea páginas web específicas para actualizar continuamente tu IA.
             Configura las rutas incluidas y excluidas para refinar lo que tu IA
             aprende. Más información.{" "}
-            <a className="underline" href="!#">
+            <a className="underline" href="/blog/entrenar-agente-ia-formmy" target="_blank">
               Más información
             </a>
           </span>

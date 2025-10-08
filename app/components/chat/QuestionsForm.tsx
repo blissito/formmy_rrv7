@@ -45,7 +45,7 @@ export const QuestionsForm = ({
           <p>
             Agrega pares de preguntas y respuestas específicas para entrenar a
             tu agente de IA con información precisa y contextual.{" "}
-            <a href="#!" className="underline">
+            <a className="underline" href="/blog/entrenar-agente-ia-formmy" target="_blank">
               Más información
             </a>
           </p>
