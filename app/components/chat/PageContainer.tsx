@@ -316,8 +316,8 @@ export const ChatCard = ({
       {chatbot.canAccess === false ? (
         // Show as disabled div with Pro upgrade for blocked chatbots
         <div className="group relative overflow-hidden transition-all border border-outlines bg-white rounded-2xl w-full h-full block opacity-75">
-          <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
-            <img src="/dash/chat.png" alt="chatbot" />
+          <section className="overflow-hidden bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
+            <img className="w-[40%] -mb-4" src="/dash/chat.svg" alt="chatbot" />
           </section>
           <div className="flex flex-col px-4 pt-4 pb-2 relative">
             <ProTagChatbot message="Tu plan gratuito no incluye acceso a chatbots. Actualiza tu plan para usar esta funcionalidad." />
@@ -352,8 +352,8 @@ export const ChatCard = ({
           to={`/dashboard/chat/${chatbot.slug}`}
           className="group relative overflow-hidden transition-all hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] border border-outlines bg-white rounded-2xl w-full h-full block"
         >
-          <section className="bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
-            <img src="/dash/chat.png" alt="chatbot" />
+          <section className="overflow-hidden bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
+            <img className="w-[40%] -mb-4" src="/dash/chat.svg" alt="chatbot" />
           </section>
           <div className="flex flex-col px-4 pt-4 pb-2">
             <div className="flex items-center justify-between mb-2">
