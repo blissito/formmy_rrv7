@@ -180,6 +180,7 @@ export const createCheckoutSessionURL = async ({
     success_url: `${DOMAIN}/profile?success=1`,
     cancel_url: `${DOMAIN}/planes`,
     line_items: [lineItem],
+    allow_promotion_codes: true, // Habilita campo nativo de cupones en checkout
   };
 
   if (user) {
