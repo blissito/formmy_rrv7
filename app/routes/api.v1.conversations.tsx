@@ -77,6 +77,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       case "delete_conversation":
         return await handleDeleteConversation(conversationId);
 
+      case "toggle_favorite":
+        return await handleToggleFavorite(conversationId);
+
       default:
         return json({ error: "Intent no reconocido" }, {
           status: 400,
@@ -172,7 +175,19 @@ async function handleManualResponse(
 
   // Enviar por WhatsApp si es conversación de WhatsApp
   let whatsappResult = null;
+
+  // Debug logging para diagnosticar problemas de envío
+  console.log("🔍 WhatsApp detection check:", {
+    sessionId: conversation.sessionId,
+    visitorId: conversation.visitorId,
+    chatbotId: conversation.chatbotId,
+    isWhatsApp: conversation.sessionId?.includes("whatsapp"),
+    hasVisitorId: !!conversation.visitorId,
+    willAttemptSend: conversation.sessionId?.includes("whatsapp") && !!conversation.visitorId
+  });
+
   if (conversation.sessionId?.includes("whatsapp") && conversation.visitorId) {
+    console.log("📱 Attempting to send manual WhatsApp message...");
     try {
       whatsappResult = await sendManualWhatsAppMessage(
         conversation.visitorId,
@@ -197,15 +212,37 @@ async function handleManualResponse(
     }
   }
 
+  // Determinar canal de la conversación
+  const isWhatsAppConversation = conversation.sessionId?.includes("whatsapp");
+  const isWebConversation = !isWhatsAppConversation;
+
+  // Mensaje apropiado según el canal
+  let responseMessage: string;
+  if (whatsappResult?.success) {
+    responseMessage = "Respuesta enviada por WhatsApp exitosamente";
+  } else if (isWhatsAppConversation && whatsappResult?.error) {
+    responseMessage = `Error enviando por WhatsApp: ${whatsappResult.error}`;
+  } else if (isWebConversation) {
+    responseMessage = "Respuesta enviada - Usuario verá mensaje en tiempo real vía SSE";
+  } else {
+    responseMessage = "Respuesta guardada en base de datos";
+  }
+
+  console.log("✅ Manual response result:", {
+    messageId: assistantMessage.id,
+    channel: isWhatsAppConversation ? "whatsapp" : "web",
+    whatsappSent: whatsappResult?.success || false,
+    message: responseMessage
+  });
+
   return json({
     success: true,
     messageId: assistantMessage.id,
+    channel: isWhatsAppConversation ? "whatsapp" : "web",
     whatsappSent: whatsappResult?.success || false,
     whatsappMessageId: whatsappResult?.messageId,
     whatsappError: whatsappResult?.error,
-    message: whatsappResult?.success
-      ? "Respuesta enviada por WhatsApp exitosamente"
-      : "Respuesta guardada (WhatsApp no disponible)"
+    message: responseMessage
   });
 }
 
@@ -217,6 +254,12 @@ async function sendManualWhatsAppMessage(
   message: string,
   chatbotId: string
 ) {
+  console.log("📱 sendManualWhatsAppMessage called:", {
+    phoneNumber: phoneNumber?.substring(0, 8) + "***",
+    messageLength: message.length,
+    chatbotId
+  });
+
   // Obtener integración de WhatsApp para este chatbot
   const integration = await db.integration.findFirst({
     where: {
@@ -226,8 +269,26 @@ async function sendManualWhatsAppMessage(
     }
   });
 
+  console.log("🔍 WhatsApp integration found:", {
+    exists: !!integration,
+    isActive: integration?.isActive,
+    hasToken: !!integration?.token,
+    hasPhoneNumberId: !!integration?.phoneNumberId
+  });
+
   if (!integration) {
+    console.error("❌ WhatsApp integration not found or inactive for chatbot:", chatbotId);
     throw new Error("Integración de WhatsApp no encontrada o inactiva");
+  }
+
+  if (!integration.token) {
+    console.error("❌ WhatsApp integration missing token");
+    throw new Error("Integración de WhatsApp sin token de acceso");
+  }
+
+  if (!integration.phoneNumberId) {
+    console.error("❌ WhatsApp integration missing phoneNumberId");
+    throw new Error("Integración de WhatsApp sin phoneNumberId");
   }
 
   const url = `https://graph.facebook.com/v18.0/${integration.phoneNumberId}/messages`;
@@ -296,6 +357,44 @@ async function handleDeleteConversation(conversationId: string) {
   return json({
     success: true,
     message: "Conversación eliminada exitosamente"
+  }, {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+/**
+ * Toggle favorite status para una conversación
+ */
+async function handleToggleFavorite(conversationId: string) {
+  console.log("⭐ Toggle favorite for conversation:", conversationId);
+
+  const conversation = await db.conversation.findUnique({
+    where: { id: conversationId }
+  });
+
+  if (!conversation) {
+    console.log("❌ Conversation not found:", conversationId);
+    return json({ error: "Conversación no encontrada" }, {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  console.log("🔄 Current favorite status:", conversation.isFavorite);
+
+  const updatedConversation = await db.conversation.update({
+    where: { id: conversationId },
+    data: { isFavorite: !conversation.isFavorite }
+  });
+
+  console.log("✅ Updated favorite status:", updatedConversation.isFavorite);
+
+  return json({
+    success: true,
+    isFavorite: updatedConversation.isFavorite,
+    message: updatedConversation.isFavorite ?
+      "Conversación marcada como favorita" :
+      "Conversación desmarcada como favorita"
   }, {
     headers: { 'Content-Type': 'application/json' }
   });

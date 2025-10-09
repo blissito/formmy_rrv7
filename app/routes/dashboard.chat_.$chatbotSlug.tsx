@@ -291,13 +291,17 @@ export default function ChatbotDetailRoute({
         );
       }
 
-      // Show success/warning based on WhatsApp delivery
-      if (result.whatsappSent) {
-        alert("✅ Respuesta enviada por WhatsApp exitosamente");
-      } else {
-        alert(
-          `⚠️ ${result.message}${result.whatsappError ? `\nError: ${result.whatsappError}` : ""}`
-        );
+      // Log result (no alert - no interrumpir flujo de conversación)
+      console.log("✅ Manual response sent:", {
+        channel: result.channel,
+        whatsappSent: result.whatsappSent,
+        message: result.message
+      });
+
+      // Solo mostrar error si realmente falló
+      if (result.channel === "whatsapp" && result.whatsappError) {
+        console.error("❌ WhatsApp send failed:", result.whatsappError);
+        // Opcional: Agregar toast notification aquí en el futuro
       }
 
       // Refresh conversations after sending - trigger revalidation
@@ -344,6 +348,55 @@ export default function ChatbotDetailRoute({
     }
   };
 
+  // Toggle favorite
+  const handleToggleFavorite = async (conversationId: string) => {
+    console.log("⭐ Route handleToggleFavorite called:", conversationId);
+
+    try {
+      const response = await fetch(`/api/v1/conversations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intent: "toggle_favorite",
+          conversationId,
+        }),
+      });
+
+      console.log("📡 Toggle favorite response:", response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Toggle favorite error response:", errorText);
+        throw new Error(
+          `Error toggling favorite: ${response.status} - ${errorText}`
+        );
+      }
+
+      // Check if response is actually JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const htmlText = await response.text();
+        console.error("❌ Response is not JSON:", htmlText);
+        throw new Error(
+          "Server returned HTML instead of JSON - check API endpoint"
+        );
+      }
+
+      const result = await response.json();
+      console.log("✅ Toggle favorite result:", result);
+
+      if (!result.success) {
+        throw new Error(result.error || "Unknown error toggling favorite");
+      }
+
+      // Refresh conversations after toggle - trigger revalidation
+      navigate(window.location.pathname, { replace: true });
+    } catch (error) {
+      console.error("❌ Error toggling favorite:", error);
+      alert(`Error al marcar como favorito: ${error.message}`);
+    }
+  };
+
   return (
     <PageContainer>
       <div className="bg-white sticky top-0 z-10">
@@ -372,6 +425,7 @@ export default function ChatbotDetailRoute({
             onToggleManual={handleToggleManual}
             onSendManualResponse={handleSendManualResponse}
             onDeleteConversation={handleDeleteConversation}
+            onToggleFavorite={handleToggleFavorite}
             selectedConversationId={searchParams.get('conversation') || undefined}
           />
         )}

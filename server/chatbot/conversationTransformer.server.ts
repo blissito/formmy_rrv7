@@ -73,7 +73,7 @@ export function transformConversationToUI(
     unread: 0, // TODO: Implement unread count logic
     avatar: getConversationAvatar(conversation, chatbotAvatarUrl),
     tel: phoneNumber || "N/A",
-    isFavorite: false, // TODO: Implement favorites system
+    isFavorite: conversation.isFavorite || false,
     manualMode: conversation.manualMode || false,
     isWhatsApp: isFromWhatsApp,
   };

@@ -15,6 +15,7 @@ type ConversationsProps = {
   onToggleManual?: (conversationId: string) => void;
   onSendManualResponse?: (conversationId: string, message: string) => void;
   onDeleteConversation?: (conversationId: string) => void;
+  onToggleFavorite?: (conversationId: string) => void;
   selectedConversationId?: string;
 };
 
@@ -43,6 +44,7 @@ export const Conversations = ({
   onToggleManual,
   onSendManualResponse,
   onDeleteConversation,
+  onToggleFavorite,
   selectedConversationId,
 }: ConversationsProps) => {
   // Estado para scroll infinito
@@ -110,8 +112,15 @@ export const Conversations = ({
   const { currentTab, setCurrentTab} = useChipTabs("Todos", `conversations_${chatbot?.id || 'default'}`);
   const navigate = useNavigate();
 
+  // Estado local para toggle manual (inicializado con valores reales)
+  const [localManualModes, setLocalManualModes] = useState<Record<string, boolean>>({});
+
+  // Estado local para favoritos (inicializado con valores reales)
+  const [localFavorites, setLocalFavorites] = useState<Record<string, boolean>>({});
+
+  // Filtrar favoritos usando estado local optimista
   const favoriteConversations = actualConversations.filter(
-    (conversation) => conversation.isFavorite
+    (conversation) => localFavorites[conversation.id] ?? conversation.isFavorite
   );
   const allConversations = actualConversations;
 
@@ -122,16 +131,16 @@ export const Conversations = ({
 
   const [conversation, setConversation] = useState<Conversation>(initialConversation);
 
-  // Estado local para toggle manual (inicializado con valores reales)
-  const [localManualModes, setLocalManualModes] = useState<Record<string, boolean>>({});
-
   // Inicializar estado local con valores de BD
   useEffect(() => {
     const initialModes: Record<string, boolean> = {};
+    const initialFavorites: Record<string, boolean> = {};
     actualConversations.forEach(conv => {
       initialModes[conv.id] = conv.manualMode || false;
+      initialFavorites[conv.id] = conv.isFavorite || false;
     });
     setLocalManualModes(initialModes);
+    setLocalFavorites(initialFavorites);
   }, [actualConversations]);
 
   // 🔄 Actualizar conversación cuando cambia selectedConversationId (desde URL)
@@ -206,6 +215,37 @@ export const Conversations = ({
     alert("⚠️ Función de envío no disponible");
   });
 
+  // 🎯 Toggle favorito con sincronización backend
+  const handleToggleFavorite = async (conversationId: string, event?: React.MouseEvent) => {
+    // Prevenir propagación para que no seleccione la conversación
+    if (event) {
+      event.stopPropagation();
+    }
+
+    console.log("⭐ Toggle favorite with backend sync for:", conversationId);
+
+    // Actualizar estado local inmediatamente para UX responsiva
+    setLocalFavorites(prev => ({
+      ...prev,
+      [conversationId]: !prev[conversationId]
+    }));
+
+    // Sincronizar con backend si hay función disponible
+    if (onToggleFavorite) {
+      try {
+        await onToggleFavorite(conversationId);
+        console.log("✅ Favorite backend sync completed");
+      } catch (error) {
+        console.error("❌ Favorite backend sync failed:", error);
+        // Revertir estado local si falló
+        setLocalFavorites(prev => ({
+          ...prev,
+          [conversationId]: !prev[conversationId]
+        }));
+      }
+    }
+  };
+
   // Mostrar empty state si no hay conversaciones
   if (conversations.length === 0) {
     return <EmptyConversations />;
@@ -231,6 +271,8 @@ export const Conversations = ({
           isLoadingMore={isLoadingMore}
           hasMore={hasMore && currentTab === "Todos"}
           onLoadMore={loadMoreConversations}
+          onToggleFavorite={handleToggleFavorite}
+          localFavorites={localFavorites}
         />
       </article>
       <section className="col-span-12 md:col-span-9 pb-4 b  min-h-[calc(100vh-310px)] ">
@@ -286,6 +328,8 @@ const ConversationsList = ({
   isLoadingMore = false,
   hasMore = false,
   onLoadMore,
+  onToggleFavorite,
+  localFavorites = {},
 }: {
   conversations: Conversation[];
   onConversationSelect: (conversation: Conversation) => void;
@@ -294,6 +338,8 @@ const ConversationsList = ({
   isLoadingMore?: boolean;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
+  localFavorites?: Record<string, boolean>;
 }) => {
   const conversationRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -329,6 +375,8 @@ const ConversationsList = ({
               conversation={conversation}
               onClick={() => onConversationSelect(conversation)}
               isActive={conversation.id === currentConversation.id}
+              onToggleFavorite={onToggleFavorite}
+              isFavorite={localFavorites[conversation.id] ?? conversation.isFavorite}
             />
           ))}
 
@@ -377,8 +425,10 @@ const Conversation = forwardRef<
     conversation: Conversation;
     onClick?: () => void;
     isActive?: boolean;
+    onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
+    isFavorite?: boolean;
   }
->(({ conversation, onClick, isActive }, ref) => {
+>(({ conversation, onClick, isActive, onToggleFavorite, isFavorite }, ref) => {
   const userMessage = conversation.messages.find(
     (message) => message.role === "USER"
   );
@@ -386,6 +436,14 @@ const Conversation = forwardRef<
   const lastUserMessage = conversation.messages.find(
     (message) => message.role === "USER"
   );
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevenir que seleccione la conversación
+    if (onToggleFavorite) {
+      onToggleFavorite(conversation.id, e);
+    }
+  };
+
   return (
     <section
       ref={ref}
@@ -409,11 +467,20 @@ const Conversation = forwardRef<
           {lastUserMessage?.content}
         </p>
       </div>
-      <div className="flex-2 pr-3">
-        <p className="ml-3 text-xs text-gray-500">{conversation.time}</p>
-        {conversation.isFavorite && (
-          <img className="ml-auto" src="/assets/chat/pin.svg" alt="pin icon" />
-        )}
+      <div className="flex-2 pr-3 flex flex-col items-end gap-1">
+        <p className="text-xs text-gray-500">{conversation.time}</p>
+        {/* Botón de favorito clickeable */}
+        <button
+          onClick={handleFavoriteClick}
+          className={cn(
+            "transition-all hover:scale-110 cursor-pointer active:scale-95",
+            "text-lg leading-none",
+            isFavorite ? "text-yellow-500" : "text-gray-400 hover:text-yellow-400"
+          )}
+          title={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"}
+        >
+          {isFavorite ? "⭐" : "☆"}
+        </button>
       </div>
     </section>
   );
@@ -765,6 +832,16 @@ export const ConversationsPreview = ({
   onDeleteConversation?: (conversationId: string) => void;
   localManualMode?: boolean;
 }) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll al final cuando cambian los mensajes
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [conversation?.messages]);
+
   // Log conversation state for debugging
   console.log("🔍 ConversationsPreview render:", {
     conversationId: conversation?.id,
@@ -772,6 +849,7 @@ export const ConversationsPreview = ({
     hasToggleFunction: !!onToggleManual,
     hasSendFunction: !!onSendManualResponse
   });
+
   return (
     <div className="h-full flex flex-col max-h-[calc(100vh-320px)]">
       <div className="flex-shrink-0">
@@ -789,6 +867,7 @@ export const ConversationsPreview = ({
 
       {/* Messages - Flex grow container */}
       <div
+        ref={messagesContainerRef}
         style={{ borderColor: primaryColor || "brand-500" }}
         className={cn(
           "border w-full shadow-standard flex-1 overflow-y-auto",
@@ -805,6 +884,8 @@ export const ConversationsPreview = ({
               Selecciona una conversación para ver los mensajes
             </div>
           )}
+          {/* Elemento invisible para hacer scroll al final */}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 

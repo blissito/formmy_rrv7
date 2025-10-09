@@ -216,6 +216,73 @@ export default function ChatPreview({
     }
   }, [chatMessages, stream, chatLoading]);
 
+  // 🌊 SSE: Escuchar mensajes manuales del admin en tiempo real
+  useEffect(() => {
+    // Solo conectar SSE si:
+    // 1. Estamos en producción (widget embebido real)
+    // 2. Ya hay más de 1 mensaje (conversación iniciada)
+    if (!production || chatMessages.length <= 1) {
+      return;
+    }
+
+    const currentSessionId = getOrCreateSessionId();
+    const sseUrl = `/api/v1/conversations/${encodeURIComponent(currentSessionId)}/stream`;
+
+    console.log("🌊 Conectando SSE para respuestas manuales...", sseUrl);
+
+    const eventSource = new EventSource(sseUrl);
+
+    // Evento de conexión exitosa
+    eventSource.addEventListener("message", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("📩 SSE event received:", data.type);
+
+        if (data.type === "new_messages" && data.messages && data.messages.length > 0) {
+          console.log(`✅ Recibidos ${data.messages.length} mensaje(s) nuevo(s) del admin`);
+
+          // Agregar mensajes nuevos a la UI
+          setChatMessages((prev) => {
+            // Evitar duplicados: solo agregar mensajes que no existan ya
+            const existingContents = new Set(prev.map((m) => m.content));
+            const newMessages = data.messages
+              .filter((msg: any) => !existingContents.has(msg.content))
+              .map((msg: any) => ({
+                role: "assistant" as const,
+                content: msg.content,
+              }));
+
+            if (newMessages.length > 0) {
+              return [...prev, ...newMessages];
+            }
+            return prev;
+          });
+
+          // Scroll automático y reiniciar temporizador de inactividad
+          setShouldAutoScroll(true);
+          setIsUserScrolling(false);
+          if (!isConversationEnded) {
+            resetInactivityTimer();
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error parsing SSE message:", error);
+      }
+    });
+
+    // Error handling (conexión perdida, reconexión automática)
+    eventSource.onerror = (error) => {
+      console.log("⚠️ SSE connection error, will auto-retry...", error);
+      // EventSource automáticamente reintenta la conexión
+    };
+
+    // Cleanup al desmontar o cambiar sesión
+    return () => {
+      console.log("🔌 Cerrando conexión SSE");
+      eventSource.close();
+    };
+  }, [production, chatMessages.length, isConversationEnded, resetInactivityTimer]);
+
   // Limpiar conversación
   const handleClearConversation = () => {
     setChatMessages([
