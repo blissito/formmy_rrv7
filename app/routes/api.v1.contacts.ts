@@ -2,7 +2,8 @@ import { data as json } from "react-router";
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import { db } from "~/utils/db.server";
 import { getUserOrNull } from "server/getUserUtils.server";
-import { ContactStatus } from "@prisma/client";
+import pkg from "@prisma/client";
+const { ContactStatus } = pkg;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await getUserOrNull(request);
