@@ -9,6 +9,7 @@ export const QuestionsForm = ({
   questions,
   answer,
   questionContexts,
+  newQuestionContexts = [],
   onTitleChange,
   onQuestionsChange,
   onAnswerChange,
@@ -25,12 +26,13 @@ export const QuestionsForm = ({
   questions: string[];
   answer: string;
   questionContexts: any[];
+  newQuestionContexts?: any[];
   onTitleChange: (title: string) => void;
   onQuestionsChange: (index: number, value: string) => void;
   onAnswerChange: (answer: string) => void;
   onAddContext: () => void;
-  onRemoveContext: (index: number, context: any) => void;
-  onEditContext: (index: number, context: any) => void;
+  onRemoveContext: (index: number, context: any, isNew?: boolean) => void;
+  onEditContext: (index: number, context: any, isNew?: boolean) => void;
   onCancelEdit?: () => void;
   onAddQuestion: () => void;
   onRemoveQuestion: (index: number) => void;
@@ -133,7 +135,7 @@ export const QuestionsForm = ({
         </div>
       </Card>
 
-      {questionContexts.length > 0 && (
+      {(questionContexts.length > 0 || newQuestionContexts.length > 0) && (
         <Card noSearch title="Preguntas y respuestas" navClassName="!mb-4">
           <CardHeader
             left={
@@ -164,8 +166,38 @@ export const QuestionsForm = ({
                   alt="question icon"
                 />
               }
-              onRemove={() => onRemoveContext(index, context)}
-              onEdit={() => onEditContext(index, context)}
+              onRemove={() => onRemoveContext(index, context, false)}
+              onEdit={() => onEditContext(index, context, false)}
+            />
+          ))}
+          {newQuestionContexts.map((context, index) => (
+            <CardRow
+              key={`new-${index}`}
+              text={context.sizeKB ? `${context.sizeKB}kb` : "0kb"}
+              title={
+                <span className="flex items-center gap-2">
+                  {context.title}
+                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                    Nuevo
+                  </span>
+                </span>
+              }
+              subtitle={
+                Array.isArray(context.questions)
+                  ? context.questions.slice(0, 2).join(", ") +
+                    (context.questions.length > 2 ? "..." : "")
+                  : context.questions?.split("\n").slice(0, 2).join(", ") +
+                    (context.questions?.split("\n").length > 2 ? "..." : "")
+              }
+              icon={
+                <img
+                  className="w-6"
+                  src="/assets/chat/message.svg"
+                  alt="question icon"
+                />
+              }
+              onRemove={() => onRemoveContext(index, context, true)}
+              onEdit={() => onEditContext(index, context, true)}
             />
           ))}
         </Card>

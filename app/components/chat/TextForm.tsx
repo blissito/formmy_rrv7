@@ -8,6 +8,7 @@ export const TextForm = ({
   title,
   content,
   textContexts,
+  newTextContexts = [],
   onTitleChange,
   onContentChange,
   onAddContext,
@@ -20,11 +21,12 @@ export const TextForm = ({
   title: string;
   content: string;
   textContexts: any[];
+  newTextContexts?: any[];
   onTitleChange: (title: string) => void;
   onContentChange: (content: string) => void;
   onAddContext: () => void;
-  onRemoveContext: (index: number, context: any) => void;
-  onEditContext: (index: number, context: any) => void;
+  onRemoveContext: (index: number, context: any, isNew?: boolean) => void;
+  onEditContext: (index: number, context: any, isNew?: boolean) => void;
   onCancelEdit?: () => void;
   isAddingText?: boolean;
   editingContext?: any;
@@ -86,7 +88,7 @@ export const TextForm = ({
           </div>
       </Card>
 
-      {textContexts.length > 0 && (
+      {(textContexts.length > 0 || newTextContexts.length > 0) && (
         <Card noSearch title="Fuentes de texto" navClassName="!mb-4">
           <CardHeader
             left={
@@ -111,8 +113,32 @@ export const TextForm = ({
                   alt="text icon"
                 />
               }
-              onRemove={() => onRemoveContext(index, context)}
-              onEdit={() => onEditContext(index, context)}
+              onRemove={() => onRemoveContext(index, context, false)}
+              onEdit={() => onEditContext(index, context, false)}
+            />
+          ))}
+          {newTextContexts.map((context, index) => (
+            <CardRow
+              key={`new-${index}`}
+              text={context.sizeKB ? `${context.sizeKB}kb` : "0kb"}
+              title={
+                <span className="flex items-center gap-2">
+                  {context.title}
+                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                    Nuevo
+                  </span>
+                </span>
+              }
+              subtitle={context.content ? context.content.substring(0, 100) + (context.content.length > 100 ? '...' : '') : ''}
+              icon={
+                <img
+                  className="w-6"
+                  src="/assets/chat/increase.svg"
+                  alt="text icon"
+                />
+              }
+              onRemove={() => onRemoveContext(index, context, true)}
+              onEdit={() => onEditContext(index, context, true)}
             />
           ))}
         </Card>

@@ -380,12 +380,26 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
         <section className="">
           <Card title="Configura la seguridad de tu chatbot" text="Aumenta la seguridad de tu chatbot permitiendo la conexión desde dominios específicos y estableciendo un límite de mensajes por minuto.">
             <main className="flex flex-col gap-4">
-              <Input
-                label="Ingresa el o los dominios separados por coma"
-                placeholder="www.ejemplo.app, www.ejemplo.mx"
-                value={security.allowedDomains}
-                onChange={(value) => setSecurity({...security, allowedDomains: value})}
-              />
+              <div>
+                <Input
+                  label="Ingresa el o los dominios separados por coma"
+                  placeholder="ejemplo.com, app.ejemplo.com"
+                  value={security.allowedDomains}
+                  onChange={(value) => setSecurity({...security, allowedDomains: value})}
+                />
+                <div className="flex gap-1 items-start text-[12px] text-irongray mt-1">
+                  <span className="mt-[2px]">
+                    <IoInformationCircleOutline />
+                  </span>
+                  <p>
+                    Puedes escribir los dominios con o sin 'www', con o sin 'https://',
+                    el sistema los normalizará automáticamente.
+                    Ejemplos válidos: <code className="bg-gray-100 px-1 rounded">ejemplo.com</code>,
+                    <code className="bg-gray-100 px-1 rounded mx-1">https://www.ejemplo.com</code>,
+                    <code className="bg-gray-100 px-1 rounded">www.ejemplo.com</code>
+                  </p>
+                </div>
+              </div>
              
               <section>
                 <Select

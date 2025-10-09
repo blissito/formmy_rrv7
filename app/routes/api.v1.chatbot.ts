@@ -375,9 +375,20 @@ export async function action({ request }: any) {
 
         // Parse allowedDomains (comma-separated string → array)
         const allowedDomainsStr = formData.get("allowedDomains") as string;
-        const allowedDomains = allowedDomainsStr
+        const rawDomains = allowedDomainsStr
           ? allowedDomainsStr.split(',').map(d => d.trim()).filter(Boolean)
           : [];
+
+        // ✅ FIX: Normalizar dominios antes de guardar (Oct 2025)
+        // Previene problemas con www, protocolos, puertos, paths
+        const { normalizeDomainsForStorage } = await import("../../server/utils/domain-validator.server");
+        const allowedDomains = normalizeDomainsForStorage(rawDomains);
+
+        console.log('🔒 Guardando dominios permitidos:', {
+          chatbotId,
+          raw: rawDomains,
+          normalized: allowedDomains
+        });
 
         const rateLimit = parseInt(formData.get("rateLimit") as string) || 100;
         const status = formData.get("status") as string || "public";
@@ -399,7 +410,14 @@ export async function action({ request }: any) {
         });
 
         return new Response(
-          JSON.stringify({ success: true, chatbot: updatedChatbot }),
+          JSON.stringify({
+            success: true,
+            chatbot: updatedChatbot,
+            debug: {
+              rawDomains,
+              normalizedDomains: allowedDomains
+            }
+          }),
           { headers: { "Content-Type": "application/json" } }
         );
       }

@@ -36,10 +36,12 @@ export const Entrenamiento = ({
     []
   );
   const [textContexts, setTextContexts] = useState<any[]>([]);
+  const [newTextContexts, setNewTextContexts] = useState<any[]>([]);
   const [textContextsToRemove, setTextContextsToRemove] = useState<any[]>([]);
   const [fileContextsToRemove, setFileContextsToRemove] = useState<any[]>([]);
   const [websiteContextsToRemove, setWebsiteContextsToRemove] = useState<any[]>([]);
   const [questionContexts, setQuestionContexts] = useState<any[]>([]);
+  const [newQuestionContexts, setNewQuestionContexts] = useState<any[]>([]);
   const [questionContextsToRemove, setQuestionContextsToRemove] = useState<any[]>([]);
   const [textTitle, setTextTitle] = useState("");
   const [textContent, setTextContent] = useState("");
@@ -103,7 +105,7 @@ export const Entrenamiento = ({
         .map((context: any) => ({
           id: context.id,
           title: context.title,
-          questions: typeof context.questions === 'string' ? context.questions.split('\n').filter(q => q.trim()) : context.questions,
+          questions: typeof context.questions === 'string' ? context.questions.split('\n').filter((q: string) => q.trim()) : context.questions,
           answer: context.answer,
           sizeKB: context.sizeKB,
         }));
@@ -128,79 +130,87 @@ export const Entrenamiento = ({
     setUploadedFiles(newFiles);
   };
 
-  const handleAddTextContext = async () => {
+  const handleAddTextContext = () => {
     if (!textTitle.trim() || !textContent.trim()) {
       return;
     }
 
-    setIsAddingText(true);
-    try {
-      const formData = new FormData();
-      
-      if (editingTextContext) {
-        // Actualizar contexto existente
-        formData.append("intent", "update_text_context");
-        formData.append("contextId", editingTextContext.id);
-      } else {
-        // Agregar nuevo contexto
-        formData.append("intent", "add_text_context");
-      }
-      
-      formData.append("chatbotId", chatbot.id);
-      formData.append("title", textTitle.trim());
-      formData.append("content", textContent.trim());
-      formData.append(
-        "sizeKB",
-        Math.ceil(textContent.length / 1024).toString()
-      );
+    const sizeKB = Math.ceil(textContent.length / 1024);
 
-      const response = await fetch("/api/v1/chatbot", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        console.log(`Contexto de texto ${editingTextContext ? 'actualizado' : 'agregado'} exitosamente`);
-        // Limpiar formulario y recargar datos
-        setTextTitle("");
-        setTextContent("");
-        setEditingTextContext(null);
-        // Forzar recarga de datos con un parámetro dummy para evitar cache
-        submit({ _timestamp: Date.now().toString() }, { method: "get" });
+    if (editingTextContext) {
+      // Actualizar contexto existente en el estado local
+      if (editingTextContext.id) {
+        // Es un contexto guardado en BD - actualizar en textContexts
+        setTextContexts(prev =>
+          prev.map(ctx =>
+            ctx.id === editingTextContext.id
+              ? { ...ctx, title: textTitle.trim(), content: textContent.trim(), sizeKB }
+              : ctx
+          )
+        );
       } else {
-        throw new Error(`Error ${editingTextContext ? 'actualizando' : 'agregando'} contexto de texto`);
+        // Es un contexto nuevo - actualizar en newTextContexts
+        setNewTextContexts(prev =>
+          prev.map((ctx, idx) =>
+            idx === editingTextContext.tempIndex
+              ? { title: textTitle.trim(), content: textContent.trim(), sizeKB }
+              : ctx
+          )
+        );
       }
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsAddingText(false);
+    } else {
+      // Agregar nuevo contexto al estado local
+      setNewTextContexts(prev => [
+        ...prev,
+        {
+          title: textTitle.trim(),
+          content: textContent.trim(),
+          sizeKB,
+        }
+      ]);
     }
+
+    // Limpiar formulario
+    setTextTitle("");
+    setTextContent("");
+    setEditingTextContext(null);
   };
 
-  const handleRemoveTextContext = (index: number, context: any) => {
+  const handleRemoveTextContext = (index: number, context: any, isNew: boolean = false) => {
     // Si estamos editando este contexto, limpiar el formulario
-    if (editingTextContext && editingTextContext.id === context.id) {
+    if (editingTextContext &&
+        ((context.id && editingTextContext.id === context.id) ||
+         (!context.id && editingTextContext.tempIndex === index))) {
       setEditingTextContext(null);
       setTextTitle("");
       setTextContent("");
     }
 
-    // Marcar para eliminar (virtual)
-    setTextContextsToRemove(prev => [...prev, context]);
-    
-    // Remover del estado local para que no se muestre
-    const newContexts = [...textContexts];
-    newContexts.splice(index, 1);
-    setTextContexts(newContexts);
+    if (isNew) {
+      // Remover del array de nuevos (no guardados aún)
+      setNewTextContexts(prev => prev.filter((_, idx) => idx !== index));
+    } else {
+      // Marcar para eliminar (contexto guardado en BD)
+      setTextContextsToRemove(prev => [...prev, context]);
+
+      // Remover del estado local para que no se muestre
+      const newContexts = [...textContexts];
+      newContexts.splice(index, 1);
+      setTextContexts(newContexts);
+    }
   };
 
-  const handleEditTextContext = (index: number, context: any) => {
+  const handleEditTextContext = (index: number, context: any, isNew: boolean = false) => {
     // Popular el formulario con los datos del contexto
     setTextTitle(context.title || "");
     setTextContent(context.content || "");
-    
+
     // Marcar como editando
-    setEditingTextContext(context);
+    if (isNew) {
+      setEditingTextContext({ ...context, tempIndex: index });
+    } else {
+      setEditingTextContext(context);
+    }
   };
 
   const handleCancelEditText = () => {
@@ -210,93 +220,109 @@ export const Entrenamiento = ({
     setEditingTextContext(null);
   };
 
-  const handleAddQuestionContext = async () => {
+  const handleAddQuestionContext = () => {
     const validQuestions = questions.filter(q => q.trim());
     if (!questionTitle.trim() || validQuestions.length === 0 || !answer.trim()) {
       return;
     }
 
-    setIsAddingQuestion(true);
-    try {
-      const formData = new FormData();
-      
-      if (editingQuestionContext) {
-        // Actualizar contexto existente
-        formData.append("intent", "update_question_context");
-        formData.append("contextId", editingQuestionContext.id);
+    const sizeKB = Math.ceil((questionTitle.length + validQuestions.join('\n').length + answer.length) / 1024);
+
+    if (editingQuestionContext) {
+      // Actualizar contexto existente en el estado local
+      if (editingQuestionContext.id) {
+        // Es un contexto guardado en BD - actualizar en questionContexts
+        setQuestionContexts(prev =>
+          prev.map(ctx =>
+            ctx.id === editingQuestionContext.id
+              ? {
+                  ...ctx,
+                  title: questionTitle.trim(),
+                  questions: validQuestions,
+                  answer: answer.trim(),
+                  sizeKB
+                }
+              : ctx
+          )
+        );
       } else {
-        // Agregar nuevo contexto
-        formData.append("intent", "add_question_context");
+        // Es un contexto nuevo - actualizar en newQuestionContexts
+        setNewQuestionContexts(prev =>
+          prev.map((ctx, idx) =>
+            idx === editingQuestionContext.tempIndex
+              ? {
+                  title: questionTitle.trim(),
+                  questions: validQuestions,
+                  answer: answer.trim(),
+                  sizeKB
+                }
+              : ctx
+          )
+        );
       }
-      
-      formData.append("chatbotId", chatbot.id);
-      formData.append("title", questionTitle.trim());
-      formData.append("questions", validQuestions.join('\n'));
-      formData.append("answer", answer.trim());
-      formData.append(
-        "sizeKB",
-        Math.ceil((questionTitle.length + validQuestions.join('\n').length + answer.length) / 1024).toString()
-      );
-
-      const response = await fetch("/api/v1/chatbot", {
-        method: "POST",
-        body: formData,
-      });
-
-      const responseData = await response.json();
-
-      if (response.ok) {
-        console.log(`Contexto de pregunta ${editingQuestionContext ? 'actualizado' : 'agregado'} exitosamente`);
-        // Limpiar formulario y recargar datos
-        setQuestionTitle("");
-        setQuestions([""]);
-        setAnswer("");
-        setEditingQuestionContext(null);
-        // Forzar recarga de datos con un parámetro dummy para evitar cache
-        submit({ _timestamp: Date.now().toString() }, { method: "get" });
-      } else {
-        throw new Error(responseData.error || `Error ${editingQuestionContext ? 'actualizando' : 'agregando'} contexto de pregunta`);
-      }
-    } catch (error) {
-      console.error(`Error ${editingQuestionContext ? 'actualizando' : 'agregando'} contexto de pregunta:`, error);
-      throw error;
-    } finally {
-      setIsAddingQuestion(false);
+    } else {
+      // Agregar nuevo contexto al estado local
+      setNewQuestionContexts(prev => [
+        ...prev,
+        {
+          title: questionTitle.trim(),
+          questions: validQuestions,
+          answer: answer.trim(),
+          sizeKB,
+        }
+      ]);
     }
+
+    // Limpiar formulario
+    setQuestionTitle("");
+    setQuestions([""]);
+    setAnswer("");
+    setEditingQuestionContext(null);
   };
 
-  const handleRemoveQuestionContext = (index: number, context: any) => {
+  const handleRemoveQuestionContext = (index: number, context: any, isNew: boolean = false) => {
     // Si estamos editando este contexto, limpiar el formulario
-    if (editingQuestionContext && editingQuestionContext.id === context.id) {
+    if (editingQuestionContext &&
+        ((context.id && editingQuestionContext.id === context.id) ||
+         (!context.id && editingQuestionContext.tempIndex === index))) {
       setEditingQuestionContext(null);
       setQuestionTitle("");
       setQuestions([""]);
       setAnswer("");
     }
 
-    // Marcar para eliminar (virtual)
-    setQuestionContextsToRemove(prev => [...prev, context]);
-    
-    // Remover del estado local para que no se muestre
-    const newContexts = [...questionContexts];
-    newContexts.splice(index, 1);
-    setQuestionContexts(newContexts);
+    if (isNew) {
+      // Remover del array de nuevos (no guardados aún)
+      setNewQuestionContexts(prev => prev.filter((_, idx) => idx !== index));
+    } else {
+      // Marcar para eliminar (contexto guardado en BD)
+      setQuestionContextsToRemove(prev => [...prev, context]);
+
+      // Remover del estado local para que no se muestre
+      const newContexts = [...questionContexts];
+      newContexts.splice(index, 1);
+      setQuestionContexts(newContexts);
+    }
   };
 
-  const handleEditQuestionContext = (index: number, context: any) => {
+  const handleEditQuestionContext = (index: number, context: any, isNew: boolean = false) => {
     // Popular el formulario con los datos del contexto
     setQuestionTitle(context.title);
-    
+
     // Manejar tanto arrays como strings para las preguntas
-    const contextQuestions = Array.isArray(context.questions) 
-      ? context.questions 
+    const contextQuestions = Array.isArray(context.questions)
+      ? context.questions
       : context.questions?.split('\n').filter((q: string) => q.trim()) || [""];
-    
+
     setQuestions(contextQuestions.length > 0 ? contextQuestions : [""]);
     setAnswer(context.answer || "");
-    
+
     // Marcar como editando
-    setEditingQuestionContext(context);
+    if (isNew) {
+      setEditingQuestionContext({ ...context, tempIndex: index });
+    } else {
+      setEditingQuestionContext(context);
+    }
   };
 
   const handleCancelEditQuestion = () => {
@@ -378,6 +404,61 @@ export const Entrenamiento = ({
       // Subir archivos automáticamente cuando se presiona "Actualizar Chatbot"
       await handleUploadFiles();
 
+      // Agregar nuevos contextos de texto
+      for (const textContext of newTextContexts) {
+        try {
+          const formData = new FormData();
+          formData.append("intent", "add_text_context");
+          formData.append("chatbotId", chatbot.id);
+          formData.append("title", textContext.title);
+          formData.append("content", textContext.content);
+          formData.append("sizeKB", textContext.sizeKB.toString());
+
+          const response = await fetch("/api/v1/chatbot", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              `Error al agregar contexto de texto ${textContext.title}: ${errorData.error}`
+            );
+          }
+        } catch (error) {
+          throw error;
+        }
+      }
+
+      // Agregar nuevos contextos de preguntas
+      for (const questionContext of newQuestionContexts) {
+        try {
+          const formData = new FormData();
+          formData.append("intent", "add_question_context");
+          formData.append("chatbotId", chatbot.id);
+          formData.append("title", questionContext.title);
+          formData.append("questions", Array.isArray(questionContext.questions)
+            ? questionContext.questions.join('\n')
+            : questionContext.questions);
+          formData.append("answer", questionContext.answer);
+          formData.append("sizeKB", questionContext.sizeKB.toString());
+
+          const response = await fetch("/api/v1/chatbot", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              `Error al agregar contexto de pregunta ${questionContext.title}: ${errorData.error}`
+            );
+          }
+        } catch (error) {
+          throw error;
+        }
+      }
+
       // Agregar sitios web nuevos como contextos
       for (const entry of newWebsiteEntries) {
         try {
@@ -436,9 +517,14 @@ export const Entrenamiento = ({
       }
 
       // Limpiar estados después de subirlos y recargar datos
-      const hasChanges = newWebsiteEntries.length > 0 || allContextsToRemove.length > 0;
+      const hasChanges = newWebsiteEntries.length > 0 ||
+                        newTextContexts.length > 0 ||
+                        newQuestionContexts.length > 0 ||
+                        allContextsToRemove.length > 0;
       if (hasChanges) {
         setNewWebsiteEntries([]);
+        setNewTextContexts([]);
+        setNewQuestionContexts([]);
         setTextContextsToRemove([]);
         setFileContextsToRemove([]);
         setWebsiteContextsToRemove([]);
@@ -519,6 +605,7 @@ export const Entrenamiento = ({
             title={textTitle}
             content={textContent}
             textContexts={textContexts}
+            newTextContexts={newTextContexts}
             onTitleChange={setTextTitle}
             onContentChange={setTextContent}
             onAddContext={handleAddTextContext}
@@ -552,6 +639,7 @@ export const Entrenamiento = ({
             questions={questions}
             answer={answer}
             questionContexts={questionContexts}
+            newQuestionContexts={newQuestionContexts}
             onTitleChange={setQuestionTitle}
             onQuestionsChange={handleQuestionsChange}
             onAnswerChange={setAnswer}
@@ -571,12 +659,12 @@ export const Entrenamiento = ({
             contexts={fileContexts}
             uploadedFiles={uploadedFiles}
             websiteEntries={[...existingWebsites, ...newWebsiteEntries]}
-            textContexts={textContexts}
-            questionContexts={questionContexts}
+            textContexts={[...textContexts, ...newTextContexts]}
+            questionContexts={[...questionContexts, ...newQuestionContexts]}
             mode="edit"
             onCreateChatbot={handleUpdateChatbot}
             isCreating={isUpdating}
-            hasPendingChanges={uploadedFiles.length > 0 || newWebsiteEntries.length > 0 || textContextsToRemove.length > 0 || fileContextsToRemove.length > 0 || websiteContextsToRemove.length > 0 || questionContextsToRemove.length > 0}
+            hasPendingChanges={uploadedFiles.length > 0 || newWebsiteEntries.length > 0 || newTextContexts.length > 0 || newQuestionContexts.length > 0 || textContextsToRemove.length > 0 || fileContextsToRemove.length > 0 || websiteContextsToRemove.length > 0 || questionContextsToRemove.length > 0}
           />
         </section>
       </StickyGrid>

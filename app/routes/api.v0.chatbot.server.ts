@@ -227,35 +227,45 @@ async function handleChatV0(params: {
       console.log('👁️ Permitiendo preview desde dashboard de Formmy (sin autenticación)');
     }
 
-    // Opcional: Validar allowedDomains si está configurado (patrón Flowise)
+    // ✅ FIX: Validar allowedDomains con normalización flexible (Oct 2025)
+    // Previene problemas con www, protocolos, puertos, paths
     const allowedDomains = chatbot.settings?.security?.allowedDomains;
     if (allowedDomains && allowedDomains.length > 0) {
       const origin = request.headers.get('origin');
-      if (origin) {
-        try {
-          const originHost = new URL(origin).host;
-          const isDomainAllowed = allowedDomains.some(domain => {
-            try {
-              const allowedHost = new URL(domain).host;
-              return originHost === allowedHost;
-            } catch {
-              return false;
-            }
-          });
 
-          if (!isDomainAllowed) {
-            return new Response(
-              JSON.stringify({
-                error: "Dominio no autorizado",
-                userMessage: "Este asistente no está disponible desde tu sitio web."
-              }),
-              { status: 403, headers: { "Content-Type": "application/json" } }
-            );
-          }
-        } catch {
-          // Si no se puede parsear el origin, permitir acceso
-        }
+      // Usar utilidad de validación con comparación flexible
+      const { validateDomainAccess } = await import("../../server/utils/domain-validator.server");
+      const validation = validateDomainAccess(origin, allowedDomains);
+
+      // Logging detallado para debugging
+      console.log('🔒 Validación de dominio:', {
+        chatbotId,
+        origin,
+        allowedDomains,
+        validation
+      });
+
+      if (!validation.allowed) {
+        // Mensaje de error mejorado con información específica
+        const errorMessage = validation.originHost
+          ? `Acceso bloqueado desde '${validation.originHost}'.\n\nDominios permitidos: ${validation.normalizedAllowed.join(', ')}\n\nVerifica tu configuración en Seguridad.`
+          : "Acceso bloqueado. Verifica la configuración de dominios permitidos.";
+
+        return new Response(
+          JSON.stringify({
+            error: "Dominio no autorizado",
+            userMessage: errorMessage,
+            debug: {
+              origin: validation.originHost,
+              allowedDomains: validation.normalizedAllowed,
+              reason: validation.reason
+            }
+          }),
+          { status: 403, headers: { "Content-Type": "application/json" } }
+        );
       }
+
+      console.log(`✅ Dominio permitido: ${validation.matchedDomain} (${validation.reason})`);
     }
 
     console.log('👤 Usuario anónimo accediendo a chatbot público:', chatbotId);

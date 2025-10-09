@@ -236,7 +236,7 @@ export const CardRow = ({
   onSelect?: () => void;
   onRemove?: () => void;
   onEdit?: () => void;
-  title: string;
+  title: string | ReactNode;
   subtitle?: string;
 }) => {
   const handleAction = (action: string) => {
