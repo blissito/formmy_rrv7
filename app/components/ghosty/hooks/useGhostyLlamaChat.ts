@@ -379,12 +379,11 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
-    
-    const conversationHistory = messages.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-    
+
+    // ✅ Detectar si es primera interacción después de clearChat()
+    // Si messages está vacío, es nueva conversación
+    const isFirstMessageAfterClear = messages.length === 0;
+
     // Add user message
     const userMessage = addMessage({
       role: 'user',
@@ -422,7 +421,8 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
         body: JSON.stringify({
           message: content.trim(),
           stream: true,
-          integrations: {} // TODO: Add real integrations
+          integrations: {}, // TODO: Add real integrations
+          forceNewConversation: isFirstMessageAfterClear // ✅ Backend creará nueva conversación
         }),
         signal: controller.signal,
       });
@@ -630,7 +630,8 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
     setError(null);
     setToolProgress([]);
     setCurrentThought('');
-    setIsExpanded(false);
+    // ✅ NO colapsar el chat - mantener expandido si ya estaba expandido
+    // setIsExpanded(false);
   }, []);
 
   const expandChat = useCallback(() => {

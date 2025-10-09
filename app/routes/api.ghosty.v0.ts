@@ -11,7 +11,7 @@ import { resolveChatbotConfig, createAgentExecutionContext } from "server/chatbo
 export const action = async ({ request }: Route.ActionArgs): Promise<Response> => {
   try {
     const body = await request.json();
-    const { message, integrations = {} } = body;
+    const { message, integrations = {}, forceNewConversation = false } = body;
 
     if (!message?.trim()) {
       return Response.json(
@@ -68,12 +68,55 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
       );
     }
 
-    console.log('🚀 Ghosty v0 endpoint:', {
-      userId: user.id,
-      plan: user.plan || 'FREE',
-      messageLength: message.length,
-      integrationsCount: Object.keys(integrations).length
-    });
+    // 💾 GESTIÓN DE CONVERSACIONES - Backend como source of truth
+    const {
+      findLastActiveConversation,
+      createConversation,
+    } = await import("../../server/chatbot/conversationModel.server");
+    const {
+      getMessagesByConversationId,
+      addUserMessage,
+      addAssistantMessage,
+    } = await import("../../server/chatbot/messageModel.server");
+
+    let conversation = null;
+
+    if (forceNewConversation) {
+      // clearChat() solicitó nueva conversación → crear siempre nueva
+      conversation = await createConversation({
+        chatbotId: 'ghosty-main',
+        visitorId: user.id, // Usuario autenticado
+      });
+    } else {
+      // Buscar última conversación ACTIVE del usuario
+      conversation = await findLastActiveConversation({
+        chatbotId: 'ghosty-main',
+        visitorId: user.id,
+      });
+
+      if (!conversation) {
+        // No existe conversación previa → crear nueva
+        conversation = await createConversation({
+          chatbotId: 'ghosty-main',
+          visitorId: user.id,
+        });
+      }
+    }
+
+    // 📚 Cargar historial desde BD (ANTES de guardar mensaje actual)
+    const allMessages = await getMessagesByConversationId(conversation.id);
+
+    // Truncar a últimos 50 mensajes
+    const recentMessages = allMessages.slice(-50);
+
+    // Formatear historial para el agente (SOLO mensajes anteriores)
+    const conversationHistory = recentMessages.map(msg => ({
+      role: msg.role.toLowerCase() as "user" | "assistant",
+      content: msg.content
+    }));
+
+    // Guardar mensaje del usuario en BD
+    await addUserMessage(conversation.id, message, undefined, "web");
 
     // Crear configuración Ghosty mock para AgentWorkflow
     const ghostyChatbot = {
@@ -97,7 +140,9 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
 
     const resolvedConfig = resolveChatbotConfig(ghostyChatbot as any, user);
     const agentContext = createAgentExecutionContext(user, 'ghosty-main', message, {
-      integrations
+      integrations,
+      conversationHistory, // ✅ Desde BD, no desde cliente
+      conversationId: conversation.id, // Para rate limiting de tools
     });
 
     // Server-Sent Events streaming con AgentV0 (100% streaming)
@@ -106,14 +151,26 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
     return new Response(
       new ReadableStream({
         async start(controller) {
+          let fullResponse = ""; // Acumular respuesta del asistente
+
           try {
             // runStream con eventos LlamaIndex oficiales y context completo
             for await (const event of streamAgentWorkflow(user, message, 'ghosty-main', {
               resolvedConfig,
               agentContext
             })) {
+              // Acumular chunks de contenido
+              if (event.type === "chunk" && event.content) {
+                fullResponse += event.content;
+              }
+
               const data = JSON.stringify(event);
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            }
+
+            // 💾 Guardar respuesta del asistente en BD
+            if (fullResponse.trim()) {
+              await addAssistantMessage(conversation.id, fullResponse.trim());
             }
 
             // Final completion signal
