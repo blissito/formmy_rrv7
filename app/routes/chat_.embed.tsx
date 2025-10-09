@@ -86,7 +86,7 @@ export default function ChatEmbedRoute() {
   return (
     <>
       <GlobalStyles />
-      <div className="h-screen w-full">
+      <div className="h-screen w-full bg-pink-500">
         <ChatPreview production chatbot={data.chatbot as Chatbot} />
       </div>
     </>

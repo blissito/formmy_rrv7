@@ -512,7 +512,7 @@ export default function ChatPreview({
 
   return (
     <main
-      className={cn("h-full max-h-[700px] bg-red-500", {
+      className={cn("h-full  bg-red-500", {
         "bg-chatPattern bg-cover rounded-3xl  pt-6": !production,
       })}
     >
