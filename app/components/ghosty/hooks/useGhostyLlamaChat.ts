@@ -418,6 +418,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // ✅ Enviar cookies de sesión para autenticación
         body: JSON.stringify({
           message: content.trim(),
           stream: true,
