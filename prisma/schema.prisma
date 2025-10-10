@@ -341,8 +341,8 @@ model Conversation {
   messageCount Int                @default(0)
   isFavorite   Boolean            @default(false)
   manualMode   Boolean            @default(false) // Para controlar respuestas manuales vs automáticas
-  chatbotId    String             @db.ObjectId
-  chatbot      Chatbot            @relation(fields: [chatbotId], references: [id])
+  chatbotId    String?            @db.ObjectId // ✅ Nullable para permitir Ghosty (sin chatbot real)
+  chatbot      Chatbot?           @relation(fields: [chatbotId], references: [id])
   messages     Message[]
   contacts     Contact[]
 

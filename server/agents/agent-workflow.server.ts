@@ -270,7 +270,7 @@ async function createSingleAgent(
     conversationId: context.agentContext?.conversationId, // Para rate limiting
     message: context.message,
     integrations: context.integrations,
-    isGhosty: context.chatbotId === "ghosty-main", // Ghosty tiene acceso a stats
+    isGhosty: context.agentContext?.isGhosty || false, // Ghosty tiene acceso a stats
   };
 
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
@@ -571,7 +571,7 @@ export const streamAgentWorkflow = async function* (
       conversationId: context.agentContext?.conversationId,
       message: context.message,
       integrations: context.integrations,
-      isGhosty: context.chatbotId === "ghosty-main",
+      isGhosty: context.agentContext?.isGhosty || false,
     };
     const availableToolsObjects = getToolsForPlan(context.userPlan, context.integrations, toolContext);
     const availableTools = availableToolsObjects.map((tool: any) => tool.metadata?.name || 'unknown');

@@ -84,20 +84,20 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
     if (forceNewConversation) {
       // clearChat() solicitó nueva conversación → crear siempre nueva
       conversation = await createConversation({
-        chatbotId: 'ghosty-main',
+        chatbotId: null, // Ghosty no tiene chatbotId real
         visitorId: user.id, // Usuario autenticado
       });
     } else {
       // Buscar última conversación ACTIVE del usuario
       conversation = await findLastActiveConversation({
-        chatbotId: 'ghosty-main',
+        chatbotId: null, // Ghosty no tiene chatbotId real
         visitorId: user.id,
       });
 
       if (!conversation) {
         // No existe conversación previa → crear nueva
         conversation = await createConversation({
-          chatbotId: 'ghosty-main',
+          chatbotId: null, // Ghosty no tiene chatbotId real
           visitorId: user.id,
         });
       }
@@ -139,10 +139,11 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
     };
 
     const resolvedConfig = resolveChatbotConfig(ghostyChatbot as any, user);
-    const agentContext = createAgentExecutionContext(user, 'ghosty-main', message, {
+    const agentContext = createAgentExecutionContext(user, null, message, {
       integrations,
       conversationHistory, // ✅ Desde BD, no desde cliente
       conversationId: conversation.id, // Para rate limiting de tools
+      isGhosty: true, // Flag para identificar que es Ghosty
     });
 
     // Server-Sent Events streaming con AgentV0 (100% streaming)
@@ -155,7 +156,7 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
 
           try {
             // runStream con eventos LlamaIndex oficiales y context completo
-            for await (const event of streamAgentWorkflow(user, message, 'ghosty-main', {
+            for await (const event of streamAgentWorkflow(user, message, null, {
               resolvedConfig,
               agentContext
             })) {

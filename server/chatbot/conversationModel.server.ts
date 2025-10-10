@@ -16,17 +16,19 @@ export async function createConversation({
   visitorId,
   sessionId: clientSessionId,
 }: {
-  chatbotId: string;
+  chatbotId: string | null; // ✅ Permitir null para Ghosty
   visitorIp?: string;
   visitorId?: string;
   sessionId?: string; // ✅ NUEVO: Aceptar sessionId del cliente
 }): Promise<Conversation> {
-  // Validar límites mensuales de conversaciones
-  const limitValidation = await validateMonthlyConversationLimit(chatbotId);
-  if (!limitValidation.canCreate) {
-    throw new Error(
-      `Se ha alcanzado el límite mensual de ${limitValidation.maxAllowed} conversaciones para este chatbot.`
-    );
+  // Validar límites mensuales de conversaciones (solo para chatbots reales)
+  if (chatbotId) {
+    const limitValidation = await validateMonthlyConversationLimit(chatbotId);
+    if (!limitValidation.canCreate) {
+      throw new Error(
+        `Se ha alcanzado el límite mensual de ${limitValidation.maxAllowed} conversaciones para este chatbot.`
+      );
+    }
   }
 
   // ✅ Usar sessionId del cliente si se proporciona, sino generar uno nuevo
@@ -46,18 +48,20 @@ export async function createConversation({
     },
   });
 
-  // Guardar el mensaje SYSTEM con el prompt general (instructions)
-  const chatbot = await getChatbotById(chatbotId);
-  if (chatbot?.instructions) {
-    await addSystemMessage(conversation.id, chatbot.instructions);
+  // Guardar el mensaje SYSTEM con el prompt general (instructions) (solo para chatbots reales)
+  if (chatbotId) {
+    const chatbot = await getChatbotById(chatbotId);
+    if (chatbot?.instructions) {
+      await addSystemMessage(conversation.id, chatbot.instructions);
+    }
+
+    // Increment the conversation count for the chatbot
+    await incrementConversationCount(chatbotId);
+
+    // Check if the chatbot has reached its limit after incrementing the count
+    // This will automatically pause the chatbot if the limit is reached
+    await pauseChatbotIfLimitReached(chatbotId);
   }
-
-  // Increment the conversation count for the chatbot
-  await incrementConversationCount(chatbotId);
-
-  // Check if the chatbot has reached its limit after incrementing the count
-  // This will automatically pause the chatbot if the limit is reached
-  await pauseChatbotIfLimitReached(chatbotId);
 
   return conversation;
 }
@@ -161,14 +165,14 @@ export async function findLastActiveConversation({
   chatbotId,
   visitorId,
 }: {
-  chatbotId: string;
+  chatbotId: string | null; // ✅ Permitir null para Ghosty
   visitorId?: string;
 }): Promise<Conversation | null> {
   if (!visitorId) return null;
 
   return db.conversation.findFirst({
     where: {
-      chatbotId,
+      chatbotId, // ✅ Prisma maneja null correctamente en where clause
       visitorId,
       status: ConversationStatus.ACTIVE,
     },
