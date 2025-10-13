@@ -52,13 +52,13 @@ export default function Compartir({ loaderData }: Route.ComponentProps) {
   return (
     <div>
       <DashboardLayout title="Compartir" user={user}>
-        <section className="py-8 max-w-7xl mx-auto overflow-y-scroll noscroll grid place-content-center h-full ">
+        <section className="py-8 px-4 max-w-7xl mx-auto overflow-y-scroll noscroll grid place-content-center h-full ">
           <div className="flex flex-col items-center justify-center h-full max-w-[560px] mx-auto">
             <div className="flex gap-8 items-center">
               <img
                 src="/dash/share.svg"
                 alt="compartir"
-                className="mx-auto mb-8"
+                className="w-[200px] md:w-auto mx-auto mb-8"
               />
               {/* <CreditsBox /> */}
             </div>

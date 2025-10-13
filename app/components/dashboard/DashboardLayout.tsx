@@ -135,7 +135,7 @@ export const TopMenu = ({ user }: { user: User }) => {
           alt="Formmy Logo"
         />
       </Link>
-      <div className="flex items-center justify-end md:gap-4 gap-0 w-full">
+      <div className="flex items-center justify-end gap-4  w-full">
         <Link to="/dashboard/uso">
           <Button
             variant="secondary"

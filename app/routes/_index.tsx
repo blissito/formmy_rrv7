@@ -6,9 +6,9 @@ import { redirectIfUser } from "server/getUserUtils.server";
 
 export const meta = () =>
   getBasicMetaTags({
-    title: "Formularios de contacto para tu sitio web",
+    title: "Chatbots IA y formularios de contacto para tu sitio web",
     description:
-      "Formularios en tu sitio web fácilmente y sin necesidad de un backend ",
+      "Agrega chatbots IA a tu sitio web fácilmente ",
   });
 
 export const loader = async ({ request }: Route.LoaderArgs) => {

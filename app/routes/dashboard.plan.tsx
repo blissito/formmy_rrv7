@@ -40,8 +40,8 @@ export default function DashboardPlan() {
   const navigation = useNavigation();
 
   return (
-    <section className="max-w-7xl mx-auto  py-6  md:py-8 px-4">
-        <h2 className="text-2xl md:text-3xl text-space-800 dark:text-white font-semibold mb-8">
+    <section className="max-w-7xl mx-auto  py-6  md py-6:md:py-8 px-4">
+        <h2 className="text-2xl md:text-3xl text-space-800 dark:text-white font-semibold">
           Administra tu plan
         </h2>
         {(user.plan === "FREE" || user.plan === "TRIAL") && (
@@ -84,7 +84,7 @@ export default function DashboardPlan() {
 
 export const TaxesInfo=()=>{
     return(
-        <section className="border border-outlines rounded-3xl py-8 px-6 mt-6 ">
+        <section className="border border-outlines rounded-3xl py-6 md:py-8 px-6 mt-6 ">
             <h2 className="text-dark text-xl heading">Facturación</h2>
             <p className="text-metal  mt-1">Si requieres factura fiscal mexicana, envía tu información fiscal a <a href="mailto:hola@formmy.app" className="text-brand-600 underline">hola@formmy.app</a>. Si la información fiscal es correcta, la factura será enviada a tu correo en las próximas 72 hrs.</p>
             
@@ -105,7 +105,7 @@ export const CardFree = () => {
     };
   
     return (
-      <section className="border-outlines border  rounded-3xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap">
+      <section className="border-outlines border  rounded-3xl py-6 md:py-8 px-6 my-6 flex flex-wrap md:flex-nowrap">
         <Form method="post" className="min-w-[320px] relative pb-16 md:pb-0">
           <h3 className="text-dark text-2xl font-semibold">
             Free
@@ -153,7 +153,7 @@ export const CardFree = () => {
   }) => {
     return (
       <section
-        className="border border-outlines shadow-standard relative rounded-3xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
+        className="border border-outlines shadow-standard relative rounded-3xl py-6 md:py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
       >
           <img className="h-80 opacity-10 absolute bottom-0 right-0" src="/dash/pro.svg" alt="pro"/>
         <Form method="post" action="/api/stripe" className="min-w-[320px]  pb-16 md:pb-0 relative">
@@ -234,7 +234,7 @@ export const CardFree = () => {
   }) => {
     return (
       <section
-        className="border border-outlines shadow-standard relative rounded-3xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
+        className="border border-outlines shadow-standard relative rounded-3xl py-6 md:py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
       >
           <img className="h-80 opacity-10 absolute bottom-0 right-0" src="/dash/enterprise.svg" alt="pro"/>
         <Form method="post" action="/api/stripe" className="min-w-[320px]  pb-16 md:pb-0 relative">
@@ -319,7 +319,7 @@ export const CardFree = () => {
   }) => {
     return (
       <section
-        className="border border-outlines shadow-standard relative rounded-3xl py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
+        className="border border-outlines shadow-standard relative rounded-3xl py-6 md:py-8 px-6 my-6 flex flex-wrap md:flex-nowrap"
       >
       <img className="h-80 opacity-10 absolute bottom-0 right-0" src="/dash/starter.svg" alt="pro"/>
         <Form method="post" action="/api/stripe" className="min-w-[320px]  pb-16 md:pb-0 relative">
