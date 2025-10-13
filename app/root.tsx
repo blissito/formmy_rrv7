@@ -12,6 +12,7 @@ import stylesheet from "./app.css?url";
 import type { ReactNode } from "react";
 import useHotjar from "./utils/useHotjar";
 import useGoogleTM from "./utils/useGoogleTM";
+import useFacebookPixel from "./utils/useFacebookPixel";
 import { Toaster } from "react-hot-toast";
 import { useTagManager } from "./utils/useTagManager";
 
@@ -32,6 +33,7 @@ export const links: Route.LinksFunction = () => [
 export function Layout({ children }: { children: ReactNode }) {
   useHotjar();
   useGoogleTM();
+  useFacebookPixel();
   useTagManager();
   return (
     <html
