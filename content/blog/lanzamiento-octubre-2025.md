@@ -9,7 +9,7 @@ category: "anuncio"
 highlight: "main"
 ---
 
-# La Revolución de Formmy llega el 8 de Septiembre
+# Formmy llega el 15 de Octubre
 
 Hace unos meses decidimos aceptar un gran desafío: hacer que la IA deje de ser complicada y se convierta en una herramienta fácil y poderosa para que cada negocio pueda conectar mejor con sus clientes.
 
