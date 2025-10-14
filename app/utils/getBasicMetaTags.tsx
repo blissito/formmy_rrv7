@@ -7,8 +7,8 @@ export type GetBasicMetaTagsPros = {
 
 export default function getBasicMetaTags({
   title,
-  description = "Agrega formularios de contacto a tu sitio web fácilmente", // description should be at least 100 chars
-  image = "https://i.imgur.com/6kgOsufh.png",
+  description = "Chatbots IA y formularios de contacto para tu sitio web", // description should be at least 100 chars
+  image = "https://i.imgur.com/NyaSaFn.png",
   twitterCard = "summary",
 }: GetBasicMetaTagsPros) {
   if (!title) {
@@ -18,7 +18,7 @@ export default function getBasicMetaTags({
       },
       {
         name: "description",
-        content: "Agrega formularios de contacto a tu sitio web fácilmente",
+        content: "Agrega chatbots IA a tu sitio web fácilmente",
       },
     ];
   }
@@ -42,7 +42,7 @@ export default function getBasicMetaTags({
     },
     {
       property: "og:url",
-      content: "formy.app",
+      content: "www.formy.app",
     },
     {
       name: "twitter:card",

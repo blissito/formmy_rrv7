@@ -71,7 +71,7 @@ export default function BlogPost() {
           <h1 className="text-4xl md:text-5xl font-bold text-white  mb-6 !leading-[1.2]">
               {post.title}
             </h1>
-            <div className="inline-flex items-center gap-2 mb-6">
+            <div className="inline-flex flex-wrap items-center gap-2 mb-10 md:mb-6">
               {post.tags && post.tags.map((tag, index) => (
                 <span 
                   key={index}
@@ -80,7 +80,6 @@ export default function BlogPost() {
                   {tag}
                 </span>
               ))}
-              <span className="text-sm text-gray-400">•</span>
               <time 
                 dateTime={post.date} 
                 className="text-sm text-gray-400"
