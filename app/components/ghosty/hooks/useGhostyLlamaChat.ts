@@ -57,6 +57,10 @@ export interface GhostyLlamaMessage {
   toolProgress?: ToolProgress[];
   confidence?: number;
   suggestedFollowUp?: string[];
+  widgets?: Array<{
+    type: 'payment' | 'booking' | 'form';
+    id: string;
+  }>;
   metadata?: {
     tokensUsed?: number;
     processingTime?: number;
@@ -125,6 +129,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
       'delete_reminder': '🗑️ Eliminando recordatorio...',
 
       // Payment tools
+      'create_formmy_plan_payment': '💳 Generando link de pago para plan...',
       'create_payment_link': '💳 Creando link de pago...',
 
       // Contact tools
@@ -422,7 +427,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
         body: JSON.stringify({
           message: content.trim(),
           stream: true,
-          integrations: {}, // TODO: Add real integrations
+          integrations: {}, // ✅ Backend inyecta Stripe de Formmy para cobro de planes
           forceNewConversation: isFirstMessageAfterClear // ✅ Backend creará nueva conversación
         }),
         signal: controller.signal,
@@ -445,6 +450,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
       let sources: LlamaSource[] = [];
       let toolsUsed: string[] = [];
       let availableTools: string[] = [];
+      let widgets: Array<{type: 'payment' | 'booking' | 'form', id: string}> = [];
       let metadata: any = {};
 
       while (true) {
@@ -528,6 +534,24 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
                   });
                   break;
 
+                case 'widget':
+                  // 🆕 Agregar widget al mensaje actual
+                  console.log(`\n${'🎨'.repeat(40)}`);
+                  console.log(`🎨 [Frontend] EVENTO WIDGET RECIBIDO`);
+                  console.log(`   Tipo: ${parsed.widgetType}`);
+                  console.log(`   ID: ${parsed.widgetId}`);
+                  console.log(`   Total widgets en mensaje: ${widgets.length + 1}`);
+                  console.log(`${'🎨'.repeat(40)}\n`);
+
+                  widgets.push({
+                    type: parsed.widgetType,
+                    id: parsed.widgetId
+                  });
+                  updateMessage(assistantMessage.id, {
+                    widgets: [...widgets]
+                  });
+                  break;
+
                 case 'sources':
                   sources = parsed.sources?.map((source: any) => ({
                     ...source,
@@ -560,6 +584,7 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
                     sources: sources,
                     toolsUsed: toolsUsed,
                     toolProgress: toolProgress,
+                    widgets: widgets, // 🆕 Incluir widgets detectados
                     metadata: {
                       ...metadata,
                       ...parsed.metadata,

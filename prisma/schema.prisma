@@ -475,3 +475,16 @@ model ToolUsage {
 
   createdAt DateTime @default(now())
 }
+
+model Widget {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  type      String // 'payment', 'booking', 'form'
+  data      Json // Flexible: { amount, url, description, ... }
+
+  userId    String  @db.ObjectId
+  chatbotId String? @db.ObjectId
+
+  createdAt DateTime @default(now())
+
+  @@index([type])
+}

@@ -20,6 +20,14 @@ export async function saveContactInfoHandler(
   context: ToolContext
 ): Promise<ToolResponse> {
   try {
+    // 🚫 Ghosty NO debe usar esta tool (usuario ya autenticado)
+    if (!context.chatbotId) {
+      console.error('❌ [save_contact_info] Rechazado: chatbotId es null (probablemente Ghosty)');
+      return {
+        success: false,
+        message: "Esta herramienta no está disponible en este contexto. El usuario ya está autenticado.",
+      };
+    }
 
     // Validar que al menos se proporcione email o teléfono (forma de contacto)
     if (!input.email && !input.phone) {

@@ -70,6 +70,38 @@ function mapModelForPerformance(model: string): string {
 }
 
 /**
+ * Construye system prompt optimizado para Ghosty
+ * Task-focused, examples-first, sin contradicciones
+ */
+function buildGhostySystemPrompt(): string {
+  return `Eres Ghosty, asistente de soporte de Formmy. Usuario autenticado.
+
+🔧 REGLAS DE HERRAMIENTAS:
+1. Pregunta info de plan → RESPONDE directo (ya sabes: Starter $149, Pro $499, Enterprise $1499)
+2. Usuario QUIERE upgrade/pagar → USA create_formmy_plan_payment({ planName: "STARTER" | "PRO" | "ENTERPRISE" })
+3. Conversación casual → NO uses herramientas
+
+Frases que requieren tool:
+✅ "quiero el plan Pro", "dame link del Starter", "cómo pago Enterprise"
+❌ "qué incluye Pro", "cuánto cuesta Starter", "diferencias entre planes"
+
+🎯 PLANES FORMMY:
+• Starter - $149 MXN/mes: 2 chatbots, 50 conversaciones
+• Pro - $499 MXN/mes: 10 chatbots, 250 conversaciones
+• Enterprise - $1,499 MXN/mes: chatbots ilimitados, 1000 conversaciones
+
+🚨 CRÍTICO - WIDGETS:
+Si una tool retorna 🎨WIDGET:payment:abc123🎨:
+✅ COPIA el mensaje EXACTO sin cambiar NADA
+❌ NO cambies 🎨WIDGET:payment:abc123🎨 a [Pagar](payment:abc123)
+❌ NO quites los emojis 🎨
+
+Ejemplo:
+Tool: "🎨WIDGET:payment:123🎨\n\nPlan PRO $499"
+Tú: "🎨WIDGET:payment:123🎨\n\nPlan PRO $499" (EXACTO)`;
+}
+
+/**
  * Construye system prompt personalizado
  */
 function buildSystemPrompt(
@@ -78,12 +110,17 @@ function buildSystemPrompt(
   hasWebSearch: boolean,
   hasReportGeneration: boolean
 ): string {
+  // 🎯 GHOSTY usa prompt dedicado optimizado
+  if (config.name === 'Ghosty') {
+    return buildGhostySystemPrompt();
+  }
+
   const personality = config.personality || "friendly";
 
   // Agent types válidos
   const agentTypes: AgentType[] = ['sales', 'customer_support', 'data_analyst', 'coach', 'medical_receptionist', 'educational_assistant'];
 
-  // 🔍 PRIORIDAD MÁXIMA: Instrucciones de búsqueda PRIMERO (antes de custom instructions)
+  // 🔍 Instrucciones de búsqueda para chatbots con RAG
   let searchInstructions = '';
   if (hasContextSearch) {
     searchInstructions = `⚠️ REGLA CRÍTICA - REVISAR HISTORIAL PRIMERO:
@@ -233,6 +270,38 @@ Correcto: "✅ Reporte generado... [DESCARGAR PDF](/api/ghosty/download_123)"
 Incorrecto: "Descarga: sandbox:/api/ghosty/download_123"`;
   }
 
+  // 🎨 Instrucciones de widgets (SIEMPRE - aplica a todas las tools que generan widgets)
+  basePrompt += `
+
+🎨 REGLA CRÍTICA DE WIDGETS INTERACTIVOS:
+
+Cuando una herramienta retorna un marcador 🎨WIDGET:tipo:id🎨:
+
+✅ HACER (OBLIGATORIO):
+1. COPIAR EXACTO el mensaje de la herramienta (incluye el marcador 🎨WIDGET:tipo:id🎨)
+2. NO modificar NADA del mensaje
+3. NO agregar texto antes/después del marcador
+4. NO reformular si contiene el marcador
+
+❌ NO HACER (PROHIBIDO):
+- NO remover los emojis 🎨
+- NO cambiar el formato WIDGET:tipo:id
+- NO agregar explicaciones dentro del marcador
+- NO mover el marcador a otra posición
+
+📋 EJEMPLOS:
+
+✅ CORRECTO:
+Tool retorna: "🎨WIDGET:payment:abc123🎨\\n\\nLink generado por $499 MXN"
+→ Copias EXACTO ese texto
+
+❌ INCORRECTO:
+"He preparado tu pago 🎨WIDGET:payment:abc123🎨 para que procedas"
+"Link de pago: 🎨WIDGET:payment:abc123🎨 ← usa este botón"
+"🎨 WIDGET: payment: abc123 🎨" (espacios incorrectos)
+
+⚠️ IMPORTANTE: El marcador es TÉCNICO y el sistema lo detecta automáticamente para mostrar widgets interactivos. Si lo modificas, el widget NO se mostrará.`;
+
   return basePrompt;
 }
 
@@ -272,6 +341,14 @@ async function createSingleAgent(
     integrations: context.integrations,
     isGhosty: context.agentContext?.isGhosty || false, // Ghosty tiene acceso a stats
   };
+
+  console.log(`\n${'🔍'.repeat(40)}`);
+  console.log(`🔍 [ToolContext Debug] CONSTRUYENDO TOOL CONTEXT`);
+  console.log(`   context.agentContext:`, context.agentContext);
+  console.log(`   context.agentContext?.isGhosty:`, context.agentContext?.isGhosty);
+  console.log(`   toolContext.isGhosty:`, toolContext.isGhosty);
+  console.log(`   userPlan:`, userPlan);
+  console.log(`${'🔍'.repeat(40)}\n`);
 
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
 
@@ -373,6 +450,7 @@ const TOOL_CREDITS: Record<string, number> = {
   'search_context': 2,
 
   // Avanzadas (4-6 créditos)
+  'create_formmy_plan_payment': 4,
   'create_payment_link': 4,
   'get_usage_limits': 2,
   'query_chatbots': 3,
@@ -394,6 +472,7 @@ const TOOL_CREDITS: Record<string, number> = {
 async function* streamSingleAgent(agentInstance: any, message: string, availableTools: string[] = []) {
   const MAX_CHUNKS = 1000;
   const MAX_DURATION_MS = 45000; // 45 segundos
+  const MAX_SAME_TOOL_CONSECUTIVE = 2; // Máximo 2 veces LA MISMA tool consecutivamente
   const startTime = Date.now();
 
   // El agente ya tiene memoria configurada con el historial, solo pasamos el mensaje actual
@@ -407,8 +486,22 @@ async function* streamSingleAgent(agentInstance: any, message: string, available
   let totalTokens = 0; // Tracking de tokens
   let creditsUsed = 0; // Tracking de créditos
 
+  // 🆕 Buffer para detectar widgets
+  let widgetBuffer = '';
+  let detectedWidgets: Array<{type: string, id: string}> = [];
+
+  // 🚨 Detección de loops infinitos
+  let lastToolExecuted: string | null = null;
+  let sameToolConsecutiveCount = 0;
+  let shouldAbort = false; // Flag para salir del loop
+
   try {
     for await (const event of events as any) {
+      // 🚨 Salir si detectamos loop infinito
+      if (shouldAbort) {
+        console.error('🛑 Abortando stream por loop infinito detectado');
+        break;
+      }
       // 🛡️ PROTECCIÓN 1: Timeout
       const elapsed = Date.now() - startTime;
       if (elapsed > MAX_DURATION_MS) {
@@ -438,6 +531,33 @@ async function* streamSingleAgent(agentInstance: any, message: string, available
         const toolName = event.data.toolName || "unknown_tool";
         toolsUsed.push(toolName);
 
+        // 🚨 Detectar loop infinito: misma tool ejecutándose consecutivamente
+        if (toolName === lastToolExecuted) {
+          sameToolConsecutiveCount++;
+          console.warn(`⚠️  Tool "${toolName}" ejecutada ${sameToolConsecutiveCount + 1} veces consecutivas`);
+
+          if (sameToolConsecutiveCount >= MAX_SAME_TOOL_CONSECUTIVE) {
+            console.error(`🚨 LOOP INFINITO DETECTADO: ${toolName} ejecutada ${sameToolConsecutiveCount + 1} veces consecutivas`);
+            yield {
+              type: "error",
+              content: `Detuve un loop infinito. La herramienta "${toolName}" se ejecutó múltiples veces sin producir resultado útil. Intenta reformular tu pregunta o describe con más detalle lo que necesitas.`,
+            };
+            shouldAbort = true;
+            continue;
+          }
+        } else {
+          // Tool diferente, resetear contador
+          sameToolConsecutiveCount = 0;
+          lastToolExecuted = toolName;
+        }
+
+        console.log(`\n${'🔧'.repeat(40)}`);
+        console.log(`🔧 [Tool Call] HERRAMIENTA EJECUTADA`);
+        console.log(`   Nombre: ${toolName}`);
+        console.log(`   Consecutivas: ${sameToolConsecutiveCount + 1}`);
+        console.log(`   Total ejecutadas: ${toolsExecuted}`);
+        console.log(`${'🔧'.repeat(40)}\n`);
+
         // Calcular créditos consumidos por esta tool
         const toolCredits = TOOL_CREDITS[toolName] || 1; // Default 1 crédito
         creditsUsed += toolCredits;
@@ -453,33 +573,70 @@ async function* streamSingleAgent(agentInstance: any, message: string, available
       if (agentStreamEvent.include(event)) {
         if (event.data.delta) {
           chunkCount++;
-          totalChars += event.data.delta.length;
+          const chunk = event.data.delta;
+          totalChars += chunk.length;
 
           // Estimar tokens basado en caracteres (regla aproximada: ~4 chars por token)
-          totalTokens += Math.ceil(event.data.delta.length / 4);
+          totalTokens += Math.ceil(chunk.length / 4);
 
-          // 🛡️ PROTECCIÓN 3: Detectar contenido corrupto (múltiples scripts)
-          const hasMultipleScripts =
-            /[\u0400-\u04FF].*[\u0E00-\u0E7F]|[\u0600-\u06FF].*[\u4E00-\u9FFF]|[\u0900-\u097F].*[\u0400-\u04FF]/.test(
-              event.data.delta
-            );
-          if (hasMultipleScripts && event.data.delta.length > 100) {
-            console.error(
-              `🚫 Contenido corrupto detectado en chunk ${chunkCount}`
-            );
+          // 🆕 Acumular en buffer para detectar widgets
+          widgetBuffer += chunk;
+
+          // 🎨 Detectar widget completo: 🎨WIDGET:tipo:id🎨
+          // Soporta IDs con letras, números, guiones y guiones bajos (MongoDB ObjectIDs)
+          // Case-insensitive por seguridad
+          const widgetMatch = widgetBuffer.match(/🎨WIDGET:(\w+):([a-zA-Z0-9_-]+)🎨/i);
+          if (widgetMatch) {
+            const [fullMatch, widgetType, widgetId] = widgetMatch;
+
+            console.log(`\n${'🎨'.repeat(40)}`);
+            console.log(`🎨 [Widget Detected] WIDGET ENCONTRADO EN STREAMING`);
+            console.log(`   Tipo: ${widgetType}`);
+            console.log(`   ID: ${widgetId}`);
+            console.log(`   Match completo: ${fullMatch}`);
+            console.log(`${'🎨'.repeat(40)}\n`);
+
+            // Emitir evento widget
             yield {
-              type: "error",
-              content:
-                "Error de generación detectado. Por favor intenta de nuevo.",
+              type: "widget",
+              widgetType,
+              widgetId
             };
-            break;
+
+            detectedWidgets.push({ type: widgetType, id: widgetId });
+
+            // Limpiar del buffer (ya procesado)
+            widgetBuffer = widgetBuffer.replace(fullMatch, '');
           }
 
-          hasStreamedContent = true;
-          yield {
-            type: "chunk",
-            content: event.data.delta,
-          };
+          // 🧹 Emitir chunk SIN el marcador emoji
+          // Mismo regex que la detección pero con flag global para reemplazar todas las ocurrencias
+          const cleanChunk = chunk.replace(/🎨WIDGET:\w+:[a-zA-Z0-9_-]+🎨/gi, '');
+
+          if (cleanChunk) {
+            // 🛡️ PROTECCIÓN 3: Detectar contenido corrupto (múltiples scripts)
+            const hasMultipleScripts =
+              /[\u0400-\u04FF].*[\u0E00-\u0E7F]|[\u0600-\u06FF].*[\u4E00-\u9FFF]|[\u0900-\u097F].*[\u0400-\u04FF]/.test(
+                cleanChunk
+              );
+            if (hasMultipleScripts && cleanChunk.length > 100) {
+              console.error(
+                `🚫 Contenido corrupto detectado en chunk ${chunkCount}`
+              );
+              yield {
+                type: "error",
+                content:
+                  "Error de generación detectado. Por favor intenta de nuevo.",
+              };
+              break;
+            }
+
+            hasStreamedContent = true;
+            yield {
+              type: "chunk",
+              content: cleanChunk,
+            };
+          }
         }
       }
     }
@@ -507,6 +664,7 @@ async function* streamSingleAgent(agentInstance: any, message: string, available
       availableTools, // 🔧 Lista de herramientas disponibles para el usuario
       tokensUsed: totalTokens,
       creditsUsed,
+      detectedWidgets, // 🆕 Widgets detectados durante el streaming
       estimatedCost: {
         tokens: totalTokens,
         credits: creditsUsed,

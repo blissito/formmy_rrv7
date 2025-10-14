@@ -164,6 +164,9 @@ export default [
   route("widget.js", "routes/widget.ts"),
   route("api/chatbot/public/:slug", "routes/api.chatbot.public.$slug.ts"),
 
+  // Widget iframe routes
+  route("widgets/:widgetId", "routes/widgets.$widgetId.tsx"),
+
   // Well-known routes
   route(".well-known/*", "routes/.well-known.$.tsx"),
 

@@ -54,6 +54,7 @@ export interface AgentExecutionContext {
   sessionId?: string;
   conversationId?: string; // Para rate limiting de herramientas
   conversationHistory?: Array<{ role: string; content: string }>;
+  isGhosty?: boolean; // Flag para distinguir Ghosty (asistente interno) de chatbots públicos
 }
 
 /**
@@ -251,6 +252,7 @@ export function createAgentExecutionContext(
     conversationId?: string;
     conversationHistory?: Array<{ role: string; content: string }>;
     integrations?: Record<string, any>;
+    isGhosty?: boolean; // Flag para Ghosty
   } = {}
 ): AgentExecutionContext {
   return {
@@ -261,7 +263,8 @@ export function createAgentExecutionContext(
     integrations: options.integrations || {},
     sessionId: options.sessionId,
     conversationId: options.conversationId,
-    conversationHistory: options.conversationHistory || []
+    conversationHistory: options.conversationHistory || [],
+    isGhosty: options.isGhosty || false // Retornar isGhosty desde options
   };
 }
 

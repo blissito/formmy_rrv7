@@ -1,7 +1,7 @@
 import { db } from "~/utils/db.server";
 
 export interface ToolUsageData {
-  chatbotId: string;
+  chatbotId: string | null; // null para Ghosty (asistente interno sin chatbot)
   conversationId?: string;
   toolName: string;
   success: boolean;
@@ -17,6 +17,12 @@ export class ToolUsageTracker {
    */
   static async trackUsage(data: ToolUsageData) {
     try {
+      // 🛡️ Skip tracking si chatbotId es null (Ghosty) o inválido
+      if (!data.chatbotId || data.chatbotId === 'unknown') {
+        console.log(`📊 [Tool Tracker] Skipping ${data.toolName} (no chatbotId - Ghosty internal tool)`);
+        return null;
+      }
+
       const usage = await db.toolUsage.create({
         data: {
           chatbotId: data.chatbotId,
