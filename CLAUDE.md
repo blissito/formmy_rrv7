@@ -395,6 +395,399 @@ npx tsx scripts/migrate-contact-status.ts
 
 ---
 
+## Integraciones con Composio (Google Calendar, etc.)
+
+### Arquitectura de Integraciones
+
+**Proveedor**: Composio (https://composio.dev)
+**SDK**: `@composio/core` + `@composio/llamaindex`
+**Auth**: OAuth2 con entity-based authentication (chatbot-level)
+
+### ⚠️ REGLAS CRÍTICAS - Integración con Composio
+
+#### 1. Entity Management (Chatbot-based)
+
+Cada chatbot tiene su propia "entity" en Composio para aislar conexiones:
+
+```typescript
+// ✅ CORRECTO: Entity ID basado en chatbot
+const entityId = `chatbot_${chatbotId}`;
+
+// ❌ INCORRECTO: Usar userId directamente
+const entityId = userId; // NO - mezcla cuentas de diferentes chatbots
+```
+
+**Por qué**: Un usuario puede tener múltiples chatbots, cada uno conectado a diferentes cuentas de Google Calendar.
+
+#### 2. Formato de composio.tools.execute()
+
+**CRÍTICO**: El formato es específico de Composio y diferente de LlamaIndex tools:
+
+```typescript
+// ✅ CORRECTO
+const result = await composio.tools.execute(
+  'GOOGLECALENDAR_EVENTS_LIST',  // ← Tool slug (primer parámetro)
+  {
+    userId: entityId,              // ← Entity ID del chatbot
+    arguments: {                   // ← "arguments" no "params"
+      calendarId: 'primary',
+      maxResults: 10,
+      timeMin: now.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+    },
+  }
+);
+
+// ❌ INCORRECTO (causaba ComposioError)
+const result = await composio.tools.execute(
+  entityId,                        // ← Entity NO va aquí
+  {
+    name: 'GOOGLECALENDAR_EVENTS_LIST',  // ← Formato inválido
+    params: { ... }                // ← "params" no existe, usar "arguments"
+  }
+);
+```
+
+#### 3. Extracción de Resultados
+
+Composio retorna datos en `result.data`, no directamente en `result`:
+
+```typescript
+// ✅ CORRECTO
+const events = (result as any).data?.items || [];
+
+// ❌ INCORRECTO (retorna array vacío aunque haya eventos)
+const events = (result as any).items || [];
+```
+
+#### 4. Fechas Relativas > Fechas ISO
+
+**PROBLEMA**: Los LLMs no conocen la fecha actual (knowledge cutoff en enero 2025)
+
+**SOLUCIÓN**: Server-side date calculation con parámetros semánticos:
+
+```typescript
+// Tool definition
+parameters: z.object({
+  period: z.enum(['today', 'tomorrow', 'this_week', 'next_week', 'next_7_days', 'next_30_days']),
+  maxResults: z.number().optional(),
+  // timeMin/timeMax solo para casos edge, NO para uso normal
+})
+
+// Handler calculates dates server-side
+function calculateDateRange(period: string) {
+  const now = new Date(); // ← Fecha REAL del servidor
+
+  switch (period) {
+    case 'today':
+      return { timeMin: startOfDay(), timeMax: endOfDay() };
+    case 'tomorrow':
+      return { timeMin: tomorrowStart(), timeMax: tomorrowEnd() };
+    // etc...
+  }
+}
+```
+
+**Por qué**: El modelo dirá "hoy es octubre 10, 2023" cuando en realidad es 2025. Server-side date calculation previene esto.
+
+---
+
+### Paso a Paso: Agregar Nueva Integración con Composio
+
+#### Paso 1: Configurar Auth en Composio Dashboard
+
+1. Ir a https://app.composio.dev
+2. Crear nuevo Auth Config para el toolkit (ej: Google Calendar)
+3. Configurar OAuth redirect URL: `https://formmy-v2.fly.dev/api/v1/composio/google-calendar/callback`
+4. Copiar `authConfigId` del dashboard
+
+#### Paso 2: Crear Rutas de Autenticación
+
+**Ruta de inicio OAuth** (`/api/v1/composio/[integration].ts`):
+
+```typescript
+// app/routes/api.v1.composio.google-calendar.ts
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const chatbotId = formData.get('chatbotId') as string;
+  const userId = formData.get('userId') as string;
+
+  // Entity ID basado en chatbot
+  const entityId = `chatbot_${chatbotId}`;
+
+  // Iniciar OAuth flow
+  const connection = await composio.connectedAccounts.initiate({
+    userId: entityId,
+    authConfig: 'YOUR_AUTH_CONFIG_ID',
+    redirectUrl: `${process.env.APP_URL}/api/v1/composio/google-calendar/callback`,
+    entityId: entityId,
+  });
+
+  return redirect(connection.redirectUrl);
+}
+```
+
+**Ruta de callback** (`/api/v1/composio/[integration].callback.ts`):
+
+```typescript
+export async function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get('code');
+
+  if (!code) {
+    return redirect('/dashboard?error=oauth_failed');
+  }
+
+  // Composio maneja el token exchange automáticamente
+  // Solo redirigir al usuario de vuelta
+  return redirect('/dashboard?success=calendar_connected');
+}
+```
+
+#### Paso 3: Crear Handlers
+
+**Ubicación**: `/server/tools/handlers/[integration].ts`
+
+```typescript
+import { Composio } from '@composio/core';
+import { LlamaindexProvider } from '@composio/llamaindex';
+import type { ToolContext, ToolResponse } from '../types';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new LlamaindexProvider(),
+});
+
+export async function listItemsHandler(
+  input: {
+    period?: 'today' | 'tomorrow' | 'this_week';
+    maxResults?: number;
+    chatbotId?: string; // Para Ghosty
+  },
+  context: ToolContext
+): Promise<ToolResponse> {
+  try {
+    // Determinar qué chatbot usar
+    const targetChatbotId = context.isGhosty && input.chatbotId
+      ? input.chatbotId
+      : context.chatbotId;
+
+    const entityId = `chatbot_${targetChatbotId}`;
+
+    // Calcular fechas server-side
+    const { timeMin, timeMax } = calculateDateRange(input.period);
+
+    // Ejecutar tool de Composio
+    const result = await composio.tools.execute(
+      'TOOLKIT_ACTION_NAME',
+      {
+        userId: entityId,
+        arguments: {
+          param1: input.param1,
+          timeMin,
+          timeMax,
+        },
+      }
+    );
+
+    // Extraer datos de result.data
+    const items = (result as any).data?.items || [];
+
+    if (items.length === 0) {
+      return {
+        success: true,
+        message: '📭 No hay items disponibles.',
+        data: { items: [] },
+      };
+    }
+
+    // Formatear respuesta
+    const itemList = items.map((item: any, i: number) =>
+      `${i + 1}. **${item.title}**\n   📅 ${item.date}`
+    ).join('\n\n');
+
+    return {
+      success: true,
+      message: `✅ **Items encontrados** (${items.length}):\n\n${itemList}`,
+      data: { items },
+    };
+
+  } catch (error: any) {
+    // Manejo de errores OAuth
+    if (error.message?.includes('not connected') || error.message?.includes('authentication')) {
+      return {
+        success: false,
+        message: '🔐 Necesitas conectar tu cuenta primero. Ve a Integraciones en tu perfil.',
+        data: { needsAuth: true },
+      };
+    }
+
+    return {
+      success: false,
+      message: `❌ Error: ${error.message || 'Error desconocido'}`,
+    };
+  }
+}
+```
+
+#### Paso 4: Registrar Tools en `/server/tools/index.ts`
+
+```typescript
+import { z } from 'zod';
+import { tool } from '@llamaindex/workflow';
+import type { ToolContext } from './types';
+
+export const createListItemsTool = (context: ToolContext) => tool(
+  async ({ period, maxResults }) => {
+    const { listItemsHandler } = await import('./handlers/integration-name');
+    const result = await listItemsHandler({ period, maxResults }, context);
+    return result.message;
+  },
+  {
+    name: "list_items",
+    description: `Listar items del servicio integrado.
+
+**⚠️ IMPORTANTE - FECHAS RELATIVAS:**
+- Para "hoy": usa period: "today"
+- Para "mañana": usa period: "tomorrow"
+- NUNCA calcules fechas ISO manualmente
+
+**EJEMPLOS:**
+✅ "Qué tengo hoy?" → period: "today"
+✅ "Muéstrame de mañana" → period: "tomorrow"`,
+    parameters: z.object({
+      period: z.enum(['today', 'tomorrow', 'this_week', 'next_week']).optional()
+        .describe("Período relativo: 'today', 'tomorrow', 'this_week', etc."),
+      maxResults: z.number().optional().default(10)
+        .describe("Número máximo de items (default: 10)"),
+    })
+  }
+);
+
+// Agregar al registry en getToolsForPlan()
+export function getToolsForPlan(context: ToolContext): any[] {
+  const tools: any[] = [];
+
+  // ... otras tools ...
+
+  // Agregar si chatbot tiene integración activa
+  if (context.integrations?.serviceName) {
+    tools.push(createListItemsTool(context));
+    tools.push(createCreateItemTool(context));
+    // etc...
+  }
+
+  return tools;
+}
+```
+
+#### Paso 5: Agregar Integración al Modelo de Chatbot
+
+```typescript
+// En Prisma schema o donde esté definido el modelo
+interface ChatbotIntegrations {
+  stripe?: boolean;
+  googleCalendar?: boolean;
+  serviceName?: boolean; // ← Nueva integración
+  whatsapp?: boolean;
+}
+```
+
+---
+
+### Checklist de Integración Completa
+
+- [ ] Auth Config creado en Composio Dashboard
+- [ ] Redirect URL configurada correctamente
+- [ ] Ruta OAuth (`/api/v1/composio/[service].ts`) implementada
+- [ ] Ruta Callback (`/api/v1/composio/[service].callback.ts`) implementada
+- [ ] Handlers creados en `/server/tools/handlers/[service].ts`
+- [ ] Tools registrados en `/server/tools/index.ts`
+- [ ] Entity ID formato `chatbot_${chatbotId}` usado consistentemente
+- [ ] Fechas relativas (period) implementadas, NO ISO strings manuales
+- [ ] Extracción de datos usa `result.data` no `result` directamente
+- [ ] Error handling para `not connected` / `authentication` implementado
+- [ ] UI de conexión agregada en Dashboard/Integraciones
+- [ ] Testing con script de prueba (ej: `scripts/test-composio-[service].ts`)
+- [ ] Documentación actualizada en CLAUDE.md
+
+---
+
+### Ejemplos de Testing
+
+**Script de prueba** (`/scripts/test-composio-service.ts`):
+
+```typescript
+import { Composio } from '@composio/core';
+import { LlamaindexProvider } from '@composio/llamaindex';
+
+const CHATBOT_ID = 'your_chatbot_id';
+const ENTITY_ID = `chatbot_${CHATBOT_ID}`;
+
+async function main() {
+  const composio = new Composio({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    provider: new LlamaindexProvider(),
+  });
+
+  // 1. Verificar conexión
+  const connection = await composio.connectedAccounts.list({
+    userId: ENTITY_ID,
+  });
+
+  console.log(`Conexiones: ${connection.items.length}`);
+
+  // 2. Ejecutar tool
+  const result = await composio.tools.execute(
+    'SERVICE_ACTION_NAME',
+    {
+      userId: ENTITY_ID,
+      arguments: {
+        param1: 'value1',
+      },
+    }
+  );
+
+  console.log('Resultado:', result);
+}
+
+main();
+```
+
+**Ejecutar con**:
+```bash
+bash scripts/run-composio-test.sh
+```
+
+---
+
+### Troubleshooting Común
+
+**Error: "ComposioError: Error executing tool"**
+- ✅ Verificar formato de `composio.tools.execute()` (tool slug primero, luego objeto con userId y arguments)
+- ✅ Confirmar que `entityId` tiene formato `chatbot_${chatbotId}`
+- ✅ Revisar que argumentos coincidan con API del servicio
+
+**Eventos vacíos aunque existan**
+- ✅ Cambiar `result.items` a `result.data?.items`
+- ✅ Verificar que el rango de fechas sea correcto (usar `period` relativo)
+
+**Usuario dice "mañana" pero retorna eventos de 2023**
+- ✅ Implementar `period` parameter con cálculo server-side
+- ✅ NUNCA dejar que el LLM calcule fechas ISO manualmente
+
+**"Not connected" error**
+- ✅ Verificar que el chatbot completó el OAuth flow
+- ✅ Confirmar que `entityId` es el mismo que se usó en `initiate()`
+- ✅ Revisar que la conexión esté `ACTIVE` en Composio dashboard
+
+---
+
 ## Docs Pendientes
 
 - [ ] github.com/formmy/agent-examples (framework, ejemplos, tutoriales)
@@ -402,5 +795,5 @@ npx tsx scripts/migrate-contact-status.ts
 
 ---
 
-**Última actualización**: Oct 10, 2025
-**Versión**: Optimizada (~430 líneas vs 742 original)
+**Última actualización**: Oct 15, 2025
+**Versión**: Con guía completa de integraciones Composio

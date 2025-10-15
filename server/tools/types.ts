@@ -10,6 +10,7 @@ export interface ToolContext {
   conversationId?: string; // Para rate limiting y tracking
   message: string;
   integrations: Record<string, any>;
+  isGhosty?: boolean; // Flag para distinguir Ghosty de chatbots públicos
 }
 
 export interface ToolResponse {

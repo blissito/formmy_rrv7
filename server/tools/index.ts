@@ -6,16 +6,8 @@
 import { tool } from "llamaindex";
 import { z } from "zod";
 
-// ===== TOOL CONTEXT TYPE =====
-export interface ToolContext {
-  userId: string;
-  userPlan: string;
-  chatbotId: string | null;
-  conversationId?: string; // Para rate limiting y tracking
-  message: string;
-  integrations: Record<string, any>;
-  isGhosty?: boolean; // Flag para distinguir Ghosty de chatbots públicos
-}
+// ===== TOOL CONTEXT TYPE (imported from types.ts) =====
+export type { ToolContext, ToolResponse } from './types';
 
 // ===== TOOL FACTORIES WITH CONTEXT INJECTION =====
 
@@ -95,6 +87,135 @@ export const createDeleteReminderTool = (context: ToolContext) => tool(
     description: "Eliminar permanentemente un recordatorio de la base de datos",
     parameters: z.object({
       id: z.string().describe("ID del recordatorio a eliminar permanentemente")
+    })
+  }
+);
+
+// ===== GOOGLE CALENDAR TOOLS (Composio Integration) =====
+
+export const createCalendarEventTool = (context: ToolContext) => tool(
+  async ({ summary, description, startTime, endTime, attendees, location, chatbotId }) => {
+    const { createCalendarEventHandler } = await import('./handlers/google-calendar');
+    const result = await createCalendarEventHandler({ summary, description, startTime, endTime, attendees, location, chatbotId }, context);
+    return result.message;
+  },
+  {
+    name: "create_calendar_event",
+    description: `Crear un evento o cita en Google Calendar.
+
+**CUÁNDO USAR ESTA HERRAMIENTA:**
+- Usuario pide agendar: "agenda una reunión", "crea un evento", "agéndame para..."
+- Usuario quiere recordatorio en calendar: "recuérdame en mi calendario que..."
+- Frases clave: agendar, calendario, reunión, cita, evento, Google Calendar
+
+**QUÉ HACE:**
+- Crea evento en Google Calendar conectado al chatbot
+- Soporta fecha/hora, descripción, ubicación, invitados
+- Envía invitaciones automáticas si hay attendees
+
+**FORMATO DE FECHAS:**
+- startTime y endTime en formato ISO 8601: "2025-10-15T14:00:00"
+- Timezone automático: America/Mexico_City (GMT-6)
+
+**PARA GHOSTY:**
+- Si el usuario tiene múltiples chatbots con Calendar, especifica chatbotId
+- Si solo hay uno conectado, se usa automáticamente
+
+**EJEMPLOS:**
+✅ "Agenda reunión con Juan mañana a las 2pm" → crear evento
+✅ "Créame un evento el viernes 20 a las 10am" → crear evento
+✅ "Agéndame cita con el doctor el 15 de enero a las 3pm" → crear evento`,
+    parameters: z.object({
+      summary: z.string().describe("Título del evento (ej: 'Reunión con Juan', 'Cita médica')"),
+      description: z.string().optional().describe("Descripción detallada del evento"),
+      startTime: z.string().describe("Fecha y hora de inicio en formato ISO 8601: 'YYYY-MM-DDTHH:mm:ss' (ej: '2025-10-15T14:00:00')"),
+      endTime: z.string().describe("Fecha y hora de fin en formato ISO 8601: 'YYYY-MM-DDTHH:mm:ss' (ej: '2025-10-15T15:00:00')"),
+      attendees: z.array(z.string()).optional().describe("Array de emails de invitados (ej: ['juan@example.com', 'maria@example.com'])"),
+      location: z.string().optional().describe("Ubicación del evento (ej: 'Oficina Central, Sala 3')"),
+      chatbotId: z.string().optional().describe("(Solo para Ghosty) ID del chatbot cuyo calendario usar. Si no se especifica, usa el primero disponible.")
+    })
+  }
+);
+
+export const createListCalendarEventsTool = (context: ToolContext) => tool(
+  async ({ maxResults, period, timeMin, timeMax }) => {
+    const { listCalendarEventsHandler } = await import('./handlers/google-calendar');
+    const result = await listCalendarEventsHandler({ maxResults, period, timeMin, timeMax }, context);
+    return result.message;
+  },
+  {
+    name: "list_calendar_events",
+    description: `Listar próximos eventos del Google Calendar del usuario.
+
+**CUÁNDO USAR:**
+- Usuario pregunta por sus eventos: "qué tengo agendado", "cuáles son mis próximos eventos"
+- Usuario quiere ver su calendario: "muéstrame mi calendario", "qué tengo hoy/mañana/esta semana"
+
+**⚠️ IMPORTANTE - FECHAS RELATIVAS:**
+- Para "hoy": usa period: "today"
+- Para "mañana": usa period: "tomorrow"
+- Para "esta semana": usa period: "this_week"
+- Para "próximos N días": usa period: "next_7_days" o "next_30_days"
+- NUNCA calcules fechas ISO manualmente (el modelo no conoce la fecha actual real)
+
+**EJEMPLOS:**
+✅ "Qué tengo agendado hoy?" → period: "today"
+✅ "Cuáles son mis reuniones de mañana?" → period: "tomorrow"
+✅ "Qué tengo esta semana?" → period: "this_week"
+✅ "Muéstrame mis próximos eventos" → period: "next_7_days"`,
+    parameters: z.object({
+      maxResults: z.number().optional().default(10).describe("Número máximo de eventos a mostrar (default: 10)"),
+      period: z.enum(['today', 'tomorrow', 'this_week', 'next_week', 'next_7_days', 'next_30_days']).optional()
+        .describe("Período relativo: 'today' (hoy), 'tomorrow' (mañana), 'this_week', 'next_week', 'next_7_days', 'next_30_days'"),
+      timeMin: z.string().optional().describe("Fecha mínima ISO 8601 (solo para fechas específicas, usa 'period' para fechas relativas)"),
+      timeMax: z.string().optional().describe("Fecha máxima ISO 8601 (solo para fechas específicas)")
+    })
+  }
+);
+
+export const createUpdateCalendarEventTool = (context: ToolContext) => tool(
+  async ({ eventId, summary, description, startTime, endTime, attendees, location }) => {
+    const { updateCalendarEventHandler } = await import('./handlers/google-calendar');
+    const result = await updateCalendarEventHandler({ eventId, summary, description, startTime, endTime, attendees, location }, context);
+    return result.message;
+  },
+  {
+    name: "update_calendar_event",
+    description: `Actualizar un evento existente en Google Calendar.
+
+**CUÁNDO USAR:**
+- Usuario quiere cambiar fecha/hora: "mueve mi reunión a las 3pm", "cambia la fecha a mañana"
+- Usuario quiere modificar detalles: "agrega a María a la reunión", "cambia el lugar"
+
+**REQUIERE:** eventId del evento a modificar (obtenerlo primero con list_calendar_events)`,
+    parameters: z.object({
+      eventId: z.string().describe("ID del evento a actualizar (obtenido de list_calendar_events)"),
+      summary: z.string().optional().describe("Nuevo título del evento"),
+      description: z.string().optional().describe("Nueva descripción"),
+      startTime: z.string().optional().describe("Nueva fecha/hora inicio ISO 8601"),
+      endTime: z.string().optional().describe("Nueva fecha/hora fin ISO 8601"),
+      attendees: z.array(z.string()).optional().describe("Nuevos invitados (array de emails)"),
+      location: z.string().optional().describe("Nueva ubicación")
+    })
+  }
+);
+
+export const createDeleteCalendarEventTool = (context: ToolContext) => tool(
+  async ({ eventId }) => {
+    const { deleteCalendarEventHandler } = await import('./handlers/google-calendar');
+    const result = await deleteCalendarEventHandler({ eventId }, context);
+    return result.message;
+  },
+  {
+    name: "delete_calendar_event",
+    description: `Eliminar un evento de Google Calendar.
+
+**CUÁNDO USAR:**
+- Usuario quiere cancelar: "cancela mi reunión", "elimina el evento", "borra la cita"
+
+**REQUIERE:** eventId del evento (obtenerlo primero con list_calendar_events)`,
+    parameters: z.object({
+      eventId: z.string().describe("ID del evento a eliminar")
     })
   }
 );
@@ -411,6 +532,37 @@ export const getToolsForPlan = (
     );
   }
 
+  // Google Calendar tools - Disponible para chatbots PRO+ y Ghosty
+  // Cada chatbot tiene su propia conexión OAuth de Google Calendar
+  // Ghosty puede acceder a calendarios de TODOS los chatbots del usuario
+
+  // Para chatbots públicos: solo si ESE chatbot tiene Calendar conectado
+  if (!context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) && integrations.googleCalendar) {
+    console.log("📅 [getToolsForPlan] Agregando Google Calendar tools para chatbot");
+    tools.push(
+      createCalendarEventTool(context),
+      createListCalendarEventsTool(context),
+      createUpdateCalendarEventTool(context),
+      createDeleteCalendarEventTool(context)
+    );
+  }
+
+  // Para Ghosty: si ALGÚN chatbot del usuario tiene Calendar conectado
+  // TODO: Implementar checkIfUserHasAnyCalendarConnected()
+  if (context.isGhosty && ['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+    // Por ahora, agregamos las tools si el integrations object indica Calendar
+    // En el futuro, esto debería verificar TODOS los chatbots del usuario
+    if (integrations.googleCalendar) {
+      console.log("📅 [getToolsForPlan] Agregando Google Calendar tools para Ghosty");
+      tools.push(
+        createCalendarEventTool(context),
+        createListCalendarEventsTool(context),
+        createUpdateCalendarEventTool(context),
+        createDeleteCalendarEventTool(context)
+      );
+    }
+  }
+
   // Formmy Plan Payment - SOLO para Ghosty, disponible para TODOS los planes
   // Permite a cualquier usuario generar links de pago para upgrade/planes
   if (context.isGhosty) {
@@ -486,6 +638,10 @@ export const getAllToolNames = () => [
   'update_reminder',
   'cancel_reminder',
   'delete_reminder',
+  'create_calendar_event', // 🆕 Google Calendar (Composio)
+  'list_calendar_events', // 🆕 Google Calendar (Composio)
+  'update_calendar_event', // 🆕 Google Calendar (Composio)
+  'delete_calendar_event', // 🆕 Google Calendar (Composio)
   'create_formmy_plan_payment', // 🆕 Tool para planes de Formmy
   'create_payment_link', // Pendiente: para chatbots del usuario
   'save_contact_info',
