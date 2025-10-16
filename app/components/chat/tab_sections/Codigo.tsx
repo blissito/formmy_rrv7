@@ -14,7 +14,7 @@ import WhatsAppIntegrationModal from "../../integrations/WhatsAppIntegrationModa
 import WhatsAppCoexistenceModal from "../../integrations/WhatsAppCoexistenceModal";
 import WhatsAppCoexistenceRealModal from "../../integrations/WhatsAppCoexistenceRealModal";
 import WhatsAppEmbeddedSignupModal from "../../integrations/WhatsAppEmbeddedSignupModal";
-import GoogleCalendarComposioModal from "../../integrations/GoogleCalendarComposioModal";
+// import GoogleCalendarComposioModal from "../../integrations/GoogleCalendarComposioModal"; // Deshabilitado - Próximamente
 import StripeIntegrationModal from "../../integrations/StripeIntegrationModal";
 
 // Integraciones disponibles con sus configuraciones
@@ -170,6 +170,13 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
         const platformKey = integration.platform.toLowerCase();
 
+        // Google Calendar siempre debe estar en "onhold" (próximamente)
+        if (platformKey === "google_calendar") {
+          status[platformKey] = "onhold";
+          console.log("🔒 Google Calendar forzado a estado: onhold (próximamente)");
+          return;
+        }
+
         // Si la integración existe pero está inactiva, mostrarla como desconectada
         // Si está activa, mostrarla como conectada
         const integrationStatus = integration.isActive
@@ -246,7 +253,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   ] = useState(false);
   const [whatsAppEmbeddedSignupModalOpen, setWhatsAppEmbeddedSignupModalOpen] =
     useState(false);
-  const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false);
+  // const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false); // Deshabilitado - Próximamente
   const [stripeModalOpen, setStripeModalOpen] = useState(false);
 
   // Solo Embedded Signup - sin manual
@@ -290,8 +297,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       // Usar Embedded Signup ahora que la empresa está activada
       setWhatsAppEmbeddedSignupModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
-      console.log("🔍 Opening Google Calendar Composio modal");
-      setGoogleCalendarModalOpen(true);
+      console.log("🔒 Google Calendar está en onhold, no se puede conectar");
+      return; // Integración deshabilitada temporalmente
     } else if (integrationId === "STRIPE") {
       setStripeModalOpen(true);
     } else {
@@ -365,7 +372,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       // Usar Embedded Signup también para editar
       setWhatsAppEmbeddedSignupModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
-      setGoogleCalendarModalOpen(true);
+      console.log("🔒 Google Calendar está en onhold, no se puede editar");
+      return; // Integración deshabilitada temporalmente
     } else if (integrationId === "STRIPE") {
       setStripeModalOpen(true);
     }
@@ -456,8 +464,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     console.log("✅ Debug - Stripe conectado sin recargar página");
   };
 
-  // Función para manejar OAuth2 de Google Calendar
-  const handleGoogleCalendarOAuth = async () => {
+  // Función para manejar OAuth2 de Google Calendar - Deshabilitada (integración en onhold)
+  /* const handleGoogleCalendarOAuth = async () => {
     try {
       // Primero crear la integración (el servidor usará las credenciales del entorno)
       const response = await fetch("/api/v1/integration", {
@@ -575,7 +583,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
           : "Error desconocido en la autorización"
       );
     }
-  };
+  }; */
 
   return (
     <StickyGrid>
@@ -768,7 +776,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
             />
           )}
 
-          {selectedIntegration === "GOOGLE_CALENDAR" && (
+          {/* Google Calendar está en "onhold" (próximamente) - Modal deshabilitado */}
+          {/* {selectedIntegration === "GOOGLE_CALENDAR" && (
             <GoogleCalendarComposioModal
               isOpen={googleCalendarModalOpen}
               chatbotId={chatbot.id}
@@ -786,7 +795,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                 setSelectedIntegration(null);
               }}
             />
-          )}
+          )} */}
         </article>
       )}
     </StickyGrid>
