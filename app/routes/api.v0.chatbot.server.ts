@@ -7,6 +7,7 @@ import type { ActionFunctionArgs } from "react-router";
 import { authenticateRequest, createAuthError, createUnsupportedIntentError } from "../../server/chatbot-v0/auth";
 // Rate limiting removed - imports cleaned up
 import { validateModelForPlan, applyModelCorrection } from "../../server/chatbot/modelValidator.server";
+import { validateDomainAccess } from "../../server/utils/domain-validator.server";
 
 export async function handleChatbotV0Action({ request }: ActionFunctionArgs) {
   try {
@@ -206,47 +207,59 @@ async function handleChatV0(params: {
   const isOwner = chatbot.userId === userId;
 
   // 🔒 VALIDACIÓN DE DOMINIOS PERMITIDOS
-  // Fix Oct 2025: Usar REFERER (no origin) porque el widget se embebe en iframe
+  // TEMPORALMENTE DESHABILITADO: Oct 16, 2025
+  // Feature siendo revisado para mejorar funcionamiento en casos edge
+  // TODO: Re-habilitar después de resolver issues con validación de dominios
+  /*
   const allowedDomains = chatbot.settings?.security?.allowedDomains;
 
   if (allowedDomains && allowedDomains.length > 0) {
-    // Obtener referer (donde está embebido el iframe)
     const referer = request.headers.get('referer');
+    const origin = request.headers.get('origin');
 
-    // Excepción: permitir dashboard de Formmy (para preview)
-    const isFormmyDashboard = referer && (
-      referer.includes('formmy-v2.fly.dev') ||
-      referer.includes('localhost') ||
-      referer.includes('formmy.app')
-    );
+    // Excluir dashboard de Formmy de la validación
+    const isFormmyDashboard = referer?.includes('formmy-v2.fly.dev') ||
+                              origin?.includes('formmy-v2.fly.dev');
 
-    if (isFormmyDashboard) {
-      console.log('👁️ Dashboard preview - dominios no validados');
-    } else {
-      // Validar dominio del referer
-      const { validateDomainAccess } = await import("../../server/utils/domain-validator.server");
-      const validation = validateDomainAccess(referer, allowedDomains);
+    if (!isFormmyDashboard) {
+      // Validar dominio usando referer (funciona en iframes)
+      const validation = validateDomainAccess(referer || origin, allowedDomains);
 
       console.log('🔒 Validación de dominio:', {
         chatbotId,
-        referer,
+        chatbotName: chatbot.name,
         allowedDomains,
-        allowed: validation.allowed
+        referer,
+        origin,
+        validation
       });
 
       if (!validation.allowed) {
         return new Response(
           JSON.stringify({
             error: "Dominio no autorizado",
-            userMessage: `Acceso bloqueado desde '${validation.originHost || 'origen desconocido'}'.\n\nDominios permitidos: ${validation.normalizedAllowed.join(', ')}`
+            userMessage: `Acceso bloqueado desde '${validation.originHost}'.\n\nDominios permitidos: ${validation.normalizedAllowed.join(', ')}\n\nVerifica la configuración de seguridad en tu chatbot.`,
+            debug: {
+              origin: validation.originHost,
+              allowedDomains: validation.normalizedAllowed,
+              reason: validation.reason
+            }
           }),
-          { status: 403, headers: { "Content-Type": "application/json" } }
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" }
+          }
         );
       }
-
-      console.log(`✅ Dominio permitido: ${validation.matchedDomain}`);
+    } else {
+      console.log('🔓 Dashboard de Formmy detectado - validación de dominio omitida:', {
+        chatbotId,
+        referer,
+        origin
+      });
     }
   }
+  */
 
   // Validar chatbot activo
   if (!chatbot.isActive && !isOwner && !isTestUser) {

@@ -383,20 +383,17 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
               <div>
                 <Input
                   label="Ingresa el o los dominios separados por coma"
-                  placeholder="ejemplo.com, app.ejemplo.com"
+                  placeholder="Feature temporalmente deshabilitado"
                   value={security.allowedDomains}
                   onChange={(value) => setSecurity({...security, allowedDomains: value})}
+                  disabled={true}
                 />
-                <div className="flex gap-1 items-start text-[12px] text-irongray mt-1">
+                <div className="flex gap-1 items-start text-[12px] text-amber-600 mt-1 bg-amber-50 p-2 rounded">
                   <span className="mt-[2px]">
                     <IoInformationCircleOutline />
                   </span>
                   <p>
-                    Puedes escribir los dominios con o sin 'www', con o sin 'https://',
-                    el sistema los normalizará automáticamente.
-                    Ejemplos válidos: <code className="bg-gray-100 px-1 rounded">ejemplo.com</code>,
-                    <code className="bg-gray-100 px-1 rounded mx-1">https://www.ejemplo.com</code>,
-                    <code className="bg-gray-100 px-1 rounded">www.ejemplo.com</code>
+                    <strong>Feature temporalmente deshabilitado.</strong> La validación de dominios permitidos está siendo revisada para mejorar su funcionamiento. Por ahora, todos los chatbots públicos son accesibles desde cualquier dominio.
                   </p>
                 </div>
               </div>
