@@ -3,7 +3,7 @@
  */
 
 import { db } from "../../../app/utils/db.server";
-import type { ToolContext, ToolResponse } from "../index";
+import type { ToolContext, ToolResponse } from "../types";
 import { PLAN_LIMITS } from "../../chatbot/planLimits.server";
 
 interface UsageLimitsInput {

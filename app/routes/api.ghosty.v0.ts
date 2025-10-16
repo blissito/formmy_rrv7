@@ -13,6 +13,10 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
     const body = await request.json();
     const { message, integrations = {}, forceNewConversation = false } = body;
 
+    // ✅ NOTE: create_formmy_plan_payment NO necesita integrations
+    // La tool usa process.env.STRIPE_SECRET_KEY directamente
+    // Integrations aquí son para futuras tools del usuario (Google Calendar, etc.)
+
     if (!message?.trim()) {
       return Response.json(
         { error: "Message is required" },

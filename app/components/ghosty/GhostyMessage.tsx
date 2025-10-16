@@ -133,13 +133,42 @@ export const GhostyMessageComponent = ({
                   },
                 }}
               >
-                {formatReasoningContent(message.content)}
+                {formatReasoningContent(
+                  // 🧹 Limpiar marcadores técnicos de widgets (no deben mostrarse al usuario)
+                  message.content.replace(/🎨WIDGET:\w+:[a-zA-Z0-9_-]+🎨/gi, '')
+                )}
               </ReactMarkdown>
               
               {/* Streaming cursor */}
               {isStreaming && (
                 <span className="inline-block w-2 h-4 bg-brand-500 animate-pulse ml-1" />
               )}
+            </div>
+          )}
+
+          {/* 🆕 Widgets inline (después del texto) */}
+          {!isUser && message.widgets && message.widgets.length > 0 && (
+            <div className="mt-4">
+              {message.widgets.map((widget) => {
+                console.log(`🎨 [GhostyMessage] Renderizando widget iframe:`, {
+                  type: widget.type,
+                  id: widget.id,
+                  url: `/widgets/${widget.id}`
+                });
+
+                return (
+                  <iframe
+                    key={widget.id}
+                    src={`/widgets/${widget.id}`}
+                    className="w-full border-0 rounded-xl my-2 shadow-sm"
+                    style={{ height: '400px' }}
+                    sandbox="allow-scripts allow-same-origin allow-popups"
+                    title={`Widget ${widget.type}`}
+                    onLoad={() => console.log(`✅ [GhostyMessage] Widget iframe cargado: ${widget.id}`)}
+                    onError={(e) => console.error(`❌ [GhostyMessage] Error cargando widget iframe:`, widget.id, e)}
+                  />
+                );
+              })}
             </div>
           )}
           

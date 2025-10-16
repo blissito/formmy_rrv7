@@ -404,10 +404,17 @@ async function handleChatV0(params: {
       console.log(`  Primera mensaje: ${history[0].role} - "${history[0].content.substring(0, 60)}..."`);
     }
 
+    // ✅ Cargar integraciones activas del chatbot
+    const { getChatbotIntegrationFlags } = await import("../../server/chatbot/integrationModel.server");
+    const integrations = await getChatbotIntegrationFlags(chatbotId);
+
+    console.log(`🔌 Integraciones del chatbot ${chatbotId}:`, integrations);
+
     const agentContext = createAgentExecutionContext(user, chatbotId, message, {
       sessionId: conversation.sessionId,
       conversationId: conversation.id, // Para rate limiting de herramientas
-      conversationHistory: history // Desde DB, no desde cliente
+      conversationHistory: history, // Desde DB, no desde cliente
+      integrations // ✅ Pasar integraciones al contexto
     });
 
     console.log(`✅ AgentContext creado con conversationHistory:`, agentContext.conversationHistory?.length || 0);

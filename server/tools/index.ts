@@ -6,16 +6,8 @@
 import { tool } from "llamaindex";
 import { z } from "zod";
 
-// ===== TOOL CONTEXT TYPE =====
-export interface ToolContext {
-  userId: string;
-  userPlan: string;
-  chatbotId: string | null;
-  conversationId?: string; // Para rate limiting y tracking
-  message: string;
-  integrations: Record<string, any>;
-  isGhosty?: boolean; // Flag para distinguir Ghosty de chatbots públicos
-}
+// ===== TOOL CONTEXT TYPE (imported from types.ts) =====
+export type { ToolContext, ToolResponse } from './types';
 
 // ===== TOOL FACTORIES WITH CONTEXT INJECTION =====
 
@@ -99,8 +91,176 @@ export const createDeleteReminderTool = (context: ToolContext) => tool(
   }
 );
 
+// ===== GOOGLE CALENDAR TOOLS (Composio Integration) =====
+
+export const createCalendarEventTool = (context: ToolContext) => tool(
+  async ({ summary, description, startTime, endTime, attendees, location, chatbotId }) => {
+    const { createCalendarEventHandler } = await import('./handlers/google-calendar');
+    const result = await createCalendarEventHandler({ summary, description, startTime, endTime, attendees, location, chatbotId }, context);
+    return result.message;
+  },
+  {
+    name: "create_calendar_event",
+    description: `Crear un evento o cita en Google Calendar.
+
+**CUÁNDO USAR ESTA HERRAMIENTA:**
+- Usuario pide agendar: "agenda una reunión", "crea un evento", "agéndame para..."
+- Usuario quiere recordatorio en calendar: "recuérdame en mi calendario que..."
+- Frases clave: agendar, calendario, reunión, cita, evento, Google Calendar
+
+**QUÉ HACE:**
+- Crea evento en Google Calendar conectado al chatbot
+- Soporta fecha/hora, descripción, ubicación, invitados
+- Envía invitaciones automáticas si hay attendees
+
+**FORMATO DE FECHAS:**
+- startTime y endTime en formato ISO 8601: "2025-10-15T14:00:00"
+- Timezone automático: America/Mexico_City (GMT-6)
+
+**PARA GHOSTY:**
+- Si el usuario tiene múltiples chatbots con Calendar, especifica chatbotId
+- Si solo hay uno conectado, se usa automáticamente
+
+**EJEMPLOS:**
+✅ "Agenda reunión con Juan mañana a las 2pm" → crear evento
+✅ "Créame un evento el viernes 20 a las 10am" → crear evento
+✅ "Agéndame cita con el doctor el 15 de enero a las 3pm" → crear evento`,
+    parameters: z.object({
+      summary: z.string().describe("Título del evento (ej: 'Reunión con Juan', 'Cita médica')"),
+      description: z.string().optional().describe("Descripción detallada del evento"),
+      startTime: z.string().describe("Fecha y hora de inicio en formato ISO 8601: 'YYYY-MM-DDTHH:mm:ss' (ej: '2025-10-15T14:00:00')"),
+      endTime: z.string().describe("Fecha y hora de fin en formato ISO 8601: 'YYYY-MM-DDTHH:mm:ss' (ej: '2025-10-15T15:00:00')"),
+      attendees: z.array(z.string()).optional().describe("Array de emails de invitados (ej: ['juan@example.com', 'maria@example.com'])"),
+      location: z.string().optional().describe("Ubicación del evento (ej: 'Oficina Central, Sala 3')"),
+      chatbotId: z.string().optional().describe("(Solo para Ghosty) ID del chatbot cuyo calendario usar. Si no se especifica, usa el primero disponible.")
+    })
+  }
+);
+
+export const createListCalendarEventsTool = (context: ToolContext) => tool(
+  async ({ maxResults, period, timeMin, timeMax }) => {
+    const { listCalendarEventsHandler } = await import('./handlers/google-calendar');
+    const result = await listCalendarEventsHandler({ maxResults, period, timeMin, timeMax }, context);
+    return result.message;
+  },
+  {
+    name: "list_calendar_events",
+    description: `Listar próximos eventos del Google Calendar del usuario.
+
+**CUÁNDO USAR:**
+- Usuario pregunta por sus eventos: "qué tengo agendado", "cuáles son mis próximos eventos"
+- Usuario quiere ver su calendario: "muéstrame mi calendario", "qué tengo hoy/mañana/esta semana"
+
+**⚠️ IMPORTANTE - FECHAS RELATIVAS:**
+- Para "hoy": usa period: "today"
+- Para "mañana": usa period: "tomorrow"
+- Para "esta semana": usa period: "this_week"
+- Para "próximos N días": usa period: "next_7_days" o "next_30_days"
+- NUNCA calcules fechas ISO manualmente (el modelo no conoce la fecha actual real)
+
+**EJEMPLOS:**
+✅ "Qué tengo agendado hoy?" → period: "today"
+✅ "Cuáles son mis reuniones de mañana?" → period: "tomorrow"
+✅ "Qué tengo esta semana?" → period: "this_week"
+✅ "Muéstrame mis próximos eventos" → period: "next_7_days"`,
+    parameters: z.object({
+      maxResults: z.number().optional().default(10).describe("Número máximo de eventos a mostrar (default: 10)"),
+      period: z.enum(['today', 'tomorrow', 'this_week', 'next_week', 'next_7_days', 'next_30_days']).optional()
+        .describe("Período relativo: 'today' (hoy), 'tomorrow' (mañana), 'this_week', 'next_week', 'next_7_days', 'next_30_days'"),
+      timeMin: z.string().optional().describe("Fecha mínima ISO 8601 (solo para fechas específicas, usa 'period' para fechas relativas)"),
+      timeMax: z.string().optional().describe("Fecha máxima ISO 8601 (solo para fechas específicas)")
+    })
+  }
+);
+
+export const createUpdateCalendarEventTool = (context: ToolContext) => tool(
+  async ({ eventId, summary, description, startTime, endTime, attendees, location }) => {
+    const { updateCalendarEventHandler } = await import('./handlers/google-calendar');
+    const result = await updateCalendarEventHandler({ eventId, summary, description, startTime, endTime, attendees, location }, context);
+    return result.message;
+  },
+  {
+    name: "update_calendar_event",
+    description: `Actualizar un evento existente en Google Calendar.
+
+**CUÁNDO USAR:**
+- Usuario quiere cambiar fecha/hora: "mueve mi reunión a las 3pm", "cambia la fecha a mañana"
+- Usuario quiere modificar detalles: "agrega a María a la reunión", "cambia el lugar"
+
+**REQUIERE:** eventId del evento a modificar (obtenerlo primero con list_calendar_events)`,
+    parameters: z.object({
+      eventId: z.string().describe("ID del evento a actualizar (obtenido de list_calendar_events)"),
+      summary: z.string().optional().describe("Nuevo título del evento"),
+      description: z.string().optional().describe("Nueva descripción"),
+      startTime: z.string().optional().describe("Nueva fecha/hora inicio ISO 8601"),
+      endTime: z.string().optional().describe("Nueva fecha/hora fin ISO 8601"),
+      attendees: z.array(z.string()).optional().describe("Nuevos invitados (array de emails)"),
+      location: z.string().optional().describe("Nueva ubicación")
+    })
+  }
+);
+
+export const createDeleteCalendarEventTool = (context: ToolContext) => tool(
+  async ({ eventId }) => {
+    const { deleteCalendarEventHandler } = await import('./handlers/google-calendar');
+    const result = await deleteCalendarEventHandler({ eventId }, context);
+    return result.message;
+  },
+  {
+    name: "delete_calendar_event",
+    description: `Eliminar un evento de Google Calendar.
+
+**CUÁNDO USAR:**
+- Usuario quiere cancelar: "cancela mi reunión", "elimina el evento", "borra la cita"
+
+**REQUIERE:** eventId del evento (obtenerlo primero con list_calendar_events)`,
+    parameters: z.object({
+      eventId: z.string().describe("ID del evento a eliminar")
+    })
+  }
+);
+
 // ===== PAYMENT TOOLS =====
 
+// Tool para planes de Formmy (Ghosty cobra upgrades/planes)
+export const createFormmyPlanPaymentTool = (context: ToolContext) => tool(
+  async ({ planName }) => {
+    const { createFormmyPlanPaymentHandler } = await import('./handlers/formmy-plans');
+    const result = await createFormmyPlanPaymentHandler({ planName }, context);
+    return result.message;
+  },
+  {
+    name: "create_formmy_plan_payment",
+    description: `Genera un link de pago para que el usuario mejore su plan de Formmy (STARTER, PRO o ENTERPRISE).
+
+**CUÁNDO USAR ESTA HERRAMIENTA:**
+- Usuario quiere upgrade: "quiero el plan Pro", "cámbieme a STARTER", "necesito más conversaciones"
+- Usuario pide link de pago: "dame el link para pagar Pro", "cómo compro Enterprise"
+- Usuario pregunta por compra: "¿puedo pagar el plan Starter?", "quiero comprar PRO"
+- Frases clave: plan, upgrade, mejorar, comprar, pagar, STARTER, PRO, ENTERPRISE
+
+**PLANES DISPONIBLES:**
+• **STARTER** - $149 MXN/mes: 2 chatbots, 50 conversaciones, 200 créditos
+• **PRO** - $499 MXN/mes: 10 chatbots, 250 conversaciones, 1000 créditos
+• **ENTERPRISE** - $1,499 MXN/mes: Chatbots ilimitados, 1000 conversaciones, 5000 créditos
+
+**EJEMPLOS DE USO:**
+✅ "Quiero el plan Pro" → planName: "PRO"
+✅ "Dame el link para pagar Starter" → planName: "STARTER"
+✅ "¿Puedo comprar Enterprise?" → planName: "ENTERPRISE"
+✅ "Cámbieme a PRO" → planName: "PRO"
+
+**IMPORTANTE:**
+- Solo acepta planName: "STARTER", "PRO" o "ENTERPRISE" (case-insensitive)
+- Usa Stripe de Formmy automáticamente (NO requiere configuración del usuario)
+- Disponible para TODOS los usuarios (FREE, STARTER, PRO)`,
+    parameters: z.object({
+      planName: z.string().describe("Nombre del plan: 'STARTER', 'PRO' o 'ENTERPRISE' (case-insensitive)")
+    })
+  }
+);
+
+// Tool para pagos del usuario (chatbots cobran a SUS clientes) - PENDIENTE
 export const createPaymentLinkTool = (context: ToolContext) => tool(
   async ({ amount, description, currency = "mxn" }) => {
     const { createPaymentLinkHandler } = await import('./handlers/stripe');
@@ -109,11 +269,31 @@ export const createPaymentLinkTool = (context: ToolContext) => tool(
   },
   {
     name: "create_payment_link",
-    description: "Crear un link de pago de Stripe para cobrar al cliente",
+    description: `Genera un link de pago seguro con Stripe para que el cliente pueda pagar con tarjeta de crédito/débito.
+
+**CUÁNDO USAR ESTA HERRAMIENTA:**
+- Usuario solicita explícitamente: "crea un link de pago", "genera un link de pago", "quiero cobrar"
+- Usuario pregunta: "¿puedo pagar con tarjeta?", "¿cómo pago?", "necesito un payment link"
+- Usuario menciona montos: "quiero pagar $500", "cuánto cuesta el plan Pro"
+- Frases clave: link de pago, payment link, cobrar, pagar, tarjeta, stripe, checkout
+
+**QUÉ GENERA:**
+- Link de pago de Stripe seguro y listo para compartir
+- Widget interactivo con botón "Pagar ahora"
+- Válido indefinidamente (no expira)
+- Acepta tarjetas de crédito/débito
+
+**EJEMPLOS DE USO:**
+✅ "Crea un link de pago de $500 MXN para el plan Pro" → USAR ESTA TOOL
+✅ "Necesito cobrar $1,000 por consultoría" → USAR ESTA TOOL
+✅ "¿Puedo pagar con tarjeta?" → USAR ESTA TOOL (generar link para que el usuario pague)
+✅ "Genera un payment link de $299 USD" → USAR ESTA TOOL
+
+**IMPORTANTE:** Después de generar el link, COPIA EXACTA del mensaje que retorna la herramienta (incluye el marcador de widget 🎨).`,
     parameters: z.object({
-      amount: z.number().describe("Cantidad a cobrar en números (ej: 500, 1000)"),
-      description: z.string().describe("Descripción del pago o servicio"),
-      currency: z.string().default("mxn").describe("Moneda del pago (default: 'mxn' para pesos mexicanos)")
+      amount: z.number().describe("Cantidad a cobrar en números enteros (ej: 500, 1000, 299)"),
+      description: z.string().describe("Descripción clara del pago o servicio (ej: 'Plan Pro mensual', 'Consultoría 1 hora')"),
+      currency: z.string().default("mxn").describe("Moneda del pago: 'mxn' para pesos mexicanos, 'usd' para dólares (default: 'mxn')")
     })
   }
 );
@@ -128,15 +308,15 @@ export const createSaveContactTool = (context: ToolContext) => tool(
   },
   {
     name: "save_contact_info",
-    description: "Guardar información de contacto de leads/prospectos",
+    description: "⚠️ SOLO usar cuando el usuario EXPLÍCITAMENTE diga 'guarda mi email', 'anota mi teléfono', etc. y proporcione datos de contacto reales. NO usar para solicitudes de información, planes, o pagos. NO inventar datos. Requiere email O phone válido proporcionado por el usuario.",
     parameters: z.object({
-      name: z.string().optional().describe("Nombre completo de la persona"),
-      email: z.string().optional().describe("Dirección de correo electrónico"),
-      phone: z.string().optional().describe("Número de teléfono"),
-      company: z.string().optional().describe("Nombre de la empresa u organización"),
-      position: z.string().optional().describe("Cargo o posición en la empresa"),
-      website: z.string().optional().describe("Sitio web de la persona o empresa"),
-      notes: z.string().optional().describe("Notas adicionales o contexto sobre el contacto")
+      name: z.string().optional().describe("Nombre completo proporcionado por el usuario"),
+      email: z.string().optional().describe("Email REAL proporcionado por el usuario - REQUERIDO si no hay phone"),
+      phone: z.string().optional().describe("Teléfono REAL proporcionado por el usuario - REQUERIDO si no hay email"),
+      company: z.string().optional().describe("Empresa mencionada por el usuario"),
+      position: z.string().optional().describe("Cargo mencionado por el usuario"),
+      website: z.string().optional().describe("Website mencionado por el usuario"),
+      notes: z.string().optional().describe("Notas adicionales del contexto")
     })
   }
 );
@@ -331,6 +511,13 @@ export const getToolsForPlan = (
   integrations: Record<string, any> = {},
   context: ToolContext
 ) => {
+  console.log(`\n${'🔧'.repeat(40)}`);
+  console.log(`🔧 [getToolsForPlan] CONSTRUYENDO TOOLS`);
+  console.log(`   context.isGhosty: ${context.isGhosty}`);
+  console.log(`   context.chatbotId: ${context.chatbotId}`);
+  console.log(`   userPlan: ${userPlan}`);
+  console.log(`${'🔧'.repeat(40)}\n`);
+
   const tools = [];
 
   // Reminder tools - SOLO para Ghosty (gestión de agenda privada)
@@ -345,23 +532,64 @@ export const getToolsForPlan = (
     );
   }
 
-  // Payment tools - PRO+ con Stripe habilitado
-  if (['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) && integrations.stripe) {
+  // Google Calendar tools - Disponible para chatbots PRO+ y Ghosty
+  // Cada chatbot tiene su propia conexión OAuth de Google Calendar
+  // Ghosty puede acceder a calendarios de TODOS los chatbots del usuario
+
+  // Para chatbots públicos: solo si ESE chatbot tiene Calendar conectado
+  if (!context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) && integrations.googleCalendar) {
+    console.log("📅 [getToolsForPlan] Agregando Google Calendar tools para chatbot");
+    tools.push(
+      createCalendarEventTool(context),
+      createListCalendarEventsTool(context),
+      createUpdateCalendarEventTool(context),
+      createDeleteCalendarEventTool(context)
+    );
+  }
+
+  // Para Ghosty: si ALGÚN chatbot del usuario tiene Calendar conectado
+  // TODO: Implementar checkIfUserHasAnyCalendarConnected()
+  if (context.isGhosty && ['STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+    // Por ahora, agregamos las tools si el integrations object indica Calendar
+    // En el futuro, esto debería verificar TODOS los chatbots del usuario
+    if (integrations.googleCalendar) {
+      console.log("📅 [getToolsForPlan] Agregando Google Calendar tools para Ghosty");
+      tools.push(
+        createCalendarEventTool(context),
+        createListCalendarEventsTool(context),
+        createUpdateCalendarEventTool(context),
+        createDeleteCalendarEventTool(context)
+      );
+    }
+  }
+
+  // Formmy Plan Payment - SOLO para Ghosty, disponible para TODOS los planes
+  // Permite a cualquier usuario generar links de pago para upgrade/planes
+  if (context.isGhosty) {
+    tools.push(createFormmyPlanPaymentTool(context));
+  }
+
+  // Payment tools (usuario cobra a SUS clientes) - PENDIENTE IMPLEMENTACIÓN
+  // Solo para chatbots públicos con plan PRO+ y Stripe configurado
+  if (!context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) && integrations.stripe) {
     tools.push(createPaymentLinkTool(context));
   }
 
-  // Contact tools - disponibles para ANONYMOUS/STARTER+
-  if (['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  // Contact tools - disponibles para chatbots públicos ANONYMOUS/STARTER+
+  // ❌ Ghosty NO necesita esto (usuario ya autenticado)
+  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
     tools.push(createSaveContactTool(context));
   }
 
-  // DateTime tools - disponibles para ANONYMOUS/STARTER+
-  if (['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  // DateTime tools - disponibles para chatbots públicos ANONYMOUS/STARTER+
+  // ❌ Ghosty NO necesita esto (no requiere fecha/hora para sus tareas)
+  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
     tools.push(createGetCurrentDateTimeTool(context));
   }
 
-  // Google Search tools - disponibles para ANONYMOUS/STARTER+ con API configurada
-  if (['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) &&
+  // Google Search tools - disponibles para chatbots públicos ANONYMOUS/STARTER+ con API configurada
+  // ❌ Ghosty NO necesita esto (ya conoce toda la info de Formmy)
+  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) &&
       process.env.GOOGLE_SEARCH_API_KEY &&
       process.env.GOOGLE_SEARCH_ENGINE_ID) {
     tools.push(createGoogleSearchTool(context));
@@ -410,7 +638,12 @@ export const getAllToolNames = () => [
   'update_reminder',
   'cancel_reminder',
   'delete_reminder',
-  'create_payment_link',
+  'create_calendar_event', // 🆕 Google Calendar (Composio)
+  'list_calendar_events', // 🆕 Google Calendar (Composio)
+  'update_calendar_event', // 🆕 Google Calendar (Composio)
+  'delete_calendar_event', // 🆕 Google Calendar (Composio)
+  'create_formmy_plan_payment', // 🆕 Tool para planes de Formmy
+  'create_payment_link', // Pendiente: para chatbots del usuario
   'save_contact_info',
   'get_usage_limits',
   'query_chatbots',

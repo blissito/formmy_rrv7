@@ -14,7 +14,7 @@ import WhatsAppIntegrationModal from "../../integrations/WhatsAppIntegrationModa
 import WhatsAppCoexistenceModal from "../../integrations/WhatsAppCoexistenceModal";
 import WhatsAppCoexistenceRealModal from "../../integrations/WhatsAppCoexistenceRealModal";
 import WhatsAppEmbeddedSignupModal from "../../integrations/WhatsAppEmbeddedSignupModal";
-import GoogleCalendarIntegrationModal from "../../integrations/GoogleCalendarIntegrationCard";
+import GoogleCalendarComposioModal from "../../integrations/GoogleCalendarComposioModal";
 import StripeIntegrationModal from "../../integrations/StripeIntegrationModal";
 
 // Integraciones disponibles con sus configuraciones
@@ -246,7 +246,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   ] = useState(false);
   const [whatsAppEmbeddedSignupModalOpen, setWhatsAppEmbeddedSignupModalOpen] =
     useState(false);
-  // const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false);
+  const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false);
   const [stripeModalOpen, setStripeModalOpen] = useState(false);
 
   // Solo Embedded Signup - sin manual
@@ -290,8 +290,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       // Usar Embedded Signup ahora que la empresa está activada
       setWhatsAppEmbeddedSignupModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
-      console.log("🔍 Starting Google Calendar OAuth2 flow");
-      handleGoogleCalendarOAuth();
+      console.log("🔍 Opening Google Calendar Composio modal");
+      setGoogleCalendarModalOpen(true);
     } else if (integrationId === "STRIPE") {
       setStripeModalOpen(true);
     } else {
@@ -365,7 +365,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       // Usar Embedded Signup también para editar
       setWhatsAppEmbeddedSignupModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
-      // setGoogleCalendarModalOpen(true);
+      setGoogleCalendarModalOpen(true);
     } else if (integrationId === "STRIPE") {
       setStripeModalOpen(true);
     }
@@ -765,6 +765,26 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                   isActive: stripeIntegration.isActive,
                 };
               })()}
+            />
+          )}
+
+          {selectedIntegration === "GOOGLE_CALENDAR" && (
+            <GoogleCalendarComposioModal
+              isOpen={googleCalendarModalOpen}
+              chatbotId={chatbot.id}
+              onClose={() => {
+                setGoogleCalendarModalOpen(false);
+                setSelectedIntegration(null);
+              }}
+              onSuccess={() => {
+                console.log("✅ Google Calendar conectado exitosamente");
+                setIntegrationStatus((prev) => ({
+                  ...prev,
+                  google_calendar: "connected" as const,
+                }));
+                setGoogleCalendarModalOpen(false);
+                setSelectedIntegration(null);
+              }}
             />
           )}
         </article>

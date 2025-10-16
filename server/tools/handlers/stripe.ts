@@ -1,6 +1,7 @@
 import type { ToolContext, ToolResponse } from "../types";
 import { createQuickPaymentLink } from "../../integrations/stripe-payments";
 import { ToolUsageTracker } from "../../integrations/tool-usage-tracker";
+import { createWidget } from "../../widgets/widget-creator.server";
 
 export async function createPaymentLinkHandler(
   input: {
@@ -38,25 +39,56 @@ export async function createPaymentLinkHandler(
       maximumFractionDigits: 2
     }).format(amount);
 
-    // Track usage (sin awaitar para no bloquear respuesta)
-    ToolUsageTracker.trackUsage({
-      chatbotId: context.chatbotId,
-      toolName: 'create_payment_link',
-      success: true,
-      userMessage: context.message,
-      metadata: {
-        amount,
+    // 🆕 Crear widget en BD
+    const widget = await createWidget({
+      type: 'payment',
+      data: {
+        amount: formattedAmount,
+        rawAmount: amount,
         currency,
         description,
-        formattedAmount,
         paymentUrl
-      }
-    }).catch(console.error);
-    
+      },
+      userId: context.userId,
+      chatbotId: context.chatbotId
+    });
+
+    console.log(`\n${'💳'.repeat(40)}`);
+    console.log(`💳 [Stripe Tool] WIDGET CREADO EN BD`);
+    console.log(`   Widget ID: ${widget.id}`);
+    console.log(`   Tipo: payment`);
+    console.log(`   Amount: ${formattedAmount}`);
+    console.log(`   Marcador que se retornará: 🎨WIDGET:payment:${widget.id}🎨`);
+    console.log(`${'💳'.repeat(40)}\n`);
+
+    // Track usage (solo si hay chatbotId - Ghosty no tiene chatbot asociado)
+    if (context.chatbotId) {
+      ToolUsageTracker.trackUsage({
+        chatbotId: context.chatbotId,
+        toolName: 'create_payment_link',
+        success: true,
+        userMessage: context.message,
+        metadata: {
+          amount,
+          currency,
+          description,
+          formattedAmount,
+          paymentUrl,
+          widgetId: widget.id
+        }
+      }).catch(console.error);
+    }
+
     return {
       success: true,
-      message: `🤖 **HERRAMIENTA UTILIZADA: Stripe Payment Link**\n\n✅ **Link de pago generado por ${formattedAmount}:**\n\n🔗 ${paymentUrl}\n\n💳 Puedes proceder con el pago de forma segura usando este link.\n\n🔧 *Sistema: Integración Stripe activada - pago procesado automáticamente*`,
+      message: `🎨WIDGET:payment:${widget.id}🎨
+
+✅ Link de pago generado por ${formattedAmount}
+
+💳 Puedes proceder con el pago de forma segura.`,
       data: {
+        widgetId: widget.id,
+        widgetType: 'payment',
         url: paymentUrl,
         amount,
         currency,
@@ -68,15 +100,17 @@ export async function createPaymentLinkHandler(
   } catch (error) {
     console.error("Error generando link de pago:", error);
     
-    // Track error (sin awaitar)
-    ToolUsageTracker.trackUsage({
-      chatbotId: context.chatbotId,
-      toolName: 'create_payment_link',
-      success: false,
-      errorMessage: error.message,
-      userMessage: context.message,
-      metadata: { amount, currency, description }
-    }).catch(console.error);
+    // Track error (solo si hay chatbotId)
+    if (context.chatbotId) {
+      ToolUsageTracker.trackUsage({
+        chatbotId: context.chatbotId,
+        toolName: 'create_payment_link',
+        success: false,
+        errorMessage: error.message,
+        userMessage: context.message,
+        metadata: { amount, currency, description }
+      }).catch(console.error);
+    }
     
     return {
       success: false,
