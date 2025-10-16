@@ -6,6 +6,8 @@ import { useNavigate } from "react-router";
 import { cn } from "~/lib/utils";
 import Empty from "~/SVGs/Empty";
 import EmptyDark from "~/SVGs/EmptyDark";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type ConversationsProps = {
   chatbot: Chatbot;
@@ -920,6 +922,64 @@ const UserMessage = ({ message }: { message: Message }) => {
     </div>
   );
 };
+// Estilos unificados para el contenido markdown
+const PROSE_STYLES = "message-bubble-prose prose prose-base max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:!my-0 prose-ol:!my-0 prose-li:!my-0 prose-code:bg-slate-800 prose-code:text-green-400 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-xs prose-pre:bg-slate-800 prose-pre:text-green-400 prose-pre:p-3 prose-pre:rounded-lg prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-2 prose-pre:border prose-pre:border-slate-600 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0";
+
+// CSS personalizado para listas
+const LIST_STYLES = `
+  .message-bubble-prose ul {
+    list-style: none !important;
+    padding-left: 0 !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .message-bubble-prose ol {
+    list-style: none !important;
+    padding-left: 0 !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    counter-reset: list-counter;
+  }
+  .message-bubble-prose li {
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    font-size: 1rem;
+    line-height: 1.3;
+    padding-left: 1.25rem;
+    position: relative;
+  }
+  .message-bubble-prose li p {
+    margin: 0 !important;
+  }
+  .message-bubble-prose p + ul,
+  .message-bubble-prose p + ol {
+    margin-top: 0 !important;
+  }
+  .message-bubble-prose ul + p,
+  .message-bubble-prose ol + p {
+    margin-top: 0 !important;
+  }
+  .message-bubble-prose ul li::before {
+    content: "• ";
+    color: #374151;
+    position: absolute;
+    left: 0;
+  }
+  .message-bubble-prose ol li {
+    counter-increment: list-counter;
+  }
+  .message-bubble-prose ol li::before {
+    content: counter(list-counter) ". ";
+    color: #374151;
+    font-weight: 500;
+    position: absolute;
+    left: 0;
+  }
+`;
+
 /**
  * @TODO: Añadir la acción para el microlike
  * Posible feature:
@@ -928,14 +988,64 @@ const UserMessage = ({ message }: { message: Message }) => {
  * Pueden existir ejemplos positivos y negativos 👎🏼
  */
 const AssistantMessage = ({ message, avatarUrl }: { message: Message; avatarUrl?: string }) => {
-  return (
-    <div className="justify-start flex items-start gap-2">
-      <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
-      <div className="text-base p-3 bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
-        {message.content}ss
-        <MicroLikeButton />
+  const markdownComponents = {
+    a: ({ children, href }: any) => (
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    ),
+    table: ({ children }: any) => (
+      <div className="my-3 overflow-x-auto bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <table className="min-w-full border-collapse">
+          {children}
+        </table>
       </div>
-    </div>
+    ),
+    thead: ({ children }: any) => (
+      <thead className="bg-gray-100 dark:bg-gray-700">
+        {children}
+      </thead>
+    ),
+    tbody: ({ children }: any) => (
+      <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+        {children}
+      </tbody>
+    ),
+    tr: ({ children }: any) => (
+      <tr className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+        {children}
+      </tr>
+    ),
+    th: ({ children }: any) => (
+      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+        {children}
+      </th>
+    ),
+    td: ({ children }: any) => (
+      <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+        {children}
+      </td>
+    ),
+  };
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
+      <div className="justify-start flex items-start gap-2">
+        <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
+        <div className="text-base p-3 bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
+          <div className={PROSE_STYLES} style={{ whiteSpace: "pre-line" }}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={markdownComponents}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
+          <MicroLikeButton />
+        </div>
+      </div>
+    </>
   );
 };
 
