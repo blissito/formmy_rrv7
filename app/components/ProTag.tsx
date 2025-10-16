@@ -9,7 +9,7 @@ import Spinner from "./Spinner";
 /**
  * This component, needs a relative container (father)
  */
-const PricingCard = ({ plan, userPlan }: { plan: any, userPlan: string }) => {
+export const PricingCard = ({ plan, userPlan }: { plan: any, userPlan: string }) => {
   const fetcher = useFetcher();
   const isLoading = fetcher.state !== "idle";
 
@@ -32,8 +32,8 @@ const PricingCard = ({ plan, userPlan }: { plan: any, userPlan: string }) => {
   const buttonColors = {
     "Free": "bg-gray-200 hover:bg-gray-300 text-gray-800",
     "Starter": "bg-yellow-300 hover:bg-yellow-400 text-gray-900",
-    "Pro ✨": "bg-brand-500 hover:bg-brand-600 text-white",
-    "Enterprise 🤖": "bg-cloud hover:bg-cloud/90 text-white"
+    "Pro ✨": "bg-brand-500 hover:bg-brand-600 text-dark",
+    "Enterprise 🤖": "bg-cloud hover:bg-cloud/90 text-dark"
   };
 
   const hoverBgColors = {
