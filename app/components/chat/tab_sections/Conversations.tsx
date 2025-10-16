@@ -253,7 +253,7 @@ export const Conversations = ({
 
   return (
     <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
-      <article className={cn("col-span-12 md:col-span-3 overflow-y-scroll", "flex flex-col h-full gap-4 md:gap-6")}>
+      <article className={cn("col-span-12 md:col-span-3", "flex flex-col h-full gap-4 md:gap-6")}>
         <ChipTabs
           names={["Todos", "Favoritos"]}
           onTabChange={setCurrentTab}
@@ -343,24 +343,24 @@ const ConversationsList = ({
 }) => {
   const conversationRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  // Hacer scroll a la conversación seleccionada cuando cambie
-  useEffect(() => {
-    if (selectedConversationId && conversationRefs.current[selectedConversationId]) {
-      // Pequeño delay para asegurar que el elemento esté renderizado
-      const timeoutId = setTimeout(() => {
-        const element = conversationRefs.current[selectedConversationId];
-        if (element) {
-          element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-          });
-        }
-      }, 100);
+  // Hacer scroll a la conversación seleccionada cuando cambie (deshabilitado para evitar scroll de página)
+  // useEffect(() => {
+  //   if (selectedConversationId && conversationRefs.current[selectedConversationId]) {
+  //     // Pequeño delay para asegurar que el elemento esté renderizado
+  //     const timeoutId = setTimeout(() => {
+  //       const element = conversationRefs.current[selectedConversationId];
+  //       if (element) {
+  //         element.scrollIntoView({
+  //           behavior: 'smooth',
+  //           block: 'center',
+  //           inline: 'nearest'
+  //         });
+  //       }
+  //     }, 100);
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [selectedConversationId]);
+  //     return () => clearTimeout(timeoutId);
+  //   }
+  // }, [selectedConversationId]);
 
   return (
     <section className="flex flex-col gap-1 max-h-[264px] md:max-h-[616px] pb-6 overflow-y-scroll  ">
@@ -588,14 +588,14 @@ const ChatHeader = ({
         </div>
         <p className="text-xs text-gray-500">{date}</p>
       </div>
-      <ToggleButton
+      {/* <ToggleButton
         isManual={localManualMode}
         onClick={handleToggleManual}
         disabled={false}
-      />
+      /> */}
       <button
         onClick={handleDeleteConversation}
-        className="mr-3 hover:bg-red-50 rounded-full p-1 transition-colors"
+        className="mr-3 hover:bg-red-50 rounded-full p-1 transition-colors ml-auto"
         title="Eliminar conversación"
       >
         <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
@@ -832,13 +832,15 @@ export const ConversationsPreview = ({
   onDeleteConversation?: (conversationId: string) => void;
   localManualMode?: boolean;
 }) => {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll al final cuando cambian los mensajes
+  // Auto-scroll al final cuando cambian los mensajes (solo dentro del contenedor)
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
     }
   }, [conversation?.messages]);
 
@@ -884,8 +886,6 @@ export const ConversationsPreview = ({
               Selecciona una conversación para ver los mensajes
             </div>
           )}
-          {/* Elemento invisible para hacer scroll al final */}
-          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -932,7 +932,7 @@ const AssistantMessage = ({ message, avatarUrl }: { message: Message; avatarUrl?
     <div className="justify-start flex items-start gap-2">
       <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
       <div className="text-base p-3 bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
-        {message.content}
+        {message.content}ss
         <MicroLikeButton />
       </div>
     </div>
