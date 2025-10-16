@@ -176,7 +176,7 @@ function formatTimeAgo(date: Date): string {
   } else if (diffInDays < 7) {
     return `${diffInDays}d`;
   } else {
-    return formatDate(date);
+    return formatCompactDate(date);
   }
 }
 
@@ -194,6 +194,22 @@ function formatDate(date: Date): string {
   const year = date.getFullYear();
 
   return `${day} de ${month} de ${year}`;
+}
+
+/**
+ * Format compact date in Spanish - Example: 8/Oct/25
+ */
+function formatCompactDate(date: Date): string {
+  const monthNames = [
+    "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+    "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+  ];
+
+  const day = date.getDate();
+  const month = monthNames[date.getMonth()];
+  const year = String(date.getFullYear()).slice(-2); // Últimos 2 dígitos
+
+  return `${day}/${month}/${year}`;
 }
 
 /**

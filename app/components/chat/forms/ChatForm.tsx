@@ -112,7 +112,7 @@ export const ChatForm = ({
                     primaryColor === "#9A99EA" ? "0" : "180"
                   }deg)`,
                 }}
-                className="object-cover p-4 w-full h-full"
+                className="object-cover w-full h-full"
               />
             )}
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">

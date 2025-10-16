@@ -134,7 +134,7 @@ export const MiniCardGroup = ({
   );
 };
 
-export type IntegrationStatus = "connected" | "disconnected" | "connecting";
+export type IntegrationStatus = "connected" | "disconnected" | "connecting" | "onhold";
 
 export const IntegrationCard = ({
   name,
@@ -172,6 +172,7 @@ export const IntegrationCard = ({
   const exists = !!integration;
 
   const getButtonText = () => {
+    if (status === "onhold") return "Próximamente";
     if (isPermanent) return "Siempre activa";
     if (status === "connecting") return "Conectando...";
     if (!exists) return "Conectar";
@@ -180,6 +181,7 @@ export const IntegrationCard = ({
   };
 
   const getButtonAction = () => {
+    if (status === "onhold") return undefined; // No se puede hacer clic cuando está en "onhold"
     if (isPermanent) return undefined; // No se puede hacer clic en integraciones permanentes
     if (!exists) return onConnect;
     if (isActive) return onEdit;
@@ -224,22 +226,25 @@ export const IntegrationCard = ({
       <nav className="flex gap-2 mt-auto">
         <SimpleButton
           className={`grow ${
-            isConnected
+            status === "onhold"
+              ? "text-gray-400 bg-gray-100 cursor-not-allowed opacity-60"
+              : isConnected
               ? "text-metal border-success bg-success/30 hover:bg-success/40"
               : "text-metal"
           }`}
           onClick={getButtonAction()}
+          disabled={status === "onhold"}
         >
           {getButtonText()}
         </SimpleButton>
 
-        {exists && !isPermanent && (
+        {exists && !isPermanent && status !== "onhold" && (
           <SimpleButton className="shrink-0 w-[40px] px-0" onClick={onEdit}>
             <img src="/assets/chat/notebook.svg" alt="Configurar" />
           </SimpleButton>
         )}
 
-        {isConnected && (
+        {isConnected && status !== "onhold" && (
           <SimpleButton
             className={`shrink-0 w-[40px] px-0 ${
               isPermanent

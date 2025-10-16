@@ -147,13 +147,14 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       integrations?.length || 0
     );
 
-    // Inicializar todas las integraciones disponibles como desconectadas
+    // Inicializar todas las integraciones disponibles
     availableIntegrations.forEach((availableIntegration) => {
-      // Denik es una integración permanente, siempre conectada
+      // Denik y Gestión de contactos son integraciones permanentes, siempre conectadas
       if (availableIntegration.isPermanent) {
         status[availableIntegration.id.toLowerCase()] = "connected";
       } else {
-        status[availableIntegration.id.toLowerCase()] = "disconnected";
+        // Todas las demás integraciones están en "onhold" (próximamente)
+        status[availableIntegration.id.toLowerCase()] = "onhold";
       }
     });
 
@@ -256,13 +257,22 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   const handleConnect = (integrationId: string) => {
     console.log("🔍 Debug - Conectando integración:", integrationId);
 
-    // No hacer nada para integraciones permanentes
+    // No hacer nada para integraciones permanentes o en onhold
     const integration = availableIntegrations.find(
       (i) => i.id === integrationId
     );
     if (integration?.isPermanent) {
       console.log(
         "🔍 Debug - Integración permanente, no requiere conexión:",
+        integrationId
+      );
+      return;
+    }
+
+    // No permitir conexión de integraciones en "onhold"
+    if (integrationStatus[integrationId.toLowerCase()] === "onhold") {
+      console.log(
+        "🔍 Debug - Integración en onhold, próximamente disponible:",
         integrationId
       );
       return;
@@ -612,6 +622,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
               (i) => i.platform === availableIntegration.id
             );
 
+            const currentStatus = integrationStatus[availableIntegration.id.toLowerCase()];
+            const isOnHold = currentStatus === "onhold";
+
             return (
               <IntegrationCard
                 integration={existingIntegration}
@@ -619,24 +632,21 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                 name={availableIntegration.name}
                 logo={availableIntegration.logo}
                 description={availableIntegration.description}
-                status={
-                  integrationStatus[availableIntegration.id.toLowerCase()]
-                }
+                status={currentStatus}
                 lastActivity={
-                  integrationStatus[availableIntegration.id.toLowerCase()] ===
-                  "connected"
+                  currentStatus === "connected"
                     ? "Siempre activa"
                     : undefined
                 }
-                onConnect={() => handleConnect(availableIntegration.id)}
+                onConnect={isOnHold ? undefined : () => handleConnect(availableIntegration.id)}
                 onDisconnect={
-                  availableIntegration.isPermanent
-                    ? undefined // No se puede desconectar integraciones permanentes
+                  availableIntegration.isPermanent || isOnHold
+                    ? undefined // No se puede desconectar integraciones permanentes o en onhold
                     : () => handleDisconnect(availableIntegration.id)
                 }
                 onEdit={
-                  availableIntegration.isPermanent
-                    ? undefined // No se puede editar integraciones permanentes
+                  availableIntegration.isPermanent || isOnHold
+                    ? undefined // No se puede editar integraciones permanentes o en onhold
                     : () => handleEdit(availableIntegration.id)
                 }
                 isPermanent={availableIntegration.isPermanent}

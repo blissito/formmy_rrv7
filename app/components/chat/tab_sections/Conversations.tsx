@@ -435,7 +435,7 @@ const Conversation = forwardRef<
     (message) => message.role === "USER"
   );
   const pic = userMessage?.picture || conversation.avatar;
-  const lastUserMessage = conversation.messages.find(
+  const lastUserMessage = [...conversation.messages].reverse().find(
     (message) => message.role === "USER"
   );
 
@@ -465,7 +465,7 @@ const Conversation = forwardRef<
       <Avatar className="w-10" src={pic} />
       <div className="flex-1 truncate">
         <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
-        <p className="text-xs text-irongray truncate -mt-[2px]">
+        <p className="text-xs text-irongray truncate -mt-[2px] grow">
           {lastUserMessage?.content}
         </p>
       </div>
@@ -922,61 +922,131 @@ const UserMessage = ({ message }: { message: Message }) => {
     </div>
   );
 };
-// Estilos unificados para el contenido markdown
-const PROSE_STYLES = "message-bubble-prose prose prose-base max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:!my-0 prose-ol:!my-0 prose-li:!my-0 prose-code:bg-slate-800 prose-code:text-green-400 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-xs prose-pre:bg-slate-800 prose-pre:text-green-400 prose-pre:p-3 prose-pre:rounded-lg prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-2 prose-pre:border prose-pre:border-slate-600 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0";
+// Estilos unificados para el contenido markdown - compactos (sin prose)
+const PROSE_STYLES = "compact-markdown";
 
-// CSS personalizado para listas
+// CSS personalizado para espaciado mínimo - SIN prose de Tailwind
 const LIST_STYLES = `
-  .message-bubble-prose ul {
-    list-style: none !important;
-    padding-left: 0 !important;
-    margin: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
+  .compact-markdown {
+    line-height: 1.5;
+    font-size: 0.95rem;
+    color: #1f2937;
   }
-  .message-bubble-prose ol {
-    list-style: none !important;
-    padding-left: 0 !important;
-    margin: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
+  .compact-markdown p {
+    margin: 0 0 1.5rem 0;
+  }
+  .compact-markdown p:last-child {
+    margin-bottom: 0;
+  }
+  .compact-markdown h1, .compact-markdown h2, .compact-markdown h3,
+  .compact-markdown h4, .compact-markdown h5, .compact-markdown h6 {
+    margin: 1.75rem 0 1.5rem 0;
+    font-weight: 600;
+  }
+  .compact-markdown h1:first-child, .compact-markdown h2:first-child,
+  .compact-markdown h3:first-child, .compact-markdown h4:first-child,
+  .compact-markdown h5:first-child, .compact-markdown h6:first-child {
+    margin-top: 0;
+  }
+  .compact-markdown ul, .compact-markdown ol {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+  }
+  .compact-markdown ul:first-child, .compact-markdown ol:first-child {
+    margin-top: 0;
+  }
+  .compact-markdown ul:last-child, .compact-markdown ol:last-child {
+    margin-bottom: 0;
+  }
+  .compact-markdown ol {
     counter-reset: list-counter;
   }
-  .message-bubble-prose li {
-    margin: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    font-size: 1rem;
-    line-height: 1.3;
-    padding-left: 1.25rem;
+  .compact-markdown li {
+    margin: 0 0 1rem 0;
+    padding-left: 1.3rem;
     position: relative;
+    line-height: 1.5;
   }
-  .message-bubble-prose li p {
-    margin: 0 !important;
+  .compact-markdown li:last-child {
+    margin-bottom: 0;
   }
-  .message-bubble-prose p + ul,
-  .message-bubble-prose p + ol {
-    margin-top: 0 !important;
+  .compact-markdown li p {
+    margin: 0;
+    display: inline;
   }
-  .message-bubble-prose ul + p,
-  .message-bubble-prose ol + p {
-    margin-top: 0 !important;
-  }
-  .message-bubble-prose ul li::before {
+  .compact-markdown ul li::before {
     content: "• ";
     color: #374151;
     position: absolute;
     left: 0;
+    font-weight: 500;
   }
-  .message-bubble-prose ol li {
+  .compact-markdown ol li {
     counter-increment: list-counter;
   }
-  .message-bubble-prose ol li::before {
+  .compact-markdown ol li::before {
     content: counter(list-counter) ". ";
     color: #374151;
     font-weight: 500;
     position: absolute;
     left: 0;
+  }
+  .compact-markdown code {
+    background-color: #1e293b;
+    color: #4ade80;
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    font-family: ui-monospace, monospace;
+  }
+  .compact-markdown pre {
+    background-color: #1e293b;
+    color: #4ade80;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-family: ui-monospace, monospace;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    border: 1px solid #334155;
+  }
+  .compact-markdown pre:first-child {
+    margin-top: 0;
+  }
+  .compact-markdown pre:last-child {
+    margin-bottom: 0;
+  }
+  .compact-markdown pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+  .compact-markdown strong {
+    font-weight: 600;
+  }
+  .compact-markdown em {
+    font-style: italic;
+  }
+  .compact-markdown a {
+    color: #2563eb;
+    text-decoration: none;
+  }
+  .compact-markdown a:hover {
+    text-decoration: underline;
+  }
+  .compact-markdown blockquote {
+    border-left: 2px solid #e5e7eb;
+    padding-left: 0.75rem;
+    font-style: italic;
+    color: #6b7280;
+    margin: 0.4rem 0;
+  }
+  .compact-markdown blockquote:first-child {
+    margin-top: 0;
+  }
+  .compact-markdown blockquote:last-child {
+    margin-bottom: 0;
   }
 `;
 
@@ -1029,23 +1099,21 @@ const AssistantMessage = ({ message, avatarUrl }: { message: Message; avatarUrl?
   };
 
   return (
-    <>
+    <div className="justify-start flex items-start gap-2">
       <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
-      <div className="justify-start flex items-start gap-2">
-        <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
-        <div className="text-base p-3 bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
-          <div className={PROSE_STYLES} style={{ whiteSpace: "pre-line" }}>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={markdownComponents}
-            >
-              {message.content}
-            </ReactMarkdown>
-          </div>
-          <MicroLikeButton />
+      <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
+      <div className="text-base p-3 bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
+        <div className={PROSE_STYLES}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents}
+          >
+            {message.content}
+          </ReactMarkdown>
         </div>
+        <MicroLikeButton />
       </div>
-    </>
+    </div>
   );
 };
 
