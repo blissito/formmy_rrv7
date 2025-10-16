@@ -205,14 +205,38 @@ async function handleChatV0(params: {
   // 🔓 Validación de acceso público (patrón Flowise)
   const isOwner = chatbot.userId === userId;
 
-  // Si el usuario es anónimo, validar que el chatbot esté activo
-  if (isAnonymous) {
-    // ✅ Permitir preview desde el dashboard de Formmy (owner preview)
-    const origin = new URL(request.url).origin;
-    const isFormmyDashboard = origin.includes('formmy-v2.fly.dev') ||
-                              origin.includes('localhost') ||
-                              origin.includes('formmy.app');
+  // Logging completo para debugging de acceso
+  console.log('🔍 Estado de acceso:', {
+    chatbotId,
+    chatbotName: chatbot.name,
+    isAnonymous,
+    isOwner,
+    isTestUser,
+    userId,
+    chatbotUserId: chatbot.userId,
+    isActive: chatbot.isActive,
+    hasDomainRestrictions: !!chatbot.settings?.security?.allowedDomains?.length,
+    allowedDomains: chatbot.settings?.security?.allowedDomains
+  });
 
+  // FIX Oct 2025: Unificar validación para anónimos y autenticados no-dueños
+  // Owners y test users siempre tienen acceso (para preview/testing)
+  if (isOwner || isTestUser) {
+    console.log('✅ Owner/test user - acceso sin restricciones');
+  } else {
+    // Usuarios no-dueños (anónimos o autenticados) deben cumplir:
+    // 1. El chatbot debe estar activo (público)
+    // 2. El dominio debe estar permitido (si hay restricción)
+
+    // Detectar si es request desde dashboard de Formmy (para preview)
+    const originHeader = request.headers.get('origin');
+    const isFormmyDashboard = originHeader && (
+      originHeader.includes('formmy-v2.fly.dev') ||
+      originHeader.includes('localhost') ||
+      originHeader.includes('formmy.app')
+    );
+
+    // Validar que el chatbot esté activo (excepto desde dashboard)
     if (!chatbot.isActive && !isFormmyDashboard) {
       return new Response(
         JSON.stringify({
@@ -224,73 +248,57 @@ async function handleChatV0(params: {
     }
 
     if (isFormmyDashboard) {
-      console.log('👁️ Permitiendo preview desde dashboard de Formmy (sin autenticación)');
+      console.log('👁️ Preview desde dashboard de Formmy - sin validación de dominios');
     }
 
-    // ✅ FIX: Validar allowedDomains con normalización flexible (Oct 2025)
-    // Previene problemas con www, protocolos, puertos, paths
+    // Validar dominios permitidos (si están configurados y no es dashboard)
     const allowedDomains = chatbot.settings?.security?.allowedDomains;
+
     if (allowedDomains && allowedDomains.length > 0) {
-      const origin = request.headers.get('origin');
+      if (isFormmyDashboard) {
+        console.log('🔓 Dominios configurados pero excluido dashboard:', {
+          chatbotId,
+          originHeader,
+          allowedDomains,
+          userType: isAnonymous ? 'anónimo' : 'autenticado'
+        });
+      } else {
+        // Validar dominio usando utilidad con normalización flexible
+        const { validateDomainAccess } = await import("../../server/utils/domain-validator.server");
+        const validation = validateDomainAccess(originHeader, allowedDomains);
 
-      // Usar utilidad de validación con comparación flexible
-      const { validateDomainAccess } = await import("../../server/utils/domain-validator.server");
-      const validation = validateDomainAccess(origin, allowedDomains);
+        console.log('🔒 Validación de dominio:', {
+          chatbotId,
+          origin: originHeader,
+          allowedDomains,
+          userType: isAnonymous ? 'anónimo' : 'autenticado',
+          validation
+        });
 
-      // Logging detallado para debugging
-      console.log('🔒 Validación de dominio:', {
-        chatbotId,
-        origin,
-        allowedDomains,
-        validation
-      });
+        if (!validation.allowed) {
+          const errorMessage = validation.originHost
+            ? `Acceso bloqueado desde '${validation.originHost}'.\n\nDominios permitidos: ${validation.normalizedAllowed.join(', ')}\n\nContacta al administrador si necesitas acceso.`
+            : "Acceso bloqueado. Este chatbot solo funciona desde dominios específicos.";
 
-      if (!validation.allowed) {
-        // Mensaje de error mejorado con información específica
-        const errorMessage = validation.originHost
-          ? `Acceso bloqueado desde '${validation.originHost}'.\n\nDominios permitidos: ${validation.normalizedAllowed.join(', ')}\n\nVerifica tu configuración en Seguridad.`
-          : "Acceso bloqueado. Verifica la configuración de dominios permitidos.";
+          return new Response(
+            JSON.stringify({
+              error: "Dominio no autorizado",
+              userMessage: errorMessage,
+              debug: {
+                origin: validation.originHost,
+                allowedDomains: validation.normalizedAllowed,
+                reason: validation.reason
+              }
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
 
-        return new Response(
-          JSON.stringify({
-            error: "Dominio no autorizado",
-            userMessage: errorMessage,
-            debug: {
-              origin: validation.originHost,
-              allowedDomains: validation.normalizedAllowed,
-              reason: validation.reason
-            }
-          }),
-          { status: 403, headers: { "Content-Type": "application/json" } }
-        );
+        console.log(`✅ Dominio permitido: ${validation.matchedDomain} (${validation.reason})`);
       }
-
-      console.log(`✅ Dominio permitido: ${validation.matchedDomain} (${validation.reason})`);
     }
 
-    console.log('👤 Usuario anónimo accediendo a chatbot público:', chatbotId);
-  } else {
-    // Usuario autenticado - validar ownership
-    if (!isOwner && !isTestUser) {
-      return new Response(
-        JSON.stringify({
-          error: "Acceso denegado",
-          userMessage: "No tienes permisos para usar este asistente."
-        }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // Owner preview - permitir incluso si está inactivo
-    if (chatbot.isActive === false && !isOwner && !isTestUser) {
-      return new Response(
-        JSON.stringify({
-          error: "Chatbot desactivado",
-          userMessage: "Este asistente está temporalmente desactivado. Por favor intenta más tarde."
-        }),
-        { status: 503, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    console.log(`✅ Acceso permitido - Usuario ${isAnonymous ? 'anónimo' : 'autenticado'}:`, chatbotId);
   }
 
   // Validar modelo según plan del usuario (excepto anónimos)

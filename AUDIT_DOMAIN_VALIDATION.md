@@ -350,3 +350,303 @@ Para cualquier problema:
 **Auditor**: Claude Code
 **Fecha de Aprobación**: Octubre 9, 2025
 **Versión**: 1.0
+
+---
+
+## 🐛 **Bug Crítico Descubierto: Octubre 16, 2025**
+
+### **Problema**: Dashboard de Formmy Bloqueado por Validación de Dominios
+
+**Reportado por**: Usuario
+**Síntoma**: Cuando se configuran dominios permitidos, el dashboard de Formmy también queda bloqueado, impidiendo hacer preview del chatbot.
+
+### **Causa Raíz** (2 problemas combinados)
+
+#### **Problema 1**: `isFormmyDashboard` usaba origin incorrecto
+```typescript
+// ❌ ANTES (INCORRECTO): Usaba request.url (origin del servidor)
+const origin = new URL(request.url).origin;
+const isFormmyDashboard = origin.includes('formmy-v2.fly.dev') || ...
+```
+
+**Impacto**: Obtenía el origin del ENDPOINT (`https://formmy-v2.fly.dev/api/v0/chatbot`), NO del cliente. La detección era incorrecta.
+
+#### **Problema 2**: Validación de dominios NO excluía dashboard
+```typescript
+// ❌ ANTES: Validaba TODOS los requests, incluso desde dashboard
+if (allowedDomains && allowedDomains.length > 0) {
+  const origin = request.headers.get('origin');
+  // ... validación que bloqueaba formmy-v2.fly.dev
+}
+```
+
+**Impacto**: Cuando usuario configuraba dominios, el dashboard quedaba bloqueado.
+
+### **Flujo del Bug**
+
+1. Usuario en `https://formmy-v2.fly.dev/dashboard` configura: `"ejemplo.com"`
+2. Guarda: `allowedDomains = ["ejemplo.com"]` ✅
+3. Intenta preview del chatbot
+4. Request incluye: `Origin: https://formmy-v2.fly.dev`
+5. Validación compara: `"formmy-v2.fly.dev"` vs `["ejemplo.com"]`
+6. No hace match → **BLOQUEADO** ❌
+7. Error: *"Acceso bloqueado desde 'formmy-v2.fly.dev'"*
+
+### **Solución Aplicada**
+
+#### **Fix 1**: Corregir detección de `isFormmyDashboard` (líneas 211-217)
+```typescript
+// ✅ DESPUÉS (CORRECTO): Usar origin header del cliente
+const originHeader = request.headers.get('origin');
+const isFormmyDashboard = originHeader && (
+  originHeader.includes('formmy-v2.fly.dev') ||
+  originHeader.includes('localhost') ||
+  originHeader.includes('formmy.app')
+);
+```
+
+#### **Fix 2**: Excluir dashboard de validación (línea 250)
+```typescript
+// ✅ DESPUÉS: Excluir dashboard de Formmy
+if (allowedDomains && allowedDomains.length > 0 && !isFormmyDashboard) {
+  const origin = request.headers.get('origin');
+  // ... validación solo para requests externos
+}
+```
+
+#### **Fix 3**: Logging mejorado (líneas 238-248)
+```typescript
+// Logging para debugging de configuración de dominios
+if (allowedDomains && allowedDomains.length > 0) {
+  if (isFormmyDashboard) {
+    console.log('🔓 Dominios configurados pero excluido dashboard de Formmy:', {
+      chatbotId,
+      originHeader,
+      allowedDomains,
+      reason: 'Preview desde dashboard de Formmy'
+    });
+  }
+}
+```
+
+### **Archivos Modificados**
+
+1. ✅ `/app/routes/api.v0.chatbot.server.ts` (+15 líneas)
+   - Líneas 211-217: Fix detección `isFormmyDashboard`
+   - Línea 250: Agregar condición `&& !isFormmyDashboard`
+   - Líneas 238-248: Logging mejorado
+
+### **Testing del Fix**
+
+#### **Escenario 1**: Preview desde dashboard con dominios configurados
+```
+Setup: allowedDomains = ["ejemplo.com"]
+Request desde: https://formmy-v2.fly.dev/dashboard
+Antes: ❌ BLOQUEADO
+Después: ✅ PERMITIDO (excluido de validación)
+Log: "🔓 Dominios configurados pero excluido dashboard de Formmy"
+```
+
+#### **Escenario 2**: Request externo desde dominio permitido
+```
+Setup: allowedDomains = ["ejemplo.com"]
+Request desde: https://ejemplo.com
+Antes: ✅ PERMITIDO (si normalización funcionaba)
+Después: ✅ PERMITIDO (sin cambios)
+Log: "✅ Dominio permitido: ejemplo.com"
+```
+
+#### **Escenario 3**: Request externo desde dominio NO permitido
+```
+Setup: allowedDomains = ["ejemplo.com"]
+Request desde: https://malicious.com
+Antes: ❌ BLOQUEADO
+Después: ❌ BLOQUEADO (seguridad mantenida)
+Log: "🔒 Validación de dominio: allowed: false"
+```
+
+### **Estado Después del Fix**
+
+✅ **Dashboard de Formmy**: Siempre accesible para preview
+✅ **Dominios externos**: Validados correctamente
+✅ **Seguridad**: Mantenida para requests no autorizados
+✅ **Logging**: Mejorado para debugging
+
+**Fecha del Fix**: Octubre 16, 2025
+**Estado**: ✅ **RESUELTO**
+**Versión**: 1.1
+
+---
+
+## 🐛 **Bug Crítico #2: Usuarios Autenticados No-Dueños Bloqueados - Octubre 16, 2025**
+
+### **Problema Descubierto**: Usuarios autenticados bloqueados incluso desde dominios permitidos
+
+**Síntoma**: Después del primer fix, el chatbot "brenda go" con `www.brendago.design` configurado como dominio permitido TAMPOCO funcionaba desde ese dominio.
+
+### **Causa Raíz**: Lógica de validación incorrecta para usuarios autenticados
+
+**Código problemático** (líneas 304-313 antes del fix):
+
+```typescript
+} else {
+  // Usuario autenticado - validar ownership
+  if (!isOwner && !isTestUser) {
+    return new Response(
+      JSON.stringify({
+        error: "Acceso denegado",
+        userMessage: "No tienes permisos para usar este asistente."
+      }),
+      { status: 403 }
+    );
+  }
+}
+```
+
+**Problema**: La lógica distinguía tres tipos de usuarios:
+
+1. **Usuarios ANÓNIMOS**: ✅ Validaba `isActive` y `allowedDomains` correctamente
+2. **Usuarios AUTENTICADOS no-dueños**: ❌ BLOQUEADOS inmediatamente con "No tienes permisos"
+3. **Usuarios AUTENTICADOS dueños**: ✅ Permitidos siempre
+
+**Escenario del bug**:
+- Usuario A crea chatbot y lo configura con dominio `www.brendago.design`
+- Usuario B (autenticado en Formmy pero no dueño) visita `www.brendago.design`
+- Usuario B intenta usar el widget → **BLOQUEADO** antes de validar dominios
+- Error: *"No tienes permisos para usar este asistente"*
+
+Este comportamiento era incorrecto porque chatbots **públicos** deberían funcionar para **cualquier persona** (anónima o autenticada) desde **dominios permitidos**.
+
+### **Solución Aplicada**: Unificación de validación
+
+**Nueva lógica** (líneas 222-302):
+
+```typescript
+// FIX Oct 2025: Unificar validación para anónimos y autenticados no-dueños
+// Owners y test users siempre tienen acceso (para preview/testing)
+if (isOwner || isTestUser) {
+  console.log('✅ Owner/test user - acceso sin restricciones');
+} else {
+  // Usuarios no-dueños (anónimos o autenticados) deben cumplir:
+  // 1. El chatbot debe estar activo (público)
+  // 2. El dominio debe estar permitido (si hay restricción)
+
+  // [... validaciones de isActive y allowedDomains ...]
+}
+```
+
+**Cambios clave**:
+
+1. **Unificación**: Anónimos y autenticados no-dueños siguen las mismas reglas
+2. **Chatbot público**: Si `isActive: true`, cualquiera puede usarlo (desde dominios permitidos)
+3. **Dominios**: Se validan para TODOS los no-dueños (anónimos Y autenticados)
+4. **Owners/test users**: Sin restricciones (para preview y testing)
+
+### **Archivos Modificados**
+
+1. ✅ `/app/routes/api.v0.chatbot.server.ts` (refactorización completa, líneas 208-302)
+   - Líneas 222-226: Detección de owner/test user
+   - Líneas 227-302: Validación unificada para no-dueños
+   - Eliminado bloqueo incorrecto de usuarios autenticados no-dueños
+
+### **Testing del Fix #2**
+
+#### **Escenario 1**: Usuario anónimo desde dominio permitido
+```
+Setup: allowedDomains = ["www.brendago.design"], isActive: true
+Usuario: Anónimo (sin cookies)
+Request desde: https://www.brendago.design
+Antes: ✅ PERMITIDO
+Después: ✅ PERMITIDO (sin cambios)
+```
+
+#### **Escenario 2**: Usuario autenticado NO-dueño desde dominio permitido
+```
+Setup: allowedDomains = ["www.brendago.design"], isActive: true
+Usuario: Autenticado en Formmy (User B, no es el dueño)
+Request desde: https://www.brendago.design
+Antes: ❌ BLOQUEADO ("No tienes permisos")
+Después: ✅ PERMITIDO (fix aplicado)
+```
+
+#### **Escenario 3**: Usuario autenticado NO-dueño desde dominio NO permitido
+```
+Setup: allowedDomains = ["www.brendago.design"], isActive: true
+Usuario: Autenticado en Formmy (User B, no es el dueño)
+Request desde: https://otro-dominio.com
+Antes: ❌ BLOQUEADO ("No tienes permisos")
+Después: ❌ BLOQUEADO ("Dominio no autorizado") - correcto
+```
+
+#### **Escenario 4**: Owner desde cualquier dominio
+```
+Setup: allowedDomains = ["www.brendago.design"], isActive: true
+Usuario: Dueño del chatbot (User A)
+Request desde: https://cualquier-dominio.com
+Antes: ✅ PERMITIDO (sin validar dominios)
+Después: ✅ PERMITIDO (sin validar dominios) - sin cambios
+```
+
+#### **Escenario 5**: Dashboard de Formmy (cualquier usuario)
+```
+Setup: allowedDomains = ["www.brendago.design"]
+Usuario: Cualquiera (anónimo o autenticado)
+Request desde: https://formmy-v2.fly.dev/dashboard
+Antes: ❌ BLOQUEADO (fix #1 corrigió esto)
+Después: ✅ PERMITIDO (excluido de validación) - fix #1
+```
+
+### **Matriz de Acceso Final**
+
+| Usuario Type | Origin | isActive | allowedDomains | Resultado |
+|--------------|--------|----------|----------------|-----------|
+| Owner | Cualquiera | Cualquiera | Cualquiera | ✅ PERMITIDO |
+| Test User | Cualquiera | Cualquiera | Cualquiera | ✅ PERMITIDO |
+| Anónimo | Dashboard | Cualquiera | Cualquiera | ✅ PERMITIDO (preview) |
+| Autenticado no-dueño | Dashboard | Cualquiera | Cualquiera | ✅ PERMITIDO (preview) |
+| Anónimo | Dominio permitido | true | match | ✅ PERMITIDO |
+| Autenticado no-dueño | Dominio permitido | true | match | ✅ PERMITIDO (fix #2) |
+| Anónimo | Dominio NO permitido | true | no-match | ❌ BLOQUEADO |
+| Autenticado no-dueño | Dominio NO permitido | true | no-match | ❌ BLOQUEADO |
+| Cualquiera no-owner | Cualquiera | false | Cualquiera | ❌ BLOQUEADO (chatbot inactivo) |
+
+### **Logging Mejorado**
+
+**Nuevo log de estado** (línea 209):
+```
+🔍 Estado de acceso: {
+  chatbotId,
+  chatbotName,
+  isAnonymous,
+  isOwner,
+  isTestUser,
+  userId,
+  chatbotUserId,
+  isActive,
+  hasDomainRestrictions,
+  allowedDomains
+}
+```
+
+**Log de validación** (línea 270):
+```
+🔒 Validación de dominio: {
+  chatbotId,
+  origin,
+  allowedDomains,
+  userType: 'anónimo' | 'autenticado',  // ← Nuevo
+  validation
+}
+```
+
+### **Estado Después del Fix #2**
+
+✅ **Dashboard de Formmy**: Siempre accesible (fix #1)
+✅ **Dominios permitidos**: Funcionan para anónimos Y autenticados no-dueños (fix #2)
+✅ **Owners**: Sin restricciones para testing
+✅ **Seguridad**: Dominios se validan correctamente para no-dueños
+✅ **Logging**: Detallado para debugging
+
+**Fecha del Fix #2**: Octubre 16, 2025
+**Estado**: ✅ **RESUELTO COMPLETAMENTE**
+**Versión**: 1.2
