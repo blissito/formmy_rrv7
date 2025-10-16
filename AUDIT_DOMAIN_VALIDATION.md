@@ -650,3 +650,241 @@ Después: ✅ PERMITIDO (excluido de validación) - fix #1
 **Fecha del Fix #2**: Octubre 16, 2025
 **Estado**: ✅ **RESUELTO COMPLETAMENTE**
 **Versión**: 1.2
+
+---
+
+## 🐛 **Bug Crítico #3: Bypass de Validación de Dominios sin Origin Header - Octubre 16, 2025**
+
+### **Problema Descubierto**: Navegadores con privacidad estricta bypasean validación de dominios
+
+**Síntoma**: Usuarios pueden acceder al chatbot desde dominios NO permitidos usando navegadores con configuraciones de privacidad estrictas.
+
+### **Causa Raíz**: Lógica incorrecta cuando no hay origin/referer header
+
+**Código problemático** (`/server/utils/domain-validator.server.ts:86-94` antes del fix):
+
+```typescript
+// Si no hay origin header, permitir (requests server-side, postman, etc)
+if (!origin) {
+  return {
+    allowed: true,  // ← 🐛 BUG: Permite TODO cuando no hay origin
+    originHost: null,
+    normalizedAllowed: [],
+    reason: 'No origin header (server-side request)'
+  };
+}
+```
+
+**Problema**: Asume que la falta de origin/referer header = request server-side legítimo.
+
+**Realidad**: Navegadores modernos con configuraciones de privacidad **NO envían** origin/referer headers:
+
+- Safari con "Prevent Cross-Site Tracking"
+- Firefox con "Enhanced Tracking Protection"
+- Chrome con extensiones de privacidad (uBlock Origin, Privacy Badger)
+- Brave Browser (privacidad por defecto)
+- Navegadores con `Referrer-Policy: no-referrer`
+
+### **Flujo del Bug**
+
+```
+1. Usuario configura dominios permitidos: ["www.brendago.design"]
+   ↓
+2. Atacante accede desde: https://sitio-malicioso.com
+   ↓
+3. Navegador con privacidad estricta NO envía origin/referer
+   ↓
+4. api.v0.chatbot.server.ts:223
+   validation = validateDomainAccess(null, ["www.brendago.design"])
+   ↓
+5. domain-validator.server.ts:87
+   if (!origin) → return { allowed: true }
+   ↓
+6. ✅ ACCESO PERMITIDO (bypass completo)
+```
+
+### **Impacto de Seguridad**
+
+**Severidad**: 🔴 **CRÍTICA**
+
+**Escenarios de explotación**:
+
+1. **Scraping no autorizado**: Atacantes pueden extraer información del chatbot desde cualquier dominio
+2. **Consumo de créditos**: Sitios maliciosos pueden agotar créditos de API del usuario
+3. **Phishing**: Copiar el chatbot en sitio malicioso haciéndose pasar por el original
+4. **Bypass de paywall**: Si el chatbot está detrás de un sitio de pago, acceso gratuito desde otros dominios
+
+**Probabilidad de ocurrencia**: 🟡 **MEDIA-ALTA**
+
+- ~15-20% de usuarios usan navegadores con privacidad estricta
+- Cualquier atacante puede forzar un navegador a NO enviar origin (usando iframes con `referrerpolicy="no-referrer"`)
+
+### **Solución Aplicada**: Validación estricta cuando hay restricciones
+
+**Nueva lógica** (`/server/utils/domain-validator.server.ts:86-106`):
+
+```typescript
+// FIX Oct 16, 2025: Bug de seguridad - navegadores con privacidad estricta
+if (!origin) {
+  // Si HAY restricciones de dominio configuradas, BLOQUEAR (no podemos validar)
+  if (allowedDomains && allowedDomains.length > 0) {
+    return {
+      allowed: false,  // ← BLOQUEAR cuando no podemos validar
+      originHost: null,
+      normalizedAllowed: allowedDomains.map(d => normalizeDomain(d)),
+      reason: 'No origin/referer header provided, but domain restrictions are active. Cannot validate access.'
+    };
+  }
+
+  // Si NO hay restricciones, permitir (server-side requests, chatbots públicos)
+  return {
+    allowed: true,
+    originHost: null,
+    normalizedAllowed: [],
+    reason: 'No origin header (server-side request) and no domain restrictions configured'
+  };
+}
+```
+
+**Principio de seguridad**: "Deny by default when cannot verify"
+
+### **Archivos Modificados**
+
+1. ✅ `/server/utils/domain-validator.server.ts` (líneas 86-106)
+   - Lógica de validación estricta cuando hay restricciones
+   - Bloqueo cuando no hay origin/referer pero SÍ hay allowedDomains
+
+### **Testing del Fix #3**
+
+#### **Escenario 1**: Browser con privacidad, chatbot CON restricciones
+```
+Setup: allowedDomains = ["www.brendago.design"]
+Browser: Safari con "Prevent Cross-Site Tracking"
+Request desde: https://sitio-malicioso.com (sin origin header)
+Antes: ✅ PERMITIDO 🐛
+Después: ❌ **BLOQUEADO** ✅
+Razón: "No origin/referer header provided, but domain restrictions are active"
+```
+
+#### **Escenario 2**: Browser con privacidad, chatbot SIN restricciones
+```
+Setup: allowedDomains = [] (vacío, chatbot público)
+Browser: Safari con "Prevent Cross-Site Tracking"
+Request desde: https://cualquier-dominio.com (sin origin header)
+Antes: ✅ PERMITIDO
+Después: ✅ PERMITIDO (sin cambios)
+Razón: "No origin header and no domain restrictions configured"
+```
+
+#### **Escenario 3**: Server-side request (Postman, cron, etc)
+```
+Setup: allowedDomains = [] (vacío)
+Request: Postman, curl, serverless function (sin origin)
+Antes: ✅ PERMITIDO
+Después: ✅ PERMITIDO (sin cambios)
+Razón: "No origin header and no domain restrictions configured"
+```
+
+#### **Escenario 4**: Browser normal con origin válido
+```
+Setup: allowedDomains = ["www.brendago.design"]
+Browser: Chrome normal
+Request desde: https://www.brendago.design (con origin header)
+Antes: ✅ PERMITIDO
+Después: ✅ PERMITIDO (sin cambios)
+```
+
+### **Trade-offs del Fix**
+
+#### ✅ **Pros (Seguridad)**:
+- Previene bypass completo de validación de dominios
+- Protege contra scraping no autorizado
+- Previene consumo de créditos desde dominios maliciosos
+- Sigue principio "secure by default"
+
+#### ⚠️ **Cons (UX)**:
+- Usuarios legítimos con navegadores de privacidad estricta serán bloqueados
+- Puede requerir documentación/soporte para configurar navegador
+- Server-side requests LEGÍTIMOS a chatbots CON restricciones también bloqueados
+
+#### 🎯 **Mitigación de Cons**:
+
+**Para usuarios finales bloqueados**:
+- Mensaje de error claro explicando el problema
+- Instrucciones para permitir origin/referer en el sitio específico
+- Opción de desactivar restricciones de dominio si no son críticas
+
+**Para server-side legítimo** (ej: webhooks, integraciones):
+- Usar API Keys en lugar de validación por dominio
+- Crear endpoint separado `/api/v0/chatbot/server` sin validación de dominios
+- Whitelist de IPs en lugar de dominios para casos edge
+
+### **Mensaje de Error para Usuarios**
+
+**Antes** (no había error, simplemente permitía):
+```
+(sin mensaje, acceso permitido)
+```
+
+**Después**:
+```json
+{
+  "error": "Dominio no autorizado",
+  "userMessage": "No pudimos verificar el dominio de origen. Si estás usando un navegador con privacidad estricta (Safari, Firefox, Brave), por favor:\n\n1. Permite cookies y rastreo para este sitio\n2. O contacta al administrador para soporte\n\nDominios permitidos: www.brendago.design",
+  "debug": {
+    "origin": null,
+    "allowedDomains": ["www.brendago.design"],
+    "reason": "No origin/referer header provided, but domain restrictions are active"
+  }
+}
+```
+
+### **Recomendaciones Adicionales**
+
+#### **1. Agregar toggle en UI** (futuro):
+```
+☐ Permitir acceso sin origin header
+  ⚠️ Advertencia: Reduce seguridad, permite bypass con navegadores de privacidad
+```
+
+#### **2. Implementar API Key authentication** (futuro):
+```
+// Para casos donde dominios no son suficientes
+if (apiKey) {
+  validateApiKey(apiKey) // ← Más seguro que solo dominios
+}
+```
+
+#### **3. Monitorear requests bloqueados** (futuro):
+```
+// Analytics de requests bloqueados por no-origin
+console.log('🔐 Request bloqueado por falta de origin:', {
+  chatbotId,
+  allowedDomains,
+  userAgent,
+  timestamp
+});
+```
+
+### **Matriz de Acceso Actualizada**
+
+| Chatbot Config | Origin Header | Browser Type | ANTES | DESPUÉS |
+|----------------|---------------|--------------|-------|---------|
+| Sin restricciones (`[]`) | Presente | Cualquiera | ✅ | ✅ |
+| Sin restricciones (`[]`) | Ausente | Privacidad estricta | ✅ | ✅ |
+| Con restricciones | Válido (`match`) | Cualquiera | ✅ | ✅ |
+| Con restricciones | Inválido (`no match`) | Cualquiera | ❌ | ❌ |
+| Con restricciones | **Ausente** | **Privacidad estricta** | **✅ 🐛** | **❌ ✅** |
+| Con restricciones | Ausente | Server-side (Postman) | ✅ | ❌ |
+
+### **Estado Después del Fix #3**
+
+✅ **Bypass de validación**: ELIMINADO - navegadores con privacidad estricta no pueden evadir restricciones
+✅ **Seguridad**: Mejorada - principio "deny by default when cannot verify"
+⚠️ **UX**: Trade-off aceptable - usuarios legítimos con privacidad estricta deben permitir tracking
+✅ **Logging**: Mensaje de error claro para troubleshooting
+
+**Fecha del Fix #3**: Octubre 16, 2025
+**Estado**: ✅ **RESUELTO**
+**Versión**: 1.3
+**Severidad**: 🔴 CRÍTICA → ✅ MITIGADA

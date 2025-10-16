@@ -83,13 +83,25 @@ export function validateDomainAccess(
   matchedDomain?: string;
   reason?: string;
 } {
-  // Si no hay origin header, permitir (requests server-side, postman, etc)
+  // Si no hay origin header, validar según restricciones
+  // FIX Oct 16, 2025: Bug de seguridad - navegadores con privacidad estricta pueden no enviar origin/referer
   if (!origin) {
+    // Si HAY restricciones de dominio configuradas, BLOQUEAR (no podemos validar)
+    if (allowedDomains && allowedDomains.length > 0) {
+      return {
+        allowed: false,
+        originHost: null,
+        normalizedAllowed: allowedDomains.map(d => normalizeDomain(d)),
+        reason: 'No origin/referer header provided, but domain restrictions are active. Cannot validate access.'
+      };
+    }
+
+    // Si NO hay restricciones, permitir (server-side requests, testing, chatbots públicos sin restricciones)
     return {
       allowed: true,
       originHost: null,
       normalizedAllowed: [],
-      reason: 'No origin header (server-side request)'
+      reason: 'No origin header (server-side request) and no domain restrictions configured'
     };
   }
 
