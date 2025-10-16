@@ -14,10 +14,6 @@ export const TOOL_CREDIT_COSTS: Record<string, number> = {
   update_reminder: 2,
   cancel_reminder: 1,
   delete_reminder: 1,
-  create_calendar_event: 3, // Google Calendar (Composio) - crear evento
-  list_calendar_events: 2, // Google Calendar (Composio) - listar eventos
-  update_calendar_event: 3, // Google Calendar (Composio) - actualizar evento
-  delete_calendar_event: 2, // Google Calendar (Composio) - eliminar evento
   search_context: 2,
   web_search_google: 3,
   get_usage_limits: 1,
