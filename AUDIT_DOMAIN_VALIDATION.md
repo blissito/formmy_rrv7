@@ -888,3 +888,144 @@ console.log('🔐 Request bloqueado por falta de origin:', {
 **Estado**: ✅ **RESUELTO**
 **Versión**: 1.3
 **Severidad**: 🔴 CRÍTICA → ✅ MITIGADA
+
+---
+
+## 🔄 **FEATURE DESHABILITADO TEMPORALMENTE - Octubre 16, 2025**
+
+### **Decisión**: Feature de dominios permitidos deshabilitado en producción
+
+**Razón**: Después de implementar y desplegar el fix de seguridad (Bug #3), se detectaron issues en casos de uso reales que afectaban la experiencia del usuario.
+
+### **Problemas Reportados**
+
+1. **UX Impact**: El bloqueo estricto de requests sin origin/referer headers afectó casos de uso legítimos
+2. **Configuración compleja**: Normalización de dominios no era suficientemente intuitiva para usuarios finales
+3. **False positives**: Algunos navegadores/contextos legítimos eran bloqueados
+
+### **Solución Temporal**
+
+**Cambios aplicados** (Commit `8a7e2e4`):
+
+#### **1. UI Deshabilitada**
+**Archivo**: `/app/components/chat/tab_sections/Configuracion.tsx`
+
+```tsx
+<Input
+  label="Ingresa el o los dominios separados por coma"
+  placeholder="Feature temporalmente deshabilitado"
+  value={security.allowedDomains}
+  onChange={(value) => setSecurity({...security, allowedDomains: value})}
+  disabled={true}  // ← Input deshabilitado
+/>
+<div className="flex gap-1 items-start text-[12px] text-amber-600 mt-1 bg-amber-50 p-2 rounded">
+  <p>
+    <strong>Feature temporalmente deshabilitado.</strong>
+    La validación de dominios permitidos está siendo revisada
+    para mejorar su funcionamiento. Por ahora, todos los chatbots
+    públicos son accesibles desde cualquier dominio.
+  </p>
+</div>
+```
+
+#### **2. Validación Backend Comentada**
+**Archivo**: `/app/routes/api.v0.chatbot.server.ts` (líneas 213-262)
+
+```typescript
+// 🔒 VALIDACIÓN DE DOMINIOS PERMITIDOS
+// TEMPORALMENTE DESHABILITADO: Oct 16, 2025
+// Feature siendo revisado para mejorar funcionamiento en casos edge
+// TODO: Re-habilitar después de resolver issues con validación de dominios
+/*
+  ... código de validación comentado ...
+*/
+```
+
+### **Impacto**
+
+#### ✅ **Positivo**:
+- Usuarios pueden acceder a chatbots desde cualquier dominio sin restricciones
+- Eliminación de false positives
+- UX mejorado (no hay bloqueos inesperados)
+
+#### ⚠️ **Negativo**:
+- Feature de seguridad deshabilitado
+- Usuarios que dependían de restricción de dominios quedan desprotegidos
+- Potential for scraping/abuse (mitigado por rate limiting existente)
+
+### **Plan de Mejora Futura**
+
+**Antes de re-habilitar el feature, se debe**:
+
+1. **Mejorar detección de contexto**:
+   - Agregar whitelist de User-Agents legítimos
+   - Mejor detección de iframes vs requests directos
+   - Considerar otros headers además de origin/referer
+
+2. **Toggle explícito de seguridad**:
+   ```tsx
+   <Switch
+     label="Modo estricto (bloquear requests sin origin header)"
+     checked={security.strictMode}
+     onChange={...}
+   />
+   <Alert type="warning">
+     Advertencia: Algunos navegadores con privacidad estricta
+     pueden ser bloqueados
+   </Alert>
+   ```
+
+3. **API Key como alternativa**:
+   - Implementar sistema de API Keys para validación más robusta
+   - Permitir uso de API Keys en lugar de validación por dominio
+   - Mejor para integraciones server-side
+
+4. **Testing exhaustivo**:
+   - Test con Safari (Prevent Cross-Site Tracking)
+   - Test con Firefox (Enhanced Tracking Protection)
+   - Test con Brave Browser
+   - Test en iframes de diferentes orígenes
+   - Test con diferentes Referrer-Policy configurations
+
+5. **Documentación clara**:
+   - Tutorial de configuración de dominios
+   - Troubleshooting guide para usuarios bloqueados
+   - Explicación de trade-offs de seguridad vs accesibilidad
+
+### **Estado Actual del Código**
+
+**Versión**: 1.4
+**Código de validación**: ✅ Preservado (comentado, fácilmente reversible)
+**Utilidad de validación**: ✅ Intacta (`/server/utils/domain-validator.server.ts`)
+**Tests**: ✅ Preservados (`/scripts/test-domain-validation.ts`)
+**Auditoría**: ✅ Documentada completamente
+
+### **Para Re-habilitar en el Futuro**
+
+```bash
+# 1. Descomentar validación en backend
+# app/routes/api.v0.chatbot.server.ts líneas 213-262
+
+# 2. Re-habilitar input en UI
+# app/components/chat/tab_sections/Configuracion.tsx
+# disabled={false}
+
+# 3. Implementar mejoras sugeridas arriba
+
+# 4. Testing exhaustivo antes de deploy
+
+# 5. Deploy gradual (feature flag)
+```
+
+### **Lecciones Aprendidas**
+
+1. **Seguridad vs UX**: Features de seguridad estrictos requieren UX excepcional
+2. **Edge cases reales**: Testing en producción reveló casos no considerados en desarrollo
+3. **Comunicación**: Mensajes de error claros son críticos
+4. **Rollback plan**: Código comentado permite rollback rápido
+5. **Iteración**: Better to disable temporarily than ship broken feature
+
+**Fecha de deshabilitación**: Octubre 16, 2025
+**Estado**: 🔄 **TEMPORALMENTE DESHABILITADO**
+**Versión**: 1.4
+**Próximos pasos**: Revisión y mejora del feature antes de re-habilitar
