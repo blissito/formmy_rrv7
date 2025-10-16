@@ -109,6 +109,24 @@ const FormMyWidget = {
     document.body.appendChild(bubble);
     document.body.appendChild(chatContainer);
 
+    // 🔒 SEGURIDAD: Enviar parent domain al iframe para validación
+    // Implementado: Oct 16, 2025
+    const iframe = chatContainer.querySelector('iframe');
+    const sendParentDomain = () => {
+      if (iframe && iframe.contentWindow) {
+        const parentDomain = window.location.hostname;
+        iframe.contentWindow.postMessage({
+          type: 'formmy-parent-domain',
+          domain: parentDomain,
+          href: window.location.href
+        }, apiHost);
+        console.log('🔒 Parent domain enviado al iframe:', parentDomain);
+      }
+    };
+
+    // Enviar parent domain cuando el iframe esté listo
+    iframe.addEventListener('load', sendParentDomain);
+
     // Toggle functionality
     let isOpen = false;
     const toggle = () => {
@@ -116,6 +134,8 @@ const FormMyWidget = {
       if (isOpen) {
         bubble.classList.add('hidden');
         chatContainer.classList.remove('closed');
+        // Enviar parent domain cada vez que se abre (por si acaso)
+        setTimeout(sendParentDomain, 100);
       } else {
         bubble.classList.remove('hidden');
         chatContainer.classList.add('closed');

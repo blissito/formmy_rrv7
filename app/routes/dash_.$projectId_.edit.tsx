@@ -23,10 +23,22 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       where: {
         id: projectId,
       },
-      include: {
-        answers: true, // consider appart to filter?
+      select: {
+        id: true,
+        status: true,
+        answers: true,
+        config: true,
+        userId: true,
+        name: true,
+        createdAt: true,
       },
     });
+    if (!project || project.status === "ARCHIVED") {
+      throw new Response(null, {
+        status: 404,
+        statusText: "Not Found",
+      });
+    }
     return { project, user };
   } catch (e) {
     throw new Response(null, {

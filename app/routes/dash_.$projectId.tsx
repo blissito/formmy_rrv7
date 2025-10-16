@@ -37,9 +37,12 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
     where: { id: params.projectId },
     select: {
       userId: true,
+      status: true,
     },
   });
-  if (!project) throw json(null, { status: 404 });
+  if (!project || project.status === "ARCHIVED") {
+    return json(null, { status: 404 });
+  }
   if (user.id !== project.userId) return json(null, { status: 403 });
   // validation
   if (intent === "delete") {

@@ -6,6 +6,7 @@ import {
   useActionData,
   useLoaderData,
   useNavigation,
+  useFetcher,
 } from "react-router";
 import Nav from "~/components/NavBar";
 import invariant from "tiny-invariant";
@@ -29,7 +30,7 @@ import ChatIcon from "~/components/ui/icons/ChatIcon";
 import CodeIcon from "~/components/ui/icons/Code";
 import { MessageIcon } from "~/components/ui/icons/MessageIcon";
 import BubbleIcon from "~/components/ui/icons/Buuble";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "~/lib/utils";
 
 const findActivePermissions = async (email: string): Promise<Permission[]> => {
@@ -71,6 +72,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     projects: await db.project.findMany({
       where: {
         userId: user.id,
+        status: { not: "ARCHIVED" }, // Filter out archived projects
       },
       include: {
         answers: true,
@@ -122,6 +124,33 @@ export const action = async ({ request }: Route.ActionArgs) => {
     return { close: true };
     // return redirect("/dash");
   }
+
+  if (intent === "archive_project") {
+    const projectId = formData.get("projectId") as string;
+    if (!projectId) return json({ ok: false }, { status: 400 });
+
+    // Verify that user is the owner of the project
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+      select: { userId: true },
+    });
+
+    if (!project || project.userId !== user.id) {
+      return json({ ok: false, error: "Unauthorized" }, { status: 403 });
+    }
+
+    // Archive the project (soft delete)
+    await db.project.update({
+      where: { id: projectId },
+      data: {
+        status: "ARCHIVED",
+        isActive: false, // For backwards compatibility
+      },
+    });
+
+    return json({ ok: true });
+  }
+
   return null;
 };
 
@@ -131,6 +160,9 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
   const navigation = useNavigation();
   const { user, projects, permission, invitedProyects } =
     useLoaderData<typeof loader>();
+  const [allProjects, setAllProjects] = useState<Project[]>(
+    projects.concat(invitedProyects)
+  );
   const [filtered, setFiltered] = useState<Project[]>(
     projects.concat(invitedProyects)
   );
@@ -147,16 +179,29 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
 
   const clearSearch = () => {
     setIsSearch('');
-    setFiltered(projects.concat(invitedProyects));
+    setFiltered(allProjects);
   };
 
   const onSearch = ({ target: { value } }: ChangeEvent<HTMLInputElement>) => {
     setIsSearch(value);
     setFiltered(
-      projects.filter((pro) =>
+      allProjects.filter((pro) =>
         pro.name?.toLocaleLowerCase().includes(value.toLocaleLowerCase())
       )
     );
+  };
+
+  // Update local state when loader data changes
+  useEffect(() => {
+    const newProjects = projects.concat(invitedProyects);
+    setAllProjects(newProjects);
+    setFiltered(newProjects);
+  }, [projects, invitedProyects]);
+
+  // Handle optimistic delete
+  const handleOptimisticDelete = (projectId: string) => {
+    setAllProjects((prev) => prev.filter((p) => p.id !== projectId));
+    setFiltered((prev) => prev.filter((p) => p.id !== projectId));
   };
 
   // if from landing, show modal with tiers
@@ -321,16 +366,19 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
           </div>
         </nav>
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {filtered.map((p, index) => (
-            <ProjectCard
-              key={p.id}
-              isInvite={p.userId !== user.id}
-              userRole={p.userRole}
-              project={p}
-              index={index}
-              {...p}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {filtered.map((p, index) => (
+              <ProjectCard
+                key={p.id}
+                isInvite={p.userId !== user.id}
+                userRole={p.userRole}
+                project={p}
+                index={index}
+                onOptimisticDelete={handleOptimisticDelete}
+                {...p}
+              />
+            ))}
+          </AnimatePresence>
           {filtered.length === 0 && (
             <motion.div 
               className="mx-auto col-span-1 md:col-span-2 md:col-span-4 text-center flex flex-col justify-start md:justify-center w-full min-h-fit md:min-h-[60vh]"
@@ -416,6 +464,7 @@ export const ProjectCard = ({
   id,
   index = 0,
   userRole,
+  onOptimisticDelete,
 }: {
   isInvite?: boolean;
   actionNode?: ReactNode;
@@ -424,75 +473,131 @@ export const ProjectCard = ({
   id: string;
   index?: number;
   userRole?: string;
+  onOptimisticDelete?: (projectId: string) => void;
 }) => {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const fetcher = useFetcher();
+
+  const handleArchive = () => {
+    // Optimistic update: remove from UI immediately
+    onOptimisticDelete?.(project.id);
+
+    fetcher.submit(
+      { intent: "archive_project", projectId: project.id },
+      { method: "post" }
+    );
+    setShowDeleteModal(false);
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.4,
-        delay: index * 0.05,
-        ease: [0.25, 0.1, 0.25, 1]
-      }}
-      className="col-span-1"
-      id="formmy-card-detail"
-    >
-      <Link
-        to={id ?? ""}
-        className="group relative overflow-hidden hover:shadow-none transition-all md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl w-full h-full block"
+    <>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.8, y: -20 }}
+        transition={{
+          duration: 0.4,
+          delay: index * 0.05,
+          ease: [0.25, 0.1, 0.25, 1]
+        }}
+        className="col-span-1"
+        id="formmy-card-detail"
       >
-        <section className="overflow-hidden bg-gradient-to-r from-[#51B8BF] to-bird w-full h-24 flex items-end justify-center border-b border-outlines">
-          <img className="w-[40%] -mb-4" src="/dash/formmy.svg" alt="chatbot" />
-        </section>
-        <div className="flex flex-col px-4 pt-4 pb-2">
-          <section className="flex justify-between items-center gap-2 ">
-            <h2 className="text-xl font-medium text-dark truncate">
-              {name}
-            </h2>
-            {actionNode}
-            {project.type === 'subscription' && <ModificameBRENDIYellowCorner />}
+        <Link
+          to={id ?? ""}
+          className="group relative overflow-hidden hover:shadow-none transition-all md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] dark:shadow-none border border-outlines bg-white rounded-2xl w-full h-full block"
+        >
+          <section className="overflow-hidden bg-gradient-to-r from-[#51B8BF] to-bird w-full h-24 flex items-end justify-center border-b border-outlines">
+            <img className="w-[40%] -mb-4" src="/dash/formmy.svg" alt="chatbot" />
           </section>
-          <p className="text-sm text-metal flex-grow">
-            {project.summary || 'Pronto podrás saber que es lo que más preguntan tus clientes'}
-          </p>
-          <div className="flex text-sm gap-4 mt-4 justify-between items-end">
-            <p className="text-metal font-normal flex gap-1 items-center">
-              <BubbleIcon className="mb-[2px]" /> {project.answers?.length || 0} {project.answers?.length === 1 ? 'mensaje' : 'mensajes'}
+          <div className="flex flex-col px-4 pt-4 pb-2">
+            <section className="flex justify-between items-center gap-2 ">
+              <h2 className="text-xl font-medium text-dark truncate">
+                {name}
+              </h2>
+              {actionNode}
+              {project.type === 'subscription' && <ModificameBRENDIYellowCorner />}
+            </section>
+            <p className="text-sm text-metal flex-grow">
+              {project.summary || 'Pronto podrás saber que es lo que más preguntan tus clientes'}
             </p>
-            {isInvite && <RoleBadge role={userRole} />}
-          </div>
-          <div id="actions" className="hidden md:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all items-center justify-end px-3">
-            <button 
+            <div className="flex text-sm gap-4 mt-4 justify-between items-end">
+              <p className="text-metal font-normal flex gap-1 items-center">
+                <BubbleIcon className="mb-[2px]" /> {project.answers?.length || 0} {project.answers?.length === 1 ? 'mensaje' : 'mensajes'}
+              </p>
+              {isInvite && <RoleBadge role={userRole} />}
+            </div>
+            <div id="actions" className="hidden md:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all items-center justify-end px-3">
+              {!isInvite && (
+                <>
+                  <button
+                    className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setShowDeleteModal(true);
+                    }}
+                  >
+                    <DeleteIcon className="w-5 h-5" />
+                  </button>
+                  <hr className="h-6 w-[1px] border-none bg-outlines" />
+                </>
+              )}
+              <Link
+                to={`/dashboard/formmys/${project.id}/code`}
                 className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
-                onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                // Add delete handler here
-              }}
-            >
-              <DeleteIcon className="w-5 h-5" />
-            </button>
-            <hr className="h-6 w-[1px] border-none bg-outlines" />
-            <Link 
-              to={`/dashboard/formmys/${project.id}/code`}
-              className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <CodeIcon />
-            </Link>
-            <a 
-              href={`/preview/${project.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <OpenTabIcon />
-            </a>
+                onClick={(e) => e.stopPropagation()}
+              >
+                <CodeIcon />
+              </Link>
+              <a
+                href={`/preview/${project.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <OpenTabIcon />
+              </a>
+            </div>
           </div>
-        </div>
-      </Link>
-    </motion.div>
+        </Link>
+      </motion.div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="¿Eliminar este Formmy?"
+        message={
+          <div className="text-base font-normal text-center mb-6 text-gray-600 dark:text-space-400">
+            <p>
+              ¿Seguro que quieres eliminar <strong>{name}</strong>?
+            </p>
+          </div>
+        }
+        footer={
+          <div className="flex justify-center gap-4">
+            <Button
+              onClick={() => setShowDeleteModal(false)}
+              variant="secondary"
+              className="mx-0"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleArchive}
+              isLoading={fetcher.state === "submitting"}
+              className="bg-red-500 hover:bg-red-600 text-clear mx-0 mt-0"
+            >
+              Eliminar
+            </Button>
+          </div>
+        }
+        emojis="🗑️"
+      />
+    </>
   );
 };
 

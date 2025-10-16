@@ -18,9 +18,9 @@ export const loader = async ({ params, request }: Route.LoaderArgs) => {
     where: {
       id: params.projectId,
     },
-    select: { config: true, type: true, id: true },
+    select: { config: true, type: true, id: true, status: true },
   });
-  if (!project) {
+  if (!project || project.status === "ARCHIVED") {
     throw json(null, { status: 404 });
   }
 

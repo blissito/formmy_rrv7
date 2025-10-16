@@ -10,7 +10,6 @@ import { z } from "zod";
 import { db } from "~/utils/db.server";
 import { EmojiConfetti } from "~/components/EmojiConffeti";
 import Spinner from "~/components/Spinner";
-import { getUserOrRedirect } from "server/getUserUtils.server";
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Este campo es necesario" }),
@@ -19,7 +18,7 @@ const formSchema = z.object({
 });
 
 export const action: ActionFunction = async ({ request, params }) => {
-  const user = await getUserOrRedirect(request);
+  // Public form - no authentication required
   const formData = await request.formData();
   const { success, data } = formSchema.safeParse(Object.fromEntries(formData));
   if (!success) return null; // todo
@@ -29,15 +28,14 @@ export const action: ActionFunction = async ({ request, params }) => {
       slug: ProjectSlug,
     },
   });
-  if (!project) {
-    return { ok: false, error: "Project " }; // todo
+  if (!project || project.status === "ARCHIVED") {
+    return { ok: false, error: "Project not found or archived" };
   }
 
   const recordBody = {
     data: data,
     schema: JSON.stringify(formSchema),
     projectId: project.id,
-    userId: user.id,
   };
 
   try {
@@ -57,8 +55,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       slug: ProjectSlug,
     },
   });
-  if (!project || !project.isActive) {
-    throw new Response(null, { status: 404 }); // only exiting projects
+  if (!project || project.status === "ARCHIVED") {
+    throw new Response(null, { status: 404 }); // only active projects
   }
   return { project };
 };

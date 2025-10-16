@@ -13,6 +13,15 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
   const notifications = Object.fromEntries(formData);
   const validData = notificationsSchema.parse(notifications) as Notifications;
 
+  // Verify project exists and is not archived before updating
+  const project = await db.project.findUnique({
+    where: { id: params.projectId },
+    select: { status: true },
+  });
+  if (!project || project.status === "ARCHIVED") {
+    return json(null, { status: 404 });
+  }
+
   await db.project.update({
     where: { id: params.projectId },
     data: { settings: { notifications: validData } },
@@ -26,8 +35,9 @@ export const loader = async ({ params, request }: Route.LoaderArgs) => {
   const user = await getUserOrNull(request); // why? well, not sure... just don't want to redirect.
   const project = await db.project.findUnique({
     where: { id: params.projectId },
+    select: { settings: true, status: true },
   });
-  if (!project) throw json(null, { status: 404 });
+  if (!project || project.status === "ARCHIVED") throw json(null, { status: 404 });
   const isPro = user?.plan === "PRO" ? true : false;
   return {
     isPro,

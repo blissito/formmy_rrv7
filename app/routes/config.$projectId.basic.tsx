@@ -56,7 +56,11 @@ export const action = async ({ request, params }: ActionArgs) => {
     }
     const project = await db.project.findUnique({
       where: { id: params.projectId },
+      select: { config: true, status: true },
     });
+    if (!project || project.status === "ARCHIVED") {
+      return json(null, { status: 404 });
+    }
     await db.project.update({
       where: { id: params.projectId },
       data: {
@@ -76,7 +80,11 @@ export const action = async ({ request, params }: ActionArgs) => {
       where: {
         id: params.projectId,
       },
+      select: { config: true, status: true },
     });
+    if (!current || current.status === "ARCHIVED") {
+      return json(null, { status: 404 });
+    }
     await db.project.update({
       where: { id: params.projectId },
       data: {
@@ -95,9 +103,9 @@ export const loader = async ({ params, request }: LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   const project = await db.project.findUnique({
     where: { id: params.projectId },
-    select: { id: true, type: true, config: true },
+    select: { id: true, type: true, config: true, status: true },
   });
-  if (!project) throw json(null, { status: 404 });
+  if (!project || project.status === "ARCHIVED") throw json(null, { status: 404 });
   return {
     configuration: project.config as ConfigSchema,
     isPro: user.plan === "PRO" ? true : false,

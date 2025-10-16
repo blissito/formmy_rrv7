@@ -20,9 +20,10 @@ export const loader = async ({ params }: LoaderArgs) => {
       config: true,
       id: true,
       type: true,
+      status: true,
     },
   });
-  if (!project) throw json(null, { status: 404 });
+  if (!project || project.status === "ARCHIVED") throw json(null, { status: 404 });
   const isPro = project.User.plan === "PRO";
   delete project.User;
   return {

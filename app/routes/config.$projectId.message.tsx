@@ -48,8 +48,9 @@ export const action = async ({ request, params }: ActionArgs) => {
       where: {
         id: params.projectId,
       },
+      select: { config: true, status: true },
     });
-    if (!current) {
+    if (!current || current.status === "ARCHIVED") {
       return json(
         { message: `Formmy con id: ${params.projectId} no encontrado` },
         { status: 404 }
@@ -75,9 +76,9 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   const user = await getUserOrNull(request);
   const project = await db.project.findUnique({
     where: { id: params.projectId },
-    select: { id: true, config: true, type: true },
+    select: { id: true, config: true, type: true, status: true },
   });
-  if (!project) throw json(null, { status: 404 });
+  if (!project || project.status === "ARCHIVED") throw json(null, { status: 404 });
   return {
     configuration: project.config as ConfigSchema,
     isPro: user?.plan === "PRO" ? true : false,

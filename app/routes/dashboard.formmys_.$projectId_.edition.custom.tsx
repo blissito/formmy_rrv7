@@ -27,8 +27,9 @@ const parseZodIssues = (error: ZodError) =>
 export const loader = async ({ params }: LoaderArgs) => {
   const project = await db.project.findUnique({
     where: { id: params.projectId },
+    select: { id: true, config: true, status: true },
   });
-  if (!project) return json(null, { status: 404 });
+  if (!project || project.status === "ARCHIVED") return json(null, { status: 404 });
   return { project };
 };
 
@@ -42,8 +43,9 @@ export const action = async ({ request, params }: ActionArgs) => {
   if (formData.get("intent") === "add_custom_input") {
     const project = await db.project.findUnique({
       where: { id: params.projectId },
+      select: { id: true, config: true, status: true },
     });
-    if (!project) return json(null, { status: 404 });
+    if (!project || project.status === "ARCHIVED") return json(null, { status: 404 });
     await db.project.update({
       where: { id: params.projectId },
       data: {

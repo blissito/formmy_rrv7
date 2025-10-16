@@ -8,6 +8,9 @@ import { getAdminUserOrRedirect } from "server/getUserUtils.server";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await getAdminUserOrRedirect(request);
   const projects = await db.project.findMany({
+    where: {
+      status: { not: "ARCHIVED" }, // Only show active projects
+    },
     select: { name: true, createdAt: true, id: true, User: true },
     orderBy: { createdAt: "desc" },
   });
@@ -17,6 +20,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const thisWeek = await db.project.count({
     where: {
+      status: { not: "ARCHIVED" }, // Only count active projects
       createdAt: {
         lte: new Date(),
         gte: sevenDaysAgo,

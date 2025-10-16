@@ -1,4 +1,5 @@
 import { useLoaderData } from "react-router";
+import { useState, useEffect } from "react";
 import ChatPreview from "~/components/ChatPreview";
 import type { Chatbot } from "@prisma/client";
 import { db } from "~/utils/db.server";
@@ -34,6 +35,12 @@ export async function loader({ request }: { request: Request }) {
 
     console.log(chatbot, 'chatbot');
 
+    // 🔒 SEGURIDAD: CSP frame-ancestors para bloquear embeddings no autorizados
+    // Implementado: Oct 16, 2025
+    // NOTA: React Router v7 no soporta headers custom en loaders de forma directa
+    // La validación real se hace en el backend (api.v0.chatbot.server.ts)
+    // CSP se puede implementar a nivel de servidor (Fly.io headers)
+
     return { chatbot };
   } catch (error) {
     console.error("Error al cargar el chatbot para embebido:", error);
@@ -67,6 +74,39 @@ export default function ChatEmbedRoute() {
     status?: number;
   }>();
 
+  // 🔒 SEGURIDAD: Estado para guardar el parent domain (para validación)
+  // Implementado: Oct 16, 2025
+  const [parentDomain, setParentDomain] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Escuchar mensajes del parent window
+    const handleMessage = (event: MessageEvent) => {
+      // Verificar que el mensaje venga de un origin confiable
+      // (formmy-v2.fly.dev, formmy.app, o localhost para dev)
+      const trustedOrigins = [
+        'https://formmy-v2.fly.dev',
+        'https://formmy.app',
+        'http://localhost:5173',
+        'http://localhost:3000'
+      ];
+
+      if (!trustedOrigins.some(origin => event.origin.startsWith(origin))) {
+        console.warn('🔒 Mensaje de origen no confiable:', event.origin);
+        return;
+      }
+
+      // Procesar mensaje de parent domain
+      if (event.data.type === 'formmy-parent-domain') {
+        const { domain } = event.data;
+        console.log('🔒 Parent domain recibido:', domain);
+        setParentDomain(domain);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // Si hay un error, mostrar un mensaje de error amigable
   if (data.error) {
     return (
@@ -87,7 +127,11 @@ export default function ChatEmbedRoute() {
     <>
       <GlobalStyles />
       <div className="h-screen w-full bg-pink-500">
-        <ChatPreview production chatbot={data.chatbot as Chatbot} />
+        <ChatPreview
+          production
+          chatbot={data.chatbot as Chatbot}
+          parentDomain={parentDomain}
+        />
       </div>
     </>
   );

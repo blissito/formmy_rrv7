@@ -24,9 +24,15 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
   const intent = formData.get("intent");
 
   if (intent === "delete") {
-    // @TODO: delete files from firebase
-    await db.answer.deleteMany({ where: { projectId: params.projectId } }); // cascade deleting
-    await db.project.delete({ where: { id: params.projectId } });
+    // Archive project instead of hard delete (soft delete)
+    // This preserves all data (answers, permissions, config) for potential restoration
+    await db.project.update({
+      where: { id: params.projectId },
+      data: {
+        status: "ARCHIVED",
+        isActive: false,
+      },
+    });
     return redirect("/dashboard/formmys");
   }
 

@@ -49,7 +49,11 @@ export const action = async ({ request, params }: ActionArgs) => {
     await db.permission.create({ data: permissionData });
     const project = await db.project.findUnique({
       where: { id: params.projectId },
+      select: { id: true, name: true, status: true },
     });
+    if (!project || project.status === "ARCHIVED") {
+      return json(null, { status: 404 });
+    }
     //@ts-ignore
     sendInvite({ project, email });
     return { success: true };

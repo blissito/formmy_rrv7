@@ -82,10 +82,26 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const projectId = form.projectId;
     delete form.intent;
     delete form.projectId;
-    await saveForm({ form, projectId });
-    // notify
-    await sendAllNotifications(projectId);
-    return new Response(JSON.stringify({ ok: true }));
+
+    try {
+      await saveForm({ form, projectId });
+      // notify
+      await sendAllNotifications(projectId);
+      return new Response(JSON.stringify({ ok: true }));
+    } catch (error: any) {
+      // Handle archived or non-existent projects
+      if (error.message?.includes("not found") || error.message?.includes("archived")) {
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            error: "Project not found or no longer available",
+          }),
+          { status: 404 }
+        );
+      }
+      // Re-throw unexpected errors
+      throw error;
+    }
   }
 
   return null;

@@ -18,6 +18,7 @@ export interface ChatPreviewProps {
   chatbot: Chatbot;
   production?: boolean;
   onClose?: () => void;
+  parentDomain?: string | null; // 🔒 SEGURIDAD: Parent domain para validación (Oct 16, 2025)
 }
 
 // Función unificada para prompts optimizados (versión cliente)
@@ -38,6 +39,7 @@ export default function ChatPreview({
   chatbot,
   production,
   onClose,
+  parentDomain,
 }: ChatPreviewProps) {
   const [chatMessages, setChatMessages] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
@@ -345,6 +347,12 @@ export default function ChatPreview({
       // ❌ ELIMINADO: conversationHistory desde cliente (backend usa BD como fuente de verdad)
       formData.append("stream", stream.toString()); // Usar valor real del toggle
 
+      // 🔒 SEGURIDAD: Incluir parent domain para validación (Oct 16, 2025)
+      if (parentDomain) {
+        formData.append("parentDomain", parentDomain);
+        console.log('🔒 Parent domain incluido en request:', parentDomain);
+      }
+
       // Timeout de seguridad para evitar loading infinito
       const timeoutId = setTimeout(() => {
         setChatLoading(false);
@@ -600,7 +608,7 @@ export default function ChatPreview({
         <ChatHeader
           primaryColor={chatbot.primaryColor || "#9A99EA"}
           name={chatbot.name}
-          avatarUrl={chatbot.avatarUrl}
+          avatarUrl={chatbot.avatarUrl || undefined}
           onClear={handleClearConversation}
           showCloseButton={production}
           onClose={onClose}
@@ -618,7 +626,7 @@ export default function ChatPreview({
                 key={idx}
                 message={msg}
                 primaryColor={chatbot.primaryColor || "#9A99EA"}
-                avatarUrl={chatbot.avatarUrl}
+                avatarUrl={chatbot.avatarUrl || undefined}
               />
             ))}
           <div ref={messagesEndRef} />
@@ -629,7 +637,7 @@ export default function ChatPreview({
             <MessageBubble
               role="assistant"
               primaryColor={chatbot.primaryColor || "#9A99EA"}
-              avatarUrl={chatbot.avatarUrl}
+              avatarUrl={chatbot.avatarUrl || undefined}
             >
               <LoadingIndicator />
             </MessageBubble>

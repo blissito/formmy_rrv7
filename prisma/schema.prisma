@@ -109,6 +109,12 @@ enum FormmyTypes {
   subscription
 }
 
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
 enum ContactStatus {
   NEW
   CONTACTED
@@ -121,6 +127,7 @@ enum ContactStatus {
 
 model Project {
   isActive    Boolean          @default(true)
+  status      ProjectStatus    @default(ACTIVE)
   slug        String           @unique
   id          String           @id @default(auto()) @map("_id") @db.ObjectId
   userId      String           @db.ObjectId

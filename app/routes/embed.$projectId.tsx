@@ -16,9 +16,9 @@ export const loader = async ({ params, request }: LoaderArgs) => {
     where: {
       id: params.projectId,
     },
-    select: { User: true, config: true, id: true, type: true },
+    select: { User: true, config: true, id: true, type: true, status: true },
   });
-  if (!project)
+  if (!project || project.status === "ARCHIVED")
     throw json(
       { message: `Formmy con id: ${params.projectId}, no encontrado` },
       { status: 404 }
