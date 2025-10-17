@@ -77,27 +77,11 @@ const availableIntegrations = [
     isPermanent: false,
   },
   {
-    id: "MESSENGER",
-    name: "Messenger",
-    logo: "/assets/chat/messenger.svg",
-    description:
-      "Conecta a tu agente a tu fan page y deja que responda los mensajes de tus clientes.",
-    isPermanent: false,
-  },
-  {
     id: "SHOPIFY",
     name: "Shopify",
     logo: "/assets/chat/shopify.svg",
     description:
       "Deje que tu agente interactúe con sus clientes, responda a sus consultas, ayude con los pedidos y más.",
-    isPermanent: false,
-  },
-  {
-    id: "WORDPRESS",
-    name: "WordPress",
-    logo: "/assets/chat/wordpress.svg",
-    description:
-      "Utiliza el plugin para Wordpress para agregar el widget de chat a su sitio web.",
     isPermanent: false,
   },
   {
