@@ -97,6 +97,10 @@ export default function WhatsAppEmbeddedSignupModal({
             // Procesar respuesta sin async en el callback
             const processResponse = async () => {
               try {
+                console.log('🚀 [Modal] Iniciando proceso de conexión WhatsApp...');
+
+                // PASO 1: Intercambiar código por tokens con Meta
+                console.log('📞 [Modal] PASO 1: Intercambiando código por tokens con Meta...');
                 const exchangeResponse = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
                   method: 'POST',
                   headers: {
@@ -109,28 +113,81 @@ export default function WhatsAppEmbeddedSignupModal({
                   }),
                 });
 
-                const data = await exchangeResponse.json();
+                const exchangeData = await exchangeResponse.json();
 
                 if (!exchangeResponse.ok) {
-                  throw new Error(data.error || 'Error al procesar la autorización');
+                  console.error('❌ [Modal] PASO 1 FALLÓ:', exchangeData.error);
+                  throw new Error(exchangeData.error || 'Error al intercambiar tokens con Meta');
                 }
 
-                setStatus('success');
-                onSuccess({
-                  ...data.integration,
-                  embeddedSignup: true,
-                  businessIntegrationToken: true,
+                console.log('✅ [Modal] PASO 1 COMPLETADO - Tokens obtenidos de Meta:', {
+                  hasAccessToken: !!exchangeData.integration?.token,
+                  phoneNumberId: exchangeData.integration?.phoneNumberId,
+                  waba: exchangeData.integration?.businessAccountId
                 });
 
-                // Cerrar modal después de un breve retraso
+                // PASO 2: Registrar en Composio con los tokens de Meta
+                console.log('📞 [Modal] PASO 2: Registrando en Composio...');
+                const composioResponse = await fetch('/api/v1/composio/whatsapp?intent=connect', {
+                  method: 'POST',
+                  body: new URLSearchParams({
+                    chatbotId: chatbotId,
+                    accessToken: exchangeData.integration.token, // Token de Meta
+                    phoneNumberId: exchangeData.integration.phoneNumberId,
+                    whatsappBusinessAccountId: exchangeData.integration.businessAccountId || ''
+                  })
+                });
+
+                console.log('📥 [Modal] Respuesta de Composio recibida (status:', composioResponse.status, ')');
+
+                const composioData = await composioResponse.json();
+
+                if (!composioResponse.ok) {
+                  console.error('❌ [Modal] PASO 2 FALLÓ - Error registrando en Composio:', composioData);
+                  console.error('❌ [Modal] Status HTTP:', composioResponse.status);
+                  console.error('❌ [Modal] Error message:', composioData.error);
+
+                  // CRÍTICO: NO cerrar modal, mostrar error al usuario
+                  setStatus('error');
+                  setError(
+                    `Fallo en registro de Composio: ${composioData.error || 'Error desconocido'}. ` +
+                    `La integración de Meta se guardó pero no se pudo activar Composio. ` +
+                    `Por favor, intenta desconectar y volver a conectar.`
+                  );
+
+                  // NO llamar onSuccess ni cerrar modal
+                  return; // Salir sin cerrar modal
+                }
+
+                console.log('✅ [Modal] PASO 2 COMPLETADO - Registrado en Composio:', composioData);
+
+                // SOLO si ambas operaciones fueron exitosas, actualizar estado
+                console.log('🎉 [Modal] PROCESO COMPLETO - Actualizando UI...');
+                setStatus('success');
+                onSuccess({
+                  ...exchangeData.integration,
+                  embeddedSignup: true,
+                  businessIntegrationToken: true,
+                  composio: true, // Flag para indicar que está conectado vía Composio
+                });
+
+                // Cerrar modal después de un breve retraso (SOLO si todo fue exitoso)
+                console.log('⏱️  [Modal] Cerrando modal en 1.5 segundos...');
                 setTimeout(() => {
+                  console.log('✅ [Modal] Modal cerrado exitosamente');
                   onClose();
                 }, 1500);
 
               } catch (exchangeError) {
-                console.error('Token exchange error:', exchangeError);
+                console.error('❌ [Modal] ERROR GENERAL en proceso de conexión:', exchangeError);
                 setStatus('error');
-                setError(exchangeError instanceof Error ? exchangeError.message : 'Error al intercambiar tokens');
+                setError(
+                  exchangeError instanceof Error
+                    ? exchangeError.message
+                    : 'Error al conectar WhatsApp'
+                );
+                // NO cerrar modal en caso de error
+                console.log('⚠️  [Modal] Modal permanece abierto para mostrar error');
               }
             };
 
@@ -146,6 +203,7 @@ export default function WhatsAppEmbeddedSignupModal({
           ...(import.meta.env.VITE_FACEBOOK_CONFIG_ID && {
             config_id: import.meta.env.VITE_FACEBOOK_CONFIG_ID
           }),
+          scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management', // Permisos requeridos
           response_type: 'code', // Requerido para Embedded Signup
           override_default_response_type: true,
           extras: {
@@ -180,73 +238,17 @@ export default function WhatsAppEmbeddedSignupModal({
       size="lg"
     >
       <div className="space-y-6 mt-8">
-        {/* Header con información */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <img
-              src="/assets/chat/whatsapp.svg"
-              alt="WhatsApp"
-              className="w-8 h-8"
-            />
-            <div>
-              <h3 className="font-medium text-dark">WhatsApp Business Platform</h3>
-              <p className="text-sm text-metal">
-                Conecta directamente con la plataforma oficial de Meta
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Información sobre Embedded Signup */}
-        <div className="p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-800 mb-2">🚀 Embedded Signup Official</h4>
-          <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Autenticación directa con Facebook Login for Business</li>
-            <li>• Genera Business Integration System User Access Tokens</li>
-            <li>• Selecciona o crea WhatsApp Business Account automáticamente</li>
-            <li>• Verificación de número de teléfono de negocio incluida</li>
-            <li>• Soporte para números de teléfono comercial reales</li>
-          </ul>
-        </div>
-
-        {/* INSTRUCCIONES WEBHOOK - SIEMPRE VISIBLE */}
-        <div className="bg-orange-50 border-l-4 border-orange-400 p-4">
-          <h4 className="font-semibold text-orange-800 mb-3 flex items-center">
-            ⚠️ CONFIGURACIÓN REQUERIDA: Webhook
-          </h4>
-
-          <div className="text-sm text-orange-700 space-y-3">
-            <p className="font-medium">Después de la autorización, configura en Meta for Developers:</p>
-
-            <div className="bg-white p-3 rounded border space-y-2">
-              <div>
-                <span className="font-medium">1. Callback URL:</span>
-                <div className="bg-gray-100 p-2 rounded mt-1 font-mono text-xs break-all">
-                  https://formmy-whatsapp-bridge.fixtergeek.workers.dev/webhook
-                </div>
-              </div>
-
-              <div>
-                <span className="font-medium">2. Verify Token:</span>
-                <div className="bg-gray-100 p-2 rounded mt-1 font-mono text-xs">
-                  formmy_wh_2024_secure_token_f7x9k2m8
-                </div>
-              </div>
-
-              <div>
-                <span className="font-medium">3. Eventos a subscribir:</span>
-                <div className="bg-gray-100 p-2 rounded mt-1 text-xs">
-                  ✅ messages<br/>
-                  ✅ smb_message_echoes
-                </div>
-              </div>
-            </div>
-
-            <div className="text-xs space-y-1">
-              <p><span className="font-medium">Ruta:</span> Meta for Developers → WhatsApp → Configuration → Webhooks</p>
-              <p><span className="font-medium">Importante:</span> Tu app debe estar en modo LIVE, no Development</p>
-            </div>
-          </div>
+        {/* Header simple */}
+        <div className="text-center">
+          <img
+            src="/assets/chat/whatsapp.svg"
+            alt="WhatsApp"
+            className="w-16 h-16 mx-auto mb-4"
+          />
+          <h3 className="text-lg font-medium text-dark mb-2">Conectar WhatsApp</h3>
+          <p className="text-sm text-metal">
+            Conecta tu número de WhatsApp Business para que tus agentes puedan enviar mensajes automáticamente
+          </p>
         </div>
 
         {/* SDK Loading Status */}
@@ -258,94 +260,42 @@ export default function WhatsAppEmbeddedSignupModal({
         ) : (
           <div className="space-y-4">
             {/* Embedded Signup Button */}
-            <div className="text-center">
-              <Button
-                onClick={handleEmbeddedSignup}
-                isLoading={status === 'loading'}
-                className="w-full py-4 text-lg"
-                style={{
-                  backgroundColor: '#1877F2',
-                  color: 'white',
-                }}
-              >
-                {status === 'loading' ? (
-                  <>
-                    <FiLoader className="animate-spin mr-2" />
-                    Procesando autorización...
-                  </>
-                ) : (
-                  <>
-                    <img
-                      src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI0IDEyQzI0IDUuMzczIDE4LjYyNyAwIDEyIDEyIDVzNS4zNzMgMTIgMTIgMTJjMi4zMTggMCA0LjgyNC0xLjI3IDQuODI0LTMuMTc0IDAtMC43NzUtLjM2LTEuNzM2LTIuODE5LTEuNzM2LTIuNDU5IDAtOC4zODUgMi41MzItMTAuNTU4IDIuNTMyQzguODE5IDExLjgzNyA3LjU0IDExLjc2MiA3LjU0IDEyYzAtLjIzOCAxLjI3OS0uMzEzIDMuNjM2LS4zMTMgNC4xMzEgMCA3LjU0LTEuNTM0IDcuNTQtMy40MjQgMC0xLjI3OS0xLjU0LTIuMTY0LTMuNjY0LTIuMTY0LTIuMTI0IDAtNC41MTEgMi4xNjQtNC41MTEgMi4xNjQtMS4xNTQgMS4xMDMtMi45OTcgMS4xMDMtNC4xNTEgMC0xLjE1NC0xLjEwMy0xLjE1NC0yLjg5NyAwLTRzMi44OTctMS4xNTQgNC0xLjE1NGMxLjEwMy0yLjg5NyAxLjEwMy0xLjE1NCAwLTQtMi44OTcgMC00LTIuODk3Ii8+PC9zdmc+"
-                      alt="Facebook"
-                      className="w-5 h-5 mr-2 inline"
-                    />
-                    Conectar con WhatsApp Business
-                  </>
-                )}
-              </Button>
-            </div>
+            <button
+              onClick={handleEmbeddedSignup}
+              disabled={status === 'loading'}
+              className="w-full px-6 py-3 text-white font-medium rounded-lg transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{ backgroundColor: '#25D366' }}
+            >
+              {status === 'loading' ? (
+                <>
+                  <FiLoader className="animate-spin h-5 w-5" />
+                  <span>Conectando...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                  </svg>
+                  <span>Conectar con WhatsApp</span>
+                </>
+              )}
+            </button>
 
             {/* Información adicional */}
-            <div className="text-center text-sm text-metal">
-              <p>
-                Al hacer clic, serás redirigido a Facebook para autorizar el acceso a tu
-                WhatsApp Business Account
-              </p>
-            </div>
+            <p className="text-center text-xs text-metal">
+              Se abrirá una ventana de Facebook para autorizar tu cuenta de WhatsApp Business
+            </p>
           </div>
         )}
 
         {/* Estados de éxito y error */}
         {status === 'success' && (
-          <div className="space-y-4">
-            <div className="bg-green-50 border-l-4 border-green-400 p-4">
-              <div className="flex items-center">
-                <FiCheck className="h-5 w-5 text-green-400 mr-2" />
-                <p className="text-sm text-green-700">
-                  ¡Autorización exitosa! Ahora configura el webhook...
-                </p>
-              </div>
-            </div>
-
-            {/* Configuración del Webhook - PASO CRÍTICO */}
-            <div className="bg-orange-50 border-l-4 border-orange-400 p-4">
-              <h4 className="font-semibold text-orange-800 mb-3 flex items-center">
-                ⚠️ PASO OBLIGATORIO: Configurar Webhook
-              </h4>
-
-              <div className="text-sm text-orange-700 space-y-3">
-                <p className="font-medium">Ve a Meta for Developers y configura:</p>
-
-                <div className="bg-white p-3 rounded border space-y-2">
-                  <div>
-                    <span className="font-medium">1. Callback URL:</span>
-                    <div className="bg-gray-100 p-2 rounded mt-1 font-mono text-xs break-all">
-                      https://formmy-whatsapp-bridge.fixtergeek.workers.dev/webhook
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-medium">2. Verify Token:</span>
-                    <div className="bg-gray-100 p-2 rounded mt-1 font-mono text-xs">
-                      formmy_wh_2024_secure_token_f7x9k2m8
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="font-medium">3. Eventos a subscribir:</span>
-                    <div className="bg-gray-100 p-2 rounded mt-1 text-xs">
-                      ✅ messages<br/>
-                      ✅ smb_message_echoes
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-xs space-y-1">
-                  <p><span className="font-medium">Ruta:</span> Meta for Developers → WhatsApp → Configuration → Webhooks</p>
-                  <p><span className="font-medium">Importante:</span> Tu app debe estar en modo LIVE, no Development</p>
-                </div>
-              </div>
+          <div className="bg-green-50 border-l-4 border-green-400 p-4">
+            <div className="flex items-center justify-center">
+              <FiCheck className="h-6 w-6 text-green-500 mr-2" />
+              <p className="text-green-700 font-medium">
+                ¡WhatsApp conectado exitosamente!
+              </p>
             </div>
           </div>
         )}

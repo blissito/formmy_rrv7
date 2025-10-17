@@ -113,6 +113,13 @@ export default [
   route("api/v1/composio/google-calendar", "routes/api.v1.composio.google-calendar.ts"),
   route("api/v1/composio/google-calendar/callback", "routes/api.v1.composio.google-calendar.callback.ts"),
 
+  // Composio Gmail Integration
+  route("api/v1/composio/gmail", "routes/api.v1.composio.gmail.ts"),
+  route("api/v1/composio/gmail/callback", "routes/api.v1.composio.gmail.callback.ts"),
+
+  // Composio WhatsApp Integration
+  route("api/v1/composio/whatsapp", "routes/api.v1.composio.whatsapp.ts"),
+
   // API v0 routes - Motor AgentEngine_v0
   route("api/v0/chatbot", "routes/api.v0.chatbot.ts"),
   route("api/v1/messages", "routes/api.v1.messages.ts"),

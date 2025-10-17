@@ -14,8 +14,9 @@ import WhatsAppIntegrationModal from "../../integrations/WhatsAppIntegrationModa
 import WhatsAppCoexistenceModal from "../../integrations/WhatsAppCoexistenceModal";
 import WhatsAppCoexistenceRealModal from "../../integrations/WhatsAppCoexistenceRealModal";
 import WhatsAppEmbeddedSignupModal from "../../integrations/WhatsAppEmbeddedSignupModal";
+import GmailIntegrationModal from "../../integrations/GmailIntegrationModal";
 // import GoogleCalendarComposioModal from "../../integrations/GoogleCalendarComposioModal"; // Deshabilitado - Próximamente
-import StripeIntegrationModal from "../../integrations/StripeIntegrationModal";
+// import StripeIntegrationModal from "../../integrations/StripeIntegrationModal"; // Deshabilitado temporalmente
 
 // Integraciones disponibles con sus configuraciones
 const availableIntegrations = [
@@ -49,6 +50,14 @@ const availableIntegrations = [
     logo: "/assets/chat/calendar.png",
     description:
       "Conecta tu agente a Google Calendar para que pueda programar citas y recordatorios automáticamente.",
+    isPermanent: false,
+  },
+  {
+    id: "GMAIL",
+    name: "Gmail",
+    logo: "/assets/chat/gmail.png",
+    description:
+      "Permite que tu agente envíe y lea correos electrónicos automáticamente desde tu cuenta de Gmail.",
     isPermanent: false,
   },
   {
@@ -152,6 +161,12 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       // Denik y Gestión de contactos son integraciones permanentes, siempre conectadas
       if (availableIntegration.isPermanent) {
         status[availableIntegration.id.toLowerCase()] = "connected";
+      } else if (availableIntegration.id === "GMAIL") {
+        // Gmail: Iniciar como disconnected, luego actualizar con estado real de BD
+        status[availableIntegration.id.toLowerCase()] = "disconnected";
+      } else if (availableIntegration.id === "STRIPE" || availableIntegration.id === "WHATSAPP") {
+        // Stripe y WhatsApp deshabilitados temporalmente (en desarrollo)
+        status[availableIntegration.id.toLowerCase()] = "onhold";
       } else {
         // Todas las demás integraciones están en "onhold" (próximamente)
         status[availableIntegration.id.toLowerCase()] = "onhold";
@@ -169,6 +184,20 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         });
 
         const platformKey = integration.platform.toLowerCase();
+
+        // Stripe siempre debe estar en "onhold" (deshabilitado temporalmente)
+        if (platformKey === "stripe") {
+          status[platformKey] = "onhold";
+          console.log("🔒 Stripe forzado a estado: onhold (deshabilitado temporalmente)");
+          return;
+        }
+
+        // WhatsApp siempre debe estar en "onhold" (deshabilitado temporalmente)
+        if (platformKey === "whatsapp") {
+          status[platformKey] = "onhold";
+          console.log("🔒 WhatsApp forzado a estado: onhold (deshabilitado temporalmente)");
+          return;
+        }
 
         // Google Calendar siempre debe estar en "onhold" (próximamente)
         if (platformKey === "google_calendar") {
@@ -253,8 +282,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   ] = useState(false);
   const [whatsAppEmbeddedSignupModalOpen, setWhatsAppEmbeddedSignupModalOpen] =
     useState(false);
+  const [gmailModalOpen, setGmailModalOpen] = useState(false);
   // const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false); // Deshabilitado - Próximamente
-  const [stripeModalOpen, setStripeModalOpen] = useState(false);
+  // const [stripeModalOpen, setStripeModalOpen] = useState(false); // Deshabilitado temporalmente
 
   // Solo Embedded Signup - sin manual
   const useEmbeddedSignup = true;
@@ -296,11 +326,14 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     if (integrationId === "WHATSAPP") {
       // Usar Embedded Signup ahora que la empresa está activada
       setWhatsAppEmbeddedSignupModalOpen(true);
+    } else if (integrationId === "GMAIL") {
+      setGmailModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
       console.log("🔒 Google Calendar está en onhold, no se puede conectar");
       return; // Integración deshabilitada temporalmente
     } else if (integrationId === "STRIPE") {
-      setStripeModalOpen(true);
+      console.log("🔒 Stripe está en onhold temporalmente");
+      return; // Deshabilitado temporalmente
     } else {
       // Para otras integraciones, simular conexión
       setTimeout(() => {
@@ -371,11 +404,14 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     if (integrationId === "WHATSAPP") {
       // Usar Embedded Signup también para editar
       setWhatsAppEmbeddedSignupModalOpen(true);
+    } else if (integrationId === "GMAIL") {
+      setGmailModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
       console.log("🔒 Google Calendar está en onhold, no se puede editar");
       return; // Integración deshabilitada temporalmente
     } else if (integrationId === "STRIPE") {
-      setStripeModalOpen(true);
+      console.log("🔒 Stripe está en onhold temporalmente");
+      return; // Deshabilitado temporalmente
     }
   };
 
@@ -442,7 +478,24 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   //   }
   // };
 
-  // Manejador de éxito para la integración de Stripe
+  // Manejador de éxito para la integración de Gmail
+  const handleGmailSuccess = (data: any) => {
+    console.log("🔍 Debug - Gmail integración exitosa:", data);
+
+    // Actualizar el estado local para mostrar como conectado
+    setIntegrationStatus((prev) => ({
+      ...prev,
+      gmail: "connected" as const,
+    }));
+
+    setGmailModalOpen(false);
+    setSelectedIntegration(null);
+
+    // Recargar para reflejar la integración activa
+    window.location.reload();
+  };
+
+  // Manejador de éxito para la integración de Stripe (deshabilitado)
 
   const handleStripeSuccess = (integration: any) => {
     console.log("🔍 Debug - Stripe integración exitosa:", integration);
@@ -458,7 +511,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       return newStatus;
     });
 
-    setStripeModalOpen(false);
+    // setStripeModalOpen(false); // Comentado porque el modal está deshabilitado
     setSelectedIntegration(null);
 
     console.log("✅ Debug - Stripe conectado sin recargar página");
@@ -751,7 +804,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
             </>
           )}
 
-          {selectedIntegration === "STRIPE" && (
+          {/* Stripe está temporalmente deshabilitado */}
+          {/* {selectedIntegration === "STRIPE" && (
             <StripeIntegrationModal
               isOpen={stripeModalOpen}
               onClose={() => setStripeModalOpen(false)}
@@ -773,6 +827,15 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                   isActive: stripeIntegration.isActive,
                 };
               })()}
+            />
+          )} */}
+
+          {selectedIntegration === "GMAIL" && (
+            <GmailIntegrationModal
+              isOpen={gmailModalOpen}
+              onClose={() => setGmailModalOpen(false)}
+              onSuccess={handleGmailSuccess}
+              chatbot={chatbot}
             />
           )}
 

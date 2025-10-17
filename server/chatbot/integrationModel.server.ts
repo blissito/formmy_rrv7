@@ -265,7 +265,7 @@ export async function getActiveStripeIntegration(
  * Convierte las integraciones de un chatbot en un objeto de flags booleanos
  * Para uso en agentContext y getToolsForPlan
  * @param chatbotId The ID of the chatbot
- * @returns Object con flags: { stripe: boolean, googleCalendar: boolean, whatsapp: boolean }
+ * @returns Object con flags: { stripe: boolean, googleCalendar: boolean, whatsapp: boolean, gmail: boolean }
  */
 export async function getChatbotIntegrationFlags(
   chatbotId: string
@@ -273,6 +273,7 @@ export async function getChatbotIntegrationFlags(
   stripe: boolean;
   googleCalendar: boolean;
   whatsapp: boolean;
+  gmail: boolean;
 }> {
   const integrations = await prisma.integration.findMany({
     where: {
@@ -288,5 +289,6 @@ export async function getChatbotIntegrationFlags(
     stripe: integrations.some(i => i.platform === 'STRIPE'),
     googleCalendar: integrations.some(i => i.platform === 'GOOGLE_CALENDAR'),
     whatsapp: integrations.some(i => i.platform === 'WHATSAPP'),
+    gmail: integrations.some(i => i.platform === 'GMAIL'),
   };
 }

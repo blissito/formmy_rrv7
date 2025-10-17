@@ -76,6 +76,69 @@ const agentConfig = { llm, tools, systemPrompt, memory };
 ### 6. Documentación Externa
 **SIEMPRE** hacer `WebFetch` de docs oficiales ANTES de implementar librerías - NO improvises APIs
 
+### 7. Sistema de Integraciones Composio - Arquitectura Simplificada (Oct 17, 2025)
+⚠️ **REGLA FUNDAMENTAL**: Usar configuración declarativa centralizada, NO duplicar código
+
+**Ubicación**: `/server/integrations/composio-config.ts` - ÚNICA FUENTE DE VERDAD
+
+#### Problemas Anteriores (resueltos):
+1. **Gmail no reconocida por Ghosty**: Integrations venían del cliente (request body), NO desde BD ❌
+2. **Código duplicado masivo**: Cada integración repetía ~350 líneas de OAuth flow, handlers, callbacks ❌
+3. **Fácil confusión**: Copiar/pegar código causaba errores (`toolkitSlug: 'gmail'` vs `'whatsapp'`) ❌
+
+#### Solución Implementada (Oct 17):
+
+**✅ 1. Ghosty carga integrations desde BD automáticamente**
+```typescript
+// api.ghosty.v0.ts:146-177
+const userChatbots = await db.chatbot.findMany({ where: { userId: user.id } });
+for (const chatbot of userChatbots) {
+  const flags = await getChatbotIntegrationFlags(chatbot.id);
+  integrationFlags.gmail = integrationFlags.gmail || flags.gmail;
+  // ... otras integraciones
+}
+```
+
+**✅ 2. Configuración Declarativa en `/server/integrations/composio-config.ts`**
+```typescript
+export const COMPOSIO_INTEGRATIONS: Record<string, ComposioIntegrationConfig> = {
+  GMAIL: {
+    name: "GMAIL",
+    displayName: "Gmail",
+    toolkitSlug: "gmail",  // ✅ Una sola vez, no se repite
+    authMethod: "oauth2",
+    authConfigEnvVar: "COMPOSIO_GMAIL_AUTH_CONFIG_ID",
+    emoji: "📧",
+  },
+  WHATSAPP: { /* config */ },
+  // ...
+};
+```
+
+**Beneficios:**
+- ✅ **DRY**: Una sola definición por integración (vs 500+ líneas duplicadas)
+- ✅ **Type-safe**: TypeScript valida configuración
+- ✅ **Fácil agregar**: Nuevo provider = agregar config + handlers (sin rutas duplicadas)
+- ✅ **Menos errores**: Imposible confundir `toolkitSlug` entre integraciones
+
+#### Agregar Nueva Integración (proceso simplificado):
+1. Agregar valor al `enum IntegrationType` en `schema.prisma`
+2. Agregar configuración a `COMPOSIO_INTEGRATIONS` en `/server/integrations/composio-config.ts`
+3. Crear handlers en `/server/tools/handlers/[nombre].ts`
+4. Registrar tools en `/server/tools/index.ts` (usar `getToolsForPlan()`)
+5. ✅ **Las rutas OAuth se generan automáticamente** (futuro: usar factory pattern)
+
+#### Debugging Integraciones:
+```bash
+# Verificar integrations cargadas por Ghosty
+grep "🔌 \[Ghosty\] Cargando integraciones" logs.txt
+
+# Verificar tools disponibles
+grep "🛠️ \[getToolsForPlan\]" logs.txt
+```
+
+**Documentación extendida**: Ver sección "Integraciones con Composio" más abajo para OAuth flows, testing, troubleshooting.
+
 ---
 
 ## Arquitectura (Producción)
@@ -239,9 +302,291 @@ const exampleTool = FunctionTool.from({
 
 ## Integraciones
 
-### WhatsApp (Sept 18) ✅
-**Features**: Embedded Signup, Meta SDK, webhook interno, filtrado echo
-**Status**: ⏳ Pendiente Meta App Review para Advanced Access (1-2 semanas)
+⚠️ **NUEVO SISTEMA (Oct 17, 2025)**: Todas las integraciones están centralizadas en `/server/integrations/composio-config.ts`. Ver sección "Sistema de Integraciones Composio" arriba para la arquitectura completa.
+
+### WhatsApp + Composio (Oct 17, 2025) ✅
+**Status**: ✅ **ACTIVO** - Integración completa con Composio para tools de agentes
+**Features**: Embedded Signup, Meta SDK, webhook interno, filtrado echo, **Tools para agentes**
+**Provider**: Composio (gestión de tokens y API calls)
+**Meta App Review**: ⏳ Pendiente Advanced Access (1-2 semanas)
+**Config**: `/server/integrations/composio-config.ts:COMPOSIO_INTEGRATIONS.WHATSAPP`
+
+#### Arquitectura de Integración
+
+**Flow de Conexión:**
+1. Usuario → Embedded Signup de Meta → obtiene `accessToken`, `phoneNumberId`
+2. Frontend → POST `/api/v1/composio/whatsapp?intent=connect` con tokens
+3. Backend → Registra en Composio con `AuthScheme.APIKey({ api_key: accessToken })`
+4. Composio → Gestiona tokens, refresh automático, API calls a Meta
+
+**Entity ID Pattern**: `chatbot_${chatbotId}` (cada chatbot = entity separada)
+
+#### Tools Disponibles (via `/server/tools/index.ts`)
+
+| Tool | Plan | Descripción | Handler |
+|------|------|-------------|---------|
+| `send_whatsapp_message` | PRO/ENT/TRIAL | Enviar mensajes de WhatsApp | `/server/tools/handlers/whatsapp.ts:sendWhatsAppMessageHandler` |
+| `list_whatsapp_conversations` | PRO/ENT/TRIAL | Listar conversaciones recientes | `/server/tools/handlers/whatsapp.ts:listWhatsAppConversationsHandler` |
+| `get_whatsapp_stats` | PRO/ENT/TRIAL (Ghosty only) | Estadísticas de WhatsApp del chatbot | `/server/tools/handlers/whatsapp.ts:getWhatsAppStatsHandler` |
+
+**Acceso por Plan:**
+- **Ghosty (PRO/ENT/TRIAL)**: Todas las tools (puede enviar en nombre de chatbots del usuario)
+- **Chatbots públicos (PRO/ENT/TRIAL)**: `send_whatsapp_message`, `list_whatsapp_conversations`
+- **STARTER/FREE**: ❌ Sin access a tools (solo recepción de mensajes)
+
+#### Rutas de API
+
+**Conexión/Gestión:**
+- `GET /api/v1/composio/whatsapp?intent=status&chatbotId={id}` - Verificar estado
+- `POST /api/v1/composio/whatsapp?intent=connect` - Conectar con tokens de Meta
+- `GET /api/v1/composio/whatsapp?intent=disconnect&chatbotId={id}` - Desconectar
+
+**Variables de Entorno Requeridas:**
+```bash
+COMPOSIO_API_KEY=<tu_api_key_de_composio>
+COMPOSIO_WHATSAPP_AUTH_CONFIG_ID=<auth_config_id_de_dashboard>
+```
+
+#### Composio Actions Disponibles
+
+**Docs oficiales**: https://docs.composio.dev/toolkits/whatsapp
+
+Actions principales: `WHATSAPP_SEND_MESSAGE`, `WHATSAPP_SEND_TEMPLATE_MESSAGE`, `WHATSAPP_SEND_MEDIA`, `WHATSAPP_SEND_INTERACTIVE_BUTTONS`, `WHATSAPP_GET_MESSAGE_TEMPLATES`
+
+#### Testing
+
+**Script de prueba**: `/scripts/test-composio-whatsapp.ts`
+
+```bash
+# Ejecutar test end-to-end
+bash scripts/run-whatsapp-test.sh
+
+# O manualmente
+export TEST_CHATBOT_ID=your_chatbot_id
+export TEST_PHONE_NUMBER=+521234567890
+npx tsx scripts/test-composio-whatsapp.ts
+```
+
+**Verifica:**
+1. Conexión activa en Composio
+2. phone_number_id en BD
+3. Envío de mensaje de prueba
+4. Tools disponibles
+
+#### Troubleshooting Común
+
+**"not connected" o "authentication"**
+→ Verificar que completó Embedded Signup y que `connectedViaComposio: true` en whatsappConfig
+
+**Mensajes no se envían**
+→ Verificar que destinatario envió primer mensaje (restricción WhatsApp Business)
+
+**phone_number_id faltante**
+→ Asegurar que Embedded Signup guardó `phoneNumberId` en `chatbot.whatsappConfig`
+
+**Composio error 400**
+→ Revisar formato de `execute()` (tool slug primero, luego objeto con userId y arguments)
+
+---
+
+### Gmail + Composio (Oct 17, 2025) ✅
+**Status**: ✅ **ACTIVO** - Integración completa con OAuth2 para enviar/leer emails
+**Features**: OAuth2 flow, envío de emails, lectura de inbox, búsquedas, **Tools para agentes**
+**Provider**: Composio (gestión de tokens OAuth2 y refresh automático)
+**Auth Method**: OAuth2 (usuario autoriza con su cuenta de Google)
+**Config**: `/server/integrations/composio-config.ts:COMPOSIO_INTEGRATIONS.GMAIL`
+
+🔧 **Bugs Resueltos (Oct 17)**:
+1. **Integrations no cargadas**: Gmail tools no eran reconocidas por Ghosty porque las integrations venían del request body en lugar de cargarse desde BD. ✅ Solucionado en `api.ghosty.v0.ts:146-177`.
+2. **Detección de conexiones fallaba**: Handler buscaba `conn.appName === 'gmail'` pero Composio usa `conn.toolkit.slug`. ✅ Solucionado usando estructura oficial de Composio (ver Troubleshooting abajo).
+
+#### Arquitectura de Integración
+
+**Flow de Conexión OAuth2:**
+1. Usuario → Clic en "Conectar Gmail" en Formmy
+2. Frontend → POST `/api/v1/composio/gmail?intent=connect` con `chatbotId`
+3. Backend → `composio.connectedAccounts.initiate()` con `authConfigId` OAuth2
+4. Composio → Genera `redirectUrl` de Google OAuth
+5. Backend → Redirige usuario a Google para autorizar
+6. Usuario → Autoriza acceso a Gmail en popup de Google
+7. Google → Callback a Composio (https://backend.composio.dev/api/v3/toolkits/auth/callback)
+8. Composio → Guarda conexión y redirige a `/dashboard/chatbots/{chatbotId}/settings?gmail_connected=true`
+9. ✅ Gmail conectado (Composio maneja token refresh automáticamente, BD guarda pending connection)
+
+**Entity ID Pattern**: `chatbot_${chatbotId}` (cada chatbot = entity separada)
+
+#### Tools Disponibles (via `/server/tools/index.ts`)
+
+| Tool | Plan | Descripción | Handler |
+|------|------|-------------|---------|
+| `send_gmail` | PRO/ENT/TRIAL | Enviar emails desde Gmail del usuario | `/server/tools/handlers/gmail.ts:sendGmailHandler` |
+| `read_gmail` | PRO/ENT/TRIAL | Leer/buscar emails en inbox del usuario | `/server/tools/handlers/gmail.ts:readGmailHandler` |
+
+**Acceso por Plan:**
+- **Ghosty (PRO/ENT/TRIAL)**: Todas las tools (puede enviar/leer Gmail en nombre de chatbots del usuario)
+- **Chatbots públicos (PRO/ENT/TRIAL)**: `send_gmail`, `read_gmail` (si Gmail conectado)
+- **STARTER/FREE**: ❌ Sin access a Gmail tools
+
+**Capacidades de send_gmail:**
+- Enviar a múltiples destinatarios (to, cc, bcc)
+- Soporte HTML (`is_html: true`)
+- Subject y body opcionales (al menos uno requerido)
+- Email se envía desde la cuenta de Gmail del usuario autenticado
+
+**Capacidades de read_gmail:**
+- Búsqueda con query (ej: `from:juan@example.com`, `subject:importante`)
+- Filtros por etiquetas (INBOX, SENT, UNREAD, SPAM, TRASH)
+- Máximo 10 emails por consulta
+- Retorna: remitente, asunto, snippet (preview)
+
+#### Rutas de API
+
+**Conexión/Gestión:**
+- `POST /api/v1/composio/gmail?intent=connect` - Iniciar OAuth flow (redirige a Google)
+- `GET /api/v1/composio/gmail?intent=status&chatbotId={id}` - Verificar estado de conexión
+- `GET /api/v1/composio/gmail?intent=disconnect&chatbotId={id}` - Desconectar Gmail
+
+**Nota sobre Callback OAuth:**
+- Composio maneja el callback automáticamente en `https://backend.composio.dev/api/v3/toolkits/auth/callback`
+- Después de autorizar, redirige al usuario a: `/dashboard/chatbots/{chatbotId}/settings?gmail_connected=true`
+- NO necesitamos una ruta de callback personalizada (a diferencia de Google Calendar)
+
+**Variables de Entorno Requeridas:**
+```bash
+COMPOSIO_API_KEY=<tu_api_key_de_composio>
+COMPOSIO_GMAIL_AUTH_CONFIG_ID=<auth_config_id_de_dashboard>
+APP_URL=https://formmy-v2.fly.dev  # Para redirect_uri del OAuth
+```
+
+#### Composio Actions Disponibles
+
+**Docs oficiales**: https://docs.composio.dev/toolkits/gmail
+
+Actions principales:
+- `GMAIL_SEND_EMAIL` - Enviar email (con cc, bcc, attachments, HTML)
+- `GMAIL_FETCH_EMAILS` - Buscar/leer emails con filtros
+- `GMAIL_SEND_DRAFT` - Enviar borrador existente
+- `GMAIL_CREATE_EMAIL_DRAFT` - Crear borrador
+- `GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID` - Leer email específico por ID
+
+#### Testing
+
+**Script de prueba**: `/scripts/test-composio-gmail.ts`
+
+```bash
+# Ejecutar test end-to-end
+bash scripts/run-gmail-test.sh
+
+# O manualmente
+export TEST_CHATBOT_ID=your_chatbot_id
+export TEST_RECIPIENT_EMAIL=tu_email@example.com
+npx tsx scripts/test-composio-gmail.ts
+```
+
+**Verifica:**
+1. `COMPOSIO_GMAIL_AUTH_CONFIG_ID` configurado en .env
+2. Conexión OAuth activa en Composio
+3. Envío de email de prueba
+4. Lectura de últimos 5 emails
+5. Tools disponibles para el chatbot
+
+#### Crear Auth Config en Composio Dashboard
+
+**Paso 1 - Obtener Credenciales de Google Cloud:**
+1. Ve a https://console.cloud.google.com/apis/credentials
+2. Crea proyecto nuevo o selecciona existente
+3. Habilita **Gmail API**
+4. Crear credenciales → **OAuth 2.0 Client ID**
+5. Tipo de aplicación: **Web application**
+6. Authorized redirect URIs: `https://backend.composio.dev/api/v1/auth-apps/add`
+7. Copia `Client ID` y `Client Secret`
+
+**Paso 2 - Crear Auth Config en Composio:**
+1. Ve a https://platform.composio.dev/marketplace/gmail
+2. Clic en **"Create Gmail Auth Config"**
+3. Selecciona **OAuth2**
+4. Pega `Client ID` y `Client Secret` de Google
+5. Scopes (ya pre-configurados):
+   - `https://mail.google.com/` (acceso completo a Gmail)
+   - `https://www.googleapis.com/auth/userinfo.email`
+   - `https://www.googleapis.com/auth/userinfo.profile`
+6. Guarda y copia el **Auth Config ID** (empieza con `ac_`)
+7. Agrega a `.env`: `COMPOSIO_GMAIL_AUTH_CONFIG_ID=ac_YOUR_ID_HERE`
+
+#### Troubleshooting Común
+
+**"not connected" o "authentication"**
+→ Verificar que el usuario completó el OAuth flow de Google y que la conexión esté `ACTIVE` en Composio
+
+**"COMPOSIO_GMAIL_AUTH_CONFIG_ID no está configurado"**
+→ Crear Auth Config en Composio dashboard (ver sección anterior)
+
+**OAuth callback falla con 404**
+→ Verificar que `APP_URL` en .env apunte a tu dominio correcto (ej: `https://formmy-v2.fly.dev`)
+
+**Composio error "invalid_grant"**
+→ Token expiró, usuario debe re-autorizar (desconectar y volver a conectar Gmail)
+
+**Email no se envía pero no hay error**
+→ Verificar que `recipient_email` sea válido y que el usuario autenticado tenga permisos de envío
+
+**"insufficient permissions"**
+→ Verificar que los scopes de OAuth incluyan `https://mail.google.com/` (Gmail full access)
+
+**Error Prisma: "Invalid value for argument `platform`. Expected IntegrationType"**
+→ Asegurar que `GMAIL` esté en el enum `IntegrationType` del schema de Prisma:
+```prisma
+enum IntegrationType {
+  WHATSAPP
+  GOOGLE_CALENDAR
+  GMAIL        // ← Debe estar presente
+  STRIPE
+}
+```
+→ Correr `npx prisma generate` después de agregar el valor al enum
+
+**🐛 CRÍTICO: Detección de conexiones fallaba (Oct 17)**
+→ **Problema**: Handler buscaba `conn.appName === 'gmail'` pero Composio NO usa `appName`
+→ **Estructura oficial** (según `@composio/client` tipos):
+```typescript
+interface ConnectedAccountListResponse.Item {
+  id: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'FAILED' | ...;
+  is_disabled: boolean;
+  toolkit: { slug: string };  // ← AQUÍ está el toolkit, NO appName
+  // ... otros campos
+}
+```
+
+→ **Solución correcta** (`gmail.ts:94-106`):
+```typescript
+// ✅ CORRECTO según docs oficiales
+const connection = connections.items.find(conn =>
+  conn.status === 'ACTIVE' &&
+  !conn.is_disabled &&
+  conn.toolkit?.slug === 'gmail'
+);
+
+// Fallback: toolkitSlugs ya filtró, tomar primera ACTIVE
+const final = connection || connections.items.find(
+  conn => conn.status === 'ACTIVE' && !conn.is_disabled
+);
+```
+
+→ **Por qué funcionó antes**: El fallback rescató la funcionalidad, pero era un bug enmascarado
+→ **Lección**: NO asumir estructura de APIs externas, revisar tipos oficiales primero
+
+#### Diferencias con WhatsApp Integration
+
+| Aspecto | WhatsApp | Gmail |
+|---------|----------|-------|
+| **Auth Method** | API Key (accessToken de Meta) | OAuth2 (usuario autoriza) |
+| **Token Management** | Manual (Embedded Signup) | Automático (Composio refresh) |
+| **User Flow** | Meta Embedded Signup → tokens | OAuth popup → autorización |
+| **Webhook** | Sí (recibir mensajes) | No (solo enviar/leer) |
+| **Restricciones** | Destinatario debe enviar 1er msg | Ninguna (envío libre) |
+
+---
 
 ### Respuestas Manuales ✅
 **Features**: Toggle manual/auto, WhatsApp Business API, BD persistente
@@ -504,49 +849,250 @@ function calculateDateRange(period: string) {
 
 #### Paso 2: Crear Rutas de Autenticación
 
-**Ruta de inicio OAuth** (`/api/v1/composio/[integration].ts`):
+**⚠️ PATRÓN CORRECTO**: GET (loader) que retorna JSON con authUrl + Frontend abre popup
+
+**Ruta principal** (`/api/v1/composio/[integration].ts`):
 
 ```typescript
-// app/routes/api.v1.composio.google-calendar.ts
+// app/routes/api.v1.composio.gmail.ts
 import { Composio } from '@composio/core';
+import { LlamaindexProvider } from '@composio/llamaindex';
+import { getSession } from '~/sessions';
+import { db } from '~/utils/db.server';
 
-const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new LlamaindexProvider(),
+});
 
-export async function action({ request }: ActionFunctionArgs) {
-  const formData = await request.formData();
-  const chatbotId = formData.get('chatbotId') as string;
-  const userId = formData.get('userId') as string;
+/**
+ * GET /api/v1/composio/gmail?intent=connect|status|disconnect&chatbotId=xxx
+ * ✅ USAR LOADER (GET), NO ACTION (POST)
+ */
+export async function loader({ request }: any) {
+  const url = new URL(request.url);
+  const intent = url.searchParams.get("intent");
+  const chatbotId = url.searchParams.get("chatbotId");
 
-  // Entity ID basado en chatbot
+  // Autenticación y validación...
+  const session = await getSession(request.headers.get("Cookie"));
+  const user = await db.user.findFirst({ where: { id: session.get("userId") } });
+  const chatbot = await db.chatbot.findFirst({ where: { id: chatbotId, userId: user.id } });
+
   const entityId = `chatbot_${chatbotId}`;
 
-  // Iniciar OAuth flow
-  const connection = await composio.connectedAccounts.initiate({
-    userId: entityId,
-    authConfig: 'YOUR_AUTH_CONFIG_ID',
-    redirectUrl: `${process.env.APP_URL}/api/v1/composio/google-calendar/callback`,
-    entityId: entityId,
-  });
+  switch (intent) {
+    case "connect":
+      return handleConnect(entityId, chatbotId, request);
+    case "status":
+      return handleStatus(entityId);
+    case "disconnect":
+      return handleDisconnect(entityId, chatbotId);
+  }
+}
 
-  return redirect(connection.redirectUrl);
+/**
+ * ✅ RETORNAR JSON CON authUrl (NO redirect directo)
+ * Frontend abrirá esta URL en popup
+ */
+async function handleConnect(entityId: string, chatbotId: string, request: Request) {
+  const authConfigId = process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID;
+  const requestUrl = new URL(request.url);
+  const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
+
+  const connection = await composio.connectedAccounts.initiate(
+    entityId,
+    authConfigId,
+    {
+      callbackUrl: `${baseUrl}/api/v1/composio/gmail/callback?chatbotId=${chatbotId}`,
+    }
+  );
+
+  // ✅ Retornar JSON (no redirect)
+  return new Response(
+    JSON.stringify({
+      success: true,
+      authUrl: connection.redirectUrl,
+      entityId,
+      chatbotId,
+    }),
+    { headers: { "Content-Type": "application/json" } }
+  );
 }
 ```
 
 **Ruta de callback** (`/api/v1/composio/[integration].callback.ts`):
 
 ```typescript
-export async function loader({ request }: LoaderFunctionArgs) {
+/**
+ * ✅ CALLBACK CON HTML + postMessage
+ * Composio redirige aquí después de OAuth exitoso
+ */
+export async function loader({ request }: any) {
   const url = new URL(request.url);
-  const code = url.searchParams.get('code');
+  const status = url.searchParams.get("status");
+  const connectedAccountId = url.searchParams.get("connectedAccountId");
+  const chatbotId = url.searchParams.get("chatbotId");
 
-  if (!code) {
-    return redirect('/dashboard?error=oauth_failed');
+  // Manejo de errores
+  if (status && status !== 'success') {
+    return new Response(`
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <h1>❌ Error</h1>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({
+                type: 'composio_oauth_error',
+                error: 'composio_error',
+                description: 'Status: ${status}'
+              }, '*');
+            }
+            setTimeout(() => window.close(), 3000);
+          </script>
+        </body>
+      </html>
+    `, { headers: { "Content-Type": "text/html" } });
   }
 
-  // Composio maneja el token exchange automáticamente
-  // Solo redirigir al usuario de vuelta
-  return redirect('/dashboard?success=calendar_connected');
+  // ✅ Éxito: Guardar en BD + postMessage + HTML con countdown
+  if (status === 'success' && connectedAccountId) {
+    await db.integration.upsert({
+      where: { platform_chatbotId: { platform: 'GMAIL', chatbotId } },
+      create: {
+        platform: 'GMAIL',
+        chatbotId,
+        isActive: true,
+        token: connectedAccountId,
+        lastActivity: new Date(),
+      },
+      update: {
+        isActive: true,
+        token: connectedAccountId,
+        lastActivity: new Date(),
+      },
+    });
+
+    return new Response(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .container {
+              background: white;
+              padding: 3rem;
+              border-radius: 16px;
+              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+              text-align: center;
+              animation: slideIn 0.5s ease-out;
+            }
+            @keyframes slideIn {
+              from { opacity: 0; transform: translateY(-20px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div style="font-size: 4rem;">✅</div>
+            <h1>¡Autorización Exitosa!</h1>
+            <p>Gmail conectado correctamente.</p>
+            <p><strong>Cerrando en <span id="countdown">3</span>s...</strong></p>
+          </div>
+          <script>
+            // ✅ CRÍTICO: Notificar a ventana padre INMEDIATAMENTE
+            if (window.opener && !window.opener.closed) {
+              window.opener.postMessage({
+                type: 'composio_oauth_success',
+                provider: 'gmail',
+                message: 'Gmail conectado exitosamente'
+              }, window.location.origin);
+            }
+
+            // Countdown y cerrar ventana
+            let seconds = 3;
+            const countdownEl = document.getElementById('countdown');
+            const interval = setInterval(() => {
+              seconds--;
+              if (countdownEl) countdownEl.textContent = seconds.toString();
+              if (seconds <= 0) {
+                clearInterval(interval);
+                window.close();
+                setTimeout(() => {
+                  if (!window.closed) {
+                    window.location.href = '/dashboard?integration=success';
+                  }
+                }, 500);
+              }
+            }, 1000);
+          </script>
+        </body>
+      </html>
+    `, { headers: { "Content-Type": "text/html" } });
+  }
 }
+```
+
+**Frontend Modal (React)**:
+
+```typescript
+const handleConnect = async () => {
+  try {
+    // Paso 1: Obtener authUrl del backend
+    const response = await fetch(
+      `/api/v1/composio/gmail?intent=connect&chatbotId=${chatbot.id}`,
+      { method: 'GET', credentials: 'include' }
+    );
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error);
+    }
+
+    // Paso 2: Abrir popup con authUrl
+    const popup = window.open(
+      data.authUrl,
+      'gmail_oauth',
+      'width=600,height=700,left=100,top=100'
+    );
+
+    // Paso 3: Escuchar postMessage desde callback
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data.type === 'composio_oauth_success') {
+        // ✅ Éxito
+        setIsConnected(true);
+        onClose();
+      } else if (event.data.type === 'composio_oauth_error') {
+        // ❌ Error
+        setError(event.data.description);
+      }
+      window.removeEventListener('message', handleMessage);
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Limpiar listener si popup se cierra manualmente
+    const checkClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkClosed);
+        window.removeEventListener('message', handleMessage);
+      }
+    }, 1000);
+  } catch (err) {
+    setError(err.message);
+  }
+};
 ```
 
 #### Paso 3: Crear Handlers

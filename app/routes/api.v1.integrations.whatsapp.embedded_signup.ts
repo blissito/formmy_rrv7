@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from "react-router";
 import { db } from "~/utils/db.server";
+import { getSession } from "~/sessions";
 
 // Mock encryptText para desarrollo
 const encryptText = (text: string) => `encrypted_${text}`;
@@ -55,56 +56,63 @@ export async function action({ request }: ActionFunctionArgs) {
       });
     }
 
-    // Autenticar usuario desde sesión
-    const cookieHeader = request.headers.get("Cookie");
-    if (!cookieHeader) {
+    // Autenticar usuario usando getSession() (consistente con endpoint de Composio)
+    const session = await getSession(request.headers.get("Cookie"));
+    const userIdOrEmail = session.get("userId");
+
+    if (!userIdOrEmail) {
+      console.error("❌ [Embedded Signup] Usuario no autenticado - sesión no contiene userId");
       return Response.json({ error: "Usuario no autenticado" }, { status: 401 });
     }
 
-    // Extraer projectId de la sesión/cookie
-    // Por ahora usamos un approach simple - en producción se debería validar la sesión completa
-    let user: { id: string; projectId: string } | null = null;
+    console.log(`✅ [Embedded Signup] Usuario autenticado: ${userIdOrEmail}`);
 
-    try {
-      // Intentamos obtener user de la sesión/DB usando cookies
-      // Este es un approach simplificado para el MVP
-      const sessionMatch = cookieHeader.match(/projectId=([^;]+)/);
-      if (sessionMatch) {
-        const projectId = decodeURIComponent(sessionMatch[1]);
-        user = { id: 'user_from_session', projectId };
-      }
-    } catch (error) {
-      console.error("Error parsing session:", error);
-    }
+    // Validar si es un ObjectID válido o email
+    const isValidObjectId = /^[a-f\d]{24}$/i.test(userIdOrEmail);
+
+    const user = await db.user.findFirst({
+      where: isValidObjectId
+        ? { id: userIdOrEmail }
+        : { email: userIdOrEmail }
+    });
 
     if (!user) {
-      return Response.json({ error: "Usuario no autenticado" }, { status: 401 });
+      console.error(`❌ [Embedded Signup] Usuario no encontrado en BD: ${userIdOrEmail}`);
+      return Response.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
+
+    console.log(`✅ [Embedded Signup] Usuario encontrado en BD: ${user.id}`);
+
     const { chatbotId, code, accessToken, userID } = body;
 
     // Validar que el chatbot pertenece al usuario
     const chatbot = await db.chatbot.findFirst({
       where: {
         id: chatbotId,
-        projectId: user.projectId,
+        userId: user.id,
       },
     });
 
     if (!chatbot) {
+      console.error(`❌ [Embedded Signup] Chatbot no encontrado: ${chatbotId}`);
       return Response.json({ error: "Chatbot no encontrado" }, { status: 404 });
     }
+
+    console.log(`✅ [Embedded Signup] Chatbot validado: ${chatbot.id}`);
 
     // 1. Intercambiar el código por un token de larga duración
     const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
     const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
 
     if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
-      console.error("Missing Facebook app credentials");
+      console.error("❌ [Embedded Signup] Missing Facebook app credentials");
       return Response.json(
         { error: "Configuración de Meta no disponible" },
         { status: 500 }
       );
     }
+
+    console.log(`🔄 [Embedded Signup] Iniciando intercambio de código por token de larga duración...`);
 
     // Intercambiar el código por un access token de larga duración
     const tokenExchangeUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
@@ -117,7 +125,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error("Token exchange failed:", errorData);
+      console.error("❌ [Embedded Signup] Token exchange failed:", errorData);
       return Response.json(
         { error: "Error al intercambiar el código por token" },
         { status: 400 }
@@ -126,6 +134,8 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const tokenData: MetaTokenExchangeResponse = await tokenResponse.json();
     const longLivedToken = tokenData.access_token;
+
+    console.log(`✅ [Embedded Signup] Token de larga duración obtenido exitosamente`);
 
     // 2. Obtener información del Business Account y Phone Number
     const businessAccountUrl = `https://graph.facebook.com/v21.0/${userID}/businesses`;
@@ -212,6 +222,8 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     // 6. Crear o actualizar la integración en la base de datos
+    console.log(`💾 [Embedded Signup] Guardando integración en BD...`);
+
     const encryptedToken = encryptText(longLivedToken);
 
     const existingIntegration = await db.integration.findFirst({
@@ -225,6 +237,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (existingIntegration) {
       // Actualizar integración existente
+      console.log(`🔄 [Embedded Signup] Actualizando integración existente: ${existingIntegration.id}`);
       integration = await db.integration.update({
         where: { id: existingIntegration.id },
         data: {
@@ -237,6 +250,7 @@ export async function action({ request }: ActionFunctionArgs) {
       });
     } else {
       // Crear nueva integración
+      console.log(`✨ [Embedded Signup] Creando nueva integración para chatbot: ${chatbotId}`);
       integration = await db.integration.create({
         data: {
           chatbotId: chatbotId,
@@ -250,9 +264,21 @@ export async function action({ request }: ActionFunctionArgs) {
       });
     }
 
+    console.log(`✅ [Embedded Signup] Integración guardada en BD: ${integration.id}`);
+    console.log(`📱 [Embedded Signup] Phone Number ID: ${phoneNumber.id}`);
+    console.log(`🏢 [Embedded Signup] Business Account ID: ${businessAccount.id}`);
+
     // 7. Sincronizar historial de conversaciones (opcional, en background)
     // Esto se puede hacer con un job en background para no bloquear la respuesta
     // Por ahora solo marcamos que necesita sincronización
+
+    console.log(`\n${'✅'.repeat(40)}`);
+    console.log(`✅ [Embedded Signup] PROCESO COMPLETADO EXITOSAMENTE`);
+    console.log(`✅ Usuario: ${user.email || user.id}`);
+    console.log(`✅ Chatbot: ${chatbot.name} (${chatbot.id})`);
+    console.log(`✅ Phone: ${phoneNumber.display_phone_number}`);
+    console.log(`✅ Integration ID: ${integration.id}`);
+    console.log(`${'✅'.repeat(40)}\n`);
 
     return Response.json({
       success: true,
@@ -264,6 +290,7 @@ export async function action({ request }: ActionFunctionArgs) {
         phoneNumberId: phoneNumber.id,
         coexistenceMode: true,
         embeddedSignup: true,
+        token: longLivedToken, // Agregar token para el siguiente paso (Composio)
       },
       message: "Integración de WhatsApp configurada exitosamente con Embedded Signup",
     });

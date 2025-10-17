@@ -108,7 +108,8 @@ function buildSystemPrompt(
   config: ResolvedChatbotConfig,
   hasContextSearch: boolean,
   hasWebSearch: boolean,
-  hasReportGeneration: boolean
+  hasReportGeneration: boolean,
+  hasGmailTools: boolean = false
 ): string {
   // 🎯 GHOSTY usa prompt dedicado optimizado
   if (config.name === 'Ghosty') {
@@ -216,13 +217,57 @@ REGLA DE ORO: Solo promete lo que tus tools pueden cumplir. La confianza del usu
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
 
+  // 📧 Instrucciones de Gmail si tiene acceso
+  let gmailInstructions = '';
+  if (hasGmailTools) {
+    gmailInstructions = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📧 CAPACIDADES DE GMAIL:
+
+🔧 HERRAMIENTAS DISPONIBLES:
+- send_gmail: Enviar emails con HTML, CC, BCC
+- read_gmail: Leer y buscar emails en inbox
+
+⚠️ PROTOCOLO CRÍTICO - HONESTIDAD ANTE TODO:
+
+Cuando el usuario pregunta "¿Puedes leer mi correo?":
+1. INTENTA ejecutar read_gmail() PRIMERO
+2. SI la tool ejecuta exitosamente: "Sí, aquí están tus emails..."
+3. SI la tool falla con "not connected" o "authentication": "Necesitas conectar Gmail primero en tu dashboard"
+
+❌ PROHIBIDO:
+- Decir "Sí, puedo leer emails" SIN intentar leer primero
+- Prometer capacidades sin verificar conexión
+
+✅ CORRECTO:
+User: "¿Puedes leer mi correo?"
+→ EJECUTAR read_gmail(max_results: 5)
+→ Si funciona: "Sí, aquí están tus últimos emails: [lista]"
+→ Si falla: "Necesitas conectar tu Gmail desde el dashboard para que pueda leer tus correos"
+
+User: "Lee mis emails"
+→ EJECUTAR read_gmail(max_results: 10)
+
+User: "Busca emails de Juan"
+→ EJECUTAR read_gmail(query: "from:juan@example.com")
+
+User: "Envía un email a maria@empresa.com"
+→ EJECUTAR send_gmail(recipient_email: "maria@empresa.com", subject: "...", body: "...")
+
+REGLA DE ORO: Deja que las tools determinen si puedes o no. NO prometas hasta verificar con la tool.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+  }
+
   // Construir prompt base con personalidad
   let basePrompt: string;
 
   // Si personality es un AgentType válido, usar prompt optimizado
   if (agentTypes.includes(personality as AgentType)) {
-    // ORDEN: searchInstructions → toolGroundingRules → personality → custom instructions
-    basePrompt = `${searchInstructions}${toolGroundingRules}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}${config.customInstructions ? '\n\n' + config.customInstructions : ''}`;
+    // ORDEN: searchInstructions → toolGroundingRules → gmailInstructions → personality → custom instructions
+    basePrompt = `${searchInstructions}${toolGroundingRules}${gmailInstructions}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}${config.customInstructions ? '\n\n' + config.customInstructions : ''}`;
   } else {
     // Fallback a personalidades genéricas (friendly, professional)
     const personalityMap: Record<string, string> = {
@@ -230,8 +275,8 @@ REGLA DE ORO: Solo promete lo que tus tools pueden cumplir. La confianza del usu
       professional: "asistente profesional",
     };
 
-    // ORDEN: searchInstructions → toolGroundingRules → personalidad
-    basePrompt = `${searchInstructions}${toolGroundingRules}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
+    // ORDEN: searchInstructions → toolGroundingRules → gmailInstructions → personalidad
+    basePrompt = `${searchInstructions}${toolGroundingRules}${gmailInstructions}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
 
 ${config.instructions || "Asistente útil."}${config.customInstructions ? '\n\n' + config.customInstructions : ''}
 
@@ -352,7 +397,7 @@ async function createSingleAgent(
 
   const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
 
-  // Detectar si tiene acceso a search_context, web_search_google, y generate_chatbot_report tools
+  // Detectar si tiene acceso a search_context, web_search_google, generate_chatbot_report, y Gmail tools
   const hasContextSearch = allTools.some(
     (tool: any) => tool.metadata?.name === "search_context"
   );
@@ -362,8 +407,11 @@ async function createSingleAgent(
   const hasReportGeneration = allTools.some(
     (tool: any) => tool.metadata?.name === "generate_chatbot_report"
   );
+  const hasGmailTools = allTools.some(
+    (tool: any) => tool.metadata?.name === "send_gmail" || tool.metadata?.name === "read_gmail"
+  );
 
-  const systemPrompt = buildSystemPrompt(resolvedConfig, hasContextSearch, hasWebSearch, hasReportGeneration);
+  const systemPrompt = buildSystemPrompt(resolvedConfig, hasContextSearch, hasWebSearch, hasReportGeneration, hasGmailTools);
 
   // ✅ Crear memoria conversacional según patrón oficial LlamaIndex
   let memory = undefined;

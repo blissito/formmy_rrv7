@@ -11,11 +11,10 @@ import { resolveChatbotConfig, createAgentExecutionContext } from "server/chatbo
 export const action = async ({ request }: Route.ActionArgs): Promise<Response> => {
   try {
     const body = await request.json();
-    const { message, integrations = {}, forceNewConversation = false } = body;
+    const { message, forceNewConversation = false } = body;
 
-    // ✅ NOTE: create_formmy_plan_payment NO necesita integrations
-    // La tool usa process.env.STRIPE_SECRET_KEY directamente
-    // Integrations aquí son para futuras tools del usuario (Google Calendar, etc.)
+    // ✅ ELIMINADO: integrations del request body
+    // Las integraciones se cargarán desde BD automáticamente (más abajo)
 
     if (!message?.trim()) {
       return Response.json(
@@ -143,8 +142,42 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
     };
 
     const resolvedConfig = resolveChatbotConfig(ghostyChatbot as any, user);
+
+    // 🔧 Cargar integraciones activas del usuario desde BD
+    // Ghosty puede usar herramientas de integraciones si ALGÚN chatbot del usuario las tiene
+    console.log(`\n${'🔌'.repeat(40)}`);
+    console.log(`🔌 [Ghosty] Cargando integraciones del usuario: ${user.id}`);
+
+    const { getChatbotIntegrationFlags } = await import("server/chatbot/integrationModel.server");
+    const { db } = await import("../../app/utils/db.server");
+
+    // Obtener todos los chatbots del usuario
+    const userChatbots = await db.chatbot.findMany({
+      where: { userId: user.id },
+      select: { id: true }
+    });
+
+    // Buscar integraciones activas en cualquiera de sus chatbots
+    const integrationFlags = {
+      stripe: false,
+      googleCalendar: false,
+      whatsapp: false,
+      gmail: false
+    };
+
+    for (const chatbot of userChatbots) {
+      const flags = await getChatbotIntegrationFlags(chatbot.id);
+      integrationFlags.stripe = integrationFlags.stripe || flags.stripe;
+      integrationFlags.googleCalendar = integrationFlags.googleCalendar || flags.googleCalendar;
+      integrationFlags.whatsapp = integrationFlags.whatsapp || flags.whatsapp;
+      integrationFlags.gmail = integrationFlags.gmail || flags.gmail;
+    }
+
+    console.log(`   Integraciones encontradas:`, integrationFlags);
+    console.log(`${'🔌'.repeat(40)}\n`);
+
     const agentContext = createAgentExecutionContext(user, null, message, {
-      integrations,
+      integrations: integrationFlags, // ✅ Desde BD, NO desde cliente
       conversationHistory, // ✅ Desde BD, no desde cliente
       conversationId: conversation.id, // Para rate limiting de tools
       isGhosty: true, // Flag para identificar que es Ghosty
