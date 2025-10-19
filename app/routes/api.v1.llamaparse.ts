@@ -6,6 +6,8 @@ import {
   getParsingJobById,
   processParsingJob,
 } from "server/llamaparse/job.service";
+import { uploadParserFile } from "server/llamaparse/upload.service";
+import { addMarkdownToContext } from "server/llamaparse/embedding.service";
 import type { ParsingMode } from "@prisma/client";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -71,10 +73,11 @@ export async function action({ request }: Route.ActionArgs) {
         const fileType = formData.get("fileType") as string;
         const mode = formData.get("mode") as ParsingMode;
         const optionsStr = formData.get("options") as string;
+        const file = formData.get("file") as File | null;
         const options = JSON.parse(optionsStr);
 
         // Validaciones básicas
-        if (!chatbotId || !fileName || !fileSize || !fileType || !mode) {
+        if (!chatbotId || !fileName || !fileSize || !fileType || !mode || !file) {
           return Response.json(
             { success: false, error: "Faltan parámetros requeridos" },
             { status: 400 }
@@ -89,7 +92,18 @@ export async function action({ request }: Route.ActionArgs) {
           );
         }
 
-        // Crear job
+        // Validar tamaño (50MB max)
+        const MAX_FILE_SIZE_MB = 50;
+        const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+          return Response.json(
+            { success: false, error: `Archivo demasiado grande. Máximo ${MAX_FILE_SIZE_MB}MB` },
+            { status: 400 }
+          );
+        }
+
+        // Crear job primero (para obtener jobId)
         const job = await createParsingJob({
           chatbotId,
           userId: user.id,
@@ -100,10 +114,19 @@ export async function action({ request }: Route.ActionArgs) {
           options,
         });
 
+        // Upload archivo a S3
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
+        const { fileKey, publicUrl } = await uploadParserFile(
+          fileBuffer,
+          fileName,
+          job.id,
+          fileType
+        );
+
         // Procesar en background (setTimeout simula queue/worker)
         // En producción esto sería un queue real (Bull, BullMQ, etc.)
         setTimeout(() => {
-          processParsingJob(job.id).catch((error) => {
+          processParsingJob(job.id, publicUrl, fileKey).catch((error) => {
             console.error(`Error procesando job ${job.id}:`, error);
           });
         }, 100);
@@ -150,6 +173,36 @@ export async function action({ request }: Route.ActionArgs) {
         const jobs = await getUserParsingJobs(user.id, limit);
 
         return Response.json({ success: true, jobs });
+      }
+
+      case "add_to_context": {
+        const chatbotId = formData.get("chatbotId") as string;
+        const markdown = formData.get("markdown") as string;
+        const fileName = formData.get("fileName") as string;
+
+        if (!chatbotId || !markdown || !fileName) {
+          return Response.json(
+            { success: false, error: "Faltan parámetros requeridos" },
+            { status: 400 }
+          );
+        }
+
+        // TODO: Verificar que el chatbot pertenece al usuario
+
+        const result = await addMarkdownToContext(chatbotId, markdown, fileName);
+
+        if (!result.success) {
+          return Response.json(
+            { success: false, error: result.error || "Error agregando al contexto" },
+            { status: 500 }
+          );
+        }
+
+        return Response.json({
+          success: true,
+          embeddingsCreated: result.embeddingsCreated,
+          message: `${result.embeddingsCreated} fragmentos agregados al contexto`,
+        });
       }
 
       default:

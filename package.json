@@ -68,6 +68,7 @@
     "isbot": "^5.1.17",
     "js-confetti": "^0.12.0",
     "jsdom": "^26.1.0",
+    "llama-cloud-services": "^0.3.9",
     "llamaindex": "^0.12.0",
     "mammoth": "^1.10.0",
     "motion": "^12.23.12",

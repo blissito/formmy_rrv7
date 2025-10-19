@@ -224,6 +224,7 @@ export const ExtraccionAvanzada = ({
       formData.append("fileType", selectedFile.type || "application/octet-stream");
       formData.append("mode", selectedMode);
       formData.append("options", JSON.stringify(advancedOptions));
+      formData.append("file", selectedFile); // ⭐ Agregar archivo real
 
       const res = await fetch("/api/v1/llamaparse", {
         method: "POST",
@@ -250,10 +251,33 @@ export const ExtraccionAvanzada = ({
   const handleAddToContext = async () => {
     if (!parsedResult) return;
 
-    // TODO: Implementar guardado en contexto
-    alert(
-      `Próximamente: Agregar resultado al contexto del chatbot\n\nArchivo: ${parsedResult.fileName}\nModo: ${parsedResult.mode}`
-    );
+    try {
+      const formData = new FormData();
+      formData.append("intent", "add_to_context");
+      formData.append("chatbotId", chatbot.id);
+      formData.append("markdown", parsedResult.markdown);
+      formData.append("fileName", parsedResult.fileName);
+
+      const res = await fetch("/api/v1/llamaparse", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Error agregando al contexto");
+      }
+
+      alert(
+        `✅ Éxito!\n\n${data.embeddingsCreated} fragmentos agregados al contexto del chatbot.\n\nYa puedes hacer preguntas sobre "${parsedResult.fileName}" en tus conversaciones.`
+      );
+    } catch (err) {
+      console.error("Error adding to context:", err);
+      alert(
+        `❌ Error: ${err instanceof Error ? err.message : "Error del servidor"}`
+      );
+    }
   };
 
   const handleReset = () => {

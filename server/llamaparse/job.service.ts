@@ -1,5 +1,7 @@
 import { db } from "~/utils/db.server";
 import type { ParsingMode, ParsingStatus } from "@prisma/client";
+import { LlamaParseReader } from "llama-cloud-services";
+import { deleteParserFile } from "./upload.service";
 
 interface CreateParsingJobParams {
   chatbotId: string;
@@ -11,7 +13,7 @@ interface CreateParsingJobParams {
   options: any;
 }
 
-interface MockParsingResult {
+interface ParsingResult {
   markdown: string;
   pages: number;
   processingTime: number;
@@ -75,72 +77,112 @@ export async function getParsingJobById(jobId: string) {
 }
 
 /**
- * MOCK: Simular procesamiento de documento
- * Mañana esto se reemplazará con LlamaParse real
+ * Mapear modo de Formmy a configuración de LlamaParse
  */
-async function mockParsing(
+function getParseConfig(mode: ParsingMode, options: any) {
+  const baseConfig: any = {
+    resultType: "markdown",
+    verbose: false,
+  };
+
+  switch (mode) {
+    case "COST_EFFECTIVE":
+      return {
+        ...baseConfig,
+        // Modo simple y rápido
+      };
+
+    case "AGENTIC":
+      return {
+        ...baseConfig,
+        // Modo balanceado con agent
+        // @ts-ignore - LlamaParse types pueden no estar actualizados
+        parseMode: "parse_page_with_agent",
+        model: "openai-gpt-4-1-mini",
+        adaptiveLongTable: options.extractTables,
+        outlinedTableExtraction: options.extractTables,
+        outputTablesAsHTML: options.preserveFormatting,
+      };
+
+    case "AGENTIC_PLUS":
+      return {
+        ...baseConfig,
+        // Modo premium con alta precisión
+        // @ts-ignore
+        parseMode: "parse_page_with_agent",
+        model: "openai-gpt-4-1-mini",
+        highResOcr: options.extractImages,
+        adaptiveLongTable: options.extractTables,
+        outlinedTableExtraction: options.extractTables,
+        outputTablesAsHTML: options.preserveFormatting,
+      };
+
+    default:
+      return baseConfig;
+  }
+}
+
+/**
+ * Procesar documento con LlamaParse real
+ */
+async function realParsing(
+  fileUrl: string,
   fileName: string,
-  mode: ParsingMode
-): Promise<MockParsingResult> {
-  // Simular procesamiento con delay variable por modo
-  const delays = {
-    COST_EFFECTIVE: 1500,
-    AGENTIC: 2500,
-    AGENTIC_PLUS: 3500,
-  };
+  mode: ParsingMode,
+  options: any
+): Promise<ParsingResult> {
+  const startTime = Date.now();
 
-  await new Promise((resolve) => setTimeout(resolve, delays[mode]));
+  try {
+    // Inicializar LlamaParse reader
+    const reader = new LlamaParseReader({
+      apiKey: process.env.LLAMA_CLOUD_API_KEY!,
+      ...getParseConfig(mode, options),
+    });
 
-  const modeLabels = {
-    COST_EFFECTIVE: "Cost Effective",
-    AGENTIC: "Agentic",
-    AGENTIC_PLUS: "Agentic Plus",
-  };
+    console.log(`📄 Parsing ${fileName} with mode ${mode}...`);
 
-  return {
-    markdown: `# Resultado de Extracción Avanzada
+    // Procesar documento
+    const documents = await reader.loadData(fileUrl);
 
-## Documento: ${fileName}
-**Modo:** ${modeLabels[mode]}
+    // Extraer markdown de los documentos
+    let markdown = "";
+    let totalPages = 0;
 
----
+    if (Array.isArray(documents)) {
+      markdown = documents.map((doc) => doc.text || "").join("\n\n");
+      totalPages = documents.length;
+    } else {
+      markdown = documents.text || "";
+      totalPages = 1;
+    }
 
-### Resumen
+    const processingTime = (Date.now() - startTime) / 1000;
 
-Este documento ha sido procesado exitosamente con nuestro motor de procesamiento inteligente.
+    console.log(`✅ Parsed ${totalPages} pages in ${processingTime.toFixed(2)}s`);
 
-### Contenido Extraído
-
-- ✅ Texto estructurado detectado
-- ✅ Tablas y datos tabulares identificados
-- ✅ Imágenes y diagramas procesados
-- ✅ Formato preservado correctamente
-
-### Tabla de Ejemplo
-
-| Métrica | Valor |
-|---------|-------|
-| Páginas procesadas | 5 |
-| Precisión | Alta |
-| Tiempo | Óptimo |
-
-### Conclusión
-
-El procesamiento se completó exitosamente. El contenido está listo para ser agregado al contexto de tu chatbot.
-
----
-
-*Procesado con Formmy Extracción Avanzada - Modo: ${modeLabels[mode]}*`,
-    pages: Math.floor(Math.random() * 10) + 1,
-    processingTime: delays[mode] / 1000,
-  };
+    return {
+      markdown,
+      pages: totalPages,
+      processingTime,
+    };
+  } catch (error) {
+    console.error("❌ LlamaParse error:", error);
+    throw new Error(
+      `Error parsing document: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
 }
 
 /**
  * Procesar un job de parsing
  * Esta función será llamada por el worker/background processor
  */
-export async function processParsingJob(jobId: string) {
+export async function processParsingJob(
+  jobId: string,
+  fileUrl: string,
+  fileKey: string
+) {
   try {
     // 1. Actualizar estado a PROCESSING
     const job = await db.parsingJob.update({
@@ -148,10 +190,18 @@ export async function processParsingJob(jobId: string) {
       data: { status: "PROCESSING" },
     });
 
-    // 2. Procesar documento (MOCK por ahora)
-    const result = await mockParsing(job.fileName, job.mode);
+    // 2. Procesar documento con LlamaParse real
+    const result = await realParsing(
+      fileUrl,
+      job.fileName,
+      job.mode,
+      job.options
+    );
 
-    // 3. Actualizar con resultado exitoso
+    // 3. Eliminar archivo temporal de S3
+    await deleteParserFile(fileKey);
+
+    // 4. Actualizar con resultado exitoso
     await db.parsingJob.update({
       where: { id: jobId },
       data: {
@@ -165,8 +215,15 @@ export async function processParsingJob(jobId: string) {
 
     console.log(`✅ Job ${jobId} completed successfully`);
   } catch (error) {
-    // 4. Manejar error
+    // 5. Manejar error
     console.error(`❌ Job ${jobId} failed:`, error);
+
+    // Intentar limpiar archivo de S3 aunque haya fallado
+    try {
+      await deleteParserFile(fileKey);
+    } catch (cleanupError) {
+      console.error("Error cleaning up S3 file:", cleanupError);
+    }
 
     await db.parsingJob.update({
       where: { id: jobId },
