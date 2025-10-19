@@ -1,12 +1,11 @@
 # Formmy
 
-**AI-powered forms, chatbots, and document parsing platform** built with React Router v7, LlamaIndex, and OpenRouter.
+**AI-powered forms, chatbots, and document parsing platform** built with React Router v7 and LlamaIndex.
 
 Production SaaS for creating intelligent chatbots with RAG, tool calling, and document parsing capabilities.
 
-🌐 **Live**: https://formmy-v2.fly.dev
-📦 **SDK**: [@formmy/parser](./sdk/formmy-parser)
-🔧 **Stack**: React Router v7, Prisma, MongoDB, Fly.io, Stripe, AWS SES
+**Live**: https://formmy-v2.fly.dev
+**Stack**: React Router v7, Prisma, MongoDB, Fly.io, Stripe, AWS SES
 
 ---
 
@@ -53,9 +52,11 @@ npm run deploy  # Deploy to Fly.io
 
 ---
 
-## 📚 Parser SDK (@formmy/parser)
+## 📚 Parser SDK
 
 Production-ready TypeScript SDK for parsing documents and querying RAG knowledge bases.
+
+**Location**: `/sdk/formmy-parser.ts`
 
 ### Installation
 
@@ -672,7 +673,7 @@ await ses.send(new SendEmailCommand({
 - **Frontend**: React Router v7, Tailwind CSS
 - **Backend**: React Router v7 Server Functions
 - **Database**: MongoDB Atlas (Prisma ORM)
-- **AI**: LlamaIndex, OpenRouter, OpenAI
+- **AI**: LlamaIndex (GPT-5, Claude 3.5, Gemini 2.0)
 - **Hosting**: Fly.io
 - **Payments**: Stripe
 - **Email**: AWS SES
