@@ -4,7 +4,7 @@
  */
 
 import Agenda from 'agenda';
-import prisma from '~/server/db.server';
+import { db as prisma } from '~/utils/db.server';
 
 const MONGO_URI = process.env.MONGO_ATLAS!;
 
@@ -14,11 +14,12 @@ if (!MONGO_URI) {
 
 // Singleton instance
 let agendaInstance: Agenda | null = null;
+let agendaReady: Promise<void> | null = null;
 
 /**
- * Get or create Agenda instance
+ * Get or create Agenda instance and wait for it to be ready
  */
-export function getAgenda(): Agenda {
+export async function getAgenda(): Promise<Agenda> {
   if (!agendaInstance) {
     agendaInstance = new Agenda({
       db: {
@@ -44,10 +45,15 @@ export function getAgenda(): Agenda {
       console.log(`[Agenda] Job ${job.attrs.name} succeeded`);
     });
 
-    // Start agenda
-    agendaInstance.start();
+    // Start agenda and wait for connection
+    agendaReady = agendaInstance.start().then(() => {
+      console.log('[Agenda] Started and connected to MongoDB successfully');
+    });
+  }
 
-    console.log('[Agenda] Started successfully');
+  // Wait for agenda to be ready
+  if (agendaReady) {
+    await agendaReady;
   }
 
   return agendaInstance;

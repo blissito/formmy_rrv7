@@ -5,7 +5,7 @@
 
 import type { Job } from 'agenda';
 import { getAgenda } from '../agenda.server';
-import { processParsingJob } from '~/server/llamaparse/job.service';
+import { processParsingJob } from '../../llamaparse/job.service';
 
 export interface ParserJobData {
   jobId: string;
@@ -17,8 +17,8 @@ export interface ParserJobData {
 /**
  * Register parser worker with Agenda
  */
-export function registerParserWorker() {
-  const agenda = getAgenda();
+export async function registerParserWorker() {
+  const agenda = await getAgenda();
 
   agenda.define<ParserJobData>(
     'process-parsing-job',
@@ -48,7 +48,7 @@ export function registerParserWorker() {
  * Enqueue a new parsing job
  */
 export async function enqueueParsingJob(data: ParserJobData): Promise<void> {
-  const agenda = getAgenda();
+  const agenda = await getAgenda();
 
   await agenda.now('process-parsing-job', data);
 

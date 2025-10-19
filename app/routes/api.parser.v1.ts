@@ -7,18 +7,18 @@
  */
 
 // ⭐ Cargar .env PRIMERO (desarrollo local)
-import "server/env.server";
+import "../../server/env.server";
 
 import type { Route } from "./+types/api.parser.v1";
-import { extractApiKeyFromRequest, authenticateApiKey } from "server/chatbot/apiKeyAuth.server";
+import { extractApiKeyFromRequest, authenticateApiKey } from "../../server/chatbot/apiKeyAuth.server";
 import {
   createParsingJob,
   getParsingJobById,
-} from "server/llamaparse/job.service";
-import { uploadParserFile } from "server/llamaparse/upload.service";
+} from "../../server/llamaparse/job.service";
+import { uploadParserFile } from "../../server/llamaparse/upload.service";
 import type { ParsingMode } from "@prisma/client";
-import { enqueueParsingJob } from "server/jobs/workers/parser-worker";
-import { registerParserWorker } from "server/jobs/workers/parser-worker";
+import { enqueueParsingJob } from "../../server/jobs/workers/parser-worker";
+import { registerParserWorker } from "../../server/jobs/workers/parser-worker";
 
 /**
  * GET - Check job status
@@ -188,7 +188,7 @@ export async function action({ request }: Route.ActionArgs) {
       const LLAMA_KEY = process.env.LLAMA_CLOUD_API_KEY;
 
       // Registrar worker (solo se ejecuta una vez gracias al singleton)
-      registerParserWorker();
+      await registerParserWorker();
 
       // Encolar job en Agenda.js para procesamiento asíncrono
       await enqueueParsingJob({

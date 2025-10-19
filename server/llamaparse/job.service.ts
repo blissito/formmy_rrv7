@@ -261,41 +261,52 @@ export async function processParsingJob(
       },
     });
 
-    // 5. Agregar a contexts[] del chatbot (Single Source of Truth)
+    // 5. Agregar a contexts[] del chatbot usando Prisma $raw (safe MongoDB $push)
     if (completedJob.chatbotId && result.markdown) {
       console.log(`📝 Adding ParsingJob ${jobId} to chatbot.contexts[]`);
 
-      const chatbot = await db.chatbot.findUnique({
-        where: { id: completedJob.chatbotId },
-        select: { contexts: true }
-      });
+      try {
+        const { ObjectId } = await import('mongodb');
 
-      const existingContexts = (chatbot?.contexts || []) as any[];
+        const newContext = {
+          id: jobId,
+          type: "FILE",
+          fileName: completedJob.fileName,
+          fileType: completedJob.fileType,
+          fileUrl: null,
+          url: null,
+          title: null,
+          sizeKB: Math.round(completedJob.fileSize / 1024),
+          content: result.markdown,
+          routes: [],
+          questions: null,
+          answer: null,
+          createdAt: new Date(),
+        };
 
-      // Agregar nuevo context con el markdown parseado
-      const newContext = {
-        id: jobId, // Usar mismo ID del ParsingJob para consistency
-        type: "FILE",
-        content: result.markdown,
-        fileName: completedJob.fileName,
-        createdAt: new Date().toISOString(),
-        enabled: true,
-      };
+        // Usar $runCommandRaw para ejecutar updateOne con $push de manera segura
+        await db.$runCommandRaw({
+          update: 'Chatbot',
+          updates: [
+            {
+              q: { _id: new ObjectId(completedJob.chatbotId) },
+              u: { $push: { contexts: newContext } },
+            },
+          ],
+        });
 
-      await db.chatbot.update({
-        where: { id: completedJob.chatbotId },
-        data: {
-          contexts: [...existingContexts, newContext]
-        }
-      });
+        console.log(`✅ Context added to chatbot ${completedJob.chatbotId}`);
 
-      console.log(`✅ Context added to chatbot ${completedJob.chatbotId}`);
-
-      // 6. Auto-vectorizar el nuevo context
-      console.log(`🔄 Auto-vectorizing new context ${jobId}...`);
-      const { vectorizeContext } = await import("server/vector/auto-vectorize.service");
-      await vectorizeContext(completedJob.chatbotId, newContext);
-      console.log(`✅ Context vectorized`);
+        // Auto-vectorizar el nuevo context
+        console.log(`🔄 Auto-vectorizing new context ${jobId}...`);
+        const { vectorizeContext } = await import("server/vector/auto-vectorize.service");
+        await vectorizeContext(completedJob.chatbotId, newContext as any);
+        console.log(`✅ Context vectorized`);
+      } catch (error) {
+        console.error(`⚠️ Failed to add/vectorize context: ${error}`);
+        // No fallar el job completo si la vectorización falla
+        // El resultado queda disponible en ParsingJob.resultMarkdown
+      }
     }
 
     console.log(`✅ Job ${jobId} completed successfully`);
