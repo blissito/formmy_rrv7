@@ -177,22 +177,37 @@ export const GhostyMessageComponent = ({
             <div className="mt-4 pt-4 border-t border-outlines/50">
               <p className="text-sm font-semibold text-dark mb-3">📚 Fuentes consultadas</p>
               <div className="grid gap-3">
-                {message.sources.map((source, index) => (
-                  <a
+                {message.sources.map((source, index) => {
+                  const isFileSource = !!source.fileName; // Es fuente de archivo/documento RAG
+
+                  return (
+                  <div
                     key={index}
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    {...(!isFileSource && source.url ? {
+                      onClick: () => window.open(source.url, '_blank'),
+                      style: { cursor: 'pointer' }
+                    } : {})}
                     className={cn(
                       "flex items-start gap-3 p-3 rounded-lg border border-outlines/30",
-                      "hover:border-brand-300 hover:bg-brand-50/30 transition-all duration-200",
+                      !isFileSource && "hover:border-brand-300 hover:bg-brand-50/30 transition-all duration-200",
+                      isFileSource && "bg-purple-50/30 border-purple-200/50",
                       "group"
                     )}
                   >
                     {/* Thumbnail */}
                     <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-50 border border-outlines/30 flex items-center justify-center relative">
-                      {/* Prioridad 1: Open Graph Image (thumbnail principal) */}
-                      {source.image ? (
+                      {isFileSource ? (
+                        /* Fuente de archivo RAG */
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200">
+                          <div className="text-2xl">📄</div>
+                          {source.score && (
+                            <div className="text-[10px] font-bold text-purple-700 mt-1">
+                              {(source.score * 100).toFixed(0)}%
+                            </div>
+                          )}
+                        </div>
+                      ) : source.image ? (
+                        /* Prioridad 1: Open Graph Image (thumbnail principal) */
                         <>
                           <img
                             src={source.image}
@@ -287,20 +302,38 @@ export const GhostyMessageComponent = ({
                           {source.snippet}
                         </p>
                       )}
-                      
-                      <div className="flex items-center gap-2 text-xs text-lightgray">
-                        <span className="truncate">
-                          {source.siteName || new URL(source.url).hostname}
-                        </span>
-                        {source.publishedTime && (
+
+                      <div className="flex items-center gap-2 text-xs text-lightgray flex-wrap">
+                        {isFileSource ? (
                           <>
-                            <span>•</span>
-                            <time className="flex-shrink-0">
-                              {new Date(source.publishedTime).toLocaleDateString('es-ES', {
-                                day: 'numeric',
-                                month: 'short'
-                              })}
-                            </time>
+                            <span className="font-medium text-purple-600 truncate">
+                              📄 {source.fileName}
+                            </span>
+                            {source.chunkIndex !== undefined && (
+                              <>
+                                <span>•</span>
+                                <span className="text-[10px] text-metal">
+                                  chunk {source.chunkIndex + 1}
+                                </span>
+                              </>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <span className="truncate">
+                              {source.siteName || (source.url ? new URL(source.url).hostname : 'Web')}
+                            </span>
+                            {source.publishedTime && (
+                              <>
+                                <span>•</span>
+                                <time className="flex-shrink-0">
+                                  {new Date(source.publishedTime).toLocaleDateString('es-ES', {
+                                    day: 'numeric',
+                                    month: 'short'
+                                  })}
+                                </time>
+                              </>
+                            )}
                           </>
                         )}
                       </div>
@@ -340,8 +373,9 @@ export const GhostyMessageComponent = ({
                         </div>
                       )}
                     </div>
-                  </a>
-                ))}
+                  </div>
+                  );
+                })}
               </div>
             </div>
           )}

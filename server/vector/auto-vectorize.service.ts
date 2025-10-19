@@ -4,7 +4,7 @@
  */
 
 import { db } from '~/utils/db.server';
-import { generateEmbedding } from './embedding.service';
+import { generateEmbedding, cosineSimilarity } from './embedding.service';
 import type { ContextItem } from '@prisma/client';
 
 /**
@@ -16,6 +16,53 @@ const MAX_CHUNK_SIZE = 2000;
  * Overlap entre chunks para mantener contexto
  */
 const CHUNK_OVERLAP = 200;
+
+/**
+ * Umbral de similaridad semántica para prevenir duplicados
+ * Si un chunk tiene > 85% similaridad con alguno existente, se considera duplicado
+ */
+const SIMILARITY_THRESHOLD = 0.85;
+
+/**
+ * Verifica si un chunk es semánticamente similar a algún embedding existente en el store
+ * @param chunkEmbedding - Embedding del chunk a verificar
+ * @param chatbotId - ID del chatbot (define el "store")
+ * @returns true si es duplicado, false si es único
+ */
+async function isDuplicateChunk(
+  chunkEmbedding: number[],
+  chatbotId: string
+): Promise<boolean> {
+  try {
+    // Obtener TODOS los embeddings del chatbot (el "store")
+    const existingEmbeddings = await db.embedding.findMany({
+      where: { chatbotId },
+      select: {
+        embedding: true,
+      },
+    });
+
+    if (existingEmbeddings.length === 0) {
+      return false; // No hay embeddings previos, no puede ser duplicado
+    }
+
+    // Comparar con cada embedding existente
+    for (const existing of existingEmbeddings) {
+      const similarity = cosineSimilarity(chunkEmbedding, existing.embedding as number[]);
+
+      if (similarity >= SIMILARITY_THRESHOLD) {
+        console.log(`⚠️  Chunk duplicado detectado (similaridad: ${(similarity * 100).toFixed(1)}%)`);
+        return true; // Es duplicado
+      }
+    }
+
+    return false; // Es único
+  } catch (error) {
+    console.error("Error verificando duplicados:", error);
+    // En caso de error, permitir inserción (fail-open)
+    return false;
+  }
+}
 
 /**
  * Divide texto largo en chunks con overlap
@@ -99,7 +146,7 @@ function extractTextFromContext(context: ContextItem): string {
 export async function vectorizeContext(
   chatbotId: string,
   context: ContextItem
-): Promise<{ success: boolean; embeddingsCreated: number; error?: string }> {
+): Promise<{ success: boolean; embeddingsCreated: number; embeddingsSkipped?: number; error?: string }> {
   try {
     // Extraer texto
     const fullText = extractTextFromContext(context);
@@ -115,14 +162,55 @@ export async function vectorizeContext(
     // Dividir en chunks si es necesario
     const chunks = chunkText(fullText);
 
+    console.log(`📝 Verificando y creando embeddings (${chunks.length} chunks)...`);
+
     // Generar embeddings para cada chunk
     let created = 0;
+    let skipped = 0;
+
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      
+
       try {
+        // Generar embedding del chunk
         const embedding = await generateEmbedding(chunk);
 
+        // ⭐ TEST SEMÁNTICO a nivel de STORE (todos los documentos del chatbot)
+        const isDuplicate = await isDuplicateChunk(embedding, chatbotId);
+
+        if (isDuplicate) {
+          console.log(`⏭️  Chunk ${i + 1}/${chunks.length} saltado (duplicado semántico)`);
+          skipped++;
+          continue; // NO insertar chunk duplicado
+        }
+
+        // Construir metadata con valores fallback según el tipo
+        // IMPORTANTE: Garantizar que siempre haya al menos un identificador válido
+        let title = context.title;
+        let fileName = context.fileName;
+        let url = context.url;
+
+        // Aplicar fallbacks según el tipo de contexto
+        switch (context.type) {
+          case 'FILE':
+            // Para archivos, fileName es prioritario
+            fileName = fileName || title || 'Unnamed file';
+            break;
+          case 'LINK':
+            // Para links, title y url son prioritarios
+            title = title || (url ? new URL(url).hostname : 'Unnamed link');
+            break;
+          case 'TEXT':
+            // Para texto, title es prioritario
+            title = title || 'Unnamed text';
+            break;
+          case 'QUESTION':
+            // Para FAQs, usar la pregunta como title
+            title = title || context.questions || 'Unnamed question';
+            break;
+        }
+
+        // Insertar solo si NO es duplicado
         await db.embedding.create({
           data: {
             chatbotId,
@@ -131,9 +219,9 @@ export async function vectorizeContext(
             metadata: {
               contextId: context.id,
               contextType: context.type,
-              title: context.title,
-              fileName: context.fileName,
-              url: context.url,
+              title,
+              fileName,
+              url,
               chunkIndex: i,
               totalChunks: chunks.length,
               source: 'auto-vectorize'
@@ -142,15 +230,19 @@ export async function vectorizeContext(
         });
 
         created++;
+        console.log(`✅ Chunk ${i + 1}/${chunks.length} agregado (único)`);
       } catch (chunkError) {
         console.error(`Error generando embedding para chunk ${i}:`, chunkError);
         // Continuar con los demás chunks aunque falle uno
       }
     }
 
+    console.log(`✅ Resultado: ${created} creados, ${skipped} duplicados (de ${chunks.length} chunks totales)`);
+
     return {
       success: true,
-      embeddingsCreated: created
+      embeddingsCreated: created,
+      embeddingsSkipped: skipped
     };
 
   } catch (error: any) {

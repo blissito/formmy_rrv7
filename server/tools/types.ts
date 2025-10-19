@@ -11,6 +11,7 @@ export interface ToolContext {
   message: string;
   integrations: Record<string, any>;
   isGhosty?: boolean; // Flag para distinguir Ghosty de chatbots públicos
+  onSourcesFound?: (sources: any[]) => void; // Callback para emitir fuentes al stream
 }
 
 export interface ToolResponse {

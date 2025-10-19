@@ -9,6 +9,11 @@ export interface SearchSource {
   siteName?: string;
   publishedTime?: string;
   images?: string[]; // Galería que se carga después
+  // 🆕 Metadata para fuentes de RAG (archivos/documentos)
+  fileName?: string;
+  score?: number;
+  chunkIndex?: number;
+  contextType?: 'FILE' | 'LINK' | 'TEXT' | 'QUESTION';
 }
 
 export type MessageRole = 'user' | 'assistant';
@@ -111,6 +116,7 @@ export const useGhostyV0Chat = (initialMessages: GhostyMessage[] = []) => {
       let buffer = '';
       let currentContent = '';
       const toolsUsed: string[] = [];
+      let ragSources: any[] = []; // Para almacenar fuentes de RAG (search_context)
 
       while (true) {
         const { done, value } = await reader.read();
@@ -140,6 +146,10 @@ export const useGhostyV0Chat = (initialMessages: GhostyMessage[] = []) => {
                 if (!toolsUsed.includes(parsed.tool)) {
                   toolsUsed.push(parsed.tool);
                 }
+              } else if (parsed.type === 'sources') {
+                // 🔍 Handler para fuentes de RAG (search_context)
+                console.log('[useGhostyV0Chat] Recibiendo fuentes de RAG:', parsed.sources);
+                ragSources = parsed.sources || [];
               } else if (parsed.type === 'chunk') {
                 setCurrentState('streaming');
                 setCurrentTool(null);
@@ -150,10 +160,30 @@ export const useGhostyV0Chat = (initialMessages: GhostyMessage[] = []) => {
                   toolsUsed: [...toolsUsed]
                 });
               } else if (parsed.type === 'done') {
+                // Convertir fuentes de RAG al formato SearchSource
+                const formattedSources: SearchSource[] = ragSources.map((source: any) => {
+                  // Priorizar fileName > title > url para el título
+                  const displayTitle = source.metadata?.fileName ||
+                                      source.metadata?.title ||
+                                      source.metadata?.url ||
+                                      'Documento';
+
+                  return {
+                    title: displayTitle,
+                    url: source.metadata?.url || '#',
+                    snippet: source.text || '',
+                    fileName: source.metadata?.fileName,
+                    score: source.score,
+                    chunkIndex: source.metadata?.chunkIndex,
+                    contextType: source.metadata?.source || 'FILE'
+                  };
+                });
+
                 updateMessage(assistantMessage.id, {
                   content: currentContent,
                   isStreaming: false,
-                  toolsUsed: [...toolsUsed]
+                  toolsUsed: [...toolsUsed],
+                  sources: formattedSources.length > 0 ? formattedSources : undefined
                 });
                 setCurrentState('idle');
                 setCurrentTool(null);

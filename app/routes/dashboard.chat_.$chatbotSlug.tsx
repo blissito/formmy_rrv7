@@ -159,6 +159,22 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     },
   });
 
+  // Filtrar contextos sin embeddings (documentos eliminados)
+  if (chatbot.contexts && chatbot.contexts.length > 0) {
+    const allEmbeddings = await db.embedding.findMany({
+      where: { chatbotId: chatbot.id },
+      select: { metadata: true }
+    });
+
+    // Filtrar solo contextos que tienen embeddings
+    chatbot.contexts = chatbot.contexts.filter((ctx: any) => {
+      const hasEmbeddings = allEmbeddings.some((emb: any) =>
+        emb.metadata?.contextId === ctx.id
+      );
+      return hasEmbeddings;
+    });
+  }
+
   return {
     user,
     chatbot,

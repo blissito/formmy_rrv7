@@ -6,9 +6,16 @@
  * import { FormmyParser } from './sdk/formmy-parser';
  *
  * const parser = new FormmyParser('sk_live_xxxxx');
+ *
+ * // Parse documento
  * const job = await parser.parse('./documento.pdf', 'AGENTIC');
  * const result = await parser.waitFor(job.id);
  * console.log(result.markdown);
+ *
+ * // Query RAG
+ * const ragResult = await parser.query('¿horarios?', 'chatbot_id_xxx');
+ * console.log(ragResult.answer);
+ * console.log(ragResult.sources);
  * ```
  */
 
@@ -18,6 +25,8 @@ import * as path from 'path';
 export type ParsingMode = 'COST_EFFECTIVE' | 'AGENTIC' | 'AGENTIC_PLUS';
 
 export type JobStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+export type QueryMode = 'fast' | 'accurate';
 
 export interface ParsingJob {
   id: string;
@@ -36,6 +45,31 @@ export interface ParsingJob {
 export interface ParserConfig {
   apiKey: string;
   baseUrl?: string;
+}
+
+export interface RAGQueryResult {
+  query: string;
+  answer?: string; // Solo en mode="accurate"
+  results?: Array<{
+    content: string;
+    score: number;
+    metadata: {
+      fileName?: string;
+      page?: number;
+      chunkIndex?: number;
+    };
+  }>;
+  sources?: Array<{
+    content: string;
+    score: number;
+    metadata: {
+      fileName?: string;
+      page?: number;
+      chunkIndex?: number;
+    };
+  }>;
+  creditsUsed: number;
+  processingTime: number;
 }
 
 export class FormmyParser {
@@ -150,5 +184,40 @@ export class FormmyParser {
     }
 
     throw new Error(`Timeout waiting for job ${jobId} to complete`);
+  }
+
+  /**
+   * Query RAG - Búsqueda semántica en la base de conocimiento
+   */
+  async query(
+    query: string,
+    chatbotId: string,
+    options: {
+      mode?: QueryMode; // default: 'accurate'
+      contextId?: string; // Para test específico de documento
+    } = {}
+  ): Promise<RAGQueryResult> {
+    const { mode = 'accurate', contextId } = options;
+
+    const response = await fetch(`${this.baseUrl}/api/rag/v1?intent=query`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query,
+        chatbotId,
+        contextId,
+        mode
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`RAG API error: ${error.error || error.message || response.statusText}`);
+    }
+
+    return await response.json();
   }
 }

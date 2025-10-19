@@ -4,15 +4,16 @@
  */
 
 import OpenAI from 'openai';
+import { EMBEDDING_MODEL, EMBEDDING_DIMENSIONS, validateEmbeddingDimensions } from './vector-config';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 /**
- * Genera embedding de un texto usando OpenAI text-embedding-3-small
+ * Genera embedding de un texto usando OpenAI
  * @param text - Texto a convertir en vector
- * @returns Vector de 768 dimensiones
+ * @returns Vector con dimensiones configuradas en EMBEDDING_DIMENSIONS
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   if (!text || text.trim().length === 0) {
@@ -21,13 +22,15 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
   try {
     const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
+      model: EMBEDDING_MODEL,
       input: text.trim(),
       encoding_format: 'float',
-      dimensions: 768, // Forzar 768 dimensiones (text-embedding-3-small soporta 512-1536)
+      dimensions: EMBEDDING_DIMENSIONS,
     });
 
-    return response.data[0].embedding;
+    const embedding = response.data[0].embedding;
+    validateEmbeddingDimensions(embedding);
+    return embedding;
   } catch (error) {
     console.error('Error generating embedding:', error);
     throw new Error(`Failed to generate embedding: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -55,13 +58,15 @@ export async function generateEmbeddingsBatch(texts: string[]): Promise<number[]
 
     try {
       const response = await openai.embeddings.create({
-        model: 'text-embedding-3-small',
+        model: EMBEDDING_MODEL,
         input: batch,
         encoding_format: 'float',
-        dimensions: 768, // Forzar 768 dimensiones
+        dimensions: EMBEDDING_DIMENSIONS,
       });
 
-      results.push(...response.data.map(d => d.embedding));
+      const embeddings = response.data.map(d => d.embedding);
+      embeddings.forEach(validateEmbeddingDimensions);
+      results.push(...embeddings);
     } catch (error) {
       console.error(`Error generating batch embeddings (batch ${i / batchSize + 1}):`, error);
       throw error;

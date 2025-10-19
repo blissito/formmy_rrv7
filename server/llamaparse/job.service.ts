@@ -240,7 +240,7 @@ export async function processParsingJob(
     await deleteParserFile(fileKey);
 
     // 4. Actualizar con resultado exitoso
-    await db.parsingJob.update({
+    const completedJob = await db.parsingJob.update({
       where: { id: jobId },
       data: {
         status: "COMPLETED",
@@ -250,6 +250,43 @@ export async function processParsingJob(
         completedAt: new Date(),
       },
     });
+
+    // 5. Agregar a contexts[] del chatbot (Single Source of Truth)
+    if (completedJob.chatbotId && result.markdown) {
+      console.log(`📝 Adding ParsingJob ${jobId} to chatbot.contexts[]`);
+
+      const chatbot = await db.chatbot.findUnique({
+        where: { id: completedJob.chatbotId },
+        select: { contexts: true }
+      });
+
+      const existingContexts = (chatbot?.contexts || []) as any[];
+
+      // Agregar nuevo context con el markdown parseado
+      const newContext = {
+        id: jobId, // Usar mismo ID del ParsingJob para consistency
+        type: "FILE",
+        content: result.markdown,
+        fileName: completedJob.fileName,
+        createdAt: new Date().toISOString(),
+        enabled: true,
+      };
+
+      await db.chatbot.update({
+        where: { id: completedJob.chatbotId },
+        data: {
+          contexts: [...existingContexts, newContext]
+        }
+      });
+
+      console.log(`✅ Context added to chatbot ${completedJob.chatbotId}`);
+
+      // 6. Auto-vectorizar el nuevo context
+      console.log(`🔄 Auto-vectorizing new context ${jobId}...`);
+      const { vectorizeContext } = await import("server/vector/auto-vectorize.service");
+      await vectorizeContext(completedJob.chatbotId, newContext);
+      console.log(`✅ Context vectorized`);
+    }
 
     console.log(`✅ Job ${jobId} completed successfully`);
   } catch (error) {

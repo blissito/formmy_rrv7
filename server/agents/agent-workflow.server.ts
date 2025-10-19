@@ -363,7 +363,8 @@ Tool retorna: "🎨WIDGET:payment:abc123🎨\\n\\nLink generado por $499 MXN"
  */
 async function createSingleAgent(
   context: WorkflowContext,
-  conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>
+  conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>,
+  toolContext?: ToolContext // Aceptar toolContext pre-construido (incluye onSourcesFound)
 ) {
   const { resolvedConfig, userPlan } = context;
 
@@ -376,8 +377,8 @@ async function createSingleAgent(
   // Use nullish coalescing to avoid overriding valid values like 0
   const llm = createLLM(selectedModel, resolvedConfig.temperature ?? getOptimalTemperature(selectedModel));
 
-  // Todas las herramientas del plan - modelo decide cuáles usar
-  const toolContext: ToolContext = {
+  // Usar el toolContext proporcionado o crear uno por defecto
+  const finalToolContext: ToolContext = toolContext || {
     userId: context.userId,
     userPlan,
     chatbotId: context.chatbotId,
@@ -391,11 +392,12 @@ async function createSingleAgent(
   console.log(`🔍 [ToolContext Debug] CONSTRUYENDO TOOL CONTEXT`);
   console.log(`   context.agentContext:`, context.agentContext);
   console.log(`   context.agentContext?.isGhosty:`, context.agentContext?.isGhosty);
-  console.log(`   toolContext.isGhosty:`, toolContext.isGhosty);
+  console.log(`   finalToolContext.isGhosty:`, finalToolContext.isGhosty);
+  console.log(`   finalToolContext.onSourcesFound:`, !!finalToolContext.onSourcesFound);
   console.log(`   userPlan:`, userPlan);
   console.log(`${'🔍'.repeat(40)}\n`);
 
-  const allTools = getToolsForPlan(userPlan, context.integrations, toolContext);
+  const allTools = getToolsForPlan(userPlan, context.integrations, finalToolContext);
 
   // Detectar si tiene acceso a search_context, web_search_google, generate_chatbot_report, y Gmail tools
   const hasContextSearch = allTools.some(
@@ -517,7 +519,12 @@ const TOOL_CREDITS: Record<string, number> = {
  * - Máximo 1000 chunks
  * - Detección de contenido corrupto
  */
-async function* streamSingleAgent(agentInstance: any, message: string, availableTools: string[] = []) {
+async function* streamSingleAgent(
+  agentInstance: any,
+  message: string,
+  availableTools: string[] = [],
+  sourcesBuffer?: { value: any[] | null } // Buffer compartido para fuentes
+) {
   const MAX_CHUNKS = 1000;
   const MAX_DURATION_MS = 45000; // 45 segundos
   const MAX_SAME_TOOL_CONSECUTIVE = 2; // Máximo 2 veces LA MISMA tool consecutivamente
@@ -615,6 +622,35 @@ async function* streamSingleAgent(agentInstance: any, message: string, available
           tool: toolName,
           message: `🔧 ${toolName}`,
         };
+
+        // 🔍 Emitir fuentes si search_context fue ejecutado y hay fuentes en el buffer
+        if (toolName === 'search_context' && sourcesBuffer?.value) {
+          console.log(`\n${'📚'.repeat(40)}`);
+          console.log(`📚 [Sources] EMITIENDO FUENTES AL STREAM`);
+          console.log(`   Fuentes encontradas: ${sourcesBuffer.value.length}`);
+          console.log(`${'📚'.repeat(40)}\n`);
+
+          yield {
+            type: "sources",
+            sources: sourcesBuffer.value.map((source: any) => ({
+              id: source.id || source.metadata?.contextId || 'unknown',
+              score: source.score || 0,
+              text: source.content || source.text || '',
+              metadata: {
+                source: source.metadata?.contextType || 'Unknown', // ✅ FIXED: usar contextType en lugar de source
+                fileName: source.metadata?.fileName || null,
+                url: source.metadata?.url || null,
+                title: source.metadata?.title || null,
+                contextId: source.metadata?.contextId || null,
+                chatbotId: source.metadata?.chatbotId || null,
+                chunkIndex: source.metadata?.chunkIndex || 0
+              }
+            }))
+          };
+
+          // Limpiar buffer después de emitir
+          sourcesBuffer.value = null;
+        }
       }
 
       // Stream content events
@@ -766,10 +802,10 @@ export const streamAgentWorkflow = async function* (
     }
     console.log(`${'🔥'.repeat(40)}\n`);
 
-    // Single agent con todas las tools + memoria conversacional
-    const agentInstance = await createSingleAgent(context, conversationHistory);
+    // 🔍 Crear buffer compartido para fuentes
+    const sourcesBuffer = { value: null as any[] | null };
 
-    // 🔧 Obtener lista de herramientas disponibles para el usuario
+    // 🔧 Obtener lista de herramientas disponibles para el usuario con callback de fuentes
     const toolContext: ToolContext = {
       userId: context.userId,
       userPlan: context.userPlan,
@@ -778,12 +814,23 @@ export const streamAgentWorkflow = async function* (
       message: context.message,
       integrations: context.integrations,
       isGhosty: context.agentContext?.isGhosty || false,
+      onSourcesFound: (sources: any[]) => {
+        console.log(`\n${'🔔'.repeat(40)}`);
+        console.log(`🔔 [onSourcesFound] CALLBACK EJECUTADO`);
+        console.log(`   Fuentes recibidas: ${sources.length}`);
+        console.log(`${'🔔'.repeat(40)}\n`);
+        sourcesBuffer.value = sources;
+      }
     };
+
+    // Single agent con todas las tools + memoria conversacional
+    const agentInstance = await createSingleAgent(context, conversationHistory, toolContext);
+
     const availableToolsObjects = getToolsForPlan(context.userPlan, context.integrations, toolContext);
     const availableTools = availableToolsObjects.map((tool: any) => tool.metadata?.name || 'unknown');
 
-    // Stream con memoria ya configurada en el agente + lista de tools disponibles
-    yield* streamSingleAgent(agentInstance, message, availableTools);
+    // Stream con memoria ya configurada en el agente + lista de tools disponibles + buffer de fuentes
+    yield* streamSingleAgent(agentInstance, message, availableTools, sourcesBuffer);
   } catch (error) {
     console.error("❌ AgentWorkflow error:", error);
     yield {

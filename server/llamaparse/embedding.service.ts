@@ -3,13 +3,60 @@
  */
 
 import { db } from "~/utils/db.server";
-import { generateEmbedding } from "server/vector/embedding.service";
+import { generateEmbedding, cosineSimilarity } from "server/vector/embedding.service";
 
 /**
  * Tamaño de chunk para parsing (mismo que auto-vectorize)
  */
 const MAX_CHUNK_SIZE = 2000;
 const CHUNK_OVERLAP = 200;
+
+/**
+ * Umbral de similaridad semántica para prevenir duplicados
+ * Si un chunk tiene > 85% similaridad con alguno existente, se considera duplicado
+ */
+const SIMILARITY_THRESHOLD = 0.85;
+
+/**
+ * Verifica si un chunk es semánticamente similar a algún embedding existente en el store
+ * @param chunkEmbedding - Embedding del chunk a verificar
+ * @param chatbotId - ID del chatbot (define el "store")
+ * @returns true si es duplicado, false si es único
+ */
+async function isDuplicateChunk(
+  chunkEmbedding: number[],
+  chatbotId: string
+): Promise<boolean> {
+  try {
+    // Obtener TODOS los embeddings del chatbot (el "store")
+    const existingEmbeddings = await db.embedding.findMany({
+      where: { chatbotId },
+      select: {
+        embedding: true,
+      },
+    });
+
+    if (existingEmbeddings.length === 0) {
+      return false; // No hay embeddings previos, no puede ser duplicado
+    }
+
+    // Comparar con cada embedding existente
+    for (const existing of existingEmbeddings) {
+      const similarity = cosineSimilarity(chunkEmbedding, existing.embedding as number[]);
+
+      if (similarity >= SIMILARITY_THRESHOLD) {
+        console.log(`⚠️  Chunk duplicado detectado (similaridad: ${(similarity * 100).toFixed(1)}%)`);
+        return true; // Es duplicado
+      }
+    }
+
+    return false; // Es único
+  } catch (error) {
+    console.error("Error verificando duplicados:", error);
+    // En caso de error, permitir inserción (fail-open)
+    return false;
+  }
+}
 
 /**
  * Divide markdown en chunks con overlap
@@ -53,7 +100,7 @@ export async function addMarkdownToContext(
   chatbotId: string,
   markdown: string,
   fileName: string
-): Promise<{ success: boolean; embeddingsCreated: number; contextId?: string; error?: string }> {
+): Promise<{ success: boolean; embeddingsCreated: number; embeddingsSkipped?: number; contextId?: string; error?: string }> {
   try {
     if (!markdown || markdown.trim().length === 0) {
       return {
@@ -107,16 +154,29 @@ export async function addMarkdownToContext(
     const chunks = chunkMarkdown(markdown);
 
     console.log(
-      `📝 Creando ${chunks.length} embeddings para ${fileName}...`
+      `📝 Verificando y creando embeddings para ${fileName} (${chunks.length} chunks)...`
     );
 
     let created = 0;
+    let skipped = 0;
+
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
 
       try {
+        // Generar embedding del chunk
         const embedding = await generateEmbedding(chunk);
 
+        // ⭐ TEST SEMÁNTICO a nivel de STORE (todos los documentos del chatbot)
+        const isDuplicate = await isDuplicateChunk(embedding, chatbotId);
+
+        if (isDuplicate) {
+          console.log(`⏭️  Chunk ${i + 1}/${chunks.length} saltado (duplicado semántico)`);
+          skipped++;
+          continue; // NO insertar chunk duplicado
+        }
+
+        // Insertar solo si NO es duplicado
         await db.embedding.create({
           data: {
             chatbotId,
@@ -134,17 +194,19 @@ export async function addMarkdownToContext(
         });
 
         created++;
+        console.log(`✅ Chunk ${i + 1}/${chunks.length} agregado (único)`);
       } catch (chunkError) {
         console.error(`Error generando embedding para chunk ${i}:`, chunkError);
         // Continuar con los demás chunks aunque falle uno
       }
     }
 
-    console.log(`✅ ${created}/${chunks.length} embeddings creados`);
+    console.log(`✅ Resultado: ${created} creados, ${skipped} duplicados (de ${chunks.length} chunks totales)`);
 
     return {
       success: true,
       embeddingsCreated: created,
+      embeddingsSkipped: skipped,
       contextId,
     };
   } catch (error) {

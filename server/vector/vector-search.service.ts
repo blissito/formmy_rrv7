@@ -5,6 +5,11 @@
 
 import { db } from '~/utils/db.server';
 import { generateEmbedding } from './embedding.service';
+import {
+  VECTOR_INDEX_NAME,
+  VECTOR_SEARCH_CONFIG,
+  getIndexConfigJSON
+} from './vector-config';
 
 export interface VectorSearchResult {
   id: string;
@@ -15,20 +20,52 @@ export interface VectorSearchResult {
     contextId?: string;
     contextType?: string;
     title?: string;
-    fileName?: string;
-    url?: string;
+    fileName?: string | null;
+    url?: string | null;
     chunkIndex?: number;
   };
 }
 
 /**
+ * Helper para obtener un nombre legible de la fuente del resultado
+ * Prioriza: fileName > title > url > "Unknown"
+ */
+export function getSourceName(metadata: VectorSearchResult['metadata']): string {
+  if (metadata.fileName) {
+    return metadata.fileName;
+  }
+  if (metadata.title) {
+    return metadata.title;
+  }
+  if (metadata.url) {
+    // Extraer dominio de la URL para display más limpio
+    try {
+      const urlObj = new URL(metadata.url);
+      return urlObj.hostname;
+    } catch {
+      return metadata.url;
+    }
+  }
+  return 'Unknown';
+}
+
+/**
+ * Helper para obtener el tipo de fuente legible
+ */
+export function getSourceType(metadata: VectorSearchResult['metadata']): string {
+  if (metadata.contextType === 'FILE') return '📄 File';
+  if (metadata.contextType === 'LINK') return '🔗 Web';
+  if (metadata.contextType === 'TEXT') return '📝 Text';
+  if (metadata.contextType === 'QUESTION') return '💬 FAQ';
+  return '❓ Unknown';
+}
+
+/**
  * Busca contenido relevante usando vector search
  *
- * NOTA: Requiere vector search index en MongoDB Atlas:
- * - Nombre del index: "vector_index"
- * - Campo: "embedding"
- * - Dimensiones: 768
- * - Similaridad: cosine
+ * SETUP: Requiere vector search index en MongoDB Atlas.
+ * Nombre del índice: configurado en VECTOR_INDEX_NAME
+ * Configuración JSON: ver getIndexConfigJSON()
  *
  * @param query - Texto de búsqueda
  * @param chatbotId - ID del chatbot para filtrar
@@ -38,23 +75,32 @@ export interface VectorSearchResult {
 export async function vectorSearch(
   query: string,
   chatbotId: string,
-  topK: number = 5
+  topK: number = VECTOR_SEARCH_CONFIG.defaultLimit
 ): Promise<VectorSearchResult[]> {
   try {
+    // Validar límite
+    const limit = Math.min(topK, VECTOR_SEARCH_CONFIG.maxLimit);
+
     // 1. Generar embedding del query
     const queryEmbedding = await generateEmbedding(query);
 
+    console.log('[Vector Search] Query:', query);
+    console.log('[Vector Search] ChatbotId:', chatbotId);
+    console.log('[Vector Search] Index:', VECTOR_INDEX_NAME);
+    console.log('[Vector Search] Limit:', limit);
+
     // 2. Realizar vector search usando $vectorSearch aggregation
     // Docs: https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/
+    // IMPORTANTE: chatbotId es ObjectId en MongoDB, necesita formato { $oid: id }
     const results = await db.embedding.aggregateRaw({
       pipeline: [
         {
           $vectorSearch: {
-            index: 'vector_index_2',
+            index: VECTOR_INDEX_NAME,
             path: 'embedding',
             queryVector: queryEmbedding,
-            numCandidates: topK * 10, // Buscar más candidatos para mejor precisión
-            limit: topK,
+            numCandidates: limit * VECTOR_SEARCH_CONFIG.numCandidatesMultiplier,
+            limit,
             filter: {
               chatbotId: { $oid: chatbotId }
             }
@@ -72,8 +118,11 @@ export async function vectorSearch(
       ]
     });
 
+    const resultsArray = results as unknown as any[];
+    console.log('[Vector Search] Results count:', resultsArray.length);
+
     // 3. Mapear resultados al formato esperado
-    return (results as any[]).map((result: any) => ({
+    return resultsArray.map((result: any) => ({
       id: result._id.$oid || result._id,
       chatbotId: result.chatbotId.$oid || result.chatbotId,
       content: result.content,
@@ -81,13 +130,14 @@ export async function vectorSearch(
       metadata: result.metadata || {}
     }));
   } catch (error) {
-    console.error('Vector search error:', error);
+    console.error('[Vector Search] Error:', error);
 
     // Si el índice no existe, dar instrucciones claras
     if (error instanceof Error && error.message.includes('index')) {
       throw new Error(
-        'Vector search index not found. Please create "vector_index" in MongoDB Atlas UI. ' +
-        'See /server/vector/SETUP.md for instructions.'
+        `Vector search index "${VECTOR_INDEX_NAME}" not found in MongoDB Atlas.\n` +
+        `Create it with this configuration:\n${getIndexConfigJSON()}\n` +
+        `See server/vector/vector-config.ts for details.`
       );
     }
 
@@ -109,11 +159,15 @@ export async function vectorSearchWithFilters(
     contextType?: string;
     contextId?: string;
   },
-  topK: number = 5
+  topK: number = VECTOR_SEARCH_CONFIG.defaultLimit
 ): Promise<VectorSearchResult[]> {
+  // Validar límite
+  const limit = Math.min(topK, VECTOR_SEARCH_CONFIG.maxLimit);
+
   const queryEmbedding = await generateEmbedding(query);
 
   // Construir filtro completo
+  // IMPORTANTE: chatbotId es ObjectId en MongoDB, necesita formato { $oid: id }
   const filter: any = {
     chatbotId: { $oid: chatbotId }
   };
@@ -126,15 +180,20 @@ export async function vectorSearchWithFilters(
     filter['metadata.contextId'] = filters.contextId;
   }
 
+  console.log('[Vector Search] Query:', query);
+  console.log('[Vector Search] Index:', VECTOR_INDEX_NAME);
+  console.log('[Vector Search] Filter:', JSON.stringify(filter, null, 2));
+  console.log('[Vector Search] Limit:', limit);
+
   const results = await db.embedding.aggregateRaw({
     pipeline: [
       {
         $vectorSearch: {
-          index: 'vector_index_2',
+          index: VECTOR_INDEX_NAME,
           path: 'embedding',
           queryVector: queryEmbedding,
-          numCandidates: topK * 10,
-          limit: topK,
+          numCandidates: limit * VECTOR_SEARCH_CONFIG.numCandidatesMultiplier,
+          limit,
           filter
         }
       },
@@ -150,7 +209,10 @@ export async function vectorSearchWithFilters(
     ]
   });
 
-  return (results as any[]).map((result: any) => ({
+  const resultsArray = results as unknown as any[];
+  console.log('[Vector Search] Results count:', resultsArray.length);
+
+  return resultsArray.map((result: any) => ({
     id: result._id.$oid || result._id,
     chatbotId: result.chatbotId.$oid || result.chatbotId,
     content: result.content,

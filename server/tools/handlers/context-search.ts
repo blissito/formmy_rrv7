@@ -41,6 +41,11 @@ export async function contextSearchHandler(
     // Realizar búsqueda vectorial
     const results = await vectorSearch(query, context.chatbotId, topK);
 
+    // 🔔 Emitir fuentes al stream si hay callback disponible
+    if (context.onSourcesFound && results.length > 0) {
+      context.onSourcesFound(results);
+    }
+
     if (results.length === 0) {
       return {
         success: true,

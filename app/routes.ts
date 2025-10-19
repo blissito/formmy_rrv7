@@ -112,6 +112,7 @@ export default [
   route("api/v1/llamaparse", "routes/api.v1.llamaparse.ts"),
   route("api/v1/credits", "routes/api.v1.credits.ts"),
   route("api/parser/v1", "routes/api.parser.v1.ts"),
+  route("api/rag/v1", "routes/api.rag.v1.ts"),
 
   // Composio Google Calendar Integration
   route("api/v1/composio/google-calendar", "routes/api.v1.composio.google-calendar.ts"),
@@ -174,6 +175,9 @@ export default [
     "api/download/:projectId.csv",
     "routes/api.download.$projectId[.]csv.tsx"
   ),
+
+  // SDK routes - ES Module
+  route("sdk/formmy-parser.js", "routes/sdk.formmy-parser.ts"),
 
   // Widget embed routes (inyección directa - sin iframe)
   route("widget.js", "routes/widget.ts"),
