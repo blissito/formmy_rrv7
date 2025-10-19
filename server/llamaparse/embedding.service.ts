@@ -47,13 +47,13 @@ function chunkMarkdown(text: string): string[] {
 
 /**
  * Agregar markdown parseado al contexto del chatbot
- * Genera embeddings y los guarda en la BD
+ * Agrega un ContextItem al array de contexts y genera embeddings
  */
 export async function addMarkdownToContext(
   chatbotId: string,
   markdown: string,
   fileName: string
-): Promise<{ success: boolean; embeddingsCreated: number; error?: string }> {
+): Promise<{ success: boolean; embeddingsCreated: number; contextId?: string; error?: string }> {
   try {
     if (!markdown || markdown.trim().length === 0) {
       return {
@@ -63,14 +63,53 @@ export async function addMarkdownToContext(
       };
     }
 
-    // Dividir en chunks
+    // 1. Obtener chatbot actual
+    const chatbot = await db.chatbot.findUnique({
+      where: { id: chatbotId },
+    });
+
+    if (!chatbot) {
+      throw new Error(`Chatbot ${chatbotId} not found`);
+    }
+
+    // 2. Crear ContextItem para agregar al array
+    const sizeKB = Math.round(Buffer.byteLength(markdown, "utf8") / 1024);
+    const fileType = fileName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/markdown";
+    const contextId = `ctx_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    const newContextItem = {
+      id: contextId,
+      type: "FILE" as const,
+      fileName,
+      fileType,
+      sizeKB,
+      content: markdown, // Guardar markdown completo
+      createdAt: new Date(),
+      routes: [], // Campo requerido
+    };
+
+    // 3. Agregar al array de contexts del chatbot
+    const existingContexts = Array.isArray(chatbot.contexts)
+      ? JSON.parse(JSON.stringify(chatbot.contexts))
+      : [];
+
+    await db.chatbot.update({
+      where: { id: chatbotId },
+      data: {
+        contexts: [...existingContexts, newContextItem],
+        contextSizeKB: (chatbot.contextSizeKB || 0) + sizeKB,
+      },
+    });
+
+    console.log(`📁 ContextItem agregado: ${contextId} para ${fileName}`);
+
+    // 4. Dividir en chunks y generar embeddings
     const chunks = chunkMarkdown(markdown);
 
     console.log(
       `📝 Creando ${chunks.length} embeddings para ${fileName}...`
     );
 
-    // Generar embeddings para cada chunk
     let created = 0;
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
@@ -86,6 +125,7 @@ export async function addMarkdownToContext(
             metadata: {
               source: "llamaparse",
               fileName,
+              contextId, // Relacionar con el ContextItem
               chunkIndex: i,
               totalChunks: chunks.length,
               createdAt: new Date().toISOString(),
@@ -105,6 +145,7 @@ export async function addMarkdownToContext(
     return {
       success: true,
       embeddingsCreated: created,
+      contextId,
     };
   } catch (error) {
     console.error("❌ Error en addMarkdownToContext:", error);

@@ -1,6 +1,3 @@
-// @ts-ignore - pdf-parse no tiene tipos perfectos
-import pdfParse from "pdf-parse";
-
 /**
  * Cuenta las páginas de un PDF desde un buffer
  * @param buffer Buffer del PDF
@@ -8,7 +5,8 @@ import pdfParse from "pdf-parse";
  */
 export async function countPDFPages(buffer: Buffer): Promise<number> {
   try {
-    // @ts-ignore
+    // Usar require dinámico para pdf-parse (CommonJS module)
+    const pdfParse = (await import("pdf-parse")).default;
     const data = await pdfParse(buffer);
     return data.numpages;
   } catch (error) {
