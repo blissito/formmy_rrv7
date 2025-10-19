@@ -143,9 +143,9 @@ export async function action({ request }: Route.ActionArgs) {
         );
       }
 
-      if (!["COST_EFFECTIVE", "AGENTIC", "AGENTIC_PLUS"].includes(mode)) {
+      if (!["DEFAULT", "COST_EFFECTIVE", "AGENTIC", "AGENTIC_PLUS"].includes(mode)) {
         return Response.json(
-          { error: "Invalid mode. Use: COST_EFFECTIVE, AGENTIC, or AGENTIC_PLUS" },
+          { error: "Invalid mode. Use: DEFAULT (free), COST_EFFECTIVE, AGENTIC, or AGENTIC_PLUS" },
           { status: 400 }
         );
       }

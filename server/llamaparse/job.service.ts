@@ -161,7 +161,54 @@ function getParseConfig(mode: ParsingMode, options: any) {
 }
 
 /**
- * Procesar documento con LlamaParse real
+ * Parsing básico DEFAULT (sin LlamaParse) - GRATIS
+ * Extrae texto simple de archivos sin procesamiento avanzado
+ */
+async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingResult> {
+  const startTime = Date.now();
+
+  try {
+    console.log(`📄 Basic parsing (FREE) for ${fileName}...`);
+
+    // Descargar archivo
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.statusText}`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    let markdown = "";
+    let pages = 1;
+
+    // Parsing básico según tipo de archivo
+    if (fileName.toLowerCase().endsWith('.txt')) {
+      markdown = buffer.toString('utf-8');
+    } else if (fileName.toLowerCase().endsWith('.pdf')) {
+      // Usar pdf-parse para extracción básica de texto
+      const pdfParse = (await import("pdf-parse")).default;
+      const data = await pdfParse(buffer);
+      markdown = data.text;
+      pages = data.numpages;
+    } else {
+      // Para otros formatos, intentar leer como texto
+      markdown = buffer.toString('utf-8');
+    }
+
+    const processingTime = (Date.now() - startTime) / 1000;
+    console.log(`✅ Basic parsed ${pages} pages in ${processingTime.toFixed(2)}s (FREE)`);
+
+    return { markdown, pages, processingTime };
+  } catch (error) {
+    console.error("❌ Basic parsing error:", error);
+    throw new Error(
+      `Error in basic parsing: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+}
+
+/**
+ * Procesar documento con LlamaParse (modos avanzados)
  */
 async function realParsing(
   fileUrl: string,
@@ -237,14 +284,10 @@ export async function processParsingJob(
       data: { status: "PROCESSING" },
     });
 
-    // 2. Procesar documento con LlamaParse real
-    const result = await realParsing(
-      fileUrl,
-      job.fileName,
-      job.mode,
-      job.options,
-      llamaApiKey // ⭐ Pasar la key
-    );
+    // 2. Procesar documento según el modo
+    const result = job.mode === "DEFAULT"
+      ? await basicParsing(fileUrl, job.fileName) // DEFAULT = parsing básico gratis
+      : await realParsing(fileUrl, job.fileName, job.mode, job.options, llamaApiKey); // Otros = LlamaParse
 
     // 3. Eliminar archivo temporal de S3
     await deleteParserFile(fileKey);
@@ -300,11 +343,36 @@ export async function processParsingJob(
         // Auto-vectorizar el nuevo context
         console.log(`🔄 Auto-vectorizing new context ${jobId}...`);
         const { vectorizeContext } = await import("server/vector/auto-vectorize.service");
-        await vectorizeContext(completedJob.chatbotId, newContext as any);
-        console.log(`✅ Context vectorized`);
+
+        try {
+          const vectorResult = await vectorizeContext(completedJob.chatbotId, newContext as any);
+
+          if (vectorResult.success && vectorResult.embeddingsCreated > 0) {
+            console.log(`✅ Context vectorized: ${vectorResult.embeddingsCreated} embeddings created`);
+          } else {
+            // Vectorización falló o no creó embeddings
+            throw new Error(`Vectorization failed: ${vectorResult.error || 'No embeddings created'}`);
+          }
+        } catch (vectorError) {
+          console.error(`⚠️ Vectorization failed after retries:`, vectorError);
+
+          // Actualizar estado a COMPLETED_NO_VECTOR
+          await db.parsingJob.update({
+            where: { id: jobId },
+            data: {
+              status: "COMPLETED_NO_VECTOR",
+              errorMessage: `Parsing successful but vectorization failed: ${
+                vectorError instanceof Error ? vectorError.message : 'Unknown error'
+              }`
+            }
+          });
+
+          console.warn(`⚠️ Job ${jobId} marked as COMPLETED_NO_VECTOR - markdown available but not searchable`);
+          return; // Exit early, don't throw
+        }
       } catch (error) {
-        console.error(`⚠️ Failed to add/vectorize context: ${error}`);
-        // No fallar el job completo si la vectorización falla
+        console.error(`⚠️ Failed to add context to chatbot: ${error}`);
+        // No fallar el job completo si falla el push al chatbot
         // El resultado queda disponible en ParsingJob.resultMarkdown
       }
     }

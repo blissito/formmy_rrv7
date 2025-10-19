@@ -134,9 +134,9 @@ export async function action({ request }: Route.ActionArgs) {
         }
 
         // Validar modo
-        if (!["COST_EFFECTIVE", "AGENTIC", "AGENTIC_PLUS"].includes(mode)) {
+        if (!["DEFAULT", "COST_EFFECTIVE", "AGENTIC", "AGENTIC_PLUS"].includes(mode)) {
           return Response.json(
-            { success: false, error: "Modo de parsing inválido" },
+            { success: false, error: "Modo de parsing inválido. Usa: DEFAULT (gratis), COST_EFFECTIVE, AGENTIC, o AGENTIC_PLUS" },
             { status: 400 }
           );
         }

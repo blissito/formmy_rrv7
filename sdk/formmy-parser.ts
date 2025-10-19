@@ -22,7 +22,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export type ParsingMode = 'COST_EFFECTIVE' | 'AGENTIC' | 'AGENTIC_PLUS';
+export type ParsingMode = 'DEFAULT' | 'COST_EFFECTIVE' | 'AGENTIC' | 'AGENTIC_PLUS';
 
 export type JobStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
@@ -91,7 +91,7 @@ export class FormmyParser {
    */
   async parse(
     file: string | Buffer,
-    mode: ParsingMode = 'AGENTIC'
+    mode: ParsingMode = 'DEFAULT'
   ): Promise<ParsingJob> {
     const formData = new FormData();
 
