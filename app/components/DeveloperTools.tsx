@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { cn } from "~/lib/utils";
 
 interface RagTesterProps {
   chatbots: Array<{ id: string; name: string }>;
@@ -51,6 +54,7 @@ function getSourceEmoji(contextType: string): string {
 export function RagTester({ chatbots, apiKey }: RagTesterProps) {
   const [selectedChatbot, setSelectedChatbot] = useState(chatbots[0]?.id || "");
   const [query, setQuery] = useState("");
+  const [topK, setTopK] = useState(3);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,19 +76,31 @@ export function RagTester({ chatbots, apiKey }: RagTesterProps) {
         body: JSON.stringify({
           query,
           chatbotId: selectedChatbot,
-          mode: "accurate"
+          mode: "accurate",
+          topK
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || "Request failed");
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+        } else {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText.slice(0, 100)}`);
+        }
       }
 
       const data = await response.json();
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      console.error("[RagTester] Error:", err);
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError("Error de conexión. ¿El servidor está corriendo?");
+      } else {
+        setError(err instanceof Error ? err.message : "Unknown error");
+      }
     } finally {
       setLoading(false);
     }
@@ -100,7 +116,7 @@ export function RagTester({ chatbots, apiKey }: RagTesterProps) {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-medium text-dark mb-1">
             Chatbot
@@ -117,9 +133,25 @@ export function RagTester({ chatbots, apiKey }: RagTesterProps) {
             ))}
           </select>
         </div>
+        <div>
+          <label className="block text-xs font-medium text-dark mb-1">
+            Top K <span className="text-purple-600 font-semibold">(chunks)</span>
+          </label>
+          <select
+            value={topK}
+            onChange={(e) => setTopK(Number(e.target.value))}
+            className="w-full px-3 py-1.5 text-sm border border-outlines rounded-lg focus:outline-none focus:border-brand-500 bg-white"
+          >
+            <option value={2}>2 (mínimo)</option>
+            <option value={3}>3 (óptimo) ⭐</option>
+            <option value={5}>5 (complejo)</option>
+            <option value={7}>7 (exhaustivo)</option>
+            <option value={10}>10 (máximo)</option>
+          </select>
+        </div>
         <div className="flex items-end">
           <div className="text-xs text-metal">
-            Mode: <span className="font-semibold text-brand-600">Accurate</span> (3 cr)
+            Mode: <span className="font-semibold text-brand-600">Accurate</span> (1.5 cr)
           </div>
         </div>
       </div>
@@ -156,16 +188,48 @@ export function RagTester({ chatbots, apiKey }: RagTesterProps) {
       {result && (
         <div className="border border-green-200 bg-green-50 rounded-lg p-3 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-green-800">✓ Results</span>
-            <span className="text-xs text-metal">
-              {result.creditsUsed} credits • {result.processingTime}ms
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-green-800">✓ Results</span>
+              {result.topK && (
+                <span className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
+                  K={result.topK}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-orange-600 font-semibold">
+                {result.creditsUsed} cr
+              </span>
+              {result.tokensUsed && (
+                <>
+                  <span className="text-metal">•</span>
+                  <span className="text-purple-600 font-mono" title={`Prompt: ${result.tokensUsed.prompt} | Completion: ${result.tokensUsed.completion}`}>
+                    {result.tokensUsed.total.toLocaleString()} tok
+                  </span>
+                </>
+              )}
+              <span className="text-metal">•</span>
+              <span className="text-green-600 font-mono">
+                {result.processingTime}ms
+              </span>
+            </div>
           </div>
 
           {result.answer && (
             <div className="bg-white border border-green-200 rounded-lg p-3">
-              <p className="text-xs font-medium text-metal mb-1">Answer:</p>
-              <p className="text-sm text-dark">{result.answer}</p>
+              <p className="text-xs font-medium text-metal mb-2">Answer:</p>
+              <div className={cn(
+                "prose prose-sm max-w-none",
+                "prose-headings:text-dark prose-p:text-dark prose-strong:text-dark prose-strong:font-semibold",
+                "prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5",
+                "prose-p:my-2 prose-p:leading-relaxed",
+                "prose-code:text-brand-500 prose-code:bg-brand-100/20 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs",
+                "text-dark"
+              )}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {result.answer}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
 
@@ -197,6 +261,27 @@ export function RagTester({ chatbots, apiKey }: RagTesterProps) {
 
           {result.results && result.results.length === 0 && (
             <p className="text-sm text-metal">No se encontraron resultados relevantes.</p>
+          )}
+
+          {/* Token Usage Breakdown */}
+          {result.tokensUsed && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <p className="text-xs font-semibold text-purple-800 mb-2">📊 Token Usage</p>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-white rounded p-2">
+                  <p className="text-metal mb-0.5">Prompt</p>
+                  <p className="font-mono font-bold text-purple-600">{result.tokensUsed.prompt.toLocaleString()}</p>
+                </div>
+                <div className="bg-white rounded p-2">
+                  <p className="text-metal mb-0.5">Completion</p>
+                  <p className="font-mono font-bold text-purple-600">{result.tokensUsed.completion.toLocaleString()}</p>
+                </div>
+                <div className="bg-white rounded p-2">
+                  <p className="text-metal mb-0.5">Total</p>
+                  <p className="font-mono font-bold text-purple-700">{result.tokensUsed.total.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -434,6 +519,12 @@ function ChunkTester({ chatbotId, apiKey, documents }: ChunkTesterProps) {
 
   return (
     <div className="space-y-3">
+      {/* Título */}
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-dark">🔍 Semantic Tester</h4>
+        <span className="text-xs text-metal">Test semantic search across all documents</span>
+      </div>
+
       {/* Input de búsqueda */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
@@ -453,9 +544,14 @@ function ChunkTester({ chatbotId, apiKey, documents }: ChunkTesterProps) {
             {loading ? "Buscando..." : "Buscar"}
           </button>
         </div>
-        <p className="text-xs text-metal">
-          💡 Busca en <strong>todos los documentos</strong> vectorizados (simulando búsqueda real del bot)
-        </p>
+        <div className="flex items-center justify-between text-xs">
+          <p className="text-metal">
+            💡 Busca en <strong>todos los documentos</strong> vectorizados (simulando búsqueda real del bot)
+          </p>
+          <span className="text-orange-600 font-medium">
+            0.5 cr/búsqueda
+          </span>
+        </div>
       </div>
 
       {/* Resultados */}
@@ -470,9 +566,15 @@ function ChunkTester({ chatbotId, apiKey, documents }: ChunkTesterProps) {
                     {results.results.length} chunk{results.results.length !== 1 ? 's' : ''} encontrado{results.results.length !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <span className="text-xs text-green-600 font-mono">
-                  {results.processingTime}ms
-                </span>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-orange-600 font-semibold">
+                    {results.creditsUsed || 0.5} cr
+                  </span>
+                  <span className="text-metal">•</span>
+                  <span className="text-green-600 font-mono">
+                    {results.processingTime}ms
+                  </span>
+                </div>
               </div>
 
               {results.results.map((chunk: any, i: number) => {

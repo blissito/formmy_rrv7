@@ -14,139 +14,13 @@
  */
 
 import { db } from '~/utils/db.server';
-import { generateEmbedding, cosineSimilarity } from '../vector/embedding.service';
+import { generateEmbedding } from '../vector/embedding.service';
 import type { ContextType } from '@prisma/client';
-
-/**
- * Configuración optimizada de chunks
- *
- * CHUNK_SIZE: 2000 chars ≈ 500 tokens → óptimo para text-embedding-3-small
- * OVERLAP: 100 chars = 5% → balance entre contexto y falsos positivos
- * THRESHOLD: 85% → solo chunks muy similares se rechazan
- */
-const CHUNK_CONFIG = {
-  MAX_SIZE: 2000,
-  OVERLAP: 100,              // Reducido desde 200 (10%) → 100 (5%)
-  SIMILARITY_THRESHOLD: 0.85
-} as const;
-
-/**
- * Retry configuration para embeddings
- */
-const MAX_RETRIES = 3;
-const INITIAL_RETRY_DELAY = 1000;
-
-/**
- * Sleep helper
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * Retry wrapper con exponential backoff
- */
-async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  operationName: string,
-  maxRetries: number = MAX_RETRIES
-): Promise<T> {
-  let lastError: Error | unknown;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-
-      if (attempt < maxRetries) {
-        const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-        console.warn(
-          `⚠️ ${operationName} failed (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`,
-          error instanceof Error ? error.message : error
-        );
-        await sleep(delay);
-      }
-    }
-  }
-
-  console.error(`❌ ${operationName} failed after ${maxRetries + 1} attempts`);
-  throw lastError;
-}
-
-/**
- * Chunking unificado
- * Reemplaza chunkText() y chunkMarkdown()
- */
-function chunkContent(
-  text: string,
-  maxSize: number = CHUNK_CONFIG.MAX_SIZE,
-  overlap: number = CHUNK_CONFIG.OVERLAP
-): string[] {
-  if (text.length <= maxSize) {
-    return [text];
-  }
-
-  const chunks: string[] = [];
-  let start = 0;
-
-  while (start < text.length) {
-    const end = Math.min(start + maxSize, text.length);
-    const chunk = text.slice(start, end);
-
-    // Intentar cortar en un espacio para no partir palabras
-    if (end < text.length) {
-      const lastSpace = chunk.lastIndexOf(' ');
-      if (lastSpace > maxSize / 2) {
-        chunks.push(chunk.slice(0, lastSpace).trim());
-        start += lastSpace - overlap;
-      } else {
-        chunks.push(chunk.trim());
-        start += maxSize - overlap;
-      }
-    } else {
-      chunks.push(chunk.trim());
-      break;
-    }
-  }
-
-  return chunks.filter(c => c.length > 0);
-}
-
-/**
- * Deduplicación semántica unificada
- * Verifica si un chunk es semánticamente similar a embeddings existentes
- */
-async function isDuplicateChunk(
-  embedding: number[],
-  chatbotId: string,
-  threshold: number = CHUNK_CONFIG.SIMILARITY_THRESHOLD
-): Promise<boolean> {
-  try {
-    const existingEmbeddings = await db.embedding.findMany({
-      where: { chatbotId },
-      select: { embedding: true },
-    });
-
-    if (existingEmbeddings.length === 0) {
-      return false;
-    }
-
-    for (const existing of existingEmbeddings) {
-      const similarity = cosineSimilarity(embedding, existing.embedding as number[]);
-
-      if (similarity >= threshold) {
-        console.log(`⚠️  Chunk duplicado detectado (similaridad: ${(similarity * 100).toFixed(1)}%)`);
-        return true;
-      }
-    }
-
-    return false;
-  } catch (error) {
-    console.error('Error verificando duplicados:', error);
-    return false; // Fail-open: en caso de error, permitir inserción
-  }
-}
+import {
+  retryWithBackoff,
+  chunkContent,
+  isDuplicateChunk
+} from '../vector/vector-utils.server';
 
 /**
  * Parámetros para agregar contexto
@@ -177,6 +51,11 @@ export interface AddContextParams {
 
     // Override de ID (opcional, para parser jobs)
     contextId?: string;
+
+    // Metadata de parsing (opcional, solo para Parser API)
+    parsingMode?: string;    // "DEFAULT" | "COST_EFFECTIVE" | "AGENTIC" | "AGENTIC_PLUS"
+    parsingPages?: number;
+    parsingCredits?: number;
   };
 }
 
@@ -189,6 +68,56 @@ export interface AddContextResult {
   embeddingsCreated: number;
   embeddingsSkipped: number;
   error?: string;
+}
+
+/**
+ * Extrae texto procesable para vectorización según tipo de contexto
+ * Copia de auto-vectorize.service.ts para mantener lógica consistente
+ */
+function extractTextFromContext(
+  content: string,
+  metadata: AddContextParams['metadata']
+): string {
+  const parts: string[] = [];
+
+  // Título siempre incluido si existe
+  if (metadata.title) {
+    parts.push(`# ${metadata.title}`);
+  }
+
+  // Contenido según tipo
+  switch (metadata.type) {
+    case 'TEXT':
+    case 'FILE':
+    case 'LINK':
+      if (content) {
+        parts.push(content);
+      }
+      break;
+
+    case 'QUESTION':
+      if (metadata.questions) {
+        parts.push(`Pregunta: ${metadata.questions}`);
+      }
+      if (metadata.answer) {
+        parts.push(`Respuesta: ${metadata.answer}`);
+      }
+      // También incluir content si existe
+      if (content) {
+        parts.push(content);
+      }
+      break;
+  }
+
+  // Metadata adicional
+  if (metadata.type === 'FILE' && metadata.fileName) {
+    parts.push(`Archivo: ${metadata.fileName}`);
+  }
+  if (metadata.type === 'LINK' && metadata.url) {
+    parts.push(`URL: ${metadata.url}`);
+  }
+
+  return parts.join('\n\n');
 }
 
 /**
@@ -227,6 +156,11 @@ function buildContextItem(params: AddContextParams) {
     sizeKB,
     routes: metadata.routes || [],
     createdAt: new Date(),
+
+    // Metadata de parsing (solo presente para docs parseados via Parser API)
+    parsingMode: metadata.parsingMode || null,
+    parsingPages: metadata.parsingPages || null,
+    parsingCredits: metadata.parsingCredits || null,
   };
 }
 
@@ -257,11 +191,27 @@ export async function addContextWithEmbeddings(
       };
     }
 
-    // 2. Construir ContextItem completo
+    // 2. Validar que el chatbot existe
+    const chatbot = await db.chatbot.findUnique({
+      where: { id: chatbotId },
+      select: { id: true },
+    });
+
+    if (!chatbot) {
+      return {
+        success: false,
+        contextId: '',
+        embeddingsCreated: 0,
+        embeddingsSkipped: 0,
+        error: `Chatbot ${chatbotId} no encontrado`,
+      };
+    }
+
+    // 3. Construir ContextItem completo
     const contextItem = buildContextItem(params);
     console.log(`📝 Creating context ${contextItem.id} (type: ${contextItem.type})`);
 
-    // 3. Insertar con $push atómico (MongoDB)
+    // 4. Insertar con $push atómico (MongoDB)
     const { ObjectId } = await import('mongodb');
 
     await db.$runCommandRaw({
@@ -279,14 +229,17 @@ export async function addContextWithEmbeddings(
 
     console.log(`✅ Context added to chatbot ${chatbotId}`);
 
-    // 4. Dividir en chunks
-    const chunks = chunkContent(content);
+    // 4. Extraer texto procesable según tipo de contexto
+    const textToVectorize = extractTextFromContext(content, params.metadata);
+
+    // 5. Dividir en chunks
+    const chunks = chunkContent(textToVectorize);
     console.log(`📝 Verificando y creando embeddings (${chunks.length} chunks)...`);
 
     let created = 0;
     let skipped = 0;
 
-    // 5. Generar embeddings para cada chunk
+    // 6. Generar embeddings para cada chunk
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
 
@@ -306,24 +259,41 @@ export async function addContextWithEmbeddings(
           continue;
         }
 
-        // Construir metadata para embedding
+        // Construir metadata con fallbacks (igual que auto-vectorize)
+        let title = contextItem.title;
+        let fileName = contextItem.fileName;
+        let url = contextItem.url;
+
+        // Aplicar fallbacks según el tipo de contexto
+        switch (contextItem.type) {
+          case 'FILE':
+            // Para archivos, fileName es prioritario
+            fileName = fileName || title || 'Unnamed file';
+            break;
+          case 'LINK':
+            // Para links, title y url son prioritarios
+            title = title || (url ? new URL(url).hostname : 'Unnamed link');
+            break;
+          case 'TEXT':
+            // Para texto, title es prioritario
+            title = title || 'Unnamed text';
+            break;
+          case 'QUESTION':
+            // Para FAQs, usar la pregunta como title
+            title = title || contextItem.questions || 'Unnamed question';
+            break;
+        }
+
         const embeddingMetadata: any = {
           contextId: contextItem.id,
           contextType: contextItem.type,
+          title,
+          fileName,
+          url,
           chunkIndex: i,
           totalChunks: chunks.length,
           source: 'unified-processor',
         };
-
-        // Agregar campos relevantes según tipo
-        if (contextItem.type === 'FILE') {
-          embeddingMetadata.fileName = contextItem.fileName;
-        } else if (contextItem.type === 'LINK') {
-          embeddingMetadata.url = contextItem.url;
-          embeddingMetadata.title = contextItem.title;
-        } else if (contextItem.type === 'TEXT' || contextItem.type === 'QUESTION') {
-          embeddingMetadata.title = contextItem.title;
-        }
 
         // Insertar embedding
         await db.embedding.create({

@@ -30,18 +30,23 @@ import { FormmyParser } from 'https://formmy-v2.fly.dev/sdk/formmy-parser.js';
 // Inicializar cliente
 const parser = new FormmyParser('YOUR_API_KEY');
 
-// 1. Parsear documento
-const job = await parser.parse('./document.pdf', 'AGENTIC');
+// 1. Parsear documento GRATIS (DEFAULT mode)
+const job = await parser.parse('./document.pdf'); // DEFAULT = gratis
 console.log('Job ID:', job.id);
+console.log('Créditos usados:', job.creditsUsed); // 0
 
-// 2. Esperar resultado con progreso
+// 2. O usar parsing avanzado con mayor precisión (costo por página)
+const jobPremium = await parser.parse('./document.pdf', 'AGENTIC');
+console.log('Créditos usados:', jobPremium.creditsUsed); // 3 * páginas
+
+// 3. Esperar resultado con progreso
 const result = await parser.waitFor(job.id, {
   onProgress: (job) => console.log(\`Status: \${job.status}\`)
 });
 
 console.log('Markdown:', result.markdown);
 
-// 3. Query RAG
+// 4. Query RAG
 const ragResult = await parser.query(
   '¿Cuáles son los horarios de atención?',
   'chatbot_id_xxx',
@@ -51,7 +56,14 @@ const ragResult = await parser.query(
 console.log('Answer:', ragResult.answer);
 console.log('Sources:', ragResult.sources);`;
 
-  const curlParserCode = `curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\
+  const curlParserCode = `# Parsing GRATUITO (default)
+curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F "file=@document.pdf" \\
+  -F "mode=DEFAULT"
+
+# Parsing avanzado (costo por página)
+curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -F "file=@document.pdf" \\
   -F "mode=AGENTIC"
@@ -61,8 +73,8 @@ console.log('Sources:', ragResult.sources);`;
 #   "id": "job_abc123",
 #   "status": "PENDING",
 #   "fileName": "document.pdf",
-#   "mode": "AGENTIC",
-#   "creditsUsed": 3,
+#   "mode": "DEFAULT",
+#   "creditsUsed": 0,
 #   "createdAt": "2025-01-18T10:00:00Z"
 # }`;
 
@@ -84,8 +96,9 @@ console.log('Sources:', ragResult.sources);`;
   -H "Content-Type: application/json" \\
   -d '{
     "query": "¿Cuáles son los horarios de atención?",
-    "chatbotId": "chatbot_xxx",
-    "mode": "accurate"
+    "chatbotId": "YOUR_CHATBOT_ID",
+    "mode": "accurate",
+    "topK": 3
   }'
 
 # Response:
@@ -99,23 +112,30 @@ console.log('Sources:', ragResult.sources);`;
 #       "metadata": { "fileName": "info.pdf", "page": 1 }
 #     }
 #   ],
-#   "creditsUsed": 3,
+#   "topK": 3,
+#   "creditsUsed": 1.5,
+#   "tokensUsed": {
+#     "prompt": 1247,
+#     "completion": 156,
+#     "total": 1403
+#   },
 #   "processingTime": 842
 # }`;
 
   const pythonCode = `import requests
+import time
 
-# Upload documento
+# Upload documento GRATIS (DEFAULT mode)
 response = requests.post(
     "https://formmy-v2.fly.dev/api/parser/v1?intent=upload",
     headers={"Authorization": "Bearer YOUR_API_KEY"},
     files={"file": open("document.pdf", "rb")},
-    data={"mode": "AGENTIC"}
+    data={"mode": "DEFAULT"}  # GRATIS - 0 créditos
 )
 job = response.json()
+print(f"Job ID: {job['id']} - Créditos: {job['creditsUsed']}")
 
 # Polling para esperar resultado
-import time
 while True:
     status_response = requests.get(
         f"https://formmy-v2.fly.dev/api/parser/v1?intent=status&jobId={job['id']}",
@@ -218,6 +238,18 @@ while True:
             <div>
               <h4 className="font-semibold text-dark text-sm mb-2">Modos de Parsing</h4>
               <div className="space-y-2">
+                <div className="border-2 border-green-400 bg-green-50 rounded-lg p-2 hover:border-green-500 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🆓</span>
+                      <div>
+                        <p className="font-semibold text-sm text-green-800">DEFAULT</p>
+                        <p className="text-xs text-green-700">Parsing gratuito</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-green-600">GRATIS</span>
+                  </div>
+                </div>
                 <div className="border border-outlines rounded-lg p-2 hover:border-brand-300 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -236,7 +268,7 @@ while True:
                       <span className="text-base">🎯</span>
                       <div>
                         <p className="font-semibold text-sm">AGENTIC</p>
-                        <p className="text-xs text-metal">Balance óptimo</p>
+                        <p className="text-xs text-metal">Tablas complejas + mejor calidad</p>
                       </div>
                     </div>
                     <span className="text-xs font-bold text-brand-600">3 cr/pág</span>
@@ -248,7 +280,7 @@ while True:
                       <span className="text-base">✨</span>
                       <div>
                         <p className="font-semibold text-sm">AGENTIC_PLUS</p>
-                        <p className="text-xs text-metal">Máxima precisión + OCR</p>
+                        <p className="text-xs text-metal">OCR + imágenes + máxima precisión</p>
                       </div>
                     </div>
                     <span className="text-xs font-bold text-brand-600">6 cr/pág</span>
@@ -270,7 +302,7 @@ while True:
             </div>
 
             <div>
-              <h4 className="font-semibold text-dark text-sm mb-2">Endpoints</h4>
+              <h4 className="font-semibold text-dark text-sm mb-2">Endpoints Públicos</h4>
               <div className="space-y-2">
                 <div className="bg-gray-50 border border-outlines rounded-lg p-2">
                   <p className="text-xs font-mono font-bold text-green-700">POST /api/rag/v1?intent=query</p>
@@ -279,10 +311,6 @@ while True:
                 <div className="bg-gray-50 border border-outlines rounded-lg p-2">
                   <p className="text-xs font-mono font-bold text-blue-700">GET /api/rag/v1?intent=list&chatbotId=xxx</p>
                   <p className="text-xs text-metal mt-1">Listar documentos parseados con métricas</p>
-                </div>
-                <div className="bg-gray-50 border border-outlines rounded-lg p-2">
-                  <p className="text-xs font-mono font-bold text-orange-700">GET /api/rag/v1?intent=cleanup&chatbotId=xxx</p>
-                  <p className="text-xs text-metal mt-1">Limpiar embeddings huérfanos sin contexto asociado</p>
                 </div>
               </div>
             </div>
@@ -301,7 +329,7 @@ while True:
                       <p className="font-semibold text-sm">fast</p>
                       <p className="text-xs text-metal">Solo retrieval vectorial - Retorna top 5 chunks relevantes</p>
                     </div>
-                    <span className="text-xs font-bold text-brand-600">1 cr</span>
+                    <span className="text-xs font-bold text-brand-600">0.5 cr</span>
                   </div>
                 </div>
                 <div className="border border-outlines rounded-lg p-2">
@@ -310,7 +338,7 @@ while True:
                       <p className="font-semibold text-sm">accurate</p>
                       <p className="text-xs text-metal">Retrieval + GPT-4o-mini - Respuesta en lenguaje natural + fuentes</p>
                     </div>
-                    <span className="text-xs font-bold text-brand-600">2 cr</span>
+                    <span className="text-xs font-bold text-brand-600">1.5 cr</span>
                   </div>
                 </div>
               </div>
@@ -320,6 +348,22 @@ while True:
               <h4 className="font-semibold text-dark text-sm mb-2">Parámetros Opcionales</h4>
               <div className="space-y-2 text-xs">
                 <div className="border border-outlines rounded-lg p-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <code className="font-mono text-brand-600">topK</code>
+                    <span className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">OPTIMIZACIÓN</span>
+                  </div>
+                  <p className="text-metal mb-2">Número de chunks a recuperar (1-10). Default: <strong>3</strong></p>
+                  <div className="bg-blue-50 border border-blue-200 rounded p-2 text-[11px]">
+                    <p className="text-blue-800 font-medium mb-1">💡 Mejores Prácticas (2025)</p>
+                    <ul className="space-y-0.5 text-blue-700">
+                      <li>• <strong>topK=2-3</strong>: Queries simples (90% casos)</li>
+                      <li>• <strong>topK=4-5</strong>: Queries complejas</li>
+                      <li>• <strong>topK=7-10</strong>: Análisis exhaustivo</li>
+                    </ul>
+                    <p className="mt-1 text-blue-600"><strong>Ahorro</strong>: topK=3 usa ~40% menos tokens que topK=5</p>
+                  </div>
+                </div>
+                <div className="border border-outlines rounded-lg p-2">
                   <code className="font-mono text-brand-600">contextId</code>
                   <p className="text-metal mt-1">Filtrar búsqueda a un documento específico</p>
                 </div>
@@ -328,11 +372,28 @@ while True:
 
             <div>
               <h4 className="font-semibold text-dark text-sm mb-2">Códigos de Error</h4>
-              <ul className="space-y-1 text-xs text-metal">
-                <li><code className="bg-gray-100 px-1 text-dark">401</code> - API key inválida o faltante</li>
-                <li><code className="bg-gray-100 px-1 text-dark">402</code> - Créditos insuficientes</li>
-                <li><code className="bg-gray-100 px-1 text-dark">403</code> - Chatbot no encontrado o sin permisos</li>
-                <li><code className="bg-gray-100 px-1 text-dark">500</code> - Error interno del servidor</li>
+              <ul className="space-y-2 text-xs">
+                <li>
+                  <code className="bg-gray-100 px-1 text-dark font-bold">401</code>
+                  <span className="text-metal"> - API key inválida o faltante</span>
+                </li>
+                <li>
+                  <code className="bg-red-100 px-1 text-red-700 font-bold">402 Payment Required</code>
+                  <span className="text-metal"> - Créditos insuficientes</span>
+                  <div className="mt-1 ml-10 p-2 bg-red-50 border border-red-200 rounded text-[11px] text-red-800">
+                    <strong>⚠️ Validación pre-procesamiento:</strong> El sistema cuenta páginas ANTES de procesar.
+                    Si no tienes suficientes créditos, recibes error 402 con desglose exacto de créditos disponibles vs requeridos.
+                    NO se cobra ni procesa el documento.
+                  </div>
+                </li>
+                <li>
+                  <code className="bg-gray-100 px-1 text-dark font-bold">403</code>
+                  <span className="text-metal"> - Chatbot no encontrado o sin permisos</span>
+                </li>
+                <li>
+                  <code className="bg-gray-100 px-1 text-dark font-bold">500</code>
+                  <span className="text-metal"> - Error interno del servidor</span>
+                </li>
               </ul>
             </div>
           </>

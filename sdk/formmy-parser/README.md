@@ -7,7 +7,7 @@ Production-ready client with automatic retry logic, error handling, and full Typ
 ## Why Formmy Parser?
 
 - 🚀 **Zero Infrastructure** - No setup, just API calls
-- 🧠 **AI-Powered** - LlamaParse for structured document extraction
+- 🧠 **AI-Powered** - Advanced structured document extraction
 - 💰 **Pay-as-you-go** - Credits system with free tier (DEFAULT mode)
 - 📚 **RAG Built-in** - Semantic search on your documents
 - 🔒 **Type-Safe** - Full TypeScript with runtime validation
@@ -15,7 +15,7 @@ Production-ready client with automatic retry logic, error handling, and full Typ
 
 ## Features
 
-- ✅ **4 Parsing Modes** - FREE basic extraction + 3 LlamaParse tiers
+- ✅ **4 Parsing Modes** - FREE basic extraction + 3 advanced tiers
 - ✅ **Dual Environment** - Works in Node.js and Browser
 - ✅ **TypeScript First** - Full type safety with runtime validation
 - ✅ **Automatic Retries** - Exponential backoff for network errors
@@ -114,7 +114,7 @@ const parser = new FormmyParser({
 
 #### `parse(file, mode)`
 
-Parse a document (PDF, DOCX, XLSX, etc.) using LlamaParse.
+Parse a document (PDF, DOCX, XLSX, etc.) with advanced AI extraction.
 
 **Parameters:**
 
@@ -304,15 +304,15 @@ try {
 
 | Mode | Credits/Page | Features | Use Case |
 |------|--------------|----------|----------|
-| `DEFAULT` | **0 (FREE)** | Basic text extraction, no LlamaParse | Simple docs, prototyping |
-| `COST_EFFECTIVE` | 1 | Fast LlamaParse | Budget-friendly production |
+| `DEFAULT` | **0 (FREE)** | Basic text extraction | Simple docs, prototyping |
+| `COST_EFFECTIVE` | 1 | Fast AI extraction | Budget-friendly production |
 | `AGENTIC` | 3 | Structured tables, better quality | Business documents |
 | `AGENTIC_PLUS` | 6 | Advanced OCR, images, max precision | Complex PDFs, scans |
 
 **Examples:**
 - Text file with `DEFAULT` = **0 credits (FREE)**
 - PDF with 5 pages using `AGENTIC` = 5 × 3 = **15 credits**
-- PDF with 9 pages using `AGENTIC` = 9 × 3 = **27 credits** ✅ Exact match with LlamaCloud
+- PDF with 9 pages using `AGENTIC` = 9 × 3 = **27 credits**
 
 **Free Tier:**
 - DEFAULT mode is 100% free (basic extraction)

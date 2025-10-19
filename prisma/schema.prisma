@@ -176,10 +176,10 @@ model User {
   permissions     Permission[] @relation("UserPermissions")
 
   // Tool Credits Tracking (para Parser Avanzado y otras herramientas)
-  toolCreditsUsed     Int       @default(0) // Créditos MENSUALES consumidos en el mes actual
+  toolCreditsUsed     Float     @default(0) // Créditos MENSUALES consumidos en el mes actual (soporta decimales: 0.5, 1.5)
   creditsResetAt      DateTime? @default(now()) // Última fecha de reset mensual (nullable para usuarios existentes)
-  purchasedCredits    Int       @default(0) // Créditos COMPRADOS que NO caducan (se usan primero)
-  lifetimeCreditsUsed Int       @default(0) // Total histórico de créditos usados (analytics)
+  purchasedCredits    Float     @default(0) // Créditos COMPRADOS que NO caducan (se usan primero, soporta decimales)
+  lifetimeCreditsUsed Float     @default(0) // Total histórico de créditos usados (analytics, soporta decimales)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -230,6 +230,11 @@ type ContextItem {
   questions String?
   answer    String?
   createdAt DateTime
+
+  // Metadata de parsing (solo para documentos parseados via Parser API)
+  parsingMode    String? // ParsingMode enum como string
+  parsingPages   Int?
+  parsingCredits Int?
 }
 
 model Chatbot {
@@ -506,8 +511,9 @@ model Widget {
 enum ParsingStatus {
   PENDING
   PROCESSING
-  COMPLETED
-  FAILED
+  COMPLETED            // Parsing + embeddings exitosos
+  COMPLETED_NO_VECTOR  // Parsing exitoso, embeddings fallidos (puede reintentar)
+  FAILED               // Parsing fallido
 }
 
 enum ParsingMode {

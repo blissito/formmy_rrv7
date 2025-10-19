@@ -102,6 +102,7 @@ export default function DashboardAPIKeys() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedChatbotId, setCopiedChatbotId] = useState<string | null>(null);
   const buyCredits = useFetcher();
 
   const activeTab = searchParams.get("tab") || "keys";
@@ -153,7 +154,7 @@ export default function DashboardAPIKeys() {
   return (
     <section className="max-w-7xl mx-auto p-4 !min-h-0 h-auto">
       {/* Header + Credits Balance */}
-      <div className="flex items-center justify-between mb-4 pb-4 border-b border-outlines">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-outlines">
         <div>
           <h1 className="text-2xl font-bold text-space-800 dark:text-white mb-2">
             Developer API
@@ -186,9 +187,9 @@ export default function DashboardAPIKeys() {
         </div>
 
         {/* Paquetes de créditos */}
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col lg:items-end gap-2">
           <span className="text-xs text-metal font-medium">Agregar más créditos</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => handleBuyCredits("500")}
               disabled={buyCredits.state === "submitting"}
@@ -261,7 +262,7 @@ export default function DashboardAPIKeys() {
 
       {/* Tab Content */}
       {activeTab === "keys" && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* API Keys List */}
         <div className="border border-outlines rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
@@ -393,7 +394,38 @@ export default function DashboardAPIKeys() {
                         </span>
                       </div>
                       <div className="text-xs text-metal space-y-1">
-                        <p className="truncate">Chatbot: <span className="text-dark font-medium">{key.chatbot?.name}</span></p>
+                        <p className="truncate">
+                          Chatbot: <span className="text-dark font-medium">{key.chatbot?.name}</span>
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <span>chatbotId:</span>
+                          <code className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded text-dark">
+                            {key.chatbotId}
+                          </code>
+                          <button
+                            onClick={() => {
+                              copyToClipboard(key.chatbotId);
+                              setCopiedChatbotId(key.chatbotId);
+                              setTimeout(() => setCopiedChatbotId(null), 2000);
+                            }}
+                            className={`transition-colors ${
+                              copiedChatbotId === key.chatbotId
+                                ? 'text-green-600'
+                                : 'text-brand-600 hover:text-brand-700'
+                            }`}
+                            title={copiedChatbotId === key.chatbotId ? "¡Copiado!" : "Copiar Chatbot ID"}
+                          >
+                            {copiedChatbotId === key.chatbotId ? (
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </button>
+                        </p>
                         <p className="font-mono text-xs">Key: sk_live_•••{key.key.slice(-8)}</p>
                         <p>Requests: <span className="text-dark font-medium">{key.requestCount.toLocaleString()}</span></p>
                         {key.lastUsedAt && (
@@ -430,16 +462,16 @@ export default function DashboardAPIKeys() {
 
       {/* Developer Tools Tab */}
       {activeTab === "dev" && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* RAG Tester */}
           <div className="border border-outlines rounded-xl p-4">
             <h3 className="text-dark text-base font-semibold mb-3">RAG Tester</h3>
             <RagTester chatbots={chatbots} apiKey={apiKeys[0]?.key} />
           </div>
 
-          {/* Documents */}
+          {/* Semantic Tester */}
           <div className="border border-outlines rounded-xl p-4">
-            <h3 className="text-dark text-base font-semibold mb-3">Documents</h3>
+            <h3 className="text-dark text-base font-semibold mb-3">Semantic Tester</h3>
             <DocumentList chatbots={chatbots} apiKey={apiKeys[0]?.key} />
           </div>
         </div>

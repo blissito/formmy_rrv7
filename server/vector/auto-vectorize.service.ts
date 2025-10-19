@@ -4,99 +4,13 @@
  */
 
 import { db } from '~/utils/db.server';
-import { generateEmbedding, cosineSimilarity } from './embedding.service';
+import { generateEmbedding } from './embedding.service';
 import type { ContextItem } from '@prisma/client';
-
-/**
- * Tamaño máximo de chunk en caracteres (aproximadamente 512 tokens)
- */
-const MAX_CHUNK_SIZE = 2000;
-
-/**
- * Overlap entre chunks para mantener contexto
- */
-const CHUNK_OVERLAP = 200;
-
-/**
- * Umbral de similaridad semántica para prevenir duplicados
- * Si un chunk tiene > 85% similaridad con alguno existente, se considera duplicado
- */
-const SIMILARITY_THRESHOLD = 0.85;
-
-/**
- * Verifica si un chunk es semánticamente similar a algún embedding existente en el store
- * @param chunkEmbedding - Embedding del chunk a verificar
- * @param chatbotId - ID del chatbot (define el "store")
- * @returns true si es duplicado, false si es único
- */
-async function isDuplicateChunk(
-  chunkEmbedding: number[],
-  chatbotId: string
-): Promise<boolean> {
-  try {
-    // Obtener TODOS los embeddings del chatbot (el "store")
-    const existingEmbeddings = await db.embedding.findMany({
-      where: { chatbotId },
-      select: {
-        embedding: true,
-      },
-    });
-
-    if (existingEmbeddings.length === 0) {
-      return false; // No hay embeddings previos, no puede ser duplicado
-    }
-
-    // Comparar con cada embedding existente
-    for (const existing of existingEmbeddings) {
-      const similarity = cosineSimilarity(chunkEmbedding, existing.embedding as number[]);
-
-      if (similarity >= SIMILARITY_THRESHOLD) {
-        console.log(`⚠️  Chunk duplicado detectado (similaridad: ${(similarity * 100).toFixed(1)}%)`);
-        return true; // Es duplicado
-      }
-    }
-
-    return false; // Es único
-  } catch (error) {
-    console.error("Error verificando duplicados:", error);
-    // En caso de error, permitir inserción (fail-open)
-    return false;
-  }
-}
-
-/**
- * Divide texto largo en chunks con overlap
- */
-function chunkText(text: string, maxSize: number = MAX_CHUNK_SIZE, overlap: number = CHUNK_OVERLAP): string[] {
-  if (text.length <= maxSize) {
-    return [text];
-  }
-
-  const chunks: string[] = [];
-  let start = 0;
-
-  while (start < text.length) {
-    const end = Math.min(start + maxSize, text.length);
-    const chunk = text.slice(start, end);
-    
-    // Intentar cortar en un espacio para no partir palabras
-    if (end < text.length) {
-      const lastSpace = chunk.lastIndexOf(' ');
-      if (lastSpace > maxSize / 2) {
-        chunks.push(chunk.slice(0, lastSpace).trim());
-        start += lastSpace - overlap;
-      } else {
-        chunks.push(chunk.trim());
-        start += maxSize - overlap;
-      }
-    } else {
-      chunks.push(chunk.trim());
-      break;
-    }
-  }
-
-  return chunks.filter(c => c.length > 0);
-}
+import {
+  retryWithBackoff,
+  chunkContent,
+  isDuplicateChunk
+} from './vector-utils.server';
 
 /**
  * Extrae texto procesable de un ContextItem
@@ -160,7 +74,7 @@ export async function vectorizeContext(
     }
 
     // Dividir en chunks si es necesario
-    const chunks = chunkText(fullText);
+    const chunks = chunkContent(fullText);
 
     console.log(`📝 Verificando y creando embeddings (${chunks.length} chunks)...`);
 
@@ -172,8 +86,11 @@ export async function vectorizeContext(
       const chunk = chunks[i];
 
       try {
-        // Generar embedding del chunk
-        const embedding = await generateEmbedding(chunk);
+        // Generar embedding del chunk con retry
+        const embedding = await retryWithBackoff(
+          () => generateEmbedding(chunk),
+          `Generating embedding for chunk ${i + 1}/${chunks.length}`
+        );
 
         // ⭐ TEST SEMÁNTICO a nivel de STORE (todos los documentos del chatbot)
         const isDuplicate = await isDuplicateChunk(embedding, chatbotId);

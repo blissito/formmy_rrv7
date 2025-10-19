@@ -97,19 +97,31 @@ console.log(result.markdown); // Extracted text
 const result = await parser.query(
   '¿Cuál es el horario de atención?',
   'chatbot_abc123',
-  { mode: 'accurate' }
+  {
+    mode: 'accurate',  // 'fast' (0.5 cr) or 'accurate' (1.5 cr)
+    topK: 3            // Number of chunks to retrieve (1-10, default: 3)
+  }
 );
 
-console.log(result.answer);
-console.log(result.sources); // Retrieved chunks with scores
+console.log(result.answer);         // AI-generated answer
+console.log(result.sources);        // Retrieved chunks with scores
+console.log(result.tokensUsed);     // Token breakdown (accurate mode only)
+console.log(result.topK);           // Chunks used
 ```
+
+**topK Best Practices** (Industry Standard 2025):
+- `topK: 2-3` → Simple queries (90% of cases) ⭐ **Recommended**
+- `topK: 4-5` → Complex queries requiring more context
+- `topK: 7-10` → Exhaustive analysis
+
+**Token Savings**: `topK=3` uses ~40% fewer tokens than `topK=5`
 
 ### Parsing Modes & Pricing
 
 | Mode | Credits/Page | Features |
 |------|--------------|----------|
-| `DEFAULT` | **0 (FREE)** | Basic text extraction (no LlamaParse) |
-| `COST_EFFECTIVE` | 1 | Fast LlamaParse |
+| `DEFAULT` | **0 (FREE)** | Basic text extraction |
+| `COST_EFFECTIVE` | 1 | Fast AI extraction |
 | `AGENTIC` | 3 | Structured tables, better quality |
 | `AGENTIC_PLUS` | 6 | OCR, images, max precision |
 

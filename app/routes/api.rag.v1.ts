@@ -120,7 +120,8 @@ export async function loader({ request }: { request: Request }) {
 
       // Verificar ownership del chatbot
       const chatbot = await db.chatbot.findFirst({
-        where: { id: chatbotId, userId }
+        where: { id: chatbotId, userId },
+        select: { contexts: true }
       });
 
       if (!chatbot) {
@@ -130,62 +131,15 @@ export async function loader({ request }: { request: Request }) {
         );
       }
 
-      // Obtener chatbot con contextos
-      const chatbotWithContexts = await db.chatbot.findUnique({
-        where: { id: chatbotId },
-        select: {
-          contexts: true
-        }
-      });
-
-      // Obtener parsing jobs completados de este chatbot
-      const parsingJobs = await db.parsingJob.findMany({
-        where: {
-          chatbotId,
-          status: "COMPLETED"
-        },
-        select: {
-          id: true,
-          fileName: true,
-          mode: true,
-          pages: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: "desc" }
-      });
-
       // Obtener todos los embeddings de una vez para eficiencia
       const allEmbeddings = await db.embedding.findMany({
         where: { chatbotId },
         select: { metadata: true }
       });
 
-      // Procesar ParsingJobs (vía Parser API)
-      const parsingJobDocs = parsingJobs
-        .map((job) => {
-          const embeddingCount = allEmbeddings.filter((emb: any) =>
-            emb.metadata?.contextId === job.id
-          ).length;
-
-          // Solo incluir si tiene embeddings (documento activo)
-          if (embeddingCount === 0) return null;
-
-          return {
-            id: job.id,
-            fileName: job.fileName,
-            mode: job.mode,
-            pages: job.pages || 0,
-            chunks: embeddingCount,
-            quality: null,
-            queryCount: 0,
-            source: "parser_api",
-            createdAt: job.createdAt
-          };
-        })
-        .filter(Boolean); // Remover nulos
-
       // Procesar ContextItems (TODOS los tipos: FILE, LINK, TEXT, QUESTION)
-      const contextItemDocs = (chatbotWithContexts?.contexts || [])
+      // Esto incluye tanto docs subidos manualmente como parseados via Parser API
+      const docs = (chatbot.contexts as any[] || [])
         .map((ctx: any) => {
           const embeddingCount = allEmbeddings.filter((emb: any) =>
             emb.metadata?.contextId === ctx.id
@@ -201,7 +155,8 @@ export async function loader({ request }: { request: Request }) {
           switch (ctx.type) {
             case "FILE":
               displayName = ctx.fileName || "Unnamed file";
-              source = "manual_upload";
+              // Detectar si viene de Parser API por presencia de parsingMode
+              source = ctx.parsingMode ? "parser_api" : "manual_upload";
               break;
             case "LINK":
               displayName = ctx.url || ctx.title || "Unnamed link";
@@ -223,25 +178,24 @@ export async function loader({ request }: { request: Request }) {
           return {
             id: ctx.id,
             fileName: displayName,
-            type: ctx.type, // Agregar tipo para debug
-            mode: "COST_EFFECTIVE", // Contextos manuales usan modo básico
-            pages: ctx.type === "LINK" ? (ctx.routes?.length || 0) : 0,
+            type: ctx.type,
+            mode: ctx.parsingMode || "COST_EFFECTIVE", // Usar parsingMode si existe, sino default
+            pages: ctx.parsingPages || (ctx.type === "LINK" ? (ctx.routes?.length || 0) : 0),
             chunks: embeddingCount,
             quality: null,
             queryCount: 0,
             source,
-            createdAt: new Date(ctx.createdAt)
+            createdAt: new Date(ctx.createdAt),
+            // Metadata adicional de parsing (solo si existe)
+            ...(ctx.parsingCredits && { creditsUsed: ctx.parsingCredits })
           };
         })
-        .filter(Boolean); // Remover nulos
-
-      // Combinar ambas fuentes y ordenar por fecha
-      const allDocs = [...parsingJobDocs, ...contextItemDocs]
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        .filter(Boolean) // Remover nulos (docs sin embeddings)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Ordenar por fecha
 
       return Response.json({
-        contexts: allDocs,
-        total: allDocs.length
+        contexts: docs,
+        total: docs.length
       });
     }
 
@@ -288,7 +242,7 @@ export async function action({ request }: { request: Request }) {
     // POST /api/rag/v1?intent=query
     if (intent === "query") {
       const body = await request.json();
-      const { query, chatbotId, contextId, mode = "accurate" } = body;
+      const { query, chatbotId, contextId, mode = "accurate", topK = 3 } = body;
 
       // Validaciones
       if (!query || typeof query !== "string") {
@@ -308,6 +262,14 @@ export async function action({ request }: { request: Request }) {
       if (!["fast", "accurate"].includes(mode)) {
         return Response.json(
           { error: "Invalid mode. Use: fast or accurate" },
+          { status: 400 }
+        );
+      }
+
+      // Validar topK (1-10, default 3)
+      if (!Number.isInteger(topK) || topK < 1 || topK > 10) {
+        return Response.json(
+          { error: "topK must be an integer between 1-10" },
           { status: 400 }
         );
       }
@@ -334,11 +296,11 @@ export async function action({ request }: { request: Request }) {
           query,
           chatbotId,
           { contextId },
-          5
+          topK
         );
       } else {
         // Búsqueda en todos los contextos del chatbot
-        results = await vectorSearch(query, chatbotId, 5);
+        results = await vectorSearch(query, chatbotId, topK);
       }
 
       const processingTime = Date.now() - startTime;
@@ -355,8 +317,8 @@ export async function action({ request }: { request: Request }) {
 
       // Modo "fast": Solo retrieval
       if (mode === "fast") {
-        // Validar y descontar 1 crédito
-        await validateAndDeduct(userId, 1);
+        // Validar y descontar 0.5 créditos
+        await validateAndDeduct(userId, 0.5);
 
         return Response.json({
           query,
@@ -373,7 +335,8 @@ export async function action({ request }: { request: Request }) {
               contextId: r.metadata.contextId      // ✅ AGREGADO: Por completitud
             }
           })),
-          creditsUsed: 1,
+          topK,
+          creditsUsed: 0.5,
           processingTime
         });
       }
@@ -411,8 +374,15 @@ Responde basándote únicamente en el contexto anterior:`;
 
       const answer = response.choices[0]?.message?.content || "No pude generar una respuesta.";
 
-      // Validar y descontar 2 créditos
-      await validateAndDeduct(userId, 2);
+      // Extraer tokens usage
+      const tokensUsed = {
+        prompt: response.usage?.prompt_tokens || 0,
+        completion: response.usage?.completion_tokens || 0,
+        total: response.usage?.total_tokens || 0
+      };
+
+      // Validar y descontar 1.5 créditos
+      await validateAndDeduct(userId, 1.5);
 
       return Response.json({
         query,
@@ -430,7 +400,9 @@ Responde basándote únicamente en el contexto anterior:`;
             contextId: r.metadata.contextId      // ✅ AGREGADO: Por completitud
           }
         })),
-        creditsUsed: 2,
+        topK,
+        creditsUsed: 1.5,
+        tokensUsed,
         processingTime: Date.now() - startTime
       });
     }

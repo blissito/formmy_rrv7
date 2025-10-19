@@ -320,6 +320,10 @@ export async function processParsingJob(
             fileType: completedJob.fileType,
             fileSize: completedJob.fileSize,
             contextId: jobId, // Preserve parser job ID
+            // Metadata de parsing
+            parsingMode: completedJob.mode,
+            parsingPages: result.pages,
+            parsingCredits: completedJob.creditsUsed,
           },
         });
 
