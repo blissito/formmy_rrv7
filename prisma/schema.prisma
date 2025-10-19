@@ -390,6 +390,7 @@ enum IntegrationType {
   WHATSAPP
   GOOGLE_CALENDAR
   STRIPE
+  GMAIL
 }
 
 model Integration {
