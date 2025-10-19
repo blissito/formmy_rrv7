@@ -117,12 +117,21 @@ export class FormmyParser {
       body: formData,
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Parser API error: ${error.error || error.message || response.statusText}`);
+      let errorMessage = response.statusText;
+      try {
+        const error = JSON.parse(responseText);
+        errorMessage = error.error || error.message || errorMessage;
+      } catch {
+        // Si no es JSON, usar el texto completo (probablemente HTML)
+        errorMessage = responseText.substring(0, 300);
+      }
+      throw new Error(`Parser API error (${response.status}): ${errorMessage}`);
     }
 
-    return await response.json();
+    return JSON.parse(responseText);
   }
 
   /**
@@ -138,12 +147,20 @@ export class FormmyParser {
       }
     );
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Parser API error: ${error.error || response.statusText}`);
+      let errorMessage = response.statusText;
+      try {
+        const error = JSON.parse(responseText);
+        errorMessage = error.error || error.message || errorMessage;
+      } catch {
+        errorMessage = responseText.substring(0, 300);
+      }
+      throw new Error(`Parser API error (${response.status}): ${errorMessage}`);
     }
 
-    return await response.json();
+    return JSON.parse(responseText);
   }
 
   /**
@@ -213,11 +230,19 @@ export class FormmyParser {
       })
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`RAG API error: ${error.error || error.message || response.statusText}`);
+      let errorMessage = response.statusText;
+      try {
+        const error = JSON.parse(responseText);
+        errorMessage = error.error || error.message || errorMessage;
+      } catch {
+        errorMessage = responseText.substring(0, 300);
+      }
+      throw new Error(`RAG API error (${response.status}): ${errorMessage}`);
     }
 
-    return await response.json();
+    return JSON.parse(responseText);
   }
 }

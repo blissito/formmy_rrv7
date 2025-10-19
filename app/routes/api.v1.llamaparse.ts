@@ -174,10 +174,13 @@ export async function action({ request }: Route.ActionArgs) {
           fileType
         );
 
+        // ⭐ Capturar LLAMA_CLOUD_API_KEY ANTES del setTimeout
+        const LLAMA_KEY = process.env.LLAMA_CLOUD_API_KEY;
+
         // Procesar en background (setTimeout simula queue/worker)
         // En producción esto sería un queue real (Bull, BullMQ, etc.)
         setTimeout(() => {
-          processParsingJob(job.id, publicUrl, fileKey).catch((error) => {
+          processParsingJob(job.id, publicUrl, fileKey, LLAMA_KEY).catch((error) => {
             console.error(`Error procesando job ${job.id}:`, error);
           });
         }, 100);

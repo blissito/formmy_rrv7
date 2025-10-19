@@ -167,14 +167,22 @@ async function realParsing(
   fileUrl: string,
   fileName: string,
   mode: ParsingMode,
-  options: any
+  options: any,
+  llamaApiKey?: string // ⭐ Opcionalmente pasar la key
 ): Promise<ParsingResult> {
   const startTime = Date.now();
 
   try {
+    // Usar key pasada como parámetro o fallback a env var
+    const llamaKey = llamaApiKey || process.env.LLAMA_CLOUD_API_KEY;
+
+    if (!llamaKey) {
+      throw new Error("API Key is required for LlamaParseReader. Please pass the apiKey parameter or set the LLAMA_CLOUD_API_KEY environment variable.");
+    }
+
     // Inicializar LlamaParse reader
     const reader = new LlamaParseReader({
-      apiKey: process.env.LLAMA_CLOUD_API_KEY!,
+      apiKey: llamaKey,
       ...getParseConfig(mode, options),
     });
 
@@ -219,7 +227,8 @@ async function realParsing(
 export async function processParsingJob(
   jobId: string,
   fileUrl: string,
-  fileKey: string
+  fileKey: string,
+  llamaApiKey?: string // ⭐ Parámetro opcional para la API key
 ) {
   try {
     // 1. Actualizar estado a PROCESSING
@@ -233,7 +242,8 @@ export async function processParsingJob(
       fileUrl,
       job.fileName,
       job.mode,
-      job.options
+      job.options,
+      llamaApiKey // ⭐ Pasar la key
     );
 
     // 3. Eliminar archivo temporal de S3

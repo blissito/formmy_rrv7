@@ -14,7 +14,7 @@ async function testParserSDK() {
   if (!apiKey) {
     throw new Error('FORMMY_TEST_API_KEY environment variable is required');
   }
-  const parser = new FormmyParser(apiKey, 'http://localhost:5173');
+  const parser = new FormmyParser(apiKey, 'http://localhost:3000');
 
   // Si no existe, crear un txt que simule un doc
   const testDocPath = path.join(__dirname, 'test-doc.txt');

@@ -6,6 +6,9 @@
  * - GET /api/parser/v1?intent=status&jobId=xxx
  */
 
+// ⭐ Cargar .env PRIMERO (desarrollo local)
+import "server/env.server";
+
 import type { Route } from "./+types/api.parser.v1";
 import { extractApiKeyFromRequest, authenticateApiKey } from "server/chatbot/apiKeyAuth.server";
 import {
@@ -180,9 +183,13 @@ export async function action({ request }: Route.ActionArgs) {
         file.type || "application/octet-stream"
       );
 
+      // ⭐ Capturar LLAMA_CLOUD_API_KEY ANTES del setTimeout
+      const LLAMA_KEY = process.env.LLAMA_CLOUD_API_KEY;
+      console.log(`[Parser API] LLAMA_KEY captured: ${LLAMA_KEY ? 'YES' : 'NO'}, length: ${LLAMA_KEY?.length || 0}`);
+
       // Procesar en background
       setTimeout(() => {
-        processParsingJob(job.id, publicUrl, fileKey).catch((error) => {
+        processParsingJob(job.id, publicUrl, fileKey, LLAMA_KEY).catch((error) => {
           console.error(`[Parser API] Error procesando job ${job.id}:`, error);
         });
       }, 100);
