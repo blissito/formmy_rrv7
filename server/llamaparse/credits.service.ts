@@ -3,6 +3,7 @@ import { PLAN_LIMITS } from "../chatbot/planLimits.server";
 
 /**
  * Valida si el usuario tiene suficientes créditos y los descuenta
+ * Lógica de uso: PRIMERO purchased credits (no caducan), LUEGO monthly credits
  * @throws Error si no hay créditos suficientes
  */
 export async function validateAndDeduct(
@@ -10,8 +11,11 @@ export async function validateAndDeduct(
   credits: number
 ): Promise<{
   success: boolean;
-  creditsUsed: number;
-  creditsRemaining: number;
+  monthlyUsed: number;
+  purchasedRemaining: number;
+  monthlyRemaining: number;
+  totalAvailable: number;
+  usedFrom: "purchased" | "monthly" | "mixed";
 }> {
   // 1. Obtener usuario
   const user = await db.user.findUnique({
@@ -20,7 +24,9 @@ export async function validateAndDeduct(
       plan: true,
       toolCreditsUsed: true,
       creditsResetAt: true,
-      createdAt: true, // Fallback si creditsResetAt es null
+      createdAt: true,
+      purchasedCredits: true,
+      lifetimeCreditsUsed: true,
     },
   });
 
@@ -30,17 +36,15 @@ export async function validateAndDeduct(
 
   // 2. Reset mensual si es necesario
   const now = new Date();
-  const resetDate = user.creditsResetAt || user.createdAt; // Fallback para usuarios existentes
+  const resetDate = user.creditsResetAt || user.createdAt;
   const resetMonth = new Date(resetDate).getMonth();
   const currentMonth = now.getMonth();
   const resetYear = new Date(resetDate).getFullYear();
   const currentYear = now.getFullYear();
 
-  let currentCreditsUsed = user.toolCreditsUsed;
+  let currentMonthlyUsed = user.toolCreditsUsed;
 
-  // Resetear si es diferente mes O año O si creditsResetAt es null (primera vez)
   if (currentMonth !== resetMonth || currentYear !== resetYear || !user.creditsResetAt) {
-    // Nuevo mes - resetear créditos
     await db.user.update({
       where: { id: userId },
       data: {
@@ -48,63 +52,91 @@ export async function validateAndDeduct(
         creditsResetAt: now,
       },
     });
-    currentCreditsUsed = 0;
+    currentMonthlyUsed = 0;
   }
 
-  // 3. Validar límite del plan
+  // 3. Calcular créditos disponibles
   const planLimit = PLAN_LIMITS[user.plan].toolCreditsPerMonth;
-  const creditsAvailable = planLimit - currentCreditsUsed;
+  const monthlyAvailable = planLimit - currentMonthlyUsed;
+  const purchasedAvailable = user.purchasedCredits;
+  const totalAvailable = purchasedAvailable + monthlyAvailable;
 
-  if (credits > creditsAvailable) {
+  if (credits > totalAvailable) {
     throw new Error(
-      `Créditos insuficientes. Disponibles: ${creditsAvailable}, Requeridos: ${credits}. Límite del plan ${user.plan}: ${planLimit}/mes`
+      `Créditos insuficientes. Disponibles: ${totalAvailable} (${purchasedAvailable} comprados + ${monthlyAvailable} mensuales). Requeridos: ${credits}`
     );
   }
 
-  // 4. Descontar créditos (RACE CONDITION FIX: Usar operación atómica)
-  // MongoDB no soporta transacciones fácilmente, pero increment es atómico
+  // 4. Descontar créditos (PRIMERO purchased, LUEGO monthly)
+  let creditsFromPurchased = 0;
+  let creditsFromMonthly = 0;
+  let usedFrom: "purchased" | "monthly" | "mixed";
+
+  if (purchasedAvailable >= credits) {
+    // Caso 1: Tenemos suficientes créditos comprados
+    creditsFromPurchased = credits;
+    usedFrom = "purchased";
+  } else {
+    // Caso 2: Usar todos los purchased + algunos monthly
+    creditsFromPurchased = purchasedAvailable;
+    creditsFromMonthly = credits - purchasedAvailable;
+    usedFrom = purchasedAvailable > 0 ? "mixed" : "monthly";
+  }
+
+  // Actualizar atómicamente
   const updated = await db.user.update({
     where: { id: userId },
     data: {
-      toolCreditsUsed: { increment: credits },
+      purchasedCredits: { decrement: creditsFromPurchased },
+      toolCreditsUsed: { increment: creditsFromMonthly },
+      lifetimeCreditsUsed: { increment: credits },
     },
     select: {
+      purchasedCredits: true,
       toolCreditsUsed: true,
     },
   });
 
-  const newCreditsUsed = updated.toolCreditsUsed;
-  const creditsRemaining = planLimit - newCreditsUsed;
+  // Double-check post-update
+  const newMonthlyUsed = updated.toolCreditsUsed;
+  const newPurchasedRemaining = updated.purchasedCredits;
 
-  // Double-check post-update (seguridad extra)
-  if (newCreditsUsed > planLimit) {
-    // Rollback - restar los créditos que agregamos
+  if (newMonthlyUsed > planLimit || newPurchasedRemaining < 0) {
+    // Rollback
     await db.user.update({
       where: { id: userId },
       data: {
-        toolCreditsUsed: { decrement: credits },
+        purchasedCredits: { increment: creditsFromPurchased },
+        toolCreditsUsed: { decrement: creditsFromMonthly },
+        lifetimeCreditsUsed: { decrement: credits },
       },
     });
     throw new Error(
-      `Créditos insuficientes detectado post-update. Operación revertida.`
+      `Error en validación post-update. Operación revertida.`
     );
   }
 
   return {
     success: true,
-    creditsUsed: newCreditsUsed,
-    creditsRemaining,
+    monthlyUsed: newMonthlyUsed,
+    purchasedRemaining: newPurchasedRemaining,
+    monthlyRemaining: planLimit - newMonthlyUsed,
+    totalAvailable: newPurchasedRemaining + (planLimit - newMonthlyUsed),
+    usedFrom,
   };
 }
 
 /**
- * Obtiene los créditos disponibles de un usuario
+ * Obtiene los créditos disponibles de un usuario (purchased + monthly)
  */
 export async function getAvailableCredits(userId: string): Promise<{
   planLimit: number;
-  used: number;
-  available: number;
+  monthlyUsed: number;
+  monthlyAvailable: number;
+  purchasedCredits: number;
+  totalAvailable: number;
   resetAt: Date;
+  lifetimeUsed: number;
 }> {
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -112,7 +144,9 @@ export async function getAvailableCredits(userId: string): Promise<{
       plan: true,
       toolCreditsUsed: true,
       creditsResetAt: true,
-      createdAt: true, // Fallback si creditsResetAt es null
+      createdAt: true,
+      purchasedCredits: true,
+      lifetimeCreditsUsed: true,
     },
   });
 
@@ -122,26 +156,56 @@ export async function getAvailableCredits(userId: string): Promise<{
 
   // Check si necesita reset
   const now = new Date();
-  const resetDate = user.creditsResetAt || user.createdAt; // Fallback para usuarios existentes
+  const resetDate = user.creditsResetAt || user.createdAt;
   const resetMonth = new Date(resetDate).getMonth();
   const currentMonth = now.getMonth();
 
-  let used = user.toolCreditsUsed;
+  let monthlyUsed = user.toolCreditsUsed;
   let resetAt = resetDate;
 
   if (currentMonth !== resetMonth || !user.creditsResetAt) {
-    // Ya pasó el mes, créditos reseteados
-    used = 0;
+    monthlyUsed = 0;
     resetAt = now;
   }
 
   const planLimit = PLAN_LIMITS[user.plan].toolCreditsPerMonth;
-  const available = Math.max(0, planLimit - used);
+  const monthlyAvailable = Math.max(0, planLimit - monthlyUsed);
+  const purchasedCredits = user.purchasedCredits;
+  const totalAvailable = purchasedCredits + monthlyAvailable;
 
   return {
     planLimit,
-    used,
-    available,
+    monthlyUsed,
+    monthlyAvailable,
+    purchasedCredits,
+    totalAvailable,
     resetAt,
+    lifetimeUsed: user.lifetimeCreditsUsed,
+  };
+}
+
+/**
+ * Agregar créditos comprados a un usuario (one-time purchase, NO caducan)
+ */
+export async function addPurchasedCredits(
+  userId: string,
+  credits: number
+): Promise<{
+  success: boolean;
+  newBalance: number;
+}> {
+  const updated = await db.user.update({
+    where: { id: userId },
+    data: {
+      purchasedCredits: { increment: credits },
+    },
+    select: {
+      purchasedCredits: true,
+    },
+  });
+
+  return {
+    success: true,
+    newBalance: updated.purchasedCredits,
   };
 }

@@ -147,6 +147,8 @@ export const createCheckoutSessionURL = async ({
   coupon,
   price, // anual by default
   priceData, // custom price data (para precios custom sin crear price ID)
+  mode = "subscription", // subscription (recurring) o payment (one-time)
+  metadata, // metadata adicional para el checkout session
 }: {
   origin: string;
   coupon?: string;
@@ -155,9 +157,11 @@ export const createCheckoutSessionURL = async ({
   priceData?: {
     currency: string;
     unit_amount: number;
-    recurring: { interval: 'month' | 'year' };
+    recurring?: { interval: 'month' | 'year' }; // Opcional para payment mode
     product_data: { name: string; description?: string };
   };
+  mode?: "subscription" | "payment";
+  metadata?: Record<string, string>;
 }) => {
   const isDevelopment = process.env.NODE_ENV === "development";
   const DOMAIN = origin;
@@ -176,15 +180,24 @@ export const createCheckoutSessionURL = async ({
     : { price: price || ANUAL_PRICE, quantity: 1 };
 
   const sessionConfig: any = {
-    mode: "subscription",
-    success_url: `${DOMAIN}/profile?success=1`,
+    mode,
+    success_url: mode === "payment"
+      ? `${DOMAIN}/dashboard/plan?credits_purchased=1`
+      : `${DOMAIN}/profile?success=1`,
     cancel_url: `${DOMAIN}/planes`,
     line_items: [lineItem],
     allow_promotion_codes: true, // Habilita campo nativo de cupones en checkout
   };
 
+  if (metadata) {
+    sessionConfig.metadata = metadata;
+  }
+
   if (user) {
     sessionConfig.customer = await getOrCreateCustomerId(user);
+  } else if (mode === "payment") {
+    // Para payment mode sin usuario, permitir que Stripe cree customer
+    sessionConfig.customer_creation = "always";
   }
   // Para usuarios anónimos en modo subscription, Stripe crea customer automáticamente
   // No necesitamos customer_creation ya que solo funciona en payment mode

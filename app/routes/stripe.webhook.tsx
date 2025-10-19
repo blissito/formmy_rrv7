@@ -3,6 +3,7 @@ import {
   handleSubscriptionCreated,
   handleSubscriptionUpdated,
   handleSubscriptionDeleted,
+  handleCheckoutCompleted,
 } from "~/lib/stripe/webhook-utils";
 
 type ActionArgs = {
@@ -48,6 +49,10 @@ export const action = async ({ request }: ActionArgs) => {
 
       case "customer.subscription.deleted":
         await handleSubscriptionDeleted(event.data.object);
+        break;
+
+      case "checkout.session.completed":
+        await handleCheckoutCompleted(event.data.object);
         break;
 
       default:

@@ -6,6 +6,7 @@ import { sendProEmail } from "~/utils/notifyers/pro";
 import { sendPlanCancellation } from "~/utils/notifyers/planCancellation";
 
 import { getDefaultModelForPlan } from "~/utils/aiModels";
+import { addPurchasedCredits } from "server/llamaparse/credits.service";
 
 
 type SubscriptionStatus =
@@ -200,5 +201,59 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
     });
   } catch (error) {
     console.error('Error sending plan cancellation email:', error);
+  }
+}
+
+/**
+ * Maneja completado de checkout (one-time payments como compra de créditos)
+ */
+export async function handleCheckoutCompleted(session: any) {
+  console.log(`[Webhook] Processing checkout.session.completed: ${session.id}`);
+
+  // Verificar si es una compra de créditos por metadata
+  const metadata = session.metadata;
+
+  if (!metadata || metadata.type !== "credits") {
+    console.log("[Webhook] Checkout session no es compra de créditos, ignorando");
+    return;
+  }
+
+  const customerId = session.customer;
+  const creditsAmount = parseInt(metadata.amount);
+
+  if (!creditsAmount || creditsAmount <= 0) {
+    console.error("[Webhook] Cantidad de créditos inválida en metadata:", metadata.amount);
+    return;
+  }
+
+  // Buscar usuario por customerId
+  const user = await db.user.findUnique({
+    where: { customerId },
+  });
+
+  if (!user) {
+    console.warn(
+      `[Webhook] Usuario no encontrado para el cliente de Stripe: ${customerId}`
+    );
+    return;
+  }
+
+  // Agregar créditos comprados al usuario
+  try {
+    const result = await addPurchasedCredits(user.id, creditsAmount);
+
+    console.log(
+      `[Webhook] ✅ ${creditsAmount} créditos agregados a ${user.email}. Nuevo balance: ${result.newBalance}`
+    );
+
+    // TODO: Enviar email de confirmación de compra
+    // await sendCreditsPurchaseEmail({
+    //   email: user.email,
+    //   name: user.name,
+    //   credits: creditsAmount,
+    //   newBalance: result.newBalance
+    // });
+  } catch (error) {
+    console.error("[Webhook] Error agregando créditos:", error);
   }
 }

@@ -18,6 +18,7 @@ export default [
     route("ghosty", "routes/dashboard.ghosty.tsx"),
     route("plan", "routes/dashboard.plan.tsx"),
     route("uso", "routes/dashboard.uso.tsx"),
+    route("api-keys", "routes/dashboard.api-keys_.tsx"),
     route("formmys", "routes/dashboard.formmys.tsx"),
     route("formmys/new", "routes/dashboard.formmys.new.tsx"),
     route("formmys/:projectId", "routes/dashboard.formmys_.$projectId.tsx"),
@@ -109,6 +110,8 @@ export default [
   route("api/v1/conversations/load-more", "routes/api.v1.conversations.load-more.ts"),
   route("api/v1/conversations/:conversationId/stream", "routes/api.v1.conversations.$conversationId.stream.tsx"),
   route("api/v1/llamaparse", "routes/api.v1.llamaparse.ts"),
+  route("api/v1/credits", "routes/api.v1.credits.ts"),
+  route("api/parser/v1", "routes/api.parser.v1.ts"),
 
   // Composio Google Calendar Integration
   route("api/v1/composio/google-calendar", "routes/api.v1.composio.google-calendar.ts"),

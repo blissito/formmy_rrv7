@@ -94,6 +94,12 @@ const memory = createMemory({
 ### Tool Credits ✅ (Implementado)
 **Ubicación**: `/server/llamaparse/credits.service.ts`
 
+**Sistema Dual de Créditos**:
+1. **Créditos Mensuales** (`toolCreditsUsed`): Resetean cada mes
+2. **Créditos Comprados** (`purchasedCredits`): Permanentes hasta agotarse
+
+**Orden de Consumo**: Primero mensuales, luego comprados
+
 **Costos por Tool**:
 - Básicas: 1 crédito (save_contact, get_datetime)
 - Intermedias: 2-3 créditos (search_context, web_search)
@@ -109,15 +115,26 @@ const memory = createMemory({
 - PRO: 1,000 créditos/mes
 - ENTERPRISE: 5,000 créditos/mes
 
-**Reset Automático**: Primer día de cada mes
+**Compra de Paquetes** (vía Stripe):
+- 500 créditos: $99 MXN (`price_1SLwONRuGQeGCFrvx7YKBzMT`)
+- 2,000 créditos: $349 MXN (`price_1SLwPBRuGQeGCFrvwVfKj8Lk`)
+- 5,000 créditos: $799 MXN (`price_1SLwPqRuGQeGCFrvQZeRStNm`)
+
+**Reset Automático**: Primer día de cada mes (solo mensuales)
 
 **DB Schema**:
 ```prisma
 model User {
-  toolCreditsUsed Int @default(0)  // Créditos consumidos
-  creditsResetAt  DateTime @default(now())  // Última fecha de reset
+  toolCreditsUsed     Int @default(0)      // Créditos mensuales consumidos
+  creditsResetAt      DateTime @default(now())  // Última fecha reset
+  purchasedCredits    Int @default(0)      // Créditos comprados restantes
+  lifetimeCreditsUsed Int @default(0)      // Total histórico consumido
 }
 ```
+
+**API Stripe**:
+- `/api/stripe?intent=buy_credits&package=[500|2000|5000]`
+- Webhook: `checkout.session.completed` para acreditar compras
 
 ---
 

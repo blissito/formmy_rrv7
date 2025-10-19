@@ -176,8 +176,10 @@ model User {
   permissions     Permission[] @relation("UserPermissions")
 
   // Tool Credits Tracking (para Parser Avanzado y otras herramientas)
-  toolCreditsUsed Int       @default(0) // Créditos consumidos en el mes actual
-  creditsResetAt  DateTime? @default(now()) // Última fecha de reset mensual (nullable para usuarios existentes)
+  toolCreditsUsed     Int       @default(0) // Créditos MENSUALES consumidos en el mes actual
+  creditsResetAt      DateTime? @default(now()) // Última fecha de reset mensual (nullable para usuarios existentes)
+  purchasedCredits    Int       @default(0) // Créditos COMPRADOS que NO caducan (se usan primero)
+  lifetimeCreditsUsed Int       @default(0) // Total histórico de créditos usados (analytics)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
