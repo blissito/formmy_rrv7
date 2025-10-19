@@ -175,6 +175,10 @@ model User {
   referrals       Referral[]   @relation("Referrer")
   permissions     Permission[] @relation("UserPermissions")
 
+  // Tool Credits Tracking (para Parser Avanzado y otras herramientas)
+  toolCreditsUsed Int       @default(0) // Créditos consumidos en el mes actual
+  creditsResetAt  DateTime? @default(now()) // Última fecha de reset mensual (nullable para usuarios existentes)
+
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 }

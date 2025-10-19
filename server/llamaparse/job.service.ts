@@ -2,6 +2,7 @@ import { db } from "~/utils/db.server";
 import type { ParsingMode, ParsingStatus } from "@prisma/client";
 import { LlamaParseReader } from "llama-cloud-services";
 import { deleteParserFile } from "./upload.service";
+import { validateAndDeduct } from "./credits.service";
 
 interface CreateParsingJobParams {
   chatbotId: string;
@@ -35,21 +36,39 @@ function getModeCredits(mode: ParsingMode): number {
 export async function createParsingJob(params: CreateParsingJobParams) {
   const credits = getModeCredits(params.mode);
 
-  const job = await db.parsingJob.create({
-    data: {
-      chatbotId: params.chatbotId,
-      userId: params.userId,
-      fileName: params.fileName,
-      fileSize: params.fileSize,
-      fileType: params.fileType,
-      mode: params.mode,
-      options: params.options,
-      status: "PENDING",
-      creditsUsed: credits,
-    },
-  });
+  // ✅ Validar y descontar créditos ANTES de crear el job
+  await validateAndDeduct(params.userId, credits);
 
-  return job;
+  try {
+    const job = await db.parsingJob.create({
+      data: {
+        chatbotId: params.chatbotId,
+        userId: params.userId,
+        fileName: params.fileName,
+        fileSize: params.fileSize,
+        fileType: params.fileType,
+        mode: params.mode,
+        options: params.options,
+        status: "PENDING",
+        creditsUsed: credits,
+      },
+    });
+
+    return job;
+  } catch (error) {
+    // Revertir créditos si falla la creación del job
+    console.error(`Error creando parsing job, revirtiendo ${credits} créditos para user ${params.userId}`);
+    await db.user.update({
+      where: { id: params.userId },
+      data: {
+        toolCreditsUsed: { decrement: credits },
+      },
+    }).catch((revertError) => {
+      console.error("Error revirtiendo créditos:", revertError);
+    });
+
+    throw error;
+  }
 }
 
 /**

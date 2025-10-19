@@ -14,6 +14,7 @@ export const InfoSources = ({
   isCreating = false,
   mode = "create", // "create" o "edit"
   hasPendingChanges = false,
+  maxContextSizeKB, // Límite del plan del usuario
 }: {
   className?: string;
   websiteEntries?: WebsiteEntry[];
@@ -26,6 +27,7 @@ export const InfoSources = ({
   isCreating?: boolean;
   mode?: "create" | "edit";
   hasPendingChanges?: boolean;
+  maxContextSizeKB?: number; // KB según plan del usuario
 }) => {
   // Calcular el peso total de los sitios web (basado en el contenido de texto)
   const websiteWeight = websiteEntries.reduce((total, entry) => {
@@ -57,7 +59,12 @@ export const InfoSources = ({
   }, 0);
 
   const totalWeight = websiteWeight + filesWeight + contextsWeight + textContextsWeight + questionContextsWeight;
-  const maxWeight = 1 * 1024 * 1024; // 800KB en bytes
+
+  // Usar límite del plan del usuario (KB → bytes)
+  // Si no se proporciona maxContextSizeKB, usar 1MB por defecto (backward compatibility)
+  const maxWeight = maxContextSizeKB !== undefined
+    ? maxContextSizeKB * 1024
+    : 1 * 1024 * 1024;
 
   // Función para formatear bytes a KB/MB
   const formatBytes = (bytes: number): string => {
@@ -147,18 +154,50 @@ export const InfoSources = ({
 
         <hr className="border-b border-dashed my-2 w-full" />
 
-        <div className="flex justify-between">
-          <p>Peso total:</p>
-          <div className="grid text-sm">
-            <span className={totalWeight > maxWeight ? "text-red-500" : ""}>
-              {formatBytes(totalWeight)}
-            </span>
-            <span className="text-irongray">/ {formatBytes(maxWeight)} </span>
-          </div>
-        </div>
+        {/* Mostrar límite solo si el plan permite contexto manual (maxContextSizeKB > 0) */}
+        {maxContextSizeKB !== undefined && maxContextSizeKB > 0 ? (
+          <>
+            <div className="flex justify-between">
+              <p>Peso total:</p>
+              <div className="grid text-sm">
+                <span className={totalWeight > maxWeight ? "text-red-500" : ""}>
+                  {formatBytes(totalWeight)}
+                </span>
+                <span className="text-irongray">/ {formatBytes(maxWeight)} </span>
+              </div>
+            </div>
 
-        {totalWeight > maxWeight && (
-          <div className="text-red-500 text-xs">⚠️ Límite excedido</div>
+            {totalWeight > maxWeight && (
+              <div className="text-red-500 text-xs">⚠️ Límite excedido</div>
+            )}
+          </>
+        ) : maxContextSizeKB !== undefined && maxContextSizeKB === 0 ? (
+          <div className="text-sm text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <p className="font-semibold mb-1">💡 Plan STARTER</p>
+            <p className="text-xs">
+              No permite contexto manual. Usa el <strong>Parser Avanzado</strong> (200 créditos/mes) para entrenar tu chatbot.{" "}
+              <a href="/dashboard/api-keys" className="underline hover:text-blue-900">
+                Ver API →
+              </a>
+            </p>
+          </div>
+        ) : (
+          // Backward compatibility si no se pasa maxContextSizeKB
+          <>
+            <div className="flex justify-between">
+              <p>Peso total:</p>
+              <div className="grid text-sm">
+                <span className={totalWeight > maxWeight ? "text-red-500" : ""}>
+                  {formatBytes(totalWeight)}
+                </span>
+                <span className="text-irongray">/ {formatBytes(maxWeight)} </span>
+              </div>
+            </div>
+
+            {totalWeight > maxWeight && (
+              <div className="text-red-500 text-xs">⚠️ Límite excedido</div>
+            )}
+          </>
         )}
 
         {mode === "create" && (

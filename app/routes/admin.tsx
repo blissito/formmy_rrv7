@@ -14,6 +14,7 @@ import {
   TopChatbots,
   ActiveIntegrations,
   ContactsOverview,
+  ParserMetrics,
 } from "~/components/admin";
 
 // Helper function to safely parse AI model provider
@@ -496,6 +497,44 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       console.error('Error loading system health:', error);
     }
 
+    // Parser/LlamaParse Metrics (NUEVO)
+    let parserMetrics = {
+      totalJobs: 0,
+      totalPages: 0,
+      totalCredits: 0,
+      byMode: [],
+    };
+
+    try {
+      const parserAggregates = await db.parsingJob.aggregate({
+        _count: { id: true },
+        _sum: { creditsUsed: true, pages: true },
+        where: {
+          status: 'COMPLETED',
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      });
+
+      const parserByMode = await db.parsingJob.groupBy({
+        by: ['mode'],
+        _count: { id: true },
+        _sum: { creditsUsed: true, pages: true },
+        where: {
+          status: 'COMPLETED',
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      });
+
+      parserMetrics = {
+        totalJobs: parserAggregates._count.id || 0,
+        totalPages: parserAggregates._sum.pages || 0,
+        totalCredits: parserAggregates._sum.creditsUsed || 0,
+        byMode: parserByMode,
+      };
+    } catch (error) {
+      console.error('Error loading parser metrics:', error);
+    }
+
     return {
       users: {
         total: totalUsers,
@@ -568,6 +607,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       toolCredits: toolCreditsData,
       ragMetrics,
       systemHealth,
+      parserMetrics,
     };
   } catch (error) {
     console.error('Error loading admin dashboard data:', error);
@@ -585,6 +625,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       toolCredits: { toolUsage: [], totalCredits: 0, totalCostUSD: 0, totalCostMXN: 0, usersNearLimit: [] },
       ragMetrics: { ragSearches: 0, webSearches: 0, conversationsWithRAG: 0 },
       systemHealth: { avgLatency: 0, maxLatency: 0, toolErrors: [], alerts: [] },
+      parserMetrics: { totalJobs: 0, totalPages: 0, totalCredits: 0, byMode: [] },
       error: 'Error cargando datos del dashboard. Intenta refrescar la página.',
     };
   }
@@ -658,6 +699,14 @@ export default function AdminDashboard() {
 
       {/* Contacts Overview */}
       <ContactsOverview contacts={data.contacts} />
+
+      {/* Parser/LlamaParse Metrics */}
+      <ParserMetrics
+        totalJobs={data.parserMetrics.totalJobs}
+        totalPages={data.parserMetrics.totalPages}
+        totalCredits={data.parserMetrics.totalCredits}
+        byMode={data.parserMetrics.byMode}
+      />
 
       {/* Top Chatbots & Integrations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

@@ -17,10 +17,19 @@ import { TextForm } from "../TextForm";
 import { QuestionsForm } from "../QuestionsForm";
 import { Website } from "../Website";
 import { ExtraccionAvanzada } from "./ExtraccionAvanzada";
-import type { Chatbot, User } from "@prisma/client";
+import type { Chatbot, User, Plans } from "@prisma/client";
 import type { WebsiteEntry } from "~/types/website";
 import { useEffect, useState } from "react";
 import { useSubmit } from "react-router";
+
+// Client-safe plan limits mapping
+const PLAN_LIMITS_CLIENT: Record<Plans, { maxContextSizeKB: number }> = {
+  FREE: { maxContextSizeKB: 0 },
+  TRIAL: { maxContextSizeKB: 51200 }, // 50MB
+  STARTER: { maxContextSizeKB: 0 }, // No contexto manual, solo parser
+  PRO: { maxContextSizeKB: 51200 }, // 50MB
+  ENTERPRISE: { maxContextSizeKB: 102400 }, // 100MB
+};
 
 export const Entrenamiento = ({
   chatbot,
@@ -674,6 +683,7 @@ export const Entrenamiento = ({
             onCreateChatbot={handleUpdateChatbot}
             isCreating={isUpdating}
             hasPendingChanges={uploadedFiles.length > 0 || newWebsiteEntries.length > 0 || newTextContexts.length > 0 || newQuestionContexts.length > 0 || textContextsToRemove.length > 0 || fileContextsToRemove.length > 0 || websiteContextsToRemove.length > 0 || questionContextsToRemove.length > 0}
+            maxContextSizeKB={PLAN_LIMITS_CLIENT[user.plan].maxContextSizeKB}
           />
         </section>
       </StickyGrid>

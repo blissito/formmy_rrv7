@@ -7,7 +7,7 @@ export const PLAN_LIMITS = {
   [Plans.FREE]: {
     maxChatbots: 0, // Sin chatbots permitidos
     maxFormmys: 3, // Solo 3 formmys permitidos
-    maxContextSizeKB: 1000, // 1MB
+    maxContextSizeKB: 0, // Sin contexto (usar parser si quieren subir docs)
     maxConversationsPerMonth: 0, // Sin conversaciones
     maxTokensPerQuery: 0, // Sin contexto
     maxContextQueriesPerDay: 0, // Sin queries con contexto
@@ -19,7 +19,7 @@ export const PLAN_LIMITS = {
   [Plans.TRIAL]: {
     maxChatbots: 10, // Todas las funcionalidades PRO
     maxFormmys: Infinity, // Sin límite como PRO
-    maxContextSizeKB: 5000, // 5MB como PRO
+    maxContextSizeKB: 51200, // 50MB (mismo que parser) - trial generoso
     maxConversationsPerMonth: 50, // 50 conversaciones específicas para trial
     maxTokensPerQuery: 8000, // Como PRO
     maxContextQueriesPerDay: 100, // Como PRO
@@ -35,7 +35,7 @@ export const PLAN_LIMITS = {
   [Plans.STARTER]: {
     maxChatbots: 2,
     maxFormmys: Infinity, // Formmys ilimitados desde STARTER
-    maxContextSizeKB: 2000, // 2MB
+    maxContextSizeKB: 0, // Sin contexto manual (deben usar parser pagando créditos)
     maxConversationsPerMonth: 50,
     maxTokensPerQuery: 4000, // Protección básica
     maxContextQueriesPerDay: 20, // Limite diario bajo
@@ -49,7 +49,7 @@ export const PLAN_LIMITS = {
   [Plans.PRO]: {
     maxChatbots: 10,
     maxFormmys: Infinity, // Sin límite en formmys
-    maxContextSizeKB: 5000, // 5MB
+    maxContextSizeKB: 51200, // 50MB (mismo que parser)
     maxConversationsPerMonth: 250,
     maxTokensPerQuery: 8000, // Moderada protección
     maxContextQueriesPerDay: 100, // Límite generoso
@@ -65,7 +65,7 @@ export const PLAN_LIMITS = {
   [Plans.ENTERPRISE]: {
     maxChatbots: Infinity,
     maxFormmys: Infinity, // Sin límite en formmys
-    maxContextSizeKB: 10000, // 10MB
+    maxContextSizeKB: 102400, // 100MB para enterprise
     maxConversationsPerMonth: 1000,
     maxTokensPerQuery: 16000, // Límite alto pero protegido
     maxContextQueriesPerDay: 500, // Límite empresarial

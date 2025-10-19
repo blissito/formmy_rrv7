@@ -76,7 +76,7 @@ const memory = createMemory({
 - Temperature validation `<= 1.5`
 - Streaming timeout 45s, max 1000 chunks
 
-**TODOs**: Tool Credits, CRUD chatbots/contextos/forms, Analytics
+**TODOs**: CRUD chatbots/contextos/forms, Analytics
 
 ---
 
@@ -91,7 +91,33 @@ const memory = createMemory({
 - **TRIAL**: Completo temporal
 - **Ghosty**: + reminders, query_chatbots, stats
 
-**Tool Credits**: Básicas 1, Intermedias 2-3, Avanzadas 4-6
+### Tool Credits ✅ (Implementado)
+**Ubicación**: `/server/llamaparse/credits.service.ts`
+
+**Costos por Tool**:
+- Básicas: 1 crédito (save_contact, get_datetime)
+- Intermedias: 2-3 créditos (search_context, web_search)
+- Avanzadas: 4-6 créditos (generate_report)
+
+**Parser Avanzado**:
+- `COST_EFFECTIVE`: 1 crédito
+- `AGENTIC`: 3 créditos
+- `AGENTIC_PLUS`: 6 créditos (con OCR)
+
+**Límites Mensuales**:
+- STARTER: 200 créditos/mes
+- PRO: 1,000 créditos/mes
+- ENTERPRISE: 5,000 créditos/mes
+
+**Reset Automático**: Primer día de cada mes
+
+**DB Schema**:
+```prisma
+model User {
+  toolCreditsUsed Int @default(0)  // Créditos consumidos
+  creditsResetAt  DateTime @default(now())  // Última fecha de reset
+}
+```
 
 ---
 
@@ -371,4 +397,102 @@ const result = await composio.tools.execute('ACTION', { userId: entityId, argume
 
 ---
 
-**Última actualización**: Oct 17, 2025
+## Parser API v1 ✅ (External REST API)
+
+### Overview
+API REST pública para parsear documentos con LlamaParse avanzado. Estilo LlamaCloud.
+
+**Endpoint Base**: `https://formmy-v2.fly.dev/api/parser/v1`
+
+### Autenticación
+```bash
+Authorization: Bearer sk_live_xxxxx
+# O
+X-API-Key: sk_live_xxxxx
+```
+
+**Gestión de Keys**: `/dashboard/api-keys`
+
+### Endpoints
+
+#### POST /api/parser/v1?intent=upload
+```bash
+curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \
+  -H "Authorization: Bearer sk_live_xxxxx" \
+  -F "file=@documento.pdf" \
+  -F "mode=AGENTIC"
+```
+
+**Response**:
+```json
+{
+  "id": "job_abc123",
+  "status": "PENDING",
+  "fileName": "documento.pdf",
+  "mode": "AGENTIC",
+  "creditsUsed": 3,
+  "createdAt": "2025-01-18T10:00:00Z"
+}
+```
+
+#### GET /api/parser/v1?intent=status&jobId=xxx
+```bash
+curl https://formmy-v2.fly.dev/api/parser/v1?intent=status&jobId=job_abc123 \
+  -H "Authorization: Bearer sk_live_xxxxx"
+```
+
+**Response (COMPLETED)**:
+```json
+{
+  "id": "job_abc123",
+  "status": "COMPLETED",
+  "markdown": "# Contenido parseado...",
+  "pages": 15,
+  "processingTime": 45.2,
+  "creditsUsed": 3
+}
+```
+
+### SDK TypeScript
+**Ubicación**: `/sdk/formmy-parser.ts` (50 líneas, standalone)
+
+```typescript
+import { FormmyParser } from './sdk/formmy-parser';
+
+const parser = new FormmyParser('sk_live_xxxxx');
+
+// Parse
+const job = await parser.parse('./doc.pdf', 'AGENTIC');
+console.log(`Job ${job.id} - Créditos: ${job.creditsUsed}`);
+
+// Wait for completion
+const result = await parser.waitFor(job.id);
+console.log(result.markdown);
+```
+
+### Pricing (Créditos)
+| Modo | Créditos | Features |
+|------|----------|----------|
+| COST_EFFECTIVE | 1 | Parsing básico, rápido |
+| AGENTIC | 3 | Tablas estructuradas, mejor calidad |
+| AGENTIC_PLUS | 6 | OCR avanzado, imágenes, máxima precisión |
+
+### Rate Limits
+- 1000 requests/hour por API key
+- Tracking mensual automático
+
+### Errores
+- `401`: API key inválida o inactiva
+- `402`: Créditos insuficientes
+- `429`: Rate limit excedido
+
+### Implementación
+**Archivos clave**:
+- `/app/routes/api.parser.v1.ts` - API endpoints
+- `/app/routes/dashboard.api-keys.tsx` - UI gestión + docs
+- `/server/llamaparse/credits.service.ts` - Validación créditos
+- `/sdk/formmy-parser.ts` - SDK cliente
+
+---
+
+**Última actualización**: Ene 18, 2025
