@@ -94,8 +94,13 @@ export default {
         floatingleft: "floatingleft 4s infinite ease-in-out",
         floatingright: "floatingright 4s infinite ease-in-out	",
         "meteor-effect": "meteor 5s linear infinite",
+        "fade-in": "fadeIn 0.5s ease-in-out",
       },
       keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
         meteor: {
           "0%": { transform: "rotate(215deg) translateX(0)", opacity: "1" },
           "70%": { opacity: "1" },

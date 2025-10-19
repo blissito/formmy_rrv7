@@ -496,3 +496,56 @@ model Widget {
 
   @@index([type])
 }
+
+enum ParsingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ParsingMode {
+  COST_EFFECTIVE
+  AGENTIC
+  AGENTIC_PLUS
+}
+
+model ParsingJob {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Relaciones
+  chatbotId String @db.ObjectId
+  userId    String @db.ObjectId
+
+  // Archivo
+  fileName String
+  fileSize Int // KB
+  fileType String
+  fileUrl  String? // Temporal upload
+
+  // Configuración
+  mode    ParsingMode
+  options Json // advancedOptions
+
+  // Estado
+  status ParsingStatus @default(PENDING)
+
+  // Resultado
+  resultMarkdown String?
+  pages          Int?
+  processingTime Float? // segundos
+
+  // Créditos
+  creditsUsed Int
+
+  // Error
+  errorMessage String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  @@index([userId])
+  @@index([chatbotId])
+  @@index([status])
+}

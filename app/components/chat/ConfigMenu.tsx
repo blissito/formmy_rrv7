@@ -223,6 +223,25 @@ export const PreguntasButton = ({
   );
 };
 
+export const AvanzadoButton = ({
+  onClick,
+  current,
+}: {
+  onClick?: () => void;
+  current?: string;
+}) => {
+  return (
+    <MenuButton
+      onClick={onClick}
+      isActive={current?.includes("avanzado")}
+      to="/chat/nuevo"
+      icon="✨"
+    >
+      Avanzado
+    </MenuButton>
+  );
+};
+
 export const GeneralButton = ({
   onClick,
   current,

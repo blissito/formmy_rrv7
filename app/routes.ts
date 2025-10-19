@@ -108,6 +108,7 @@ export default [
   route("api/v1/conversations", "routes/api.v1.conversations.tsx"),
   route("api/v1/conversations/load-more", "routes/api.v1.conversations.load-more.ts"),
   route("api/v1/conversations/:conversationId/stream", "routes/api.v1.conversations.$conversationId.stream.tsx"),
+  route("api/v1/llamaparse", "routes/api.v1.llamaparse.ts"),
 
   // Composio Google Calendar Integration
   route("api/v1/composio/google-calendar", "routes/api.v1.composio.google-calendar.ts"),

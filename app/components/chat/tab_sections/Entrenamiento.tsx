@@ -7,6 +7,7 @@ import {
   NotionButton,
   PreguntasButton,
   WebsiteButton,
+  AvanzadoButton,
 } from "../ConfigMenu";
 import { InfoSources } from "../InfoSources";
 import { ListFiles } from "../ListFiles";
@@ -15,6 +16,7 @@ import { UploadFiles } from "../UploadFiles";
 import { TextForm } from "../TextForm";
 import { QuestionsForm } from "../QuestionsForm";
 import { Website } from "../Website";
+import { ExtraccionAvanzada } from "./ExtraccionAvanzada";
 import type { Chatbot, User } from "@prisma/client";
 import type { WebsiteEntry } from "~/types/website";
 import { useEffect, useState } from "react";
@@ -559,6 +561,10 @@ export const Entrenamiento = ({
               onClick={() => setCurrentTab("preguntas")}
               current={currentTab}
             />
+            <AvanzadoButton
+              onClick={() => setCurrentTab("avanzado")}
+              current={currentTab}
+            />
             <GoogleDriveButton
               onClick={() => setCurrentTab("google_drive")}
               current={currentTab}
@@ -652,6 +658,9 @@ export const Entrenamiento = ({
             isAddingQuestion={isAddingQuestion}
             editingContext={editingQuestionContext}
           />
+        )}
+        {currentTab === "avanzado" && (
+          <ExtraccionAvanzada chatbot={chatbot} user={user} />
         )}
 
         <section >
