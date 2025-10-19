@@ -37,6 +37,14 @@ export const ATLAS_VECTOR_INDEX_CONFIG = {
     {
       type: 'filter',
       path: 'chatbotId'
+    },
+    {
+      type: 'filter',
+      path: 'metadata.contextId'
+    },
+    {
+      type: 'filter',
+      path: 'metadata.contextType'
     }
   ]
 } as const;

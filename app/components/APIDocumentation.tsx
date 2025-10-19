@@ -280,6 +280,10 @@ while True:
                   <p className="text-xs font-mono font-bold text-blue-700">GET /api/rag/v1?intent=list&chatbotId=xxx</p>
                   <p className="text-xs text-metal mt-1">Listar documentos parseados con métricas</p>
                 </div>
+                <div className="bg-gray-50 border border-outlines rounded-lg p-2">
+                  <p className="text-xs font-mono font-bold text-orange-700">GET /api/rag/v1?intent=cleanup&chatbotId=xxx</p>
+                  <p className="text-xs text-metal mt-1">Limpiar embeddings huérfanos sin contexto asociado</p>
+                </div>
               </div>
             </div>
 
@@ -295,7 +299,7 @@ while True:
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold text-sm">fast</p>
-                      <p className="text-xs text-metal">Solo retrieval vectorial (sin LLM)</p>
+                      <p className="text-xs text-metal">Solo retrieval vectorial - Retorna top 5 chunks relevantes</p>
                     </div>
                     <span className="text-xs font-bold text-brand-600">1 cr</span>
                   </div>
@@ -304,12 +308,32 @@ while True:
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold text-sm">accurate</p>
-                      <p className="text-xs text-metal">Retrieval + LLM synthesis (respuesta natural)</p>
+                      <p className="text-xs text-metal">Retrieval + GPT-4o-mini - Respuesta en lenguaje natural + fuentes</p>
                     </div>
                     <span className="text-xs font-bold text-brand-600">2 cr</span>
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-dark text-sm mb-2">Parámetros Opcionales</h4>
+              <div className="space-y-2 text-xs">
+                <div className="border border-outlines rounded-lg p-2">
+                  <code className="font-mono text-brand-600">contextId</code>
+                  <p className="text-metal mt-1">Filtrar búsqueda a un documento específico</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-dark text-sm mb-2">Códigos de Error</h4>
+              <ul className="space-y-1 text-xs text-metal">
+                <li><code className="bg-gray-100 px-1 text-dark">401</code> - API key inválida o faltante</li>
+                <li><code className="bg-gray-100 px-1 text-dark">402</code> - Créditos insuficientes</li>
+                <li><code className="bg-gray-100 px-1 text-dark">403</code> - Chatbot no encontrado o sin permisos</li>
+                <li><code className="bg-gray-100 px-1 text-dark">500</code> - Error interno del servidor</li>
+              </ul>
             </div>
           </>
         )}
