@@ -1,3 +1,4 @@
+// @ts-ignore - pdf-parse no tiene tipos perfectos
 import pdfParse from "pdf-parse";
 
 /**
@@ -7,6 +8,7 @@ import pdfParse from "pdf-parse";
  */
 export async function countPDFPages(buffer: Buffer): Promise<number> {
   try {
+    // @ts-ignore
     const data = await pdfParse(buffer);
     return data.numpages;
   } catch (error) {
