@@ -14,7 +14,13 @@ async function testParserSDK() {
   if (!apiKey) {
     throw new Error('FORMMY_TEST_API_KEY environment variable is required');
   }
-  const parser = new FormmyParser(apiKey, 'http://localhost:3000');
+
+  const parser = new FormmyParser({
+    apiKey,
+    baseUrl: 'http://localhost:3000',
+    debug: true, // Enable debug logging
+    retries: 3
+  });
 
   // Si no existe, crear un txt que simule un doc
   const testDocPath = path.join(__dirname, 'test-doc.txt');
@@ -58,8 +64,11 @@ El sistema está listo para producción.
 
     console.log('2️⃣ Esperando resultado (polling automático)...');
     const result = await parser.waitFor(job.id, {
-      maxAttempts: 30,
-      pollInterval: 2000
+      pollInterval: 2000,
+      timeout: 60000, // 60 seconds total
+      onProgress: (currentJob) => {
+        console.log(`   ⏳ Status: ${currentJob.status}${currentJob.pages ? ` (${currentJob.pages} pages)` : ''}`);
+      }
     });
 
     console.log('✅ Parsing completado:');

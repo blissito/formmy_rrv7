@@ -18,12 +18,18 @@ export async function countPDFPages(buffer: Buffer): Promise<number> {
 
 /**
  * Calcula los créditos necesarios según el modo y número de páginas
- * Modelo híbrido: Base (hasta 5 páginas) + créditos por página extra
+ * DEFAULT = GRATIS (extracción básica sin LlamaParse)
+ * Otros modos = Modelo híbrido: Base (hasta 5 páginas) + créditos por página extra
  */
 export function calculateCreditsForPages(
-  mode: "COST_EFFECTIVE" | "AGENTIC" | "AGENTIC_PLUS",
+  mode: "DEFAULT" | "COST_EFFECTIVE" | "AGENTIC" | "AGENTIC_PLUS",
   pages: number
 ): number {
+  // DEFAULT = GRATIS (extracción básica sin LlamaParse)
+  if (mode === "DEFAULT") {
+    return 0;
+  }
+
   const BASE_PAGES = 5;
 
   const pricing = {

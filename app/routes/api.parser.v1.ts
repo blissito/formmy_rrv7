@@ -16,8 +16,9 @@ import {
   getParsingJobById,
 } from "server/llamaparse/job.service";
 import { uploadParserFile } from "server/llamaparse/upload.service";
-import { processParsingJob } from "server/llamaparse/job.service";
 import type { ParsingMode } from "@prisma/client";
+import { enqueueParsingJob } from "server/jobs/workers/parser-worker";
+import { registerParserWorker } from "server/jobs/workers/parser-worker";
 
 /**
  * GET - Check job status
@@ -183,16 +184,19 @@ export async function action({ request }: Route.ActionArgs) {
         file.type || "application/octet-stream"
       );
 
-      // ⭐ Capturar LLAMA_CLOUD_API_KEY ANTES del setTimeout
+      // ⭐ Capturar LLAMA_CLOUD_API_KEY para pasar al worker
       const LLAMA_KEY = process.env.LLAMA_CLOUD_API_KEY;
-      console.log(`[Parser API] LLAMA_KEY captured: ${LLAMA_KEY ? 'YES' : 'NO'}, length: ${LLAMA_KEY?.length || 0}`);
 
-      // Procesar en background
-      setTimeout(() => {
-        processParsingJob(job.id, publicUrl, fileKey, LLAMA_KEY).catch((error) => {
-          console.error(`[Parser API] Error procesando job ${job.id}:`, error);
-        });
-      }, 100);
+      // Registrar worker (solo se ejecuta una vez gracias al singleton)
+      registerParserWorker();
+
+      // Encolar job en Agenda.js para procesamiento asíncrono
+      await enqueueParsingJob({
+        jobId: job.id,
+        fileUrl: publicUrl,
+        fileKey: fileKey,
+        llamaApiKey: LLAMA_KEY,
+      });
 
       // Response estilo LlamaCloud
       return Response.json({

@@ -511,9 +511,10 @@ enum ParsingStatus {
 }
 
 enum ParsingMode {
-  COST_EFFECTIVE
-  AGENTIC
-  AGENTIC_PLUS
+  DEFAULT         // Modo básico gratuito (texto plano, URLs) - NO usa LlamaParse
+  COST_EFFECTIVE  // Modo económico LlamaParse - 1 crédito/página
+  AGENTIC         // Modo balanceado LlamaParse - 3 créditos/página
+  AGENTIC_PLUS    // Modo premium LlamaParse - 6 créditos/página
 }
 
 model ParsingJob {
