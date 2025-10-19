@@ -8,7 +8,7 @@
  */
 
 import { db } from '~/utils/db.server';
-import { addMarkdownToContext } from '../server/llamaparse/embedding.service';
+import { addContextWithEmbeddings } from '../server/context/unified-processor.server';
 
 const TEST_CHATBOT_ID = '6796b9d15ba8bdacbcd8d603'; // Ghosty Dev
 

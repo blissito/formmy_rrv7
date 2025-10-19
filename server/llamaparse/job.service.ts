@@ -304,76 +304,47 @@ export async function processParsingJob(
       },
     });
 
-    // 5. Agregar a contexts[] del chatbot usando Prisma $raw (safe MongoDB $push)
+    // 5. Agregar a contexts[] del chatbot usando servicio unificado
     if (completedJob.chatbotId && result.markdown) {
-      console.log(`📝 Adding ParsingJob ${jobId} to chatbot.contexts[]`);
+      console.log(`📝 Adding ParsingJob ${jobId} to chatbot.contexts[] using unified processor`);
 
       try {
-        const { ObjectId } = await import('mongodb');
+        const { addContextWithEmbeddings } = await import("server/context/unified-processor.server");
 
-        const newContext = {
-          id: jobId,
-          type: "FILE",
-          fileName: completedJob.fileName,
-          fileType: completedJob.fileType,
-          fileUrl: null,
-          url: null,
-          title: null,
-          sizeKB: Math.round(completedJob.fileSize / 1024),
+        const vectorResult = await addContextWithEmbeddings({
+          chatbotId: completedJob.chatbotId,
           content: result.markdown,
-          routes: [],
-          questions: null,
-          answer: null,
-          createdAt: new Date(),
-        };
-
-        // Usar $runCommandRaw para ejecutar updateOne con $push de manera segura
-        await db.$runCommandRaw({
-          update: 'Chatbot',
-          updates: [
-            {
-              q: { _id: new ObjectId(completedJob.chatbotId) },
-              u: { $push: { contexts: newContext } },
-            },
-          ],
+          metadata: {
+            type: 'FILE',
+            fileName: completedJob.fileName,
+            fileType: completedJob.fileType,
+            fileSize: completedJob.fileSize,
+            contextId: jobId, // Preserve parser job ID
+          },
         });
 
-        console.log(`✅ Context added to chatbot ${completedJob.chatbotId}`);
-
-        // Auto-vectorizar el nuevo context
-        console.log(`🔄 Auto-vectorizing new context ${jobId}...`);
-        const { vectorizeContext } = await import("server/vector/auto-vectorize.service");
-
-        try {
-          const vectorResult = await vectorizeContext(completedJob.chatbotId, newContext as any);
-
-          if (vectorResult.success && vectorResult.embeddingsCreated > 0) {
-            console.log(`✅ Context vectorized: ${vectorResult.embeddingsCreated} embeddings created`);
-          } else {
-            // Vectorización falló o no creó embeddings
-            throw new Error(`Vectorization failed: ${vectorResult.error || 'No embeddings created'}`);
-          }
-        } catch (vectorError) {
-          console.error(`⚠️ Vectorization failed after retries:`, vectorError);
-
-          // Actualizar estado a COMPLETED_NO_VECTOR
-          await db.parsingJob.update({
-            where: { id: jobId },
-            data: {
-              status: "COMPLETED_NO_VECTOR",
-              errorMessage: `Parsing successful but vectorization failed: ${
-                vectorError instanceof Error ? vectorError.message : 'Unknown error'
-              }`
-            }
-          });
-
-          console.warn(`⚠️ Job ${jobId} marked as COMPLETED_NO_VECTOR - markdown available but not searchable`);
-          return; // Exit early, don't throw
+        if (vectorResult.success && vectorResult.embeddingsCreated > 0) {
+          console.log(`✅ Context vectorized: ${vectorResult.embeddingsCreated} embeddings created, ${vectorResult.embeddingsSkipped} skipped`);
+        } else {
+          // Vectorización falló o no creó embeddings
+          throw new Error(`Vectorization failed: ${vectorResult.error || 'No embeddings created'}`);
         }
-      } catch (error) {
-        console.error(`⚠️ Failed to add context to chatbot: ${error}`);
-        // No fallar el job completo si falla el push al chatbot
-        // El resultado queda disponible en ParsingJob.resultMarkdown
+      } catch (vectorError) {
+        console.error(`⚠️ Vectorization failed after retries:`, vectorError);
+
+        // Actualizar estado a COMPLETED_NO_VECTOR
+        await db.parsingJob.update({
+          where: { id: jobId },
+          data: {
+            status: "COMPLETED_NO_VECTOR",
+            errorMessage: `Parsing successful but vectorization failed: ${
+              vectorError instanceof Error ? vectorError.message : 'Unknown error'
+            }`
+          }
+        });
+
+        console.warn(`⚠️ Job ${jobId} marked as COMPLETED_NO_VECTOR - markdown available but not searchable`);
+        return; // Exit early, don't throw
       }
     }
 

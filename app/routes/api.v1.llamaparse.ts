@@ -6,7 +6,7 @@ import {
   getParsingJobById,
 } from "../../server/llamaparse/job.service";
 import { uploadParserFile } from "../../server/llamaparse/upload.service";
-import { addMarkdownToContext } from "../../server/llamaparse/embedding.service";
+import { addContextWithEmbeddings } from "../../server/context/unified-processor.server";
 import { enqueueParsingJob } from "../../server/jobs/workers/parser-worker";
 import { registerParserWorker } from "../../server/jobs/workers/parser-worker";
 import type { ParsingMode } from "@prisma/client";
@@ -247,7 +247,23 @@ export async function action({ request }: Route.ActionArgs) {
 
         // TODO: Verificar que el chatbot pertenece al usuario
 
-        const result = await addMarkdownToContext(chatbotId, markdown, fileName);
+        // Determinar fileType
+        const fileType = fileName.toLowerCase().endsWith('.pdf')
+          ? 'application/pdf'
+          : fileName.toLowerCase().endsWith('.docx')
+          ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          : 'text/markdown';
+
+        const result = await addContextWithEmbeddings({
+          chatbotId,
+          content: markdown,
+          metadata: {
+            type: 'FILE',
+            fileName,
+            fileType,
+            fileSize: Buffer.byteLength(markdown, 'utf8'),
+          },
+        });
 
         if (!result.success) {
           return Response.json(

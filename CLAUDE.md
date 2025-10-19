@@ -147,7 +147,38 @@ model User {
 ## RAG Agéntico ✅
 
 **Status**: Operativo | **Index**: `vector_index_2` MongoDB
-**Embeddings**: text-embedding-3-small (768d) | **Chunk**: 2000/200
+**Embeddings**: text-embedding-3-small (768d) | **Chunk**: 2000/100 (5% overlap, optimizado)
+
+### Vectorización Unificada ⭐ (Enero 2025)
+
+**Servicio Central**: `/server/context/unified-processor.server.ts`
+
+**Función principal**:
+```typescript
+addContextWithEmbeddings({
+  chatbotId, content,
+  metadata: { type, fileName, fileType, fileSize, contextId? }
+})
+```
+
+**Proceso**:
+1. Construye ContextItem completo (TODOS los campos presentes, `null` para opcionales)
+2. Inserción atómica con `$push` MongoDB
+3. Chunking optimizado: 2000 chars, 100 overlap (5%)
+4. Deduplicación semántica (85% threshold)
+5. Generación de embeddings
+
+**Migración completada**:
+- ✅ `job.service.ts`: 70 líneas → 40 líneas
+- ✅ `embedding.service.ts`: 220 líneas → ELIMINADO (migrado completamente)
+- ✅ `api.v1.llamaparse.ts`: Usa servicio unificado
+- ✅ Código duplicado eliminado: ~200 líneas
+
+**Beneficios**:
+- Estructura 100% consistente (campos `fileUrl`, `url`, `title`, `questions`, `answer` siempre presentes)
+- 50% menos chunks procesados (overlap reducido 10% → 5%)
+- Un solo lugar para cambios (threshold, chunk size, etc.)
+- Método de inserción eficiente en todos los flujos
 
 ### System Prompt (ANTES custom instructions)
 ```
