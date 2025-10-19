@@ -1,13 +1,14 @@
 import type { Route } from "./+types/api.v1.llamaparse";
-import { getUserOrRedirect } from "server/getUserUtils.server";
+import { getUserOrRedirect } from "../../server/getUserUtils.server";
 import {
   createParsingJob,
   getUserParsingJobs,
   getParsingJobById,
-  processParsingJob,
-} from "server/llamaparse/job.service";
-import { uploadParserFile } from "server/llamaparse/upload.service";
-import { addMarkdownToContext } from "server/llamaparse/embedding.service";
+} from "../../server/llamaparse/job.service";
+import { uploadParserFile } from "../../server/llamaparse/upload.service";
+import { addMarkdownToContext } from "../../server/llamaparse/embedding.service";
+import { enqueueParsingJob } from "../../server/jobs/workers/parser-worker";
+import { registerParserWorker } from "../../server/jobs/workers/parser-worker";
 import type { ParsingMode } from "@prisma/client";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -174,16 +175,19 @@ export async function action({ request }: Route.ActionArgs) {
           fileType
         );
 
-        // ⭐ Capturar LLAMA_CLOUD_API_KEY ANTES del setTimeout
+        // ⭐ Capturar LLAMA_CLOUD_API_KEY para pasar al worker
         const LLAMA_KEY = process.env.LLAMA_CLOUD_API_KEY;
 
-        // Procesar en background (setTimeout simula queue/worker)
-        // En producción esto sería un queue real (Bull, BullMQ, etc.)
-        setTimeout(() => {
-          processParsingJob(job.id, publicUrl, fileKey, LLAMA_KEY).catch((error) => {
-            console.error(`Error procesando job ${job.id}:`, error);
-          });
-        }, 100);
+        // Registrar worker (solo se ejecuta una vez gracias al singleton)
+        await registerParserWorker();
+
+        // Encolar job en Agenda.js para procesamiento asíncrono (PRODUCCIÓN-READY)
+        await enqueueParsingJob({
+          jobId: job.id,
+          fileUrl: publicUrl,
+          fileKey: fileKey,
+          llamaApiKey: LLAMA_KEY,
+        });
 
         return Response.json({
           success: true,
