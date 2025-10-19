@@ -23,7 +23,8 @@ const PARSING_MODES = [
     label: "Cost Effective",
     description: "Rápido y económico, ideal para documentos con mucho texto",
     icon: "⚡",
-    credits: 1,
+    creditsPerPage: 1,
+    pricing: "1 crédito/página",
     speed: "Muy rápido",
   },
   {
@@ -32,7 +33,8 @@ const PARSING_MODES = [
     description: "Balance óptimo, maneja imágenes y diagramas",
     icon: "🎯",
     isDefault: true,
-    credits: 3,
+    creditsPerPage: 3,
+    pricing: "3 créditos/página",
     speed: "Rápido",
   },
   {
@@ -40,7 +42,8 @@ const PARSING_MODES = [
     label: "Agentic Plus",
     description: "Máxima fidelidad para layouts complejos y tablas",
     icon: "✨",
-    credits: 6,
+    creditsPerPage: 6,
+    pricing: "6 créditos/página",
     speed: "Moderado",
   },
 ];
@@ -76,6 +79,7 @@ export const ExtraccionAvanzada = ({
   const [jobId, setJobId] = useState<string | null>(null);
   const [recentJobs, setRecentJobs] = useState<ParsingJob[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [isAddingToContext, setIsAddingToContext] = useState(false);
 
   // Opciones avanzadas
   const [advancedOptions, setAdvancedOptions] = useState({
@@ -251,6 +255,8 @@ export const ExtraccionAvanzada = ({
   const handleAddToContext = async () => {
     if (!parsedResult) return;
 
+    setIsAddingToContext(true);
+
     try {
       const formData = new FormData();
       formData.append("intent", "add_to_context");
@@ -277,6 +283,8 @@ export const ExtraccionAvanzada = ({
       alert(
         `❌ Error: ${err instanceof Error ? err.message : "Error del servidor"}`
       );
+    } finally {
+      setIsAddingToContext(false);
     }
   };
 
@@ -290,7 +298,6 @@ export const ExtraccionAvanzada = ({
   };
 
   const selectedModeData = PARSING_MODES.find((m) => m.id === selectedMode);
-  const estimatedCredits = selectedModeData?.credits || 0;
 
   return (
     <div className="space-y-5">
@@ -390,7 +397,7 @@ export const ExtraccionAvanzada = ({
                 <div className="flex items-center gap-3 text-xs">
                   <div className="flex items-center gap-1 text-purple-700 font-semibold">
                     <span>💎</span>
-                    <span>{mode.credits}</span>
+                    <span>{mode.pricing}</span>
                   </div>
                   <div className="h-3 w-px bg-gray-300"></div>
                   <span className="text-gray-600">{mode.speed}</span>
@@ -612,7 +619,7 @@ export const ExtraccionAvanzada = ({
                 <span>Procesar Documento</span>
                 <div className="ml-auto flex items-center gap-1 text-sm bg-white/20 px-2.5 py-0.5 rounded-full">
                   <span className="text-xs">💎</span>
-                  <span>{estimatedCredits}</span>
+                  <span>{selectedModeData?.pricing}</span>
                 </div>
               </>
             )}
@@ -678,9 +685,42 @@ export const ExtraccionAvanzada = ({
           <div className="flex gap-3">
             <button
               onClick={handleAddToContext}
-              className="flex-1 py-3 px-4 bg-brand-500 text-white rounded-lg font-medium hover:bg-brand-600 transition-colors"
+              disabled={isAddingToContext}
+              className={cn(
+                "flex-1 py-3 px-4 bg-brand-500 text-white rounded-lg font-medium transition-colors",
+                "flex items-center justify-center gap-2",
+                isAddingToContext
+                  ? "opacity-75 cursor-wait"
+                  : "hover:bg-brand-600"
+              )}
             >
-              Agregar al Contexto del Chatbot
+              {isAddingToContext ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span>Agregando al contexto...</span>
+                </>
+              ) : (
+                "Agregar al Contexto del Chatbot"
+              )}
             </button>
             <button
               onClick={() => {
@@ -768,7 +808,7 @@ export const ExtraccionAvanzada = ({
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           <span>💎</span>
-                          {job.creditsUsed}
+                          {job.creditsUsed} créditos
                         </span>
                         {job.pages && (
                           <>

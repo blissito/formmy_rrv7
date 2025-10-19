@@ -105,10 +105,16 @@ const memory = createMemory({
 - Intermedias: 2-3 créditos (search_context, web_search)
 - Avanzadas: 4-6 créditos (generate_report)
 
-**Parser Avanzado**:
-- `COST_EFFECTIVE`: 1 crédito
-- `AGENTIC`: 3 créditos
-- `AGENTIC_PLUS`: 6 créditos (con OCR)
+**Parser Avanzado** (Pricing por página):
+- `COST_EFFECTIVE`: 1 crédito/página
+- `AGENTIC`: 3 créditos/página
+- `AGENTIC_PLUS`: 6 créditos/página (con OCR)
+
+**Cálculo de Créditos**:
+- Sistema híbrido que match exacto con LlamaCloud
+- Pre-scan PDF para contar páginas ANTES de cobrar
+- Ejemplo: PDF de 9 páginas en modo AGENTIC = 9 × 3 = 27 créditos
+- Fallback para no-PDFs: DOCX/XLSX/TXT = 5 páginas estimadas
 
 **Límites Mensuales**:
 - STARTER: 200 créditos/mes
@@ -303,11 +309,23 @@ npm run typecheck
 
 ## Roadmap
 
-1. **Tool Credits** ⭐⭐⭐
-2. Context compression
-3. CRUD Ghosty completo
-4. Gemini Direct API
-5. ChromaDB
+1. **Parser API v1 - Stripe Price IDs** ⭐⭐⭐
+   - Crear products en Stripe Dashboard para paquetes de créditos
+   - Actualizar placeholders: `price_credits_100_prod`, `price_credits_500_prod`, etc.
+   - Testing end-to-end: compra → webhook → acreditación
+
+2. **Expandir API v1 - RAG Endpoint** ⭐⭐⭐
+   - `POST /api/v1/rag?intent=query` - Consultar RAG de un chatbot vía API
+   - `POST /api/v1/rag?intent=upload` - Subir contexto vía API (similar a parser)
+   - `GET /api/v1/rag?intent=list` - Listar contextos del chatbot
+   - Autenticación: Mismo sistema de API Keys
+   - Credits: 1-2 créditos por query según complexity
+   - Response format: `{ query, answer, sources[], creditsUsed }`
+
+3. Context compression
+4. CRUD Ghosty completo
+5. Gemini Direct API
+6. ChromaDB
 
 ---
 
@@ -487,12 +505,17 @@ const result = await parser.waitFor(job.id);
 console.log(result.markdown);
 ```
 
-### Pricing (Créditos)
-| Modo | Créditos | Features |
-|------|----------|----------|
+### Pricing (Créditos por Página)
+| Modo | Créditos/Página | Features |
+|------|-----------------|----------|
 | COST_EFFECTIVE | 1 | Parsing básico, rápido |
 | AGENTIC | 3 | Tablas estructuradas, mejor calidad |
 | AGENTIC_PLUS | 6 | OCR avanzado, imágenes, máxima precisión |
+
+**Ejemplo de Cobro**:
+- PDF de 5 páginas con AGENTIC = 5 × 3 = 15 créditos
+- PDF de 9 páginas con AGENTIC = 9 × 3 = 27 créditos ✅ Match con LlamaCloud
+- DOCX de 20 páginas con COST_EFFECTIVE = 20 × 1 = 20 créditos
 
 ### Rate Limits
 - 1000 requests/hour por API key

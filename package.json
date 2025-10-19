@@ -74,6 +74,7 @@
     "motion": "^12.23.12",
     "nanoid": "^5.1.5",
     "nodemailer": "^6.10.0",
+    "pdf-parse": "^2.4.3",
     "pdfkit": "^0.17.2",
     "playwright": "^1.54.2",
     "playwright-extra": "^4.3.6",

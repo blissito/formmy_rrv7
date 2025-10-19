@@ -157,7 +157,10 @@ export async function action({ request }: Route.ActionArgs) {
         );
       }
 
-      // Crear job (esto valida y descuenta créditos automáticamente)
+      // Leer archivo PRIMERO
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+      // Crear job (esto cuenta páginas, valida y descuenta créditos automáticamente)
       const job = await createParsingJob({
         chatbotId,
         userId,
@@ -166,10 +169,10 @@ export async function action({ request }: Route.ActionArgs) {
         fileType: file.type || "application/octet-stream",
         mode,
         options: {}, // Usar defaults
+        fileBuffer, // ⭐ Pasar buffer para contar páginas
       });
 
       // Upload archivo a S3
-      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const { fileKey, publicUrl } = await uploadParserFile(
         fileBuffer,
         file.name,
