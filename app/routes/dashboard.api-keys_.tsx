@@ -2,9 +2,11 @@ import { useState } from "react";
 import type { Route } from "./+types/dashboard.api-keys_";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
-import { Form, useActionData, useLoaderData, useFetcher } from "react-router";
+import { Form, useActionData, useLoaderData, useFetcher, useSearchParams } from "react-router";
 import { nanoid } from "nanoid";
 import { getAvailableCredits } from "server/llamaparse/credits.service";
+import { RagTester, DocumentList } from "~/components/DeveloperTools";
+import { APIDocumentation } from "~/components/APIDocumentation";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -97,8 +99,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
 export default function DashboardAPIKeys() {
   const { user, apiKeys, chatbots, credits } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [copied, setCopied] = useState(false);
   const buyCredits = useFetcher();
+
+  const activeTab = searchParams.get("tab") || "keys";
 
   const justCreatedKey = actionData?.success && (actionData as any).apiKey?.justCreated
     ? (actionData as any).apiKey
@@ -112,17 +118,56 @@ export default function DashboardAPIKeys() {
     buyCredits.submit(formData, { method: "post", action: "/api/stripe" });
   };
 
+  const setTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Error al copiar:', err);
+    }
+  };
+
+  const downloadSDK = async () => {
+    try {
+      const response = await fetch('/sdk/formmy-parser.ts');
+      const content = await response.text();
+      const blob = new Blob([content], { type: 'text/typescript' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'formmy-parser.ts';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading SDK:', err);
+    }
+  };
+
   return (
     <section className="max-w-7xl mx-auto p-4 !min-h-0 h-auto">
       {/* Header + Credits Balance */}
       <div className="flex items-center justify-between mb-4 pb-4 border-b border-outlines">
         <div>
           <h1 className="text-2xl font-bold text-space-800 dark:text-white mb-2">
-            Parser API
+            Developer API
           </h1>
-          <p className="text-sm text-metal mb-3 max-w-2xl">
-            Crea API keys para usar nuestro parser avanzado de documentos. Extrae texto, tablas y datos estructurados de PDFs, Word y más.
+          <p className="text-sm text-metal mb-2 max-w-2xl">
+            API completa para parsing avanzado y búsqueda semántica. <strong>Parsea</strong> documentos (PDF, Word, Excel) con OCR y extracción de tablas. <strong>Consulta</strong> tu base de conocimiento con RAG y obtén respuestas generadas por IA. <strong>Gestiona</strong> documentos y embeddings con queries vectoriales.
           </p>
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">📄 Parser Avanzado</span>
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">🔍 RAG/Búsqueda Semántica</span>
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">🤖 Respuestas IA (GPT-5)</span>
+            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">📊 OCR + Tablas</span>
+            <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full font-medium">⚡ TypeScript SDK</span>
+          </div>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-baseline gap-1.5">
               <span className="text-metal">Comprados:</span>
@@ -172,8 +217,51 @@ export default function DashboardAPIKeys() {
         </div>
       </div>
 
-      {/* Main Content - Grilla 2 columnas optimizada */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Tab Navigation */}
+      <div className="flex items-center justify-between mb-4 border-b border-outlines">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setTab("keys")}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === "keys"
+                ? "border-brand-600 text-brand-600"
+                : "border-transparent text-metal hover:text-dark"
+            }`}
+          >
+            🔑 API Keys
+          </button>
+          <button
+            onClick={() => setTab("dev")}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === "dev"
+                ? "border-brand-600 text-brand-600"
+                : "border-transparent text-metal hover:text-dark"
+            }`}
+          >
+            🛠️ Developer Tools
+          </button>
+        </div>
+        {activeTab === "keys" && (
+          <button
+            onClick={() => {
+              const docSection = document.querySelector('[data-docs-section]');
+              if (docSection) {
+                docSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+            className="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1 px-3 py-1 border border-brand-200 rounded-lg hover:bg-brand-50 transition-colors"
+          >
+            📖 Ver Documentación
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "keys" && (
+        <div className="grid grid-cols-2 gap-4">
         {/* API Keys List */}
         <div className="border border-outlines rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
@@ -250,10 +338,34 @@ export default function DashboardAPIKeys() {
               <p className="text-xs text-green-700 mb-2">
                 Guarda esta clave. No podrás verla nuevamente.
               </p>
-              <div className="bg-white p-2 rounded-lg border border-green-200">
-                <code className="font-mono text-xs break-all text-dark">
+              <div className="bg-white p-2 rounded-lg border border-green-200 relative">
+                <code className="font-mono text-xs break-all text-dark pr-24">
                   {justCreatedKey.key}
                 </code>
+                <button
+                  onClick={() => copyToClipboard(justCreatedKey.key)}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1.5 ${
+                    copied
+                      ? 'bg-green-600 text-white'
+                      : 'bg-brand-600 text-white hover:bg-brand-700'
+                  }`}
+                >
+                  {copied ? (
+                    <>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Copiado
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copiar
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}
@@ -264,7 +376,7 @@ export default function DashboardAPIKeys() {
               <p className="text-xs text-metal">Crea una para comenzar a usar el Parser API</p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto">
+            <div className="space-y-2">
               {apiKeys.map((key) => (
                 <div
                   key={key.id}
@@ -312,104 +424,26 @@ export default function DashboardAPIKeys() {
         </div>
 
         {/* Documentation */}
-        <div className="border border-outlines rounded-xl p-4">
-          <h3 className="text-dark text-base font-semibold mb-3">Documentación API</h3>
+        <APIDocumentation onDownloadSDK={downloadSDK} />
+        </div>
+      )}
 
-          <div className="space-y-3 max-h-[calc(100vh-20rem)] overflow-y-auto">
-            {/* Endpoint */}
-            <div>
-              <p className="text-xs font-medium text-metal mb-1">Endpoint Base</p>
-              <code className="block bg-gray-100 px-3 py-2 rounded-lg text-xs font-mono">
-                https://formmy-v2.fly.dev/api/parser/v1
-              </code>
-            </div>
+      {/* Developer Tools Tab */}
+      {activeTab === "dev" && (
+        <div className="grid grid-cols-2 gap-4">
+          {/* RAG Tester */}
+          <div className="border border-outlines rounded-xl p-4">
+            <h3 className="text-dark text-base font-semibold mb-3">RAG Tester</h3>
+            <RagTester chatbots={chatbots} apiKey={apiKeys[0]?.key} />
+          </div>
 
-            {/* Code Examples */}
-            <details className="border border-outlines rounded-lg">
-              <summary className="cursor-pointer font-semibold text-dark text-sm px-3 py-2 hover:bg-gray-50">
-                cURL
-              </summary>
-              <pre className="mt-2 bg-gray-900 text-gray-100 p-3 rounded-b-lg text-xs overflow-x-auto">
-{`curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
-  -F "file=@document.pdf" \\
-  -F "mode=AGENTIC"`}</pre>
-            </details>
-
-            <details className="border border-outlines rounded-lg">
-              <summary className="cursor-pointer font-semibold text-dark text-sm px-3 py-2 hover:bg-gray-50">
-                TypeScript SDK
-              </summary>
-              <pre className="mt-2 bg-gray-900 text-gray-100 p-3 rounded-b-lg text-xs overflow-x-auto">
-{`import { FormmyParser } from './sdk/formmy-parser';
-
-const parser = new FormmyParser('YOUR_API_KEY');
-const job = await parser.parse('./document.pdf', 'AGENTIC');
-const result = await parser.waitFor(job.id);
-console.log(result.markdown);`}</pre>
-            </details>
-
-            <details className="border border-outlines rounded-lg">
-              <summary className="cursor-pointer font-semibold text-dark text-sm px-3 py-2 hover:bg-gray-50">
-                Python
-              </summary>
-              <pre className="mt-2 bg-gray-900 text-gray-100 p-3 rounded-b-lg text-xs overflow-x-auto">
-{`import requests
-
-response = requests.post(
-    "https://formmy-v2.fly.dev/api/parser/v1?intent=upload",
-    headers={"Authorization": "Bearer YOUR_API_KEY"},
-    files={"file": open("document.pdf", "rb")},
-    data={"mode": "AGENTIC"}
-)
-job = response.json()`}</pre>
-            </details>
-
-            {/* Parsing Modes */}
-            <div>
-              <h4 className="font-semibold text-dark text-sm mb-2">Modos de Parsing</h4>
-              <div className="space-y-2">
-                <div className="border border-outlines rounded-lg p-2 hover:border-brand-300 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">⚡</span>
-                      <div>
-                        <p className="font-semibold text-sm">COST_EFFECTIVE</p>
-                        <p className="text-xs text-metal">Rápido y económico</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-brand-600">1 cr/pág</span>
-                  </div>
-                </div>
-                <div className="border border-outlines rounded-lg p-2 hover:border-brand-300 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">🎯</span>
-                      <div>
-                        <p className="font-semibold text-sm">AGENTIC</p>
-                        <p className="text-xs text-metal">Balance óptimo</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-brand-600">3 cr/pág</span>
-                  </div>
-                </div>
-                <div className="border border-outlines rounded-lg p-2 hover:border-brand-300 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">✨</span>
-                      <div>
-                        <p className="font-semibold text-sm">AGENTIC_PLUS</p>
-                        <p className="text-xs text-metal">Máxima precisión + OCR</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-brand-600">6 cr/pág</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Documents */}
+          <div className="border border-outlines rounded-xl p-4">
+            <h3 className="text-dark text-base font-semibold mb-3">Documents</h3>
+            <DocumentList chatbots={chatbots} apiKey={apiKeys[0]?.key} />
           </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
