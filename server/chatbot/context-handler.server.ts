@@ -240,6 +240,51 @@ export async function handleContextOperation(
         });
       }
 
+      case "rename_context": {
+        const chatbotId = formData.get("chatbotId") as string;
+        const contextItemId = formData.get("contextItemId") as string;
+        const newFileName = formData.get("newFileName") as string;
+
+        if (!newFileName || !newFileName.trim()) {
+          return new Response(
+            JSON.stringify({ error: "Nombre de archivo requerido" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Obtener chatbot con contexts
+        const { db } = await import("~/utils/db.server");
+        const chatbot = await db.chatbot.findUnique({
+          where: { id: chatbotId },
+          select: { id: true, userId: true, contexts: true }
+        });
+
+        if (!chatbot || chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso para modificar este chatbot" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Actualizar el fileName en el array de contexts
+        const updatedContexts = chatbot.contexts.map((ctx: any) =>
+          ctx.id === contextItemId
+            ? { ...ctx, fileName: newFileName.trim() }
+            : ctx
+        );
+
+        const updatedChatbot = await db.chatbot.update({
+          where: { id: chatbotId },
+          data: {
+            contexts: updatedContexts
+          }
+        });
+
+        return new Response(JSON.stringify({ success: true, chatbot: updatedChatbot }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       case "get_contexts": {
         const chatbotId = formData.get("chatbotId") as string;
 

@@ -3,18 +3,20 @@ import { FloatingMenu } from "../common/FloatingMenu";
 import type { ReactNode } from "react";
 import { Select } from "./common/Select";
 import { cn } from "~/lib/utils";
-import DownloadIcon from "../ui/icons/Download";
 import EditIcon from "../ui/icons/Edit";
 import DeleteIcon from "../ui/icons/Delete";
 import RenameIcon from "../ui/icons/Rename";
+import { useState } from "react";
 
-export const ListFiles = ({ 
-  files = [], 
+export const ListFiles = ({
+  files = [],
   onRemoveFile,
+  onRenameFile,
   mode = "local" // "local" para archivos del navegador, "context" para contextos del chatbot
-}: { 
-  files?: File[] | any[]; 
+}: {
+  files?: File[] | any[];
   onRemoveFile?: (index: number, file: any) => void;
+  onRenameFile?: (index: number, file: any, newName: string) => void;
   mode?: "local" | "context";
 }) => {
   const getFileType = (fileName: string): string => {
@@ -82,13 +84,15 @@ export const ListFiles = ({
               type={getFileType(file.name || file.fileName)}
               icon={getFileIcon(getFileType(file.name || file.fileName))}
               fileName={file.name || file.fileName}
-              fileSize={mode === "context" 
-                ? `${file.sizeKB || 0} KB` 
+              fileSize={mode === "context"
+                ? `${file.sizeKB || 0} KB`
                 : formatFileSize(file.size)
               }
               onSelect={() => {}}
               onRemove={() => onRemoveFile?.(index, file)}
+              onRename={(newName: string) => onRenameFile?.(index, file, newName)}
               tag={index === 0 ? "Nuevo" : undefined}
+              canRename={mode === "context"} // Solo permitir renombrar en modo context
             />
           ))}
       </section>
@@ -132,38 +136,68 @@ export const FileItem = ({
   tag,
   onSelect,
   onRemove,
+  onRename,
   icon,
   fileName = "Servicios.pdf",
   fileSize = "60Kb",
+  canRename = false,
 }: {
   type?: string;
   tag?: string;
   onSelect?: () => void;
   onRemove?: () => void;
+  onRename?: (newName: string) => void;
   icon?: string;
   fileName?: string;
   fileSize?: string;
+  canRename?: boolean;
 }) => {
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [editableName, setEditableName] = useState("");
+
+  // Separar nombre y extensión
+  const getNameAndExtension = (fullName: string) => {
+    const lastDot = fullName.lastIndexOf(".");
+    if (lastDot === -1) return { name: fullName, extension: "" };
+    return {
+      name: fullName.substring(0, lastDot),
+      extension: fullName.substring(lastDot), // incluye el punto
+    };
+  };
+
+  const { name: baseFileName, extension: fileExtension } = getNameAndExtension(fileName);
+
   const handleAction = (action: string) => {
-    console.log(`Acción seleccionada: ${action}`);
     if (action === "eliminar" && onRemove) {
       onRemove();
     }
-    // Aquí puedes agregar la lógica para cada acción
+    if (action === "renombrar") {
+      setIsRenaming(true);
+      setEditableName(baseFileName); // Solo el nombre, sin extensión
+    }
+  };
+
+  const handleRenameSubmit = () => {
+    const trimmedName = editableName.trim();
+    if (trimmedName && trimmedName !== baseFileName && onRename) {
+      // Combinar nombre editado + extensión original
+      const fullNewName = trimmedName + fileExtension;
+      onRename(fullNewName);
+    }
+    setIsRenaming(false);
+  };
+
+  const handleRenameCancel = () => {
+    setEditableName(baseFileName);
+    setIsRenaming(false);
   };
 
   const menuItems = [
-    {
-      label: "Descargar",
-      onClick: () => handleAction("descargar"),
-      icon:<DownloadIcon className="w-4 h-4" />,
-    },
-    {
+    ...(canRename ? [{
       label: "Renombrar",
       onClick: () => handleAction("renombrar"),
       icon:<RenameIcon className="w-4 h-4" />,
-
-    },
+    }] : []),
     {
       label: "Eliminar",
       onClick: () => handleAction("eliminar"),
@@ -179,7 +213,7 @@ export const FileItem = ({
         "hover:bg-gray-50"
       )}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-1">
         <input
           className="rounded-md border-gray-300 scale-110"
           type="checkbox"
@@ -193,19 +227,57 @@ export const FileItem = ({
           }
           alt="document"
         />
-        <div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm md:text-base font-medium">{fileName}</p>
-            {tag && <Tag  className="hidden md:block" text={tag} />}
-          </div>
-          <span className="text-sm font-thin text-gray-500">{fileSize}</span>
+        <div className="flex-1">
+          {isRenaming ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center flex-1 border border-primary rounded">
+                <input
+                  type="text"
+                  value={editableName}
+                  onChange={(e) => setEditableName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleRenameSubmit();
+                    if (e.key === "Escape") handleRenameCancel();
+                  }}
+                  className="flex-1 px-2 py-1 text-sm md:text-base outline-none"
+                  autoFocus
+                  placeholder="Nombre del archivo"
+                />
+                <span className="px-2 text-sm md:text-base text-gray-500 font-medium">
+                  {fileExtension}
+                </span>
+              </div>
+              <button
+                onClick={handleRenameSubmit}
+                className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary/90 whitespace-nowrap"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={handleRenameCancel}
+                className="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <p className="text-sm md:text-base font-medium">{fileName}</p>
+                {tag && <Tag className="hidden md:block" text={tag} />}
+              </div>
+              <span className="text-sm font-thin text-gray-500">{fileSize}</span>
+            </>
+          )}
         </div>
       </div>
-      <FloatingMenu
-        items={menuItems}
-        buttonClassName="text-2xl text-gray-600 hover:bg-gray-100 p-1 rounded-full"
-        buttonLabel="Opciones del archivo"
-      />
+      {!isRenaming && (
+        <FloatingMenu
+          items={menuItems}
+          buttonClassName="text-2xl text-gray-600 hover:bg-gray-100 p-1 rounded-full"
+          buttonLabel="Opciones del archivo"
+        />
+      )}
     </div>
   );
 };
@@ -251,11 +323,6 @@ export const CardRow = ({
   };
 
   const menuItems = [
-    {
-      label: "Descargar",
-      onClick: () => handleAction("descargar"),
-      icon: <DownloadIcon className="w-4 h-4" />,
-    },
     {
       label: "Editar",
       onClick: () => handleAction("editar"),

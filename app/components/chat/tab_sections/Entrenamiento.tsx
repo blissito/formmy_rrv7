@@ -20,7 +20,7 @@ import { ExtraccionAvanzada } from "./ExtraccionAvanzada";
 import type { Chatbot, User, Plans } from "@prisma/client";
 import type { WebsiteEntry } from "~/types/website";
 import { useEffect, useState } from "react";
-import { useSubmit } from "react-router";
+import { useSubmit, useRevalidator } from "react-router";
 
 // Client-safe plan limits mapping
 const PLAN_LIMITS_CLIENT: Record<Plans, { maxContextSizeKB: number }> = {
@@ -39,6 +39,7 @@ export const Entrenamiento = ({
   user: User;
 }) => {
   const submit = useSubmit();
+  const revalidator = useRevalidator();
   const { currentTab, setCurrentTab } = useChipTabs("website", `entrenamiento_${chatbot.id}`);
   const [fileContexts, setFileContexts] = useState<any[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -401,11 +402,57 @@ export const Entrenamiento = ({
   const handleRemoveContext = (index: number, context: any) => {
     // Marcar archivo para eliminar (virtual)
     setFileContextsToRemove(prev => [...prev, context]);
-    
+
     // Remover del estado local para que no se muestre
     const newContexts = [...fileContexts];
     newContexts.splice(index, 1);
     setFileContexts(newContexts);
+  };
+
+  const handleRenameContext = async (index: number, context: any, newName: string) => {
+    // Actualizar el estado local inmediatamente para feedback visual optimista
+    const previousFileName = context.fileName;
+    setFileContexts(prev =>
+      prev.map((ctx, idx) =>
+        idx === index ? { ...ctx, fileName: newName } : ctx
+      )
+    );
+
+    try {
+      const formData = new FormData();
+      formData.append("intent", "rename_context");
+      formData.append("chatbotId", chatbot.id);
+      formData.append("contextItemId", context.id);
+      formData.append("newFileName", newName);
+
+      const response = await fetch("/api/v1/chatbot", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Revertir el cambio si falla
+        setFileContexts(prev =>
+          prev.map((ctx, idx) =>
+            idx === index ? { ...ctx, fileName: previousFileName } : ctx
+          )
+        );
+        return;
+      }
+
+      // Éxito - revalidar para obtener datos actualizados del servidor
+      revalidator.revalidate();
+    } catch (error) {
+
+      // Revertir el cambio si hay error
+      setFileContexts(prev =>
+        prev.map((ctx, idx) =>
+          idx === index ? { ...ctx, fileName: previousFileName } : ctx
+        )
+      );
+    }
   };
 
   const handleUpdateChatbot = async () => {
@@ -605,10 +652,11 @@ export const Entrenamiento = ({
             {/* Mostrar contextos existentes */}
             {fileContexts.length > 0 && (
               <div>
-             
+
                 <ListFiles
                   files={fileContexts}
                   onRemoveFile={handleRemoveContext}
+                  onRenameFile={handleRenameContext}
                   mode="context"
                 />
               </div>

@@ -18,19 +18,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
     enterprise: isDevelopment
       ? process.env.STRIPE_ENTERPRISE_PRICE_TEST || "price_test_enterprise"
       :"price_1S5Cm2DtYmGT70YtwzUlp99P",
-    // Credits one-time purchases (99% margen)
-    credits_100: isDevelopment
-      ? process.env.STRIPE_CREDITS_100_TEST || "price_test_credits_100"
-      : "price_credits_100_prod", // TODO: Crear en Stripe Dashboard
-    credits_500: isDevelopment
-      ? process.env.STRIPE_CREDITS_500_TEST || "price_test_credits_500"
-      : "price_credits_500_prod", // TODO: Crear en Stripe Dashboard
-    credits_1000: isDevelopment
-      ? process.env.STRIPE_CREDITS_1000_TEST || "price_test_credits_1000"
-      : "price_credits_1000_prod", // TODO: Crear en Stripe Dashboard
-    credits_5000: isDevelopment
-      ? process.env.STRIPE_CREDITS_5000_TEST || "price_test_credits_5000"
-      : "price_credits_5000_prod", // TODO: Crear en Stripe Dashboard
+    // Credits one-time purchases - Price IDs reales de producción
+    credits_500: "price_1SLwONRuGQeGCFrvx7YKBzMT", // $99 MXN
+    credits_2000: "price_1SLwPBRuGQeGCFrvwVfKj8Lk", // $349 MXN
+    credits_5000: "price_1SLwPqRuGQeGCFrvQZeRStNm", // $799 MXN
   };
 
   // New plan intents
@@ -73,24 +64,45 @@ export const action = async ({ request }: Route.ActionArgs) => {
     if (url) return Response.redirect(url);
   }
 
+  // Credits purchases - Usando priceData dinámico
+  const origin = new URL(request.url).origin;
+
   if (intent === "credits_500") {
     const url = await createCheckoutSessionURL({
       user: null,
-      price: PRICES.credits_500,
-      origin: new URL(request.url).origin,
+      priceData: {
+        currency: 'mxn',
+        unit_amount: 9900, // $99.00 MXN (en centavos)
+        product_data: {
+          name: '500 Créditos Parser',
+          description: '500 créditos para usar el Parser API avanzado'
+        }
+      },
+      origin,
       mode: "payment",
       metadata: { type: "credits", amount: "500" },
+      successUrl: `${origin}/dashboard/api-keys?credits_purchased=500`,
+      cancelUrl: `${origin}/dashboard/api-keys`,
     });
     if (url) return Response.redirect(url);
   }
 
-  if (intent === "credits_1000") {
+  if (intent === "credits_2000") {
     const url = await createCheckoutSessionURL({
       user: null,
-      price: PRICES.credits_1000,
-      origin: new URL(request.url).origin,
+      priceData: {
+        currency: 'mxn',
+        unit_amount: 34900, // $349.00 MXN (en centavos)
+        product_data: {
+          name: '2,000 Créditos Parser',
+          description: '2,000 créditos para usar el Parser API avanzado'
+        }
+      },
+      origin,
       mode: "payment",
-      metadata: { type: "credits", amount: "1000" },
+      metadata: { type: "credits", amount: "2000" },
+      successUrl: `${origin}/dashboard/api-keys?credits_purchased=2000`,
+      cancelUrl: `${origin}/dashboard/api-keys`,
     });
     if (url) return Response.redirect(url);
   }
@@ -98,10 +110,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (intent === "credits_5000") {
     const url = await createCheckoutSessionURL({
       user: null,
-      price: PRICES.credits_5000,
-      origin: new URL(request.url).origin,
+      priceData: {
+        currency: 'mxn',
+        unit_amount: 79900, // $799.00 MXN (en centavos)
+        product_data: {
+          name: '5,000 Créditos Parser',
+          description: '5,000 créditos para usar el Parser API avanzado'
+        }
+      },
+      origin,
       mode: "payment",
       metadata: { type: "credits", amount: "5000" },
+      successUrl: `${origin}/dashboard/api-keys?credits_purchased=5000`,
+      cancelUrl: `${origin}/dashboard/api-keys`,
     });
     if (url) return Response.redirect(url);
   }

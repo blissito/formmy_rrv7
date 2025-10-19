@@ -93,7 +93,7 @@ export async function createChatbot({
       theme,
       temperature,
       instructions,
-      status: ChatbotStatus.DRAFT,
+      status: ChatbotStatus.ACTIVE, // Chatbots creados directamente como ACTIVE
       isActive: true, // Chatbots creados como activos por defecto
       conversationCount: 0,
       monthlyUsage: 0,

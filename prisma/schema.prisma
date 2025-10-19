@@ -250,7 +250,7 @@ model Chatbot {
   theme              String?           @default("light")
   enableStreaming    Boolean           @default(false) // 🚨 STREAMING DESHABILITADO por defecto - problema crítico resuelto
   streamingSpeed     Int               @default(50)
-  status             ChatbotStatus     @default(DRAFT)
+  status             ChatbotStatus     @default(ACTIVE)
   isActive           Boolean           @default(true)
   conversationCount  Int               @default(0)
   monthlyUsage       Int               @default(0)

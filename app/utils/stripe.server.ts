@@ -149,6 +149,8 @@ export const createCheckoutSessionURL = async ({
   priceData, // custom price data (para precios custom sin crear price ID)
   mode = "subscription", // subscription (recurring) o payment (one-time)
   metadata, // metadata adicional para el checkout session
+  successUrl, // URL de éxito personalizada
+  cancelUrl, // URL de cancelación personalizada
 }: {
   origin: string;
   coupon?: string;
@@ -162,6 +164,8 @@ export const createCheckoutSessionURL = async ({
   };
   mode?: "subscription" | "payment";
   metadata?: Record<string, string>;
+  successUrl?: string;
+  cancelUrl?: string;
 }) => {
   const isDevelopment = process.env.NODE_ENV === "development";
   const DOMAIN = origin;
@@ -179,12 +183,15 @@ export const createCheckoutSessionURL = async ({
     ? { price_data: priceData, quantity: 1 }
     : { price: price || ANUAL_PRICE, quantity: 1 };
 
+  const defaultSuccessUrl = mode === "payment"
+    ? `${DOMAIN}/dashboard/plan?credits_purchased=1`
+    : `${DOMAIN}/profile?success=1`;
+  const defaultCancelUrl = `${DOMAIN}/planes`;
+
   const sessionConfig: any = {
     mode,
-    success_url: mode === "payment"
-      ? `${DOMAIN}/dashboard/plan?credits_purchased=1`
-      : `${DOMAIN}/profile?success=1`,
-    cancel_url: `${DOMAIN}/planes`,
+    success_url: successUrl || defaultSuccessUrl,
+    cancel_url: cancelUrl || defaultCancelUrl,
     line_items: [lineItem],
     allow_promotion_codes: true, // Habilita campo nativo de cupones en checkout
   };

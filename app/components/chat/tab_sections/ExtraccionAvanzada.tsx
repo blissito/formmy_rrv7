@@ -81,6 +81,8 @@ export const ExtraccionAvanzada = ({
   const [showHistory, setShowHistory] = useState(false);
   const [isAddingToContext, setIsAddingToContext] = useState(false);
   const [hasAddedToContext, setHasAddedToContext] = useState(false);
+  const [estimatedPages, setEstimatedPages] = useState<number | null>(null);
+  const [isEstimatingPages, setIsEstimatingPages] = useState(false);
 
   // Opciones avanzadas
   const [advancedOptions, setAdvancedOptions] = useState({
@@ -167,13 +169,54 @@ export const ExtraccionAvanzada = ({
     fetchJobs();
   }, [hasAccess, status]); // Refetch cuando cambia status (completado un job)
 
+  // Re-estimar cuando cambie el modo de parsing
+  useEffect(() => {
+    if (selectedFile) {
+      estimateCost(selectedFile, selectedMode);
+    }
+  }, [selectedMode]); // Solo selectedMode, no selectedFile para evitar loop
+
+  // Estimar páginas y costo en el servidor (preciso)
+  const estimateCost = useCallback(async (file: File, mode: ParsingMode) => {
+    setIsEstimatingPages(true);
+    try {
+      const formData = new FormData();
+      formData.append("intent", "estimate_cost");
+      formData.append("mode", mode);
+      formData.append("file", file);
+
+      const res = await fetch("/api/v1/llamaparse", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Error estimando costo");
+      }
+
+      setEstimatedPages(data.pages);
+    } catch (err) {
+      // Fallback: estimación básica
+      const estimatedPages = Math.max(1, Math.ceil(file.size / (1024 * 200)));
+      setEstimatedPages(estimatedPages);
+    } finally {
+      setIsEstimatingPages(false);
+    }
+  }, []);
+
   // Handlers
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
     setError(null);
     setParsedResult(null);
     setStatus("idle");
-  }, []);
+    setEstimatedPages(null);
+
+    // Estimar costo con el modo actual
+    estimateCost(file, selectedMode);
+  }, [estimateCost, selectedMode]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -303,6 +346,24 @@ export const ExtraccionAvanzada = ({
   };
 
   const selectedModeData = PARSING_MODES.find((m) => m.id === selectedMode);
+
+  // Calcular créditos estimados
+  const estimatedCredits = estimatedPages && selectedModeData
+    ? estimatedPages * selectedModeData.creditsPerPage
+    : null;
+
+  // Calcular créditos disponibles del usuario
+  const userCreditsAvailable = user.plan === 'STARTER' ? 200
+    : user.plan === 'PRO' ? 1000
+    : user.plan === 'ENTERPRISE' ? 5000
+    : user.plan === 'TRIAL' ? 1000
+    : 0;
+
+  const creditsUsedThisMonth = user.toolCreditsUsed || 0;
+  const purchasedCredits = user.purchasedCredits || 0;
+  const totalAvailable = (userCreditsAvailable - creditsUsedThisMonth) + purchasedCredits;
+
+  const hasEnoughCredits = estimatedCredits ? totalAvailable >= estimatedCredits : true;
 
   return (
     <div className="space-y-5">
@@ -571,9 +632,50 @@ export const ExtraccionAvanzada = ({
       {/* Botón de procesamiento */}
       {!parsedResult && selectedFile && (
         <div className="space-y-3 pt-2">
+          {/* Estimación de créditos */}
+          {estimatedPages !== null && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-purple-600 font-medium">Estimación:</span>
+                  <span className="text-gray-700">
+                    {isEstimatingPages ? (
+                      "Calculando páginas..."
+                    ) : (
+                      `~${estimatedPages} página${estimatedPages !== 1 ? 's' : ''}`
+                    )}
+                  </span>
+                </div>
+                {estimatedCredits && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-purple-700 font-semibold">
+                      💎 {estimatedCredits} créditos
+                    </span>
+                  </div>
+                )}
+              </div>
+              {!hasEnoughCredits && estimatedCredits && (
+                <div className="mt-2 pt-2 border-t border-purple-200">
+                  <p className="text-xs text-red-600 font-medium">
+                    ⚠️ Créditos insuficientes. Disponibles: {totalAvailable}, Requeridos: {estimatedCredits}
+                  </p>
+                  <a
+                    href="/dashboard/plan"
+                    className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-purple-700 hover:text-purple-900"
+                  >
+                    <span>Comprar más créditos</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             onClick={handleProcess}
-            disabled={!hasAccess || status === "parsing"}
+            disabled={!hasAccess || status === "parsing" || !hasEnoughCredits}
             className={cn(
               "w-full py-3.5 px-5 rounded-xl font-semibold transition-all",
               "bg-gradient-to-r from-brand-500 to-brand-600 text-white",
@@ -622,15 +724,18 @@ export const ExtraccionAvanzada = ({
                   />
                 </svg>
                 <span>Procesar Documento</span>
-                <div className="ml-auto flex items-center gap-1 text-sm bg-white/20 px-2.5 py-0.5 rounded-full">
-                  <span className="text-xs">💎</span>
-                  <span>{selectedModeData?.pricing}</span>
-                </div>
+                {estimatedCredits && (
+                  <div className="ml-auto flex items-center gap-1 text-sm bg-white/20 px-2.5 py-0.5 rounded-full">
+                    <span className="text-xs">💎</span>
+                    <span>{estimatedCredits} créditos</span>
+                  </div>
+                )}
               </>
             )}
           </button>
           <p className="text-center text-xs text-gray-500">
             {selectedModeData?.label} • {selectedModeData?.speed}
+            {totalAvailable > 0 && ` • ${totalAvailable} créditos disponibles`}
           </p>
         </div>
       )}

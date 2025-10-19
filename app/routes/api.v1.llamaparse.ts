@@ -66,6 +66,54 @@ export async function action({ request }: Route.ActionArgs) {
 
   try {
     switch (intent) {
+      case "estimate_cost": {
+        const mode = formData.get("mode") as ParsingMode;
+        const file = formData.get("file") as File | null;
+
+        if (!mode || !file) {
+          return Response.json(
+            { success: false, error: "Modo y archivo requeridos" },
+            { status: 400 }
+          );
+        }
+
+        // Leer archivo como buffer
+        const arrayBuffer = await file.arrayBuffer();
+        const fileBuffer = Buffer.from(arrayBuffer);
+
+        // Importar utilidades
+        const { countPDFPages, calculateCreditsForPages } = await import(
+          "server/llamaparse/pdf-utils.server"
+        );
+        const { PLAN_LIMITS } = await import("server/chatbot/planLimits.server");
+
+        // Contar páginas usando la misma lógica que el procesamiento real
+        const pageCount = file.name.toLowerCase().endsWith('.pdf')
+          ? await countPDFPages(fileBuffer)
+          : 5; // Para no-PDFs, usar estimación estándar
+
+        // Calcular créditos
+        const creditsRequired = calculateCreditsForPages(mode, pageCount);
+
+        // Calcular créditos disponibles del usuario
+        const planLimit = PLAN_LIMITS[user.plan].toolCreditsPerMonth;
+        const monthlyUsed = user.toolCreditsUsed || 0;
+        const purchasedCredits = user.purchasedCredits || 0;
+        const totalAvailable = (planLimit - monthlyUsed) + purchasedCredits;
+
+        return Response.json({
+          success: true,
+          pages: pageCount,
+          creditsRequired,
+          totalAvailable,
+          hasEnoughCredits: totalAvailable >= creditsRequired,
+          breakdown: {
+            monthlyAvailable: planLimit - monthlyUsed,
+            purchasedAvailable: purchasedCredits,
+          }
+        });
+      }
+
       case "create_job": {
         const chatbotId = formData.get("chatbotId") as string;
         const fileName = formData.get("fileName") as string;
