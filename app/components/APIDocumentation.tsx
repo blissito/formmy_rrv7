@@ -91,35 +91,77 @@ curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\
 #   "creditsUsed": 3
 # }`;
 
-  const curlRAGCode = `curl -X POST https://formmy-v2.fly.dev/api/rag/v1?intent=query \\
+  const curlRAGListCode = `# Listar contextos del chatbot
+curl https://formmy-v2.fly.dev/api/v1/rag?intent=list \\
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+# Response:
+# {
+#   "chatbotId": "abc123",
+#   "chatbotName": "Mi Chatbot",
+#   "totalContexts": 15,
+#   "totalSizeKB": 2048,
+#   "totalEmbeddings": 456,
+#   "contexts": [
+#     {
+#       "id": "ctx_abc123",
+#       "type": "FILE",
+#       "fileName": "manual.pdf",
+#       "sizeKB": 512,
+#       "createdAt": "2025-01-18T10:00:00Z",
+#       "parsingMode": "AGENTIC",
+#       "parsingPages": 15,
+#       "parsingCredits": 45
+#     }
+#   ]
+# }`;
+
+  const curlRAGUploadCode = `# Subir contexto manualmente
+curl -X POST https://formmy-v2.fly.dev/api/v1/rag?intent=upload \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "content": "Horarios: Lunes a Viernes 9:00-18:00",
+    "type": "TEXT",
+    "metadata": {
+      "title": "Horarios de Atención"
+    }
+  }'
+
+# Response:
+# {
+#   "success": true,
+#   "contextId": "ctx_xyz789",
+#   "embeddingsCreated": 3,
+#   "embeddingsSkipped": 0,
+#   "creditsUsed": 3
+# }`;
+
+  const curlRAGQueryCode = `# Consultar RAG con búsqueda semántica
+curl -X POST https://formmy-v2.fly.dev/api/v1/rag?intent=query \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "query": "¿Cuáles son los horarios de atención?",
-    "chatbotId": "YOUR_CHATBOT_ID",
-    "mode": "accurate",
-    "topK": 3
+    "topK": 5
   }'
 
 # Response:
 # {
 #   "query": "¿Cuáles son los horarios de atención?",
-#   "answer": "Los horarios de atención son de lunes a viernes...",
+#   "answer": "[1] Horarios de Atención:\\nHorarios: Lunes a Viernes 9:00-18:00...",
 #   "sources": [
 #     {
 #       "content": "Horarios: Lunes a Viernes 9:00 - 18:00",
 #       "score": 0.92,
-#       "metadata": { "fileName": "info.pdf", "page": 1 }
+#       "metadata": {
+#         "fileName": "info.pdf",
+#         "title": "Horarios de Atención",
+#         "contextType": "TEXT"
+#       }
 #     }
 #   ],
-#   "topK": 3,
-#   "creditsUsed": 1.5,
-#   "tokensUsed": {
-#     "prompt": 1247,
-#     "completion": 156,
-#     "total": 1403
-#   },
-#   "processingTime": 842
+#   "creditsUsed": 2
 # }`;
 
   const pythonCode = `import requests
@@ -295,77 +337,95 @@ while True:
         {docTab === "rag" && (
           <>
             <div className="bg-gradient-to-br from-blue-50 to-green-50 border border-blue-200 rounded-lg p-3 mb-4">
-              <p className="text-xs text-dark font-semibold mb-1">🔍 RAG / Búsqueda Semántica con IA</p>
+              <p className="text-xs text-dark font-semibold mb-1">🔍 RAG API - Búsqueda Semántica</p>
               <p className="text-xs text-metal">
-                Consulta tu base de conocimiento con búsqueda vectorial. Modo <strong>fast</strong> retorna chunks relevantes. Modo <strong>accurate</strong> genera respuestas naturales con GPT-5 + fuentes citadas.
+                Gestiona y consulta tu base de conocimiento con búsqueda vectorial. Lista contextos, sube contenido manualmente y realiza queries semánticas con fuentes citadas.
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold text-dark text-sm mb-2">Endpoints Públicos</h4>
+              <h4 className="font-semibold text-dark text-sm mb-2">Endpoints</h4>
               <div className="space-y-2">
                 <div className="bg-gray-50 border border-outlines rounded-lg p-2">
-                  <p className="text-xs font-mono font-bold text-green-700">POST /api/rag/v1?intent=query</p>
-                  <p className="text-xs text-metal mt-1">Query con RAG - Búsqueda semántica + respuestas IA</p>
+                  <p className="text-xs font-mono font-bold text-blue-700">GET /api/v1/rag?intent=list</p>
+                  <p className="text-xs text-metal mt-1">Listar contextos del chatbot con métricas</p>
                 </div>
                 <div className="bg-gray-50 border border-outlines rounded-lg p-2">
-                  <p className="text-xs font-mono font-bold text-blue-700">GET /api/rag/v1?intent=list&chatbotId=xxx</p>
-                  <p className="text-xs text-metal mt-1">Listar documentos parseados con métricas</p>
+                  <p className="text-xs font-mono font-bold text-green-700">POST /api/v1/rag?intent=upload</p>
+                  <p className="text-xs text-metal mt-1">Subir contexto manualmente (TEXT/FILE/LINK/QUESTION)</p>
+                </div>
+                <div className="bg-gray-50 border border-outlines rounded-lg p-2">
+                  <p className="text-xs font-mono font-bold text-purple-700">POST /api/v1/rag?intent=query</p>
+                  <p className="text-xs text-metal mt-1">Consultar RAG con búsqueda semántica</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 className="font-semibold text-dark text-sm mb-2">Ejemplo cURL - Query</h4>
-              <CodeSnippet code={curlRAGCode} language="bash" title="cURL - RAG Query" />
+              <h4 className="font-semibold text-dark text-sm mb-2">Ejemplo 1: Listar Contextos</h4>
+              <CodeSnippet code={curlRAGListCode} language="bash" title="cURL - List Contexts" />
             </div>
 
             <div>
-              <h4 className="font-semibold text-dark text-sm mb-2">Modos de Query</h4>
+              <h4 className="font-semibold text-dark text-sm mb-2">Ejemplo 2: Subir Contexto</h4>
+              <CodeSnippet code={curlRAGUploadCode} language="bash" title="cURL - Upload Context" />
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-dark text-sm mb-2">Ejemplo 3: Query RAG</h4>
+              <CodeSnippet code={curlRAGQueryCode} language="bash" title="cURL - RAG Query" />
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-dark text-sm mb-2">Costos de Créditos</h4>
               <div className="space-y-2">
                 <div className="border border-outlines rounded-lg p-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-semibold text-sm">fast</p>
-                      <p className="text-xs text-metal">Solo retrieval vectorial - Retorna top 5 chunks relevantes</p>
+                      <p className="font-semibold text-sm">intent=list</p>
+                      <p className="text-xs text-metal">Listar contextos y embeddings</p>
                     </div>
-                    <span className="text-xs font-bold text-brand-600">0.5 cr</span>
+                    <span className="text-xs font-bold text-green-600">GRATIS</span>
                   </div>
                 </div>
                 <div className="border border-outlines rounded-lg p-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-semibold text-sm">accurate</p>
-                      <p className="text-xs text-metal">Retrieval + GPT-4o-mini - Respuesta en lenguaje natural + fuentes</p>
+                      <p className="font-semibold text-sm">intent=query</p>
+                      <p className="text-xs text-metal">Búsqueda vectorial + respuesta con fuentes</p>
                     </div>
-                    <span className="text-xs font-bold text-brand-600">1.5 cr</span>
+                    <span className="text-xs font-bold text-brand-600">2 cr</span>
+                  </div>
+                </div>
+                <div className="border border-outlines rounded-lg p-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-sm">intent=upload</p>
+                      <p className="text-xs text-metal">Subir contexto + generar embeddings</p>
+                    </div>
+                    <span className="text-xs font-bold text-brand-600">3 cr</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 className="font-semibold text-dark text-sm mb-2">Parámetros Opcionales</h4>
+              <h4 className="font-semibold text-dark text-sm mb-2">Parámetros de Query</h4>
               <div className="space-y-2 text-xs">
                 <div className="border border-outlines rounded-lg p-2">
                   <div className="flex items-center justify-between mb-1">
                     <code className="font-mono text-brand-600">topK</code>
-                    <span className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">OPTIMIZACIÓN</span>
+                    <span className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">OPCIONAL</span>
                   </div>
-                  <p className="text-metal mb-2">Número de chunks a recuperar (1-10). Default: <strong>3</strong></p>
+                  <p className="text-metal mb-2">Número de resultados (1-20). Default: <strong>5</strong></p>
                   <div className="bg-blue-50 border border-blue-200 rounded p-2 text-[11px]">
-                    <p className="text-blue-800 font-medium mb-1">💡 Mejores Prácticas (2025)</p>
+                    <p className="text-blue-800 font-medium mb-1">💡 Mejores Prácticas</p>
                     <ul className="space-y-0.5 text-blue-700">
-                      <li>• <strong>topK=2-3</strong>: Queries simples (90% casos)</li>
-                      <li>• <strong>topK=4-5</strong>: Queries complejas</li>
-                      <li>• <strong>topK=7-10</strong>: Análisis exhaustivo</li>
+                      <li>• <strong>topK=3-5</strong>: Queries simples (90% casos)</li>
+                      <li>• <strong>topK=7-10</strong>: Queries complejas</li>
+                      <li>• <strong>topK=15-20</strong>: Análisis exhaustivo</li>
                     </ul>
-                    <p className="mt-1 text-blue-600"><strong>Ahorro</strong>: topK=3 usa ~40% menos tokens que topK=5</p>
                   </div>
-                </div>
-                <div className="border border-outlines rounded-lg p-2">
-                  <code className="font-mono text-brand-600">contextId</code>
-                  <p className="text-metal mt-1">Filtrar búsqueda a un documento específico</p>
                 </div>
               </div>
             </div>

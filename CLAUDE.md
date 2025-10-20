@@ -338,6 +338,166 @@ npm run typecheck
 
 ---
 
+## RAG API v1 ✅ (Implementado - Ene 20, 2025)
+
+### Overview
+API REST pública para consultar y gestionar la base de conocimientos (RAG) de un chatbot.
+
+**Endpoint Base**: `https://formmy-v2.fly.dev/api/v1/rag`
+
+### Autenticación
+```bash
+Authorization: Bearer sk_live_xxxxx
+# O
+X-API-Key: sk_live_xxxxx
+```
+
+**Gestión de Keys**: `/dashboard/api-keys`
+
+### Endpoints
+
+#### GET /api/v1/rag?intent=list
+Lista todos los contextos del chatbot con métricas.
+
+```bash
+curl https://formmy-v2.fly.dev/api/v1/rag?intent=list \
+  -H "Authorization: Bearer sk_live_xxxxx"
+```
+
+**Response**:
+```json
+{
+  "chatbotId": "abc123",
+  "chatbotName": "Mi Chatbot",
+  "totalContexts": 15,
+  "totalSizeKB": 2048,
+  "totalEmbeddings": 456,
+  "contexts": [
+    {
+      "id": "ctx_abc123",
+      "type": "FILE",
+      "fileName": "manual.pdf",
+      "sizeKB": 512,
+      "createdAt": "2025-01-18T10:00:00Z",
+      "parsingMode": "AGENTIC",
+      "parsingPages": 15,
+      "parsingCredits": 45
+    }
+  ]
+}
+```
+
+#### POST /api/v1/rag?intent=upload
+Sube contenido manualmente y genera embeddings automáticamente.
+
+```bash
+curl -X POST https://formmy-v2.fly.dev/api/v1/rag?intent=upload \
+  -H "Authorization: Bearer sk_live_xxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Horarios: Lunes a Viernes 9:00-18:00",
+    "type": "TEXT",
+    "metadata": {
+      "title": "Horarios de Atención"
+    }
+  }'
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "contextId": "ctx_xyz789",
+  "embeddingsCreated": 3,
+  "embeddingsSkipped": 0,
+  "creditsUsed": 3
+}
+```
+
+#### POST /api/v1/rag?intent=query
+Realiza búsqueda semántica en la base de conocimientos.
+
+```bash
+curl -X POST https://formmy-v2.fly.dev/api/v1/rag?intent=query \
+  -H "Authorization: Bearer sk_live_xxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "¿Cuáles son los horarios?",
+    "topK": 5
+  }'
+```
+
+**Response**:
+```json
+{
+  "query": "¿Cuáles son los horarios?",
+  "answer": "[1] Horarios de Atención:\nHorarios: Lunes a Viernes 9:00-18:00...",
+  "sources": [
+    {
+      "content": "Horarios: Lunes a Viernes 9:00-18:00",
+      "score": 0.92,
+      "metadata": {
+        "fileName": "info.pdf",
+        "title": "Horarios de Atención",
+        "contextType": "TEXT"
+      }
+    }
+  ],
+  "creditsUsed": 2
+}
+```
+
+### SDK TypeScript
+**Ubicación**: `/sdk/formmy-rag.ts` (standalone)
+
+```typescript
+import { FormmyRAG } from './sdk/formmy-rag';
+
+const rag = new FormmyRAG('sk_live_xxxxx');
+
+// Listar contextos
+const contexts = await rag.list();
+console.log(`Total: ${contexts.totalContexts}`);
+
+// Subir contexto
+await rag.upload({
+  content: 'Horarios: Lunes a Viernes 9am-6pm',
+  type: 'TEXT',
+  metadata: { title: 'Horarios de atención' }
+});
+
+// Query RAG
+const result = await rag.query('¿Cuáles son los horarios?', { topK: 5 });
+console.log(result.answer);
+console.log(`Fuentes: ${result.sources.length}`);
+```
+
+### Pricing (Créditos)
+| Operación | Créditos | Descripción |
+|-----------|----------|-------------|
+| `intent=list` | 0 | Listar contextos (GRATIS) |
+| `intent=query` | 2 | Búsqueda vectorial + respuesta |
+| `intent=upload` | 3 | Subir contenido + generar embeddings |
+
+### Testing
+```bash
+# Test completo con SDK
+FORMMY_TEST_API_KEY=sk_live_xxx npx tsx scripts/test-rag-api.ts
+
+# Test agéntico (RAG + múltiples queries)
+FORMMY_TEST_API_KEY=sk_live_xxx npx tsx scripts/test-agentic-rag.ts
+```
+
+### Implementación
+**Archivos clave**:
+- `/app/routes/api.v1.rag.ts` - API endpoints
+- `/sdk/formmy-rag.ts` - SDK cliente
+- `/app/components/APIDocumentation.tsx` - Docs UI
+- `/server/context/unified-processor.server.ts` - Procesamiento embeddings
+- `/server/vector/vector-search.service.ts` - Búsqueda vectorial
+
+---
+
 ## Roadmap
 
 1. **Parser API v1 - Stripe Price IDs** ⭐⭐⭐
@@ -345,18 +505,10 @@ npm run typecheck
    - Actualizar placeholders: `price_credits_100_prod`, `price_credits_500_prod`, etc.
    - Testing end-to-end: compra → webhook → acreditación
 
-2. **Expandir API v1 - RAG Endpoint** ⭐⭐⭐
-   - `POST /api/v1/rag?intent=query` - Consultar RAG de un chatbot vía API
-   - `POST /api/v1/rag?intent=upload` - Subir contexto vía API (similar a parser)
-   - `GET /api/v1/rag?intent=list` - Listar contextos del chatbot
-   - Autenticación: Mismo sistema de API Keys
-   - Credits: 1-2 créditos por query según complexity
-   - Response format: `{ query, answer, sources[], creditsUsed }`
-
-3. Context compression
-4. CRUD Ghosty completo
-5. Gemini Direct API
-6. ChromaDB
+2. Context compression
+3. CRUD Ghosty completo
+4. Gemini Direct API
+5. ChromaDB
 
 ---
 
@@ -519,11 +671,12 @@ curl https://formmy-v2.fly.dev/api/parser/v1?intent=status&jobId=job_abc123 \
 }
 ```
 
-### SDK TypeScript
-**Ubicación**: `/sdk/formmy-parser.ts` (50 líneas, standalone)
+### SDK TypeScript (Publicado en npm como `formmy-sdk`)
+**Desarrollo Local**: Workspace en `/sdk/formmy-parser` con symlink automático
+**Instalación**: `npm install formmy-sdk`
 
 ```typescript
-import { FormmyParser } from './sdk/formmy-parser';
+import { FormmyParser } from 'formmy-sdk';
 
 const parser = new FormmyParser('sk_live_xxxxx');
 
@@ -562,8 +715,116 @@ console.log(result.markdown);
 - `/app/routes/api.parser.v1.ts` - API endpoints
 - `/app/routes/dashboard.api-keys.tsx` - UI gestión + docs
 - `/server/llamaparse/credits.service.ts` - Validación créditos
-- `/sdk/formmy-parser.ts` - SDK cliente
+- `/sdk/formmy-parser/` - SDK publicado en npm
 
 ---
 
-**Última actualización**: Ene 18, 2025
+## SDK npm - Setup y Publicación ✅
+
+### Estructura
+```
+/sdk/formmy-parser/           # Workspace npm
+├── client.ts                 # Cliente principal
+├── types.ts                  # Tipos TypeScript
+├── errors.ts                 # Clases de errores
+├── index.ts                  # Export entry point
+├── package.json              # name: "formmy-sdk"
+├── tsconfig.json             # Compilación a /dist
+├── .npmignore                # Excluir sources
+├── README.md                 # Documentación
+└── dist/                     # Compilado (generado)
+```
+
+### Desarrollo Local
+
+**1. Workspace Setup** (Ya configurado):
+```json
+// package.json raíz
+{
+  "workspaces": ["packages/*", "sdk/formmy-parser"]
+}
+```
+
+**2. Symlink Automático**:
+```bash
+npm install
+# Crea: node_modules/formmy-sdk → ../sdk/formmy-parser
+```
+
+**3. Uso en Scripts**:
+```typescript
+import { FormmyParser } from 'formmy-sdk';
+// Hot reload automático cuando cambies SDK
+```
+
+### Publicación a npm
+
+**1. Build Automático**:
+```bash
+npm run build --workspace=formmy-sdk
+# O desde SDK:
+cd sdk/formmy-parser && npm run build
+```
+
+**2. Versionado Semántico**:
+```bash
+cd sdk/formmy-parser
+
+# Patch (1.0.0 → 1.0.1) - Bug fixes
+npm version patch
+
+# Minor (1.0.0 → 1.1.0) - Nuevas features
+npm version minor
+
+# Major (1.0.0 → 2.0.0) - Breaking changes
+npm version major
+```
+> `npm version` ejecuta automáticamente `prepublishOnly` → build
+
+**3. Publicar**:
+```bash
+npm publish --access public
+# Primera vez: crear cuenta npm.com y login
+# npm login
+```
+
+**4. Verificar**:
+```bash
+npm view formmy-sdk
+npm info formmy-sdk versions
+```
+
+### Sincronización Local ↔ npm
+
+**Flow**:
+1. Cambios en `/sdk/formmy-parser/*.ts` → Hot reload local instantáneo
+2. Testing local: `npx tsx scripts/test-parser-sdk.ts`
+3. Cuando esté listo: `npm version patch && npm publish`
+4. Usuarios externos: `npm install formmy-sdk@latest`
+
+**Ventajas**:
+- ✅ Desarrollo local sin reinstalar
+- ✅ Build automático antes de publicar (`prepublishOnly`)
+- ✅ Sources excluidas de npm (solo `/dist`)
+- ✅ Versionado semántico con git tags
+- ✅ Estructura profesional con tipos `.d.ts`
+
+### Scripts Útiles
+
+```bash
+# Limpiar build
+npm run clean --workspace=formmy-sdk
+
+# Rebuild
+npm run build --workspace=formmy-sdk
+
+# Test local
+npx tsx scripts/test-parser-sdk.ts
+
+# Verificar qué se publicará
+cd sdk/formmy-parser && npm pack --dry-run
+```
+
+---
+
+**Última actualización**: Ene 20, 2025 - SDK npm setup completo ✅
