@@ -6,9 +6,6 @@
  * - GET /api/parser/v1?intent=status&jobId=xxx
  */
 
-// ⭐ Cargar .env PRIMERO (desarrollo local)
-import "../../server/env.server";
-
 import type { Route } from "./+types/api.parser.v1";
 import { extractApiKeyFromRequest, authenticateApiKey } from "../../server/chatbot/apiKeyAuth.server";
 import {
