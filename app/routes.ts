@@ -111,6 +111,7 @@ export default [
   route("api/v1/conversations/:conversationId/stream", "routes/api.v1.conversations.$conversationId.stream.tsx"),
   route("api/v1/llamaparse", "routes/api.v1.llamaparse.ts"),
   route("api/v1/credits", "routes/api.v1.credits.ts"),
+  route("api/v1/traces", "routes/api.v1.traces.ts"),
   route("api/parser/v1", "routes/api.parser.v1.ts"),
   route("api/rag/v1", "routes/api.rag.v1.ts"),
 
