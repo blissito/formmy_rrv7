@@ -115,45 +115,24 @@ async function loadUserTools(chatbot: any, user: any): Promise<FunctionTool[]> {
 
   try {
     const { getToolsForPlan } = await import("../tools");
-    // Create mock context for this legacy system
-    const mockContext = {
+    // Create context for tools
+    const toolContext = {
       userId: user.id,
       userPlan: user.plan,
       chatbotId: chatbot.id,
-      message: '',
+      isGhosty: false, // This is a regular chatbot, not Ghosty
       integrations: chatbot.integrations || {}
     };
+
+    // getToolsForPlan already returns native LlamaIndex tools
+    // No need to convert - use them directly
     const availableTools = getToolsForPlan(
       user.plan || 'FREE',
       chatbot.integrations || {},
-      mockContext
+      toolContext
     );
 
-    // Convert to LlamaIndex FunctionTools
-    for (const toolDef of availableTools) {
-      const llamaTool = FunctionTool.from(
-        async (args: any) => {
-          const context = {
-            chatbotId: chatbot.id,
-            userId: user.id,
-            userPlan: user.plan,
-            integrations: chatbot.integrations || {}
-          };
-
-          // TODO: Migrar a LlamaIndex tools nativas
-          const result = `Tool ${toolDef.name} executed (migration pending)`;
-          // const result = await executeToolCall(toolDef.name, args, context);
-          return typeof result === "string" ? result : JSON.stringify(result);
-        },
-        {
-          name: toolDef.name,
-          description: toolDef.description,
-          parameters: toolDef.input_schema
-        }
-      );
-
-      tools.push(llamaTool);
-    }
+    return availableTools;
   } catch (error) {
     console.error("⚠️ Error loading tools:", error);
   }

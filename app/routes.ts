@@ -122,8 +122,8 @@ export default [
   route("api/v1/composio/gmail", "routes/api.v1.composio.gmail.ts"),
   route("api/v1/composio/gmail/callback", "routes/api.v1.composio.gmail.callback.ts"),
 
-  // Composio WhatsApp Integration
-  route("api/v1/composio/whatsapp", "routes/api.v1.composio.whatsapp.ts"),
+  // Composio WhatsApp Integration - DEPRECADO (eliminado)
+  // WhatsApp ahora usa WhatsAppSDKService directo
 
   // API v0 routes - Motor AgentEngine_v0
   route("api/v0/chatbot", "routes/api.v0.chatbot.ts"),

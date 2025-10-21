@@ -229,26 +229,23 @@ ANONYMOUS: 2/día | STARTER: 10/día | PRO: 25/día | ENTERPRISE: 100/día
 
 ## Integraciones Activas
 
-### WhatsApp + Composio ✅
-**Features**: Embedded Signup, webhook, tools agentes
-**Config**: `/server/integrations/composio-config.ts:WHATSAPP`
+### WhatsApp (Directo con Meta) ✅
+**Features**: Embedded Signup, webhook
+**Service**: `/server/integrations/whatsapp/WhatsAppSDKService.ts`
 
-**Flow**: Meta Signup → tokens → Composio AuthScheme.APIKey
-**Entity**: `chatbot_${chatbotId}`
-
-**Tools**: `send_whatsapp_message`, `list_whatsapp_conversations`, `get_whatsapp_stats`
-**Acceso**: PRO/ENT/TRIAL
+**Flow**: Meta Embedded Signup → tokens → guardar en Integration model
+**NOTA**: Composio WhatsApp DEPRECADO (eliminado en Ene 2025)
 
 **Rutas**:
-- `GET /api/v1/composio/whatsapp?intent=status`
-- `POST /api/v1/composio/whatsapp?intent=connect`
+- `POST /api/v1/integrations/whatsapp?intent=connect`
+- `POST /api/v1/integrations/whatsapp/embedded_signup`
+- `POST /api/v1/integrations/whatsapp/webhook`
 
-**Testing**: `bash scripts/run-whatsapp-test.sh`
+**Acceso**: PRO/ENT/TRIAL
 
-**Troubleshooting**:
-- "not connected" → Verificar Embedded Signup completo
-- Mensajes no envían → Destinatario debe enviar 1er msg
-- Error 400 → Revisar formato `execute(toolSlug, {userId, arguments})`
+**Componentes**:
+- `WhatsAppEmbeddedSignupModal.tsx`: Modal de conexión
+- `WhatsAppSDKService`: Servicio directo con Meta API
 
 ### Gmail + Composio ✅
 **Features**: OAuth2, envío/lectura emails, tools agentes
@@ -500,15 +497,21 @@ FORMMY_TEST_API_KEY=sk_live_xxx npx tsx scripts/test-agentic-rag.ts
 
 ## Roadmap
 
-1. **Parser API v1 - Stripe Price IDs** ⭐⭐⭐
+1. ✅ **Parser API v1 + SDK npm** (Completado - Ene 20, 2025)
+   - SDK `formmy-sdk` publicado en npm
+   - Parser API endpoints funcionando
+   - Sistema de créditos integrado
+   - Documentación completa
+
+2. **Parser API v1 - Stripe Price IDs** ⭐⭐⭐
    - Crear products en Stripe Dashboard para paquetes de créditos
    - Actualizar placeholders: `price_credits_100_prod`, `price_credits_500_prod`, etc.
    - Testing end-to-end: compra → webhook → acreditación
 
-2. Context compression
-3. CRUD Ghosty completo
-4. Gemini Direct API
-5. ChromaDB
+3. Context compression
+4. CRUD Ghosty completo
+5. Gemini Direct API
+6. ChromaDB
 
 ---
 
@@ -541,6 +544,8 @@ npx tsx scripts/migrate-temperatures.ts
 ---
 
 ## Composio Integrations - Guía Rápida
+
+**⚠️ IMPORTANTE**: WhatsApp NO usa Composio (deprecado en Ene 2025). WhatsApp usa WhatsAppSDKService directo con Meta API.
 
 ### Reglas Críticas
 
@@ -672,7 +677,10 @@ curl https://formmy-v2.fly.dev/api/parser/v1?intent=status&jobId=job_abc123 \
 ```
 
 ### SDK TypeScript (Publicado en npm como `formmy-sdk`)
-**Desarrollo Local**: Workspace en `/sdk/formmy-parser` con symlink automático
+**npm**: https://www.npmjs.com/package/formmy-sdk
+**Versión actual**: 1.0.1
+**Código fuente**: `/sdk/formmy-parser`
+**Desarrollo Local**: Workspace con symlink automático
 **Instalación**: `npm install formmy-sdk`
 
 ```typescript

@@ -104,12 +104,12 @@ async function createFormData(
     const filePath = path.resolve(file);
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
-    const blob = new Blob([fileBuffer]);
+    const blob = new Blob([new Uint8Array(fileBuffer)]);
 
     formData.append('file', blob, fileName);
   } else if (file instanceof Buffer) {
     // Node.js: Buffer
-    const blob = new Blob([file]);
+    const blob = new Blob([new Uint8Array(file)]);
     formData.append('file', blob, 'document.pdf');
   } else if (file instanceof Blob) {
     // Browser: Blob or File

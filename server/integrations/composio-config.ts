@@ -66,19 +66,6 @@ export const COMPOSIO_INTEGRATIONS: Record<string, ComposioIntegrationConfig> = 
     emoji: "📧",
   },
 
-  WHATSAPP: {
-    name: "WHATSAPP",
-    displayName: "WhatsApp",
-    toolkitSlug: "whatsapp",
-    authMethod: "api_key", // Meta accessToken
-    authConfigEnvVar: "COMPOSIO_WHATSAPP_AUTH_CONFIG_ID",
-    emoji: "📱",
-    requiresChatbotData: {
-      field: "whatsappConfig",
-      key: "phoneNumberId",
-    },
-  },
-
   GOOGLE_CALENDAR: {
     name: "GOOGLE_CALENDAR",
     displayName: "Google Calendar",
@@ -89,6 +76,7 @@ export const COMPOSIO_INTEGRATIONS: Record<string, ComposioIntegrationConfig> = 
   },
 
   // Agregar más integraciones aquí...
+  // NOTA: WhatsApp NO usa Composio (deprecado) - usa WhatsAppSDKService directo
 };
 
 /**

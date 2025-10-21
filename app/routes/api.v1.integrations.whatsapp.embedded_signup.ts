@@ -10,6 +10,19 @@ interface EmbeddedSignupRequest {
   code: string;
   accessToken: string;
   userID: string;
+  authResponse?: {
+    code?: string;
+    userID?: string;
+  };
+  status?: string;
+  embeddedSignupData?: {
+    phone_number_id?: string;
+    waba_id?: string;
+    business_id?: string;
+    ad_account_ids?: string[];
+    page_ids?: string[];
+    dataset_ids?: string[];
+  };
 }
 
 interface MetaTokenExchangeResponse {
@@ -83,7 +96,32 @@ export async function action({ request }: ActionFunctionArgs) {
 
     console.log(`✅ [Embedded Signup] Usuario encontrado en BD: ${user.id}`);
 
-    const { chatbotId, code, accessToken, userID } = body;
+    // Extraer parámetros - soportar tanto formato antiguo como nuevo
+    const chatbotId = body.chatbotId;
+    const code = body.authResponse?.code || body.code;
+    const accessToken = body.accessToken;
+    const userID = body.authResponse?.userID || body.userID;
+
+    console.log(`\n${'📊'.repeat(40)}`);
+    console.log(`📊 [Embedded Signup] Parámetros recibidos del cliente:`);
+    console.log(`   chatbotId: ${chatbotId}`);
+    console.log(`   code: ${code ? `${code.substring(0, 30)}...` : 'NO RECIBIDO'}`);
+    console.log(`   userID: ${userID || 'N/A'}`);
+    console.log(`   status: ${body.status || 'N/A'}`);
+    console.log(`${'📊'.repeat(40)}\n`);
+
+    // Validar que el código fue recibido
+    if (!code) {
+      console.error("❌ [Embedded Signup] ERROR: No se recibió código de autorización");
+      console.error("   authResponse:", JSON.stringify(body.authResponse, null, 2));
+      return Response.json(
+        {
+          error: "No se recibió código de autorización",
+          hint: "Verifica que el flujo de Embedded Signup se completó correctamente"
+        },
+        { status: 400 }
+      );
+    }
 
     // Validar que el chatbot pertenece al usuario
     const chatbot = await db.chatbot.findFirst({
@@ -100,6 +138,28 @@ export async function action({ request }: ActionFunctionArgs) {
 
     console.log(`✅ [Embedded Signup] Chatbot validado: ${chatbot.id}`);
 
+    // Extraer datos del message event si están disponibles
+    const messageEventData = body.embeddedSignupData;
+    if (messageEventData) {
+      console.log(`\n${'📱'.repeat(40)}`);
+      console.log(`📱 [Message Event] Datos capturados del flujo de Meta:`);
+      console.log(`   phone_number_id: ${messageEventData.phone_number_id || 'N/A'}`);
+      console.log(`   waba_id: ${messageEventData.waba_id || 'N/A'}`);
+      console.log(`   business_id: ${messageEventData.business_id || 'N/A'}`);
+      if (messageEventData.ad_account_ids && messageEventData.ad_account_ids.length > 0) {
+        console.log(`   ad_account_ids: ${messageEventData.ad_account_ids.join(', ')}`);
+      }
+      if (messageEventData.page_ids && messageEventData.page_ids.length > 0) {
+        console.log(`   page_ids: ${messageEventData.page_ids.join(', ')}`);
+      }
+      if (messageEventData.dataset_ids && messageEventData.dataset_ids.length > 0) {
+        console.log(`   dataset_ids: ${messageEventData.dataset_ids.join(', ')}`);
+      }
+      console.log(`${'📱'.repeat(40)}\n`);
+    } else {
+      console.warn(`⚠️ [Message Event] No se recibieron datos del message event (puede ser normal si el evento aún no llegó)`);
+    }
+
     // 1. Intercambiar el código por un token de larga duración
     const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
     const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
@@ -113,21 +173,53 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     console.log(`🔄 [Embedded Signup] Iniciando intercambio de código por token de larga duración...`);
+    console.log(`📋 [Embedded Signup] Client ID (App ID): ${FACEBOOK_APP_ID}`);
+    console.log(`🔐 [Embedded Signup] Code recibido: ${code?.substring(0, 20)}...`);
 
     // Intercambiar el código por un access token de larga duración
+    // NOTA: El redirect_uri DEBE coincidir con la URL de la página donde se ejecutó FB.login()
+    // Para Embedded Signup con popup, Facebook usa implícitamente la URL de la página actual
+    // Por lo tanto, debemos usar la URL base de la aplicación
+    const redirectUri = 'https://formmy-v2.fly.dev/';
+
     const tokenExchangeUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
     tokenExchangeUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
     tokenExchangeUrl.searchParams.append('client_secret', FACEBOOK_APP_SECRET);
     tokenExchangeUrl.searchParams.append('code', code);
-    tokenExchangeUrl.searchParams.append('redirect_uri', `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/embedded_signup`);
+    tokenExchangeUrl.searchParams.append('redirect_uri', redirectUri);
+
+    console.log(`🔗 [Embedded Signup] Redirect URI: ${redirectUri}`);
 
     const tokenResponse = await fetch(tokenExchangeUrl.toString());
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error("❌ [Embedded Signup] Token exchange failed:", errorData);
+      console.error(`\n${'❌'.repeat(40)}`);
+      console.error(`❌ [Embedded Signup] Token exchange FAILED`);
+      console.error(`   HTTP Status: ${tokenResponse.status} ${tokenResponse.statusText}`);
+      console.error(`   Client ID usado: ${FACEBOOK_APP_ID}`);
+      console.error(`   Code usado: ${code?.substring(0, 20)}...`);
+      console.error(`   Response de Meta:`);
+
+      try {
+        const errorJson = JSON.parse(errorData);
+        console.error(`   Error Type: ${errorJson.error?.type || 'N/A'}`);
+        console.error(`   Error Code: ${errorJson.error?.code || 'N/A'}`);
+        console.error(`   Error Message: ${errorJson.error?.message || errorData}`);
+        console.error(`   Error Subcode: ${errorJson.error?.error_subcode || 'N/A'}`);
+        console.error(`   Fbtrace ID: ${errorJson.error?.fbtrace_id || 'N/A'}`);
+      } catch {
+        console.error(`   Raw Error: ${errorData}`);
+      }
+
+      console.error(`${'❌'.repeat(40)}\n`);
+
       return Response.json(
-        { error: "Error al intercambiar el código por token" },
+        {
+          error: "Error al intercambiar el código por token",
+          details: errorData,
+          hint: "Verifica que FACEBOOK_APP_ID y VITE_FACEBOOK_APP_ID sean iguales en .env"
+        },
         { status: 400 }
       );
     }
@@ -192,6 +284,40 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     const phoneNumber = phoneData.data[0];
+
+    // 3.5. Validación cruzada con datos del message event
+    if (messageEventData) {
+      console.log(`\n${'🔍'.repeat(40)}`);
+      console.log(`🔍 [Validación] Comparando IDs del message event vs API de Meta:`);
+
+      // Validar phone_number_id
+      if (messageEventData.phone_number_id && messageEventData.phone_number_id !== phoneNumber.id) {
+        console.warn(`⚠️ [Validación] ADVERTENCIA: phone_number_id no coincide!`);
+        console.warn(`   Message Event: ${messageEventData.phone_number_id}`);
+        console.warn(`   Meta API: ${phoneNumber.id}`);
+        console.warn(`   → Usando valor de Meta API (más confiable)`);
+      } else if (messageEventData.phone_number_id === phoneNumber.id) {
+        console.log(`✅ [Validación] phone_number_id coincide: ${phoneNumber.id}`);
+      }
+
+      // Validar waba_id (business account)
+      if (messageEventData.waba_id && messageEventData.waba_id !== businessAccount.id) {
+        console.warn(`⚠️ [Validación] ADVERTENCIA: waba_id no coincide!`);
+        console.warn(`   Message Event: ${messageEventData.waba_id}`);
+        console.warn(`   Meta API: ${businessAccount.id}`);
+        console.warn(`   → Usando valor de Meta API (más confiable)`);
+      } else if (messageEventData.waba_id === businessAccount.id) {
+        console.log(`✅ [Validación] waba_id coincide: ${businessAccount.id}`);
+      }
+
+      // Informar sobre business_id (es adicional, no lo obtenemos de la API)
+      if (messageEventData.business_id) {
+        console.log(`ℹ️ [Validación] business_id del message event: ${messageEventData.business_id}`);
+        console.log(`   (Este ID solo está disponible vía message event)`);
+      }
+
+      console.log(`${'🔍'.repeat(40)}\n`);
+    }
 
     // 4. Generar un webhook verify token único
     const webhookVerifyToken = `formmy_${chatbotId}_${Date.now()}`;
@@ -277,7 +403,27 @@ export async function action({ request }: ActionFunctionArgs) {
     console.log(`✅ Usuario: ${user.email || user.id}`);
     console.log(`✅ Chatbot: ${chatbot.name} (${chatbot.id})`);
     console.log(`✅ Phone: ${phoneNumber.display_phone_number}`);
+    console.log(`✅ Phone Number ID: ${phoneNumber.id}`);
+    console.log(`✅ Business Account ID (WABA): ${businessAccount.id}`);
     console.log(`✅ Integration ID: ${integration.id}`);
+
+    // Información adicional del message event (si está disponible)
+    if (messageEventData) {
+      console.log(`\n📊 [Message Event] Assets adicionales capturados:`);
+      if (messageEventData.business_id) {
+        console.log(`   💼 Business Portfolio ID: ${messageEventData.business_id}`);
+      }
+      if (messageEventData.ad_account_ids && messageEventData.ad_account_ids.length > 0) {
+        console.log(`   📢 Ad Accounts (${messageEventData.ad_account_ids.length}): ${messageEventData.ad_account_ids.join(', ')}`);
+      }
+      if (messageEventData.page_ids && messageEventData.page_ids.length > 0) {
+        console.log(`   📄 Pages (${messageEventData.page_ids.length}): ${messageEventData.page_ids.join(', ')}`);
+      }
+      if (messageEventData.dataset_ids && messageEventData.dataset_ids.length > 0) {
+        console.log(`   📊 Datasets (${messageEventData.dataset_ids.length}): ${messageEventData.dataset_ids.join(', ')}`);
+      }
+    }
+
     console.log(`${'✅'.repeat(40)}\n`);
 
     return Response.json({
@@ -290,7 +436,16 @@ export async function action({ request }: ActionFunctionArgs) {
         phoneNumberId: phoneNumber.id,
         coexistenceMode: true,
         embeddedSignup: true,
-        token: longLivedToken, // Agregar token para el siguiente paso (Composio)
+        token: longLivedToken,
+        // Datos adicionales del message event (si están disponibles)
+        ...(messageEventData && {
+          messageEventData: {
+            businessPortfolioId: messageEventData.business_id,
+            adAccountIds: messageEventData.ad_account_ids,
+            pageIds: messageEventData.page_ids,
+            datasetIds: messageEventData.dataset_ids,
+          }
+        })
       },
       message: "Integración de WhatsApp configurada exitosamente con Embedded Signup",
     });

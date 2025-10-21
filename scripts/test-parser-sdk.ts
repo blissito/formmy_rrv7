@@ -1,4 +1,4 @@
-import { FormmyParser } from '../sdk/formmy-parser';
+import { FormmyParser } from 'formmy-sdk';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';

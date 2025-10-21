@@ -8,10 +8,7 @@ import {
   addWhatsAppUserMessage,
   addWhatsAppAssistantMessage,
 } from "../../server/chatbot/messageModel.server";
-import {
-  getConversationBySessionId,
-  createConversation,
-} from "../../server/chatbot/conversationModel.server";
+import { getOrCreateConversation } from "../../server/integrations/whatsapp/conversation.server";
 import { getChatbotById } from "../../server/chatbot/chatbotModel.server";
 import { db } from "../utils/db.server";
 import { createAgent } from "../../server/agent-engine-v0";
@@ -83,6 +80,18 @@ interface WhatsAppWebhookPayload {
 }
 
 /**
+ * Deduplication cache for webhook messages (in-memory)
+ * WhatsApp may send the same webhook multiple times if we don't respond fast enough
+ */
+const processedMessages = new Set<string>();
+const MESSAGE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Clean up old entries periodically
+setInterval(() => {
+  processedMessages.clear();
+}, MESSAGE_CACHE_TTL);
+
+/**
  * Loader function - handles GET requests for webhook verification
  * WhatsApp sends a GET request to verify the webhook endpoint - simplified
  */
@@ -119,16 +128,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const integration = await db.integration.findFirst({
         where: {
           platform: "WHATSAPP",
-          settings: {
-            path: ["webhookVerifyToken"],
-            equals: token
-          }
+          webhookVerifyToken: token
         }
       });
 
       if (integration) {
         isValidToken = true;
-        console.log("Token verified against dynamic webhook token");
+        console.log("Token verified against dynamic webhook token from Integration");
       }
     }
 
@@ -178,6 +184,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           // Process regular messages
           for (const message of change.value.messages) {
             try {
+              // ✅ DEDUPLICATION: Skip if already processed
+              if (processedMessages.has(message.id)) {
+                console.log("⏭️  Skipping duplicate message", { messageId: message.id });
+                results.push({
+                  success: true,
+                  messageId: message.id,
+                  skipped: true,
+                  reason: "duplicate"
+                });
+                continue;
+              }
+
+              // Mark as processed BEFORE processing (prevent race conditions)
+              processedMessages.add(message.id);
+
               const incomingMessage: IncomingMessage = {
                 messageId: message.id,
                 from: message.from,
@@ -416,45 +437,6 @@ async function findIntegrationByPhoneNumber(phoneNumberId: string) {
 }
 
 /**
- * Get or create conversation - simplified
- */
-async function getOrCreateConversation(phoneNumber: string, chatbotId: string) {
-  const sessionId = `whatsapp_${phoneNumber}`;
-
-  // Try to find existing conversation
-  const existingConversation = await getConversationBySessionId(sessionId);
-
-  if (existingConversation) {
-    console.log("Found existing conversation", {
-      conversationId: existingConversation.id,
-      sessionId,
-    });
-    return existingConversation;
-  }
-
-  // Create new conversation
-  const newConversation = await createConversation({
-    chatbotId,
-    visitorId: phoneNumber,
-    visitorIp: undefined,
-  });
-
-  // Update the sessionId to our custom format for WhatsApp
-  const updatedConversation = await db.conversation.update({
-    where: { id: newConversation.id },
-    data: { sessionId },
-  });
-
-  console.log("Created new WhatsApp conversation", {
-    conversationId: updatedConversation.id,
-    sessionId,
-    phoneNumber,
-  });
-
-  return updatedConversation;
-}
-
-/**
  * Send WhatsApp message using direct HTTP call
  */
 async function sendWhatsAppMessage(
@@ -519,9 +501,8 @@ async function generateChatbotResponse(
 
   try {
     // Get user info from chatbot owner
-    const user = await db.user.findFirst({
-      where: { projects: { some: { id: chatbot.projectId } } },
-      include: { projects: true }
+    const user = await db.user.findUnique({
+      where: { id: chatbot.userId }
     });
 
     if (!user) {

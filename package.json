@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "sdk/formmy-parser"
   ],
   "scripts": {
     "build": "cross-env NODE_ENV=production react-router build",

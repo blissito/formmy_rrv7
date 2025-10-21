@@ -14,82 +14,76 @@ import WhatsAppIntegrationModal from "../../integrations/WhatsAppIntegrationModa
 import WhatsAppCoexistenceModal from "../../integrations/WhatsAppCoexistenceModal";
 import WhatsAppCoexistenceRealModal from "../../integrations/WhatsAppCoexistenceRealModal";
 import WhatsAppEmbeddedSignupModal from "../../integrations/WhatsAppEmbeddedSignupModal";
+import { WhatsAppTemplateCreator } from "../../integrations/WhatsAppTemplateCreator";
+import { WhatsAppTemplateList } from "../../integrations/WhatsAppTemplateList";
 import GmailIntegrationModal from "../../integrations/GmailIntegrationModal";
+import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 // import GoogleCalendarComposioModal from "../../integrations/GoogleCalendarComposioModal"; // Deshabilitado - Próximamente
 // import StripeIntegrationModal from "../../integrations/StripeIntegrationModal"; // Deshabilitado temporalmente
 
 // Integraciones disponibles con sus configuraciones
-const availableIntegrations = [
+const getAvailableIntegrations = (t: (key: string) => string) => [
   {
     id: "DENIK",
     name: "Deník",
     logo: "/assets/chat/denik.svg",
-    description:
-      "Sistema de recordatorios y agenda integrado. Tu agente puede crear recordatorios, agendar citas y enviar notificaciones automáticamente.",
+    description: t('integrations.denik.description'),
     isPermanent: true, // Integración permanente, siempre activa
   },
   {
     id: "SAVE_CONTACT",
-    name: "Gestión de Contactos",
+    name: t('integrations.saveContact.name'),
     logo: "/assets/chat/users.svg",
-    description:
-      "Sistema de captura y gestión de contactos. Tu agente guarda información de clientes y prospectos durante las conversaciones.",
+    description: t('integrations.saveContact.description'),
     isPermanent: true, // Integración permanente, siempre activa
   },
   {
     id: "STRIPE",
     name: "Stripe",
     logo: "/assets/chat/stripe.png",
-    description:
-      "Permite que tu agente genere links de pago automáticamente para cobrar productos y servicios.",
+    description: t('integrations.stripe.description'),
     isPermanent: false,
   },
   {
     id: "GOOGLE_CALENDAR",
     name: "Google Calendar",
     logo: "/assets/chat/calendar.png",
-    description:
-      "Conecta tu agente a Google Calendar para que pueda programar citas y recordatorios automáticamente.",
+    description: t('integrations.googleCalendar.description'),
     isPermanent: false,
   },
   {
     id: "GMAIL",
     name: "Gmail",
     logo: "/assets/chat/gmail.png",
-    description:
-      "Permite que tu agente envíe y lea correos electrónicos automáticamente desde tu cuenta de Gmail.",
+    description: t('integrations.gmail.description'),
     isPermanent: false,
   },
   {
     id: "WHATSAPP",
     name: "WhatsApp",
     logo: "/assets/chat/whatsapp.svg",
-    description:
-      "Conecta a tu agente a un número de WhatsApp y deja que responda los mensajes de tus clientes.",
+    description: t('integrations.whatsapp.description'),
     isPermanent: false,
   },
   {
     id: "INSTAGRAM",
     name: "Instagram",
     logo: "/assets/chat/instagram.svg",
-    description:
-      "Conecta a tu agente a una página de Instagram y deja que responda los mensajes de tus clientes.",
+    description: t('integrations.instagram.description'),
     isPermanent: false,
   },
   {
     id: "SHOPIFY",
     name: "Shopify",
     logo: "/assets/chat/shopify.svg",
-    description:
-      "Deje que tu agente interactúe con sus clientes, responda a sus consultas, ayude con los pedidos y más.",
+    description: t('integrations.shopify.description'),
     isPermanent: false,
   },
   {
     id: "SLACK",
     name: "Slack",
     logo: "/assets/chat/slack.svg",
-    description:
-      "Conecta a tu agente a Slack, menciónalo y haz que responda cualquier mensaje.",
+    description: t('integrations.slack.description'),
     isPermanent: false,
   },
 ] as const;
@@ -117,6 +111,9 @@ interface CodigoProps {
 }
 
 export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
+  const { t } = useDashboardTranslation();
+  const availableIntegrations = getAvailableIntegrations(t);
+
   const { currentTab, setCurrentTab } = useChipTabs(
     "integrations",
     `codigo_${chatbot.id}`
@@ -148,9 +145,12 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       } else if (availableIntegration.id === "GMAIL") {
         // Gmail: Iniciar como disconnected, luego actualizar con estado real de BD
         status[availableIntegration.id.toLowerCase()] = "disconnected";
-      } else if (availableIntegration.id === "STRIPE" || availableIntegration.id === "WHATSAPP") {
-        // Stripe y WhatsApp deshabilitados temporalmente (en desarrollo)
+      } else if (availableIntegration.id === "STRIPE") {
+        // Stripe deshabilitado temporalmente (en desarrollo)
         status[availableIntegration.id.toLowerCase()] = "onhold";
+      } else if (availableIntegration.id === "WHATSAPP") {
+        // WhatsApp disponible - iniciar como disconnected
+        status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else {
         // Todas las demás integraciones están en "onhold" (próximamente)
         status[availableIntegration.id.toLowerCase()] = "onhold";
@@ -173,13 +173,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         if (platformKey === "stripe") {
           status[platformKey] = "onhold";
           console.log("🔒 Stripe forzado a estado: onhold (deshabilitado temporalmente)");
-          return;
-        }
-
-        // WhatsApp siempre debe estar en "onhold" (deshabilitado temporalmente)
-        if (platformKey === "whatsapp") {
-          status[platformKey] = "onhold";
-          console.log("🔒 WhatsApp forzado a estado: onhold (deshabilitado temporalmente)");
           return;
         }
 
@@ -377,7 +370,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       }));
 
       // Mostrar error al usuario
-      alert("Error al desconectar la integración. Inténtalo de nuevo.");
+      alert(t('integrations.disconnectError'));
     }
   };
 
@@ -421,13 +414,11 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       const isEmbeddedSignup = integration.embeddedSignup;
       const isCoexistence = integration.coexistenceMode;
 
-      let message = "¡Integración de WhatsApp configurada correctamente!";
+      let message = t('integrations.whatsappSuccessDefault');
       if (isEmbeddedSignup) {
-        message =
-          "¡WhatsApp conectado via Embedded Signup oficial! Business Integration Token generado.";
+        message = t('integrations.whatsappSuccessEmbedded');
       } else if (isCoexistence) {
-        message =
-          "¡WhatsApp conectado en modo coexistencia! Tu chatbot y la app móvil funcionarán juntos.";
+        message = t('integrations.whatsappSuccessCoexistence');
       }
       alert(message);
 
@@ -639,13 +630,13 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       {currentTab === "embed" && (
         <section className="w-full">
           <Card
-            title="Embebe tu chatbot en tu sitio web"
+            title={t('integrations.embedTitle')}
             text={
               <div>
                 <p className="text-metal font-normal">
-                  Elige la forma de embebido que más te convenga.{" "}
+                  {t('integrations.embedDescription')}{" "}
                   <a href="/blog/como-embeber-chatbot-formmy-sitio-web" className="underline" target="_blank">
-                    Más información
+                    {t('integrations.embedMoreInfo')}
                   </a>
                 </p>
               </div>
@@ -680,7 +671,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                 status={currentStatus}
                 lastActivity={
                   currentStatus === "connected"
-                    ? "Siempre activa"
+                    ? t('integrations.alwaysActive')
                     : undefined
                 }
                 onConnect={isOnHold ? undefined : () => handleConnect(availableIntegration.id)}
@@ -785,6 +776,38 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                   };
                 })()}
               />
+
+              {/* WhatsApp Template Management - Solo mostrar si hay integración activa */}
+              {(() => {
+                const whatsappIntegration = integrations.find(
+                  (integration) => integration.platform === "WHATSAPP" && integration.isActive
+                );
+
+                if (!whatsappIntegration) return null;
+
+                return (
+                  <div className="mt-8 space-y-6">
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                        {t('integrations.whatsappTemplatesTitle')}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                        {t('integrations.whatsappTemplatesDescription')}
+                      </p>
+                    </div>
+
+                    <WhatsAppTemplateCreator
+                      chatbotId={chatbot.id}
+                      onSuccess={(template) => {
+                        console.log('Template created:', template);
+                        // Optionally trigger a refresh or show a toast
+                      }}
+                    />
+
+                    <WhatsAppTemplateList chatbotId={chatbot.id} />
+                  </div>
+                );
+              })()}
             </>
           )}
 
@@ -856,6 +879,7 @@ interface LinkBlockProps {
 }
 
 const LinkBlock = ({ chatbot }: LinkBlockProps) => {
+  const { t } = useDashboardTranslation();
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
@@ -864,25 +888,19 @@ const LinkBlock = ({ chatbot }: LinkBlockProps) => {
 
   const codeToCopy = `
 <a href="${chatUrl}" target="_blank" rel="noopener noreferrer">
-  Chatear con nuestro asistente
+  ${t('integrations.embedLinkText')}
 </a>
 `;
 
   const instructions = [
-    { step: "1", description: "Copia el código del enlace" },
-    {
-      step: "2",
-      description: "Pégalo en tu archivo HTML donde quieras que aparezca",
-    },
-    {
-      step: "3",
-      description: "Personaliza el texto y los estilos según tus necesidades",
-    },
+    { step: "1", description: t('integrations.embedLinkStep1') },
+    { step: "2", description: t('integrations.embedLinkStep2') },
+    { step: "3", description: t('integrations.embedLinkStep3') },
   ];
 
   return (
     <CodeBlock
-      title="Instrucciones de configuración"
+      title={t('integrations.setupInstructions')}
       language="html"
       code={codeToCopy}
       instructions={instructions}
@@ -891,6 +909,7 @@ const LinkBlock = ({ chatbot }: LinkBlockProps) => {
 };
 
 const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
+  const { t } = useDashboardTranslation();
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
@@ -907,36 +926,17 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
 `;
 
   const instructions = [
-    { step: "1", description: "Copia el código del widget" },
-    {
-      step: "2",
-      description:
-        "Pégalo en tu archivo HTML, preferiblemente antes del </body>",
-    },
-    {
-      step: "3",
-      description:
-        "El widget aparecerá como una burbuja en la esquina inferior derecha",
-    },
-    {
-      step: "4",
-      description:
-        "Funciona en CodePen, JSFiddle y cualquier sitio web",
-    },
-    {
-      step: "5",
-      description: "Sin conflictos - no bloquea tu sitio",
-    },
-    {
-      step: "6",
-      description:
-        "Responsive y optimizado para todos los dispositivos",
-    },
+    { step: "1", description: t('integrations.embedWidgetStep1') },
+    { step: "2", description: t('integrations.embedWidgetStep2') },
+    { step: "3", description: t('integrations.embedWidgetStep3') },
+    { step: "4", description: t('integrations.embedWidgetStep4') },
+    { step: "5", description: t('integrations.embedWidgetStep5') },
+    { step: "6", description: t('integrations.embedWidgetStep6') },
   ];
 
   return (
     <CodeBlock
-      title="Instrucciones de configuración"
+      title={t('integrations.setupInstructions')}
       language="html"
       code={codeToCopy}
       instructions={instructions}

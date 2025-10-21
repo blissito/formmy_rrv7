@@ -85,12 +85,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
   if (intent === "revoke") {
     const keyId = formData.get("keyId") as string;
 
-    await db.apiKey.updateMany({
+    await db.apiKey.deleteMany({
       where: { id: keyId, userId: user.id },
-      data: { isActive: false },
     });
 
-    return { success: true, message: "API key revocada" };
+    return { success: true, message: "API key eliminada" };
   }
 
   return { success: false, error: "Intent no reconocido" };
@@ -387,11 +386,6 @@ export default function DashboardAPIKeys() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-semibold text-dark text-sm truncate">{key.name}</h4>
-                        <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${
-                          key.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                        }`}>
-                          {key.isActive ? "Activa" : "Revocada"}
-                        </span>
                       </div>
                       <div className="text-xs text-metal space-y-1">
                         <p className="truncate">
@@ -433,21 +427,19 @@ export default function DashboardAPIKeys() {
                         )}
                       </div>
                     </div>
-                    {key.isActive && (
-                      <Form method="post">
-                        <input type="hidden" name="intent" value="revoke" />
-                        <input type="hidden" name="keyId" value={key.id} />
-                        <button
-                          type="submit"
-                          className="px-3 py-1 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
-                          onClick={(e) => {
-                            if (!confirm("¿Estás seguro de revocar esta API key?")) e.preventDefault();
-                          }}
-                        >
-                          Revocar
-                        </button>
-                      </Form>
-                    )}
+                    <Form method="post">
+                      <input type="hidden" name="intent" value="revoke" />
+                      <input type="hidden" name="keyId" value={key.id} />
+                      <button
+                        type="submit"
+                        className="px-3 py-1 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                        onClick={(e) => {
+                          if (!confirm("¿Estás seguro de eliminar esta API key? Esta acción no se puede deshacer.")) e.preventDefault();
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    </Form>
                   </div>
                 </div>
               ))}

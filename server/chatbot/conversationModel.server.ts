@@ -78,13 +78,16 @@ export async function getConversationById(
 }
 
 /**
- * Gets a conversation by session ID
+ * Gets a conversation by session ID (excludes deleted conversations)
  */
 export async function getConversationBySessionId(
   sessionId: string
 ): Promise<Conversation | null> {
-  return db.conversation.findUnique({
-    where: { sessionId },
+  return db.conversation.findFirst({
+    where: {
+      sessionId,
+      status: { not: ConversationStatus.DELETED }, // ✅ EXCLUDE deleted conversations
+    },
   });
 }
 

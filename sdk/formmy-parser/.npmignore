@@ -1,0 +1,24 @@
+# Source files (only publish compiled /dist)
+*.ts
+!*.d.ts
+
+# Config files
+tsconfig.json
+.prettierrc
+.eslintrc
+
+# Development
+node_modules
+.DS_Store
+*.log
+npm-debug.log*
+
+# Testing
+*.test.js
+*.spec.js
+__tests__
+coverage
+
+# Git
+.git
+.gitignore

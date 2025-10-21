@@ -9,6 +9,8 @@ import {
   updateIntegrationActivity,
 } from "../../server/chatbot/integrationModel.server";
 import { db } from "../utils/db.server";
+import { getUserOrRedirect } from "server/getUserUtils.server";
+import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
 
 // ============================================================================
 // Domain Types
@@ -369,6 +371,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return await handleTestConnection(formDataObject);
       case "test_coexistence":
         return await handleTestCoexistence(formDataObject);
+      case "create_template":
+        return await handleCreateTemplate(request);
+      case "list_templates":
+        return await handleListTemplates(request);
       default:
         return new Response(
           JSON.stringify({ success: false, error: "Invalid intent", code: "INVALID_INTENT" }),
@@ -1059,6 +1065,192 @@ const checkCoexistenceMode = (config: WhatsAppConnectionConfig) =>
 
 // ============================================================================
 // Effect-based WhatsApp Integration API Route
+// ============================================================================
+// Template Management Handlers
+// ============================================================================
+
+/**
+ * Handle creating a new WhatsApp message template
+ */
+async function handleCreateTemplate(request: Request) {
+  try {
+    // Get user and validate access
+    const user = await getUserOrRedirect(request);
+    const body = await request.json();
+    const { chatbotId, templateData } = body;
+
+    if (!chatbotId || !templateData) {
+      return new Response(
+        JSON.stringify({ success: false, error: "chatbotId and templateData are required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate chatbot access
+    const access = await validateChatbotAccess(user.id, chatbotId);
+    if (!access.canAccess) {
+      return new Response(
+        JSON.stringify({ success: false, error: "No access to this chatbot" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get WhatsApp integration
+    const integration = await db.integration.findFirst({
+      where: {
+        chatbotId,
+        platform: IntegrationType.WHATSAPP,
+        isActive: true
+      }
+    });
+
+    if (!integration) {
+      return new Response(
+        JSON.stringify({ success: false, error: "WhatsApp integration not found" }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get token and business account ID
+    const accessToken = integration.token;
+    const wabaId = integration.businessAccountId;
+
+    // Create template in Graph API
+    const createUrl = `https://graph.facebook.com/v18.0/${wabaId}/message_templates`;
+
+    const payload = {
+      name: templateData.name,
+      language: templateData.language || "en_US",
+      category: templateData.category || "MARKETING",
+      components: [
+        {
+          type: "BODY",
+          text: templateData.body
+        }
+      ]
+    };
+
+    const response = await fetch(createUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error.error?.message || "Failed to create template"
+        }),
+        { status: response.status, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const data = await response.json();
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        templateId: data.id,
+        status: data.status || "PENDING"
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error creating template:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+
+/**
+ * Handle listing WhatsApp message templates
+ */
+async function handleListTemplates(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const chatbotId = url.searchParams.get('chatbotId');
+
+    if (!chatbotId) {
+      return new Response(
+        JSON.stringify({ success: false, error: "chatbotId is required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get integration
+    const integration = await db.integration.findFirst({
+      where: {
+        chatbotId,
+        platform: IntegrationType.WHATSAPP,
+        isActive: true
+      }
+    });
+
+    if (!integration) {
+      return new Response(
+        JSON.stringify({ success: false, error: "WhatsApp integration not found" }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get token and business account ID
+    const accessToken = integration.token;
+    const wabaId = integration.businessAccountId;
+
+    // Fetch templates from Graph API
+    const listUrl = `https://graph.facebook.com/v18.0/${wabaId}/message_templates?fields=name,status,category,language,components`;
+
+    const response = await fetch(listUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to fetch templates",
+          details: error
+        }),
+        { status: response.status, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const data = await response.json();
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        templates: data.data || []
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("Error listing templates:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error)
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+
 // ============================================================================
 //
 // This route provides CRUD operations for WhatsApp integrations using Effect.js

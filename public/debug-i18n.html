@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Debug i18n</title>
+</head>
+<body>
+  <h1>Debug i18n System</h1>
+  <button onclick="clearLang()">Clear Language Setting</button>
+  <button onclick="setES()">Set Spanish</button>
+  <button onclick="setEN()">Set English</button>
+  <button onclick="showStatus()">Show Status</button>
+  <pre id="status"></pre>
+
+  <script>
+    function clearLang() {
+      localStorage.removeItem('formmy_dashboard_lang');
+      alert('Cleared!');
+      showStatus();
+    }
+
+    function setES() {
+      localStorage.setItem('formmy_dashboard_lang', 'es');
+      alert('Set to Spanish!');
+      showStatus();
+    }
+
+    function setEN() {
+      localStorage.setItem('formmy_dashboard_lang', 'en');
+      alert('Set to English!');
+      showStatus();
+    }
+
+    function showStatus() {
+      const lang = localStorage.getItem('formmy_dashboard_lang');
+      document.getElementById('status').textContent = `Current language: ${lang || 'NOT SET (will default to es)'}`;
+    }
+
+    showStatus();
+  </script>
+</body>
+</html>

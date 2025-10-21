@@ -28,6 +28,7 @@ import EditIcon from "../ui/icons/Edit";
 import { type AgentType } from "./common/AgentDropdown";
 import { ProTagChatbot } from "../ProTagChatbot";
 import { getDefaultModelForPlan } from "~/utils/aiModels";
+import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 
 // Context para compartir estado entre PreviewForm y ChatPreview
 interface PreviewContextType {
@@ -558,12 +559,14 @@ export const TabSelector = ({
   activeTab?: string;
   onTabChange?: (tab: string) => void;
 }) => {
+  const { t, lang, toggleLanguage } = useDashboardTranslation();
   const [selectedTab, setSelectedTab] = useState(activeTab || "Preview");
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const tabs = [
+  // Keep original tab keys for internal state
+  const tabKeys = [
     "Preview",
     "Conversaciones",
     "Contactos",
@@ -573,6 +576,20 @@ export const TabSelector = ({
     "Configuración",
   ];
 
+  // Translation map for display
+  const getTabLabel = (tabKey: string): string => {
+    const map: Record<string, string> = {
+      "Preview": t('tabs.preview'),
+      "Conversaciones": t('tabs.conversations'),
+      "Contactos": t('tabs.contacts'),
+      "Entrenamiento": t('tabs.training'),
+      "Tareas": t('tabs.tasks'),
+      "Código": t('tabs.code'),
+      "Configuración": t('tabs.settings'),
+    };
+    return map[tabKey] || tabKey;
+  };
+
   // Sincronizar estado local con prop activeTab
   useEffect(() => {
     if (activeTab && activeTab !== selectedTab) {
@@ -580,7 +597,7 @@ export const TabSelector = ({
     }
   }, [activeTab]);
 
-  const activeIndex = tabs.indexOf(selectedTab);
+  const activeIndex = tabKeys.indexOf(selectedTab);
 
   useEffect(() => {
     const updateIndicator = () => {
@@ -606,44 +623,60 @@ export const TabSelector = ({
   };
 
   return (
-    <nav
-      className={cn(
-        "relative",
-        "flex overflow-y-scroll md:overflow-auto items-start md:items-end justify-start md:justify-center",
-        "mb-6"
-      )}
-      style={{
-        scrollbarWidth: "none",
-      }}
-    >
-      <div
-        ref={containerRef}
-        className="relative flex border-b border-outlines/50 "
+    <div className="flex items-center justify-between mb-6 gap-4">
+      <nav
+        className={cn(
+          "relative flex-1",
+          "flex overflow-y-scroll md:overflow-auto items-start md:items-end justify-start md:justify-center"
+        )}
+        style={{
+          scrollbarWidth: "none",
+        }}
       >
-        {tabs.map((tab, index) => (
-          <TabButton
-            id={`tab_${tab}`}
-            key={tab}
-            ref={(el: HTMLButtonElement | null) =>
-              (tabRefs.current[index] = el)
-            }
-            isActive={selectedTab === tab}
-            onClick={() => handleTabClick(tab)}
-          >
-            {tab}
-          </TabButton>
-        ))}
-
-        {/* Barra animada sin bordes laterales */}
         <div
-          className="absolute bottom-0 h-0.5 bg-brand-500 rounded-full top-[47px] transition-all duration-300 ease-out"
-          style={{
-            left: `${indicatorStyle.left}px`,
-            width: `${indicatorStyle.width}px`,
-          }}
-        />
-      </div>
-    </nav>
+          ref={containerRef}
+          className="relative flex border-b border-outlines/50 "
+        >
+          {tabKeys.map((tabKey, index) => (
+            <TabButton
+              id={`tab_${tabKey}`}
+              key={tabKey}
+              ref={(el: HTMLButtonElement | null) =>
+                (tabRefs.current[index] = el)
+              }
+              isActive={selectedTab === tabKey}
+              onClick={() => handleTabClick(tabKey)}
+            >
+              {getTabLabel(tabKey)}
+            </TabButton>
+          ))}
+
+          {/* Barra animada sin bordes laterales */}
+          <div
+            className="absolute bottom-0 h-0.5 bg-brand-500 rounded-full top-[47px] transition-all duration-300 ease-out"
+            style={{
+              left: `${indicatorStyle.left}px`,
+              width: `${indicatorStyle.width}px`,
+            }}
+          />
+        </div>
+      </nav>
+
+      {/* Toggle de Idioma Global */}
+      <button
+        onClick={toggleLanguage}
+        className={cn(
+          "px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
+          "border border-outlines/30 hover:border-outlines/50",
+          "bg-primary/5 hover:bg-primary/10",
+          "flex items-center gap-2"
+        )}
+        title={lang === 'en' ? 'Switch to Spanish' : 'Cambiar a Inglés'}
+      >
+        <span className="text-base">{lang === 'en' ? '🇺🇸' : '🇪🇸'}</span>
+        <span className="font-semibold">{lang === 'en' ? 'EN' : 'ES'}</span>
+      </button>
+    </div>
   );
 };
 

@@ -8,6 +8,7 @@ import Empty from "~/SVGs/Empty";
 import EmptyDark from "~/SVGs/EmptyDark";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 
 type ConversationsProps = {
   chatbot: Chatbot;
@@ -49,6 +50,9 @@ export const Conversations = ({
   onToggleFavorite,
   selectedConversationId,
 }: ConversationsProps) => {
+  // Hook de traducción global del dashboard
+  const { t } = useDashboardTranslation();
+
   // Estado para scroll infinito
   const [allLoadedConversations, setAllLoadedConversations] = useState(conversations);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -111,7 +115,12 @@ export const Conversations = ({
 
   const actualConversations = allLoadedConversations;
 
-  const { currentTab, setCurrentTab} = useChipTabs("Todos", `conversations_${chatbot?.id || 'default'}`);
+  // 🌐 TABS i18n: Usar índices (0 = All, 1 = Favorites) para compatibilidad con localStorage
+  const TAB_ALL = 0;
+  const TAB_FAVORITES = 1;
+  const tabNames = [t('conversations.allConversations'), t('conversations.favorites')];
+
+  const { currentTab: currentTabIndex, setCurrentTab: setCurrentTabIndex} = useChipTabs(TAB_ALL.toString(), `conversations_${chatbot?.id || 'default'}`);
   const navigate = useNavigate();
 
   // Estado local para toggle manual (inicializado con valores reales)
@@ -250,31 +259,37 @@ export const Conversations = ({
 
   // Mostrar empty state si no hay conversaciones
   if (conversations.length === 0) {
-    return <EmptyConversations />;
+    return <EmptyConversations t={t} />;
   }
 
   return (
-    <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
-      <article className={cn("col-span-12 md:col-span-3", "flex flex-col h-full gap-4 md:gap-6")}>
-        <ChipTabs
-          names={["Todos", "Favoritos"]}
-          onTabChange={setCurrentTab}
-          activeTab={currentTab}
-        />
+    <>
+      <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
+        <article className={cn("col-span-12 md:col-span-3", "flex flex-col h-full gap-4 md:gap-6")}>
+          <ChipTabs
+            names={tabNames}
+            onTabChange={(tabName) => {
+              const index = tabNames.indexOf(tabName);
+              setCurrentTabIndex(index.toString());
+            }}
+            activeTab={tabNames[parseInt(currentTabIndex) || 0]}
+          />
         <ConversationsList
           onConversationSelect={setConversation}
           conversations={
-            currentTab === "Favoritos"
+            parseInt(currentTabIndex) === TAB_FAVORITES
               ? favoriteConversations
               : allConversations
           }
           currentConversation={conversation}
           selectedConversationId={selectedConversationId}
           isLoadingMore={isLoadingMore}
-          hasMore={hasMore && currentTab === "Todos"}
+          hasMore={hasMore && parseInt(currentTabIndex) === TAB_ALL}
           onLoadMore={loadMoreConversations}
           onToggleFavorite={handleToggleFavorite}
           localFavorites={localFavorites}
+          currentTabIndex={parseInt(currentTabIndex) || 0}
+          tabAll={TAB_ALL}
         />
       </article>
       <section className="col-span-12 md:col-span-9 pb-4 b  min-h-[calc(100vh-310px)] ">
@@ -288,35 +303,37 @@ export const Conversations = ({
         />
       </section>
     </main>
+    </>
   );
 };
 
-const EmptyConversations = () => {
+const EmptyConversations = ({ t }: { t: (key: string) => string }) => {
   return (
     <div className="text-center mt-12 flex flex-col items-center justify-center min-h-[400px]">
       <Empty className="w-[200px] md:w-[240px] dark:hidden flex" />
       <EmptyDark className="w-[240px] hidden dark:flex" />
       <h3 className="font-bold text-lg text-space-800 dark:text-clear mt-6">
-        Aún no tienes conversaciones
+        {t('conversations.noConversations')}
       </h3>
       <p className="text-gray-600 text-sm dark:text-gray-400 font-light mt-2 max-w-md">
-        Las conversaciones con tus clientes aparecerán aquí.<br />
-        Agrega el chatbot a tu sitio web para empezar a recibir mensajes.
+        {t('conversations.noConversationsDescription')}<br />
+        {t('conversations.installScript')}
       </p>
     </div>
   );
 };
 
 const EmptyFavorites = () => {
+  const { t } = useDashboardTranslation();
   return (
     <div className="text-center mt-0 md:mt-12 flex flex-col items-center ">
       <Empty className="w-[160px] md:w-[200px] dark:hidden flex" />
       <EmptyDark className="w-[200px] hidden dark:flex" />
       <h3 className="font-bold text-sm text-space-800 dark:text-clear">
-        ¡No tienes favoritos!
+        {t('conversations.noFavorites') || '¡No tienes favoritos!'}
       </h3>
       <p className="text-gray-600 text-sm dark:text-gray-400 font-light mt-2">
-        Marca como favoritos <br /> tus mensajes más importantes.
+        {t('conversations.noFavoritesDescription') || 'Marca como favoritos tus mensajes más importantes.'}
       </p>
     </div>
   );
@@ -332,6 +349,8 @@ const ConversationsList = ({
   onLoadMore,
   onToggleFavorite,
   localFavorites = {},
+  currentTabIndex,
+  tabAll,
 }: {
   conversations: Conversation[];
   onConversationSelect: (conversation: Conversation) => void;
@@ -342,7 +361,10 @@ const ConversationsList = ({
   onLoadMore?: () => void;
   onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
   localFavorites?: Record<string, boolean>;
+  currentTabIndex: number;
+  tabAll: number;
 }) => {
+  const { t } = useDashboardTranslation();
   const conversationRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Hacer scroll a la conversación seleccionada cuando cambie (deshabilitado para evitar scroll de página)
@@ -383,7 +405,7 @@ const ConversationsList = ({
           ))}
 
           {/* Botón para cargar más */}
-          {hasMore && (
+          {hasMore && currentTabIndex === tabAll && (
             <div className="py-3 grid place-items-center">
               <button
                 onClick={onLoadMore}
@@ -398,19 +420,19 @@ const ConversationsList = ({
                 {isLoadingMore ? (
                   <>
                     <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-                    Cargando...
+                    {t('common.loading')}
                   </>
                 ) : (
-                  `Cargar más (${conversations.length} de muchas)`
+                  `${t('conversations.loadMore')} (${conversations.length})`
                 )}
               </button>
             </div>
           )}
 
           {/* Indicador de fin de lista */}
-          {!hasMore && conversations.length > 20 && (
+          {!hasMore && conversations.length > 20 && currentTabIndex === tabAll && (
             <div className="py-3 text-center text-xs text-gray-400">
-              ✓ Todas las conversaciones cargadas ({conversations.length})
+              ✓ {t('conversations.allConversations')} ({conversations.length})
             </div>
           )}
         </>
@@ -580,15 +602,24 @@ const ChatHeader = ({
       )}
     >
       <Avatar className="h-10 w-10" src={conversation.messages[0]?.picture || "/assets/chat/ghosty.svg"} />
-      <div>
-        <div className="flex items-center gap-1">
-          <h3 className="text-base font-medium text-dark">{tel === "N/A" ? "Usuario web" : tel}</h3>
-          {/* Solo mostrar logo WhatsApp si es conversación legítima de WhatsApp */}
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium text-gray-600">
+            {conversation.userName || "User"}
+          </h3>
+          {/* Logo WhatsApp si es conversación de WhatsApp */}
           {isWhatsAppConversation && (
-            <img src="/assets/chat/whatsapp.svg" alt="whatsapp icon" />
+            <img src="/assets/chat/whatsapp.svg" alt="WhatsApp" className="w-5 h-5" />
           )}
         </div>
-        <p className="text-xs text-gray-500">{date}</p>
+        {/* Número de teléfono MUY VISIBLE */}
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs text-gray-500">Phone:</span>
+          <span className="font-mono font-bold text-green-600 text-base">
+            {tel === "N/A" ? "Web User" : tel}
+          </span>
+        </div>
+        <p className="text-xs text-gray-400 mt-0.5">{date}</p>
       </div>
       {/* <ToggleButton
         isManual={localManualMode}
@@ -633,12 +664,20 @@ const ToggleButton = ({
 const ManualResponseInput = ({
   conversationId,
   onSendResponse,
+  chatbotId,
+  isWhatsApp = false,
 }: {
   conversationId: string;
   onSendResponse: (conversationId: string, message: string) => void;
+  chatbotId?: string;
+  isWhatsApp?: boolean;
 }) => {
+  const { t } = useDashboardTranslation();
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 🎯 AUTO-FOCUS: Input listo inmediatamente
@@ -680,6 +719,67 @@ const ManualResponseInput = ({
     }
   };
 
+  // Fetch templates when showing selector
+  useEffect(() => {
+    if (isWhatsApp && chatbotId && showTemplateSelector && templates.length === 0) {
+      fetchTemplates();
+    }
+  }, [isWhatsApp, chatbotId, showTemplateSelector]);
+
+  const fetchTemplates = async () => {
+    if (!chatbotId) return;
+
+    setLoadingTemplates(true);
+    try {
+      const response = await fetch(
+        `/api/v1/integrations/whatsapp?intent=list_templates&chatbotId=${chatbotId}`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        // Only show APPROVED templates
+        const approvedTemplates = (data.templates || []).filter(
+          (tmpl: any) => tmpl.status === 'APPROVED'
+        );
+        setTemplates(approvedTemplates);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const handleSendTemplate = async (template: any) => {
+    setIsSending(true);
+    try {
+      const response = await fetch('/api/v1/conversations?intent=send_template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId,
+          templateName: template.name,
+          templateLanguage: template.language
+        })
+      });
+
+      if (response.ok) {
+        setShowTemplateSelector(false);
+        // Notify parent to refresh conversation
+        await onSendResponse(conversationId, `[Template sent: ${template.name}]`);
+      } else {
+        const error = await response.json();
+        console.error('Error sending template:', error);
+        alert(t('conversations.errorSendingTemplate') || 'Error sending template');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert(t('conversations.errorSendingTemplate') || 'Error sending template');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   // 🎯 QUICK RESPONSES: Respuestas rápidas pre-definidas
   const quickResponses = [
     "👋 ¡Hola! ¿En qué puedo ayudarte?",
@@ -701,7 +801,102 @@ const ManualResponseInput = ({
             {response}
           </button>
         ))}
+
+        {/* WhatsApp Template Button */}
+        {isWhatsApp && (
+          <button
+            onClick={() => setShowTemplateSelector(true)}
+            className="px-3 py-1 text-xs bg-green-50 border border-green-200 rounded-full hover:bg-green-100 transition-colors flex items-center gap-1.5"
+          >
+            <img src="/assets/chat/whatsapp.svg" className="w-3 h-3" alt="WhatsApp" />
+            {t('conversations.sendTemplate')}
+          </button>
+        )}
       </div>
+
+      {/* Template Selector Modal */}
+      {showTemplateSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowTemplateSelector(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <img src="/assets/chat/whatsapp.svg" className="w-5 h-5" alt="WhatsApp" />
+                {t('conversations.selectTemplate')}
+              </h3>
+              <button
+                onClick={() => setShowTemplateSelector(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 overflow-y-auto max-h-[calc(80vh-8rem)]">
+              {loadingTemplates ? (
+                <div className="text-center py-8">
+                  <svg className="animate-spin h-8 w-8 mx-auto text-green-600" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('conversations.loading')}</p>
+                </div>
+              ) : templates.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-sm">{t('conversations.noApprovedTemplates')}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {templates.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleSendTemplate(template)}
+                      disabled={isSending}
+                      className="w-full text-left p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 dark:text-white mb-1">
+                            {template.name}
+                          </h4>
+                          {template.components && (
+                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">
+                              {template.components.find((c: any) => c.type === 'BODY')?.text || 'No content'}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                            <span>{template.category}</span>
+                            <span>•</span>
+                            <span>{template.language}</span>
+                          </div>
+                        </div>
+                        <div className="text-green-600 flex-shrink-0">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                {t('conversations.templateInfo')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-start gap-3">
         <div className="flex-1">
@@ -897,6 +1092,8 @@ export const ConversationsPreview = ({
           <ManualResponseInput
             conversationId={conversation.id}
             onSendResponse={onSendManualResponse}
+            chatbotId={chatbot?.id}
+            isWhatsApp={conversation.isWhatsApp || (conversation.tel !== "N/A" && conversation.tel.startsWith("+") && conversation.tel.length >= 10)}
           />
         </div>
       )}

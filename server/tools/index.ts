@@ -373,96 +373,8 @@ export const createGenerateChatbotReportTool = (context: ToolContext) => tool(
   }
 );
 
-// ===== WHATSAPP TOOLS (COMPOSIO INTEGRATION) =====
-
-export const createSendWhatsAppMessageTool = (context: ToolContext) => tool(
-  async ({ phoneNumber, message, chatbotId }) => {
-    const { sendWhatsAppMessageHandler } = await import('./handlers/whatsapp');
-    const result = await sendWhatsAppMessageHandler({ phoneNumber, message, chatbotId }, context);
-    return result.message;
-  },
-  {
-    name: "send_whatsapp_message",
-    description: `Enviar mensaje de texto por WhatsApp a un número específico.
-
-**CUÁNDO USAR ESTA HERRAMIENTA:**
-- Usuario pide explícitamente: "envía un WhatsApp", "manda mensaje por WhatsApp", "contacta por WhatsApp"
-- Usuario proporciona número de teléfono y mensaje
-- Frases clave: WhatsApp, enviar mensaje, mandar WhatsApp, contactar por WhatsApp
-
-**REQUISITOS:**
-- El chatbot debe tener WhatsApp conectado vía Composio
-- Número en formato internacional (ej: +52 1234567890)
-- El destinatario debe haber enviado el primer mensaje (restricción de WhatsApp Business)
-
-**IMPORTANTE:**
-- SOLO funciona si el chatbot tiene integración de WhatsApp activa
-- Si el usuario no tiene WhatsApp configurado, orientarlo a la sección de Integraciones`,
-    parameters: z.object({
-      phoneNumber: z.string().describe("Número de teléfono con código de país (ej: +52 1234567890, +1 4155551234)"),
-      message: z.string().describe("Contenido del mensaje a enviar"),
-      chatbotId: z.string().optional().describe("ID del chatbot (solo para Ghosty enviando en nombre de otros chatbots)")
-    })
-  }
-);
-
-export const createListWhatsAppConversationsTool = (context: ToolContext) => tool(
-  async ({ limit, chatbotId }) => {
-    const { listWhatsAppConversationsHandler } = await import('./handlers/whatsapp');
-    const result = await listWhatsAppConversationsHandler({ limit, chatbotId }, context);
-    return result.message;
-  },
-  {
-    name: "list_whatsapp_conversations",
-    description: `Listar conversaciones recientes de WhatsApp del chatbot.
-
-**CUÁNDO USAR ESTA HERRAMIENTA:**
-- Usuario pregunta: "mis conversaciones de WhatsApp", "chats de WhatsApp", "últimos mensajes de WhatsApp"
-- Usuario quiere revisar actividad de WhatsApp
-- Frases clave: conversaciones WhatsApp, chats WhatsApp, mensajes WhatsApp, lista WhatsApp
-
-**QUÉ RETORNA:**
-- Lista de conversaciones recientes ordenadas por última actividad
-- Nombre/teléfono del contacto
-- Preview del último mensaje
-- Timestamp relativo (ej: "2h", "3d")`,
-    parameters: z.object({
-      limit: z.number().optional().default(10).describe("Número de conversaciones a listar (máximo 20)"),
-      chatbotId: z.string().optional().describe("ID del chatbot (solo para Ghosty)")
-    })
-  }
-);
-
-export const createGetWhatsAppStatsTool = (context: ToolContext) => tool(
-  async ({ chatbotId, period }) => {
-    const { getWhatsAppStatsHandler } = await import('./handlers/whatsapp');
-    const result = await getWhatsAppStatsHandler({ chatbotId, period }, context);
-    return result.message;
-  },
-  {
-    name: "get_whatsapp_stats",
-    description: `Obtener estadísticas de WhatsApp del chatbot (conversaciones, mensajes, actividad).
-
-**CUÁNDO USAR ESTA HERRAMIENTA:**
-- Usuario pregunta: "estadísticas de WhatsApp", "cuántos mensajes de WhatsApp", "actividad de WhatsApp"
-- Usuario quiere métricas: "rendimiento WhatsApp", "analytics WhatsApp"
-- Frases clave: stats WhatsApp, estadísticas WhatsApp, métricas WhatsApp, analytics WhatsApp
-
-**PERÍODOS DISPONIBLES:**
-- 'week': Última semana (default)
-- 'month': Último mes
-- 'all': Desde el inicio
-
-**QUÉ RETORNA:**
-- Total de conversaciones y mensajes
-- Conversaciones activas en últimas 24h
-- Promedio de mensajes por conversación`,
-    parameters: z.object({
-      chatbotId: z.string().optional().describe("ID del chatbot (solo para Ghosty)"),
-      period: z.enum(['week', 'month', 'all']).optional().default('week').describe("Período de análisis")
-    })
-  }
-);
+// ===== WHATSAPP TOOLS - DEPRECADO =====
+// Composio WhatsApp fue eliminado - usar WhatsAppSDKService directo
 
 // ===== GMAIL TOOLS (COMPOSIO INTEGRATION) =====
 
@@ -635,22 +547,8 @@ export const getToolsForPlan = (
     );
   }
 
-  // WhatsApp tools - SOLO para chatbots públicos (NO Ghosty) con PRO/ENTERPRISE/TRIAL y WhatsApp conectado
-  // Ghosty puede enviar WhatsApp en nombre de chatbots del usuario
-  if (context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
-    console.log("📱 [getToolsForPlan] Agregando WhatsApp tools para Ghosty");
-    tools.push(
-      createSendWhatsAppMessageTool(context),
-      createListWhatsAppConversationsTool(context),
-      createGetWhatsAppStatsTool(context)
-    );
-  } else if (!context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) && integrations.whatsapp) {
-    console.log("📱 [getToolsForPlan] Agregando WhatsApp tools para chatbot público");
-    tools.push(
-      createSendWhatsAppMessageTool(context),
-      createListWhatsAppConversationsTool(context)
-    );
-  }
+  // WhatsApp tools - DEPRECADO (Composio WhatsApp eliminado)
+  // WhatsApp ahora usa WhatsAppSDKService directo sin Composio
 
   // Gmail tools - Para chatbots públicos con Gmail conectado vía OAuth2
   // Ghosty puede enviar/leer Gmail en nombre de chatbots del usuario
@@ -683,7 +581,7 @@ export const getAllToolNames = () => [
   'update_reminder',
   'cancel_reminder',
   'delete_reminder',
-  'create_formmy_plan_payment', // 🆕 Tool para planes de Formmy
+  'create_formmy_plan_payment', // Tool para planes de Formmy
   'create_payment_link', // Pendiente: para chatbots del usuario
   'save_contact_info',
   'get_usage_limits',
@@ -693,9 +591,7 @@ export const getAllToolNames = () => [
   'web_search_google',
   'search_context',
   'generate_chatbot_report',
-  'send_whatsapp_message', // 🆕 WhatsApp via Composio
-  'list_whatsapp_conversations', // 🆕 WhatsApp via Composio
-  'get_whatsapp_stats', // 🆕 WhatsApp via Composio
-  'send_gmail', // 🆕 Gmail via Composio OAuth2
-  'read_gmail' // 🆕 Gmail via Composio OAuth2
+  // WhatsApp tools DEPRECADO - Composio eliminado
+  'send_gmail', // Gmail via Composio OAuth2
+  'read_gmail' // Gmail via Composio OAuth2
 ];

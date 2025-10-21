@@ -1,8 +1,11 @@
-# @formmy/parser
+# formmy-sdk
 
 Official TypeScript/JavaScript SDK for **Formmy Parser & RAG API** - Parse documents (PDF, DOCX, etc.) and query AI-powered knowledge bases.
 
 Production-ready client with automatic retry logic, error handling, and full TypeScript support for Node.js and Browser.
+
+[![npm version](https://img.shields.io/npm/v/formmy-sdk.svg)](https://www.npmjs.com/package/formmy-sdk)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Why Formmy Parser?
 
@@ -26,11 +29,11 @@ Production-ready client with automatic retry logic, error handling, and full Typ
 ## Installation
 
 ```bash
-npm install @formmy/parser
+npm install formmy-sdk
 # or
-yarn add @formmy/parser
+yarn add formmy-sdk
 # or
-pnpm add @formmy/parser
+pnpm add formmy-sdk
 ```
 
 ## Quick Start
@@ -38,7 +41,7 @@ pnpm add @formmy/parser
 ### Parse a Document
 
 ```typescript
-import { FormmyParser } from '@formmy/parser';
+import { FormmyParser } from 'formmy-sdk';
 
 const parser = new FormmyParser('sk_live_xxxxx');
 
@@ -276,7 +279,7 @@ import {
   ParsingFailedError,
   TimeoutError,
   NetworkError
-} from '@formmy/parser';
+} from 'formmy-sdk';
 
 try {
   const job = await parser.parse('./document.pdf', 'AGENTIC');

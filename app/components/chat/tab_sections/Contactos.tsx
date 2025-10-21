@@ -5,16 +5,18 @@ import { HiOutlineTrash, HiOutlineChat } from "react-icons/hi";
 import { useNavigate, useFetcher, useRevalidator } from "react-router";
 import DeleteIcon from "~/components/ui/icons/Delete";
 import { cn } from "~/lib/utils";
+import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 
-const STATUS_LABELS: Record<ContactStatus, string> = {
-  NEW: "Nuevo",
-  CONTACTED: "Contactado",
-  SCHEDULED: "Agendado",
-  NEGOTIATING: "Negociando",
-  ON_HOLD: "En Pausa",
-  CLOSED_WON: "Ganado",
-  CLOSED_LOST: "Perdido",
-};
+// Helper function to get status labels (must be called inside component with hook)
+const getStatusLabels = (t: (key: string) => string): Record<ContactStatus, string> => ({
+  NEW: t('contacts.status.new'),
+  CONTACTED: t('contacts.status.contacted'),
+  SCHEDULED: t('contacts.status.scheduled'),
+  NEGOTIATING: t('contacts.status.negotiating'),
+  ON_HOLD: t('contacts.status.on_hold'),
+  CLOSED_WON: t('contacts.status.closed_won'),
+  CLOSED_LOST: t('contacts.status.closed_lost'),
+});
 
 const STATUS_COLORS: Record<ContactStatus, string> = {
   NEW: "bg-brand-500/20 text-brand-600",
@@ -41,10 +43,12 @@ const StatusDropdown = ({
   value,
   onChange,
   disabled,
+  statusLabels,
 }: {
   value: ContactStatus;
   onChange: (status: ContactStatus) => void;
   disabled: boolean;
+  statusLabels: Record<ContactStatus, string>;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -75,13 +79,13 @@ const StatusDropdown = ({
           disabled ? "opacity-50 cursor-wait" : "hover:opacity-80 cursor-pointer"
         }`}
       >
-        {STATUS_LABELS[value]}
+        {statusLabels[value]}
         <HiChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (
         <div className="absolute z-50 mt-2 w-40 bg-white rounded-lg shadow-lg border border-outlines overflow-hidden">
-          {Object.entries(STATUS_LABELS).map(([statusValue, label]) => (
+          {Object.entries(statusLabels).map(([statusValue, label]) => (
             <button
               key={statusValue}
               type="button"
@@ -109,6 +113,8 @@ export const Contactos = ({
   user: User;
   contacts: Contact[];
 }) => {
+  const { t } = useDashboardTranslation();
+  const STATUS_LABELS = getStatusLabels(t);
   const navigate = useNavigate();
   const statusFetcher = useFetcher();
   const deleteFetcher = useFetcher();
@@ -165,7 +171,7 @@ export const Contactos = ({
   }, [statusFetcher.state, statusFetcher.data, revalidator]);
 
   const handleDeleteContact = (contactId: string) => {
-    if (!confirm("¿Estás seguro de que quieres eliminar este contacto?")) {
+    if (!confirm(t('contacts.confirmDelete'))) {
       return;
     }
 
@@ -198,7 +204,16 @@ export const Contactos = ({
   // Manejar exportación a CSV
   const handleExportCSV = () => {
     // Generar CSV en el cliente directamente
-    const headers = ["Nombre", "Email", "Teléfono", "Empresa", "Cargo", "Estatus", "Origen", "Fecha"];
+    const headers = [
+      t('contacts.name'),
+      t('contacts.email'),
+      t('contacts.phone'),
+      t('contacts.company'),
+      t('contacts.position'),
+      t('contacts.contactStatus'),
+      t('contacts.source'),
+      t('contacts.date')
+    ];
     const rows = filteredContacts.map(contact => [
       contact.name || "",
       contact.email || "",
@@ -229,7 +244,7 @@ export const Contactos = ({
 
   const handleViewConversation = (conversationId: string | null) => {
     if (!conversationId) {
-      alert("Este contacto no tiene una conversación asociada");
+      alert(t('contacts.noConversationAssociated'));
       return;
     }
     // Navegar a la tab de conversaciones con el ID de la conversación
@@ -247,12 +262,10 @@ export const Contactos = ({
             alt="no contacts"
           />
           <h3 className="text-2xl font-bold text-dark text-center heading mt-6">
-            Sin Contactos
+            {t('contacts.noContacts')}
           </h3>
           <p className="paragraph text-center text-metal mt-3 max-w-md mx-auto">
-            Aún no has capturado contactos con tu chatbot. Los contactos se
-            guardarán automáticamente cuando los usuarios proporcionen su
-            información durante las conversaciones.
+            {t('contacts.noContactsDescription')}
           </p>
         </div>
       </section>
@@ -264,10 +277,10 @@ export const Contactos = ({
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h3 className="text-xl font-semibold text-dark">
-            Contactos ({contacts.length})
+            {t('contacts.title')} ({contacts.length})
           </h3>
           <p className="text-sm text-metal mt-1">
-            💡 Tip: Los contactos se guardan automáticamente cuando tu chatbot usa la herramienta save_contact.
+            {t('contacts.autoSaveTip')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -286,7 +299,7 @@ export const Contactos = ({
             <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-metal w-5 h-5" />
             <input
               type="text"
-              placeholder="Buscar por nombre, email, empresa..."
+              placeholder={t('contacts.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border placeholder:text-sm border-outlines rounded-full focus:outline-none focus:ring-0 focus:border-brand-500"
@@ -301,28 +314,28 @@ export const Contactos = ({
             <thead className="bg-surfaceTwo border-b border-outlines">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[22%]">
-                  Contacto
+                  {t('contacts.contact')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
-                  Teléfono
+                  {t('contacts.phone')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[14%]">
-                  Empresa
+                  {t('contacts.company')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
-                  Cargo
+                  {t('contacts.position')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[11%]">
-                  Fecha
+                  {t('contacts.date')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[9%]">
-                  Origen
+                  {t('contacts.source')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
-                  Estatus
+                  {t('contacts.contactStatus')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[8%]">
-                  Acciones
+                  {t('contacts.actions')}
                 </th>
               </tr>
             </thead>
@@ -371,7 +384,7 @@ export const Contactos = ({
                           ? 'bg-green-100 text-green-700'
                           : 'bg-cloud/20 text-teal-700'
                       }`}>
-                        {contact.source.toLowerCase() === 'whatsapp' ? 'WhatsApp' : 'Web'}
+                        {contact.source.toLowerCase() === 'whatsapp' ? t('contacts.sourceWhatsApp') : t('contacts.sourceWeb')}
                       </span>
                     </div>
                   </td>
@@ -381,6 +394,7 @@ export const Contactos = ({
                         value={optimisticStatuses[contact.id] || contact.status || "NEW"}
                         onChange={(newStatus) => handleStatusChange(contact.id, newStatus)}
                         disabled={statusFetcher.state !== "idle"}
+                        statusLabels={STATUS_LABELS}
                       />
                     </div>
                   </td>
@@ -394,7 +408,7 @@ export const Contactos = ({
                             ? 'hover:bg-surfaceThree text-metal '
                             : 'text-gray-300 cursor-not-allowed'
                         }`}
-                        title={contact.conversationId ? "Ver conversación" : "Sin conversación"}
+                        title={contact.conversationId ? t('contacts.viewConversation') : t('contacts.noConversation')}
                       >
                         <HiOutlineChat className="w-5 h-5" />
                       </button>
@@ -402,7 +416,7 @@ export const Contactos = ({
                         onClick={() => handleDeleteContact(contact.id)}
                         disabled={deleteFetcher.state !== "idle"}
                         className="p-2 rounded-lg  text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
-                        title="Eliminar contacto"
+                        title={t('contacts.deleteContact')}
                       >
                         <DeleteIcon className="w-5 h-5" />
                       </button>
@@ -417,7 +431,7 @@ export const Contactos = ({
         {filteredContacts.length === 0 && searchTerm && (
           <div className="py-12 text-center">
             <p className="text-metal">
-              No se encontraron contactos con "{searchTerm}"
+              {t('contacts.noSearchResults').replace('{search}', searchTerm)}
             </p>
           </div>
         )}

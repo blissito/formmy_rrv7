@@ -69,20 +69,21 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         if (!isActive) return;
 
         try {
-          // Buscar mensajes ASSISTANT nuevos desde última verificación
+          // ✅ FIX: Buscar TODOS los mensajes nuevos (USER y ASSISTANT)
           const newMessages = await db.message.findMany({
             where: {
               conversationId,
-              role: "ASSISTANT",
               createdAt: { gt: lastCheck }
             },
             orderBy: { createdAt: "asc" }
           });
 
           if (newMessages.length > 0) {
-            console.log(`📩 Found ${newMessages.length} new message(s) for conversation ${conversationId}`);
+            console.log(`📩 Found ${newMessages.length} new message(s) for conversation ${conversationId}`, {
+              roles: newMessages.map(m => m.role).join(', ')
+            });
 
-            // Enviar mensajes nuevos al cliente
+            // Enviar mensajes nuevos al cliente (USER y ASSISTANT)
             sendEvent({
               type: "new_messages",
               messages: newMessages.map(msg => ({

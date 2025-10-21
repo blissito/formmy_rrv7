@@ -80,6 +80,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       case "toggle_favorite":
         return await handleToggleFavorite(conversationId);
 
+      case "send_template":
+        const { templateName, templateLanguage } = body;
+        if (!templateName) {
+          return json({ error: "Template name required" }, {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        return await handleSendTemplate(conversationId, templateName, templateLanguage || 'en_US', conversation);
+
       default:
         return json({ error: "Intent no reconocido" }, {
           status: 400,
@@ -326,6 +336,126 @@ async function sendManualWhatsAppMessage(
     messageId: result.messages?.[0]?.id,
     success: true
   };
+}
+
+/**
+ * Send WhatsApp template message
+ */
+async function handleSendTemplate(
+  conversationId: string,
+  templateName: string,
+  templateLanguage: string,
+  conversation: any
+) {
+  console.log("📱 handleSendTemplate called:", {
+    conversationId,
+    templateName,
+    templateLanguage,
+    chatbotId: conversation.chatbotId
+  });
+
+  // Verify conversation is WhatsApp
+  if (!conversation.sessionId?.includes("whatsapp") || !conversation.visitorId) {
+    return json({
+      error: "This is not a WhatsApp conversation or phone number is missing"
+    }, { status: 400 });
+  }
+
+  // Verify conversation is in manual mode
+  if (!conversation.manualMode) {
+    return json({
+      error: "Conversation must be in manual mode to send templates"
+    }, { status: 400 });
+  }
+
+  // Get WhatsApp integration
+  const integration = await db.integration.findFirst({
+    where: {
+      chatbotId: conversation.chatbotId,
+      platform: "WHATSAPP",
+      isActive: true
+    }
+  });
+
+  if (!integration || !integration.token || !integration.phoneNumberId) {
+    return json({
+      error: "WhatsApp integration not found or not configured"
+    }, { status: 400 });
+  }
+
+  // Send template via Graph API
+  const url = `https://graph.facebook.com/v18.0/${integration.phoneNumberId}/messages`;
+
+  const payload = {
+    messaging_product: 'whatsapp',
+    to: conversation.visitorId,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: {
+        code: templateLanguage
+      }
+    }
+  };
+
+  console.log(`📱 Sending WhatsApp template "${templateName}" to ${conversation.visitorId.substring(0, 8)}***`);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${integration.token}`
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error WhatsApp API:', response.status, errorText);
+      return json({
+        error: `WhatsApp API error: ${response.status}`,
+        details: errorText
+      }, { status: 500 });
+    }
+
+    const result = await response.json();
+    console.log('WhatsApp template sent:', result);
+
+    // Save assistant message to DB
+    const assistantMessage = await addAssistantMessage(
+      conversationId,
+      `[Template: ${templateName}]`,
+      undefined,
+      undefined,
+      undefined,
+      "manual",
+      "whatsapp"
+    );
+
+    // Update message with WhatsApp message ID
+    if (result.messages?.[0]?.id) {
+      await db.message.update({
+        where: { id: assistantMessage.id },
+        data: { externalMessageId: result.messages[0].id }
+      });
+    }
+
+    return json({
+      success: true,
+      messageId: assistantMessage.id,
+      whatsappMessageId: result.messages?.[0]?.id,
+      message: "Template sent successfully"
+    });
+
+  } catch (error) {
+    console.error("❌ Error sending WhatsApp template:", error);
+    return json({
+      error: "Error sending template",
+      details: error.message
+    }, { status: 500 });
+  }
 }
 
 /**

@@ -5,7 +5,6 @@
 
 import WhatsApp from 'whatsapp';
 import type { Integration } from '@prisma/client';
-import { decryptText } from '~/utils/encryption.server';
 
 interface WhatsAppConfig {
   phoneNumberId: string;
@@ -87,17 +86,13 @@ export class WhatsAppSDKService {
   private phoneNumberId: string;
 
   constructor(integration: Integration) {
-    const settings = integration.settings as any;
-
-    // Desencriptar el access token
-    const decryptedToken = decryptText(settings.accessToken);
-
+    // Use integration fields directly (not encrypted)
     this.config = {
-      phoneNumberId: settings.phoneNumberId,
-      accessToken: decryptedToken,
-      businessAccountId: settings.businessAccountId,
-      webhookVerifyToken: settings.webhookVerifyToken,
-      apiVersion: settings.apiVersion || 'v18.0'
+      phoneNumberId: integration.phoneNumberId || '',
+      accessToken: integration.token || '',
+      businessAccountId: integration.businessAccountId || '',
+      webhookVerifyToken: integration.webhookVerifyToken || '',
+      apiVersion: 'v18.0'
     };
 
     this.phoneNumberId = this.config.phoneNumberId;
