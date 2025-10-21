@@ -7,6 +7,8 @@ import { nanoid } from "nanoid";
 import { getAvailableCredits } from "server/llamaparse/credits.service";
 import { RagTester, DocumentList } from "~/components/DeveloperTools";
 import { APIDocumentation } from "~/components/APIDocumentation";
+import { ObservabilityPanel } from "~/components/ObservabilityPanel";
+import { listTraces, getTraceStats } from "server/tracing/trace.service";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -34,7 +36,19 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   // Obtener créditos disponibles
   const credits = await getAvailableCredits(user.id);
 
-  return { user, apiKeys, chatbots, credits };
+  // Obtener traces recientes para observability
+  const { traces, total } = await listTraces({
+    userId: user.id,
+    limit: 50,
+  });
+
+  // Obtener estadísticas de traces
+  const traceStats = await getTraceStats({
+    userId: user.id,
+    periodDays: 7,
+  });
+
+  return { user, apiKeys, chatbots, credits, traces, traceStats };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
@@ -96,7 +110,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 };
 
 export default function DashboardAPIKeys() {
-  const { user, apiKeys, chatbots, credits } = useLoaderData<typeof loader>();
+  const { user, apiKeys, chatbots, credits, traces, traceStats } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -239,6 +253,16 @@ export default function DashboardAPIKeys() {
             }`}
           >
             🛠️ Developer Tools
+          </button>
+          <button
+            onClick={() => setTab("observability")}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === "observability"
+                ? "border-brand-600 text-brand-600"
+                : "border-transparent text-metal hover:text-dark"
+            }`}
+          >
+            📊 Observability
           </button>
         </div>
         {activeTab === "keys" && (
@@ -467,6 +491,11 @@ export default function DashboardAPIKeys() {
             <DocumentList chatbots={chatbots} apiKey={apiKeys[0]?.key} />
           </div>
         </div>
+      )}
+
+      {/* Observability Tab */}
+      {activeTab === "observability" && (
+        <ObservabilityPanel chatbots={chatbots} traces={traces} traceStats={traceStats} />
       )}
     </section>
   );

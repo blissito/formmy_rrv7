@@ -16,6 +16,15 @@ import { getToolsForPlan, type ToolContext } from "../tools";
 import type { ResolvedChatbotConfig } from "../chatbot/configResolver.server";
 import { getAgentPrompt, type AgentType } from "~/utils/agents/agentPrompts";
 import { getOptimalTemperature } from "../config/model-temperatures";
+import {
+  startTrace,
+  endTrace,
+  failTrace,
+  instrumentLLMCall,
+  instrumentToolCall,
+  estimateCost,
+  type TraceContext,
+} from "../tracing/instrumentation";
 
 // Types para el workflow
 interface WorkflowContext {
@@ -523,12 +532,27 @@ async function* streamSingleAgent(
   agentInstance: any,
   message: string,
   availableTools: string[] = [],
-  sourcesBuffer?: { value: any[] | null } // Buffer compartido para fuentes
+  sourcesBuffer?: { value: any[] | null }, // Buffer compartido para fuentes
+  traceCtx?: TraceContext | null, // 🔍 Trace context para observabilidad
+  model?: string // 🔍 Modelo para instrumentación
 ) {
   const MAX_CHUNKS = 1000;
   const MAX_DURATION_MS = 45000; // 45 segundos
   const MAX_SAME_TOOL_CONSECUTIVE = 2; // Máximo 2 veces LA MISMA tool consecutivamente
   const startTime = Date.now();
+
+  // 🔍 TRACING: Instrumentar LLM call principal
+  let llmInstrumentation: Awaited<ReturnType<typeof instrumentLLMCall>> | null = null;
+  if (traceCtx && model) {
+    try {
+      llmInstrumentation = await instrumentLLMCall(traceCtx, {
+        model,
+        temperature: undefined, // Se podría pasar si está disponible
+      });
+    } catch (err) {
+      console.error("⚠️ [Tracing] Failed to instrument LLM call:", err);
+    }
+  }
 
   // El agente ya tiene memoria configurada con el historial, solo pasamos el mensaje actual
   const events = agentInstance.runStream(message);
@@ -585,6 +609,17 @@ async function* streamSingleAgent(
         toolsExecuted++;
         const toolName = event.data.toolName || "unknown_tool";
         toolsUsed.push(toolName);
+
+        // 🔍 TRACING: Instrumentar tool call
+        if (traceCtx) {
+          try {
+            await instrumentToolCall(traceCtx, {
+              toolName,
+            });
+          } catch (err) {
+            console.error("⚠️ [Tracing] Failed to instrument tool call:", err);
+          }
+        }
 
         // 🚨 Detectar loop infinito: misma tool ejecutándose consecutivamente
         if (toolName === lastToolExecuted) {
@@ -740,6 +775,19 @@ async function* streamSingleAgent(
     };
   }
 
+  // 🔍 TRACING: Completar LLM span
+  const estimatedCostValue = model ? estimateCost(model, totalTokens) : (totalTokens / 1_000_000) * 0.375;
+  if (llmInstrumentation && traceCtx) {
+    try {
+      await llmInstrumentation.complete({
+        tokens: totalTokens,
+        cost: estimatedCostValue,
+      });
+    } catch (err) {
+      console.error("⚠️ [Tracing] Failed to complete LLM instrumentation:", err);
+    }
+  }
+
   yield {
     type: "done",
     metadata: {
@@ -754,7 +802,7 @@ async function* streamSingleAgent(
         credits: creditsUsed,
         // Estimación aproximada: GPT-4o-mini = $0.15 input + $0.60 output por 1M tokens
         // Asumiendo 50/50 input/output para simplificar
-        usdCost: ((totalTokens / 1_000_000) * 0.375).toFixed(6)
+        usdCost: estimatedCostValue.toFixed(6)
       }
     },
   };
@@ -782,6 +830,29 @@ export const streamAgentWorkflow = async function* (
     agentContext: options.agentContext, // Incluir agentContext completo
   };
 
+  // 🔍 TRACING: Iniciar trace para observabilidad
+  let traceCtx: TraceContext | null = null;
+  const selectedModel = mapModelForPerformance(
+    options.resolvedConfig.aiModel || "gpt-5-nano"
+  );
+
+  try {
+    traceCtx = await startTrace({
+      userId: user.id,
+      chatbotId: chatbotId || undefined,
+      conversationId: options.agentContext?.conversationId,
+      input: message,
+      model: selectedModel, // 🔍 Guardar modelo usado
+      metadata: {
+        userPlan: user.plan,
+        temperature: options.resolvedConfig.temperature,
+      },
+    });
+  } catch (traceError) {
+    console.error("⚠️ [Tracing] Failed to start trace:", traceError);
+    // No fallar el request si tracing falla - tracing es opcional
+  }
+
   try {
     // Extraer historial conversacional del agentContext
     const conversationHistory = options.agentContext?.conversationHistory || [];
@@ -793,7 +864,7 @@ export const streamAgentWorkflow = async function* (
 
     if (conversationHistory.length > 0) {
       console.log(`\n   📚 HISTORIAL EXTRAÍDO DEL AGENTCONTEXT:`);
-      conversationHistory.forEach((msg, i) => {
+      conversationHistory.forEach((msg: any, i: number) => {
         console.log(`   [${i + 1}] ${msg.role}: "${msg.content.substring(0, 60)}..."`);
       });
     } else {
@@ -829,10 +900,58 @@ export const streamAgentWorkflow = async function* (
     const availableToolsObjects = getToolsForPlan(context.userPlan, context.integrations, toolContext);
     const availableTools = availableToolsObjects.map((tool: any) => tool.metadata?.name || 'unknown');
 
-    // Stream con memoria ya configurada en el agente + lista de tools disponibles + buffer de fuentes
-    yield* streamSingleAgent(agentInstance, message, availableTools, sourcesBuffer);
+    // 🔍 Capturar modelo para tracing
+    const selectedModel = mapModelForPerformance(
+      context.resolvedConfig.aiModel || "gpt-5-nano"
+    );
+
+    // Stream con memoria ya configurada en el agente + lista de tools disponibles + buffer de fuentes + tracing
+    let fullOutput = "";
+    let finalMetadata: any = null;
+
+    for await (const event of streamSingleAgent(
+      agentInstance,
+      message,
+      availableTools,
+      sourcesBuffer,
+      traceCtx, // 🔍 Pasar trace context
+      selectedModel // 🔍 Pasar modelo
+    )) {
+      // Capturar chunks para construir output completo
+      if (event.type === "chunk" && event.content) {
+        fullOutput += event.content;
+      }
+      if (event.type === "done" && event.metadata) {
+        finalMetadata = event.metadata;
+      }
+      yield event;
+    }
+
+    // 🔍 TRACING: Completar trace con output y métricas finales
+    if (traceCtx && finalMetadata) {
+      try {
+        await endTrace(traceCtx, {
+          output: fullOutput || "Respuesta completada",
+          totalTokens: finalMetadata.tokensUsed || 0,
+          totalCost: parseFloat(finalMetadata.estimatedCost?.usdCost || "0"),
+          creditsUsed: finalMetadata.creditsUsed || 0,
+        });
+      } catch (err) {
+        console.error("⚠️ [Tracing] Failed to complete trace:", err);
+      }
+    }
   } catch (error) {
     console.error("❌ AgentWorkflow error:", error);
+
+    // 🔍 TRACING: Marcar trace como error
+    if (traceCtx) {
+      try {
+        await failTrace(traceCtx, error instanceof Error ? error.message : String(error));
+      } catch (err) {
+        console.error("⚠️ [Tracing] Failed to mark trace as error:", err);
+      }
+    }
+
     yield {
       type: "error",
       content:
