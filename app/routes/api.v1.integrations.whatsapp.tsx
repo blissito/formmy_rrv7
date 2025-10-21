@@ -271,6 +271,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const url = new URL(request.url);
     const chatbotId = url.searchParams.get("chatbotId");
+    const intent = url.searchParams.get("intent");
 
     if (!chatbotId) {
       return new Response(
@@ -283,6 +284,88 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       );
     }
 
+    // Handle list_templates intent
+    if (intent === "list_templates") {
+      console.log("📋 Fetching WhatsApp templates for chatbot:", chatbotId);
+
+      // Get active WhatsApp integration
+      const integration = await db.integration.findFirst({
+        where: {
+          chatbotId,
+          platform: IntegrationType.WHATSAPP,
+          isActive: true
+        }
+      });
+
+      if (!integration) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "WhatsApp integration not found or not active"
+          }),
+          { status: 404, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!integration.token || !integration.businessAccountId) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "WhatsApp integration is missing required credentials (token or businessAccountId)"
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Fetch templates from Meta Graph API
+      const templatesUrl = `https://graph.facebook.com/v20.0/${integration.businessAccountId}/message_templates`;
+
+      try {
+        const response = await fetch(templatesUrl, {
+          headers: {
+            'Authorization': `Bearer ${integration.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Meta Graph API error:', response.status, errorText);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Meta Graph API error: ${response.status}`,
+              details: errorText
+            }),
+            { status: response.status, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const data = await response.json();
+        console.log(`✅ Fetched ${data.data?.length || 0} templates from Meta`);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            templates: data.data || []
+          }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+
+      } catch (fetchError) {
+        console.error('❌ Error fetching templates from Meta:', fetchError);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Failed to fetch templates from Meta Graph API",
+            details: fetchError instanceof Error ? fetchError.message : "Unknown error"
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Default behavior: fetch integrations
     const fetchEffect = Effect.tryPromise({
       try: () => getIntegrationsByChatbotId(chatbotId),
       catch: (error) =>

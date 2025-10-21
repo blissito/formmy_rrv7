@@ -2,7 +2,7 @@ import type { Chatbot, Message, User } from "@prisma/client";
 import { ChipTabs, useChipTabs } from "../common/ChipTabs";
 import { Avatar } from "../Avatar";
 import { useState, useEffect, useRef, type ReactNode, forwardRef } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSubmit } from "react-router";
 import { cn } from "~/lib/utils";
 import Empty from "~/SVGs/Empty";
 import EmptyDark from "~/SVGs/EmptyDark";
@@ -52,6 +52,7 @@ export const Conversations = ({
 }: ConversationsProps) => {
   // Hook de traducción global del dashboard
   const { t } = useDashboardTranslation();
+  const submit = useSubmit();
 
   // Estado para scroll infinito
   const [allLoadedConversations, setAllLoadedConversations] = useState(conversations);
@@ -621,14 +622,14 @@ const ChatHeader = ({
         </div>
         <p className="text-xs text-gray-400 mt-0.5">{date}</p>
       </div>
-      {/* <ToggleButton
+      <ToggleButton
         isManual={localManualMode}
         onClick={handleToggleManual}
         disabled={false}
-      /> */}
+      />
       <button
         onClick={handleDeleteConversation}
-        className="mr-3 hover:bg-red-50 rounded-full p-1 transition-colors ml-auto"
+        className="mr-3 hover:bg-red-50 rounded-full p-1 transition-colors"
         title="Eliminar conversación"
       >
         <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
@@ -673,6 +674,7 @@ const ManualResponseInput = ({
   isWhatsApp?: boolean;
 }) => {
   const { t } = useDashboardTranslation();
+  const submit = useSubmit();
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
@@ -737,11 +739,17 @@ const ManualResponseInput = ({
       const data = await response.json();
 
       if (response.ok) {
-        // Only show APPROVED templates
-        const approvedTemplates = (data.templates || []).filter(
-          (tmpl: any) => tmpl.status === 'APPROVED'
-        );
-        setTemplates(approvedTemplates);
+        // TEMP: Show ALL templates for debugging (including PENDING)
+        // TODO: Revert to only APPROVED before production
+        const allTemplates = data.templates || [];
+        console.log('📋 Templates recibidos:', allTemplates.map((t: any) => ({ name: t.name, status: t.status })));
+        setTemplates(allTemplates);
+
+        // Original: Only show APPROVED templates
+        // const approvedTemplates = (data.templates || []).filter(
+        //   (tmpl: any) => tmpl.status === 'APPROVED'
+        // );
+        // setTemplates(approvedTemplates);
       }
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -764,9 +772,10 @@ const ManualResponseInput = ({
       });
 
       if (response.ok) {
+        const data = await response.json();
         setShowTemplateSelector(false);
-        // Notify parent to refresh conversation
-        await onSendResponse(conversationId, `[Template sent: ${template.name}]`);
+        // Trigger revalidation to show the template message from backend
+        submit({}, { method: "get" });
       } else {
         const error = await response.json();
         console.error('Error sending template:', error);

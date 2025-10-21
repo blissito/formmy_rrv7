@@ -26,8 +26,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const user = await getUserOrRedirect(request);
     console.log("🎯 API Conversations - User:", user.id);
 
+    // Read intent from URL query params OR body (support both)
+    const url = new URL(request.url);
     const body = await request.json();
-    const { intent, conversationId, message } = body;
+    const intent = url.searchParams.get("intent") || body.intent;
+    const { conversationId, message } = body;
 
     console.log("🎯 API Conversations - Intent:", { intent, conversationId, message: message ? `${message.length} chars` : 'none' });
 
@@ -81,13 +84,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return await handleToggleFavorite(conversationId);
 
       case "send_template":
+        console.log("🔥 SEND_TEMPLATE CASE REACHED!");
+        console.log("🔥 Body:", JSON.stringify(body, null, 2));
         const { templateName, templateLanguage } = body;
+        console.log("🔥 Template details:", { templateName, templateLanguage });
         if (!templateName) {
+          console.log("🔥 ERROR: No template name!");
           return json({ error: "Template name required" }, {
             status: 400,
             headers: { 'Content-Type': 'application/json' }
           });
         }
+        console.log("🔥 Calling handleSendTemplate...");
         return await handleSendTemplate(conversationId, templateName, templateLanguage || 'en_US', conversation);
 
       default:
@@ -423,10 +431,36 @@ async function handleSendTemplate(
     const result = await response.json();
     console.log('WhatsApp template sent:', result);
 
+    // Fetch template details to get the actual content
+    let templateContent = `📨 WhatsApp Template: ${templateName}`;
+
+    try {
+      const templatesUrl = `https://graph.facebook.com/v18.0/${integration.businessAccountId}/message_templates?name=${templateName}`;
+      const templateResponse = await fetch(templatesUrl, {
+        headers: {
+          'Authorization': `Bearer ${integration.token}`
+        }
+      });
+
+      if (templateResponse.ok) {
+        const templateData = await templateResponse.json();
+        const template = templateData.data?.[0];
+        if (template) {
+          // Extract body text from template components
+          const bodyComponent = template.components?.find((c: any) => c.type === 'BODY');
+          if (bodyComponent?.text) {
+            templateContent = `📨 Template enviado:\n\n${bodyComponent.text}`;
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch template content, using fallback');
+    }
+
     // Save assistant message to DB
     const assistantMessage = await addAssistantMessage(
       conversationId,
-      `[Template: ${templateName}]`,
+      templateContent,
       undefined,
       undefined,
       undefined,
