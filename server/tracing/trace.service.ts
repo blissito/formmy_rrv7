@@ -298,10 +298,19 @@ export async function createEvent(params: CreateEventParams) {
 /**
  * Obtener un trace completo con spans y eventos
  */
-export async function getTraceById(traceId: string) {
+/**
+ * Obtener un trace por ID con validación de permisos
+ *
+ * IMPORTANTE: Siempre valida que el trace pertenezca al userId especificado
+ * para evitar que usuarios vean traces de otros usuarios.
+ */
+export async function getTraceById(traceId: string, userId: string) {
   try {
-    const trace = await db.trace.findUnique({
-      where: { id: traceId },
+    const trace = await db.trace.findFirst({
+      where: {
+        id: traceId,
+        userId, // 🔒 Validación de seguridad: solo traces del usuario
+      },
       include: {
         spans: {
           orderBy: { startTime: "asc" },

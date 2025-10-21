@@ -455,6 +455,36 @@ Pricing por 1M tokens (USD):
 | claude-3-5-haiku | $1.00 |
 | gemini-1.5-flash | $0.075 |
 
+### Seguridad y Privacidad
+
+**IMPORTANTE**: Los traces son privados por usuario.
+
+**Validación de Permisos en Servicio**:
+```typescript
+// ✅ CORRECTO: getTraceById valida userId internamente
+export async function getTraceById(traceId: string, userId: string) {
+  const trace = await db.trace.findFirst({
+    where: {
+      id: traceId,
+      userId, // 🔒 Solo traces del usuario
+    },
+    // ...
+  });
+  return trace;
+}
+```
+
+**Filtrado Automático**:
+- `listTraces()`: Siempre filtra `where: { userId }`
+- `getTraceStats()`: Siempre filtra `where: { userId }`
+- `getTraceById()`: Valida `userId` en el query
+
+**Garantías**:
+- ✅ Usuario solo ve sus propios chatbots
+- ✅ Usuario solo ve sus traces de Ghosty
+- ✅ Imposible acceder a traces de otros usuarios
+- ✅ Validación a nivel de servicio (no solo API)
+
 ### Performance
 
 **Tracing es Opcional**: Si falla, no afecta el request:
@@ -471,8 +501,7 @@ try {
 - Índices compuestos para filtros comunes
 - Paginación con `limit` y `offset`
 - Projections mínimas (solo campos necesarios)
-
-**Mock Data Fallback**: Durante desarrollo, si no hay traces reales, se generan 20 traces mock con variedad de estados, modelos y spans.
+- Filtrado por userId en DB (no en app)
 
 ### Implementación
 

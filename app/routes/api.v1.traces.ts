@@ -88,20 +88,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
           );
         }
 
-        const trace = await getTraceById(traceId);
+        // 🔒 getTraceById ahora valida userId internamente
+        const trace = await getTraceById(traceId, user.id);
 
         if (!trace) {
           return Response.json(
-            { success: false, error: "Trace no encontrado" },
+            { success: false, error: "Trace no encontrado o no autorizado" },
             { status: 404 }
-          );
-        }
-
-        // Verificar permisos
-        if (trace.userId !== user.id) {
-          return Response.json(
-            { success: false, error: "No autorizado" },
-            { status: 403 }
           );
         }
 
@@ -177,20 +170,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
           );
         }
 
-        const trace = await getTraceById(traceId);
+        // 🔒 getTraceById ahora valida userId internamente
+        const trace = await getTraceById(traceId, user.id);
 
         if (!trace) {
           return Response.json(
-            { success: false, error: "Trace no encontrado" },
+            { success: false, error: "Trace no encontrado o no autorizado" },
             { status: 404 }
-          );
-        }
-
-        // Verificar permisos
-        if (trace.userId !== user.id) {
-          return Response.json(
-            { success: false, error: "No autorizado" },
-            { status: 403 }
           );
         }
 
