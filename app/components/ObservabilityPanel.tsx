@@ -8,149 +8,35 @@ const mapModelToPublic = (model: string | null | undefined): string => {
   return model;
 };
 
-// Mock data types
-interface MockSpan {
+// Types para traces reales
+interface TraceSpan {
   id: string;
-  type: "LLM_CALL" | "TOOL_CALL" | "RAG_SEARCH" | "EMBEDDING";
+  type: "LLM_CALL" | "TOOL_CALL" | "SEARCH" | "PROCESSING";
   name: string;
-  startOffset: number; // ms desde el inicio del trace
+  startOffset: number;
   durationMs: number;
   tokens?: number;
   cost?: number;
   credits?: number;
-  status: "COMPLETED" | "ERROR";
+  status: "COMPLETED" | "ERROR" | "RUNNING";
   error?: string;
-  input?: string;
-  output?: string;
 }
 
-interface MockTrace {
+interface Trace {
   id: string;
   chatbotId: string;
   chatbotName: string;
   input: string;
   output: string;
   status: "COMPLETED" | "ERROR" | "RUNNING";
-  model?: string; // Modelo usado (público: gpt-5-nano, gpt-4o, etc.)
+  model?: string;
   startTime: Date;
   durationMs: number;
   totalTokens: number;
   totalCost: number;
   creditsUsed: number;
-  spans: MockSpan[];
+  spans: TraceSpan[];
 }
-
-// Generar datos mock realistas
-const generateMockTraces = (): MockTrace[] => {
-  const chatbots = [
-    { id: "chatbot_1", name: "Asistente Ventas" },
-    { id: "chatbot_2", name: "Soporte Técnico" },
-    { id: "chatbot_3", name: "FAQ Bot" },
-  ];
-
-  const sampleQueries = [
-    { input: "¿Cuáles son los precios de los planes?", hasRAG: true, hasTools: false },
-    { input: "Envía un email a maria@empresa.com con la propuesta", hasRAG: false, hasTools: true },
-    { input: "¿Qué incluye el plan PRO?", hasRAG: true, hasTools: false },
-    { input: "Horarios de atención al cliente", hasRAG: true, hasTools: false },
-    { input: "Crea un link de pago por $500 MXN", hasRAG: false, hasTools: true },
-    { input: "¿Tienen descuentos para estudiantes?", hasRAG: true, hasTools: false },
-    { input: "Busca en Google información sobre Formmy", hasRAG: false, hasTools: true },
-    { input: "¿Cómo puedo contactarlos?", hasRAG: true, hasTools: false },
-    { input: "Dame la lista de mis chatbots", hasRAG: false, hasTools: true },
-    { input: "¿Qué es Formmy?", hasRAG: true, hasTools: false },
-  ];
-
-  const traces: MockTrace[] = [];
-  const now = Date.now();
-
-  for (let i = 0; i < 20; i++) {
-    const chatbot = chatbots[Math.floor(Math.random() * chatbots.length)];
-    const query = sampleQueries[Math.floor(Math.random() * sampleQueries.length)];
-    const isError = Math.random() < 0.05; // 5% error rate
-
-    const spans: MockSpan[] = [];
-    let currentOffset = 0;
-
-    // RAG Search span (si aplica)
-    if (query.hasRAG) {
-      const ragDuration = 200 + Math.random() * 300;
-      spans.push({
-        id: `span_rag_${i}`,
-        type: "RAG_SEARCH",
-        name: "search_context",
-        startOffset: currentOffset,
-        durationMs: Math.round(ragDuration),
-        credits: 2,
-        status: "COMPLETED",
-        input: query.input,
-        output: "Found 3 relevant documents",
-      });
-      currentOffset += ragDuration;
-    }
-
-    // Tool Call span (si aplica)
-    if (query.hasTools) {
-      const toolDuration = 300 + Math.random() * 500;
-      const toolNames = ["send_gmail", "create_payment_link", "web_search_google", "query_chatbots"];
-      spans.push({
-        id: `span_tool_${i}`,
-        type: "TOOL_CALL",
-        name: toolNames[Math.floor(Math.random() * toolNames.length)],
-        startOffset: currentOffset,
-        durationMs: Math.round(toolDuration),
-        credits: 3,
-        status: "COMPLETED",
-      });
-      currentOffset += toolDuration;
-    }
-
-    // Modelos internos aleatorios para datos mock (se generan PRIMERO)
-    const modelsInternal = ["gpt-4o-mini", "gpt-4o", "claude-3-5-haiku"];
-    const randomInternalModel = modelsInternal[Math.floor(Math.random() * modelsInternal.length)];
-
-    // LLM Call span (siempre)
-    const llmDuration = 1200 + Math.random() * 1500;
-    const llmTokens = 800 + Math.floor(Math.random() * 1500);
-    spans.push({
-      id: `span_llm_${i}`,
-      type: "LLM_CALL",
-      name: mapModelToPublic(randomInternalModel), // ✅ Usa modelo aleatorio mapeado
-      startOffset: currentOffset,
-      durationMs: Math.round(llmDuration),
-      tokens: llmTokens,
-      cost: (llmTokens / 1_000_000) * 0.15,
-      credits: 0, // LLM no consume créditos Formmy
-      status: isError ? "ERROR" : "COMPLETED",
-      error: isError ? "Rate limit exceeded" : undefined,
-    });
-
-    const totalDuration = currentOffset + llmDuration;
-    const totalTokens = llmTokens;
-    const totalCost = spans.reduce((sum, s) => sum + (s.cost || 0), 0);
-    const creditsUsed = spans.reduce((sum, s) => sum + (s.credits || 0), 0);
-
-    traces.push({
-      id: `trace_${i}_${Date.now()}`,
-      chatbotId: chatbot.id,
-      chatbotName: chatbot.name,
-      input: query.input,
-      output: isError
-        ? "Error: No se pudo procesar la solicitud"
-        : `Respuesta generada para: ${query.input}`,
-      status: isError ? "ERROR" : "COMPLETED",
-      model: mapModelToPublic(randomInternalModel), // 🔍 Mapear a nombre público
-      startTime: new Date(now - (i * 3600000) - Math.random() * 3600000), // Últimas 20 horas
-      durationMs: Math.round(totalDuration),
-      totalTokens,
-      totalCost,
-      creditsUsed,
-      spans,
-    });
-  }
-
-  return traces.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
-};
 
 export function ObservabilityPanel({
   chatbots,
@@ -161,17 +47,12 @@ export function ObservabilityPanel({
   traces?: any[];
   traceStats?: any;
 }) {
-  // Usar datos reales si están disponibles, sino generar mock
-  const [mockTraces] = useState<MockTrace[]>(() =>
-    !initialTraces || initialTraces.length === 0 ? generateMockTraces() : []
-  );
-
   const [selectedChatbot, setSelectedChatbot] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTraceId, setExpandedTraceId] = useState<string | null>(null);
 
   // Convertir traces reales al formato esperado
-  const realTraces: MockTrace[] =
+  const traces: Trace[] =
     initialTraces?.map((trace) => ({
       id: trace.id,
       chatbotId: trace.chatbotId || "unknown",
@@ -198,11 +79,8 @@ export function ObservabilityPanel({
       })),
     })) || [];
 
-  // Usar traces reales o mock
-  const tracesData = realTraces.length > 0 ? realTraces : mockTraces;
-
   // Filtrar traces
-  const filteredTraces = tracesData.filter((trace) => {
+  const filteredTraces = traces.filter((trace) => {
     const matchesChatbot = selectedChatbot === "all" || trace.chatbotId === selectedChatbot;
     const matchesSearch =
       searchQuery === "" ||
@@ -256,7 +134,8 @@ export function ObservabilityPanel({
         </div>
         <button
           onClick={exportToJSON}
-          className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium flex items-center gap-2"
+          disabled={filteredTraces.length === 0}
+          className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -297,7 +176,7 @@ export function ObservabilityPanel({
               onChange={(e) => setSelectedChatbot(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-outlines rounded-lg focus:outline-none focus:border-brand-500 bg-white dark:bg-space-700"
             >
-              <option value="all">Todos los chatbots ({mockTraces.length})</option>
+              <option value="all">Todos los chatbots ({traces.length})</option>
               {chatbots.map((bot) => (
                 <option key={bot.id} value={bot.id}>
                   {bot.name}
@@ -322,129 +201,133 @@ export function ObservabilityPanel({
 
       {/* Tabla de Traces */}
       <div className="bg-white dark:bg-space-800 border border-outlines rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-space-700 border-b border-outlines">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
-                  Timestamp
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
-                  Chatbot
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
-                  Input
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
-                  Duration
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
-                  Tokens
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
-                  Model
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
-                  Credits
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outlines">
-              {filteredTraces.map((trace) => (
-                <>
-                  <tr
-                    key={trace.id}
-                    onClick={() => setExpandedTraceId(expandedTraceId === trace.id ? null : trace.id)}
-                    className="hover:bg-gray-50 dark:hover:bg-space-700 cursor-pointer transition-colors"
-                  >
-                    <td className="px-4 py-3 text-sm text-dark dark:text-white">
-                      {trace.startTime.toLocaleTimeString("es-MX", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-dark dark:text-white">
-                      {trace.chatbotName}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-dark dark:text-white max-w-xs truncate">
-                      {trace.input}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          trace.status === "COMPLETED"
-                            ? "bg-green-100 text-green-800"
-                            : trace.status === "ERROR"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {trace.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-dark dark:text-white">
-                      {formatDuration(trace.durationMs)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-dark dark:text-white">
-                      {trace.totalTokens.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {trace.model || "Unknown"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-dark dark:text-white">
-                      {trace.creditsUsed}
-                    </td>
-                  </tr>
-                  {expandedTraceId === trace.id && (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-4 bg-gray-50 dark:bg-space-700">
-                        <div className="space-y-3">
-                          {/* Output */}
-                          <div>
-                            <p className="text-xs font-medium text-metal mb-1">Output:</p>
-                            <p className="text-sm text-dark dark:text-white bg-white dark:bg-space-800 p-3 rounded-lg border border-outlines">
-                              {trace.output}
-                            </p>
-                          </div>
-                          {/* Waterfall */}
-                          <div>
-                            <p className="text-xs font-medium text-metal mb-2">Timeline:</p>
-                            <TraceWaterfall spans={trace.spans} totalDuration={trace.durationMs} />
-                          </div>
-                        </div>
+        {filteredTraces.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-space-700 mb-4">
+              <svg className="w-8 h-8 text-metal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <p className="text-metal text-base font-medium mb-1">No hay traces disponibles</p>
+            <p className="text-sm text-metal mb-4">
+              Los traces se generarán automáticamente cuando tus chatbots procesen conversaciones
+            </p>
+            <div className="text-xs text-metal bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 max-w-md mx-auto">
+              <strong>💡 Tip:</strong> Interactúa con tus chatbots vía la burbuja embebida o API para empezar a ver métricas de observabilidad aquí.
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-space-700 border-b border-outlines">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
+                    Timestamp
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
+                    Chatbot
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
+                    Input
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
+                    Tokens
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
+                    Model
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-metal uppercase tracking-wider">
+                    Credits
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outlines">
+                {filteredTraces.map((trace) => (
+                  <>
+                    <tr
+                      key={trace.id}
+                      onClick={() => setExpandedTraceId(expandedTraceId === trace.id ? null : trace.id)}
+                      className="hover:bg-gray-50 dark:hover:bg-space-700 cursor-pointer transition-colors"
+                    >
+                      <td className="px-4 py-3 text-sm text-dark dark:text-white">
+                        {trace.startTime.toLocaleTimeString("es-MX", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-dark dark:text-white">
+                        {trace.chatbotName}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-dark dark:text-white max-w-xs truncate">
+                        {trace.input}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            trace.status === "COMPLETED"
+                              ? "bg-green-100 text-green-800"
+                              : trace.status === "ERROR"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {trace.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-dark dark:text-white">
+                        {formatDuration(trace.durationMs)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-dark dark:text-white">
+                        {trace.totalTokens.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          {trace.model || "Unknown"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-dark dark:text-white">
+                        {trace.creditsUsed}
                       </td>
                     </tr>
-                  )}
-                </>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredTraces.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-metal text-sm">No se encontraron traces</p>
+                    {expandedTraceId === trace.id && (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-4 bg-gray-50 dark:bg-space-700">
+                          <div className="space-y-3">
+                            {/* Output */}
+                            <div>
+                              <p className="text-xs font-medium text-metal mb-1">Output:</p>
+                              <p className="text-sm text-dark dark:text-white bg-white dark:bg-space-800 p-3 rounded-lg border border-outlines">
+                                {trace.output}
+                              </p>
+                            </div>
+                            {/* Waterfall */}
+                            <div>
+                              <p className="text-xs font-medium text-metal mb-2">Timeline:</p>
+                              <TraceWaterfall spans={trace.spans} totalDuration={trace.durationMs} />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
-      {/* Footer info - Solo mostrar si usamos datos mock */}
-      {mockTraces.length > 0 && realTraces.length === 0 && (
-        <div className="text-xs text-metal bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <strong>ℹ️ Datos de Ejemplo:</strong> No hay traces reales todavía. Estos son datos de ejemplo para que explores la interfaz. Los traces se generarán automáticamente cuando uses tus chatbots.
-        </div>
-      )}
-
-      {/* Mostrar mensaje si hay datos reales */}
-      {realTraces.length > 0 && (
-        <div className="text-xs text-metal bg-green-50 border border-green-200 rounded-lg p-3">
-          <strong>✅ Datos Reales:</strong> Mostrando {realTraces.length} trace{realTraces.length !== 1 ? 's' : ''} de los últimos 7 días. Las métricas se actualizan automáticamente con cada conversación.
+      {/* Footer info - Solo mostrar si hay datos reales */}
+      {traces.length > 0 && (
+        <div className="text-xs text-metal bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+          <strong>✅ Datos Reales:</strong> Mostrando {traces.length} trace{traces.length !== 1 ? 's' : ''} de los últimos 7 días. Las métricas se actualizan automáticamente con cada conversación.
         </div>
       )}
     </div>

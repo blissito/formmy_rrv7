@@ -294,6 +294,205 @@ Botón "Cargar más" 50/request
 
 ---
 
+## Observabilidad y Tracing ✅ (Implementado - Ene 2025)
+
+### Overview
+Sistema completo de observabilidad para rastrear ejecución de agentes, captura de métricas, costos y performance en tiempo real.
+
+**UI**: `/dashboard/api-keys?tab=observability`
+**API**: `/api/v1/traces`
+
+### Arquitectura
+
+**Database** (Prisma/MongoDB):
+```prisma
+model Trace {
+  id             String      // Trace ID único
+  userId         String      // Usuario propietario
+  chatbotId      String?     // Chatbot asociado (null para Ghosty)
+  conversationId String?     // Conversación asociada
+  input          String      // Input del usuario
+  output         String?     // Respuesta generada
+  status         String      // RUNNING, COMPLETED, ERROR
+  model          String      // Modelo usado (gpt-4o-mini, claude-3-5-haiku)
+  startTime      DateTime    // Inicio de ejecución
+  endTime        DateTime?   // Fin de ejecución
+  durationMs     Int?        // Duración total en ms
+  totalTokens    Int         // Tokens consumidos
+  totalCost      Float       // Costo estimado en USD
+  creditsUsed    Int         // Créditos Formmy consumidos
+  spans          TraceSpan[] // Spans individuales (LLM, tools)
+  events         TraceEvent[] // Eventos de lifecycle
+}
+
+model TraceSpan {
+  id         String   // Span ID único
+  traceId    String   // Trace padre
+  type       String   // LLM_CALL, TOOL_CALL, SEARCH, PROCESSING
+  name       String   // Nombre del span (ej: "gpt-5-nano", "search_context")
+  startTime  DateTime // Inicio del span
+  endTime    DateTime? // Fin del span
+  durationMs Int?     // Duración en ms
+  tokens     Int?     // Tokens (solo LLM)
+  cost       Float?   // Costo (solo LLM)
+  credits    Int?     // Créditos (solo tools)
+  status     String   // RUNNING, COMPLETED, ERROR
+  metadata   Json?    // Data adicional
+}
+```
+
+**Índices Optimizados**:
+- `userId + status + createdAt` → Queries rápidas de dashboard
+- `chatbotId + createdAt` → Filtro por chatbot
+- `conversationId` → Traces de una conversación específica
+
+### Instrumentación Automática
+
+**Ubicación**: `/server/agents/agent-workflow.server.ts`
+
+Todos los chatbots (UI embebida, API, Ghosty) están instrumentados automáticamente via `streamAgentWorkflow()`:
+
+```typescript
+// 1. Iniciar trace al recibir mensaje
+const traceCtx = await startTrace({
+  userId, chatbotId, conversationId,
+  input: message,
+  model: selectedModel, // gpt-4o-mini, claude-3-5-haiku
+  metadata: { userPlan, temperature }
+});
+
+// 2. Instrumentar LLM call principal
+const llmSpan = await instrumentLLMCall(traceCtx, { model, temperature });
+// ... ejecutar LLM ...
+await llmSpan.complete({ tokens, cost });
+
+// 3. Instrumentar cada tool call
+await instrumentToolCall(traceCtx, { toolName });
+
+// 4. Completar trace exitoso
+await endTrace(traceCtx, { output, totalTokens, totalCost, creditsUsed });
+
+// 5. Marcar error si falla
+await failTrace(traceCtx, errorMessage);
+```
+
+**Cobertura**:
+- ✅ `/api/v0/chatbot` - Burbuja embebida
+- ✅ `/api/ghosty/v0` - Ghosty interno
+- ✅ `/api/agent/v0` - API de agentes
+
+### API REST
+
+**Endpoints**:
+
+```bash
+# Listar traces (paginado)
+GET /api/v1/traces?intent=list&chatbotId={id}&limit=50&offset=0
+
+# Obtener trace específico con spans
+GET /api/v1/traces?intent=get&traceId={id}
+
+# Eliminar trace
+DELETE /api/v1/traces?intent=delete&traceId={id}
+
+# Estadísticas agregadas (7 días por default)
+GET /api/v1/traces?intent=stats&chatbotId={id}&periodDays=7
+```
+
+**Response Stats**:
+```json
+{
+  "totalTraces": 156,
+  "avgLatency": 2340,
+  "totalTokens": 45678,
+  "totalCost": 0.0234,
+  "errorRate": 2.5,
+  "creditsUsed": 89
+}
+```
+
+### UI Components
+
+**ObservabilityPanel** (`/app/components/ObservabilityPanel.tsx`):
+- Filtro por chatbot (dropdown)
+- Búsqueda de texto en input/output
+- Métricas agregadas en cards
+- Lista de traces con expansión
+- Paginación automática (limit 50)
+
+**TraceWaterfall** (`/app/components/TraceWaterfall.tsx`):
+- Visualización tipo Gantt de spans
+- Timeline con duración, tokens, costos
+- Iconos por tipo de span (🤖 LLM, 🔧 Tool, 🔍 Search)
+- Estados con colores (✅ Completed, ⚠️ Error, 🔄 Running)
+
+### Mapeo Público de Modelos
+
+Para performance interna usamos `gpt-4o-mini`, pero al usuario se le muestra `gpt-5-nano`:
+
+```typescript
+function mapModelToPublic(model: string): string {
+  if (model === "gpt-4o-mini") return "gpt-5-nano";
+  return model;
+}
+```
+
+Aplicado en:
+- Traces de BD → UI
+- Mock data de desarrollo
+- Nombres de spans en waterfall
+
+### Estimación de Costos
+
+**Ubicación**: `/server/tracing/instrumentation.ts:estimateCost()`
+
+Pricing por 1M tokens (USD):
+| Modelo | Costo |
+|--------|-------|
+| gpt-5-mini | $0.30 |
+| gpt-4o-mini | $0.15 |
+| gpt-4o | $2.50 |
+| claude-3-5-haiku | $1.00 |
+| gemini-1.5-flash | $0.075 |
+
+### Performance
+
+**Tracing es Opcional**: Si falla, no afecta el request:
+```typescript
+try {
+  traceCtx = await startTrace({ ... });
+} catch (err) {
+  console.error("⚠️ Tracing failed:", err);
+  // Continúa sin tracing
+}
+```
+
+**Queries Optimizadas**:
+- Índices compuestos para filtros comunes
+- Paginación con `limit` y `offset`
+- Projections mínimas (solo campos necesarios)
+
+**Mock Data Fallback**: Durante desarrollo, si no hay traces reales, se generan 20 traces mock con variedad de estados, modelos y spans.
+
+### Implementación
+
+**Archivos clave**:
+- `/server/tracing/trace.service.ts` - CRUD de traces, stats
+- `/server/tracing/instrumentation.ts` - Helpers para instrumentar
+- `/app/routes/api.v1.traces.ts` - API REST endpoints
+- `/app/components/ObservabilityPanel.tsx` - Dashboard UI
+- `/app/components/TraceWaterfall.tsx` - Visualización de spans
+- `/prisma/schema.prisma` - Modelos Trace, TraceSpan, TraceEvent
+
+### Próximos Pasos
+
+- [ ] Exportación OpenTelemetry (OTLP) para integraciones externas
+- [ ] Alertas por errores/latencia excesiva
+- [ ] Comparación A/B de modelos/prompts
+- [ ] Retención configurable de traces (30 días default)
+
+---
+
 ## API v1 Chatbot Modular
 
 - **Context**: `/server/chatbot/context-handler.server.ts`
