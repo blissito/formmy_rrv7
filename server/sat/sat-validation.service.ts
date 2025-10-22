@@ -162,7 +162,7 @@ export async function validateInvoicesWithFacturama(
         validation.status === "Vigente" ? "VALID_VIGENTE" : "VALID_CANCELADA";
 
       // Actualizar factura en BD
-      await db.sATInvoice.update({
+      await db.satInvoice.update({
         where: { id: invoice.id },
         data: {
           satStatus,
@@ -205,7 +205,7 @@ export async function validateSingleInvoice(
   userId: string
 ): Promise<ValidationResult> {
   // Buscar factura en BD
-  const invoice = await db.sATInvoice.findFirst({
+  const invoice = await db.satInvoice.findFirst({
     where: { id: invoiceId, userId },
   });
 
@@ -252,7 +252,7 @@ export async function validateInvoicesBatch(
   console.log(`📦 [SAT Validation] Validación batch: ${invoiceIds.length} facturas`);
 
   // Buscar facturas en BD
-  const invoices = await db.sATInvoice.findMany({
+  const invoices = await db.satInvoice.findMany({
     where: {
       id: { in: invoiceIds },
       userId,
@@ -341,7 +341,7 @@ export async function getPendingValidationInvoices(
   userId: string,
   limit: number = 50
 ) {
-  return await db.sATInvoice.findMany({
+  return await db.satInvoice.findMany({
     where: {
       chatbotId,
       userId,
@@ -358,16 +358,16 @@ export async function getPendingValidationInvoices(
  */
 export async function getValidationStats(chatbotId: string, userId: string) {
   const [total, pending, vigentes, canceladas] = await Promise.all([
-    db.sATInvoice.count({
+    db.satInvoice.count({
       where: { chatbotId, userId },
     }),
-    db.sATInvoice.count({
+    db.satInvoice.count({
       where: { chatbotId, userId, satStatus: "PENDING_VALIDATION" },
     }),
-    db.sATInvoice.count({
+    db.satInvoice.count({
       where: { chatbotId, userId, satStatus: "VALID_VIGENTE" },
     }),
-    db.sATInvoice.count({
+    db.satInvoice.count({
       where: { chatbotId, userId, satStatus: "VALID_CANCELADA" },
     }),
   ]);

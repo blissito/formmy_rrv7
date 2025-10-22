@@ -175,8 +175,8 @@ model User {
   referrals       Referral[]   @relation("Referrer")
   permissions     Permission[] @relation("UserPermissions")
   traces          Trace[]
-  satInvoices     SATInvoice[] @relation("UserSATInvoices")
-  satContacts     SATContact[] @relation("UserSATContacts")
+  satInvoices     SatInvoice[] @relation("UserSatInvoices")
+  satContacts     SatContact[] @relation("UserSatContacts")
 
   // Tool Credits Tracking (para Parser Avanzado y otras herramientas)
   toolCreditsUsed     Float     @default(0) // Créditos MENSUALES consumidos en el mes actual (soporta decimales: 0.5, 1.5)
@@ -275,8 +275,8 @@ model Chatbot {
   toolUsages         ToolUsage[]
   embeddings         Embedding[]
   traces             Trace[]
-  satInvoices        SATInvoice[]      @relation("ChatbotSATInvoices")
-  satContacts        SATContact[]      @relation("ChatbotSATContacts")
+  satInvoices        SatInvoice[]      @relation("ChatbotSatInvoices")
+  satContacts        SatContact[]      @relation("ChatbotSatContacts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -702,7 +702,7 @@ model TraceEvent {
 // SAT Integration Models
 // ========================================
 
-model SATInvoice {
+model SatInvoice {
   id        String @id @default(auto()) @map("_id") @db.ObjectId
   userId    String @db.ObjectId // Contador
   chatbotId String @db.ObjectId
@@ -753,11 +753,11 @@ model SATInvoice {
 
   // Relación con contacto
   contactId String?     @db.ObjectId
-  contact   SATContact? @relation("InvoiceContact", fields: [contactId], references: [id])
+  contact   SatContact? @relation("InvoiceContact", fields: [contactId], references: [id])
 
   // Relaciones
-  user    User    @relation("UserSATInvoices", fields: [userId], references: [id], onDelete: Cascade)
-  chatbot Chatbot @relation("ChatbotSATInvoices", fields: [chatbotId], references: [id], onDelete: Cascade)
+  user    User    @relation("UserSatInvoices", fields: [userId], references: [id], onDelete: Cascade)
+  chatbot Chatbot @relation("ChatbotSatInvoices", fields: [chatbotId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -769,7 +769,7 @@ model SATInvoice {
   @@index([contactId])
 }
 
-model SATContact {
+model SatContact {
   id        String @id @default(auto()) @map("_id") @db.ObjectId
   userId    String @db.ObjectId
   chatbotId String @db.ObjectId
@@ -804,9 +804,9 @@ model SATContact {
   constanciaFiscalUrl String?
 
   // Relaciones
-  invoices SATInvoice[] @relation("InvoiceContact")
-  user     User         @relation("UserSATContacts", fields: [userId], references: [id], onDelete: Cascade)
-  chatbot  Chatbot      @relation("ChatbotSATContacts", fields: [chatbotId], references: [id], onDelete: Cascade)
+  invoices SatInvoice[] @relation("InvoiceContact")
+  user     User         @relation("UserSatContacts", fields: [userId], references: [id], onDelete: Cascade)
+  chatbot  Chatbot      @relation("ChatbotSatContacts", fields: [chatbotId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

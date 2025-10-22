@@ -9,7 +9,7 @@
  */
 
 import { db } from "server/db.server";
-import type { SATContact, SATInvoice } from "@prisma/client";
+import type { SatContact, SatInvoice } from "@prisma/client";
 import type { ParsedInvoice } from "./sat-parser.service";
 
 // ========================================
@@ -17,7 +17,7 @@ import type { ParsedInvoice } from "./sat-parser.service";
 // ========================================
 
 export type ContactType = "PROVEEDOR" | "CLIENTE" | "AMBOS";
-export type SATContactStatus = "ACTIVO" | "SUSPENDIDO" | "CANCELADO";
+export type SatContactStatus = "ACTIVO" | "SUSPENDIDO" | "CANCELADO";
 
 export interface CreateContactData {
   rfc: string;
@@ -28,7 +28,7 @@ export interface CreateContactData {
 }
 
 export interface SATValidationResult {
-  satStatus: SATContactStatus;
+  satStatus: SatContactStatus;
   regimenFiscal?: string;
   fiscalAddress?: string;
   economicActivity?: string;
@@ -49,11 +49,11 @@ export async function createOrUpdateContact(
   invoice: ParsedInvoice,
   chatbotId: string,
   userId: string
-): Promise<SATContact> {
+): Promise<SatContact> {
   console.log(`👤 [SAT Contacts] Procesando contacto: ${invoice.rfcEmisor}`);
 
   // Buscar contacto existente por RFC
-  let contact = await db.sATContact.findFirst({
+  let contact = await db.satContact.findFirst({
     where: {
       rfc: invoice.rfcEmisor,
       userId,
@@ -64,7 +64,7 @@ export async function createOrUpdateContact(
     // Crear nuevo contacto
     console.log(`✨ [SAT Contacts] Creando nuevo contacto: ${invoice.nombreEmisor}`);
 
-    contact = await db.sATContact.create({
+    contact = await db.satContact.create({
       data: {
         rfc: invoice.rfcEmisor,
         name: invoice.nombreEmisor,
@@ -86,7 +86,7 @@ export async function createOrUpdateContact(
     // Actualizar estadísticas existentes
     console.log(`📊 [SAT Contacts] Actualizando estadísticas de: ${contact.name}`);
 
-    contact = await db.sATContact.update({
+    contact = await db.satContact.update({
       where: { id: contact.id },
       data: {
         lastSeen: new Date(),
@@ -134,7 +134,7 @@ function shouldRevalidate(lastCheck: Date | null): boolean {
  * Alternativamente, puede usar Facturama que ofrece validación de RFC.
  */
 export async function validateContactWithSAT(contactId: string): Promise<void> {
-  const contact = await db.sATContact.findUnique({
+  const contact = await db.satContact.findUnique({
     where: { id: contactId },
   });
 
@@ -149,7 +149,7 @@ export async function validateContactWithSAT(contactId: string): Promise<void> {
     const satData = await querySATWebService(contact.rfc);
 
     // Actualizar datos
-    await db.sATContact.update({
+    await db.satContact.update({
       where: { id: contactId },
       data: {
         satStatus: satData.satStatus,
@@ -217,7 +217,7 @@ async function querySATWebService(rfc: string): Promise<SATValidationResult> {
 /**
  * Crea una alerta cuando un contacto es detectado en lista EFOS.
  */
-async function createEFOSAlert(contact: SATContact): Promise<void> {
+async function createEFOSAlert(contact: SatContact): Promise<void> {
   console.log(`🚨 [SAT Alerts] Creando alerta EFOS para: ${contact.name}`);
 
   // TODO: Implementar sistema de notificaciones/alertas
@@ -237,7 +237,7 @@ async function createEFOSAlert(contact: SATContact): Promise<void> {
 /**
  * Crea una alerta cuando un contacto es detectado en lista EDOS.
  */
-async function createEDOSAlert(contact: SATContact): Promise<void> {
+async function createEDOSAlert(contact: SatContact): Promise<void> {
   console.log(`🚨 [SAT Alerts] Creando alerta EDOS para: ${contact.name}`);
 
   console.warn(`
@@ -266,7 +266,7 @@ export async function parseConstanciaFiscal(
   pdfBuffer: Buffer,
   userId: string,
   chatbotId: string
-): Promise<SATContact> {
+): Promise<SatContact> {
   console.log(`📄 [SAT Contacts] Parseando Constancia Fiscal...`);
 
   // Importar LlamaParse
@@ -293,7 +293,7 @@ export async function parseConstanciaFiscal(
   }
 
   // Crear o actualizar contacto
-  const contact = await db.sATContact.upsert({
+  const contact = await db.satContact.upsert({
     where: { rfc },
     create: {
       rfc,
@@ -374,7 +374,7 @@ export async function listContacts(params: {
   if (params.isEFOS !== undefined) where.isEFOS = params.isEFOS;
   if (params.isEDOS !== undefined) where.isEDOS = params.isEDOS;
 
-  const contacts = await db.sATContact.findMany({
+  const contacts = await db.satContact.findMany({
     where,
     take: params.limit || 50,
     skip: params.offset || 0,
@@ -387,7 +387,7 @@ export async function listContacts(params: {
     },
   });
 
-  const totalCount = await db.sATContact.count({ where });
+  const totalCount = await db.satContact.count({ where });
 
   return {
     contacts,
@@ -400,7 +400,7 @@ export async function listContacts(params: {
  * Obtiene un contacto por ID con todas sus facturas.
  */
 export async function getContactById(contactId: string, userId: string) {
-  return await db.sATContact.findFirst({
+  return await db.satContact.findFirst({
     where: { id: contactId, userId },
     include: {
       invoices: {
@@ -416,9 +416,9 @@ export async function getContactById(contactId: string, userId: string) {
 export async function updateContact(
   contactId: string,
   userId: string,
-  data: Partial<Pick<SATContact, "name" | "type" | "category" | "tags">>
+  data: Partial<Pick<SatContact, "name" | "type" | "category" | "tags">>
 ) {
-  return await db.sATContact.update({
+  return await db.satContact.update({
     where: { id: contactId, userId },
     data,
   });
@@ -429,7 +429,7 @@ export async function updateContact(
  */
 export async function deleteContact(contactId: string, userId: string) {
   // Por ahora eliminación hard (puede cambiarse a soft delete)
-  return await db.sATContact.delete({
+  return await db.satContact.delete({
     where: { id: contactId, userId },
   });
 }

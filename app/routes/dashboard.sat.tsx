@@ -31,7 +31,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   // Obtener facturas
-  const invoices = await db.sATInvoice.findMany({
+  const invoices = await db.satInvoice.findMany({
     where,
     orderBy: { createdAt: "desc" },
     take: 50,
@@ -53,19 +53,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
   });
 
   // Calcular métricas
-  const totalInvoices = await db.sATInvoice.count({ where });
-  const approvedCount = await db.sATInvoice.count({
+  const totalInvoices = await db.satInvoice.count({ where });
+  const approvedCount = await db.satInvoice.count({
     where: { ...where, status: "APPROVED" },
   });
-  const needsReviewCount = await db.sATInvoice.count({
+  const needsReviewCount = await db.satInvoice.count({
     where: { ...where, status: "NEEDS_REVIEW" },
   });
-  const pendingValidationCount = await db.sATInvoice.count({
+  const pendingValidationCount = await db.satInvoice.count({
     where: { ...where, satStatus: "PENDING_VALIDATION" },
   });
 
   // Obtener contactos con alertas EFOS/EDOS
-  const alertContacts = await db.sATContact.count({
+  const alertContacts = await db.satContact.count({
     where: {
       userId: user.id,
       OR: [{ isEFOS: true }, { isEDOS: true }],
