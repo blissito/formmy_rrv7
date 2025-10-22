@@ -86,6 +86,13 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
     description: t('integrations.slack.description'),
     isPermanent: false,
   },
+  {
+    id: "SAT",
+    name: "SAT México",
+    logo: "/assets/chat/sat-logo.png",
+    description: "Recolección inteligente de facturas CFDI, validación con SAT, gestión de contactos fiscales y detección de lista negra EFOS/EDOS. Tus clientes suben documentos 24/7 al chatbot.",
+    isPermanent: false,
+  },
 ] as const;
 
 // Extender el tipo de integración con propiedades adicionales si es necesario
