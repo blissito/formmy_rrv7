@@ -15,7 +15,7 @@
 
 import { XMLParser } from "fast-xml-parser";
 import * as pdfParse from "pdf-parse";
-import { llamaParse } from "server/llamaparse/llamaparse.service";
+import { llamaParse } from "~/server/llamaparse/llamaparse.service";
 import type { ParsingMode } from "@prisma/client";
 
 // ========================================
