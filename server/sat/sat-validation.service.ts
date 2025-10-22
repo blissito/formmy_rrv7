@@ -15,8 +15,8 @@
  * Production: Configure via .env
  */
 
-import { db } from "~/server/db.server";
-import { consumeCredits } from "~/server/llamaparse/credits.service";
+import { db } from "server/db.server";
+import { consumeCredits } from "server/llamaparse/credits.service";
 
 // ========================================
 // Types

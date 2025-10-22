@@ -8,7 +8,7 @@
  * - Actualización automática de estadísticas
  */
 
-import { db } from "~/server/db.server";
+import { db } from "server/db.server";
 import type { SATContact, SATInvoice } from "@prisma/client";
 import type { ParsedInvoice } from "./sat-parser.service";
 
@@ -270,7 +270,7 @@ export async function parseConstanciaFiscal(
   console.log(`📄 [SAT Contacts] Parseando Constancia Fiscal...`);
 
   // Importar LlamaParse
-  const { llamaParse } = await import("~/server/llamaparse/llamaparse.service");
+  const { llamaParse } = await import("server/llamaparse/llamaparse.service");
 
   // Parsear con modo AGENTIC (mejor calidad para documentos oficiales)
   const result = await llamaParse(pdfBuffer, "AGENTIC", userId);

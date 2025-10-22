@@ -158,6 +158,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       } else if (availableIntegration.id === "WHATSAPP") {
         // WhatsApp disponible - iniciar como disconnected
         status[availableIntegration.id.toLowerCase()] = "disconnected";
+      } else if (availableIntegration.id === "SAT") {
+        // SAT disponible - iniciar como disconnected
+        status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else {
         // Todas las demás integraciones están en "onhold" (próximamente)
         status[availableIntegration.id.toLowerCase()] = "onhold";
@@ -318,6 +321,15 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     } else if (integrationId === "STRIPE") {
       console.log("🔒 Stripe está en onhold temporalmente");
       return; // Deshabilitado temporalmente
+    } else if (integrationId === "SAT") {
+      // SAT: Marcar como conectado y redirigir al dashboard
+      setIntegrationStatus((prev) => ({
+        ...prev,
+        sat: "connected",
+      }));
+      setSelectedIntegration(null);
+      // Redirigir al dashboard SAT
+      window.location.href = `/dashboard/sat?chatbotId=${chatbot.id}`;
     } else {
       // Para otras integraciones, simular conexión
       setTimeout(() => {
@@ -396,6 +408,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     } else if (integrationId === "STRIPE") {
       console.log("🔒 Stripe está en onhold temporalmente");
       return; // Deshabilitado temporalmente
+    } else if (integrationId === "SAT") {
+      // SAT: Redirigir al dashboard
+      window.location.href = `/dashboard/sat?chatbotId=${chatbot.id}`;
     }
   };
 

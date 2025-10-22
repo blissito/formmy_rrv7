@@ -14,8 +14,8 @@
  */
 
 import { XMLParser } from "fast-xml-parser";
-import pdf from "pdf-parse";
-import { llamaParse } from "~/server/llamaparse/llamaparse.service";
+import * as pdfParse from "pdf-parse";
+import { llamaParse } from "server/llamaparse/llamaparse.service";
 import type { ParsingMode } from "@prisma/client";
 
 // ========================================
@@ -137,7 +137,7 @@ export async function parseXMLLocal(xmlBuffer: Buffer): Promise<ParsedInvoice> {
 export async function parsePDFSimple(pdfBuffer: Buffer): Promise<ParsedInvoice | { needsAdvancedParsing: true }> {
   console.log("📄 [SAT Parser] Parseando PDF simple (GRATIS)...");
 
-  const data = await pdf(pdfBuffer);
+  const data = await pdfParse(pdfBuffer);
   const text = data.text;
 
   // Extraer datos con regex
