@@ -114,10 +114,7 @@ export default [
   route("api/v1/credits", "routes/api.v1.credits.ts"),
   route("api/v1/traces", "routes/api.v1.traces.ts"),
   route("api/parser/v1", "routes/api.parser.v1.ts"),
-  route("api/v1/rag", "routes/api.v1.rag.ts"),
-
-  // SAT Integration routes
-  route("api/sat/upload", "routes/api.sat.upload.ts"),
+  route("api/rag/v1", "routes/api.rag.v1.ts"),
 
   // Composio Google Calendar Integration
   route("api/v1/composio/google-calendar", "routes/api.v1.composio.google-calendar.ts"),

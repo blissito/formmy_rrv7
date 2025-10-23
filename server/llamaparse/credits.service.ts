@@ -209,3 +209,21 @@ export async function addPurchasedCredits(
     newBalance: updated.purchasedCredits,
   };
 }
+
+/**
+ * Wrapper para descontar créditos por uso de tools
+ * Compatible con la interfaz legacy que incluye chatbotId y toolName
+ */
+export async function deductToolCredits({
+  userId,
+  chatbotId,
+  toolName,
+  credits,
+}: {
+  userId: string;
+  chatbotId?: string;
+  toolName: string;
+  credits: number;
+}): Promise<void> {
+  await validateAndDeduct(userId, credits);
+}
