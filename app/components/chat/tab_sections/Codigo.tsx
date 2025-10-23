@@ -52,10 +52,10 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
     isPermanent: false,
   },
   {
-    id: "GMAIL",
-    name: "Gmail",
-    logo: "/assets/chat/gmail.png",
-    description: t('integrations.gmail.description'),
+    id: "SAT",
+    name: "SAT México",
+    logo: "/assets/chat/sat-logo.png",
+    description: "Recolección inteligente de facturas CFDI, validación con SAT, gestión de contactos fiscales y detección de lista negra EFOS/EDOS. Tus clientes suben documentos 24/7 al chatbot.",
     isPermanent: false,
   },
   {
@@ -63,6 +63,13 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
     name: "WhatsApp",
     logo: "/assets/chat/whatsapp.svg",
     description: t('integrations.whatsapp.description'),
+    isPermanent: false,
+  },
+  {
+    id: "GMAIL",
+    name: "Gmail",
+    logo: "/assets/chat/gmail.png",
+    description: t('integrations.gmail.description'),
     isPermanent: false,
   },
   {
@@ -84,13 +91,6 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
     name: "Slack",
     logo: "/assets/chat/slack.svg",
     description: t('integrations.slack.description'),
-    isPermanent: false,
-  },
-  {
-    id: "SAT",
-    name: "SAT México",
-    logo: "/assets/chat/sat-logo.png",
-    description: "Recolección inteligente de facturas CFDI, validación con SAT, gestión de contactos fiscales y detección de lista negra EFOS/EDOS. Tus clientes suben documentos 24/7 al chatbot.",
     isPermanent: false,
   },
 ] as const;
@@ -322,14 +322,67 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       console.log("🔒 Stripe está en onhold temporalmente");
       return; // Deshabilitado temporalmente
     } else if (integrationId === "SAT") {
-      // SAT: Marcar como conectado y redirigir al dashboard
+      // SAT: Crear integración en BD como activa y redirigir al dashboard
       setIntegrationStatus((prev) => ({
         ...prev,
-        sat: "connected",
+        sat: "connecting",
       }));
-      setSelectedIntegration(null);
-      // Redirigir al dashboard SAT
-      window.location.href = `/dashboard/sat?chatbotId=${chatbot.id}`;
+
+      // Crear/actualizar integración en BD directamente como activa (upsert)
+      fetch("/api/v1/integration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          intent: "upsert",
+          chatbotId: chatbot.id,
+          platform: "SAT",
+          token: "sat_enabled", // Token dummy, SAT no usa OAuth
+        }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || "Error al crear integración SAT");
+          }
+          return res.json();
+        })
+        .then(async (data) => {
+          // Activar la integración
+          const integrationId = data.integration.id;
+          const activateRes = await fetch("/api/v1/integration", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              intent: "update",
+              integrationId,
+              isActive: "true",
+            }),
+          });
+
+          if (!activateRes.ok) {
+            throw new Error("Error al activar integración SAT");
+          }
+
+          setIntegrationStatus((prev) => ({
+            ...prev,
+            sat: "connected",
+          }));
+          setSelectedIntegration(null);
+          // Redirigir al dashboard SAT
+          window.location.href = `/dashboard/sat?chatbotId=${chatbot.id}`;
+        })
+        .catch((err) => {
+          console.error("Error activando SAT:", err);
+          alert(`Error al activar SAT: ${err.message}`);
+          setIntegrationStatus((prev) => ({
+            ...prev,
+            sat: "disconnected",
+          }));
+        });
     } else {
       // Para otras integraciones, simular conexión
       setTimeout(() => {

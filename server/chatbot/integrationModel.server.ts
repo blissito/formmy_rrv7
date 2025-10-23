@@ -30,13 +30,14 @@ export async function createIntegration(
     stripeApiKey?: string;
     stripePublishableKey?: string;
     stripeWebhookSecret?: string;
-  }
+  },
+  isActive?: boolean // Permitir especificar si se crea como activa
 ): Promise<Integration> {
   return prisma.integration.create({
     data: {
       platform,
       token,
-      isActive: false, // Default to inactive until configured properly
+      isActive: isActive ?? false, // Default to inactive unless explicitly set
       // WhatsApp-specific fields
       phoneNumberId: whatsappData?.phoneNumberId,
       businessAccountId: whatsappData?.businessAccountId,
