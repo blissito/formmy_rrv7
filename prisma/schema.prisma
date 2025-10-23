@@ -175,6 +175,8 @@ model User {
   referrals       Referral[]   @relation("Referrer")
   permissions     Permission[] @relation("UserPermissions")
   traces          Trace[]
+  satInvoices     SatInvoice[] @relation("UserSatInvoices")
+  satContacts     SatContact[] @relation("UserSatContacts")
 
   // Tool Credits Tracking (para Parser Avanzado y otras herramientas)
   toolCreditsUsed     Float     @default(0) // Créditos MENSUALES consumidos en el mes actual (soporta decimales: 0.5, 1.5)
@@ -273,6 +275,8 @@ model Chatbot {
   toolUsages         ToolUsage[]
   embeddings         Embedding[]
   traces             Trace[]
+  satInvoices        SatInvoice[]      @relation("ChatbotSatInvoices")
+  satContacts        SatContact[]      @relation("ChatbotSatContacts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -404,6 +408,7 @@ enum IntegrationType {
   GOOGLE_CALENDAR
   GMAIL
   STRIPE
+  SAT
 }
 
 model Integration {
@@ -498,9 +503,9 @@ model ToolUsage {
 }
 
 model Widget {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  type      String // 'payment', 'booking', 'form'
-  data      Json // Flexible: { amount, url, description, ... }
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  type String // 'payment', 'booking', 'form'
+  data Json // Flexible: { amount, url, description, ... }
 
   userId    String  @db.ObjectId
   chatbotId String? @db.ObjectId
@@ -513,16 +518,16 @@ model Widget {
 enum ParsingStatus {
   PENDING
   PROCESSING
-  COMPLETED            // Parsing + embeddings exitosos
-  COMPLETED_NO_VECTOR  // Parsing exitoso, embeddings fallidos (puede reintentar)
-  FAILED               // Parsing fallido
+  COMPLETED // Parsing + embeddings exitosos
+  COMPLETED_NO_VECTOR // Parsing exitoso, embeddings fallidos (puede reintentar)
+  FAILED // Parsing fallido
 }
 
 enum ParsingMode {
-  DEFAULT         // Modo básico gratuito (texto plano, URLs) - NO usa LlamaParse
-  COST_EFFECTIVE  // Modo económico LlamaParse - 1 crédito/página
-  AGENTIC         // Modo balanceado LlamaParse - 3 créditos/página
-  AGENTIC_PLUS    // Modo premium LlamaParse - 6 créditos/página
+  DEFAULT // Modo básico gratuito (texto plano, URLs) - NO usa LlamaParse
+  COST_EFFECTIVE // Modo económico LlamaParse - 1 crédito/página
+  AGENTIC // Modo balanceado LlamaParse - 3 créditos/página
+  AGENTIC_PLUS // Modo premium LlamaParse - 6 créditos/página
 }
 
 model ParsingJob {
@@ -600,10 +605,10 @@ enum TraceEventType {
 }
 
 model Trace {
-  id             String      @id @default(auto()) @map("_id") @db.ObjectId
-  chatbotId      String?     @db.ObjectId
-  conversationId String?     @db.ObjectId
-  userId         String      @db.ObjectId
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId      String? @db.ObjectId
+  conversationId String? @db.ObjectId
+  userId         String  @db.ObjectId
 
   // Input/Output
   input  String
@@ -622,8 +627,8 @@ model Trace {
   creditsUsed Int     @default(0)
 
   // Relaciones
-  chatbot Chatbot? @relation(fields: [chatbotId], references: [id], onDelete: SetNull)
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatbot Chatbot?     @relation(fields: [chatbotId], references: [id], onDelete: SetNull)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   spans   Span[]
   events  TraceEvent[]
 
@@ -691,4 +696,123 @@ model TraceEvent {
 
   @@index([traceId])
   @@index([type])
+}
+
+// ========================================
+// SAT Integration Models
+// ========================================
+
+model SatInvoice {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String @db.ObjectId // Contador
+  chatbotId String @db.ObjectId
+
+  // Cliente que subió
+  clientName     String?
+  clientPhone    String?
+  conversationId String? @db.ObjectId
+
+  // Datos CFDI
+  uuid         String   @unique
+  rfcEmisor    String
+  rfcReceptor  String
+  nombreEmisor String
+  tipo         String // INGRESO, EGRESO, NOMINA, PAGO
+  fecha        DateTime
+  subtotal     Float
+  iva          Float
+  total        Float
+  concepto     String
+  metodoPago   String // PUE, PPD
+
+  // Validación SAT (MANUAL)
+  satStatus   String // PENDING_VALIDATION, VALIDATING, VALID_VIGENTE, VALID_CANCELADA
+  validatedAt DateTime?
+  validatedBy String?   @db.ObjectId
+
+  // Parseo con confianza
+  parseMethod String // XML_LOCAL, PDF_SIMPLE, LLAMAPARSE_CE, LLAMAPARSE_AG
+  confidence  Float // 0.0 - 1.0
+  status      String // APPROVED, NEEDS_REVIEW, PARSE_ERROR
+  creditsUsed Int
+  warnings    String[] // Alertas IA
+
+  // Clasificación cliente
+  isDeductible Boolean?
+  category     String?
+  project      String?
+  clientNotes  String?
+
+  // Clasificación IA
+  aiCategory     String?
+  cuentaContable String?
+
+  // Archivos
+  xmlUrl String?
+  pdfUrl String?
+
+  // Relación con contacto
+  contactId String?     @db.ObjectId
+  contact   SatContact? @relation("InvoiceContact", fields: [contactId], references: [id])
+
+  // Relaciones
+  user    User    @relation("UserSatInvoices", fields: [userId], references: [id], onDelete: Cascade)
+  chatbot Chatbot @relation("ChatbotSatInvoices", fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, chatbotId])
+  @@index([userId, clientName])
+  @@index([status]) // Filtrar pendientes de revisión
+  @@index([satStatus]) // Filtrar pendientes de validar
+  @@index([contactId])
+}
+
+model SatContact {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String @db.ObjectId
+  chatbotId String @db.ObjectId
+
+  // Datos básicos
+  rfc  String @unique
+  name String
+  type String // PROVEEDOR, CLIENTE, AMBOS
+
+  // Datos SAT (validación automática)
+  satStatus        String? // ACTIVO, SUSPENDIDO, CANCELADO
+  regimenFiscal    String?
+  fiscalAddress    String?
+  economicActivity String?
+
+  // Lista negra
+  isEFOS       Boolean   @default(false)
+  isEDOS       Boolean   @default(false)
+  lastSATCheck DateTime?
+
+  // Estadísticas (auto-calculadas)
+  totalInvoices Int      @default(0)
+  totalAmount   Float    @default(0)
+  firstSeen     DateTime
+  lastSeen      DateTime
+
+  // Clasificación IA
+  category String? // "Gasolinera", "Papelería"
+  tags     String[]
+
+  // Archivos
+  constanciaFiscalUrl String?
+
+  // Relaciones
+  invoices SatInvoice[] @relation("InvoiceContact")
+  user     User         @relation("UserSatContacts", fields: [userId], references: [id], onDelete: Cascade)
+  chatbot  Chatbot      @relation("ChatbotSatContacts", fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, chatbotId])
+  @@index([type])
+  @@index([isEFOS, isEDOS])
+  @@index([satStatus])
 }

@@ -1,5 +1,6 @@
 import {
   createIntegration,
+  upsertIntegration,
   getIntegrationsByChatbotId,
   updateIntegration,
   deleteIntegration,
@@ -46,6 +47,8 @@ export async function action({ request }: any) {
     switch (intent) {
       case "create":
         return await handleCreateIntegration(formData);
+      case "upsert":
+        return await handleUpsertIntegration(formData);
       case "update":
         return await handleUpdateIntegration(formData);
       case "delete":
@@ -73,6 +76,7 @@ async function handleCreateIntegration(formData: FormData) {
   const chatbotId = formData.get("chatbotId") as string;
   const platformString = formData.get("platform") as string;
   const token = formData.get("token") as string;
+  const isActive = formData.get("isActive") === "true"; // Permitir crear como activa directamente
 
   // Validate and convert platform string to enum
   const platform = platformString as IntegrationType;
@@ -149,6 +153,70 @@ async function handleCreateIntegration(formData: FormData) {
       : undefined;
 
   const integration = await createIntegration(
+    chatbotId,
+    platform,
+    token,
+    whatsappData,
+    googleCalendarData,
+    undefined, // stripeData
+    isActive // Pasar el parámetro isActive
+  );
+
+  return new Response(JSON.stringify({ integration, success: true }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function handleUpsertIntegration(formData: FormData) {
+  const chatbotId = formData.get("chatbotId") as string;
+  const platformString = formData.get("platform") as string;
+  const token = formData.get("token") as string;
+
+  // Validate and convert platform string to enum
+  const platform = platformString as IntegrationType;
+  if (!Object.values(IntegrationType).includes(platform)) {
+    return new Response(
+      JSON.stringify({ error: `Invalid platform: ${platformString}. Valid values are: ${Object.values(IntegrationType).join(", ")}` }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // WhatsApp-specific fields
+  const phoneNumberId = formData.get("phoneNumberId") as string;
+  const businessAccountId = formData.get("businessAccountId") as string;
+  const webhookVerifyToken = formData.get("webhookVerifyToken") as string;
+
+  // Google Calendar-specific fields
+  const calendarId = formData.get("calendarId") as string;
+
+  // Validation
+  if (!chatbotId || !platform) {
+    return new Response(
+      JSON.stringify({ error: "chatbotId and platform are required" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  const whatsappData =
+    platform === IntegrationType.WHATSAPP
+      ? {
+          phoneNumberId,
+          businessAccountId,
+          webhookVerifyToken,
+        }
+      : undefined;
+
+  const googleCalendarData =
+    platform === IntegrationType.GOOGLE_CALENDAR
+      ? {
+          calendarId: calendarId || "primary",
+          clientId: process.env.GOOGLE_CLIENT_ID!,
+          clientSecret: process.env.GOOGLE_SECRET!,
+          redirectUri: `${process.env.NODE_ENV === "production" ? "https" : "http"}://${process.env.HOST || "localhost:3000"}/api/v1/oauth2/google/calendar/callback`,
+        }
+      : undefined;
+
+  const integration = await upsertIntegration(
     chatbotId,
     platform,
     token,

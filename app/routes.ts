@@ -16,6 +16,7 @@ export default [
     route("chat/nuevo", "routes/dashboard.chat_.nuevo.tsx"),
     route("chat/:chatbotSlug", "routes/dashboard.chat_.$chatbotSlug.tsx"),
     route("ghosty", "routes/dashboard.ghosty.tsx"),
+    route("sat", "routes/dashboard.sat.tsx"),
     route("plan", "routes/dashboard.plan.tsx"),
     route("uso", "routes/dashboard.uso.tsx"),
     route("api-keys", "routes/dashboard.api-keys_.tsx"),
