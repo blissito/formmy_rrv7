@@ -1,7 +1,7 @@
 {
   "name": "formmy-sdk",
-  "version": "1.0.1",
-  "description": "Official TypeScript/JavaScript SDK for Formmy Parser & RAG API",
+  "version": "1.0.3",
+  "description": "RAG as a Service - Official TypeScript SDK for Formmy. Upload documents, query knowledge base with AI-powered semantic search.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -10,6 +10,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./llamaindex": {
+      "import": "./dist/llamaindex/index.js",
+      "types": "./dist/llamaindex/index.d.ts"
     },
     "./client": {
       "import": "./dist/client.js",
@@ -32,21 +36,22 @@
   ],
   "keywords": [
     "formmy",
-    "parser",
     "rag",
-    "llm",
-    "ai",
-    "document-parsing",
-    "pdf-parser",
-    "llamaparse",
+    "rag-as-a-service",
+    "vector-database",
     "semantic-search",
-    "vector-search",
-    "chatbot",
+    "llamaindex",
+    "document-intelligence",
     "knowledge-base",
+    "embeddings",
+    "mongodb",
+    "ai",
+    "llm",
+    "chatbot",
+    "pdf-parser",
     "typescript",
     "sdk",
-    "nodejs",
-    "browser"
+    "nodejs"
   ],
   "author": {
     "name": "Formmy",
@@ -66,6 +71,18 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "llamaindex": ">=0.3.0",
+    "zod": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "llamaindex": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    }
   },
   "scripts": {
     "build": "tsc",

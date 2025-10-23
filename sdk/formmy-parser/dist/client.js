@@ -1,9 +1,12 @@
 /**
- * Formmy Parser SDK Client
- * Production-ready TypeScript client with retry logic, error handling, and dual environment support
+ * Formmy SDK Client
+ * RAG as a Service - Upload documents, query knowledge base
+ *
+ * We handle: parsing, chunking, embeddings, vector storage, semantic search
+ * You handle: upload docs → query → get answers
  */
-import { validateApiKey, validateParsingMode, validateQueryMode, validateJobId, validateChatbotId, validateQuery, validateParsingJobResponse, validateRAGQueryResponse, } from './types';
-import { handleErrorResponse, NetworkError, TimeoutError, ParsingFailedError, } from './errors';
+import { validateApiKey, validateParsingMode, validateQueryMode, validateJobId, validateChatbotId, validateQuery, validateParsingJobResponse, validateRAGQueryResponse, } from './types.js';
+import { handleErrorResponse, NetworkError, TimeoutError, ParsingFailedError, ValidationError, } from './errors.js';
 // ============ HELPERS ============
 /**
  * Check if running in Node.js environment
@@ -78,7 +81,7 @@ async function createFormData(file, mode) {
     return formData;
 }
 // ============ CLIENT ============
-export class FormmyParser {
+export class Formmy {
     constructor(config) {
         if (typeof config === 'string') {
             this.apiKey = config;
@@ -291,7 +294,7 @@ export class FormmyParser {
         const { mode = 'accurate', contextId } = options;
         validateQueryMode(mode);
         return withRetry(async () => {
-            const response = await this.fetch(`${this.baseUrl}/api/rag/v1?intent=query`, {
+            const response = await this.fetch(`${this.baseUrl}/api/v1/rag?intent=query`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${this.apiKey}`,
@@ -321,5 +324,136 @@ export class FormmyParser {
             },
         });
     }
+    /**
+     * List all contexts (documents) in a chatbot's knowledge base
+     *
+     * @param chatbotId - The chatbot ID to list contexts from
+     * @returns List of contexts with metadata
+     *
+     * @example
+     * ```typescript
+     * const contexts = await formmy.listContexts('chatbot_123');
+     * console.log(`Total: ${contexts.totalContexts}`);
+     * console.log(contexts.contexts); // Array of documents
+     * ```
+     */
+    async listContexts(chatbotId) {
+        validateChatbotId(chatbotId);
+        return withRetry(async () => {
+            const response = await this.fetch(`${this.baseUrl}/api/v1/rag?intent=list&chatbotId=${encodeURIComponent(chatbotId)}`, {
+                headers: {
+                    Authorization: `Bearer ${this.apiKey}`,
+                },
+            });
+            return this.handleResponse(response);
+        }, {
+            retries: this.retries,
+            onRetry: (attempt, error) => {
+                if (this.debug) {
+                    console.log(`[Formmy] Retry ${attempt}/${this.retries}: ${error.message}`);
+                }
+            },
+            shouldRetry: (error) => {
+                if (error instanceof NetworkError)
+                    return true;
+                if (error.statusCode && error.statusCode >= 500)
+                    return true;
+                return false;
+            },
+        });
+    }
+    /**
+     * Upload text content directly to knowledge base
+     *
+     * @param content - Text content to upload
+     * @param options - Upload options including chatbotId and metadata
+     * @returns Upload result with contextId and credits used
+     *
+     * @example
+     * ```typescript
+     * await formmy.uploadText('Horarios: Lun-Vie 9am-6pm', {
+     *   chatbotId: 'chatbot_123',
+     *   metadata: { title: 'Horarios de atención' }
+     * });
+     * ```
+     */
+    async uploadText(content, options) {
+        validateChatbotId(options.chatbotId);
+        if (!content || typeof content !== 'string') {
+            throw new ValidationError('Content is required and must be a string');
+        }
+        return withRetry(async () => {
+            const response = await this.fetch(`${this.baseUrl}/api/v1/rag?intent=upload`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${this.apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    chatbotId: options.chatbotId,
+                    content,
+                    type: options.metadata?.type || 'TEXT',
+                    metadata: options.metadata,
+                }),
+            });
+            return this.handleResponse(response);
+        }, {
+            retries: this.retries,
+            onRetry: (attempt, error) => {
+                if (this.debug) {
+                    console.log(`[Formmy] Retry ${attempt}/${this.retries}: ${error.message}`);
+                }
+            },
+            shouldRetry: (error) => {
+                if (error instanceof NetworkError)
+                    return true;
+                if (error.statusCode && error.statusCode >= 500)
+                    return true;
+                return false;
+            },
+        });
+    }
+    /**
+     * Delete a context from the knowledge base
+     *
+     * @param contextId - The context ID to delete
+     * @param chatbotId - The chatbot ID that owns the context
+     *
+     * @example
+     * ```typescript
+     * await formmy.deleteContext('ctx_xyz789', 'chatbot_123');
+     * ```
+     */
+    async deleteContext(contextId, chatbotId) {
+        if (!contextId || typeof contextId !== 'string') {
+            throw new ValidationError('Context ID is required and must be a string');
+        }
+        validateChatbotId(chatbotId);
+        return withRetry(async () => {
+            const response = await this.fetch(`${this.baseUrl}/api/v1/rag?intent=delete&contextId=${encodeURIComponent(contextId)}&chatbotId=${encodeURIComponent(chatbotId)}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${this.apiKey}`,
+                },
+            });
+            return this.handleResponse(response);
+        }, {
+            retries: this.retries,
+            onRetry: (attempt, error) => {
+                if (this.debug) {
+                    console.log(`[Formmy] Retry ${attempt}/${this.retries}: ${error.message}`);
+                }
+            },
+            shouldRetry: (error) => {
+                if (error instanceof NetworkError)
+                    return true;
+                if (error.statusCode && error.statusCode >= 500)
+                    return true;
+                return false;
+            },
+        });
+    }
 }
+// Export alias for backward compatibility
+export { Formmy as FormmyParser };
 //# sourceMappingURL=client.js.map

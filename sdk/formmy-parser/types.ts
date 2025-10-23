@@ -2,7 +2,7 @@
  * Type Definitions and Runtime Validators for Formmy Parser SDK
  */
 
-import { ValidationError } from './errors';
+import { ValidationError } from './errors.js';
 
 // ============ ENUMS ============
 

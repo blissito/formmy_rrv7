@@ -1,29 +1,69 @@
 # formmy-sdk
 
-Official TypeScript/JavaScript SDK for **Formmy Parser & RAG API** - Parse documents (PDF, DOCX, etc.) and query AI-powered knowledge bases.
-
-Production-ready client with automatic retry logic, error handling, and full TypeScript support for Node.js and Browser.
+> **RAG as a Service** - Upload documents, query knowledge. We handle everything.
 
 [![npm version](https://img.shields.io/npm/v/formmy-sdk.svg)](https://www.npmjs.com/package/formmy-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-## Why Formmy Parser?
+---
 
-- 🚀 **Zero Infrastructure** - No setup, just API calls
-- 🧠 **AI-Powered** - Advanced structured document extraction
-- 💰 **Pay-as-you-go** - Credits system with free tier (DEFAULT mode)
-- 📚 **RAG Built-in** - Semantic search on your documents
+## What is Formmy?
+
+Formmy is a **RAG (Retrieval-Augmented Generation) platform** that manages the entire document intelligence pipeline.
+
+**You focus on**: Upload docs → Query → Get answers
+**We handle**: Parsing, chunking, embeddings, vector storage (MongoDB), semantic search
+
+### ✅ Formmy IS:
+- 📄 **Document Parser** - PDF, DOCX, XLSX → Structured markdown
+- 🔍 **RAG Knowledge Base** - Semantic search with AI-generated answers
+- 🤖 **LLM Integration** - Native tools for LlamaIndex, LangChain
+
+### ❌ Formmy is NOT:
+- ❌ A form builder (despite the name)
+- ❌ A chatbot UI framework
+- ❌ Just a parser (it's parsing + RAG + vector DB as a service)
+
+---
+
+## Why Formmy?
+
+- 🚀 **Zero Infrastructure** - No vector DB setup, no embedding models to manage
+- 🧠 **AI-Powered Parsing** - Structured extraction with tables, charts, OCR
+- 💰 **Pay-as-you-go** - Credits system, no monthly minimums
+- 📚 **RAG Built-in** - Upload once, query unlimited times
 - 🔒 **Type-Safe** - Full TypeScript with runtime validation
-- ⚡ **Production Ready** - Retry logic, error handling, timeout management
+- ⚡ **Production Ready** - Retry logic, error handling, connection pooling
+
+---
+
+## What We Handle For You
+
+### When you upload a document:
+1. 📄 Parse with AI (tables, structure, OCR)
+2. ✂️ Smart chunking (2000 chars, 5% overlap)
+3. 🧬 Generate embeddings (text-embedding-3-small)
+4. 💾 Store in MongoDB vector index
+5. 🔍 Deduplicate semantically (85% threshold)
+
+### When you query:
+1. 🧬 Embed your question
+2. 🔍 Vector similarity search
+3. 🤖 Generate AI answer with citations
+4. 📊 Return answer + source passages
+
+**You just call 2 methods. We do the rest.**
+
+---
 
 ## Features
 
-- ✅ **4 Parsing Modes** - FREE basic extraction + 3 advanced tiers
-- ✅ **Dual Environment** - Works in Node.js and Browser
+- ✅ **Hybrid Architecture** - Instance-based core + Functional integrations
+- ✅ **LlamaIndex Native Tool** - One-line integration with agents
+- ✅ **4 Parsing Modes** - FREE basic → Advanced OCR
 - ✅ **TypeScript First** - Full type safety with runtime validation
 - ✅ **Automatic Retries** - Exponential backoff for network errors
-- ✅ **Custom Error Types** - Specific errors for better debugging
-- ✅ **Async Background Jobs** - Non-blocking with progress tracking
+- ✅ **Tree-shakeable** - Modular exports, import only what you need
 - ✅ **Debug Mode** - Optional logging for troubleshooting
 
 ## Installation
@@ -38,84 +78,135 @@ pnpm add formmy-sdk
 
 ## Quick Start
 
-### Parse a Document
+### 1. Upload a Document
 
 ```typescript
-import { FormmyParser } from 'formmy-sdk';
+import { Formmy } from 'formmy-sdk';
 
-const parser = new FormmyParser('sk_live_xxxxx');
-
-// Upload file for parsing
-const job = await parser.parse('./document.pdf', 'AGENTIC');
-
-console.log(`Job created: ${job.id}`);
-console.log(`Credits used: ${job.creditsUsed}`);
-
-// Wait for completion
-const result = await parser.waitFor(job.id, {
-  onProgress: (job) => console.log(`Status: ${job.status}`)
+const formmy = new Formmy({
+  apiKey: process.env.FORMMY_API_KEY, // or 'sk_live_xxxxx'
 });
 
-console.log(result.markdown);
+// Upload document (we parse, chunk, embed, store automatically)
+const job = await formmy.parse('./invoice.pdf', 'AGENTIC');
+const result = await formmy.waitFor(job.id);
+
+console.log(result.markdown); // Parsed content
+console.log(`Credits used: ${result.creditsUsed}`);
 ```
 
-### Query RAG Knowledge Base
+### 2. Query Knowledge Base
 
 ```typescript
-const result = await parser.query(
-  '¿Cuál es el horario de atención?',
-  'chatbot_abc123',
-  { mode: 'accurate' }
-);
+// Query your uploaded documents
+const answer = await formmy.query('¿Cuál es el total de la factura?', {
+  chatbotId: 'chatbot_abc123',
+  mode: 'accurate',
+});
 
-console.log(result.answer);
-console.log(result.sources);
+console.log(answer.answer);
+// "El total de la factura es $1,234.56 MXN."
+
+console.log(answer.sources);
+// [{ content: "...", score: 0.95, metadata: {...} }]
+```
+
+### 3. Upload Text Directly
+
+```typescript
+// Upload text content (no file needed)
+await formmy.uploadText('Horarios: Lunes a Viernes 9am-6pm', {
+  chatbotId: 'chatbot_abc123',
+  metadata: { title: 'Horarios de atención' },
+});
+
+// Query immediately
+const result = await formmy.query('¿Cuál es el horario?', {
+  chatbotId: 'chatbot_abc123',
+});
+```
+
+### 4. Use with LlamaIndex (One Line!)
+
+```typescript
+import { Formmy } from 'formmy-sdk';
+import { createFormmyTool } from 'formmy-sdk/llamaindex';
+import { agent } from '@llamaindex/workflow';
+
+const formmy = new Formmy({ apiKey: 'sk_live_xxx' });
+
+// Create native LlamaIndex tool
+const tool = createFormmyTool({
+  client: formmy,
+  chatbotId: 'chatbot_abc123',
+});
+
+// Use in agent
+const myAgent = agent({
+  tools: [tool],
+  systemPrompt: 'You can search documents with formmy_search',
+});
+
+// Chat!
+const stream = myAgent.runStream('¿Cuáles son nuestras políticas de devolución?');
 ```
 
 ## API Reference
 
-### `FormmyParser`
+### `Formmy` (Main Client)
+
+The core client for interacting with Formmy's RAG platform.
+
+**Note**: `FormmyParser` is an alias for backward compatibility. New code should use `Formmy`.
 
 #### Constructor
 
 ```typescript
-new FormmyParser(config: ParserConfig | string)
+new Formmy(config?: FormmyConfig | string)
 ```
 
 **Config Options:**
 
 ```typescript
 {
-  apiKey: string;        // Required: Your API key (sk_live_xxx or sk_test_xxx)
-  baseUrl?: string;      // Optional: Custom base URL (default: https://formmy-v2.fly.dev)
-  debug?: boolean;       // Optional: Enable debug logging (default: false)
-  timeout?: number;      // Optional: Request timeout in ms (default: 30000)
-  retries?: number;      // Optional: Number of retries (default: 3)
+  apiKey?: string;       // Your API key (sk_live_xxx or sk_test_xxx)
+                         // Default: process.env.FORMMY_API_KEY
+  baseUrl?: string;      // Custom base URL
+                         // Default: https://formmy-v2.fly.dev
+  debug?: boolean;       // Enable debug logging (default: false)
+  timeout?: number;      // Request timeout in ms (default: 30000)
+  retries?: number;      // Number of retries (default: 3)
 }
 ```
 
 **Simple Usage:**
 
 ```typescript
-const parser = new FormmyParser('sk_live_xxxxx');
+// Reads from process.env.FORMMY_API_KEY
+const formmy = new Formmy();
+
+// Or explicit API key
+const formmy = new Formmy('sk_live_xxxxx');
 ```
 
 **Advanced Usage:**
 
 ```typescript
-const parser = new FormmyParser({
+const formmy = new Formmy({
   apiKey: 'sk_live_xxxxx',
   debug: true,
   timeout: 60000,
-  retries: 5
+  retries: 5,
 });
 ```
 
 ---
 
-### Methods
+### Core Methods
 
 #### `parse(file, mode)`
+
+Upload and parse a document (PDF, DOCX, XLSX, etc.)
 
 Parse a document (PDF, DOCX, XLSX, etc.) with advanced AI extraction.
 
@@ -226,6 +317,132 @@ result.sources.forEach((source, i) => {
   console.log(`\nSource ${i + 1} (score: ${source.score}):`);
   console.log(source.content);
   console.log(`From: ${source.metadata.fileName}, page ${source.metadata.page}`);
+});
+```
+
+---
+
+#### `listContexts(chatbotId)`
+
+List all uploaded documents and content in a chatbot's knowledge base.
+
+**Parameters:**
+
+- `chatbotId`: `string` - The chatbot ID to list contexts from
+
+**Returns:** `Promise<ContextList>`
+
+**Example:**
+
+```typescript
+const contexts = await formmy.listContexts('chatbot_123');
+
+console.log(`Total contexts: ${contexts.totalContexts}`);
+console.log(`Total embeddings: ${contexts.totalEmbeddings}`);
+console.log(`Total size: ${contexts.totalSizeKB}KB`);
+
+contexts.contexts.forEach(ctx => {
+  console.log(`- ${ctx.fileName || ctx.type} (${ctx.sizeKB}KB)`);
+});
+```
+
+---
+
+#### `uploadText(content, options)`
+
+Upload text content directly to knowledge base (no file needed).
+
+**Parameters:**
+
+- `content`: `string` - Text content to upload
+- `options`: `UploadTextOptions`
+  - `chatbotId`: `string` - Required: Chatbot ID
+  - `metadata`: `object` - Optional metadata
+    - `title`: `string` - Content title
+    - `type`: `string` - Content type
+
+**Returns:** `Promise<UploadResult>`
+
+**Example:**
+
+```typescript
+await formmy.uploadText('Horarios: Lunes a Viernes 9am-6pm', {
+  chatbotId: 'chatbot_123',
+  metadata: {
+    title: 'Horarios de atención',
+    type: 'TEXT',
+  },
+});
+
+// Query immediately
+const result = await formmy.query('¿Cuál es el horario?', {
+  chatbotId: 'chatbot_123',
+});
+```
+
+---
+
+#### `deleteContext(contextId, chatbotId)`
+
+Delete a context (document or text) from the knowledge base.
+
+**Parameters:**
+
+- `contextId`: `string` - The context ID to delete
+- `chatbotId`: `string` - The chatbot ID that owns the context
+
+**Returns:** `Promise<void>`
+
+**Example:**
+
+```typescript
+await formmy.deleteContext('ctx_xyz789', 'chatbot_123');
+```
+
+---
+
+## LlamaIndex Integration
+
+### `createFormmyTool(config)`
+
+Create a native LlamaIndex tool for querying Formmy knowledge base.
+
+**Parameters:**
+
+```typescript
+{
+  client: Formmy;              // Formmy client instance
+  chatbotId: string;           // Chatbot ID to query
+  name?: string;               // Tool name (default: "formmy_search")
+  description?: string;        // Tool description
+  mode?: 'fast' | 'accurate'; // Query mode (default: "accurate")
+  maxSources?: number;         // Max sources to return (default: 3)
+  maxContentLength?: number;   // Max content length per source (default: 400)
+}
+```
+
+**Returns:** LlamaIndex tool ready to use in agents
+
+**Example:**
+
+```typescript
+import { Formmy } from 'formmy-sdk';
+import { createFormmyTool } from 'formmy-sdk/llamaindex';
+import { agent } from '@llamaindex/workflow';
+
+const formmy = new Formmy({ apiKey: 'sk_live_xxx' });
+
+const tool = createFormmyTool({
+  client: formmy,
+  chatbotId: 'chatbot_123',
+  name: 'search_company_docs',
+  description: 'Search company documentation and policies',
+  maxSources: 5,
+});
+
+const myAgent = agent({
+  tools: [tool],
+  systemPrompt: 'You can search documents with search_company_docs',
 });
 ```
 

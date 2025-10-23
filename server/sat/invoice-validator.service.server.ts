@@ -6,7 +6,7 @@
  * - PARSE_ERROR: Error en parseo
  */
 
-import type { ParsedInvoiceData } from "./xml-parser.service";
+import type { ParsedInvoiceData } from "./xml-parser.service.server";
 
 export type InvoiceStatus = "APPROVED" | "NEEDS_REVIEW" | "PARSE_ERROR";
 
@@ -40,9 +40,11 @@ export function validateInvoice(
   }
 
   // 2. Validación de campos obligatorios
-  if (!parsedData.uuid || parsedData.uuid.length !== 36) {
-    reviewReasons.push("UUID inválido o faltante");
-    warnings.push("UUID no cumple formato estándar");
+  if (!parsedData.uuid || parsedData.uuid.length < 10) {
+    reviewReasons.push("Folio Fiscal (UUID) inválido o faltante");
+  } else if (parsedData.uuid.length !== 36) {
+    // UUID debe tener formato 8-4-4-4-12 (36 chars con guiones)
+    warnings.push("Folio Fiscal no tiene formato estándar UUID");
   }
 
   if (!parsedData.rfcEmisor || parsedData.rfcEmisor.length < 12) {

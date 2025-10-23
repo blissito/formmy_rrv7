@@ -1,14 +1,15 @@
 ---
-title: "¡Revolucionamos Formmy! Lanzamiento 15 de Octubre 2025"
+title: "¡Revolucionamos Formmy! Lanzamiento 15 de Noviembre 2025"
 excerpt: "Descubre las innovadoras características que llegarán a Formmy, incluyendo un nuevo dashboard, Ghosty tu asistente virtual, y potentes chatbots IA para tu sitio web."
-date: "2025-08-20"
+date: "2025-10-15"
 tags: ["Lanzamiento", "Novedades", "IA", "Ghosty", "Dashboard"]
 author: "Equipo Formmy"
 image: "/blogposts/launch.webp"
 category: "anuncio"
+highlight: "main"
 ---
 
-# Formmy llega el 15 de Octubre
+# Formmy llega el 15 de Noviembre
 
 Hace unos meses decidimos aceptar un gran desafío: hacer que la IA deje de ser complicada y se convierta en una herramienta fácil y poderosa para que cada negocio pueda conectar mejor con sus clientes.
 
@@ -28,14 +29,14 @@ Sabemos que los negocios que adoptan herramientas inteligentes se adelantan al f
 ### 👻 Ghosty: Tu Asistente de IA
 - Resuelve dudas en tiempo real
 - Sugiere mejoras para tus formularios
-- Genera reportes de tus metricas 
+- Genera reportes de tus metricas
 - Aprende de tus preferencias
 
 ### 💬 Chatbots IA para tu Sitio
 - Fácil integración con un par de clics
 - Entrenamiento automático con tu contenido
 - Personalización de colores y logo
-- Integraciones con WhatsApp, Calendar, Gmial y más
+- Integraciones con WhatsApp, Calendar, Gmail y más
 
 ### 🎨 Interfaz Renovada
 - Navegación simplificada
@@ -43,7 +44,7 @@ Sabemos que los negocios que adoptan herramientas inteligentes se adelantan al f
 - Totalmente responsive
 
 ## 📅 Calendario del Lanzamiento
-- **15 de Octubre**: Acceso anticipado para usuarios premium
-- **15 de Noviembre**: Lanzamiento general
+- **15 de Noviembre**: Lanzamiento general con acceso para todos
+- **Diciembre**: Nuevas integraciones y funcionalidades
 
 ¡Prepárate para una experiencia completamente nueva con Formmy! El futuro de los formularios inteligentes está a punto de comenzar.

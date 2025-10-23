@@ -4,7 +4,7 @@ excerpt: "Descubre cómo Fixter incrementó sus leads calificados en un 60% impl
 date: "2025-08-18"
 tags: ["IA", "Chatbot", "Desarrollo Web", "Diseño Web", "Lead Generation"]
 author: "Equipo Formmy"
-image: "/blogposts/desarrollo-web-ia.webp"
+image: "/blogposts/chat.webp"
 category: "useCase"
 highlight: "secondary"
 ---

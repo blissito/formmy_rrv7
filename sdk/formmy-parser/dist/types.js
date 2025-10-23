@@ -1,7 +1,7 @@
 /**
  * Type Definitions and Runtime Validators for Formmy Parser SDK
  */
-import { ValidationError } from './errors';
+import { ValidationError } from './errors.js';
 // ============ TYPE GUARDS ============
 export function isParsingMode(value) {
     return (typeof value === 'string' &&

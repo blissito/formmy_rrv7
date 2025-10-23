@@ -266,13 +266,13 @@ export default function BlogIndex() {
               );
             })()
           ) : (
-            <BlogCardBasic  
+            <BlogCardBasic
               className='col-span-1 md:col-span-3'
-              image="https://images.pexels.com/photos/17514176/pexels-photo-17514176.jpeg" 
-              title="Lanzamiento de Formmy"
-              excerpt="Descubre cómo Formmy puede revolucionar la forma en que manejas los formularios en tu negocio con nuestra plataforma todo en uno."
-              slug="lanzamiento-de-formmy"
-              tags={["IA", "Lanzamiento", "Nuevo"]}
+              image="/blogposts/launch.webp"
+              title="¡Revolucionamos Formmy! Lanzamiento 15 de Noviembre 2025"
+              excerpt="Descubre las innovadoras características que llegarán a Formmy, incluyendo un nuevo dashboard, Ghosty tu asistente virtual, y potentes chatbots IA para tu sitio web."
+              slug="lanzamiento-noviembre-2025"
+              tags={["Lanzamiento", "Novedades", "IA", "Ghosty", "Dashboard"]}
             />
           )}
 {posts.find(post => post.highlight === 'secondary') ? (
@@ -291,12 +291,13 @@ export default function BlogIndex() {
               );
             })()
           ) : (
-            <BlogCardSolid  
-              image="https://images.pexels.com/photos/17514176/pexels-photo-17514176.jpeg" 
-              title="Lanzamiento de Formmy"
-              excerpt="Descubre cómo Formmy puede revolucionar la forma en que manejas los formularios en tu negocio con nuestra plataforma todo en uno."
-              slug="lanzamiento-de-formmy-caso-uso"
-              tags={["IA", "Lanzamiento", "Nuevo"]}
+            <BlogCardSolid
+              image="/blogposts/chat.webp"
+              title="Cómo Fixter optimizó la captación de clientes con un Chatbot IA"
+              excerpt="Descubre cómo Fixter incrementó sus leads calificados en un 60% implementando un asistente virtual especializado en servicios de desarrollo y diseño web."
+              slug="caso-exito-fixter-chatbot-ia-desarrollo-web"
+              tags={["IA", "Chatbot", "Desarrollo Web", "Diseño Web", "Lead Generation"]}
+              variant="useCase"
             />
           )}
         </div>

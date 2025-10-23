@@ -14,7 +14,7 @@
  */
 
 import { XMLParser } from "fast-xml-parser";
-import * as pdfParse from "pdf-parse";
+import { extractText } from "unpdf";
 import { llamaParse } from "~/server/llamaparse/llamaparse.service";
 import type { ParsingMode } from "@prisma/client";
 
@@ -137,8 +137,11 @@ export async function parseXMLLocal(xmlBuffer: Buffer): Promise<ParsedInvoice> {
 export async function parsePDFSimple(pdfBuffer: Buffer): Promise<ParsedInvoice | { needsAdvancedParsing: true }> {
   console.log("📄 [SAT Parser] Parseando PDF simple (GRATIS)...");
 
-  const data = await pdfParse(pdfBuffer);
-  const text = data.text;
+  const uint8Array = new Uint8Array(pdfBuffer);
+  const result = await extractText(uint8Array);
+
+  // unpdf retorna array de strings (uno por página), unirlos
+  const text = Array.isArray(result.text) ? result.text.join("\n") : result.text;
 
   // Extraer datos con regex
   const uuid = extractUUID(text);
@@ -296,10 +299,10 @@ export async function smartParse(
 // ========================================
 
 function extractUUID(text: string): string | null {
-  // UUID del SAT: 8-4-4-4-12 caracteres hex
-  const uuidRegex = /[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}/i;
-  const match = text.match(uuidRegex);
-  return match ? match[0] : null;
+  // Folio Fiscal (UUID del SAT en CFDI): 8-4-4-4-12 caracteres hex
+  const folioFiscalRegex = /Folio\s+Fiscal[:\s]*([0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12})/i;
+  const match = text.match(folioFiscalRegex);
+  return match ? match[1] : null;
 }
 
 function extractRFC(text: string, tipo: "Emisor" | "Receptor"): string | null {
@@ -321,12 +324,18 @@ function extractTotal(text: string): number | null {
 }
 
 function extractFecha(text: string): Date | null {
-  // Fecha: DD/MM/YYYY o YYYY-MM-DD
+  // Fecha ISO del SAT: 2025-10-03T11:59:17
+  const fechaISORegex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/;
+  const isoMatch = text.match(fechaISORegex);
+  if (isoMatch) {
+    return new Date(isoMatch[1]);
+  }
+
+  // Fallback: DD/MM/YYYY o YYYY-MM-DD
   const fechaRegex = /(\d{2}\/\d{2}\/\d{4})|(\d{4}-\d{2}-\d{2})/;
   const match = text.match(fechaRegex);
   if (match) {
-    const dateStr = match[0];
-    return new Date(dateStr);
+    return new Date(match[0]);
   }
   return null;
 }
@@ -338,9 +347,17 @@ function extractNombre(text: string): string | null {
 }
 
 function extractConcepto(text: string): string | null {
-  const conceptoRegex = /Concepto[:\s]*([^\n]+)/i;
-  const match = text.match(conceptoRegex);
-  return match ? match[1].trim() : null;
+  // Buscar en tabla de productos CFDI: PRODUCTO o DESCRIPCIÓN
+  const productoRegex = /(?:PRODUCTO|DESCRIPCIÓN)\s+([^\n]{10,100})/i;
+  const match = text.match(productoRegex);
+  if (match) {
+    return match[1].trim();
+  }
+
+  // Fallback: buscar línea después de DESCRIPCIÓN
+  const descripcionRegex = /DESCRIPCIÓN[^\n]*\n\s*([^\n]{10,100})/i;
+  const descMatch = text.match(descripcionRegex);
+  return descMatch ? descMatch[1].trim() : null;
 }
 
 // ========================================

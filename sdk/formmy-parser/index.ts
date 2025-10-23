@@ -1,12 +1,15 @@
 /**
- * Formmy Parser SDK
- * Official TypeScript/JavaScript SDK for Formmy Parser & RAG API
+ * Formmy SDK
+ * RAG as a Service - Official TypeScript/JavaScript SDK
+ *
+ * Upload documents → Query knowledge → Get AI answers
+ * We handle: parsing, chunking, embeddings, vector storage, semantic search
  *
  * @packageDocumentation
  */
 
 // Main client
-export { FormmyParser } from './client';
+export { Formmy, FormmyParser } from './client.js';
 
 // Types
 export type {
@@ -19,7 +22,7 @@ export type {
   RAGQueryOptions,
   RAGQueryResult,
   RAGSource,
-} from './types';
+} from './types.js';
 
 // Errors
 export {
@@ -32,8 +35,8 @@ export {
   ParsingFailedError,
   TimeoutError,
   NetworkError,
-} from './errors';
+} from './errors.js';
 
 // Re-export as default for CommonJS compatibility
-import { FormmyParser } from './client';
+import { FormmyParser } from './client.js';
 export default FormmyParser;

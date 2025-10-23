@@ -1,9 +1,12 @@
 /**
- * Formmy Parser SDK Client
- * Production-ready TypeScript client with retry logic, error handling, and dual environment support
+ * Formmy SDK Client
+ * RAG as a Service - Upload documents, query knowledge base
+ *
+ * We handle: parsing, chunking, embeddings, vector storage, semantic search
+ * You handle: upload docs → query → get answers
  */
-import { type ParserConfig, type ParsingJob, type ParsingMode, type RAGQueryOptions, type RAGQueryResult, type WaitForOptions } from './types';
-export declare class FormmyParser {
+import { type ParserConfig, type ParsingJob, type ParsingMode, type RAGQueryOptions, type RAGQueryResult, type WaitForOptions } from './types.js';
+export declare class Formmy {
     private apiKey;
     private baseUrl;
     private debug;
@@ -87,5 +90,54 @@ export declare class FormmyParser {
      * ```
      */
     query(query: string, chatbotId: string, options?: RAGQueryOptions): Promise<RAGQueryResult>;
+    /**
+     * List all contexts (documents) in a chatbot's knowledge base
+     *
+     * @param chatbotId - The chatbot ID to list contexts from
+     * @returns List of contexts with metadata
+     *
+     * @example
+     * ```typescript
+     * const contexts = await formmy.listContexts('chatbot_123');
+     * console.log(`Total: ${contexts.totalContexts}`);
+     * console.log(contexts.contexts); // Array of documents
+     * ```
+     */
+    listContexts(chatbotId: string): Promise<any>;
+    /**
+     * Upload text content directly to knowledge base
+     *
+     * @param content - Text content to upload
+     * @param options - Upload options including chatbotId and metadata
+     * @returns Upload result with contextId and credits used
+     *
+     * @example
+     * ```typescript
+     * await formmy.uploadText('Horarios: Lun-Vie 9am-6pm', {
+     *   chatbotId: 'chatbot_123',
+     *   metadata: { title: 'Horarios de atención' }
+     * });
+     * ```
+     */
+    uploadText(content: string, options: {
+        chatbotId: string;
+        metadata?: {
+            title?: string;
+            type?: string;
+        };
+    }): Promise<any>;
+    /**
+     * Delete a context from the knowledge base
+     *
+     * @param contextId - The context ID to delete
+     * @param chatbotId - The chatbot ID that owns the context
+     *
+     * @example
+     * ```typescript
+     * await formmy.deleteContext('ctx_xyz789', 'chatbot_123');
+     * ```
+     */
+    deleteContext(contextId: string, chatbotId: string): Promise<void>;
 }
+export { Formmy as FormmyParser };
 //# sourceMappingURL=client.d.ts.map

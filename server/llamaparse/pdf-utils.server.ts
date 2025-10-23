@@ -1,3 +1,5 @@
+import { getDocumentProxy } from "unpdf";
+
 /**
  * Cuenta las páginas de un PDF desde un buffer
  * @param buffer Buffer del PDF
@@ -5,10 +7,9 @@
  */
 export async function countPDFPages(buffer: Buffer): Promise<number> {
   try {
-    // Usar require dinámico para pdf-parse (CommonJS module)
-    const pdfParse = (await import("pdf-parse")).default;
-    const data = await pdfParse(buffer);
-    return data.numpages;
+    const uint8Array = new Uint8Array(buffer);
+    const pdf = await getDocumentProxy(uint8Array);
+    return pdf.numPages;
   } catch (error) {
     console.error("Error counting PDF pages:", error);
     // Fallback: estimar ~10 páginas si falla

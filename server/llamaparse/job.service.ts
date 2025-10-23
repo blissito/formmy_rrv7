@@ -4,6 +4,7 @@ import { LlamaParseReader } from "llama-cloud-services";
 import { deleteParserFile } from "./upload.service";
 import { validateAndDeduct } from "./credits.service";
 import { countPDFPages, calculateCreditsForPages } from "./pdf-utils.server";
+import { extractText, getDocumentProxy } from "unpdf";
 
 interface CreateParsingJobParams {
   chatbotId: string;
@@ -185,11 +186,14 @@ async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingR
     if (fileName.toLowerCase().endsWith('.txt')) {
       markdown = buffer.toString('utf-8');
     } else if (fileName.toLowerCase().endsWith('.pdf')) {
-      // Usar pdf-parse para extracción básica de texto
-      const pdfParse = (await import("pdf-parse")).default;
-      const data = await pdfParse(buffer);
-      markdown = data.text;
-      pages = data.numpages;
+      // Usar unpdf para extracción básica de texto (más confiable que pdf-parse)
+      const uint8Array = new Uint8Array(buffer);
+      const result = await extractText(uint8Array);
+      const pdf = await getDocumentProxy(uint8Array);
+
+      // unpdf retorna array de strings (uno por página)
+      markdown = Array.isArray(result.text) ? result.text.join("\n\n") : result.text;
+      pages = pdf.numPages;
     } else {
       // Para otros formatos, intentar leer como texto
       markdown = buffer.toString('utf-8');

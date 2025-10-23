@@ -12,13 +12,13 @@
 import type { ActionFunctionArgs } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
-import { parseXMLInvoice, isValidSATXML } from "server/sat/xml-parser.service";
-import { parsePDFInvoice, isValidPDF } from "server/sat/pdf-parser.service";
+import { parseXMLInvoice, isValidSATXML } from "server/sat/xml-parser.service.server";
+import { parsePDFInvoice, isValidPDF } from "server/sat/pdf-parser.service.server";
 import {
   validateInvoice,
   checkBlacklists,
   addBlacklistWarnings,
-} from "server/sat/invoice-validator.service";
+} from "server/sat/invoice-validator.service.server";
 
 export async function action({ request }: ActionFunctionArgs) {
   const userFromSession = await getUserOrRedirect(request);
@@ -66,6 +66,7 @@ export async function action({ request }: ActionFunctionArgs) {
   // Procesar cada archivo
   for (const file of files) {
     try {
+      console.log(`📄 [SAT Upload] Procesando archivo: ${file.name}`);
       const buffer = Buffer.from(await file.arrayBuffer());
       const fileName = file.name;
 
@@ -74,16 +75,20 @@ export async function action({ request }: ActionFunctionArgs) {
       let selectedParseMode = parseMode;
 
       if (selectedParseMode === "auto") {
+        console.log(`🔍 [SAT Upload] Detectando tipo de archivo...`);
         if (isValidSATXML(buffer)) {
           selectedParseMode = "XML_LOCAL";
+          console.log(`✅ [SAT Upload] Detectado como XML SAT`);
         } else if (isValidPDF(buffer)) {
           selectedParseMode = "PDF_SIMPLE";
+          console.log(`✅ [SAT Upload] Detectado como PDF`);
         } else {
-          throw new Error("Formato de archivo no soportado");
+          throw new Error("Formato de archivo no soportado. Solo se aceptan archivos XML (CFDI) o PDF de facturas SAT.");
         }
       }
 
       // Parsear según método
+      console.log(`⚙️ [SAT Upload] Parseando con método: ${selectedParseMode}`);
       if (selectedParseMode === "XML_LOCAL") {
         parsedData = await parseXMLInvoice(buffer);
       } else if (selectedParseMode === "PDF_SIMPLE") {
@@ -91,6 +96,8 @@ export async function action({ request }: ActionFunctionArgs) {
       } else {
         throw new Error(`Método de parseo no implementado: ${selectedParseMode}`);
       }
+
+      console.log(`✅ [SAT Upload] Archivo parseado exitosamente. UUID: ${parsedData.uuid}`);
 
       // Validar datos parseados
       const validation = validateInvoice(parsedData);
@@ -163,38 +170,28 @@ export async function action({ request }: ActionFunctionArgs) {
           chatbotId,
           contactId: contact.id,
 
-          // Datos de la factura
+          // Datos CFDI (campos exactos del schema)
           uuid: parsedData.uuid,
-          version: parsedData.version,
+          rfcEmisor: parsedData.rfcEmisor,
+          rfcReceptor: parsedData.rfcReceptor,
+          nombreEmisor: parsedData.nombreEmisor,
           tipo: parsedData.tipo,
           fecha: parsedData.fecha,
-          total: parsedData.total,
           subtotal: parsedData.subtotal,
           iva: parsedData.iva,
-          moneda: parsedData.moneda,
-          metodoPago: parsedData.metodoPago,
-          formaPago: parsedData.formaPago,
-
-          // Emisor
-          nombreEmisor: parsedData.nombreEmisor,
-          rfcEmisor: parsedData.rfcEmisor,
-          regimenFiscalEmisor: parsedData.regimenFiscalEmisor,
-
-          // Receptor
-          nombreReceptor: parsedData.nombreReceptor,
-          rfcReceptor: parsedData.rfcReceptor,
-          usoCFDI: parsedData.usoCFDI,
-
-          // Conceptos
+          total: parsedData.total,
           concepto: parsedData.concepto,
+          metodoPago: parsedData.metodoPago,
 
-          // Metadata de parseo
+          // Validación SAT
+          satStatus: "PENDING_VALIDATION",
+
+          // Parseo con confianza
           parseMethod: parsedData.parseMethod,
           confidence: validation.confidence,
           status: validation.status,
-          satStatus: "PENDING_VALIDATION", // Se validará después con Facturama
-          warnings: finalWarnings,
           creditsUsed: 0, // XML y PDF_SIMPLE son gratis
+          warnings: finalWarnings,
         },
       });
 
@@ -216,15 +213,18 @@ export async function action({ request }: ActionFunctionArgs) {
         warnings: finalWarnings,
       });
     } catch (error: any) {
+      console.error(`❌ [SAT Upload] Error procesando ${file.name}:`, error);
       errorCount++;
       results.push({
         success: false,
         fileName: file.name,
-        error: error.message,
+        error: error.message || "Error desconocido al procesar archivo",
         status: "PARSE_ERROR",
       });
     }
   }
+
+  console.log(`📊 [SAT Upload] Resumen: ${processedCount} procesadas, ${approvedCount} aprobadas, ${needsReviewCount} requieren revisión, ${errorCount} errores`);
 
   return Response.json({
     success: true,
