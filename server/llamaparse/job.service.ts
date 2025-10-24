@@ -4,7 +4,7 @@ import { LlamaParseReader } from "llama-cloud-services";
 import { deleteParserFile } from "./upload.service";
 import { validateAndDeduct } from "./credits.service";
 import { countPDFPages, calculateCreditsForPages } from "./pdf-utils.server";
-import { extractText, getDocumentProxy } from "unpdf";
+import pdfParse from "pdf-parse";
 
 interface CreateParsingJobParams {
   chatbotId: string;
@@ -186,29 +186,16 @@ async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingR
     if (fileName.toLowerCase().endsWith('.txt')) {
       markdown = buffer.toString('utf-8');
     } else if (fileName.toLowerCase().endsWith('.pdf')) {
-      // Usar unpdf para extracción básica de texto (más confiable que pdf-parse)
-      const uint8Array = new Uint8Array(buffer);
+      // Usar pdf-parse para extracción básica de texto
+      // Es más simple y confiable que unpdf para parsing básico
+      const pdfData = await pdfParse(buffer, {
+        // Opciones para mejor compatibilidad
+        max: 0, // Parse todas las páginas
+      });
 
-      // Extract text and document info
-      const result = await extractText(uint8Array);
-      const pdf = await getDocumentProxy(uint8Array);
-
-      // Convertir result.text a string serializable
-      // unpdf puede retornar string directo o array de strings
-      let extractedText: string;
-      if (Array.isArray(result.text)) {
-        extractedText = result.text.join("\n\n");
-      } else if (typeof result.text === 'string') {
-        extractedText = result.text;
-      } else {
-        // Fallback: intentar stringify si es objeto
-        extractedText = String(result.text);
-      }
-
-      markdown = extractedText;
-
-      // Extraer solo el número de páginas (primitivo serializable)
-      pages = typeof pdf.numPages === 'number' ? pdf.numPages : 1;
+      // pdfParse retorna datos serializables directamente
+      markdown = pdfData.text || '';
+      pages = pdfData.numpages || 1;
     } else {
       // Para otros formatos, intentar leer como texto
       markdown = buffer.toString('utf-8');
