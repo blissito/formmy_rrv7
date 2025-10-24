@@ -7,7 +7,7 @@ import { countPDFPages, calculateCreditsForPages } from "./pdf-utils.server";
 // pdf-parse es CommonJS, necesita import dinámico
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse');
+const pdfParse = require('pdf-parse').default || require('pdf-parse');
 
 interface CreateParsingJobParams {
   chatbotId: string;
