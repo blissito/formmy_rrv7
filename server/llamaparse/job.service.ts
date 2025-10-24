@@ -4,10 +4,6 @@ import { LlamaParseReader } from "llama-cloud-services";
 import { deleteParserFile } from "./upload.service";
 import { validateAndDeduct } from "./credits.service";
 import { countPDFPages, calculateCreditsForPages } from "./pdf-utils.server";
-// pdf-parse es CommonJS, necesita import dinámico
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse').default || require('pdf-parse');
 
 interface CreateParsingJobParams {
   chatbotId: string;
@@ -165,8 +161,16 @@ function getParseConfig(mode: ParsingMode, options: any) {
 }
 
 /**
- * Parsing básico DEFAULT (sin LlamaParse) - GRATIS
- * Extrae texto simple de archivos sin procesamiento avanzado
+ * ⚠️ NUNCA CAMBIAR ESTA BIBLIOTECA: unpdf es la opción correcta
+ *
+ * Razones:
+ * - Diseñada específicamente para serverless/edge/workers
+ * - Mantenida activamente (2025)
+ * - Optimizada para Agenda.js background jobs
+ * - Recomendada por la comunidad sobre pdf-parse
+ *
+ * Si hay errores de serialización, el problema es NUESTRO USO,
+ * no la biblioteca. Asegurarse de retornar SOLO primitivos.
  */
 async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingResult> {
   const startTime = Date.now();
@@ -189,16 +193,15 @@ async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingR
     if (fileName.toLowerCase().endsWith('.txt')) {
       markdown = buffer.toString('utf-8');
     } else if (fileName.toLowerCase().endsWith('.pdf')) {
-      // Usar pdf-parse para extracción básica de texto
-      // Es más simple y confiable que unpdf para parsing básico
-      const pdfData = await pdfParse(buffer, {
-        // Opciones para mejor compatibilidad
-        max: 0, // Parse todas las páginas
-      });
+      // ⚠️ unpdf: NO CAMBIAR - es la biblioteca correcta
+      const { extractText, getDocumentProxy } = await import('unpdf');
 
-      // pdfParse retorna datos serializables directamente
-      markdown = pdfData.text || '';
-      pages = pdfData.numpages || 1;
+      // Extraer texto de todas las páginas
+      const { text, totalPages } = await extractText(buffer, { mergePages: true });
+
+      // ✅ CRÍTICO: Solo primitivos serializables
+      markdown = String(text || ''); // Forzar string
+      pages = Number(totalPages || 1); // Forzar number
     } else {
       // Para otros formatos, intentar leer como texto
       markdown = buffer.toString('utf-8');
@@ -207,11 +210,12 @@ async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingR
     const processingTime = (Date.now() - startTime) / 1000;
     console.log(`✅ Basic parsed ${pages} pages in ${processingTime.toFixed(2)}s (FREE)`);
 
-    // Asegurar que solo retornemos primitivos serializables
+    // ✅ CRÍTICO: Garantizar que SOLO retornamos primitivos (string, number)
+    // Esto evita errores de serialización en Agenda.js workers
     return {
-      markdown: String(markdown), // Asegurar que es string
-      pages: Number(pages),        // Asegurar que es number
-      processingTime: Number(processingTime.toFixed(2)), // Asegurar que es number
+      markdown: String(markdown),
+      pages: Number(pages),
+      processingTime: Number(parseFloat(processingTime.toFixed(2))),
     };
   } catch (error) {
     console.error("❌ Basic parsing error:", error);
@@ -341,11 +345,14 @@ export async function processParsingJob(
           },
         });
 
-        if (vectorResult.success && vectorResult.embeddingsCreated > 0) {
+        // ✅ Success puede ser:
+        // - embeddingsCreated > 0 (nuevo contenido vectorizado)
+        // - embeddingsSkipped > 0 (todo era duplicado, pero es válido)
+        if (vectorResult.success) {
           console.log(`✅ Context vectorized: ${vectorResult.embeddingsCreated} embeddings created, ${vectorResult.embeddingsSkipped} skipped`);
         } else {
-          // Vectorización falló o no creó embeddings
-          throw new Error(`Vectorization failed: ${vectorResult.error || 'No embeddings created'}`);
+          // Solo fallar si vectorResult.success === false (error real)
+          throw new Error(`Vectorization failed: ${vectorResult.error || 'Unknown error'}`);
         }
       } catch (vectorError) {
         console.error(`⚠️ Vectorization failed after retries:`, vectorError);

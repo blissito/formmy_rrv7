@@ -925,10 +925,33 @@ const result = await parser.waitFor(job.id);
 console.log(result.markdown);
 ```
 
+### ⚠️ BIBLIOTECA PDF: NUNCA CAMBIAR
+
+**Biblioteca utilizada**: `unpdf` (https://github.com/unjs/unpdf)
+
+**Razones por las que ES LA CORRECTA**:
+- ✅ Diseñada específicamente para serverless/edge/workers (Agenda.js)
+- ✅ Mantenida activamente (2025)
+- ✅ Recomendada por la comunidad sobre `pdf-parse`
+- ✅ Sin dependencias problemáticas de serialización
+
+**SI HAY ERRORES**:
+- ❌ NO es culpa de la biblioteca
+- ✅ ES problema de NUESTRO USO (no retornar primitivos)
+- ✅ Asegurar que `basicParsing()` retorna SOLO: `{ markdown: string, pages: number, processingTime: number }`
+- ✅ Usar `String()`, `Number()` para forzar primitivos
+
+**Ubicación**: `/server/llamaparse/job.service.ts:163-226`
+
+**NUNCA VOLVER A**: pdf-parse, pdf.js-extract, pdfjs-dist directamente
+
+---
+
 ### Pricing (Créditos por Página)
 | Modo | Créditos/Página | Features |
 |------|-----------------|----------|
-| COST_EFFECTIVE | 1 | Parsing básico, rápido |
+| DEFAULT | 0 | Parsing básico GRATIS con unpdf |
+| COST_EFFECTIVE | 1 | Parsing básico LlamaParse, rápido |
 | AGENTIC | 3 | Tablas estructuradas, mejor calidad |
 | AGENTIC_PLUS | 6 | OCR avanzado, imágenes, máxima precisión |
 
