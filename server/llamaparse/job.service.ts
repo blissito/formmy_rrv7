@@ -194,10 +194,13 @@ async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingR
       markdown = buffer.toString('utf-8');
     } else if (fileName.toLowerCase().endsWith('.pdf')) {
       // ⚠️ unpdf: NO CAMBIAR - es la biblioteca correcta
-      const { extractText, getDocumentProxy } = await import('unpdf');
+      const { extractText } = await import('unpdf');
+
+      // ✅ CRÍTICO: unpdf requiere Uint8Array, NO Buffer
+      const uint8Array = new Uint8Array(buffer);
 
       // Extraer texto de todas las páginas
-      const { text, totalPages } = await extractText(buffer, { mergePages: true });
+      const { text, totalPages } = await extractText(uint8Array, { mergePages: true });
 
       // ✅ CRÍTICO: Solo primitivos serializables
       markdown = String(text || ''); // Forzar string
