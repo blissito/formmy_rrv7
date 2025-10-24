@@ -4,7 +4,10 @@ import { LlamaParseReader } from "llama-cloud-services";
 import { deleteParserFile } from "./upload.service";
 import { validateAndDeduct } from "./credits.service";
 import { countPDFPages, calculateCreditsForPages } from "./pdf-utils.server";
-import pdfParse from "pdf-parse";
+// pdf-parse es CommonJS, necesita import dinámico
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
 
 interface CreateParsingJobParams {
   chatbotId: string;
