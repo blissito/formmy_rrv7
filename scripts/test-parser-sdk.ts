@@ -22,37 +22,35 @@ async function testParserSDK() {
     retries: 3
   });
 
-  // Si no existe, crear un txt que simule un doc
+  // Crear un txt con contenido único usando timestamp
   const testDocPath = path.join(__dirname, 'test-doc.txt');
-  if (!fs.existsSync(testDocPath)) {
-    fs.writeFileSync(testDocPath, `
-Documento de Prueba para Parser API
+  const timestamp = Date.now();
+  fs.writeFileSync(testDocPath, `
+Documento de Prueba para Parser API - Generado el ${new Date(timestamp).toISOString()}
 
-Este es un documento de prueba para validar el funcionamiento del Parser API v1.
+Este es un documento de prueba ÚNICO con timestamp ${timestamp} para validar el funcionamiento del Parser API v1 en modo DEFAULT.
 
 Sección 1: Introducción
-Este sistema permite parsear documentos usando LlamaParse.
+Este sistema permite parsear documentos usando parsing básico (modo DEFAULT) sin costo de créditos.
 
-Sección 2: Features
-- Soporte para PDF, DOCX, XLSX, TXT
-- Tres modos de parsing
-- Sistema de créditos por página
+Sección 2: Features del Modo DEFAULT
+- Parsing básico de texto sin procesamiento avanzado
+- Soporte para TXT y PDF
+- GRATIS - 0 créditos por documento
+- Extracción simple de texto plano
 
-Tabla de Ejemplo:
-| Modo | Créditos |
-|------|----------|
-| COST_EFFECTIVE | 1 |
-| AGENTIC | 3 |
-| AGENTIC_PLUS | 6 |
+Datos Únicos de esta Prueba:
+- Timestamp Unix: ${timestamp}
+- Fecha ISO: ${new Date(timestamp).toISOString()}
+- ID de Prueba: test-${timestamp}
 
 Conclusión:
-El sistema está listo para producción.
-    `.trim());
-  }
+El modo DEFAULT está funcionando correctamente después de corregir el error de deserialización.
+  `.trim());
 
   try {
     console.log('1️⃣ Iniciando parsing...');
-    const job = await parser.parse(testDocPath, 'AGENTIC');
+    const job = await parser.parse(testDocPath, 'DEFAULT');
 
     console.log('✅ Job creado:');
     console.log(`   ID: ${job.id}`);

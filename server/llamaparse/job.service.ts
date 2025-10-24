@@ -188,12 +188,27 @@ async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingR
     } else if (fileName.toLowerCase().endsWith('.pdf')) {
       // Usar unpdf para extracción básica de texto (más confiable que pdf-parse)
       const uint8Array = new Uint8Array(buffer);
+
+      // Extract text and document info
       const result = await extractText(uint8Array);
       const pdf = await getDocumentProxy(uint8Array);
 
-      // unpdf retorna array de strings (uno por página)
-      markdown = Array.isArray(result.text) ? result.text.join("\n\n") : result.text;
-      pages = pdf.numPages;
+      // Convertir result.text a string serializable
+      // unpdf puede retornar string directo o array de strings
+      let extractedText: string;
+      if (Array.isArray(result.text)) {
+        extractedText = result.text.join("\n\n");
+      } else if (typeof result.text === 'string') {
+        extractedText = result.text;
+      } else {
+        // Fallback: intentar stringify si es objeto
+        extractedText = String(result.text);
+      }
+
+      markdown = extractedText;
+
+      // Extraer solo el número de páginas (primitivo serializable)
+      pages = typeof pdf.numPages === 'number' ? pdf.numPages : 1;
     } else {
       // Para otros formatos, intentar leer como texto
       markdown = buffer.toString('utf-8');
@@ -202,7 +217,12 @@ async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingR
     const processingTime = (Date.now() - startTime) / 1000;
     console.log(`✅ Basic parsed ${pages} pages in ${processingTime.toFixed(2)}s (FREE)`);
 
-    return { markdown, pages, processingTime };
+    // Asegurar que solo retornemos primitivos serializables
+    return {
+      markdown: String(markdown), // Asegurar que es string
+      pages: Number(pages),        // Asegurar que es number
+      processingTime: Number(processingTime.toFixed(2)), // Asegurar que es number
+    };
   } catch (error) {
     console.error("❌ Basic parsing error:", error);
     throw new Error(
