@@ -42,7 +42,7 @@ export function FormmyMessageEdition({
     updateVirtualConfig({ message });
 
   const handleConfettiSelection = (confetti: "paper" | "emoji" | null) => {
-    updateVirtualConfig({ confetti });
+    updateVirtualConfig({ confetti: confetti || undefined });
     if (!confetti) {
       setShowConfetti(false);
       return;
@@ -102,7 +102,7 @@ export function FormmyMessageEdition({
                         {/* PRO only */}
                         <AddImages
                           localStorageKey={`images-${projectId}`}
-                          selected={config.icon} // @TODO remove null use undefined
+                          selected={config.icon || null} // @TODO remove null use undefined
                           onClick={handleIconSelection}
                           isPro={isPro}
                         />
@@ -226,7 +226,7 @@ export function FormmyMessageEdition({
       <section className={twMerge("col-span-12 md:col-span-8 h-fit  md:h-full md:min-h-[calc(100vh-300px)]", config.theme)}>
       <div className="w-full h-full noscroll bg-slate-100 dark:bg-hole overflow-scroll py-10 md:py-0">
       <div className="grid place-items-center h-[90%] ">
-            <Message config={config} type={type} />
+            <Message config={config} type={type as "subscription" | "contact"} />
             {showConfetti ? (
               <EmojiConfetti
                 mode={config.confetti === "emoji" ? "emojis" : "default"}
@@ -283,9 +283,9 @@ const AddImages = ({
 
   const removeImage = (index: number) => {
     const newArr = [...images];
-    const url = newArr.splice(index, 1);
+    const url = newArr.splice(index, 1)[0];
     set(newArr);
-    removePublicPic(url);
+    if (url) removePublicPic(url);
   };
 
   useEffect(() => {

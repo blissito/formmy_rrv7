@@ -625,7 +625,6 @@ export default function ChatPreview({
               <MessageBubble
                 key={idx}
                 message={msg}
-                primaryColor={chatbot.primaryColor || "#9A99EA"}
                 avatarUrl={chatbot.avatarUrl || undefined}
               />
             ))}
@@ -636,7 +635,6 @@ export default function ChatPreview({
           {chatLoading && (
             <MessageBubble
               role="assistant"
-              primaryColor={chatbot.primaryColor || "#9A99EA"}
               avatarUrl={chatbot.avatarUrl || undefined}
             >
               <LoadingIndicator />

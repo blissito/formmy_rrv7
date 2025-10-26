@@ -33,7 +33,7 @@ export const ChatForm = ({
   onAvatarFileChange,
 }: ChatFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imageToShow, setImageToShow] = useState<string>(avatarUrl);
+  const [imageToShow, setImageToShow] = useState<string>(avatarUrl || "");
   const [showColorPicker, setShowColorPicker] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

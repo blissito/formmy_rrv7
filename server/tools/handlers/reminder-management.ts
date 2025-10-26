@@ -10,7 +10,7 @@ export async function listRemindersHandler(
   try {
     const pendingReminders = await db.scheduledAction.findMany({
       where: {
-        chatbotId: context.chatbotId,
+        chatbotId: context.chatbotId || undefined,
         type: 'email',
         status: 'pending',
         runAt: {
@@ -57,11 +57,12 @@ export async function listRemindersHandler(
       data: { reminders: pendingReminders }
     };
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error listando recordatorios:", error);
+    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      message: `❌ Error al consultar recordatorios: ${error.message}`
+      message: `❌ Error al consultar recordatorios: ${message}`
     };
   }
 }
@@ -78,7 +79,7 @@ export async function cancelReminderHandler(
     const reminder = await db.scheduledAction.findFirst({
       where: {
         id,
-        chatbotId: context.chatbotId,
+        chatbotId: context.chatbotId || undefined,
         type: 'email',
         status: 'pending'
       }
@@ -113,11 +114,12 @@ export async function cancelReminderHandler(
       data: { cancelledReminder: reminder }
     };
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error cancelando recordatorio:", error);
+    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      message: `❌ Error al cancelar el recordatorio: ${error.message}`
+      message: `❌ Error al cancelar el recordatorio: ${message}`
     };
   }
 }
@@ -140,7 +142,7 @@ export async function updateReminderHandler(
     const existingReminder = await db.scheduledAction.findFirst({
       where: {
         id,
-        chatbotId: context.chatbotId,
+        chatbotId: context.chatbotId || undefined,
         type: 'email',
         status: 'pending'
       }
@@ -206,11 +208,12 @@ export async function updateReminderHandler(
       data: { updatedReminder: { ...existingReminder, data: newData, runAt: newRunAt } }
     };
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error actualizando recordatorio:", error);
+    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      message: `❌ Error al actualizar el recordatorio: ${error.message}`
+      message: `❌ Error al actualizar el recordatorio: ${message}`
     };
   }
 }
@@ -227,7 +230,7 @@ export async function deleteReminderHandler(
     const reminder = await db.scheduledAction.findFirst({
       where: {
         id,
-        chatbotId: context.chatbotId,
+        chatbotId: context.chatbotId || undefined,
         type: 'email'
       }
     });
@@ -260,11 +263,12 @@ export async function deleteReminderHandler(
       data: { deletedReminder: reminder }
     };
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error borrando recordatorio:", error);
+    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      message: `❌ Error al borrar el recordatorio: ${error.message}`
+      message: `❌ Error al borrar el recordatorio: ${message}`
     };
   }
 }

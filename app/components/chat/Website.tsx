@@ -20,7 +20,12 @@ export const Website = ({
   onMarkForRemoval?: (entry: WebsiteEntry) => void;
   chatbotId?: string;
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    url: string;
+    includeRoutes: string;
+    excludeRoutes: string;
+    updateFrequency: "yearly" | "monthly";
+  }>({
     url: "",
     includeRoutes: "",
     excludeRoutes: "",

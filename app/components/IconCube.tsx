@@ -10,7 +10,7 @@ export const IconCube = ({
   className,
   action,
 }: {
-  action: ReactNode;
+  action?: ReactNode;
   className?: string;
   children?: ReactNode;
   onClick?: () => void;

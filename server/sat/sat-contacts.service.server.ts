@@ -270,7 +270,7 @@ export async function parseConstanciaFiscal(
   console.log(`📄 [SAT Contacts] Parseando Constancia Fiscal...`);
 
   // Importar LlamaParse
-  const { llamaParse } = await import("~/server/llamaparse/llamaparse.service");
+  const { llamaParse } = await import("../llamaparse/llamaparse.service");
 
   // Parsear con modo AGENTIC (mejor calidad para documentos oficiales)
   const result = await llamaParse(pdfBuffer, "AGENTIC", userId);

@@ -10,7 +10,7 @@ export const iconBtnClass =
 export default function Code({ project }: { project: ProjectType }) {
   const url = LINK + "/" + project.slug + "/form";
   const [copied, setCopied] = useState(false);
-  const timeout = useRef<ReturnType<typeof setTimeout>>();
+  const timeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const copyToClipboard = () => {
     if (timeout.current) {

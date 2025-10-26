@@ -16,7 +16,7 @@
  */
 
 import { db } from "~/utils/db.server";
-import { consumeCredits } from "~/server/llamaparse/credits.service";
+import { consumeCredits } from "../llamaparse/credits.service";
 
 // ========================================
 // Types

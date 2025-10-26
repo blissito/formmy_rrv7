@@ -75,32 +75,22 @@ export const UserRow = ({
   const fetcher = useFetcher();
   
   const handleToggleNotifications = (value: boolean) => {
-    fetcher.submit(
-      {
-        intent: "toggle_notifications_for_permission",
-        permissionId: permission?.id,
-        value,
-      },
-      { method: "POST", action: "/api/formmy" }
-    );
+    const formData = new FormData();
+    formData.append("intent", "toggle_notifications_for_permission");
+    formData.append("permissionId", permission?.id || "");
+    formData.append("value", value.toString());
+    fetcher.submit(formData, { method: "POST", action: "/api/formmy" });
   };
   const handleAction = (action: string) => {
+    const formData = new FormData();
+    formData.append("permissionId", permission?.id || "");
+
     if (action === "eliminar") {
-      fetcher.submit(
-        {
-          intent: "delete_permission",
-          permissionId: permission?.id,
-        },
-        { method: "POST", action: "/api/formmy" }
-      );
+      formData.append("intent", "delete_permission");
+      fetcher.submit(formData, { method: "POST", action: "/api/formmy" });
     } else if (action === "reenviar") {
-      fetcher.submit(
-        {
-          intent: "resend_invitation",
-          permissionId: permission?.id,
-        },
-        { method: "POST", action: "/api/formmy" }
-      );
+      formData.append("intent", "resend_invitation");
+      fetcher.submit(formData, { method: "POST", action: "/api/formmy" });
     }
   };
 
@@ -123,18 +113,18 @@ export const UserRow = ({
   const avatar =
     "/home/ghosty-avatar.svg";
 
-  const displayUser = isOwner ? user : permission?.user;
   const displayEmail = isOwner ? user?.email : permission?.email;
-  const displayName = isOwner ? user?.name : permission?.user?.name;
-  const displayPicture = isOwner ? user?.picture : permission?.user?.picture;
+  const displayName = isOwner ? user?.name : permission?.email?.split('@')[0];
+  const displayPicture = isOwner ? user?.picture : avatar;
 
   return (
     <section className="grid items-center grid-cols-10 my-3 border border-outlines md:p-4 p-2 rounded-xl">
       <div className="col-span-1">
         <img
           onError={(ev) => {
-            ev.target.onerror = null;
-            ev.target.src = avatar;
+            const target = ev.target as HTMLImageElement;
+            target.onerror = null;
+            target.src = avatar;
           }}
           className="md:w-10 md:h-10 w-6 h-6 rounded-full object-cover"
           src={displayPicture ?? avatar}
@@ -156,10 +146,10 @@ export const UserRow = ({
         {permission?.status === "active" && (
           <Toggle
             onChange={handleToggleNotifications}
-            defaultValue={permission?.notifications}
+            defaultValue={permission?.notifications ?? undefined}
           />
         )}
-        {isOwner && <Toggle defaultValue={true} disabled />}
+        {isOwner && <Toggle defaultValue={true} isDisabled />}
       </div>
       
       {!isOwner && (

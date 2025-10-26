@@ -183,9 +183,9 @@ export async function removeContextEmbeddings(
     where: {
       chatbotId,
       metadata: {
-        path: ['contextId'],
+        path: '$.contextId',
         equals: contextId
-      }
+      } as any // JSON filtering types are complex in Prisma
     }
   });
 

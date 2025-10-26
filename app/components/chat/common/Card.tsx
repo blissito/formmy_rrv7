@@ -13,7 +13,7 @@ export const Card = ({
   noSearch = true,
   action,
 }: {
-  noSearch?: true;
+  noSearch?: boolean;
   className?: string;
   navClassName?: string;
   children?: ReactNode;

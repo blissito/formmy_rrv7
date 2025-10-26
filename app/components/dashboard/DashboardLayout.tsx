@@ -107,7 +107,7 @@ export function DashboardLayout({
         </nav>
       </div>
       <div className="flex flex-col grow w-full md:pb-8 pb-0 ml-0 md:ml-[120px]">
-        <TopMenu user={user} />
+        {user && <TopMenu user={user} />}
         <div className="bg-white relative w-full h-full rounded-3xl md:rounded-[40px] min-h-[calc(100svh-144px)] max-h-[calc(100svh-144px)] overflow-y-scroll md:overflow-y-auto md:max-h-none noscroll">
           {children}
         </div>
@@ -152,7 +152,7 @@ export const TopMenu = ({ user }: { user: User }) => {
             <Menu.Button className="inline-flex w-full justify-center py-2 rounded-md text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
               <img
                 className="w-10 h-10 rounded-full"
-                src={user.picture}
+                src={user.picture || "/home/ghosty-avatar.svg"}
                 alt="avatar"
               />
             </Menu.Button>

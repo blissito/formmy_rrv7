@@ -97,16 +97,17 @@ export async function createPaymentLinkHandler(
       }
     };
     
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error generando link de pago:", error);
-    
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
     // Track error (solo si hay chatbotId)
     if (context.chatbotId) {
       ToolUsageTracker.trackUsage({
         chatbotId: context.chatbotId,
         toolName: 'create_payment_link',
         success: false,
-        errorMessage: error.message,
+        errorMessage,
         userMessage: context.message,
         metadata: { amount, currency, description }
       }).catch(console.error);

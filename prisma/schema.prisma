@@ -184,6 +184,10 @@ model User {
   purchasedCredits    Float     @default(0) // Créditos COMPRADOS que NO caducan (se usan primero, soporta decimales)
   lifetimeCreditsUsed Float     @default(0) // Total histórico de créditos usados (analytics, soporta decimales)
 
+  // Voice Credits Tracking (para LiveKit Voice AI)
+  voiceCreditsUsed Int   @default(0) // Créditos de voz consumidos en el mes actual
+  voiceMinutesUsed Float @default(0) // Minutos de conversación consumidos
+
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 }
@@ -277,6 +281,15 @@ model Chatbot {
   traces             Trace[]
   satInvoices        SatInvoice[]      @relation("ChatbotSatInvoices")
   satContacts        SatContact[]      @relation("ChatbotSatContacts")
+  voiceSessions      VoiceSession[]
+
+  // LiveKit Voice AI Configuration
+  voiceEnabled  Boolean @default(false)
+  ttsProvider   String? // "cartesia" | "elevenlabs" | "inworld"
+  ttsVoiceId    String? // ID de voz específica del proveedor
+  sttLanguage   String  @default("es-MX") // Idioma para Speech-to-Text
+  voiceWelcome  String? // Mensaje de bienvenida personalizado para voz
+  voiceGoodbye  String? // Mensaje de despedida personalizado para voz
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -815,4 +828,58 @@ model SatContact {
   @@index([type])
   @@index([isEFOS, isEDOS])
   @@index([satStatus])
+}
+
+// ============================================================================
+// VOICE AI (LIVEKIT) MODELS
+// ============================================================================
+
+enum VoiceSessionStatus {
+  ACTIVE
+  COMPLETED
+  ERROR
+  CANCELLED
+}
+
+model VoiceSession {
+  id             String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String             @db.ObjectId
+  chatbotId      String             @db.ObjectId
+  conversationId String?            @db.ObjectId
+
+  // LiveKit Room
+  roomId         String             @unique // LiveKit room ID
+  roomName       String             // Human-readable room name
+  participantSid String?            // Participant ID del usuario
+
+  // Configuración TTS usada
+  ttsProvider    String             // "cartesia" | "elevenlabs" | "inworld"
+  ttsVoiceId     String?            // Voice ID específica
+  sttLanguage    String             @default("es-MX")
+
+  // Timing
+  startTime      DateTime           @default(now())
+  endTime        DateTime?
+  durationMinutes Float?            // Duración total en minutos (con decimales)
+
+  // Métricas
+  status         VoiceSessionStatus @default(ACTIVE)
+  creditsUsed    Int                @default(0) // Créditos consumidos (5 por minuto)
+  messageCount   Int                @default(0) // Número de intercambios de mensajes
+
+  // Contenido
+  transcription  String?            // Transcripción completa de la conversación
+
+  // Error handling
+  errorMessage   String?
+
+  // Relaciones
+  chatbot        Chatbot            @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([userId, status])
+  @@index([chatbotId, startTime])
+  @@index([status])
 }
