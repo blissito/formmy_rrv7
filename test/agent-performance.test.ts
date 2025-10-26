@@ -1,11 +1,13 @@
 /**
  * Test de Performance para AgentDecisionEngine
- * 
+ *
  * Verificar que las optimizaciones funcionan correctamente
+ *
+ * NOTA: Test obsoleto - agent-decision-engine fue removido
  */
 
-import { agentEngine } from '../server/chatbot/agent-decision-engine';
-import { performanceMonitor } from '../server/chatbot/performance-monitor';
+// import { agentEngine } from '../server/chatbot/agent-decision-engine';
+// import { performanceMonitor } from '../server/chatbot/performance-monitor';
 
 // Test scenarios
 const testCases = [

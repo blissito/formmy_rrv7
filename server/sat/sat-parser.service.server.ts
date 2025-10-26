@@ -307,9 +307,24 @@ function extractUUID(text: string): string | null {
 
 function extractRFC(text: string, tipo: "Emisor" | "Receptor"): string | null {
   // RFC: 12-13 caracteres alfanuméricos
-  const rfcRegex = new RegExp(`${tipo}.*?RFC[:\\s]*([A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3})`, "i");
-  const match = text.match(rfcRegex);
-  return match ? match[1] : null;
+  // Patrón 1: Buscar "RFC: XXX" después de "DATOS DEL EMISOR/RECEPTOR"
+  const rfcConLabelRegex = new RegExp(`DATOS\\s+DEL\\s+${tipo.toUpperCase()}[\\s\\S]{0,200}?RFC[:\\s]*([A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3})`, "i");
+  const labelMatch = text.match(rfcConLabelRegex);
+  if (labelMatch) {
+    return labelMatch[1];
+  }
+
+  // Patrón 2: Buscar directamente "RFC: XXX" cerca del tipo
+  const rfcDirectRegex = new RegExp(`${tipo}[\\s\\S]{0,100}?RFC[:\\s]*([A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3})`, "i");
+  const directMatch = text.match(rfcDirectRegex);
+  if (directMatch) {
+    return directMatch[1];
+  }
+
+  // Patrón 3: Fallback - buscar cualquier RFC válido después de mencionar el tipo
+  const fallbackRegex = new RegExp(`${tipo}[\\s\\S]{0,50}?([A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3})`, "i");
+  const fallbackMatch = text.match(fallbackRegex);
+  return fallbackMatch ? fallbackMatch[1] : null;
 }
 
 function extractTotal(text: string): number | null {
@@ -341,9 +356,38 @@ function extractFecha(text: string): Date | null {
 }
 
 function extractNombre(text: string): string | null {
-  const nombreRegex = /Emisor[:\s]*([A-ZÑ\s]+)/i;
-  const match = text.match(nombreRegex);
-  return match ? match[1].trim() : null;
+  // Patrón 1: "Nombre: COMERCIAL CITY FRESKO" (más común en PDFs)
+  const nombreConLabelRegex = /Nombre[:\s]+([A-ZÑ0-9\s,\.&]+?)(?:\s+RFC|\s+Régimen|\n|$)/i;
+  const labelMatch = text.match(nombreConLabelRegex);
+  if (labelMatch) {
+    const nombre = labelMatch[1].trim();
+    // Validar que NO sea un título/keyword
+    if (isValidNombre(nombre)) {
+      return nombre;
+    }
+  }
+
+  // Patrón 2: "RFC: XXX Nombre: YYY" (cuando están en la misma línea)
+  const nombreDespuesRFCRegex = /RFC[:\s]+[A-Z&Ñ0-9]{12,13}[\s]+Nombre[:\s]+([A-ZÑ0-9\s,\.&]{3,100}?)(?:\s+Régimen|\n|$)/i;
+  const rfcNombreMatch = text.match(nombreDespuesRFCRegex);
+  if (rfcNombreMatch) {
+    const nombre = rfcNombreMatch[1].trim();
+    if (isValidNombre(nombre)) {
+      return nombre;
+    }
+  }
+
+  // Patrón 3: Fallback - buscar después de "DATOS DEL EMISOR"
+  const nombreDespuesEmisorRegex = /DATOS\s+DEL\s+EMISOR[\s\S]{0,200}?Nombre[:\s]+([A-ZÑ0-9\s,\.&]{3,100}?)(?:\s+Régimen|\n|$)/i;
+  const emisorMatch = text.match(nombreDespuesEmisorRegex);
+  if (emisorMatch) {
+    const nombre = emisorMatch[1].trim();
+    if (isValidNombre(nombre)) {
+      return nombre;
+    }
+  }
+
+  return null;
 }
 
 function extractConcepto(text: string): string | null {
@@ -424,4 +468,60 @@ function validateRFCFormat(rfc: string): boolean {
   // RFC: 12-13 caracteres, 3-4 letras + 6 dígitos + 3 alfanuméricos
   const rfcRegex = /^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$/;
   return rfcRegex.test(rfc);
+}
+
+/**
+ * Valida que un nombre extraído NO sea un título o keyword del SAT.
+ * Evita capturar cosas como "DATOS DEL EMISOR", "RFC", "EMISOR", etc.
+ */
+function isValidNombre(nombre: string): boolean {
+  if (!nombre || nombre.length < 3) {
+    return false;
+  }
+
+  // Lista de keywords/títulos que NO son nombres válidos
+  const invalidKeywords = [
+    "DATOS",
+    "EMISOR",
+    "RECEPTOR",
+    "RFC",
+    "REGIMEN",
+    "FISCAL",
+    "NOMBRE",
+    "COMPROBANTE",
+    "CFDI",
+    "FACTURA",
+    "TOTAL",
+    "SUBTOTAL",
+    "IVA",
+    "FOLIO",
+    "FECHA",
+    "EXPEDICION",
+    "LUGAR",
+    "DATOS DEL EMISOR",
+    "DATOS DEL RECEPTOR",
+  ];
+
+  // Normalizar para comparación
+  const nombreUpper = nombre.toUpperCase().trim();
+
+  // Verificar si el nombre es exactamente un keyword inválido
+  if (invalidKeywords.includes(nombreUpper)) {
+    return false;
+  }
+
+  // Verificar si el nombre es solo un keyword (sin otros caracteres)
+  for (const keyword of invalidKeywords) {
+    if (nombreUpper === keyword || nombreUpper.startsWith(keyword + " ") || nombreUpper.endsWith(" " + keyword)) {
+      return false;
+    }
+  }
+
+  // Verificar que tenga al menos 3 caracteres alfabéticos
+  const alphaChars = nombre.match(/[A-ZÑ]/gi);
+  if (!alphaChars || alphaChars.length < 3) {
+    return false;
+  }
+
+  return true;
 }

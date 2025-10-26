@@ -77,7 +77,7 @@ export async function sendGmailHandler(
 
     // Verificar que el chatbot tenga Gmail conectado
     const connections = await composio.connectedAccounts.list({
-      entityId: entityId,
+      userIds: [entityId],
       toolkitSlugs: ['gmail'],
     });
 
@@ -87,7 +87,7 @@ export async function sendGmailHandler(
         id: connections.items[0].id,
         toolkit: connections.items[0].toolkit,
         status: connections.items[0].status,
-        is_disabled: connections.items[0].is_disabled,
+        isDisabled: connections.items[0].authConfig?.isDisabled,
       });
     }
 
@@ -123,7 +123,7 @@ export async function sendGmailHandler(
       id: finalConnection.id,
       toolkit: finalConnection.toolkit?.slug,
       status: finalConnection.status,
-      is_disabled: finalConnection.is_disabled,
+      isDisabled: finalConnection.authConfig?.isDisabled,
     });
 
     // Ejecutar tool de Composio para enviar email
@@ -273,7 +273,7 @@ export async function readGmailHandler(
 
     // Verificar conexión
     const connections = await composio.connectedAccounts.list({
-      entityId: entityId,
+      userIds: [entityId],
       toolkitSlugs: ['gmail'],
     });
 
@@ -311,7 +311,7 @@ export async function readGmailHandler(
       id: finalConnection.id,
       toolkit: finalConnection.toolkit?.slug,
       status: finalConnection.status,
-      is_disabled: finalConnection.is_disabled,
+      isDisabled: finalConnection.authConfig?.isDisabled,
     });
 
     // Ejecutar tool de Composio para leer emails

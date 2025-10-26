@@ -1,6 +1,6 @@
 {
   "name": "formmy-sdk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "RAG as a Service - Official TypeScript SDK for Formmy. Upload documents, query knowledge base with AI-powered semantic search.",
   "type": "module",
   "main": "./dist/index.js",
@@ -93,5 +93,8 @@
   },
   "devDependencies": {
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "pdf-parse": "^2.4.5"
   }
 }

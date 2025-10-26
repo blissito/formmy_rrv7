@@ -7,7 +7,8 @@ import { tool } from "llamaindex";
 import { z } from "zod";
 
 // ===== TOOL CONTEXT TYPE (imported from types.ts) =====
-export type { ToolContext, ToolResponse } from './types';
+import type { ToolContext, ToolResponse } from './types';
+export type { ToolContext, ToolResponse };
 
 // ===== TOOL FACTORIES WITH CONTEXT INJECTION =====
 

@@ -17,7 +17,8 @@ import {
   HiSearch,
   HiFilter,
   HiUserGroup,
-  HiArrowLeft
+  HiArrowLeft,
+  HiTrash
 } from "react-icons/hi";
 import { useState, useEffect } from "react";
 
@@ -331,6 +332,28 @@ export async function action({ request }: ActionFunctionArgs) {
         tags: tags ? tags.split(",").map(t => t.trim()) : [],
       },
     });
+    return { success: true };
+  }
+
+  if (intent === "delete") {
+    const invoiceId = formData.get("invoiceId") as string;
+
+    // Verificar que la factura pertenece al usuario
+    const invoice = await db.satInvoice.findFirst({
+      where: {
+        id: invoiceId,
+        userId: userFromSession.id
+      }
+    });
+
+    if (!invoice) {
+      return { success: false, error: "Factura no encontrada" };
+    }
+
+    await db.satInvoice.delete({
+      where: { id: invoiceId },
+    });
+
     return { success: true };
   }
 
@@ -856,7 +879,7 @@ function InvoicesList({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-visible">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           Facturas Recientes
@@ -976,7 +999,7 @@ function InvoicesList({
                     </button>
 
                     {openDropdown === invoice.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg z-10 border border-gray-200 dark:border-gray-600">
+                      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg z-50 border border-gray-200 dark:border-gray-600">
                         <button
                           onClick={() => onViewDetails(invoice)}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 rounded-t-lg"
@@ -1019,12 +1042,23 @@ function InvoicesList({
                               const url = invoice.xmlUrl || invoice.pdfUrl;
                               if (url) window.open(url, "_blank");
                             }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 rounded-b-lg border-t border-gray-200 dark:border-gray-600"
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 border-t border-gray-200 dark:border-gray-600"
                           >
                             <HiDownload className="w-4 h-4" />
                             Descargar Archivo
                           </button>
                         )}
+                        <button
+                          onClick={() => {
+                            if (confirm("¿Estás seguro de eliminar esta factura?")) {
+                              handleAction("delete", invoice.id);
+                            }
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 rounded-b-lg border-t border-gray-200 dark:border-gray-600"
+                        >
+                          <HiTrash className="w-4 h-4" />
+                          Eliminar
+                        </button>
                       </div>
                     )}
                   </td>
