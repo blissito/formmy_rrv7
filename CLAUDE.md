@@ -1158,14 +1158,113 @@ ELEVENLABS_API_KEY=sk_xxx  # LEGACY - Solo para scripts de consulta (/scripts/ge
 - ⏳ Dashboard UI (Voice Settings tab)
 - ⏳ Testing scripts
 
-### Próximos Pasos
+### ⚠️ Estado Actual y Problemas Conocidos (Oct 28, 2025)
 
-1. **Frontend React** - Componentes VoiceChat y VoiceWaveform
-2. **Widget Embebible** - Script standalone para clientes
-3. **Dashboard UI** - Pestaña Voice Settings en chatbot config
-4. **SDK npm** - Extender `formmy-sdk` con `FormmyVoice` class
-5. **Testing** - Scripts de integración completos
-6. **Docs** - Actualizar APIDocumentation.tsx con Voice API v1
+**✅ Funcionando**:
+- Worker de LiveKit conectado y activo
+- Plugin de ElevenLabs configurado correctamente (voz nativa mexicana)
+- Sesiones de voz se crean exitosamente
+- Audio bidireccional (STT + TTS) operativo
+
+**❌ Problemas Identificados**:
+
+1. **Alucinaciones del Agente** ⚠️
+   - El agente responde con información NO basada en contexto/RAG
+   - Problema: Falta integración de tools (search_context, etc.) en el worker de voz
+   - El worker actual solo usa el LLM sin acceso a la base de conocimientos
+
+2. **Conversaciones NO se Guardan** ⚠️
+   - Las transcripciones NO se persisten en la base de datos
+   - Al terminar la llamada, la conversación desaparece
+   - No hay registro en `VoiceSession.transcription`
+   - No se refleja en el chat del dashboard
+
+3. **Tracking de Créditos Incompleto** ⚠️
+   - NO se sabe si se están deduciendo créditos de Formmy correctamente
+   - Falta verificar `consumeVoiceCredits()` en `/server/llamaparse/credits.service.ts`
+   - No hay logs de consumo de créditos en tiempo real
+   - Necesita auditoría: ¿Se cobra por minuto? ¿Se trackea duración real?
+
+4. **Créditos de ElevenLabs** ℹ️
+   - Se usan directamente los créditos de la cuenta de ElevenLabs (Free tier: 10K caracteres/mes)
+   - No hay doble tracking (Formmy + ElevenLabs), solo consumo directo
+   - Plan Free suficiente para testing (~65 min de TTS)
+
+### Mejores Prácticas de la Industria (Investigación Oct 28, 2025)
+
+**Qué guardar:**
+- **Transcripción + Audio**: Estándar en Vapi, Retell, LiveKit
+- **Transcripción sola**: Más común (compliance, searchable, menor storage)
+- **Audio solo**: Raro (solo para verificación forense)
+
+**Cómo guardar:**
+
+1. **Transcripciones en Chat** (RECOMENDADO para Formmy):
+   ```typescript
+   // Al finalizar llamada → guardar en Conversation messages
+   await prisma.message.create({
+     conversationId,
+     content: fullTranscript,
+     sender: "assistant",
+     metadata: {
+       source: "voice_call",
+       voiceSessionId,
+       durationSeconds,
+       creditsUsed
+     }
+   });
+   ```
+   **Beneficios**: Historial unificado, búsqueda fácil, continuidad texto↔voz
+
+2. **Audio en Cloud Storage** (Opcional, GDPR/compliance):
+   - LiveKit Egress → S3/GCS/Azure
+   - Formato: OGG (audio), MP4 (video)
+   - Retention: 30-90 días según compliance
+   - PII redaction automática (Retell feature)
+
+3. **LiveKit Recording Best Practices**:
+   ```typescript
+   // En worker, usar shutdown callback
+   session.addShutdownCallback(async () => {
+     const transcript = session.history
+       .map(item => `${item.role}: ${item.content}`)
+       .join('\n');
+
+     await saveTranscriptToDB(voiceSessionId, transcript);
+     await updateVoiceCredits(userId, durationMinutes);
+   });
+   ```
+
+**Storage Providers Recomendados**:
+- **Vapi**: PCI DSS Level 1 compliant (AWS S3, Azure, GCS, Cloudflare R2)
+- **Retell**: Auto PII redaction + 3 niveles (Everything, No PII, Basic only)
+- **LiveKit**: Full control, BYOS (Bring Your Own Storage)
+
+**Encryption/Compliance**:
+- AES-256 encryption at rest
+- TLS 1.3 in transit
+- RBAC (Role-Based Access Control)
+- GDPR/HIPAA/SOC 2 compliance
+- Data minimization (shortest retention periods)
+- Immutable audit logs
+
+### Próximos Pasos (Prioridad)
+
+**🔴 CRÍTICO (Funcionalidad Básica)**:
+1. **Persistir Transcripciones** - Implementar `session.addShutdownCallback()` en worker para guardar conversación en `VoiceSession.transcription` y crear mensajes en `Conversation`
+2. **Fix Alucinaciones** - Integrar tools de Formmy (search_context, save_contact, etc.) en el worker de voz para acceso a RAG/base de conocimientos
+3. **Tracking de Créditos** - Auditar y verificar `consumeVoiceCredits()`, agregar logs de consumo en tiempo real
+
+**🟡 IMPORTANTE (UX)**:
+4. **Mostrar Transcripción en Chat** - Al terminar llamada, reflejar conversación como mensajes en el dashboard
+5. **Testing de Créditos** - Script para verificar deducción correcta de créditos Formmy por minuto de voz
+
+**🟢 NICE TO HAVE (Features Avanzados)**:
+6. **Audio Recording** - Implementar LiveKit Egress para guardar audio en S3/GCS (compliance)
+7. **Frontend React** - Componentes VoiceChat y VoiceWaveform mejorados
+8. **Widget Embebible** - Script standalone para clientes
+9. **SDK npm** - Extender `formmy-sdk` con `FormmyVoice` class
+10. **Docs** - Actualizar APIDocumentation.tsx con Voice API v1
 
 ---
 
