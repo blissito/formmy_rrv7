@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { getSesRemitent, getSesTransport } from "./ses";
 
-type FreeTrialEmail = {
+type ProEmail = {
   email: string;
   name?: string;
 };
@@ -14,14 +14,14 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
+export const sendEnterpriseEmail = async ({ email, name }: ProEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
       to: email,
-      subject: "⏳ Últimos días de Formmy Chat 😱",
+      subject: "¡Tu experiencia en Formmy ENTERPRISE acaba de despegar! ✈️",
       html: `
-    <html>
+        <html>
         <head>
             <title>⏳ Últimos días de Formmy Chat 😱</title>
         </head>
@@ -48,7 +48,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                 <img
                     alt="cover"
                     style="width: 100%; height: auto"
-                    src="https://i.imgur.com/N8uvxtt.png"
+            src="https://i.imgur.com/RbvF29K.png"
                 />
                 <h2
                     style="
@@ -59,7 +59,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     text-align: left;
                     "
                 >
-                    ¡Hola ${name || 'amigo'}! Tu chatbot IA está por desconectarse
+            ¡${name || 'Amigo'}, tu experiencia en Formmy ENTERPRISE acaba de despegar! ✨
                 </h2>
                 <p
                     style="
@@ -70,12 +70,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     font-size: 16px;
                     "
                 >
-                    Tu chatbot IA ha estado trabajando duro estos días 🧠💬.
-                    Respondiendo dudas, guiando a tus clientes y dándole vida a tu
-                    sitio. Pero tu
-                    <strong>
-                    prueba gratuita de 60 días está a punto de terminar… ⏳</strong
-                    >
+                Tu suscripción ya está activa y ahora tienes todo lo que necesitas para llevar tu comunicación al siguiente nivel:   <strong>formularios ilimitados</strong> y nuestro   <strong>chatbot impulsado por IA</strong> que hará que tus clientes se sientan escuchados y atendidos, ¡todo el tiempo!
                 </p>
                 <p
                     style="
@@ -86,86 +81,33 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     font-size: 16px;
                     "
                 >
-                    ¿Y si te decimos que puedes mantenerlo activo a un precio especial?
+                Imagina chatbots que no solo recogen datos, sino que también<strong> hablan, responden y acompañan a tus visitantes en tiempo real.</strong> Así, tú puedes enfocarte en lo que realmente importa mientras el chatbot se encarga del resto.
                 </p>
-                <a href="https://www.formmy.app/dashboard/ghosty" target="blank">
+                
                     <p
                     style="
                         margin-top: 16px;
-                        color: #7271cc;
                         text-align: justify;
+                        color: #4b5563;
                         line-height: 140%;
                         font-size: 16px;
-                        text-decoration: underline;
+                    
                     "
                     >
-                    💥 Activa tu plan ahora y obtén 50% de descuento durante tu primer
-                    año.
+                    ¿Tienes dudas o necesitas ayuda para arrancar? Nuestro equipo está listo para apoyarte en cada paso:   <a style=" color: #7271cc;" href="mailto:hola@formmy.app" target="blank">hola@formmy.app</a> o pregúntale a <a style=" color: #7271cc;" href="https://www.formmy.app/dashboard/ghosty" target="blank">Ghosty</a> desde tu dashboard.
                     </p>
-                </a>
                 <p
                     style="
                     margin-top: 16px;
-                    color: #4b5563;
-                    text-align: left;
-                    line-height: 140%;
-                    font-size: 16px;
-                    "
-                >
-                    Así es, tu Formmy Chat IA seguirá funcionando 24/7 – respondiendo,
-                    vendiendo y dando soporte – por la mitad de precio. Pero esta oferta
-                    expira cuando termine tu prueba gratuita.
-                </p>
-
-                <p
-                    style="
-                    margin-top: 0px;
                     color: #4b5563;
                     text-align: justify;
                     line-height: 140%;
                     font-size: 16px;
                     "
                 >
-                    Tu chatbot IA ya abrió una nueva forma de conectar con tus clientes.
-                    Y lo mejor es que apenas está comenzando.
+        Estamos muy emocionados de acompañarte en esta aventura y ver todo lo que lograrás con Formmy ENTERPRISE ✨.
                 </p>
 
-                <div style="margin-top: 24px; margin-bottom: 24px;">
-                    <div
-                        style="
-                        border-radius: 12px;
-                        padding: 20px;
-                        text-align: left;
-                        background: #f5f5f5;
-                        display: inline-block;
-                        "
-                    >
-                        <p
-                        style="
-                            color: #4b5563;
-                            font-size: 14px;
-                            margin: 0 0 8px 0;
-                            text-transform: uppercase;
-                        
-                            font-weight: 600;
-                        "
-                        >
-                        🎁 TU CUPÓN EXCLUSIVO
-                        </p>
-                        <p
-                        style="
-                   
-                            font-size: 28px;
-                            font-weight: bold;
-                            margin: 8px 0 0px;
-                            letter-spacing: 2px;
-                            font-family: monospace;
-                        "
-                        >
-                        CHATBOT50
-                        </p>
-                    </div>
-                </div>
 
                 <a href="https://www.formmy.app/dashboard/ghosty" target="blank">
                     <button
@@ -175,7 +117,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                         font-weight: 500;
                         border-radius: 8px;
                         color: white;
-                        width: 260px;
+                        width: 160px;
                         text-align: center;
                         font-size: 16px;
                         margin-top: 8px;
@@ -183,7 +125,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                         border: none;
                     "
                     >
-                    Sí, quiero mi 50% y mi chatbot 👻
+                    Ir a mi dashboard
                     </button>
                 </a>
 
@@ -195,7 +137,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     font-size: 16px;
                     "
                 >
-                    Haz que tu web no se quede muda 😉
+                Un abrazo,
                 </p>
                 <p
                     style="
@@ -285,12 +227,6 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     <p style="color: #81838e; font-size: 8px">
                         Derechos Reservados 2025 ®
                     </p>
-                    <p style="color: #81838e; font-size: 10px; text-align: center; margin-top: 8px;">
-                        <a href="https://www.formmy.app/unsubscribe?email=${encodeURIComponent(email)}&type=marketing" 
-                           style="color: #81838e; text-decoration: underline;">
-                           ¿No deseas recibir estos correos? Darse de baja
-                        </a>
-                    </p>
                     </div>
                 </div>
                 </div>
@@ -301,7 +237,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
       `,
     })
     .then((r: any) => {
-      console.log('Free Trial email sent successfully:', r);
+      console.log(' Pro email sent successfully:', r);
     })
-    .catch((e: Error) => console.error('Error sending free trial email:', e));
+    .catch((e: Error) => console.error('Error sending Pro email:', e));
 };

@@ -79,7 +79,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     margin-top: 16px;
                     margin-bottom: 4px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "
@@ -91,7 +91,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     margin-top: 4px;
                     margin-bottom: 4px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "
@@ -103,7 +103,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     margin-top: 4px;
                     margin-bottom: 4px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "
@@ -115,7 +115,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     margin-top: 4px;
                     margin-bottom: 16px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "
@@ -127,7 +127,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     style="
                     margin-top: 0px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     font-weight: bold;

@@ -19,6 +19,7 @@ export const notifyOwner = async ({
       subject: "� ¡Tienes un nuevo mensaje en tu Formmy!",
       bcc: emails,
       html: `
+      <html>
       <head>
         <title>📩 ¡Tienes un nuevo mensaje en tu Formmy!</title>
       </head>

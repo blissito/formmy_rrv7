@@ -32,92 +32,239 @@ export const sendReminderEmail = async ({ email, title, date, chatbotName }: Rem
       to: email,
       subject: `🔔 Recordatorio: ${title}`,
       html: `
-    <html>
-    <head>
-        <title>🔔 Recordatorio: ${title}</title>
-    </head>
-    <body style="font-family: Arial; background: #191a20">
-        <div style="background: #191a20; margin: 0 auto; padding: 24px 16px">
-        <div
-            style="
-            text-align: left;
-            background-color: white;
-            border-radius: 16px;
-            margin: 0 auto;
-            max-width: 600px;
-            overflow: hidden;
-            "
-        >
+        <html>
+        <head>
+            <title>🔔 Recordatorio: ${title}</title>
+        </head>
+        <body style="font-family: Arial; background: #191a20">
+            <div style="background: #191a20; margin: 0 auto; padding: 24px 16px">
             <div
-            style="
-                padding: 4% 4% 16px 4%;
-            "
-            >
-            <img
-                alt="logo"
-                style="height: 32px; width: auto"
-                src="https://www.formmy.app/assets/formmy-logo.png"
-            />
-            </div>
-            <div style="padding: 0 4%">
-            <h1 style="font-size: 22px; font-weight: bold; color: #191a20; margin-bottom: 16px">
-                🔔 Recordatorio
-            </h1>
-            <p style="font-size: 16px; margin-bottom: 16px; color: #4a4a4a; line-height: 1.5">
-                Hola,
-            </p>
-            <p style="font-size: 16px; margin-bottom: 16px; color: #4a4a4a; line-height: 1.5">
-                Tu asistente <strong>${chatbotName}</strong> te recuerda:
-            </p>
-            <div style="background: #f8f9fa; padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid #007bff">
-                <h2 style="font-size: 18px; font-weight: bold; color: #191a20; margin: 0 0 12px 0">
-                    📅 ${title}
-                </h2>
-                <p style="font-size: 16px; color: #4a4a4a; margin: 0; font-weight: 500">
-                    🕒 ${formattedDate}
-                </p>
-            </div>
-            <p style="font-size: 16px; margin-bottom: 24px; color: #4a4a4a; line-height: 1.5">
-                ¡No olvides tu cita! Si necesitas reprogramar o tienes alguna pregunta, puedes contactarnos.
-            </p>
-            <div style="text-align: center; margin: 32px 0">
-                <a
-                href="${host}/dashboard"
                 style="
-                    background: #007bff;
-                    color: white;
-                    padding: 12px 24px;
-                    text-decoration: none;
-                    border-radius: 8px;
-                    font-weight: bold;
-                    display: inline-block;
+                text-align: left;
+                background-color: white;
+                border-radius: 16px;
+                margin: 0 auto;
+                max-width: 600px;
+                overflow: hidden;
                 "
-                >
-                Ir a mi Dashboard
-                </a>
-            </div>
-            </div>
-            <div
-            style="
-                padding: 24px 4% 4% 4%;
-                text-align: center;
-                color: #888;
-                font-size: 14px;
-            "
             >
-            <p style="margin: 0">
-                Este recordatorio fue programado a través de tu chatbot <strong>${chatbotName}</strong>
-            </p>
-            <p style="margin: 8px 0 0 0">
-                <a href="${host}" style="color: #007bff; text-decoration: none"
-                >FormmyApp</a
-                > - Chatbots inteligentes para tu negocio
-            </p>
+                <div style="padding: 4% 4% 16px 4%">
+                <img
+                    alt="logo"
+                    style="height: 32px; width: auto"
+                    src="https://www.formmy.app/assets/formmy-logo.png"
+                />
+                </div>
+                <div style="padding: 0 4%">
+                <h2
+                    style="
+                    color: #000000;
+                    font-size: 24px;
+                    margin-top: 24px;
+                    line-height: 120%;
+                    text-align: left;
+                    "
+                >
+                    🔔 Recordatorio programado
+                </h2>
+                <p
+                    style="
+                    margin-top: 12px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 16px;
+                    "
+                >
+                    Hola,
+                </p>
+                <p
+                    style="
+                    margin-top: 16px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 16px;
+                    "
+                >
+                    Tu asistente <strong>${chatbotName}</strong> te recuerda:
+                </p>
+
+                <div style="margin-top: 24px; margin-bottom: 24px;">
+                    <div
+                        style="
+                        border-radius: 12px;
+                        padding: 20px;
+                        text-align: left;
+                        background: #f5f5f5;
+                        display: inline-block;
+                        "
+                    >
+                        <p
+                        style="
+                            color: #4b5563;
+                            font-size: 14px;
+                            margin: 0 0 8px 0;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                            font-weight: 600;
+                        "
+                        >
+                        📅 ${title}
+                        </p>
+                        <p
+                        style="
+                            color: #9a99ea;
+                            font-size: 18px;
+                            font-weight: bold;
+                            margin: 8px 0 0px;
+                            letter-spacing: 1px;
+                        "
+                        >
+                        🕒 ${formattedDate}
+                        </p>
+                    </div>
+                </div>
+
+                <p
+                    style="
+                    margin-top: 16px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 16px;
+                    "
+                >
+                    ¡No olvides tu cita! Si necesitas reprogramar o tienes alguna pregunta, puedes contactarnos.
+                </p>
+
+                <a href="${host}/dashboard" target="blank">
+                    <button
+                    style="
+                        background: #9a99ea;
+                        height: 40px;
+                        font-weight: 500;
+                        border-radius: 8px;
+                        color: white;
+                        width: 200px;
+                        text-align: center;
+                        font-size: 16px;
+                        margin-top: 24px;
+                        margin-bottom: 8px;
+                        border: none;
+                        cursor: pointer;
+                    "
+                    >
+                    Ir a mi Dashboard
+                    </button>
+                </a>
+
+                <p
+                    style="
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 14px;
+                    margin-top: 32px;
+                    "
+                >
+                    Este recordatorio fue programado a través de tu chatbot <strong>${chatbotName}</strong>
+                </p>
+                <p
+                    style="
+                    margin-top: -8px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 16px;
+                    font-weight: bold;
+                    "
+                >
+                    — El equipo de Formmy 👻
+                </p>
+                <hr
+                    style="
+                    background: #f2f2f2;
+                    height: 1px;
+                    border: none;
+                    width: 100%;
+                    margin-top: 32px;
+                    margin-bottom: 0px;
+                    "
+                />
+                </div>
+                <div style="padding: 4%">
+                <div style="text-align: center; margin-bottom: 0px">
+                    <a
+                    href="https://www.facebook.com/profile.php?id=61554028371141"
+                    target="blank"
+                    style="text-decoration: none"
+                    >
+                    <img
+                        alt="facebook"
+                        style="width: 16px; height: 16px; margin: 0 4px"
+                        src="https://i.imgur.com/1yIQM74.png"
+                    />
+                    </a>
+                    <a
+                    href="https://www.instagram.com/_formmyapp/"
+                    target="blank"
+                    style="text-decoration: none"
+                    >
+                    <img
+                        alt="instagram"
+                        style="width: 16px; height: 16px; margin: 0 4px"
+                        src="https://i.imgur.com/7l8Kwze.png"
+                    />
+                    </a>
+                    <a
+                    href="https://www.linkedin.com/company/formmyapp/"
+                    target="blank"
+                    style="text-decoration: none"
+                    >
+                    <img
+                        alt="linkedin"
+                        style="width: 18px; height: 18px; margin: 0 4px"
+                        src="https://i.imgur.com/isFeBmr.png"
+                    />
+                    </a>
+
+                    <a
+                    href="https://x.com/FormmyApp1"
+                    target="blank"
+                    style="text-decoration: none"
+                    >
+                    <img
+                        alt="twitter"
+                        style="width: 16px; height: 16px; margin: 0 4px"
+                        src="https://i.imgur.com/RFCc0w1.png"
+                    />
+                    </a>
+                    <a
+                    href="https://www.youtube.com/@_FormmyApp"
+                    target="blank"
+                    style="text-decoration: none"
+                    >
+                    <img
+                        alt="youtube"
+                        style="width: 16px; height: 16px; margin: 0 4px"
+                        src="https://i.imgur.com/GxqCb6n.png"
+                    />
+                    </a>
+                    <div style="text-align: center; margin-top: 16px">
+                    <p style="color: #81838e; font-size: 12px">
+                        Chatea. Conecta. Y convierte.
+                    </p>
+                    <p style="color: #81838e; font-size: 8px">
+                        Derechos Reservados 2025 ®
+                    </p>
+                    </div>
+                </div>
+                </div>
             </div>
-        </div>
-        </div>
-    </body>
-    </html>
+            </div>
+        </body>
+        </html>
     `,
     })
     .then((info) => {
