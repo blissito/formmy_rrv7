@@ -213,12 +213,12 @@ addContextWithEmbeddings({
 
 ## Pricing (MXN/mes)
 
-| Plan | $ | Bots | Conv | Credits | Price ID |
-|------|---|------|------|---------|----------|
-| Free | 0 | 0 | 0 | 0 | - |
-| Starter | 149 | 2 | 50 | 200 | `price_1S5AqX...` |
-| Pro | 499 | 10 | 250 | 1000 | `price_1S5CqA...` |
-| Enterprise | 1499 | ∞ | 1000 | 5000 | Custom |
+| Plan | $ | Bots | Conv | Credits | Voice (min) | Price ID |
+|------|---|------|------|---------|-------------|----------|
+| Free | 0 | 0 | 0 | 0 | 0 | - |
+| Starter | 149 | 0 | 0 | 0 | 0 | `price_1S5AqX...` |
+| Pro | 499 | 10 | 250 | 1000 | 30 | `price_1S5CqA...` |
+| Enterprise | 2490 | ∞ | 1000 | 5000 | 60 | Custom |
 
 **Revenue Extra**: WhatsApp $99, Setup $1.5K, White Label $299, API $199
 
@@ -720,6 +720,452 @@ FORMMY_TEST_API_KEY=sk_live_xxx npx tsx scripts/test-agentic-rag.ts
 - `/app/components/APIDocumentation.tsx` - Docs UI
 - `/server/context/unified-processor.server.ts` - Procesamiento embeddings
 - `/server/vector/vector-search.service.ts` - Búsqueda vectorial
+
+---
+
+## LiveKit Voice AI ✅ (Implementado - Ene 2025)
+
+### Overview
+Sistema completo de conversaciones de voz bidireccionales (STT + TTS) con LiveKit para chatbots de Formmy.
+
+**Canales**: API REST pública, Burbuja embebida
+**Arquitectura**: LiveKit Agents con ElevenLabs Plugin (VOCES NATIVAS)
+**Proveedor TTS**: ElevenLabs Plugin (vía @livekit/agents-plugin-elevenlabs)
+**Idioma**: Español (es) - Voz nativa mexicana (Leo Moreno)
+
+**⚠️ ARQUITECTURA CRÍTICA - PLUGIN DE ELEVENLABS (Oct 28, 2025)**:
+- **Usamos ElevenLabs PLUGIN**: Las voces nativas en español NO están en LiveKit Inference Gateway
+- **Problema con Inference**: Solo tiene voces multilingües que suenan como gringos hablando español
+- **Solución**: Plugin de ElevenLabs (`@livekit/agents-plugin-elevenlabs`) con voces custom/nativas
+- **API Key requerida**: `ELEVEN_API_KEY` (NO `ELEVENLABS_API_KEY`) en .env
+- **Formato configuración**:
+  ```typescript
+  const tts = new elevenlabs.TTS({
+    voice: { id: "3l9iCMrNSRR0w51JvFB0" }, // ✅ Leo Moreno (nativo mexicano)
+    model: "eleven_turbo_v2_5",
+    language: "es", // ISO-639-1
+    streaming_latency: 1, // Baja latencia
+  });
+  ```
+- Language code: ISO-639-1 (`"es"`, `"en"`), NO locales (`"es-MX"`)
+- Acento: Determinado por el voice ID (Leo Moreno = mexicano nativo)
+
+**⚠️ WORKER OBLIGATORIO**:
+- El worker de LiveKit **DEBE ESTAR CORRIENDO** para que el agente hable
+- Comando: `npm run voice:dev` (development) o `npm run voice:start` (production)
+- Sin el worker: El usuario se conecta pero el agente NUNCA habla (silencio total)
+- El worker es quien ejecuta `session.say()` para enviar el mensaje de bienvenida y respuestas
+
+### Arquitectura
+
+**Backend**:
+- `/server/voice/livekit-voice.service.ts` - Gestión de rooms y tokens
+- `/server/voice/voice-agent-handler.ts` - Handler de conversaciones en tiempo real
+- `/app/routes/api.voice.v1.ts` - API REST endpoints
+
+**Frontend** (✅ Implementado):
+- `/app/components/VoiceChat.tsx` - Modal de conversación de voz con LiveKit
+- `/app/components/VoiceWaveform.tsx` - Visualización animada de audio
+- `/app/components/VoiceIntegrationCard.tsx` - Card de integración en dashboard
+- `/app/components/integrations/VoiceIntegrationModal.tsx` - Modal de configuración
+- `/public/voice-widget.js` - Widget embebible (Pendiente)
+
+**Database** (Prisma):
+- `VoiceSession` - Sesiones de voz con métricas
+- `User.voiceCreditsUsed` - Créditos mensuales consumidos
+- `User.voiceMinutesUsed` - Minutos totales de conversación
+- `Integration.platform = "VOICE"` - Integración de voz por chatbot
+- `Integration.metadata.ttsVoiceId` - ID de voz ElevenLabs seleccionada
+- `Chatbot.sttLanguage` - Idioma STT ISO-639-1 (default: "es")
+
+### API REST `/api/voice/v1`
+
+#### POST `?intent=create_session`
+Crea una sesión de voz y retorna token de acceso al room de LiveKit.
+
+```bash
+curl -X POST https://formmy-v2.fly.dev/api/voice/v1?intent=create_session \
+  -H "Authorization: Bearer sk_live_xxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chatbotId": "bot_abc123",
+    "conversationId": "conv_xyz789",
+    "ttsProvider": "elevenlabs",
+    "sttLanguage": "es"
+  }'
+```
+
+**Nota**: `ttsVoiceId` se obtiene automáticamente de `Integration.metadata.ttsVoiceId` (configurado en el modal de integración de voz).
+
+**Response** (201):
+```json
+{
+  "sessionId": "voice_abc123",
+  "token": "eyJhbGc...",
+  "wsUrl": "wss://formmy.livekit.cloud",
+  "roomName": "voice_bot_abc_1234567890",
+  "ttsProvider": "elevenlabs",
+  "ttsVoiceId": "ErXwobaYiN019PkySvjV",
+  "expiresAt": "2025-01-27T10:00:00Z",
+  "creditsPerMinute": 5,
+  "estimatedMinutesAvailable": 50
+}
+```
+
+#### GET `?intent=status&sessionId=xxx`
+Obtiene estado actual de una sesión de voz.
+
+**Response**:
+```json
+{
+  "sessionId": "voice_abc123",
+  "chatbotId": "bot_abc",
+  "chatbotName": "Soporte IA",
+  "status": "ACTIVE",
+  "startTime": "2025-01-27T09:00:00Z",
+  "endTime": null,
+  "durationSeconds": 180,
+  "creditsUsed": 15,
+  "messageCount": 8,
+  "transcription": "Usuario: Hola...\nAsistente: ..."
+}
+```
+
+#### POST `?intent=end_session&sessionId=xxx`
+Finaliza una sesión y calcula créditos finales.
+
+```bash
+curl -X POST https://formmy-v2.fly.dev/api/voice/v1?intent=end_session&sessionId=voice_abc123 \
+  -H "Authorization: Bearer sk_live_xxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transcription": "Transcripción completa opcional..."
+  }'
+```
+
+**Response**:
+```json
+{
+  "sessionId": "voice_abc123",
+  "durationMinutes": 3.5,
+  "creditsUsed": 18,
+  "transcription": "Usuario: Hola...\nAsistente: ..."
+}
+```
+
+#### GET `?intent=list`
+Lista sesiones de voz del usuario (paginado).
+
+**Query params**:
+- `chatbotId` (opcional) - Filtrar por chatbot
+- `status` (opcional) - ACTIVE, COMPLETED, ERROR, CANCELLED
+- `limit` (default: 50)
+- `offset` (default: 0)
+
+**Response**:
+```json
+{
+  "sessions": [
+    {
+      "sessionId": "voice_abc123",
+      "chatbotId": "bot_abc",
+      "chatbotName": "Soporte IA",
+      "status": "COMPLETED",
+      "startTime": "2025-01-27T09:00:00Z",
+      "endTime": "2025-01-27T09:03:30Z",
+      "durationMinutes": 3.5,
+      "creditsUsed": 18,
+      "messageCount": 8
+    }
+  ],
+  "total": 156,
+  "hasMore": true
+}
+```
+
+#### GET `?intent=credits`
+Obtiene estadísticas de créditos de voz disponibles.
+
+**Response**:
+```json
+{
+  "planLimit": 1000,
+  "creditsUsed": 89,
+  "creditsRemaining": 911,
+  "minutesUsed": 17.8,
+  "minutesRemaining": 182,
+  "percentageUsed": 8.9
+}
+```
+
+### Sistema de Créditos de Voz
+
+**Ubicación**: `/server/llamaparse/credits.service.ts`
+
+**Funciones**:
+```typescript
+// Validar créditos disponibles (pre-sesión)
+validateVoiceCredits(userId, estimatedMinutes)
+
+// Consumir créditos (post-sesión)
+consumeVoiceCredits(userId, minutes)
+
+// Obtener stats
+getVoiceCreditsStats(userId)
+
+// Reset mensual
+resetVoiceCredits(userId)
+```
+
+**Límites Mensuales**:
+| Plan | Minutos/mes | Créditos/mes |
+|------|-------------|--------------|
+| FREE | 0 | 0 |
+| TRIAL | 50 | 250 |
+| STARTER | 50 | 250 |
+| PRO | 200 | 1,000 |
+| ENTERPRISE | 1,000 | 5,000 |
+
+**Costo**: 5 créditos por minuto de conversación (redondeado hacia arriba)
+
+**Ejemplo**: Sesión de 3.2 minutos = Math.ceil(3.2 * 5) = 16 créditos
+
+### Proveedor TTS: ElevenLabs (EXCLUSIVO)
+
+**⚠️ IMPORTANTE**: Solo ElevenLabs está habilitado. Cartesia e Inworld NO se usan.
+
+**✅ INVESTIGACIÓN COMPLETA (Enero 2025)**:
+
+Auditoría exhaustiva de voces disponibles en ElevenLabs:
+- **Total de voces en cuenta**: 21
+- **Voces con soporte español**: 8
+- **Voces nativas mexicanas REALES**: 1 ⚠️
+
+**Voz Nativa Mexicana Verificada** (configurada en `/app/components/integrations/VoiceIntegrationModal.tsx`):
+
+| Voice ID | Nombre | Género | Edad | Acento | Descripción |
+|----------|--------|--------|------|--------|-------------|
+| `3l9iCMrNSRR0w51JvFB0` | **Leo Moreno** | Masculino | Joven | **Mexicano Nativo** | Voz mexicana calmada, intencional, feliz. Ideal para conversaciones (DEFAULT) ✅ |
+
+**❌ VOCES LEGACY ELIMINADAS** (eran voces gringas con acento extranjero):
+
+| Voice ID (DEPRECADO) | Nombre | Problema |
+|---------------------|--------|----------|
+| `DuNnqwVuAtxzKcXGUN2v` | "Diego" | ❌ **NO EXISTE** - 400 Bad Request |
+| `FGY2WhTYpPnrIDTdsKH5` | "Valentina" | ❌ En realidad es **Laura** (American accent) |
+| `oWAxZDx7w5VEj9dCyTzz` | Grace | ❌ American accent (multilingüe) |
+| `21m00Tcm4TlvDq8ikWAM` | Rachel | ❌ American accent (multilingüe) |
+| `ErXwobaYiN019PkySvjV` | Antoni/Toño | ❌ American accent (multilingüe) |
+| `pNInz6obpgDQGcFmaJgB` | Adam | ❌ American accent (multilingüe) |
+
+**🌐 Voces Multilingües** (Pueden hablar español pero con acento extranjero - NO recomendadas):
+- Roger, Sarah, Charlie, George, Matilda, Will, Eric - Acentos americano/británico/australiano
+
+**Configuración Actual**:
+- Sistema migrado a **Leo Moreno** como ÚNICA opción
+- Todas las voces legacy reemplazadas o eliminadas
+- Fallback automático: Si detecta voice ID legacy → usa Leo Moreno
+- Las voces se guardan en `Integration.metadata.ttsVoiceId`
+
+**⚠️ NOTA IMPORTANTE**: Actualmente solo existe 1 voz nativa mexicana en ElevenLabs (masculina). Para voces femeninas mexicanas, sería necesario:
+1. Esperar a que ElevenLabs agregue más voces mexicanas, O
+2. Usar Voice Cloning de ElevenLabs con samples de voz mexicana femenina, O
+3. Explorar otros proveedores (Google Cloud TTS, Azure Speech tienen es-MX nativo)
+
+**⚠️ FORMATO LIVEKIT INFERENCE (CRÍTICO)**:
+
+Según documentación oficial de LiveKit, el formato correcto es:
+
+```typescript
+// ✅ CORRECTO - Formato LiveKit Inference Gateway
+const session = new voice.AgentSession({
+  vad,
+  stt: "deepgram/nova-2-general:es",  // Solo "es", NO "es-MX"
+  llm: "openai/gpt-4o-mini",
+  tts: `elevenlabs/eleven_turbo_v2_5:${ttsVoiceId}`,  // formato: provider/model:voiceId
+});
+
+// ❌ INCORRECTO - Formato antiguo (no funciona)
+tts: `elevenlabs:${ttsVoiceId}:es-MX`  // ❌ NO usar este formato
+```
+
+**Reglas importantes**:
+1. **Language code**: Solo ISO-639-1 (`"es"`, `"en"`), NO locales completos (`"es-MX"`, `"en-US"`)
+2. **Acento/región**: Se determina EXCLUSIVAMENTE por el voice ID (Diego = mexicano, Valentina = mexicano)
+3. **Formato TTS**: `elevenlabs/modelo:voiceId` (no incluir idioma en la string)
+4. **Modelo ElevenLabs**: Usar `eleven_turbo_v2_5` (el más rápido y de mejor calidad)
+
+**Referencia**: https://docs.livekit.io/agents/models/tts/inference/elevenlabs/
+
+### Configuración por Chatbot
+
+**Dashboard** (✅ Implementado):
+- Modal de integración de voz (`VoiceIntegrationModal.tsx`)
+- Toggle "Activar Voz" (crea `Integration` con `platform: "VOICE"`)
+- Selector de voz ElevenLabs (Diego/Valentina - voces nativas mexicanas)
+- Usa las instrucciones personalizadas del chatbot existente
+
+**Campos en BD**:
+```prisma
+model Integration {
+  platform  String // "VOICE"
+  isActive  Boolean
+  metadata  Json // { ttsVoiceId: "DuNnqwVuAtxzKcXGUN2v" }
+}
+
+model Chatbot {
+  sttLanguage   String @default("es")  // Solo código ISO-639-1 (es, en, pt, etc.) - NO locales (es-MX)
+  voiceWelcome  String? // Mensaje de bienvenida para voz
+}
+```
+
+### Integración con Agentes de Formmy
+
+El handler de voz (`voice-agent-handler.ts`) se integra completamente con el sistema de agentes existente:
+
+**Flow**:
+1. Usuario habla → STT transcribe → texto
+2. Handler procesa transcripción → llama a `streamAgentWorkflow()`
+3. Agente de Formmy (LlamaIndex) procesa mensaje con tools
+4. Respuesta streaming → TTS genera audio
+5. Audio se envía al usuario vía LiveKit
+
+**Compatibilidad**:
+- ✅ Todas las tools disponibles (save_contact, web_search, create_payment_link, etc.)
+- ✅ RAG search_context
+- ✅ Historial conversacional
+- ✅ Integraciones (Gmail, WhatsApp via API)
+- ✅ Observability (traces de sesiones de voz)
+
+### SDK TypeScript (Pendiente)
+
+**Ubicación**: `/sdk/formmy-sdk/voice.ts`
+
+```typescript
+import { FormmyVoice } from 'formmy-sdk';
+
+const voice = new FormmyVoice('sk_live_xxxxx');
+
+// Crear sesión
+const session = await voice.createSession('bot_abc123', {
+  ttsProvider: 'elevenlabs',  // Solo ElevenLabs habilitado
+  ttsVoiceId: '3l9iCMrNSRR0w51JvFB0',  // Leo Moreno (ÚNICA voz nativa mexicana)
+  sttLanguage: 'es',  // ISO-639-1 solo (NO es-MX)
+});
+
+console.log('Session created:', session.sessionId);
+console.log('Connect with token:', session.token);
+console.log('WebSocket URL:', session.wsUrl);
+
+// Obtener estado
+const status = await voice.getStatus(session.sessionId);
+console.log('Duration:', status.durationSeconds, 'seconds');
+
+// Finalizar sesión
+const result = await voice.endSession(session.sessionId);
+console.log('Credits used:', result.creditsUsed);
+```
+
+### Widget Embebible (Pendiente)
+
+**Ubicación**: `/public/voice-widget.js`
+
+```html
+<!-- Cliente embebe este script en su sitio -->
+<script src="https://formmy-v2.fly.dev/voice-widget.js"></script>
+<script>
+  Formmy.initVoice({
+    chatbotId: 'bot_abc123',
+    ttsProvider: 'elevenlabs',  // Solo ElevenLabs habilitado
+    ttsVoiceId: '3l9iCMrNSRR0w51JvFB0',  // Leo Moreno (ÚNICA voz nativa mexicana)
+    language: 'es',  // ISO-639-1 solo (NO es-MX)
+    position: 'bottom-right', // bottom-left, top-right, top-left
+    autoOpen: false,
+  });
+</script>
+```
+
+### Seguridad y Privacidad
+
+**Validación de Ownership**:
+- Solo el propietario del chatbot puede crear sesiones
+- Token JWT de LiveKit expira en 1 hora
+- Sesiones verificadas por userId en todos los endpoints
+
+**Filtrado Automático**:
+- Usuario solo ve sus propias sesiones
+- Transcripciones privadas por usuario
+- Imposible acceder a sesiones de otros usuarios
+
+**Rate Limiting**:
+- Validación de créditos PRE-sesión
+- Bloqueo si créditos insuficientes (HTTP 402)
+- Timeout automático de rooms vacíos (5 minutos)
+
+### Testing
+
+**Script**: `/scripts/test-voice-integration.ts` (Pendiente)
+
+```bash
+# Test crear sesión
+FORMMY_TEST_API_KEY=sk_live_xxx npx tsx scripts/test-voice-integration.ts create
+
+# Test obtener estado
+FORMMY_TEST_API_KEY=sk_live_xxx npx tsx scripts/test-voice-integration.ts status voice_abc123
+
+# Test finalizar sesión
+FORMMY_TEST_API_KEY=sk_live_xxx npx tsx scripts/test-voice-integration.ts end voice_abc123
+
+# Test listar sesiones
+FORMMY_TEST_API_KEY=sk_live_xxx npx tsx scripts/test-voice-integration.ts list
+```
+
+### Environment Variables
+
+```bash
+# .env
+LIVEKIT_API_KEY=APIxxxxx
+LIVEKIT_API_SECRET=secret
+LIVEKIT_URL=wss://formmy.livekit.cloud
+
+# ⚠️ CRÍTICO: ELEVEN_API_KEY requerida para el plugin de ElevenLabs
+ELEVEN_API_KEY=sk_xxx  # Plugin @livekit/agents-plugin-elevenlabs (REQUERIDO para voces nativas)
+ELEVENLABS_API_KEY=sk_xxx  # LEGACY - Solo para scripts de consulta (/scripts/get-elevenlabs-voices.ts)
+```
+
+**Uso correcto de API Keys** (ACTUALIZADO Oct 28, 2025):
+- `LIVEKIT_*`: Credenciales principales - LiveKit coordina STT/LLM
+- `ELEVEN_API_KEY`: **REQUERIDA** para el plugin de ElevenLabs (voces nativas mexicanas)
+- `ELEVENLABS_API_KEY`: LEGACY - Solo para scripts auxiliares
+- **Plugin de ElevenLabs**: Usamos `@livekit/agents-plugin-elevenlabs` para acceder a voces custom/nativas
+
+### Implementación
+
+**Archivos clave**:
+- `/server/voice/livekit-voice.service.ts` - Core service (rooms, tokens, sessions)
+- `/server/voice/voice-agent-handler.ts` - Handler de conversaciones (STT → Agent → TTS)
+- `/app/routes/api.voice.v1.ts` - API REST endpoints
+- `/server/llamaparse/credits.service.ts` - Gestión de créditos de voz
+- `/prisma/schema.prisma` - Models VoiceSession, User, Chatbot
+
+**Estado Actual**:
+- ✅ Backend completo (servicios, API, créditos, DB)
+- ✅ Integración con agentes de Formmy
+- ✅ Sistema de créditos y validación
+- ⏳ Frontend (componentes React)
+- ⏳ Widget embebible
+- ⏳ SDK npm
+- ⏳ Dashboard UI (Voice Settings tab)
+- ⏳ Testing scripts
+
+### Próximos Pasos
+
+1. **Frontend React** - Componentes VoiceChat y VoiceWaveform
+2. **Widget Embebible** - Script standalone para clientes
+3. **Dashboard UI** - Pestaña Voice Settings en chatbot config
+4. **SDK npm** - Extender `formmy-sdk` con `FormmyVoice` class
+5. **Testing** - Scripts de integración completos
+6. **Docs** - Actualizar APIDocumentation.tsx con Voice API v1
 
 ---
 
