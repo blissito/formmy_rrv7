@@ -205,26 +205,20 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
 }
 
 /**
- * Maneja completado de checkout (one-time payments como compra de créditos)
+ * Maneja completado de checkout (one-time payments como compra de créditos o conversaciones)
  */
 export async function handleCheckoutCompleted(session: any) {
   console.log(`[Webhook] Processing checkout.session.completed: ${session.id}`);
 
-  // Verificar si es una compra de créditos por metadata
+  // Verificar metadata
   const metadata = session.metadata;
 
-  if (!metadata || metadata.type !== "credits") {
-    console.log("[Webhook] Checkout session no es compra de créditos, ignorando");
+  if (!metadata || !metadata.type) {
+    console.log("[Webhook] Checkout session sin metadata de tipo, ignorando");
     return;
   }
 
   const customerId = session.customer;
-  const creditsAmount = parseInt(metadata.amount);
-
-  if (!creditsAmount || creditsAmount <= 0) {
-    console.error("[Webhook] Cantidad de créditos inválida en metadata:", metadata.amount);
-    return;
-  }
 
   // Buscar usuario por customerId
   const user = await db.user.findUnique({
@@ -238,7 +232,27 @@ export async function handleCheckoutCompleted(session: any) {
     return;
   }
 
-  // Agregar créditos comprados al usuario
+  // Manejar según tipo de compra
+  if (metadata.type === "credits") {
+    await handleCreditsPurchase(user, metadata);
+  } else if (metadata.type === "conversations") {
+    await handleConversationsPurchase(user, metadata);
+  } else {
+    console.log(`[Webhook] Tipo de compra desconocido: ${metadata.type}`);
+  }
+}
+
+/**
+ * Maneja compra de créditos
+ */
+async function handleCreditsPurchase(user: any, metadata: any) {
+  const creditsAmount = parseInt(metadata.amount);
+
+  if (!creditsAmount || creditsAmount <= 0) {
+    console.error("[Webhook] Cantidad de créditos inválida en metadata:", metadata.amount);
+    return;
+  }
+
   try {
     const result = await addPurchasedCredits(user.id, creditsAmount);
 
@@ -255,5 +269,43 @@ export async function handleCheckoutCompleted(session: any) {
     // });
   } catch (error) {
     console.error("[Webhook] Error agregando créditos:", error);
+  }
+}
+
+/**
+ * Maneja compra de conversaciones adicionales
+ */
+async function handleConversationsPurchase(user: any, metadata: any) {
+  const conversationsAmount = parseInt(metadata.amount);
+
+  if (!conversationsAmount || conversationsAmount <= 0) {
+    console.error("[Webhook] Cantidad de conversaciones inválida en metadata:", metadata.amount);
+    return;
+  }
+
+  try {
+    // Actualizar purchasedConversations en el usuario
+    const updatedUser = await db.user.update({
+      where: { id: user.id },
+      data: {
+        purchasedConversations: {
+          increment: conversationsAmount
+        }
+      }
+    });
+
+    console.log(
+      `[Webhook] ✅ ${conversationsAmount} conversaciones agregadas a ${user.email}. Nuevo total: ${updatedUser.purchasedConversations}`
+    );
+
+    // TODO: Enviar email de confirmación de compra
+    // await sendConversationsPurchaseEmail({
+    //   email: user.email,
+    //   name: user.name,
+    //   conversations: conversationsAmount,
+    //   newTotal: updatedUser.purchasedConversations
+    // });
+  } catch (error) {
+    console.error("[Webhook] Error agregando conversaciones:", error);
   }
 }

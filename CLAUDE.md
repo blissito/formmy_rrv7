@@ -216,11 +216,13 @@ addContextWithEmbeddings({
 | Plan | $ | Bots | Conv | Credits | Voice (min) | Price ID |
 |------|---|------|------|---------|-------------|----------|
 | Free | 0 | 0 | 0 | 0 | 0 | - |
-| Starter | 149 | 0 | 0 | 0 | 0 | `price_1S5AqX...` |
+| Starter | 149 | 1 | 50 | 0 | 0 | `price_1S5AqX...` |
 | Pro | 499 | 10 | 250 | 1000 | 30 | `price_1S5CqA...` |
-| Enterprise | 2490 | ∞ | 1000 | 5000 | 60 | Custom |
+| Enterprise | 2490 | ∞ | 1000 | 5000 | 60 | **priceData** (dinámico) |
 
 **Revenue Extra**: WhatsApp $99, Setup $1.5K, White Label $299, API $199
+
+**Nota Enterprise**: Usa `priceData` dinámico en Stripe (no price ID fijo). Esto permite ajustar el precio desde código sin modificar Stripe Dashboard. Ver `/app/routes/api.stripe.tsx:46-63`.
 
 ### Web Search Rate Limits
 ANONYMOUS: 2/día | STARTER: 10/día | PRO: 25/día | ENTERPRISE: 100/día

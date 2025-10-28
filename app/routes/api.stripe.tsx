@@ -15,9 +15,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     pro: isDevelopment
       ? process.env.STRIPE_PRO_PRICE_TEST || "price_test_pro"
       : "price_1S5CqADtYmGT70YtTZUtJOiS",
-    enterprise: isDevelopment
-      ? process.env.STRIPE_ENTERPRISE_PRICE_TEST || "price_test_enterprise"
-      :"price_1S5Cm2DtYmGT70YtwzUlp99P",
+    // Enterprise usa priceData dinámico (ver línea 46)
     // Credits one-time purchases - Price IDs reales de producción
     credits_500: "price_1SLwONRuGQeGCFrvx7YKBzMT", // $99 MXN
     credits_2000: "price_1SLwPBRuGQeGCFrvwVfKj8Lk", // $349 MXN
@@ -44,10 +42,112 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   if (intent === "enterprise_plan") {
+    // Usar priceData dinámico en vez de price ID fijo
     const url = await createCheckoutSessionURL({
       user: null,
-      price: PRICES.enterprise,
+      priceData: {
+        currency: 'mxn',
+        unit_amount: 249000, // $2,490.00 MXN (en centavos)
+        recurring: { interval: 'month' },
+        product_data: {
+          name: 'Plan Enterprise',
+          description: 'Chatbots ilimitados, 1,000 conversaciones/mes, 5,000 créditos, 60 min voz'
+        }
+      },
       origin: new URL(request.url).origin,
+      metadata: { plan: 'ENTERPRISE' },
+    });
+    if (url) return Response.redirect(url);
+  }
+
+  // Conversations purchase intents (one-time payments)
+  const origin = new URL(request.url).origin;
+
+  // Helper para calcular precio según plan
+  const getConversationPrice = (amount: number, plan: string): number => {
+    let pricePerConv = 1.98; // Default/FREE
+
+    switch (plan) {
+      case "STARTER":
+      case "TRIAL":
+        pricePerConv = 1.49;
+        break;
+      case "PRO":
+        pricePerConv = 0.99;
+        break;
+      case "ENTERPRISE":
+        pricePerConv = 0.69;
+        break;
+    }
+
+    return Math.round(amount * pricePerConv * 100); // Convertir a centavos
+  };
+
+  if (intent === "conversations_50") {
+    const plan = formData.get("plan") as string || "FREE";
+    const unitAmount = getConversationPrice(50, plan);
+
+    const url = await createCheckoutSessionURL({
+      user: null,
+      priceData: {
+        currency: 'mxn',
+        unit_amount: unitAmount,
+        product_data: {
+          name: '50 Conversaciones',
+          description: `50 conversaciones adicionales para tus chatbots (Plan ${plan})`
+        }
+      },
+      origin,
+      mode: "payment",
+      metadata: { type: "conversations", amount: "50", plan },
+      successUrl: `${origin}/dashboard/plan?conversations_purchased=50`,
+      cancelUrl: `${origin}/dashboard/plan`,
+    });
+    if (url) return Response.redirect(url);
+  }
+
+  if (intent === "conversations_150") {
+    const plan = formData.get("plan") as string || "FREE";
+    const unitAmount = getConversationPrice(150, plan);
+
+    const url = await createCheckoutSessionURL({
+      user: null,
+      priceData: {
+        currency: 'mxn',
+        unit_amount: unitAmount,
+        product_data: {
+          name: '150 Conversaciones',
+          description: `150 conversaciones adicionales para tus chatbots (Plan ${plan})`
+        }
+      },
+      origin,
+      mode: "payment",
+      metadata: { type: "conversations", amount: "150", plan },
+      successUrl: `${origin}/dashboard/plan?conversations_purchased=150`,
+      cancelUrl: `${origin}/dashboard/plan`,
+    });
+    if (url) return Response.redirect(url);
+  }
+
+  if (intent === "conversations_500") {
+    const plan = formData.get("plan") as string || "FREE";
+    const unitAmount = getConversationPrice(500, plan);
+
+    const url = await createCheckoutSessionURL({
+      user: null,
+      priceData: {
+        currency: 'mxn',
+        unit_amount: unitAmount,
+        product_data: {
+          name: '500 Conversaciones',
+          description: `500 conversaciones adicionales para tus chatbots (Plan ${plan})`
+        }
+      },
+      origin,
+      mode: "payment",
+      metadata: { type: "conversations", amount: "500", plan },
+      successUrl: `${origin}/dashboard/plan?conversations_purchased=500`,
+      cancelUrl: `${origin}/dashboard/plan`,
     });
     if (url) return Response.redirect(url);
   }
@@ -65,7 +165,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   // Credits purchases - Usando priceData dinámico
-  const origin = new URL(request.url).origin;
 
   if (intent === "credits_500") {
     const url = await createCheckoutSessionURL({

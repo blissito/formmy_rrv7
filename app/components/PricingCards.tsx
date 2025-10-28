@@ -54,7 +54,7 @@ export const plans: Plan[] = [
       "📋 Formularios ilimitados",
       "👨‍👩‍👦‍👦 Administración básica de usuarios",
       "🎨 Personalización avanzada de formularios",
-      "🤖 2 chatbots",
+      "🤖 1 chatbot",
       "👩🏻‍🏫 Modelos IA última generación (GPT-5 Nano, Gemini 2.5)",
       "🪪 50 conversaciones/mes",
     ],
@@ -78,10 +78,11 @@ export const plans: Plan[] = [
     includes: [
         "📋 Todo lo que incluye el plan Starter",
         "🤖 10 chatbots",
-        "🪄 5MB de contexto por chatbot",
+        "🪄 50MB de contexto RAG por chatbot",
         "🚀 Integraciones premium",
         "👩🏻‍🏫 Claude 3 Haiku premium - Calidad Anthropic",
         "🪪 250 conversaciones",
+        "🎤 30 minutos de voz IA/mes",
         "⚡ Respuestas 3x más rápidas",
     ],
     extra: [
@@ -95,7 +96,7 @@ export const plans: Plan[] = [
   {
     name: "Enterprise 🤖",
     description: "Solución corporativa",
-    price: "$1,499",
+    price: "$2,490",
     priceNote: "/mes",
     buttonText: "¡Potencia total!",
     buttonAction: "/api/stripe",
@@ -105,11 +106,12 @@ export const plans: Plan[] = [
     includes: [
         "📋 Todo lo que incluye el plan Starter",
         "🤖 Chatbots ILIMITADOS",
-        "🪄 Más contexto por chatbot",
+        "🪄 Contexto RAG ilimitado por chatbot",
         "🚀 Integraciones enterprise",
         "👩🏻‍🏫 GPT-5 Mini + Claude 3.5 Haiku",
         "📊 Dashboard de analytics profesional",
         "🪪 1,000 conversaciones",
+        "🎤 60 minutos de voz IA/mes",
         "🎧 Soporte prioritario",
     ],
     extra: [
