@@ -9,9 +9,9 @@ const FORMMY_PLANS = {
     name: 'Plan Starter',
     price: 149,
     priceId: 'price_1S5AqXDtYmGT70YtepLAzwk4',
-    chatbots: 2,
+    chatbots: 1,
     conversations: 50,
-    credits: 200
+    credits: 0
   },
   PRO: {
     name: 'Plan Pro',
@@ -23,7 +23,7 @@ const FORMMY_PLANS = {
   },
   ENTERPRISE: {
     name: 'Plan Enterprise',
-    price: 1499,
+    price: 2490,
     priceId: null, // Custom price_data
     chatbots: Infinity,
     conversations: 1000,
