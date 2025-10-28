@@ -444,6 +444,65 @@ const ConversationsList = ({
   );
 };
 
+/**
+ * Formatea un número de teléfono en el formato: +521 xxx xxx xxxx
+ * Ejemplo: 5212345672825 → +521 234 567 2825
+ * Ejemplo: 12345672825 → +1 234 567 2825
+ */
+const formatPhoneNumber = (phoneNumber: string): string => {
+  // Eliminar espacios y caracteres especiales
+  const cleaned = phoneNumber.replace(/[^\d]/g, '');
+
+  // Si está vacío o muy corto, retornar original
+  if (cleaned.length < 10) {
+    return phoneNumber;
+  }
+
+  let lada = '';
+  let restOfNumber = '';
+
+  // Detectar lada mexicana (52) + lada local (1) - 13 dígitos en total (52 + 1 + 10 dígitos)
+  if (cleaned.startsWith('521') && cleaned.length === 13) {
+    lada = '+521';
+    restOfNumber = cleaned.slice(3); // Los 10 dígitos restantes
+  }
+  // Detectar lada mexicana sin el 1 (52) - 12 dígitos en total
+  else if (cleaned.startsWith('52') && cleaned.length === 12) {
+    lada = '+52';
+    restOfNumber = cleaned.slice(2);
+  }
+  // Detectar lada USA/Canadá (1) - 11 dígitos en total
+  else if (cleaned.startsWith('1') && cleaned.length === 11) {
+    lada = '+1';
+    restOfNumber = cleaned.slice(1);
+  }
+  // Otros casos: asumir que los primeros 2 dígitos son la lada
+  else if (cleaned.length >= 12) {
+    lada = `+${cleaned.slice(0, 2)}`;
+    restOfNumber = cleaned.slice(2);
+  }
+  // Si tiene exactamente 10 dígitos, asumir número local sin lada
+  else if (cleaned.length === 10) {
+    lada = '';
+    restOfNumber = cleaned;
+  }
+  // Fallback
+  else {
+    return phoneNumber;
+  }
+
+  // Formatear como: lada xxx xxx xxxx (3-3-4)
+  if (restOfNumber.length >= 10) {
+    const part1 = restOfNumber.slice(0, 3);
+    const part2 = restOfNumber.slice(3, 6);
+    const part3 = restOfNumber.slice(6, 10);
+    return lada ? `${lada} ${part1} ${part2} ${part3}` : `${part1} ${part2} ${part3}`;
+  }
+
+  // Si no tiene suficientes dígitos, retornar con la lada separada
+  return lada ? `${lada} ${restOfNumber}` : restOfNumber;
+};
+
 const Conversation = forwardRef<
   HTMLElement,
   {
@@ -469,6 +528,12 @@ const Conversation = forwardRef<
     }
   };
 
+  // Mostrar número de WhatsApp formateado si está disponible en lugar de "Usuario xxxx"
+  // Si el número existe y no es "N/A", formatearlo; de lo contrario, usar userName
+  const displayName = (conversation.tel && conversation.tel !== "N/A")
+    ? formatPhoneNumber(conversation.tel)
+    : conversation.userName;
+
   return (
     <section
       ref={ref}
@@ -487,7 +552,7 @@ const Conversation = forwardRef<
     >
       <Avatar className="w-10" src={pic} />
       <div className="flex-1 truncate">
-        <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
+        <p className="font-medium text-base mb-0 pb-0">{displayName}</p>
         <p className="text-xs text-irongray truncate -mt-[2px] grow">
           {lastUserMessage?.content}
         </p>
@@ -499,12 +564,19 @@ const Conversation = forwardRef<
           onClick={handleFavoriteClick}
           className={cn(
             "transition-all hover:scale-110 cursor-pointer active:scale-95",
-            "text-lg leading-none",
             isFavorite ? "text-yellow-500" : "text-gray-400 hover:text-yellow-400"
           )}
           title={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"}
         >
-          {isFavorite ? "⭐" : "☆"}
+          {isFavorite ? (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+            </svg>
+          )}
         </button>
       </div>
     </section>
@@ -606,19 +678,13 @@ const ChatHeader = ({
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-gray-600">
-            {conversation.userName || "User"}
+            {/* Mostrar número de WhatsApp formateado si está disponible en lugar de "Usuario xxxx" */}
+            {tel && tel !== "N/A" ? formatPhoneNumber(tel) : (conversation.userName || "User")}
           </h3>
           {/* Logo WhatsApp si es conversación de WhatsApp */}
           {isWhatsAppConversation && (
             <img src="/assets/chat/whatsapp.svg" alt="WhatsApp" className="w-5 h-5" />
           )}
-        </div>
-        {/* Número de teléfono MUY VISIBLE */}
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-gray-500">Phone:</span>
-          <span className="font-mono font-bold text-green-600 text-base">
-            {tel === "N/A" ? "Web User" : tel}
-          </span>
         </div>
         <p className="text-xs text-gray-400 mt-0.5">{date}</p>
       </div>
@@ -1039,15 +1105,39 @@ export const ConversationsPreview = ({
   localManualMode?: boolean;
 }) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef<number>(0);
+  const isUserScrollingRef = useRef<boolean>(false);
 
-  // Auto-scroll al final cuando cambian los mensajes (solo dentro del contenedor)
+  // Detectar si el usuario está scrolleando manualmente
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50; // Margen de 50px
+
+    // Si el usuario scrollea hacia arriba, marcar que está leyendo
+    isUserScrollingRef.current = !isAtBottom;
+  };
+
+  // Auto-scroll al final SOLO cuando:
+  // 1. Se agrega un nuevo mensaje (aumenta el count)
+  // 2. El usuario NO está scrolleando hacia arriba (leyendo historial)
   useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTo({
-        top: messagesContainerRef.current.scrollHeight,
-        behavior: "smooth"
-      });
+    const currentMessageCount = conversation?.messages?.length || 0;
+    const previousMessageCount = prevMessageCountRef.current;
+
+    // Si aumentó el número de mensajes Y el usuario no está leyendo historial
+    if (currentMessageCount > previousMessageCount && !isUserScrollingRef.current) {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTo({
+          top: messagesContainerRef.current.scrollHeight,
+          behavior: "smooth"
+        });
+      }
     }
+
+    // Actualizar el count previo
+    prevMessageCountRef.current = currentMessageCount;
   }, [conversation?.messages]);
 
   // Log conversation state for debugging
@@ -1076,6 +1166,7 @@ export const ConversationsPreview = ({
       {/* Messages - Flex grow container */}
       <div
         ref={messagesContainerRef}
+        onScroll={handleScroll}
         style={{ borderColor: primaryColor || "brand-500" }}
         className={cn(
           "border w-full shadow-standard flex-1 overflow-y-auto",
@@ -1121,7 +1212,7 @@ export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: Message;
 const UserMessage = ({ message }: { message: Message }) => {
   return (
     <div className="justify-end flex items-start gap-2">
-      <div className="text-base p-3 bg-dark text-white rounded-xl max-w-[80%] break-words">
+      <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
         {message.content}
       </div>
       <Avatar className="w-8 h-8 flex-shrink-0" src={message.picture} />
@@ -1308,7 +1399,7 @@ const AssistantMessage = ({ message, avatarUrl }: { message: Message; avatarUrl?
     <div className="justify-start flex items-start gap-2">
       <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
       <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
-      <div className="text-base p-3 bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
+      <div className="text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
         <div className={PROSE_STYLES}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}

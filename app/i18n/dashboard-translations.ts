@@ -740,8 +740,8 @@ export const dashboardTranslations = {
       deleteContact: "Eliminar Contacto",
 
       // Empty State
-      noContacts: "Sin Contactos",
-      noContactsDescription: "Aún no has capturado contactos con tu chatbot. Los contactos se guardarán automáticamente cuando los usuarios proporcionen su información durante las conversaciones.",
+      noContacts: "Sin contactos",
+      noContactsDescription: "Los contactos se guardarán automáticamente cuando los usuarios proporcionen su información durante las conversaciones con tu agente.",
 
       // Confirmations
       confirmDelete: "¿Estás seguro de que quieres eliminar este contacto?",

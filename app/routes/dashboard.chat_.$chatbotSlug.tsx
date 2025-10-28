@@ -127,9 +127,27 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     take: 50, // Limitar a las 50 conversaciones más recientes (primera carga)
   });
 
+  // Ordenar conversaciones por el timestamp del último mensaje de USUARIO
+  const sortedConversations = conversationsFromDB.sort((a, b) => {
+    // Obtener el último mensaje del usuario para cada conversación
+    const lastUserMessageA = a.messages
+      .filter(msg => msg.role === "USER")
+      .slice(-1)[0];
+    const lastUserMessageB = b.messages
+      .filter(msg => msg.role === "USER")
+      .slice(-1)[0];
+
+    // Si no hay mensajes de usuario, usar updatedAt como fallback
+    const timeA = lastUserMessageA?.createdAt || a.updatedAt;
+    const timeB = lastUserMessageB?.createdAt || b.updatedAt;
+
+    // Ordenar descendente (más reciente primero)
+    return timeB.getTime() - timeA.getTime();
+  });
+
   // Transformar a formato UI
   const conversations = transformConversationsToUI(
-    conversationsFromDB,
+    sortedConversations,
     chatbot.avatarUrl || undefined
   );
 

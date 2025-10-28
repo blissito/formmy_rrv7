@@ -61,6 +61,14 @@ export function transformConversationToUI(
 
   const isFromWhatsApp = isWhatsAppConversation(conversation);
 
+  // Obtener el último mensaje del USUARIO específicamente (no del bot)
+  const lastUserMessage = conversation.messages
+    .filter(msg => msg.role === "USER")
+    .slice(-1)[0];
+
+  // Usar el timestamp del último mensaje del usuario, o updatedAt como fallback
+  const timeReference = lastUserMessage?.createdAt || conversation.updatedAt;
+
   return {
     id: conversation.id,
     chatbotId: conversation.chatbotId,
@@ -68,7 +76,7 @@ export function transformConversationToUI(
     userName,
     userEmail: `user-${conversation.id.slice(-8)}@whatsapp.local`,
     lastMessage: lastMessage?.content || "Nueva conversación",
-    time: formatTimeAgo(conversation.updatedAt),
+    time: formatTimeAgo(timeReference),
     date: formatDate(conversation.createdAt),
     unread: 0, // TODO: Implement unread count logic
     avatar: getConversationAvatar(conversation, chatbotAvatarUrl),

@@ -213,10 +213,6 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
           current={currentTab}
           onClick={() => setCurrentTab("seguridad")}
         />
-        <StreamingButton
-          current={currentTab}
-          onClick={() => setCurrentTab("streaming")}
-        />
       </ConfigMenu>
 
       {currentTab === "general" && (
@@ -379,26 +375,8 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
 
       {currentTab === "seguridad" && (
         <section className="">
-          <Card title="Configura la seguridad de tu chatbot" text="Aumenta la seguridad de tu chatbot permitiendo la conexión desde dominios específicos y estableciendo un límite de mensajes por minuto.">
+          <Card title="Configura la seguridad de tu chatbot" text="Aumenta la seguridad de tu chatbot estableciendo un límite de mensajes por minuto.">
             <main className="flex flex-col gap-4">
-              <div>
-                <Input
-                  label="Ingresa el o los dominios separados por coma"
-                  placeholder="Feature temporalmente deshabilitado"
-                  value={security.allowedDomains}
-                  onChange={(value) => setSecurity({...security, allowedDomains: value})}
-                  disabled={true}
-                />
-                <div className="flex gap-1 items-start text-[12px] text-amber-600 mt-1 bg-amber-50 p-2 rounded">
-                  <span className="mt-[2px]">
-                    <IoInformationCircleOutline />
-                  </span>
-                  <p>
-                    <strong>Feature temporalmente deshabilitado.</strong> La validación de dominios permitidos está siendo revisada para mejorar su funcionamiento. Por ahora, todos los chatbots públicos son accesibles desde cualquier dominio.
-                  </p>
-                </div>
-              </div>
-             
               <section>
                 <Select
                   options={[

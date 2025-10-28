@@ -66,14 +66,14 @@ export const GhostyMessageComponent = ({
       )}>
         {/* Message Bubble */}
         <div className={cn(
-          "rounded-xl px-4 py-2 relative shadow-sm",
-          isUser 
-            ? "bg-brand-500 text-clear" 
+          "rounded-xl px-3 py-[6px] relative shadow-sm",
+          isUser
+            ? "bg-brand-500 text-clear"
             : "bg-[#FCFDFE] border border-outlines text-dark"
         )}>
           {isUser ? (
             // User message - plain text
-            <p className="text-sm md:text-base leading-relaxed break-words">
+            <p className="text-[0.95rem] leading-relaxed break-words">
               {message.content}
             </p>
           ) : (

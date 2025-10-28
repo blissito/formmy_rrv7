@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 
 // Estilos unificados para el contenido markdown con bloques de código mejorados
-const PROSE_STYLES = "message-bubble-prose prose prose-base max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:!my-0 prose-ol:!my-0 prose-li:!my-0 prose-code:bg-slate-800 prose-code:text-green-400 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-xs prose-pre:bg-slate-800 prose-pre:text-green-400 prose-pre:p-3 prose-pre:rounded-lg prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-2 prose-pre:border prose-pre:border-slate-600 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0";
+const PROSE_STYLES = "message-bubble-prose prose text-[15px] max-w-none prose-p:my-0 prose-p:leading-tight prose-headings:my-1 prose-headings:font-bold prose-ul:!my-0 prose-ol:!my-0 prose-li:!my-0 prose-code:bg-slate-800 prose-code:text-green-400 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-xs prose-pre:bg-slate-800 prose-pre:text-green-400 prose-pre:p-3 prose-pre:rounded-lg prose-pre:text-xs prose-code:font-mono prose-pre:overflow-x-auto prose-pre:my-2 prose-pre:border prose-pre:border-slate-600 prose-blockquote:border-l-2 prose-blockquote:border-gray-200 prose-blockquote:pl-2 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:my-1 prose-strong:font-semibold prose-em:italic prose-a:text-blue-600 prose-a:hover:underline [&_table]:!my-0 [&_thead]:!bg-transparent [&_tbody]:!bg-transparent [&_tr]:!border-0 [&_th]:!border-0 [&_th]:!p-0 [&_td]:!border-0 [&_td]:!p-0";
 
 // CSS personalizado para listas
 const LIST_STYLES = `
@@ -29,7 +29,7 @@ const LIST_STYLES = `
     margin: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
-    font-size: 1rem;
+    font-size: 15px;
     line-height: 1.3;
     padding-left: 1.25rem;
     position: relative;
@@ -134,8 +134,8 @@ export const MessageBubble = ({
           </div>
         )}
         <div className="flex items-start gap-3">
-          <div className="bg-dark rounded-xl p-2 max-w-md">
-            <p className="text-base text-white whitespace-pre-line leading-tight">
+          <div className="bg-dark rounded-xl px-3 py-[6px] max-w-md">
+            <p className="text-[15px] text-white whitespace-pre-line leading-tight">
               {nodes || message?.content}
             </p>
           </div>
@@ -150,7 +150,7 @@ export const MessageBubble = ({
         <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
         <main className="px-4 flex items-start gap-3 ">
           <Avatar className="w-8 h-8" src={avatarUrl} />
-          <div className="bg-white border border-outlines rounded-xl p-3 max-w-md">
+          <div className="bg-white border border-outlines rounded-xl px-3 py-[6px] max-w-md">
             <div
               className={PROSE_STYLES}
               style={{ whiteSpace: "pre-line" }}
@@ -171,7 +171,7 @@ export const MessageBubble = ({
       <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
       <main className="px-4 flex items-start gap-3 max-w-[90%] ">
         <Avatar className="min-w-8 max-w-8 h-8" src={avatarUrl} />
-        <div className="bg-white border border-outlines rounded-tr-lg rounded-xl p-3 max-w-md">
+        <div className="bg-white border border-outlines rounded-tr-lg rounded-xl px-3 py-[6px] max-w-md">
         {/* Badge de WhatsApp - MUY VISIBLE */}
         {isWhatsAppMessage && (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 border border-green-200 rounded-full mb-2">
