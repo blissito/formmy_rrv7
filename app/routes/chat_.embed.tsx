@@ -18,11 +18,14 @@ export async function loader({ request }: { request: Request }) {
       };
     }
 
-    // Consultar la base de datos para obtener el chatbot
+    // Consultar la base de datos para obtener el chatbot con integrations
     const chatbot = await db.chatbot.findFirst({
       where: {
         slug,
         // isActive: true, @TODO: descomentar cuando se implemente
+      },
+      include: {
+        integrations: true, // ✅ Incluir integrations (necesario para Voice)
       },
     });
 
@@ -130,6 +133,7 @@ export default function ChatEmbedRoute() {
         <ChatPreview
           production
           chatbot={data.chatbot as Chatbot}
+          integrations={data.chatbot?.integrations || []} // ✅ Pasar integrations para Voice
           parentDomain={parentDomain}
         />
       </div>

@@ -115,6 +115,7 @@ export default [
   route("api/v1/traces", "routes/api.v1.traces.ts"),
   route("api/parser/v1", "routes/api.parser.v1.ts"),
   route("api/rag/v1", "routes/api.rag.v1.ts"),
+  route("api/voice/v1", "routes/api.voice.v1.ts"),
 
   // Composio Google Calendar Integration
   route("api/v1/composio/google-calendar", "routes/api.v1.composio.google-calendar.ts"),

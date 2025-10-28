@@ -3,6 +3,7 @@ import { cn } from "~/lib/utils";
 import { SearchInput } from "./SearchInput";
 import type { Integration as PrismaIntegration } from "@prisma/client";
 import { VscDebugDisconnect } from "react-icons/vsc";
+import { RiVoiceprintFill } from "react-icons/ri";
 
 export const Card = ({
   title,
@@ -192,7 +193,13 @@ export const IntegrationCard = ({
 
   return (
     <div className="grid shadow-standard border border-outlines p-3 rounded-2xl min-h-[202px]">
-      <img className="w-8 aspect-square mb-2" src={logo} alt="logo" />
+      {logo === "voice-icon" ? (
+        <div className="w-8 h-8 mb-2 text-purple-600">
+          <RiVoiceprintFill className="w-full h-full" />
+        </div>
+      ) : (
+        <img className="w-8 aspect-square mb-2" src={logo} alt="logo" />
+      )}
       <div className="flex items-center justify-between mb-1">
         <h5 className="font-medium text-md mb-0">{name}</h5>
         {/* {exists && (

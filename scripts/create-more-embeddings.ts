@@ -23,11 +23,11 @@ async function main() {
 
   const docs = [
     'Formmy es una plataforma SaaS para crear chatbots con IA',
-    'El plan Pro cuesta $499 MXN mensuales y incluye 10 chatbots',
+    'El plan Pro cuesta $499 MXN mensuales y incluye 10 chatbots, 30 minutos de voz',
     'Formmy integra WhatsApp, Stripe y herramientas de búsqueda',
     'Los chatbots pueden automatizar conversaciones y capturar leads',
-    'El plan Starter cuesta $149 MXN y incluye 2 chatbots',
-    'El plan Enterprise cuesta $1,499 MXN con chatbots ilimitados',
+    'El plan Starter cuesta $149 MXN, es solo formularios sin chatbots',
+    'El plan Enterprise cuesta $2,490 MXN con chatbots ilimitados, 60 minutos de voz',
     'Formmy usa GPT-5 Nano, Claude 3 Haiku y otros modelos de IA',
     'Puedes crear recordatorios, generar links de pago y guardar contactos',
     'La integración de WhatsApp permite respuestas automáticas',

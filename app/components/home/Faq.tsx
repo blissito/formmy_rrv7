@@ -98,16 +98,16 @@ export const Faq = () => (
                     0 chatbots, con trial de 60 días de acceso completo.
                   </li>
                   <li>
-                    <strong>Starter ($149 MXN/mes):</strong> Incluye 2 chatbots,
-                    50 conversaciones mensuales con modelos GPT-5 Nano y Gemini 2.5 Flash-Lite.
+                    <strong>Starter ($149 MXN/mes):</strong> Plan de formularios sin chatbots.
+                    Formularios ilimitados con funcionalidades básicas.
                   </li>
                   <li>
                     <strong>Pro ($499 MXN/mes):</strong> Para quienes buscan más potencia,
-                    incluye 10 chatbots, 250 conversaciones con Claude 3 Haiku.
+                    incluye 10 chatbots, 250 conversaciones con Claude 3 Haiku, 30 minutos de voz.
                   </li>
                   <li>
-                    <strong>Enterprise ($2,499 MXN/mes):</strong> Acceso ilimitado,
-                    1000 conversaciones con GPT-5 Mini y Claude 3.5 Haiku.
+                    <strong>Enterprise ($2,490 MXN/mes):</strong> Acceso ilimitado,
+                    1000 conversaciones con GPT-5 Mini y Claude 3.5 Haiku, 60 minutos de voz.
                   </li>
                 </ul>
                 <p>

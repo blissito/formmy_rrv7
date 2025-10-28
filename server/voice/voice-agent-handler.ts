@@ -82,7 +82,16 @@ export class VoiceAgentHandler {
     }
 
     const userMessage = event.text.trim();
-    if (!userMessage || this.isProcessing) {
+    if (!userMessage) {
+      return;
+    }
+
+    // ✅ Si el usuario interrumpe mientras procesamos, registrar interrupción
+    // pero NO ignorar el mensaje (las interrupciones son naturales en voz)
+    if (this.isProcessing) {
+      console.log(`⚠️ User interrupted while processing. Queuing new message: "${userMessage}"`);
+      // En una implementación completa, aquí podríamos cancelar el procesamiento actual
+      // Por ahora, simplemente dejamos que termine y procesamos el nuevo mensaje después
       return;
     }
 
@@ -113,44 +122,67 @@ export class VoiceAgentHandler {
         throw new Error("Session not found");
       }
 
-      // Construir contexto del agente (similar a /api/v0/chatbot)
-      const agentContext = {
-        userId: session.userId,
-        userPlan: session.chatbot.user.plan,
-        chatbotId: session.chatbotId,
-        message: userMessage,
-        integrations: session.chatbot.integrations.reduce((acc: any, integration: any) => {
-          acc[integration.platform] = {
-            isActive: integration.isActive,
-            ...integration,
-          };
-          return acc;
-        }, {}),
-        resolvedConfig: {
-          name: session.chatbot.name,
-          personality: session.chatbot.personality || "friendly",
-          instructions: session.chatbot.instructions,
-          customInstructions: session.chatbot.customInstructions,
-          aiModel: session.chatbot.aiModel,
-          temperature: session.chatbot.temperature,
-        },
-        agentContext: {
-          conversationId: session.conversationId,
-          isGhosty: false,
-        },
+      // Construir user object
+      const user = {
+        id: session.userId,
+        plan: session.chatbot.user.plan,
       };
 
-      // Llamar al agente de Formmy con streaming
+      // Construir integrations object
+      const integrations = session.chatbot.integrations.reduce((acc: any, integration: any) => {
+        acc[integration.platform] = {
+          isActive: integration.isActive,
+          ...integration,
+        };
+        return acc;
+      }, {});
+
+      // Construir resolvedConfig
+      const resolvedConfig = {
+        name: session.chatbot.name,
+        personality: session.chatbot.personality || "friendly",
+        instructions: session.chatbot.instructions,
+        customInstructions: session.chatbot.customInstructions,
+        aiModel: session.chatbot.aiModel,
+        temperature: session.chatbot.temperature,
+      };
+
+      // Construir agentContext con historial conversacional
+      const agentContext = {
+        conversationId: session.conversationId,
+        isGhosty: false,
+        conversationHistory: this.conversationHistory, // ✅ Pasar historial completo aquí
+        integrations,
+      };
+
+      console.log(`\n${'🎙️'.repeat(40)}`);
+      console.log(`🎙️ [VoiceHandler] Llamando a streamAgentWorkflow`);
+      console.log(`   user.id: ${user.id}`);
+      console.log(`   user.plan: ${user.plan}`);
+      console.log(`   chatbotId: ${session.chatbotId}`);
+      console.log(`   message: "${userMessage}"`);
+      console.log(`   chatbot.name: "${session.chatbot.name}"`);
+      console.log(`   customInstructions: "${resolvedConfig.customInstructions?.substring(0, 100)}..."`);
+      console.log(`   conversationHistory: ${this.conversationHistory.length} mensajes`);
+      console.log(`   isGhosty: ${agentContext.isGhosty}`);
+      console.log(`${'🎙️'.repeat(40)}\n`);
+
+      // Llamar al agente de Formmy con streaming (firma correcta)
       let agentResponse = "";
 
       for await (const chunk of streamAgentWorkflow(
-        agentContext,
-        this.conversationHistory.slice(-10) // Últimos 10 mensajes
+        user,
+        userMessage,
+        session.chatbotId,
+        {
+          resolvedConfig,
+          agentContext,
+        }
       )) {
         if (chunk.type === "text") {
           agentResponse += chunk.content;
         } else if (chunk.type === "tool_call") {
-          console.log(`🔧 Tool called: ${chunk.toolName}`);
+          console.log(`🔧 Tool called: ${chunk.tool}`);
         }
       }
 

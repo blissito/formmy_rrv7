@@ -39,21 +39,21 @@ const formmyKnowledge = [
   // Plan STARTER
   {
     title: 'Plan Starter',
-    content: 'El plan Starter de Formmy cuesta $149 MXN mensuales. Incluye 2 chatbots con IA, 50 conversaciones mensuales, 200 tool credits, modelos GPT-5 Nano y Gemini 2.5 Flash-Lite. Ideal para pequeños negocios que empiezan con automatización.',
+    content: 'El plan Starter de Formmy cuesta $149 MXN mensuales. Es un plan de formularios ilimitados sin acceso a chatbots con IA. Ideal para negocios que solo necesitan gestión de formularios.',
     category: 'pricing'
   },
 
   // Plan PRO
   {
     title: 'Plan Pro',
-    content: 'El plan Pro de Formmy cuesta $499 MXN mensuales. Incluye 10 chatbots con IA, 250 conversaciones mensuales, 1000 tool credits, modelo Claude 3 Haiku. Incluye proyectos ilimitados de formularios, mensajes ilimitados, notificaciones vía email, más opciones para personalizar formularios, administración de usuarios y dashboard avanzado. Ideal si eres freelancer o agencia.',
+    content: 'El plan Pro de Formmy cuesta $499 MXN mensuales. Incluye 10 chatbots con IA, 250 conversaciones mensuales, 1000 tool credits, 30 minutos de voz, modelo Claude 3 Haiku. Incluye proyectos ilimitados de formularios, mensajes ilimitados, notificaciones vía email, más opciones para personalizar formularios, administración de usuarios y dashboard avanzado. Ideal si eres freelancer o agencia.',
     category: 'pricing'
   },
 
   // Plan ENTERPRISE
   {
     title: 'Plan Enterprise',
-    content: 'El plan Enterprise de Formmy cuesta $1,499 MXN mensuales. Incluye chatbots ilimitados, 1000 conversaciones mensuales, 5000 tool credits, modelos GPT-5 Mini y Claude 3.5 Haiku (los mejores modelos). Todo lo del plan Pro más capacidades empresariales avanzadas.',
+    content: 'El plan Enterprise de Formmy cuesta $2,490 MXN mensuales. Incluye chatbots ilimitados, 1000 conversaciones mensuales, 5000 tool credits, 60 minutos de voz, modelos GPT-5 Mini y Claude 3.5 Haiku (los mejores modelos). Todo lo del plan Pro más capacidades empresariales avanzadas.',
     category: 'pricing'
   },
 

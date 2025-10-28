@@ -33,18 +33,16 @@ export const PLAN_LIMITS = {
     toolCreditsPerMonth: 1000, // Créditos generosos como PRO
   },
   [Plans.STARTER]: {
-    maxChatbots: 2,
+    maxChatbots: 0, // Sin chatbots (solo formularios)
     maxFormmys: Infinity, // Formmys ilimitados desde STARTER
     maxContextSizeKB: 0, // Sin contexto manual (deben usar parser pagando créditos)
-    maxConversationsPerMonth: 50,
-    maxTokensPerQuery: 4000, // Protección básica
-    maxContextQueriesPerDay: 20, // Limite diario bajo
-    availableModels: [
-      "gpt-3.5-turbo"
-    ], // Solo GPT-3.5 Turbo para STARTER
+    maxConversationsPerMonth: 0, // Sin chatbots = sin conversaciones
+    maxTokensPerQuery: 0, // Sin chatbots = sin queries
+    maxContextQueriesPerDay: 0, // Sin chatbots = sin queries
+    availableModels: [], // Sin chatbots = sin modelos
     showBranding: true,
     trialDays: 0,
-    toolCreditsPerMonth: 200, // 200 créditos mensuales según CLAUDE.md
+    toolCreditsPerMonth: 0, // Sin créditos de herramientas
   },
   [Plans.PRO]: {
     maxChatbots: 10,

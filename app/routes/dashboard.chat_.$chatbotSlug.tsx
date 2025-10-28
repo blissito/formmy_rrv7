@@ -430,6 +430,7 @@ export default function ChatbotDetailRoute({
             chatbot={chatbot}
             user={user}
             currentTab={currentTab}
+            integrations={integrations}
           />
         )}
         {currentTab === "Conversaciones" && (

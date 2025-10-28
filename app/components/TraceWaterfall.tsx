@@ -2,14 +2,14 @@ import { useState } from "react";
 
 interface Span {
   id: string;
-  type: "LLM_CALL" | "TOOL_CALL" | "RAG_SEARCH" | "EMBEDDING";
+  type: "LLM_CALL" | "TOOL_CALL" | "SEARCH" | "PROCESSING" | "RAG_SEARCH" | "EMBEDDING";
   name: string;
   startOffset: number;
   durationMs: number;
   tokens?: number;
   cost?: number;
   credits?: number;
-  status: "COMPLETED" | "ERROR";
+  status: "COMPLETED" | "ERROR" | "RUNNING";
   error?: string;
   input?: string;
   output?: string;
@@ -33,6 +33,18 @@ const SPAN_COLORS = {
     border: "border-green-300",
     bgLight: "bg-green-100",
   },
+  SEARCH: {
+    bg: "bg-yellow-500",
+    text: "text-yellow-700",
+    border: "border-yellow-300",
+    bgLight: "bg-yellow-100",
+  },
+  PROCESSING: {
+    bg: "bg-orange-500",
+    text: "text-orange-700",
+    border: "border-orange-300",
+    bgLight: "bg-orange-100",
+  },
   RAG_SEARCH: {
     bg: "bg-yellow-500",
     text: "text-yellow-700",
@@ -50,6 +62,8 @@ const SPAN_COLORS = {
 const SPAN_ICONS = {
   LLM_CALL: "🤖",
   TOOL_CALL: "🔧",
+  SEARCH: "🔍",
+  PROCESSING: "⚙️",
   RAG_SEARCH: "🔍",
   EMBEDDING: "📊",
 };

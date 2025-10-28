@@ -47,7 +47,7 @@ async function main() {
       metadata: { contextType: 'TEXT', title: 'Sobre Formmy' }
     },
     {
-      content: 'Los planes de Formmy incluyen Free, Starter ($149 MXN), Pro ($499 MXN) y Enterprise ($1,499 MXN). Cada plan tiene diferentes límites de chatbots y conversaciones.',
+      content: 'Los planes de Formmy incluyen Free, Starter ($149 MXN - solo formularios), Pro ($499 MXN - 10 chatbots, 30 min voz) y Enterprise ($2,490 MXN - ilimitado, 60 min voz).',
       metadata: { contextType: 'TEXT', title: 'Pricing' }
     },
     {

@@ -3,12 +3,13 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { DEFAULT_AI_MODEL } from "../utils/constants";
 import { cn } from "~/lib/utils";
 import { isAnthropicDirectModel } from "~/utils/aiModels";
-import type { Chatbot } from "@prisma/client";
+import type { Chatbot, Integration } from "@prisma/client";
 import { ChatInput, type ChatInputRef } from "./chat/ChatInput";
 import { MessageBubble } from "./chat/MessageBubble";
 import { ChatHeader } from "./chat/ChatHeader";
 import { StreamToggle } from "./chat/StreamToggle";
 import { LoadingIndicator } from "./chat/LoadingIndicator";
+import VoiceChat from "./VoiceChat";
 import {
   XMarkIcon,
   ChatBubbleLeftRightIcon,
@@ -16,6 +17,7 @@ import {
 
 export interface ChatPreviewProps {
   chatbot: Chatbot;
+  integrations?: Integration[]; // Integraciones del chatbot
   production?: boolean;
   onClose?: () => void;
   parentDomain?: string | null; // 🔒 SEGURIDAD: Parent domain para validación (Oct 16, 2025)
@@ -37,10 +39,26 @@ function buildBasicSystemPrompt(chatbot: Chatbot): string {
 
 export default function ChatPreview({
   chatbot,
+  integrations = [],
   production,
   onClose,
   parentDomain,
 }: ChatPreviewProps) {
+  // Detectar si VOICE está activo
+  const voiceIntegration = integrations.find((i) => i.platform === "VOICE" && i.isActive);
+  const voiceEnabled = !!voiceIntegration;
+  const voiceMetadata = (voiceIntegration?.metadata as any) || {};
+
+  // Debug: Log de integraciones
+  console.log("🔍 [VOICE DEBUG] Total integrations:", integrations.length);
+  console.log("🔍 [VOICE DEBUG] Integrations:", integrations.map((i) => ({
+    platform: i.platform,
+    isActive: i.isActive
+  })));
+  console.log("🔍 [VOICE DEBUG] voiceIntegration found:", voiceIntegration);
+  console.log("🔍 [VOICE DEBUG] voiceEnabled:", voiceEnabled);
+  console.log("🔍 [VOICE DEBUG] production:", production);
+  console.log("🔍 [VOICE DEBUG] Modal will render:", voiceEnabled && production);
   const [chatMessages, setChatMessages] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
   >([
@@ -60,6 +78,7 @@ export default function ChatPreview({
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [isConversationEnded, setIsConversationEnded] = useState(false);
   const inactivityTimerRef = useRef<number | null>(null);
+  const [voiceChatOpen, setVoiceChatOpen] = useState(false);
 
   // 🔄 SessionId con TTL de 24h - ÚNICA FUENTE DE VERDAD: localStorage
   // NO usar useRef - se elimina para evitar problemas de sincronización
@@ -612,7 +631,21 @@ export default function ChatPreview({
           onClear={handleClearConversation}
           showCloseButton={production}
           onClose={onClose}
+          voiceEnabled={voiceEnabled} // ✅ Disponible en preview y production
+          onVoiceClick={() => {
+            console.log("🔍 [VOICE DEBUG] Voice button clicked! Opening modal...");
+            setVoiceChatOpen(true);
+          }}
         />
+
+        {/* Voice Chat Modal */}
+        {voiceEnabled && (
+          <VoiceChat
+            chatbotId={chatbot.id}
+            isOpen={voiceChatOpen}
+            onClose={() => setVoiceChatOpen(false)}
+          />
+        )}
 
         <section
           ref={messagesContainerRef}
@@ -655,6 +688,8 @@ export default function ChatPreview({
           onSend={handleChatSend}
           disabled={chatLoading}
           error={chatError}
+          voiceEnabled={voiceEnabled}
+          onVoiceClick={() => setVoiceChatOpen(true)}
         />
       </article>
     </main>

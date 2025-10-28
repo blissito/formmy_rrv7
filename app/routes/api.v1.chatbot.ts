@@ -422,6 +422,61 @@ export async function action({ request }: any) {
         );
       }
 
+      // Update voice settings
+      case "update_voice_settings": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso para modificar este chatbot" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Construir objeto de actualización solo con campos presentes
+        const updateData: any = {};
+
+        const voiceEnabled = formData.get("voiceEnabled");
+        if (voiceEnabled !== null) {
+          updateData.voiceEnabled = voiceEnabled === "true";
+        }
+
+        const ttsVoiceId = formData.get("ttsVoiceId");
+        if (ttsVoiceId !== null) {
+          updateData.ttsVoiceId = ttsVoiceId as string;
+        }
+
+        const voiceWelcome = formData.get("voiceWelcome");
+        if (voiceWelcome !== null) {
+          updateData.voiceWelcome = voiceWelcome as string;
+        }
+
+        // Update chatbot
+        const updatedChatbot = await updateChatbot(chatbotId, updateData);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            chatbot: updatedChatbot,
+          }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       default: {
         return new Response(
           JSON.stringify({ error: "Intent no soportado" }),

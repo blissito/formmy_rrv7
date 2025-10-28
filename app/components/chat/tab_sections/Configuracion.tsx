@@ -269,9 +269,10 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
               <p className="font-normal">7 días</p>
             </div>
           </Card>
+
           <Card
             title="Eliminar chatbot"
-    
+
           >
            <div className="flex flex-col md:flex-row gap-6">
             <p className="text-metal font-normal max-w-[700px]">Una vez que elimines tu chatbot, tu agente será eliminado al igual que toda la información que subiste. Está acción es irreversible, así que asegúrate de que está es la acción que quieres tomar.</p>

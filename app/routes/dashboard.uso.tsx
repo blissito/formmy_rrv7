@@ -104,9 +104,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       messages: monthlyMessages._count,
       messagesLimit: user.plan === 'FREE' ? 0 : user.plan === 'STARTER' ? 200 : user.plan === 'PRO' ? 2000 : 10000,
       chatbots: user.chatbots.length,
-      chatbotsLimit: user.plan === 'FREE' ? 0 : user.plan === 'STARTER' ? 2 : user.plan === 'PRO' ? 10 : 'Ilimitado',
+      chatbotsLimit: user.plan === 'FREE' ? 0 : user.plan === 'STARTER' ? 0 : user.plan === 'PRO' ? 10 : 'Ilimitado',
       totalChatMessages: monthlyMessages._count,
-      chatMessagesLimit: user.plan === 'FREE' ? 0 : user.plan === 'STARTER' ? 50 : user.plan === 'PRO' ? 250 : 1000,
+      chatMessagesLimit: user.plan === 'FREE' ? 0 : user.plan === 'STARTER' ? 0 : user.plan === 'PRO' ? 250 : 1000,
     },
     usageHistory,
     messagesByAgent: messagesByAgent.map(agent => ({

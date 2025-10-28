@@ -1,5 +1,5 @@
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
-import { db } from "../db/db.server";
+import { db } from "~/utils/db.server";
 import type { VoiceSessionStatus } from "@prisma/client";
 
 /**
@@ -22,35 +22,25 @@ const roomClient = LIVEKIT_API_KEY && LIVEKIT_API_SECRET
 
 /**
  * Configuración de TTS Providers
+ *
+ * ⚠️ ARQUITECTURA IMPORTANTE:
+ * - LiveKit maneja TODA la orquestación de voz (STT + LLM + TTS)
+ * - ElevenLabs API Key es SOLO para consultar voces disponibles
+ * - Los voice IDs se pasan a LiveKit, NO se usan directamente
+ * - LiveKit usa su Inference Gateway para comunicarse con ElevenLabs
+ *
+ * ✅ VOZ VERIFICADA (Enero 2025):
+ * - Leo Moreno: ÚNICA voz nativa mexicana disponible en ElevenLabs
  */
 export const TTS_PROVIDERS = {
-  cartesia: {
-    name: "Cartesia Sonic-2",
-    description: "Baja latencia, optimizado para tiempo real",
-    defaultVoice: "79a125e8-cd45-4c13-8a67-188112f4dd22", // Mexican Spanish Female
-    voices: {
-      "mexican_female": "79a125e8-cd45-4c13-8a67-188112f4dd22",
-      "mexican_male": "900d0d1c-5d63-4d42-8b2b-3b8d4b1f8b8b",
-    }
-  },
   elevenlabs: {
     name: "ElevenLabs",
-    description: "Calidad premium, amplio catálogo de voces",
-    defaultVoice: "21m00Tcm4TlvDq8ikWAM", // Rachel (ES-MX capable)
+    description: "Voz nativa mexicana - Leo Moreno (vía LiveKit Inference Gateway)",
+    defaultVoice: "3l9iCMrNSRR0w51JvFB0", // Leo Moreno - Voz nativa mexicana masculina
     voices: {
-      "rachel": "21m00Tcm4TlvDq8ikWAM",
-      "antoni": "ErXwobaYiN019PkySvjV",
+      "leo_moreno": "3l9iCMrNSRR0w51JvFB0", // Male - Nativo mexicano, calmado, conversacional
     }
   },
-  inworld: {
-    name: "Inworld TTS-1",
-    description: "Emociones naturales y expresividad",
-    defaultVoice: "ashley",
-    voices: {
-      "ashley": "ashley",
-      "marcus": "marcus",
-    }
-  }
 } as const;
 
 export type TTSProviderName = keyof typeof TTS_PROVIDERS;
@@ -65,9 +55,10 @@ export async function createVoiceSession({
   userId,
   chatbotId,
   conversationId,
-  ttsProvider = "cartesia",
+  ttsProvider = "elevenlabs", // ✅ ÚNICO proveedor soportado - NO usar Cartesia/Inworld
   ttsVoiceId,
-  sttLanguage = "es-MX",
+  sttLanguage = "es",
+  metadata,
 }: {
   userId: string;
   chatbotId: string;
@@ -75,6 +66,7 @@ export async function createVoiceSession({
   ttsProvider?: TTSProviderName;
   ttsVoiceId?: string;
   sttLanguage?: string;
+  metadata?: Record<string, any>;
 }) {
   if (!roomClient) {
     throw new Error("LiveKit not configured. Set LIVEKIT_API_KEY and LIVEKIT_API_SECRET");
@@ -84,11 +76,20 @@ export async function createVoiceSession({
   const roomName = `voice_${chatbotId}_${Date.now()}`;
   const participantName = `user_${userId.substring(0, 8)}`;
 
-  // 1. Crear room en LiveKit
+  // Preparar metadata del room (lo lee el worker)
+  const roomMetadata = JSON.stringify({
+    chatbotId,
+    userId,
+    ttsVoiceId: ttsVoiceId || TTS_PROVIDERS[ttsProvider].defaultVoice,
+    ...metadata, // personality, instructions, voiceWelcome, etc.
+  });
+
+  // 1. Crear room en LiveKit con metadata
   const room = await roomClient.createRoom({
     name: roomName,
     emptyTimeout: 60 * 5, // 5 minutos de timeout si está vacío
     maxParticipants: 2, // Usuario + Agente
+    metadata: roomMetadata,
   });
 
   // 2. Generar token de acceso para el cliente

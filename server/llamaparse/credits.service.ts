@@ -227,3 +227,180 @@ export async function deductToolCredits({
 }): Promise<void> {
   await validateAndDeduct(userId, credits);
 }
+
+// ============================================================================
+// VOICE CREDITS MANAGEMENT
+// ============================================================================
+
+/**
+ * Valida si el usuario tiene suficientes créditos de voz disponibles
+ * NO descuenta, solo valida
+ * @param estimatedMinutes - Minutos estimados de conversación
+ * @returns Créditos disponibles y estimados necesarios
+ */
+export async function validateVoiceCredits(
+  userId: string,
+  estimatedMinutes: number = 5 // Default: validar para 5 minutos
+): Promise<{
+  available: boolean;
+  creditsAvailable: number;
+  creditsRequired: number;
+  minutesAvailable: number;
+}> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: {
+      plan: true,
+      voiceCreditsUsed: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error(`Usuario no encontrado: ${userId}`);
+  }
+
+  // Límites de créditos de voz por plan (10 créditos por minuto)
+  const planVoiceLimits: Record<string, number> = {
+    FREE: 0,
+    TRIAL: 150, // 15 minutos (15 × 10 créditos/min)
+    STARTER: 0, // Sin chatbots = sin acceso a voz
+    PRO: 300, // 30 minutos/mes (30 × 10 créditos/min)
+    ENTERPRISE: 600, // 60 minutos/mes (60 × 10 créditos/min)
+  };
+
+  const planLimit = planVoiceLimits[user.plan] || 0;
+  const creditsUsed = user.voiceCreditsUsed;
+  const creditsAvailable = Math.max(0, planLimit - creditsUsed);
+  const creditsRequired = Math.ceil(estimatedMinutes * 10); // 10 créditos por minuto
+
+  return {
+    available: creditsAvailable >= creditsRequired,
+    creditsAvailable,
+    creditsRequired,
+    minutesAvailable: Math.floor(creditsAvailable / 10),
+  };
+}
+
+/**
+ * Consume créditos de voz después de una sesión
+ * @param minutes - Minutos reales de conversación
+ */
+export async function consumeVoiceCredits(
+  userId: string,
+  minutes: number
+): Promise<{
+  success: boolean;
+  creditsUsed: number;
+  creditsRemaining: number;
+}> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: {
+      plan: true,
+      voiceCreditsUsed: true,
+      voiceMinutesUsed: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error(`Usuario no encontrado: ${userId}`);
+  }
+
+  // Calcular créditos a consumir (10 créditos por minuto, redondear hacia arriba)
+  const creditsToConsume = Math.ceil(minutes * 10);
+
+  // Límites por plan (10 créditos por minuto)
+  const planVoiceLimits: Record<string, number> = {
+    FREE: 0,
+    TRIAL: 150, // 15 minutos
+    STARTER: 0, // Sin chatbots = sin acceso a voz
+    PRO: 300, // 30 minutos
+    ENTERPRISE: 600, // 60 minutos
+  };
+
+  const planLimit = planVoiceLimits[user.plan] || 0;
+  const newCreditsUsed = user.voiceCreditsUsed + creditsToConsume;
+
+  if (newCreditsUsed > planLimit) {
+    throw new Error(
+      `Límite de créditos de voz excedido. Límite: ${planLimit}, usado: ${user.voiceCreditsUsed}, intentando usar: ${creditsToConsume}`
+    );
+  }
+
+  // Actualizar créditos y minutos
+  await db.user.update({
+    where: { id: userId },
+    data: {
+      voiceCreditsUsed: newCreditsUsed,
+      voiceMinutesUsed: { increment: minutes },
+    },
+  });
+
+  return {
+    success: true,
+    creditsUsed: creditsToConsume,
+    creditsRemaining: planLimit - newCreditsUsed,
+  };
+}
+
+/**
+ * Obtiene estadísticas de uso de créditos de voz
+ */
+export async function getVoiceCreditsStats(userId: string): Promise<{
+  planLimit: number;
+  creditsUsed: number;
+  creditsRemaining: number;
+  minutesUsed: number;
+  minutesRemaining: number;
+  percentageUsed: number;
+}> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: {
+      plan: true,
+      voiceCreditsUsed: true,
+      voiceMinutesUsed: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error(`Usuario no encontrado: ${userId}`);
+  }
+
+  const planVoiceLimits: Record<string, number> = {
+    FREE: 0,
+    TRIAL: 150, // 15 minutos
+    STARTER: 0, // Sin chatbots = sin voz
+    PRO: 300, // 30 minutos
+    ENTERPRISE: 600, // 60 minutos
+  };
+
+  const planLimit = planVoiceLimits[user.plan] || 0;
+  const creditsUsed = user.voiceCreditsUsed;
+  const creditsRemaining = Math.max(0, planLimit - creditsUsed);
+  const minutesUsed = user.voiceMinutesUsed;
+  const minutesRemaining = Math.floor(creditsRemaining / 10); // 10 créditos por minuto
+  const percentageUsed = planLimit > 0 ? (creditsUsed / planLimit) * 100 : 0;
+
+  return {
+    planLimit,
+    creditsUsed,
+    creditsRemaining,
+    minutesUsed,
+    minutesRemaining,
+    percentageUsed: Math.round(percentageUsed * 10) / 10, // 1 decimal
+  };
+}
+
+/**
+ * Reset mensual de créditos de voz (ejecutar al inicio de cada mes)
+ */
+export async function resetVoiceCredits(userId: string): Promise<void> {
+  await db.user.update({
+    where: { id: userId },
+    data: {
+      voiceCreditsUsed: 0,
+      voiceMinutesUsed: 0,
+    },
+  });
+}

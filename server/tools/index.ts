@@ -112,9 +112,9 @@ export const createFormmyPlanPaymentTool = (context: ToolContext) => tool(
 - Frases clave: plan, upgrade, mejorar, comprar, pagar, STARTER, PRO, ENTERPRISE
 
 **PLANES DISPONIBLES:**
-• **STARTER** - $149 MXN/mes: 2 chatbots, 50 conversaciones, 200 créditos
-• **PRO** - $499 MXN/mes: 10 chatbots, 250 conversaciones, 1000 créditos
-• **ENTERPRISE** - $1,499 MXN/mes: Chatbots ilimitados, 1000 conversaciones, 5000 créditos
+• **STARTER** - $149 MXN/mes: Solo formularios (sin chatbots)
+• **PRO** - $499 MXN/mes: 10 chatbots, 250 conversaciones, 1000 créditos, 30 min voz
+• **ENTERPRISE** - $2,490 MXN/mes: Chatbots ilimitados, 1000 conversaciones, 5000 créditos, 60 min voz
 
 **EJEMPLOS DE USO:**
 ✅ "Quiero el plan Pro" → planName: "PRO"

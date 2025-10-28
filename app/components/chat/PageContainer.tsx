@@ -1,4 +1,4 @@
-import type { Chatbot, User } from "@prisma/client";
+import type { Chatbot, User, Integration } from "@prisma/client";
 import {
   useState,
   type ReactNode,
@@ -443,8 +443,10 @@ export const EditionPair = ({
   currentTab,
   chatbot,
   user,
+  integrations,
 }: {
   chatbot: Chatbot;
+  integrations?: Integration[];
   user: User;
   currentTab?: string;
 }) => {
@@ -545,6 +547,7 @@ export const EditionPair = ({
               instructions,
               personality: selectedAgent,
             }}
+            integrations={integrations}
           />
         </section>
       </article>

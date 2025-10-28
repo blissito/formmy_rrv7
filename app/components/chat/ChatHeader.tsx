@@ -1,5 +1,5 @@
 import { Avatar } from "./Avatar";
-import { XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, ArrowPathIcon, MicrophoneIcon } from "@heroicons/react/24/outline";
 
 interface ChatHeaderProps {
   primaryColor?: string;
@@ -8,6 +8,8 @@ interface ChatHeaderProps {
   showCloseButton?: boolean;
   onClose?: () => void;
   onClear?: () => void;
+  voiceEnabled?: boolean;
+  onVoiceClick?: () => void;
 }
 
 export const ChatHeader = ({
@@ -17,6 +19,8 @@ export const ChatHeader = ({
   showCloseButton = false,
   onClose,
   onClear,
+  voiceEnabled = false,
+  onVoiceClick,
 }: ChatHeaderProps) => {
   const handleClose = () => {
     // Si está en iframe, enviar mensaje al padre
@@ -35,6 +39,17 @@ export const ChatHeader = ({
       </div>
 
       <div className="flex items-center gap-2">
+        {voiceEnabled && onVoiceClick && (
+          <button
+            onClick={onVoiceClick}
+            className="bg-green-600 hover:bg-green-700 text-white rounded-full p-1.5 shadow-lg transition-colors"
+            aria-label="Conversación por voz"
+            title="Conversación por voz"
+          >
+            <MicrophoneIcon className="w-4 h-4" />
+          </button>
+        )}
+
         {onClear && (
           <button
             onClick={onClear}

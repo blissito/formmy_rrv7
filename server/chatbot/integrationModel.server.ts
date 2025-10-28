@@ -176,6 +176,7 @@ export async function updateIntegration(
     stripeWebhookSecret?: string;
     lastActivity?: Date;
     errorMessage?: string;
+    metadata?: any; // ✅ Agregar metadata para integraciones como VOICE
   }
 ): Promise<Integration> {
   return prisma.integration.update({

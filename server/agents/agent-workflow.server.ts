@@ -95,9 +95,9 @@ Frases que requieren tool:
 ❌ "qué incluye Pro", "cuánto cuesta Starter", "diferencias entre planes"
 
 🎯 PLANES FORMMY:
-• Starter - $149 MXN/mes: 2 chatbots, 50 conversaciones
-• Pro - $499 MXN/mes: 10 chatbots, 250 conversaciones
-• Enterprise - $1,499 MXN/mes: chatbots ilimitados, 1000 conversaciones
+• Starter - $149 MXN/mes: Solo formularios (sin chatbots)
+• Pro - $499 MXN/mes: 10 chatbots, 250 conversaciones, 30 min voz
+• Enterprise - $2,490 MXN/mes: Chatbots ilimitados, 1000 conversaciones, 60 min voz
 
 🚨 CRÍTICO - WIDGETS:
 Si una tool retorna 🎨WIDGET:payment:abc123🎨:
@@ -118,10 +118,12 @@ function buildSystemPrompt(
   hasContextSearch: boolean,
   hasWebSearch: boolean,
   hasReportGeneration: boolean,
-  hasGmailTools: boolean = false
+  hasGmailTools: boolean = false,
+  isOfficialGhosty: boolean = false
 ): string {
-  // 🎯 GHOSTY usa prompt dedicado optimizado
-  if (config.name === 'Ghosty') {
+  // 🎯 GHOSTY OFICIAL (de Formmy) usa prompt dedicado optimizado
+  // Solo si es el Ghosty de Formmy (sin customInstructions) o si está marcado como oficial
+  if (config.name === 'Ghosty' && (isOfficialGhosty || !config.customInstructions)) {
     return buildGhostySystemPrompt();
   }
 
@@ -158,18 +160,37 @@ CUANDO EL USUARIO PREGUNTA SOBRE:
 - Políticas, términos, condiciones, FAQs
 - CUALQUIER información específica del negocio
 
-PROTOCOLO OBLIGATORIO:
-1. EJECUTAR search_context("query específica") INMEDIATAMENTE - NO OPCIONAL
-2. Si no encuentras: REFORMULAR query y BUSCAR DE NUEVO (mínimo 2 intentos)
-3. Si múltiples temas: EJECUTAR MÚLTIPLES BÚSQUEDAS${hasWebSearch ? `
-4. Si todo falla: EJECUTAR web_search_google("${config.name === 'Ghosty' ? 'Formmy' : config.name} [tema]")
-5. Solo si todo falla: "Busqué pero no encontré información sobre [tema]"` : `
-4. Solo si todo falla: "Busqué en la base de conocimiento pero no encontré información sobre [tema]"`}
+PROTOCOLO EN ORDEN DE PRIORIDAD:
+
+1. ✅ PRIMERO: Revisa si la información está en TUS INSTRUCCIONES
+   → Si ya conoces el precio/servicio por tus instrucciones: RESPONDE DIRECTO
+   → NO busques lo que YA SABES
+
+2. 🔍 SEGUNDO: Si NO tienes la información, EJECUTAR search_context("query específica")
+   → Si no encuentras: REFORMULAR query y BUSCAR DE NUEVO (mínimo 2 intentos)
+   → Si múltiples temas: EJECUTAR MÚLTIPLES BÚSQUEDAS${hasWebSearch ? `
+
+3. 🌐 TERCERO: Si search_context falla, EJECUTAR web_search_google("${config.name === 'Ghosty' ? 'Formmy' : config.name} [tema]")
+
+4. ❌ ÚLTIMO RECURSO: "Busqué pero no encontré información sobre [tema]"` : `
+
+3. ❌ ÚLTIMO RECURSO: "Busqué en la base de conocimiento pero no encontré información sobre [tema]"`}
+
+✅ EJEMPLOS CORRECTOS:
+
+User: "¿Cuánto cuesta tu servicio?"
+→ Si tus instrucciones dicen "Curso de agentes IA en $2000 MXN"
+→ CORRECTO: "El curso cuesta $2000 MXN" ✅
+→ INCORRECTO: search_context("precio curso") ❌ (ya lo sabes)
+
+User: "¿Tienen garantía de devolución?"
+→ Si NO está en tus instrucciones
+→ CORRECTO: search_context("política devolución garantía") ✅
 
 ❌ PROHIBIDO ABSOLUTAMENTE:
-- Responder "no tengo información" SIN buscar primero
-- Inventar o adivinar precios, fechas, features
-- Decir "no sé" sin AGOTAR todas las búsquedas
+- Buscar información que YA está en tus instrucciones
+- Responder "no tengo información" cuando SÍ la tienes
+- Inventar o adivinar información que NO conoces
 - Dar información NO solicitada o irrelevante
 
 📏 REGLA DE CONCISIÓN:
@@ -270,13 +291,27 @@ REGLA DE ORO: Deja que las tools determinen si puedes o no. NO prometas hasta ve
 `;
   }
 
+  // 🎯 CUSTOM INSTRUCTIONS PRIMERO (máxima prioridad)
+  let customInstructionsBlock = '';
+  if (config.customInstructions) {
+    customInstructionsBlock = `🎯 TU PERSONALIZACIÓN (PRIORIDAD MÁXIMA):
+
+${config.customInstructions}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+`;
+  }
+
   // Construir prompt base con personalidad
   let basePrompt: string;
 
   // Si personality es un AgentType válido, usar prompt optimizado
   if (agentTypes.includes(personality as AgentType)) {
-    // ORDEN: searchInstructions → toolGroundingRules → gmailInstructions → personality → custom instructions
-    basePrompt = `${searchInstructions}${toolGroundingRules}${gmailInstructions}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}${config.customInstructions ? '\n\n' + config.customInstructions : ''}`;
+    // ORDEN OPTIMIZADO: customInstructions PRIMERO → luego reglas técnicas
+    basePrompt = `${customInstructionsBlock}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}
+
+${searchInstructions}${toolGroundingRules}${gmailInstructions}`;
   } else {
     // Fallback a personalidades genéricas (friendly, professional)
     const personalityMap: Record<string, string> = {
@@ -284,12 +319,14 @@ REGLA DE ORO: Deja que las tools determinen si puedes o no. NO prometas hasta ve
       professional: "asistente profesional",
     };
 
-    // ORDEN: searchInstructions → toolGroundingRules → gmailInstructions → personalidad
-    basePrompt = `${searchInstructions}${toolGroundingRules}${gmailInstructions}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
+    // ORDEN OPTIMIZADO: customInstructions PRIMERO → luego reglas técnicas
+    basePrompt = `${customInstructionsBlock}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
 
-${config.instructions || "Asistente útil."}${config.customInstructions ? '\n\n' + config.customInstructions : ''}
+${config.instructions || "Asistente útil."}
 
-Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu personalidad.`;
+Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu personalidad.
+
+${searchInstructions}${toolGroundingRules}${gmailInstructions}`;
   }
 
   // 🛡️ Restricciones de seguridad para web_search_google
@@ -422,7 +459,31 @@ async function createSingleAgent(
     (tool: any) => tool.metadata?.name === "send_gmail" || tool.metadata?.name === "read_gmail"
   );
 
-  const systemPrompt = buildSystemPrompt(resolvedConfig, hasContextSearch, hasWebSearch, hasReportGeneration, hasGmailTools);
+  // Determinar si es el Ghosty oficial de Formmy (isGhosty=true y chatbotId=null)
+  const isOfficialGhosty = context.agentContext?.isGhosty === true && context.chatbotId === null;
+
+  const systemPrompt = buildSystemPrompt(
+    resolvedConfig,
+    hasContextSearch,
+    hasWebSearch,
+    hasReportGeneration,
+    hasGmailTools,
+    isOfficialGhosty
+  );
+
+  // 🔍 DEBUG: Mostrar system prompt construido
+  console.log(`\n${'📝'.repeat(40)}`);
+  console.log(`📝 [SYSTEM PROMPT] Prompt construido para el agente:`);
+  console.log(`   chatbot.name: "${resolvedConfig.name}"`);
+  console.log(`   personality: "${resolvedConfig.personality}"`);
+  console.log(`   isOfficialGhosty: ${isOfficialGhosty}`);
+  console.log(`   customInstructions presente: ${!!resolvedConfig.customInstructions}`);
+  if (resolvedConfig.customInstructions) {
+    console.log(`   customInstructions: "${resolvedConfig.customInstructions}"`);
+  }
+  console.log(`\n   SYSTEM PROMPT COMPLETO:`);
+  console.log(`   ${systemPrompt.substring(0, 500)}...`);
+  console.log(`${'📝'.repeat(40)}\n`);
 
   // ✅ Crear memoria conversacional según patrón oficial LlamaIndex
   let memory = undefined;

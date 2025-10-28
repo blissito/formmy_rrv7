@@ -240,6 +240,20 @@ async function handleUpdateIntegration(formData: FormData) {
   const webhookVerifyToken = formData.get("webhookVerifyToken") as string;
   const errorMessage = formData.get("errorMessage") as string;
 
+  // Metadata JSON (para VOICE y otras integraciones)
+  const metadataString = formData.get("metadata") as string;
+  let metadata = null;
+  if (metadataString) {
+    try {
+      metadata = JSON.parse(metadataString);
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in metadata field" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }
+
   if (!integrationId) {
     return new Response(
       JSON.stringify({ error: "integrationId is required" }),
@@ -255,6 +269,7 @@ async function handleUpdateIntegration(formData: FormData) {
   if (businessAccountId) updateData.businessAccountId = businessAccountId;
   if (webhookVerifyToken) updateData.webhookVerifyToken = webhookVerifyToken;
   if (errorMessage !== undefined) updateData.errorMessage = errorMessage;
+  if (metadata !== null) updateData.metadata = metadata;
 
   const integration = await updateIntegration(integrationId, updateData);
 

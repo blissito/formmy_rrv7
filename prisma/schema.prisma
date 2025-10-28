@@ -283,14 +283,6 @@ model Chatbot {
   satContacts        SatContact[]      @relation("ChatbotSatContacts")
   voiceSessions      VoiceSession[]
 
-  // LiveKit Voice AI Configuration
-  voiceEnabled  Boolean @default(false)
-  ttsProvider   String? // "cartesia" | "elevenlabs" | "inworld"
-  ttsVoiceId    String? // ID de voz específica del proveedor
-  sttLanguage   String  @default("es-MX") // Idioma para Speech-to-Text
-  voiceWelcome  String? // Mensaje de bienvenida personalizado para voz
-  voiceGoodbye  String? // Mensaje de despedida personalizado para voz
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -422,6 +414,7 @@ enum IntegrationType {
   GMAIL
   STRIPE
   SAT
+  VOICE
 }
 
 model Integration {
@@ -450,6 +443,10 @@ model Integration {
   // Campos de auditoría
   lastActivity DateTime? // Última actividad registrada
   errorMessage String? // Último mensaje de error
+
+  // Metadata JSON para configuración específica de cada integración
+  // Ej: VOICE → {ttsVoiceId, voiceWelcome, ttsProvider, sttLanguage}
+  metadata Json?
 
   // Relaciones
   chatbotId String  @db.ObjectId
@@ -853,9 +850,9 @@ model VoiceSession {
   participantSid String?            // Participant ID del usuario
 
   // Configuración TTS usada
-  ttsProvider    String             // "cartesia" | "elevenlabs" | "inworld"
+  ttsProvider    String             // ✅ SOLO "elevenlabs" - Cartesia e Inworld DEPRECADOS
   ttsVoiceId     String?            // Voice ID específica
-  sttLanguage    String             @default("es-MX")
+  sttLanguage    String             @default("es") // ⚠️ ISO-639-1 SOLO (es, en, pt) - NO locales (es-MX, en-US)
 
   // Timing
   startTime      DateTime           @default(now())

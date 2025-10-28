@@ -571,12 +571,13 @@ export async function enqueueParsingJob(data: {
 
 ```typescript
 export const PLANS = {
-  FREE: { price: 0, conversations: 0, chatbots: 0, credits: 0 },
+  FREE: { price: 0, conversations: 0, chatbots: 0, credits: 0, voiceMinutes: 0 },
   STARTER: {
     price: 149,
-    conversations: 50,
-    chatbots: 2,
-    credits: 200,
+    conversations: 0,
+    chatbots: 0,
+    credits: 0,
+    voiceMinutes: 0,
     priceId: "price_1S5AqX..."
   },
   PRO: {
@@ -584,13 +585,15 @@ export const PLANS = {
     conversations: 250,
     chatbots: 10,
     credits: 1000,
+    voiceMinutes: 30,
     priceId: "price_1S5CqA..."
   },
   ENTERPRISE: {
-    price: 1499,
+    price: 2490,
     conversations: 1000,
     chatbots: Infinity,
-    credits: 5000
+    credits: 5000,
+    voiceMinutes: 60
   }
 };
 ```

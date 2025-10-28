@@ -18,44 +18,34 @@ import { WhatsAppTemplateCreator } from "../../integrations/WhatsAppTemplateCrea
 import { WhatsAppTemplateList } from "../../integrations/WhatsAppTemplateList";
 import GmailIntegrationModal from "../../integrations/GmailIntegrationModal";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
+import VoiceIntegrationModal from "../../integrations/VoiceIntegrationModal";
 // import GoogleCalendarComposioModal from "../../integrations/GoogleCalendarComposioModal"; // Deshabilitado - Próximamente
 // import StripeIntegrationModal from "../../integrations/StripeIntegrationModal"; // Deshabilitado temporalmente
 
 // Integraciones disponibles con sus configuraciones
+// ✅ ACTIVAS PRIMERO (permanentes + disponibles)
 const getAvailableIntegrations = (t: (key: string) => string) => [
+  // Integraciones permanentes (siempre activas)
   {
     id: "DENIK",
     name: "Deník",
     logo: "/assets/chat/denik.svg",
     description: t('integrations.denik.description'),
-    isPermanent: true, // Integración permanente, siempre activa
+    isPermanent: true,
   },
   {
     id: "SAVE_CONTACT",
     name: t('integrations.saveContact.name'),
     logo: "/assets/chat/users.svg",
     description: t('integrations.saveContact.description'),
-    isPermanent: true, // Integración permanente, siempre activa
+    isPermanent: true,
   },
+  // Integraciones activas disponibles
   {
-    id: "STRIPE",
-    name: "Stripe",
-    logo: "/assets/chat/stripe.png",
-    description: t('integrations.stripe.description'),
-    isPermanent: false,
-  },
-  {
-    id: "GOOGLE_CALENDAR",
-    name: "Google Calendar",
-    logo: "/assets/chat/calendar.png",
-    description: t('integrations.googleCalendar.description'),
-    isPermanent: false,
-  },
-  {
-    id: "SAT",
-    name: "SAT México",
-    logo: "/assets/chat/sat-logo.png",
-    description: "Recolección inteligente de facturas CFDI, validación con SAT, gestión de contactos fiscales y detección de lista negra EFOS/EDOS. Tus clientes suben documentos 24/7 al chatbot.",
+    id: "VOICE",
+    name: "Conversaciones de Voz",
+    logo: "voice-icon", // Especial: se renderizará como icono de react-icons
+    description: "Permite a los usuarios hablar con tu chatbot en tiempo real mediante voz. Voces naturales en español mexicano con modelos de IA avanzados.",
     isPermanent: false,
   },
   {
@@ -70,6 +60,28 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
     name: "Gmail",
     logo: "/assets/chat/gmail.png",
     description: t('integrations.gmail.description'),
+    isPermanent: false,
+  },
+  {
+    id: "SAT",
+    name: "SAT México",
+    logo: "/assets/chat/sat-logo.png",
+    description: "Recolección inteligente de facturas CFDI, validación con SAT, gestión de contactos fiscales y detección de lista negra EFOS/EDOS. Tus clientes suben documentos 24/7 al chatbot.",
+    isPermanent: false,
+  },
+  // Integraciones en desarrollo (onhold)
+  {
+    id: "STRIPE",
+    name: "Stripe",
+    logo: "/assets/chat/stripe.png",
+    description: t('integrations.stripe.description'),
+    isPermanent: false,
+  },
+  {
+    id: "GOOGLE_CALENDAR",
+    name: "Google Calendar",
+    logo: "/assets/chat/calendar.png",
+    description: t('integrations.googleCalendar.description'),
     isPermanent: false,
   },
   {
@@ -112,7 +124,7 @@ interface CodigoProps {
   integrations: Integration[];
   user: {
     id: string;
-    subscriptionPlan?: string;
+    plan: string;
     // Otras propiedades del usuario que necesites
   };
 }
@@ -149,18 +161,21 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       // Denik y Gestión de contactos son integraciones permanentes, siempre conectadas
       if (availableIntegration.isPermanent) {
         status[availableIntegration.id.toLowerCase()] = "connected";
+      } else if (availableIntegration.id === "VOICE") {
+        // VOICE: Estado basado en chatbot.voiceEnabled (se actualiza en useState inicial)
+        status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else if (availableIntegration.id === "GMAIL") {
         // Gmail: Iniciar como disconnected, luego actualizar con estado real de BD
         status[availableIntegration.id.toLowerCase()] = "disconnected";
-      } else if (availableIntegration.id === "STRIPE") {
-        // Stripe deshabilitado temporalmente (en desarrollo)
-        status[availableIntegration.id.toLowerCase()] = "onhold";
       } else if (availableIntegration.id === "WHATSAPP") {
         // WhatsApp disponible - iniciar como disconnected
         status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else if (availableIntegration.id === "SAT") {
         // SAT disponible - iniciar como disconnected
         status[availableIntegration.id.toLowerCase()] = "disconnected";
+      } else if (availableIntegration.id === "STRIPE") {
+        // Stripe deshabilitado temporalmente (en desarrollo)
+        status[availableIntegration.id.toLowerCase()] = "onhold";
       } else {
         // Todas las demás integraciones están en "onhold" (próximamente)
         status[availableIntegration.id.toLowerCase()] = "onhold";
@@ -211,6 +226,10 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     } else {
       console.log("⚠️ Debug - No hay integraciones o array vacío");
     }
+
+    // VOICE: Inicializar estado basándose en chatbot.voiceEnabled
+    // Nota: chatbot se pasa como contexto global del componente
+    // El estado se actualiza después en useEffect basándose en chatbot.voiceEnabled
 
     console.log("🔍 Debug - Estado final de integraciones:", status);
     return status;
@@ -270,6 +289,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   const [whatsAppEmbeddedSignupModalOpen, setWhatsAppEmbeddedSignupModalOpen] =
     useState(false);
   const [gmailModalOpen, setGmailModalOpen] = useState(false);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   // const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false); // Deshabilitado - Próximamente
   // const [stripeModalOpen, setStripeModalOpen] = useState(false); // Deshabilitado temporalmente
 
@@ -321,6 +341,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     } else if (integrationId === "STRIPE") {
       console.log("🔒 Stripe está en onhold temporalmente");
       return; // Deshabilitado temporalmente
+    } else if (integrationId === "VOICE") {
+      // VOICE: Abrir modal de configuración
+      setVoiceModalOpen(true);
     } else if (integrationId === "SAT") {
       // SAT: Crear integración en BD como activa y redirigir al dashboard
       setIntegrationStatus((prev) => ({
@@ -448,6 +471,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
   const handleEdit = (integrationId: string) => {
     console.log("🔍 Debug - Editando integración:", integrationId);
+    console.log("🔍 Debug - currentTab actual:", currentTab);
+    console.log("🔍 Debug - ¿Estamos en integrations?:", currentTab === "integrations");
     setSelectedIntegration(integrationId);
 
     if (integrationId === "WHATSAPP") {
@@ -461,6 +486,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     } else if (integrationId === "STRIPE") {
       console.log("🔒 Stripe está en onhold temporalmente");
       return; // Deshabilitado temporalmente
+    } else if (integrationId === "VOICE") {
+      // VOICE: Abrir modal de configuración
+      setVoiceModalOpen(true);
     } else if (integrationId === "SAT") {
       // SAT: Redirigir al dashboard
       window.location.href = `/dashboard/sat?chatbotId=${chatbot.id}`;
@@ -542,6 +570,31 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     setSelectedIntegration(null);
 
     // Recargar para reflejar la integración activa
+    window.location.reload();
+  };
+
+  // Manejador de éxito para la integración de Voz
+  const handleVoiceSuccess = (data: any) => {
+    console.log("🔍 Debug - Voice integración exitosa:", data);
+
+    if (data.connected) {
+      // Actualizar el estado local para mostrar como conectado
+      setIntegrationStatus((prev) => ({
+        ...prev,
+        voice: "connected" as const,
+      }));
+    } else if (data.disconnected) {
+      // Actualizar el estado local para mostrar como desconectado
+      setIntegrationStatus((prev) => ({
+        ...prev,
+        voice: "disconnected" as const,
+      }));
+    }
+
+    setVoiceModalOpen(false);
+    setSelectedIntegration(null);
+
+    // Recargar para reflejar los cambios
     window.location.reload();
   };
 
@@ -726,6 +779,11 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
           </Card>
         </section>
       )}
+      {currentTab === "integrations" && (() => {
+        console.log("🎯 [INTEGRATIONS TAB] Tab de integraciones activa");
+        console.log("🎯 [INTEGRATIONS TAB] selectedIntegration:", selectedIntegration);
+        return null;
+      })()}
       {currentTab === "integrations" && (
         <article className="grid lg:grid-cols-3 grid-cols-1 md:grid-cols-2 gap-4 py-3">
           {availableIntegrations.map((availableIntegration) => {
@@ -918,6 +976,18 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
               onClose={() => setGmailModalOpen(false)}
               onSuccess={handleGmailSuccess}
               chatbot={chatbot}
+            />
+          )}
+
+          {/* VOICE Integration Modal */}
+          {selectedIntegration === "VOICE" && (
+            <VoiceIntegrationModal
+              isOpen={voiceModalOpen}
+              onClose={() => setVoiceModalOpen(false)}
+              onSuccess={handleVoiceSuccess}
+              chatbot={chatbot}
+              existingIntegration={integrations.find((i) => i.platform === "VOICE") || null}
+              userPlan={user.plan || "FREE"}
             />
           )}
 
