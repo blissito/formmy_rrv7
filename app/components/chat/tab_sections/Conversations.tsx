@@ -677,7 +677,7 @@ const ChatHeader = ({
       <Avatar className="h-10 w-10" src={conversation.messages[0]?.picture || "/assets/chat/ghosty.svg"} />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-gray-600">
+          <h3 className="text-sm font-semibold text-dark ">
             {/* Mostrar número de WhatsApp formateado si está disponible en lugar de "Usuario xxxx" */}
             {tel && tel !== "N/A" ? formatPhoneNumber(tel) : (conversation.userName || "User")}
           </h3>
@@ -719,8 +719,8 @@ const ToggleButton = ({
     className={cn(
       "ml-auto mr-2 px-3 py-1 text-xs rounded-full font-medium transition-colors",
       isManual
-        ? "bg-orange-100 text-orange-800"
-        : "bg-blue-100 text-blue-800",
+        ? "bg-bird text-dark"
+        : "bg-cloud text-dark",
       "disabled:opacity-50"
     )}
   >
@@ -858,20 +858,19 @@ const ManualResponseInput = ({
   // 🎯 QUICK RESPONSES: Respuestas rápidas pre-definidas
   const quickResponses = [
     "👋 ¡Hola! ¿En qué puedo ayudarte?",
-    "✅ Perfecto, entendido",
     "⏱️ Te respondo en un momento",
     "📞 ¿Podrías compartir tu contacto?",
   ];
 
   return (
-    <div className="border-l border-r border-b border-outlines bg-brand-100 p-4 w-full rounded-b-3xl">
+    <div className="border-l border-t border-r border-b border-outlines bg-gray-100/10 p-4 w-full rounded-b-3xl">
       {/* 🎯 QUICK RESPONSES */}
-      <div className="flex flex-wrap gap-2 mb-3">
+      <div className="flex flex-wrap gap-2 mb-4">
         {quickResponses.map((response, index) => (
           <button
             key={index}
             onClick={() => setMessage(response)}
-            className="px-3 py-1 text-xs bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+            className="px-2.5 py-1.5 text-xs font-medium bg-dark dark:bg-space-700 text-white dark:text-clear border border-dark dark:border-space-600 rounded-full hover:bg-space-800 dark:hover:bg-brand-500/10 transition-all duration-200"
           >
             {response}
           </button>
@@ -881,7 +880,7 @@ const ManualResponseInput = ({
         {isWhatsApp && (
           <button
             onClick={() => setShowTemplateSelector(true)}
-            className="px-3 py-1 text-xs bg-green-50 border border-green-200 rounded-full hover:bg-green-100 transition-colors flex items-center gap-1.5"
+            className="px-2.5 py-1.5 text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-all duration-200 flex items-center gap-1.5"
           >
             <img src="/assets/chat/whatsapp.svg" className="w-3 h-3" alt="WhatsApp" />
             {t('conversations.sendTemplate')}
@@ -980,36 +979,55 @@ const ManualResponseInput = ({
             value={message}
             onChange={handleAutoResize}
             onKeyDown={handleKeyDown}
-            placeholder="💬 Responde al usuario aquí..."
-            className="w-full p-3 border-2 border-blue-200 rounded-xl resize-none focus:outline-none focus:ring-0  focus:border-brand-500 transition-all"
+            placeholder="💬 Escribe tu respuesta..."
+            className={cn(
+              "w-full p-3 border border-outlines dark:border-space-600 rounded-xl resize-none",
+            "bg-white text-dark dark:text-clear text-[0.95rem]",
+              "placeholder:text-lightgray dark:placeholder:text-space-400",
+              "focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500",
+              "transition-all duration-200"
+            )}
             rows={2}
             maxLength={4096}
-            style={{ minHeight: '60px' }}
+            style={{ minHeight: '64px' }}
           />
-          <div className="flex justify-between items-center mt-2 text-xs text-gray-600">
-            <span>⚡ Enter envía • Shift+Enter nueva línea</span>
-            <span className={message.length > 3500 ? 'text-orange-600 font-medium' : ''}>{message.length}/4096</span>
+          <div className="flex justify-between items-center mt-0 text-[10px] text-irongray dark:text-space-400">
+            <span className="flex items-center gap-1">
+              <span className="text-brand-500">⚡</span>
+              <span>Enter envía • Shift+Enter nueva línea</span>
+            </span>
+            <span className={cn(
+              "font-medium tabular-nums",
+              message.length > 3500 ? 'text-orange-500' : ''
+            )}>
+              {message.length}/4096
+            </span>
           </div>
         </div>
         <button
           onClick={handleSend}
           disabled={!message.trim() || isSending}
           className={cn(
-            "px-6 py-3 bg-brand-500 text-white rounded-full transition-all transform",
-            "hover:scale-105 hover:shadow-lg hover:bg-brand-600",
-            "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
-            "flex items-center gap-2 font-medium whitespace-nowrap",
+            "px-5 py-2.5 bg-brand-500 text-white rounded-full transition-all font-medium",
+            "hover:bg-brand-600 hover:shadow-lg",
+            "active:scale-95",
+            "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-500 disabled:hover:shadow-none",
+            "flex items-center justify-center gap-2 whitespace-nowrap",
             "focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
           )}
         >
           {isSending ? (
             <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Enviando...
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Enviando...</span>
             </>
           ) : (
             <>
-              Enviar
+              <span>Enviar</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
             </>
           )}
         </button>
@@ -1167,9 +1185,8 @@ export const ConversationsPreview = ({
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        style={{ borderColor: primaryColor || "brand-500" }}
         className={cn(
-          "border w-full shadow-standard flex-1 overflow-y-auto",
+          "border border-outlines w-full shadow-standard flex-1 overflow-y-auto",
           localManualMode ? "border-b-0" : "rounded-b-3xl"
         )}
       >

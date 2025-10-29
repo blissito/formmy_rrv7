@@ -257,8 +257,9 @@ export const Contactos = ({
       <section className="h-full min-h-[60vh] place-items-center grid pb-6 ">
         <div>
           <img
-            className="w-40 md:w-[200px] mx-auto"
-            src="/dash/comming.svg"
+            className="w-80 md:w-[400px] mx-auto"
+            // src="/dash/comming.svg"
+            src="/rotating_ghost.png"
             alt="no contacts"
           />
           <h3 className="text-2xl font-bold text-dark text-center heading mt-6">
