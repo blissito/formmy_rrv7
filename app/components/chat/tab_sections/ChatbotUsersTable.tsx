@@ -23,7 +23,7 @@ export const ChatbotUsersTable = ({
 }: ChatbotUsersTableProps) => {
   return (
     <article>
-      <section className="grid grid-cols-10 md:text-sm text-xs px-4 text-dark ">
+      <section className="grid grid-cols-10 md:text-sm text-xs px-4 text-dark font-medium ">
         <h6 className="col-span-1"></h6>
         <h6 className="col-span-4 md:col-span-3">Email</h6>
         <h6 className="col-span-2 hidden md:block">Rol</h6>
@@ -206,9 +206,9 @@ const getRoleLabel = (role?: string): string => {
 
 const Status = ({ status }: { status: string }) => {
   const statusColors = {
-    active: "text-green-500",
-    pending: "text-[#51B8BF]",
-    rejected: "text-red-500",
+    active: "text-lime-600 font-medium",
+    pending: "text-[#51B8BF] font-medium",
+    rejected: "text-red-500 font-medium",
   };
   
   return (

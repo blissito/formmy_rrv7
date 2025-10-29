@@ -54,7 +54,7 @@ export const AddUserModal = ({
             value={email}
             required
             placeholder={placeholder}
-            className="h-12 input font-normal w-full md:w-[416px] border-[1px] border-outlines focus:outline-none focus:ring-0  focus:border-brand-500 rounded-xl placeholder:text-lightgray text-dark"
+            className="h-10 input text-sm font-normal w-full md:w-[416px] border-[1px] border-outlines focus:outline-none focus:ring-0  focus:border-brand-500 rounded-xl placeholder:text-lightgray text-dark"
             />
         </div>
 
@@ -65,7 +65,7 @@ export const AddUserModal = ({
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="h-12 input font-normal w-full md:w-[416px] border-[1px] border-outlines focus:outline-none focus:ring-0  focus:border-brand-500 rounded-xl placeholder:text-lightgray text-dark"
+            className="h-10 input text-sm font-normal w-full md:w-[416px] border-[1px] border-outlines focus:outline-none focus:ring-0  focus:border-brand-500 rounded-xl placeholder:text-lightgray text-dark"
             >
             <option value="VIEWER" className="dark:bg-space-900">
               Espectador - Solo lectura
@@ -77,7 +77,7 @@ export const AddUserModal = ({
               Admin - Todos los permisos
             </option>
           </select>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-irongray font-light mt-1">
             {selectedRole === "VIEWER" && "Puede ver conversaciones pero no puede editar la configuración"}
             {selectedRole === "EDITOR" && "Puede ver conversaciones y editar configuración básica"}
             {selectedRole === "ADMIN" && "Tiene acceso completo incluyendo gestión de usuarios"}

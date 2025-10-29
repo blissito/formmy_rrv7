@@ -334,7 +334,7 @@ export const ChatCard = ({
                 </span>
               )}
             </div>
-            <p className="text-sm text-metal flex-grow">
+            <p className="text-sm text-metal flex-grow line-clamp-2">
               {chatbot.description ||
                 "Pronto podrás saber que es lo que más preguntan tus clientes"}
             </p>
@@ -369,7 +369,7 @@ export const ChatCard = ({
                 </span>
               )}
             </div>
-            <p className="text-sm text-metal flex-grow">
+            <p className="text-sm text-metal flex-grow line-clamp-2">
               {chatbot.description ||
                 "Pronto podrás saber que es lo que más preguntan tus clientes"}
             </p>

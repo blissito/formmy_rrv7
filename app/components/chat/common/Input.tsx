@@ -54,8 +54,8 @@ export const Input = ({
           placeholder={placeholder}
           value={value}
           className={cn(
-            "placeholder:text-lightgray text-dark text-base font-normal",
-            "border-none focus:outline-none py-3 focus:border-none focus:ring-brand-500 w-full min-h-full",
+            "placeholder:text-lightgray text-dark text-sm font-regular",
+            "border-none focus:outline-none h-10 focus:border-none focus:ring-brand-500 w-full min-h-full",
             {
               "rounded-r-xl": !!left,
               "rounded-xl": !left,

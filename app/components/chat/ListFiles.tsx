@@ -284,7 +284,7 @@ export const FileItem = ({
 
 const Tag = ({ text, className }: { text: string; className?: string }) => {
   return (
-    <span className={cn("text-xs text-green-600 bg-green-100 rounded-full py-px px-2", className) }>
+    <span className={cn("text-xs text-lime-600 bg-success/30 rounded-full py-px px-2", className) }>
       {text}
     </span>
   );

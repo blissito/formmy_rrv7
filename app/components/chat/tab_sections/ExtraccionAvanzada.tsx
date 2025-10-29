@@ -3,6 +3,8 @@ import type { Chatbot, User, Plans } from "@prisma/client";
 import { cn } from "~/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Card } from "../common/Card";
+import { ListFiles } from "../ListFiles";
 
 // Tipos
 type ParsingMode = "COST_EFFECTIVE" | "AGENTIC" | "AGENTIC_PLUS";
@@ -78,7 +80,6 @@ export const ExtraccionAvanzada = ({
   const [isDragging, setIsDragging] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [recentJobs, setRecentJobs] = useState<ParsingJob[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
   const [isAddingToContext, setIsAddingToContext] = useState(false);
   const [hasAddedToContext, setHasAddedToContext] = useState(false);
   const [estimatedPages, setEstimatedPages] = useState<number | null>(null);
@@ -366,64 +367,23 @@ export const ExtraccionAvanzada = ({
   const hasEnoughCredits = estimatedCredits ? totalAvailable >= estimatedCredits : true;
 
   return (
-    <div className="space-y-5">
-      {/* Header ejecutivo */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <h3 className="text-xl font-bold text-gray-900">
-            Extracción Avanzada
-          </h3>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Procesamiento inteligente de documentos complejos
-          </p>
-        </div>
-        {!hasAccess && (
-          <div className="px-3 py-1.5 bg-brand-500/10 text-brand-600 text-xs font-semibold rounded-lg border border-brand-200">
-            PRO/Enterprise
-          </div>
-        )}
-      </div>
-
-      {/* API Access Banner */}
-      {hasAccess && (
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-gray-900 text-sm">
-                API REST Disponible
-              </h4>
-              <p className="text-xs text-gray-600 mt-1">
-                Integra el Parser Avanzado en tus propias aplicaciones. Genera API keys, consulta docs y ejemplos de código en cURL, TypeScript y Python.
-              </p>
-              <a
-                href="/dashboard/api-keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-semibold text-purple-700 hover:text-purple-900 transition-colors"
-              >
-                <span>Ver API Keys y Documentación</span>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
+    <>
+    <Card
+      title="Extracción Avanzada"
+      text={
+        <span>
+          Procesamiento inteligente de documentos complejos con LlamaParse. Selecciona el modo de procesamiento según complejidad del documento. {" "}
+          {!hasAccess && (
+            <span className="inline-flex items-center px-2 py-0.5 bg-brand-500/10 text-brand-600 text-xs font-semibold rounded-lg border border-brand-200 ml-2">
+              PRO/Enterprise
+            </span>
+          )}
+        </span>
+      }
+    >
+      <div className="space-y-5">
       {/* Selector de modo */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-semibold text-gray-900">
-            Modo de Procesamiento
-          </label>
-          <span className="text-xs text-gray-500">Selecciona según complejidad del documento</span>
-        </div>
+      <div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {PARSING_MODES.map((mode) => (
             <button
@@ -431,23 +391,23 @@ export const ExtraccionAvanzada = ({
               onClick={() => setSelectedMode(mode.id)}
               disabled={!hasAccess}
               className={cn(
-                "relative p-3 rounded-xl border transition-all text-left group",
+                "relative px-3 pt-2 pb-3 rounded-2xl border transition-all text-left group",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 selectedMode === mode.id
                   ? "border-brand-500 bg-brand-50 shadow-sm"
-                  : "border-gray-200 bg-white hover:border-brand-300 hover:shadow-sm"
+                  : "border-outlines bg-white hover:border-brand-300 hover:shadow-sm"
               )}
             >
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {/* Header del modo */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{mode.icon}</span>
+               
                     <h4 className={cn(
                       "font-semibold text-sm",
-                      selectedMode === mode.id ? "text-brand-700" : "text-gray-900"
+                      selectedMode === mode.id ? "text-brand-700" : "text-dark"
                     )}>
-                      {mode.label}
+                      {mode.label}          <span className="text-xl">{mode.icon}</span>          
                     </h4>
                   </div>
                   {selectedMode === mode.id && (
@@ -458,19 +418,14 @@ export const ExtraccionAvanzada = ({
                     </div>
                   )}
                 </div>
-
                 {/* Métricas compactas */}
-                <div className="flex items-center gap-3 text-xs">
-                  <div className="flex items-center gap-1 text-purple-700 font-semibold">
-                    <span>💎</span>
+                <div className="flex items-center text-xs ">
+                  <div className="flex items-center gap-1 text-metal font-semibold">
                     <span>{mode.pricing}</span>
                   </div>
-                  <div className="h-3 w-px bg-gray-300"></div>
-                  <span className="text-gray-600">{mode.speed}</span>
                 </div>
-
                 {/* Descripción compacta */}
-                <p className="text-xs text-gray-600 leading-tight">
+                <p className="text-xs text-irongray leading-tight pt-1">
                   {mode.description}
                 </p>
               </div>
@@ -488,16 +443,17 @@ export const ExtraccionAvanzada = ({
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               className={cn(
-                "relative border-2 border-dashed rounded-xl p-8 text-center transition-all",
+                "group cursor-pointer bg-gray-50",
+                "grid place-content-center place-items-center border-dashed border rounded-3xl h-[120px] px-4 transition-all",
                 isDragging
-                  ? "border-brand-500 bg-brand-50 scale-[1.01]"
-                  : "border-gray-300 bg-white hover:border-brand-400 hover:bg-gray-50",
+                  ? "border-brand-500 bg-brand-500/20"
+                  : "border-gray-300",
                 !hasAccess && "opacity-50 cursor-not-allowed"
               )}
             >
               <input
                 type="file"
-                id="file-upload"
+                id="file-upload-advanced"
                 className="hidden"
                 accept=".pdf,.docx,.xlsx,.txt"
                 disabled={!hasAccess}
@@ -507,83 +463,29 @@ export const ExtraccionAvanzada = ({
                 }}
               />
               <label
-                htmlFor="file-upload"
+                htmlFor="file-upload-advanced"
                 className={cn(
-                  "cursor-pointer",
+                  "cursor-pointer w-full h-full flex flex-col items-center justify-center",
                   !hasAccess && "cursor-not-allowed"
                 )}
               >
-                <div className="space-y-2">
-                  <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      Selecciona o arrastra tu documento
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      PDF, DOCX, XLSX, TXT • Máx 50MB
-                    </p>
-                  </div>
-                </div>
+                <span className="group-hover:scale-110 transition-all">
+                  <img src="/assets/chat/upload.svg" alt="upload icon" />
+                </span>
+                <h4 className="text-xs text-gray-500 font-medium text-center mt-2">
+                  Arrastra los archivos aquí o selecciona desde tu computadora
+                </h4>
+                <p className="text-xs text-gray-400 text-center mt-2">
+                  Puedes subir archivos .pdf, .docx, .xlsx o .txt • Máx 50MB
+                </p>
               </label>
             </div>
           ) : (
-            <div className="border border-gray-200 rounded-xl p-3 bg-white shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-gray-900 truncate">
-                      {selectedFile.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {(selectedFile.size / 1024).toFixed(0)} KB
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleReset}
-                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 ml-2"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <ListFiles
+              files={[selectedFile]}
+              onRemoveFile={handleReset}
+              mode="local"
+            />
           )}
 
           {error && (
@@ -596,11 +498,11 @@ export const ExtraccionAvanzada = ({
 
       {/* Opciones de Extracción */}
       {!parsedResult && (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-900 mb-3">
+        <div className="bg-surfaceTwo rounded-2xl p-4 border border-outlines">
+          <h4 className="text-sm font-semibold text-dark mb-3">
             Opciones de Extracción
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {Object.entries(advancedOptions).map(([key, value]) => (
               <label
                 key={key}
@@ -616,9 +518,9 @@ export const ExtraccionAvanzada = ({
                       [key]: e.target.checked,
                     })
                   }
-                  className="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500 disabled:opacity-50"
+                  className="w-4 h-4 text-brand-500 border-outlines rounded focus:ring-brand-500 disabled:opacity-50"
                 />
-                <span className="text-gray-700 group-hover:text-gray-900 font-medium">
+                <span className="text-metal group-hover:text-dark font-regular">
                   {key
                     .replace(/([A-Z])/g, " $1")
                     .replace(/^./, (str) => str.toUpperCase())}
@@ -629,6 +531,37 @@ export const ExtraccionAvanzada = ({
         </div>
       )}
 
+      {/* API Access Banner */}
+      {hasAccess && (
+        <div className="bg-cloud/20 border border-cloud/50 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cloud to-bird flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-dark text-sm">
+                API REST Disponible
+              </h4>
+              <p className="text-xs text-metal mt-1">
+                Integra el Parser Avanzado en tus propias aplicaciones. Genera API keys, consulta docs y ejemplos de código en cURL, TypeScript y Python.
+              </p>
+              <a
+                href="/dashboard/api-keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-semibold text-teal-700 hover:text-teal-600 transition-colors"
+              >
+                <span>Ver API Keys y Documentación</span>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Botón de procesamiento */}
       {!parsedResult && selectedFile && (
         <div className="space-y-3 pt-2">
@@ -677,7 +610,7 @@ export const ExtraccionAvanzada = ({
             onClick={handleProcess}
             disabled={!hasAccess || status === "parsing" || !hasEnoughCredits}
             className={cn(
-              "w-full py-3.5 px-5 rounded-xl font-semibold transition-all",
+              "w-full py-3.5 px-5 rounded-2xl font-semibold transition-all",
               "bg-gradient-to-r from-brand-500 to-brand-600 text-white",
               "hover:shadow-lg hover:scale-[1.02]",
               "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
@@ -733,7 +666,7 @@ export const ExtraccionAvanzada = ({
               </>
             )}
           </button>
-          <p className="text-center text-xs text-gray-500">
+          <p className="text-center text-xs text-metal">
             {selectedModeData?.label} • {selectedModeData?.speed}
             {totalAvailable > 0 && ` • ${totalAvailable} créditos disponibles`}
           </p>
@@ -771,16 +704,16 @@ export const ExtraccionAvanzada = ({
             </div>
             <button
               onClick={handleReset}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-sm font-medium text-metal bg-white border border-outlines rounded-2xl hover:bg-gray-50"
             >
               Procesar otro
             </button>
           </div>
 
           {/* Vista previa markdown */}
-          <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-              <h4 className="font-semibold text-gray-900">
+          <div className="border-2 border-outlines rounded-2xl overflow-hidden">
+            <div className="bg-surfaceTwo px-4 py-3 border-b border-outlines">
+              <h4 className="font-semibold text-dark">
                 Vista Previa del Contenido Extraído
               </h4>
             </div>
@@ -797,7 +730,7 @@ export const ExtraccionAvanzada = ({
               onClick={handleAddToContext}
               disabled={isAddingToContext || hasAddedToContext}
               className={cn(
-                "flex-1 py-3 px-4 rounded-lg font-medium transition-colors",
+                "flex-1 py-3 px-4 rounded-2xl font-medium transition-colors",
                 "flex items-center justify-center gap-2",
                 hasAddedToContext
                   ? "bg-green-500 text-white cursor-not-allowed"
@@ -856,7 +789,7 @@ export const ExtraccionAvanzada = ({
                 a.download = `${parsedResult.fileName}.md`;
                 a.click();
               }}
-              className="px-6 py-3 bg-white text-gray-700 border-2 border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              className="px-6 py-3 bg-white text-metal border-2 border-outlines rounded-2xl font-medium hover:bg-gray-50 transition-colors"
             >
               Descargar Markdown
             </button>
@@ -864,107 +797,86 @@ export const ExtraccionAvanzada = ({
         </div>
       )}
 
-      {/* Historial de Parsings */}
-      {hasAccess && recentJobs.length > 0 && !parsedResult && (
-        <div className="mt-8 space-y-3">
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center justify-between w-full text-left"
-          >
-            <h4 className="text-sm font-semibold text-gray-900">
-              Historial Reciente ({recentJobs.length})
-            </h4>
-            <svg
-              className={cn(
-                "w-5 h-5 text-gray-500 transition-transform",
-                showHistory && "rotate-180"
-              )}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
+      </div>
+    </Card>
 
-          {showHistory && (
-            <div className="space-y-2 animate-fade-in">
-              {recentJobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="border border-gray-200 rounded-lg p-3 bg-white hover:shadow-sm transition-shadow"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm text-gray-900 truncate">
-                          {job.fileName}
-                        </p>
-                        <span
-                          className={cn(
-                            "text-xs px-2 py-0.5 rounded-full font-medium",
-                            job.status === "COMPLETED" &&
-                              "bg-green-100 text-green-700",
-                            job.status === "PROCESSING" &&
-                              "bg-blue-100 text-blue-700",
-                            job.status === "PENDING" &&
-                              "bg-yellow-100 text-yellow-700",
-                            job.status === "FAILED" && "bg-red-100 text-red-700"
-                          )}
-                        >
-                          {job.status === "COMPLETED" && "✓ Completado"}
-                          {job.status === "PROCESSING" && "⏳ Procesando"}
-                          {job.status === "PENDING" && "⏸ Pendiente"}
-                          {job.status === "FAILED" && "✗ Error"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                        <span>
-                          {PARSING_MODES.find((m) => m.id === job.mode)?.label ||
-                            job.mode}
-                        </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <span>💎</span>
-                          {job.creditsUsed} créditos
-                        </span>
-                        {job.pages && (
-                          <>
-                            <span>•</span>
-                            <span>{job.pages} páginas</span>
-                          </>
-                        )}
-                        {job.processingTime && (
-                          <>
-                            <span>•</span>
-                            <span>{job.processingTime.toFixed(1)}s</span>
-                          </>
-                        )}
-                      </div>
-                      {job.errorMessage && (
-                        <p className="text-xs text-red-600 mt-1">
-                          {job.errorMessage}
-                        </p>
+    {/* Historial de Parsings */}
+    {hasAccess && recentJobs.length > 0 && !parsedResult && (
+      <Card
+        title={`Historial Reciente (${recentJobs.length})`}
+        className=" mt-6"
+      >
+        <div className="space-y-2">
+          {recentJobs.map((job) => (
+            <div
+              key={job.id}
+              className="border border-outlines rounded-2xl p-3 bg-white hover:shadow-sm transition-shadow"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm text-dark truncate">
+                      {job.fileName}
+                    </p>
+                    <span
+                      className={cn(
+                        "text-xs px-2 py-0.5 rounded-full ",
+                        job.status === "COMPLETED" &&
+                          "bg-success/30 text-lime-600",
+                        job.status === "PROCESSING" &&
+                          "bg-blue-100 text-blue-700",
+                        job.status === "PENDING" &&
+                          "bg-yellow-100 text-yellow-700",
+                        job.status === "FAILED" && "bg-danger/20 text-red-500"
                       )}
-                    </div>
-                    <span className="text-xs text-gray-400 whitespace-nowrap">
-                      {new Date(job.createdAt).toLocaleDateString("es-MX", {
-                        month: "short",
-                        day: "numeric",
-                      })}
+                    >
+                      {job.status === "COMPLETED" && "✓ Completado"}
+                      {job.status === "PROCESSING" && "⏳ Procesando"}
+                      {job.status === "PENDING" && "⏸ Pendiente"}
+                      {job.status === "FAILED" && "✗ Error"}
                     </span>
                   </div>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-metal">
+                    <span>
+                      {PARSING_MODES.find((m) => m.id === job.mode)?.label ||
+                        job.mode}
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <span>💎</span>
+                      {job.creditsUsed} créditos
+                    </span>
+                    {job.pages && (
+                      <>
+                        <span>•</span>
+                        <span>{job.pages} páginas</span>
+                      </>
+                    )}
+                    {job.processingTime && (
+                      <>
+                        <span>•</span>
+                        <span>{job.processingTime.toFixed(1)}s</span>
+                      </>
+                    )}
+                  </div>
+                  {job.errorMessage && (
+                    <p className="text-xs text-red-600 mt-1">
+                      {job.errorMessage}
+                    </p>
+                  )}
                 </div>
-              ))}
+                <span className="text-xs text-metal whitespace-nowrap">
+                  {new Date(job.createdAt).toLocaleDateString("es-MX", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
             </div>
-          )}
+          ))}
         </div>
-      )}
-    </div>
+      </Card>
+    )}
+    </>
   );
 };

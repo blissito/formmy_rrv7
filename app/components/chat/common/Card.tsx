@@ -37,11 +37,11 @@ export const Card = ({
         )}
       >
         <div>
-          <h3 className="text-lg md:text-2xl font-medium min-w-none md:min-w-max text-dark ">
+          <h3 className="text-lg md:text-xl font-semibold min-w-none md:min-w-max text-dark ">
             {title}
           </h3>
           {text && (
-            <p className="text-metal mt-2 mb-2 text-sm font-normal md:text-base">{text}</p>
+            <p className="text-metal mt-1 mb-2 text-sm font-normal md:text-base">{text}</p>
           )}
         </div>
         {!noSearch && !action && <SearchInput />}

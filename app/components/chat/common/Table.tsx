@@ -33,7 +33,7 @@ export const Table = ({
         )}
       >
         <section className="flex justify-between items-center">
-          <h3 className="font-medium text-lg md:text-2xl">{title}</h3>
+          <h3 className="font-medium text-lg md:text-xl">{title}</h3>
           {!noSearch && (
             <Input
               containerClassName="rounded-full"
