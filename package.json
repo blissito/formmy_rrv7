@@ -18,8 +18,8 @@
     "postinstall": "prisma generate",
     "dev:setup": "npx playwright install chromium && prisma generate",
     "playwright:install": "npx playwright install chromium",
-    "deploy": "./scripts/fast-deploy.sh",
-    "deploy:force": "fly deploy --no-cache",
+    "deploy": "fly deploy --now",
+    "deploy:force": "fly deploy --no-cache --now",
     "audit:memory": "npx tsx scripts/audit-conversation-memory.ts",
     "voice:dev": "tsx server/voice/livekit-agent-worker.ts dev",
     "voice:start": "tsx server/voice/livekit-agent-worker.ts start"

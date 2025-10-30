@@ -1,5 +1,5 @@
 import { db } from "~/utils/db.server";
-import { sendReminderEmail } from "~/utils/notifyers/reminder";
+import { sendReminderEmail } from "server/notifyers/reminder";
 
 export interface ReminderData {
   chatbotId: string;

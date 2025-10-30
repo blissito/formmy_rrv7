@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { getSesRemitent, getSesTransport } from "./ses";
 
-type FreeTrialEmail = {
+type NoUsageEmail = {
   email: string;
   name?: string;
 };
@@ -14,16 +14,16 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
+export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
       to: email,
-      subject: "⏳ Últimos días de Formmy Chat 😱",
+      subject: "¡Tu Formmy aún no está en acción!",
       html: `
-    <html>
+        <html>
         <head>
-            <title>⏳ Últimos días de Formmy Chat 😱</title>
+            <title>¡Tu Formmy aún no está en acción!</title>
         </head>
         <body style="font-family: Arial; background: #191a20">
             <div style="background: #191a20; margin: 0 auto; padding: 24px 16px">
@@ -59,7 +59,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     text-align: left;
                     "
                 >
-                    ¡Hola ${name || 'amigo'}! Tu chatbot IA está por desconectarse
+                    ¡Hey ${name || 'amigo'}! Tu cuenta ya está lista… pero tu Formmy aún no.
                 </h2>
                 <p
                     style="
@@ -70,102 +70,72 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     font-size: 16px;
                     "
                 >
-                    Tu chatbot IA ha estado trabajando duro estos días 🧠💬.
-                    Respondiendo dudas, guiando a tus clientes y dándole vida a tu
-                    sitio. Pero tu
-                    <strong>
-                    prueba gratuita de 60 días está a punto de terminar… ⏳</strong
-                    >
+                    Con Formmy puedes crear un formulario personalizado o activar un
+                    chatbot con IA en minutos. Sin código, sin enredos. Ya diste el
+                    primer paso… ahora deja que tu web haga el resto.
                 </p>
                 <p
                     style="
                     margin-top: 16px;
-                    color: #4b5563;
-                    text-align: justify;
-                    line-height: 140%;
-                    font-size: 16px;
-                    "
-                >
-                    ¿Y si te decimos que puedes mantenerlo activo a un precio especial?
-                </p>
-                <a href="https://www.formmy.app/dashboard/ghosty" target="blank">
-                    <p
-                    style="
-                        margin-top: 16px;
-                        color: #7271cc;
-                        text-align: justify;
-                        line-height: 140%;
-                        font-size: 16px;
-                        text-decoration: underline;
-                    "
-                    >
-                    💥 Activa tu plan ahora y obtén 50% de descuento durante tu primer
-                    año.
-                    </p>
-                </a>
-                <p
-                    style="
-                    margin-top: 16px;
+                    margin-bottom: 4px;
                     color: #4b5563;
                     text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "
                 >
-                    Así es, tu Formmy Chat IA seguirá funcionando 24/7 – respondiendo,
-                    vendiendo y dando soporte – por la mitad de precio. Pero esta oferta
-                    expira cuando termine tu prueba gratuita.
+                    ¿Qué puedes hacer hoy mismo?
+                </p>
+                <p
+                    style="
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 16px;
+                    "
+                >
+                    📋 Crear tu primer formulario
+                </p>
+                <p
+                    style="
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 16px;
+                    "
+                >
+                    💬 Configurar un chat con IA
+                </p>
+                <p
+                    style="
+                    margin-top: 4px;
+                    margin-bottom: 16px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 16px;
+                    "
+                >
+                    🚀 Integrarlo a tu sitio ¡solo copia y pega!
                 </p>
 
                 <p
                     style="
                     margin-top: 0px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
+                    font-weight: bold;
                     "
                 >
-                    Tu chatbot IA ya abrió una nueva forma de conectar con tus clientes.
-                    Y lo mejor es que apenas está comenzando.
+                    Hazlo en menos de 5 minutos y empieza a captar leads, responder
+                    preguntas y mejorar la experiencia de tus clientes.
                 </p>
-
-                <div style="margin-top: 24px; margin-bottom: 24px;">
-                    <div
-                        style="
-                        border-radius: 12px;
-                        padding: 20px;
-                        text-align: left;
-                        background: #f5f5f5;
-                        display: inline-block;
-                        "
-                    >
-                        <p
-                        style="
-                            color: #4b5563;
-                            font-size: 14px;
-                            margin: 0 0 8px 0;
-                            text-transform: uppercase;
-                        
-                            font-weight: 600;
-                        "
-                        >
-                        🎁 TU CUPÓN EXCLUSIVO
-                        </p>
-                        <p
-                        style="
-                   
-                            font-size: 28px;
-                            font-weight: bold;
-                            margin: 8px 0 0px;
-                            letter-spacing: 2px;
-                            font-family: monospace;
-                        "
-                        >
-                        CHATBOT50
-                        </p>
-                    </div>
-                </div>
 
                 <a href="https://www.formmy.app/dashboard/ghosty" target="blank">
                     <button
@@ -175,7 +145,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                         font-weight: 500;
                         border-radius: 8px;
                         color: white;
-                        width: 260px;
+                        width: 140px;
                         text-align: center;
                         font-size: 16px;
                         margin-top: 8px;
@@ -183,7 +153,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                         border: none;
                     "
                     >
-                    Sí, quiero mi 50% y mi chatbot 👻
+                    ¡Empezar ya!
                     </button>
                 </a>
 
@@ -195,7 +165,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     font-size: 16px;
                     "
                 >
-                    Haz que tu web no se quede muda 😉
+                    Nos encantaría ver lo que construyes.
                 </p>
                 <p
                     style="
@@ -285,12 +255,6 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     <p style="color: #81838e; font-size: 8px">
                         Derechos Reservados 2025 ®
                     </p>
-                    <p style="color: #81838e; font-size: 10px; text-align: center; margin-top: 8px;">
-                        <a href="https://www.formmy.app/unsubscribe?email=${encodeURIComponent(email)}&type=marketing" 
-                           style="color: #81838e; text-decoration: underline;">
-                           ¿No deseas recibir estos correos? Darse de baja
-                        </a>
-                    </p>
                     </div>
                 </div>
                 </div>
@@ -298,10 +262,11 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
             </div>
         </body>
         </html>
+
       `,
     })
     .then((r: any) => {
-      console.log('Free Trial email sent successfully:', r);
+      console.log('No usage email sent successfully:', r);
     })
-    .catch((e: Error) => console.error('Error sending free trial email:', e));
+    .catch((e: Error) => console.error('Error sending no usage email:', e));
 };

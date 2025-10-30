@@ -16,7 +16,7 @@ import { InputModalFormWithRole } from "~/components/InputModalFormWithRole";
 import { useEffect, useState } from "react";
 import { db } from "~/utils/db.server";
 import Spinner from "~/components/Spinner";
-import { sendInvite } from "~/utils/notifyers/sendInvite";
+import { sendInvite } from "server/notifyers/sendInvite";
 import { Pluralize } from "~/components/Pluralize";
 import { Toggle } from "~/components/Switch";
 

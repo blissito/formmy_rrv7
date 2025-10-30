@@ -1,4 +1,5 @@
-import { AIProvider, ProviderConfig, ChatRequest, ChatResponse, StreamChunk } from './types';
+import { AIProvider } from './types';
+import type { ProviderConfig, ChatRequest, ChatResponse, StreamChunk } from './types';
 import { AnthropicProvider } from './anthropic';
 import { OpenRouterProvider } from './openrouter';
 import { OpenAIProvider } from './openai';

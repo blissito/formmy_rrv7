@@ -2,8 +2,8 @@ import { db } from "~/utils/db.server";
 import { Effect } from "effect";
 import { referralService } from "~/services/referral.service";
 
-import { sendProEmail } from "~/utils/notifyers/pro";
-import { sendPlanCancellation } from "~/utils/notifyers/planCancellation";
+import { sendProEmail } from "server/notifyers/pro";
+import { sendPlanCancellation } from "server/notifyers/planCancellation";
 
 import { getDefaultModelForPlan } from "~/utils/aiModels";
 import { addPurchasedCredits } from "server/llamaparse/credits.service";
@@ -260,13 +260,18 @@ async function handleCreditsPurchase(user: any, metadata: any) {
       `[Webhook] ✅ ${creditsAmount} créditos agregados a ${user.email}. Nuevo balance: ${result.newBalance}`
     );
 
-    // TODO: Enviar email de confirmación de compra
-    // await sendCreditsPurchaseEmail({
-    //   email: user.email,
-    //   name: user.name,
-    //   credits: creditsAmount,
-    //   newBalance: result.newBalance
-    // });
+    // Enviar email de confirmación de compra
+    try {
+      const { sendCreditsPurchaseEmail } = await import("server/notifyers/creditsPurchase");
+      await sendCreditsPurchaseEmail({
+        email: user.email,
+        name: user.name || undefined,
+        credits: creditsAmount,
+        newBalance: result.newBalance
+      });
+    } catch (emailError) {
+      console.error("[Webhook] Error enviando email de compra de créditos:", emailError);
+    }
   } catch (error) {
     console.error("[Webhook] Error agregando créditos:", error);
   }
@@ -298,13 +303,18 @@ async function handleConversationsPurchase(user: any, metadata: any) {
       `[Webhook] ✅ ${conversationsAmount} conversaciones agregadas a ${user.email}. Nuevo total: ${updatedUser.purchasedConversations}`
     );
 
-    // TODO: Enviar email de confirmación de compra
-    // await sendConversationsPurchaseEmail({
-    //   email: user.email,
-    //   name: user.name,
-    //   conversations: conversationsAmount,
-    //   newTotal: updatedUser.purchasedConversations
-    // });
+    // Enviar email de confirmación de compra
+    try {
+      const { sendConversationsPurchaseEmail } = await import("server/notifyers/conversationsPurchase");
+      await sendConversationsPurchaseEmail({
+        email: user.email,
+        name: user.name || undefined,
+        conversations: conversationsAmount,
+        newTotal: updatedUser.purchasedConversations
+      });
+    } catch (emailError) {
+      console.error("[Webhook] Error enviando email de compra de conversaciones:", emailError);
+    }
   } catch (error) {
     console.error("[Webhook] Error agregando conversaciones:", error);
   }

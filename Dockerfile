@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
-# Install OpenSSL and other essentials for Prisma
-RUN apk add --no-cache openssl ca-certificates
+# Install OpenSSL and other essentials for Prisma + build tools for LiveKit
+RUN apk add --no-cache openssl ca-certificates python3 make g++
 
 WORKDIR /app
 
@@ -9,6 +9,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 RUN npm ci --frozen-lockfile --legacy-peer-deps
+
+# Explicitly install LiveKit native bindings for Alpine (musl)
+RUN npm install --no-save --ignore-scripts @livekit/rtc-node-linux-x64-musl || echo "Warning: Could not install musl bindings"
 
 # Copy source code
 COPY . .

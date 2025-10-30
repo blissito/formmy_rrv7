@@ -3,7 +3,7 @@ import invariant from "tiny-invariant";
 import { saveForm } from "~/utils/savers/saveForm";
 import { validateBasic } from "~/utils/validation";
 import { data as json, type ActionFunctionArgs } from "react-router";
-import { notifyOwner } from "~/utils/notifyers/notifyOwner";
+import { notifyOwner } from "server/notifyers/notifyOwner";
 
 const sendAllNotifications = async (projectId: string) => {
   const project = await db.project.findUnique({

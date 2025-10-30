@@ -4,7 +4,7 @@ import { db } from "~/utils/db.server";
 import { extraDataSchema, type ExtraData } from "~/utils/zod";
 import { processReferral } from "~/models/referral.server";
 import { Effect } from "effect";
-import { sendWelcomeEmail } from "~/utils/notifyers/welcome";
+import { sendWelcomeEmail } from "server/notifyers/welcome";
 
 const GOOGLE_SECRET = process.env.GOOGLE_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;

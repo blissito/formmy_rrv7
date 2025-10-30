@@ -1,4 +1,5 @@
-import { AIProvider, ChatRequest, ChatResponse, StreamChunk, ChatMessage } from './types';
+import { AIProvider } from './types';
+import type { ChatRequest, ChatResponse, StreamChunk, ChatMessage } from './types';
 
 /**
  * Proveedor para Anthropic Claude (API directo)
