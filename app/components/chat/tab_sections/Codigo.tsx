@@ -208,6 +208,20 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
           return;
         }
 
+        // VOICE siempre debe estar en "onhold" (próximamente)
+        if (platformKey === "voice") {
+          status[platformKey] = "onhold";
+          console.log("🔒 VOICE forzado a estado: onhold (próximamente)");
+          return;
+        }
+
+        // SAT siempre debe estar en "onhold" (próximamente)
+        if (platformKey === "sat") {
+          status[platformKey] = "onhold";
+          console.log("🔒 SAT forzado a estado: onhold (próximamente)");
+          return;
+        }
+
         // Si la integración existe pero está inactiva, mostrarla como desconectada
         // Si está activa, mostrarla como conectada
         const integrationStatus = integration.isActive
