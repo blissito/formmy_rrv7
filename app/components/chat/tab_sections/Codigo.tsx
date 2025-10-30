@@ -162,8 +162,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       if (availableIntegration.isPermanent) {
         status[availableIntegration.id.toLowerCase()] = "connected";
       } else if (availableIntegration.id === "VOICE") {
-        // VOICE: Estado basado en chatbot.voiceEnabled (se actualiza en useState inicial)
-        status[availableIntegration.id.toLowerCase()] = "disconnected";
+        // VOICE: Próximamente disponible
+        status[availableIntegration.id.toLowerCase()] = "onhold";
       } else if (availableIntegration.id === "GMAIL") {
         // Gmail: Iniciar como disconnected, luego actualizar con estado real de BD
         status[availableIntegration.id.toLowerCase()] = "disconnected";
@@ -171,8 +171,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         // WhatsApp disponible - iniciar como disconnected
         status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else if (availableIntegration.id === "SAT") {
-        // SAT disponible - iniciar como disconnected
-        status[availableIntegration.id.toLowerCase()] = "disconnected";
+        // SAT: Próximamente disponible
+        status[availableIntegration.id.toLowerCase()] = "onhold";
       } else if (availableIntegration.id === "STRIPE") {
         // Stripe deshabilitado temporalmente (en desarrollo)
         status[availableIntegration.id.toLowerCase()] = "onhold";
