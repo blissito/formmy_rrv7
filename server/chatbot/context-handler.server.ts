@@ -21,8 +21,7 @@ export async function handleContextOperation(
     getChatbotById,
   } = await import("../chatbot-api.server");
 
-  const { mammoth } = await import("mammoth");
-  const { default: XLSX } = await import("xlsx");
+  const officeParser = (await import("officeparser")).default;
 
   try {
     switch (intent) {
@@ -90,13 +89,12 @@ export async function handleContextOperation(
                 throw new Error(`No se pudo procesar el archivo PDF "${fileName}": ${errorMessage}. Verifica que el PDF no esté protegido o corrupto.`);
               }
             } else if (fileName && fileName.toLowerCase().endsWith(".docx")) {
-              // Procesar DOCX con mammoth
+              // Procesar DOCX con officeParser
               const arrayBuffer = await file.arrayBuffer();
               const buffer = Buffer.from(arrayBuffer);
 
               try {
-                const result = await mammoth.extractRawText({ buffer });
-                content = result.value;
+                content = await officeParser.parseOfficeAsync(buffer);
 
                 // Validar que se extrajo contenido real
                 if (!content || content.trim().length === 0) {
@@ -108,20 +106,12 @@ export async function handleContextOperation(
                 throw new Error(`No se pudo procesar el archivo .docx "${fileName}": ${errorMessage}. Intenta con otro formato (PDF, TXT) o verifica que el archivo no esté corrupto.`);
               }
             } else if (fileName && fileName.toLowerCase().endsWith(".xlsx")) {
-              // Procesar XLSX con xlsx
+              // Procesar XLSX con officeParser
               const arrayBuffer = await file.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
 
               try {
-                const workbook = XLSX.read(arrayBuffer, { type: "array" });
-                let allText = "";
-
-                workbook.SheetNames.forEach((sheetName) => {
-                  const worksheet = workbook.Sheets[sheetName];
-                  const csvData = XLSX.utils.sheet_to_csv(worksheet);
-                  allText += `\n--- Hoja: ${sheetName} ---\n${csvData}\n`;
-                });
-
-                content = allText.trim();
+                content = await officeParser.parseOfficeAsync(buffer);
 
                 // Validar que se extrajo contenido real
                 if (!content || content.trim().length === 0) {

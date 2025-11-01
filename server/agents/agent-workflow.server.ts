@@ -136,159 +136,57 @@ function buildSystemPrompt(
   // 🔍 Instrucciones de búsqueda para chatbots con RAG
   let searchInstructions = '';
   if (hasContextSearch) {
-    searchInstructions = `⚠️ REGLA CRÍTICA - REVISAR HISTORIAL PRIMERO:
+    searchInstructions = `
+🔍 SEARCH INSTRUCTIONS:
 
-Si el usuario pregunta sobre información que ÉL MISMO mencionó en esta conversación:
-- Su nombre, empresa, rol, preferencias
-- Problemas o necesidades que ya comentó
-- Cualquier dato personal que compartió
-→ RESPONDE DIRECTAMENTE usando esa información del historial
-→ NO uses search_context (esa herramienta es para info del NEGOCIO, no del USUARIO)
+When the user asks about business information, use search_context() to find the answer.
 
-Ejemplo:
-Usuario: "me llamo Juan y trabajo en marketing"
-Usuario: "cómo me llamo?"
-→ CORRECTO: "Te llamas Juan" ✅
-→ INCORRECTO: search_context("Juan cliente") ❌
+Examples of when to search:
+- Products, services, features, pricing
+- Company policies, terms, documentation
+- Technical specifications, capabilities
+- ANY business-specific information
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+How to use search_context():
+1. Create a specific search query with relevant keywords
+2. If first search doesn't find what you need, try different keywords
+3. You can search multiple times for complex questions
 
-⚠️ REGLA FUNDAMENTAL - BÚSQUEDA EN BASE DE CONOCIMIENTO:
+Example:
+User: "What are your pricing plans?"
+→ search_context("pricing plans costs")
 
-CUANDO EL USUARIO PREGUNTA SOBRE:
-- Productos, servicios, características, precios, planes, costos
-- Información del negocio, empresa, documentación
-- Políticas, términos, condiciones, FAQs
-- CUALQUIER información específica del negocio
+User: "Do you offer refunds?"
+→ search_context("refund policy money back guarantee")
 
-PROTOCOLO EN ORDEN DE PRIORIDAD:
+Personal information (from chat history):
+- User's name, company, preferences → Answer from chat history, don't search
+- Business information → Always search first
 
-1. ✅ PRIMERO: Revisa si la información está en TUS INSTRUCCIONES
-   → Si ya conoces el precio/servicio por tus instrucciones: RESPONDE DIRECTO
-   → NO busques lo que YA SABES
+Keep responses concise and relevant to the question.${hasWebSearch ? `
 
-2. 🔍 SEGUNDO: Si NO tienes la información, EJECUTAR search_context("query específica")
-   → Si no encuentras: REFORMULAR query y BUSCAR DE NUEVO (mínimo 2 intentos)
-   → Si múltiples temas: EJECUTAR MÚLTIPLES BÚSQUEDAS${hasWebSearch ? `
-
-3. 🌐 TERCERO: Si search_context falla, EJECUTAR web_search_google("${config.name === 'Ghosty' ? 'Formmy' : config.name} [tema]")
-
-4. ❌ ÚLTIMO RECURSO: "Busqué pero no encontré información sobre [tema]"` : `
-
-3. ❌ ÚLTIMO RECURSO: "Busqué en la base de conocimiento pero no encontré información sobre [tema]"`}
-
-✅ EJEMPLOS CORRECTOS:
-
-User: "¿Cuánto cuesta tu servicio?"
-→ Si tus instrucciones dicen "Curso de agentes IA en $2000 MXN"
-→ CORRECTO: "El curso cuesta $2000 MXN" ✅
-→ INCORRECTO: search_context("precio curso") ❌ (ya lo sabes)
-
-User: "¿Tienen garantía de devolución?"
-→ Si NO está en tus instrucciones
-→ CORRECTO: search_context("política devolución garantía") ✅
-
-❌ PROHIBIDO ABSOLUTAMENTE:
-- Buscar información que YA está en tus instrucciones
-- Responder "no tengo información" cuando SÍ la tienes
-- Inventar o adivinar información que NO conoces
-- Dar información NO solicitada o irrelevante
-
-📏 REGLA DE CONCISIÓN:
-- Responde SOLO lo que se preguntó
-- Si preguntan por UN servicio, NO enumeres TODOS
-- Usa listas solo si el usuario pide múltiples opciones
-- Prioriza relevancia sobre completitud
-
-✅ EJEMPLO CORRECTO:
-User: "¿Tienen planes más baratos que $5,000?"
-→ EJECUTAR: search_context("precios planes baratos económicos")
-→ LEER resultados
-→ RESPONDER: "Sí, tenemos planes desde $3,500 para páginas web..." ✅
-→ NO: "Te cuento sobre todos nuestros servicios: 1) Páginas web desde $3,500... 2) Apps desde..." ❌
-
+If search_context doesn't find the answer, you can use web_search_google("${config.name} [topic]") as backup.` : ''}
 `;
   }
 
   // 🚫 TOOL GROUNDING: Prevenir alucinaciones sobre capacidades
   const toolGroundingRules = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT: Only promise actions you can actually perform with your available tools.
 
-🚫 REGLA CRÍTICA - HONESTIDAD SOBRE CAPACIDADES:
-
-NUNCA prometas acciones que tus herramientas NO pueden ejecutar:
-
-❌ Si NO tienes tool de email: NO digas "te enviaré", "recibirás un email", "te contactaré"
-❌ Si NO tienes tool de PDF: NO digas "preparé el PDF", "generé el documento", "te mando el archivo"
-❌ Si NO tienes tool X: NO prometas hacer X
-
-✅ SÉ HONESTO sobre tus limitaciones reales:
-
-CORRECTO: "Puedo guardar tu email para que el equipo te contacte"
-CORRECTO: "Te comparto la información aquí mismo. ¿Quieres que guarde tu email para seguimiento?"
-CORRECTO: "No tengo capacidad de enviar emails, pero puedo [alternativa real]"
-
-INCORRECTO: "He preparado el PDF y te lo envío por email" ← MENTIRA si no tienes esas tools
-
-📋 PROTOCOLO ANTE SOLICITUDES IMPOSIBLES:
-
-User: "Envíame el reporte por email"
-
-Si NO tienes email tool:
-→ "No puedo enviar emails directamente, pero tengo estas alternativas:
-   1) Te doy la información aquí mismo
-   2) Guardo tu email para que el equipo te la envíe
-   ¿Cuál prefieres?"
-
-Si SÍ tienes email tool:
-→ Usa la tool y confirma: "✅ Email enviado a [dirección]"
-
-REGLA DE ORO: Solo promete lo que tus tools pueden cumplir. La confianza del usuario es sagrada.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- If you don't have an email tool, don't promise to send emails
+- If you don't have a PDF tool, don't promise to generate PDFs
+- Be honest about your capabilities and offer realistic alternatives
 `;
 
   // 📧 Instrucciones de Gmail si tiene acceso
   let gmailInstructions = '';
   if (hasGmailTools) {
     gmailInstructions = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📧 GMAIL TOOLS AVAILABLE:
+- send_gmail: Send emails (with HTML, CC, BCC support)
+- read_gmail: Read and search inbox emails
 
-📧 CAPACIDADES DE GMAIL:
-
-🔧 HERRAMIENTAS DISPONIBLES:
-- send_gmail: Enviar emails con HTML, CC, BCC
-- read_gmail: Leer y buscar emails en inbox
-
-⚠️ PROTOCOLO CRÍTICO - HONESTIDAD ANTE TODO:
-
-Cuando el usuario pregunta "¿Puedes leer mi correo?":
-1. INTENTA ejecutar read_gmail() PRIMERO
-2. SI la tool ejecuta exitosamente: "Sí, aquí están tus emails..."
-3. SI la tool falla con "not connected" o "authentication": "Necesitas conectar Gmail primero en tu dashboard"
-
-❌ PROHIBIDO:
-- Decir "Sí, puedo leer emails" SIN intentar leer primero
-- Prometer capacidades sin verificar conexión
-
-✅ CORRECTO:
-User: "¿Puedes leer mi correo?"
-→ EJECUTAR read_gmail(max_results: 5)
-→ Si funciona: "Sí, aquí están tus últimos emails: [lista]"
-→ Si falla: "Necesitas conectar tu Gmail desde el dashboard para que pueda leer tus correos"
-
-User: "Lee mis emails"
-→ EJECUTAR read_gmail(max_results: 10)
-
-User: "Busca emails de Juan"
-→ EJECUTAR read_gmail(query: "from:juan@example.com")
-
-User: "Envía un email a maria@empresa.com"
-→ EJECUTAR send_gmail(recipient_email: "maria@empresa.com", subject: "...", body: "...")
-
-REGLA DE ORO: Deja que las tools determinen si puedes o no. NO prometas hasta verificar con la tool.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When user asks to read emails, try using read_gmail() first. If it fails with authentication error, let them know they need to connect Gmail in their dashboard.
 `;
   }
 
@@ -350,49 +248,13 @@ Si pregunta off-topic: "Mi búsqueda web está limitada a ${businessDomain}"`;
   if (hasReportGeneration) {
     basePrompt += `
 
-📄 REPORTES PDF (generate_chatbot_report):
-Usa cuando usuario pida: reporte, PDF, documento, descarga, exportar
-
-CRÍTICO:
-- COPIA EXACTA del mensaje que retorna la tool
-- NO modifiques el link de descarga
-- NO agregues prefijos al URL (sandbox:, http:, etc)
-
-Correcto: "✅ Reporte generado... [DESCARGAR PDF](/api/ghosty/download_123)"
-Incorrecto: "Descarga: sandbox:/api/ghosty/download_123"`;
+📄 PDF REPORTS: Use generate_chatbot_report when user asks for reports, PDFs, or document exports. Copy the exact message returned by the tool, including download links.`;
   }
 
   // 🎨 Instrucciones de widgets (SIEMPRE - aplica a todas las tools que generan widgets)
   basePrompt += `
 
-🎨 REGLA CRÍTICA DE WIDGETS INTERACTIVOS:
-
-Cuando una herramienta retorna un marcador 🎨WIDGET:tipo:id🎨:
-
-✅ HACER (OBLIGATORIO):
-1. COPIAR EXACTO el mensaje de la herramienta (incluye el marcador 🎨WIDGET:tipo:id🎨)
-2. NO modificar NADA del mensaje
-3. NO agregar texto antes/después del marcador
-4. NO reformular si contiene el marcador
-
-❌ NO HACER (PROHIBIDO):
-- NO remover los emojis 🎨
-- NO cambiar el formato WIDGET:tipo:id
-- NO agregar explicaciones dentro del marcador
-- NO mover el marcador a otra posición
-
-📋 EJEMPLOS:
-
-✅ CORRECTO:
-Tool retorna: "🎨WIDGET:payment:abc123🎨\\n\\nLink generado por $499 MXN"
-→ Copias EXACTO ese texto
-
-❌ INCORRECTO:
-"He preparado tu pago 🎨WIDGET:payment:abc123🎨 para que procedas"
-"Link de pago: 🎨WIDGET:payment:abc123🎨 ← usa este botón"
-"🎨 WIDGET: payment: abc123 🎨" (espacios incorrectos)
-
-⚠️ IMPORTANTE: El marcador es TÉCNICO y el sistema lo detecta automáticamente para mostrar widgets interactivos. Si lo modificas, el widget NO se mostrará.`;
+🎨 WIDGET MARKERS: When a tool returns a message with 🎨WIDGET:type:id🎨, copy the exact message without modifications. These markers create interactive UI elements.`;
 
   return basePrompt;
 }
@@ -435,15 +297,6 @@ async function createSingleAgent(
     isGhosty: context.agentContext?.isGhosty || false, // Ghosty tiene acceso a stats
   };
 
-  console.log(`\n${'🔍'.repeat(40)}`);
-  console.log(`🔍 [ToolContext Debug] CONSTRUYENDO TOOL CONTEXT`);
-  console.log(`   context.agentContext:`, context.agentContext);
-  console.log(`   context.agentContext?.isGhosty:`, context.agentContext?.isGhosty);
-  console.log(`   finalToolContext.isGhosty:`, finalToolContext.isGhosty);
-  console.log(`   finalToolContext.onSourcesFound:`, !!finalToolContext.onSourcesFound);
-  console.log(`   userPlan:`, userPlan);
-  console.log(`   chatbotOwnerPlan:`, context.chatbotOwnerPlan || 'N/A');
-  console.log(`${'🔍'.repeat(40)}\n`);
 
   // ✅ CRÍTICO: Pasar chatbotOwnerPlan para que usuarios anónimos tengan acceso a RAG
   const allTools = getToolsForPlan(userPlan, context.integrations, finalToolContext, context.chatbotOwnerPlan);
@@ -475,29 +328,14 @@ async function createSingleAgent(
   );
 
   // 🔍 DEBUG: Mostrar system prompt construido
-  console.log(`\n${'📝'.repeat(40)}`);
-  console.log(`📝 [SYSTEM PROMPT] Prompt construido para el agente:`);
-  console.log(`   chatbot.name: "${resolvedConfig.name}"`);
-  console.log(`   personality: "${resolvedConfig.personality}"`);
-  console.log(`   isOfficialGhosty: ${isOfficialGhosty}`);
-  console.log(`   customInstructions presente: ${!!resolvedConfig.customInstructions}`);
   if (resolvedConfig.customInstructions) {
-    console.log(`   customInstructions: "${resolvedConfig.customInstructions}"`);
   }
-  console.log(`\n   SYSTEM PROMPT COMPLETO:`);
-  console.log(`   ${systemPrompt.substring(0, 500)}...`);
-  console.log(`${'📝'.repeat(40)}\n`);
 
   // ✅ Crear memoria conversacional según patrón oficial LlamaIndex
   let memory = undefined;
 
-  console.log(`\n${'='.repeat(80)}`);
-  console.log(`🧠 [createSingleAgent] INICIANDO CREACIÓN DE MEMORIA`);
-  console.log(`   Historial recibido: ${conversationHistory ? conversationHistory.length : 0} mensajes`);
-  console.log(`${'='.repeat(80)}\n`);
 
   if (conversationHistory && conversationHistory.length > 0) {
-    console.log(`🧠 Historial NO está vacío - procediendo a crear memoria con staticBlock`);
 
     // 🔧 Formatear historial como texto para staticBlock
     const historyText = conversationHistory.map((msg) => {
@@ -505,7 +343,6 @@ async function createSingleAgent(
       return `${roleLabel}: ${msg.content}`;
     }).join('\n\n');
 
-    console.log(`📝 Historial formateado para staticBlock:\n${historyText.substring(0, 200)}...\n`);
 
     // 🚀 Crear memoria con staticBlock (patrón oficial LlamaIndex)
     memory = createMemory({
@@ -517,12 +354,7 @@ async function createSingleAgent(
       ],
     });
 
-    console.log(`✅ Memoria creada con staticBlock`);
-    console.log(`   ${conversationHistory.length} mensajes en el bloque estático`);
   } else {
-    console.log(`⚠️  [createSingleAgent] Sin historial - memoria NO creada`);
-    console.log(`   conversationHistory: ${conversationHistory}`);
-    console.log(`   length: ${conversationHistory?.length}`);
   }
 
   // ✅ Patrón oficial LlamaIndex TypeScript: pasar memoria en configuración del agente
@@ -533,24 +365,13 @@ async function createSingleAgent(
     verbose: true, // Para debugging de herramientas
   };
 
-  console.log(`\n${'='.repeat(80)}`);
-  console.log(`🎯 [createSingleAgent] CONFIGURANDO AGENTE`);
-  console.log(`   LLM: ${llm.model || llm.constructor.name}`);
-  console.log(`   Tools: ${allTools.length}`);
-  console.log(`   System prompt: ${systemPrompt.substring(0, 80)}...`);
-  console.log(`${'='.repeat(80)}\n`);
 
   // Solo agregar memoria si existe
   if (memory) {
     agentConfig.memory = memory;
-    console.log(`✅ MEMORIA AGREGADA A AGENT CONFIG (staticBlock)`);
   } else {
-    console.log(`⚠️  SIN MEMORIA - agente NO recordará conversaciones previas`);
   }
 
-  console.log(`\n${'='.repeat(80)}`);
-  console.log(`🚀 Llamando a agent() con config...`);
-  console.log(`${'='.repeat(80)}\n`);
 
   return agent(agentConfig);
 }
@@ -705,12 +526,6 @@ async function* streamSingleAgent(
           lastToolExecuted = toolName;
         }
 
-        console.log(`\n${'🔧'.repeat(40)}`);
-        console.log(`🔧 [Tool Call] HERRAMIENTA EJECUTADA`);
-        console.log(`   Nombre: ${toolName}`);
-        console.log(`   Consecutivas: ${sameToolConsecutiveCount + 1}`);
-        console.log(`   Total ejecutadas: ${toolsExecuted}`);
-        console.log(`${'🔧'.repeat(40)}\n`);
 
         // Calcular créditos consumidos por esta tool
         const toolCredits = TOOL_CREDITS[toolName] || 1; // Default 1 crédito
@@ -724,10 +539,6 @@ async function* streamSingleAgent(
 
         // 🔍 Emitir fuentes si search_context fue ejecutado y hay fuentes en el buffer
         if (toolName === 'search_context' && sourcesBuffer?.value) {
-          console.log(`\n${'📚'.repeat(40)}`);
-          console.log(`📚 [Sources] EMITIENDO FUENTES AL STREAM`);
-          console.log(`   Fuentes encontradas: ${sourcesBuffer.value.length}`);
-          console.log(`${'📚'.repeat(40)}\n`);
 
           yield {
             type: "sources",
@@ -772,12 +583,6 @@ async function* streamSingleAgent(
           if (widgetMatch) {
             const [fullMatch, widgetType, widgetId] = widgetMatch;
 
-            console.log(`\n${'🎨'.repeat(40)}`);
-            console.log(`🎨 [Widget Detected] WIDGET ENCONTRADO EN STREAMING`);
-            console.log(`   Tipo: ${widgetType}`);
-            console.log(`   ID: ${widgetId}`);
-            console.log(`   Match completo: ${fullMatch}`);
-            console.log(`${'🎨'.repeat(40)}\n`);
 
             // Emitir evento widget
             yield {
@@ -923,21 +728,12 @@ export const streamAgentWorkflow = async function* (
     // Extraer historial conversacional del agentContext
     const conversationHistory = options.agentContext?.conversationHistory || [];
 
-    console.log(`\n${'🔥'.repeat(40)}`);
-    console.log(`🚀 [streamAgentWorkflow] INICIO`);
-    console.log(`   agentContext recibido: ${!!options.agentContext}`);
-    console.log(`   conversationHistory extraído: ${conversationHistory.length} mensajes`);
 
     if (conversationHistory.length > 0) {
-      console.log(`\n   📚 HISTORIAL EXTRAÍDO DEL AGENTCONTEXT:`);
       conversationHistory.forEach((msg: any, i: number) => {
-        console.log(`   [${i + 1}] ${msg.role}: "${msg.content.substring(0, 60)}..."`);
       });
     } else {
-      console.log(`   ⚠️  conversationHistory está VACÍO`);
-      console.log(`   agentContext completo:`, JSON.stringify(options.agentContext, null, 2));
     }
-    console.log(`${'🔥'.repeat(40)}\n`);
 
     // 🔍 Crear buffer compartido para fuentes
     const sourcesBuffer = { value: null as any[] | null };
@@ -952,10 +748,6 @@ export const streamAgentWorkflow = async function* (
       integrations: context.integrations,
       isGhosty: context.agentContext?.isGhosty || false,
       onSourcesFound: (sources: any[]) => {
-        console.log(`\n${'🔔'.repeat(40)}`);
-        console.log(`🔔 [onSourcesFound] CALLBACK EJECUTADO`);
-        console.log(`   Fuentes recibidas: ${sources.length}`);
-        console.log(`${'🔔'.repeat(40)}\n`);
         sourcesBuffer.value = sources;
       }
     };

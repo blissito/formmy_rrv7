@@ -21,6 +21,7 @@ import type { Chatbot, User, Plans } from "@prisma/client";
 import type { WebsiteEntry } from "~/types/website";
 import { useEffect, useState } from "react";
 import { useSubmit, useRevalidator } from "react-router";
+import toast from "react-hot-toast";
 
 // Client-safe plan limits mapping
 const PLAN_LIMITS_CLIENT: Record<Plans, { maxContextSizeKB: number }> = {
@@ -387,14 +388,33 @@ export const Entrenamiento = ({
         });
 
         if (!response.ok) {
-          throw new Error(`Error subiendo archivo ${file.name}`);
+          let errorMessage = `Error subiendo archivo ${file.name}`;
+          try {
+            const data = await response.json();
+            errorMessage = data.error || errorMessage;
+          } catch (jsonError) {
+            console.error("Error parsing error response:", jsonError);
+            errorMessage = `Error del servidor (${response.status}): ${response.statusText}`;
+          }
+          toast.error(errorMessage, { duration: 6000 }); // 6 segundos para leer el mensaje
+          console.error("Upload failed:", errorMessage);
+          throw new Error(errorMessage);
         }
       } catch (error) {
-        throw error;
+        // Si el error no es del if (!response.ok), mostrarlo también
+        if (error instanceof Error && !error.message.includes("Error subiendo")) {
+          const errorMsg = `Error de red al subir ${file.name}: ${error.message}`;
+          toast.error(errorMsg, { duration: 6000 });
+          console.error("Network error:", error);
+        }
+        throw error; // Re-lanzar para que handleUpdateChatbot lo capture
       }
     }
 
-    // Limpiar archivos subidos y recargar datos
+    // Limpiar archivos subidos y recargar datos SOLO si todo fue exitoso
+    if (uploadedFiles.length > 0) {
+      toast.success(`${uploadedFiles.length} archivo(s) subido(s) correctamente`);
+    }
     setUploadedFiles([]);
     submit({});
   };
@@ -580,6 +600,7 @@ export const Entrenamiento = ({
                         newQuestionContexts.length > 0 ||
                         allContextsToRemove.length > 0;
       if (hasChanges) {
+        toast.success("Chatbot actualizado correctamente");
         setNewWebsiteEntries([]);
         setNewTextContexts([]);
         setNewQuestionContexts([]);
@@ -590,7 +611,8 @@ export const Entrenamiento = ({
         submit({});
       }
     } catch (error) {
-      throw error;
+      // Error ya mostrado por las sub-funciones (handleUploadFiles, etc.)
+      console.error("Error al actualizar chatbot:", error);
     } finally {
       setIsUpdating(false);
     }

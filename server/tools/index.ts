@@ -478,14 +478,6 @@ export const getToolsForPlan = (
     ? chatbotOwnerPlan
     : userPlan;
 
-  console.log(`\n${'🔧'.repeat(40)}`);
-  console.log(`🔧 [getToolsForPlan] CONSTRUYENDO TOOLS`);
-  console.log(`   context.isGhosty: ${context.isGhosty}`);
-  console.log(`   context.chatbotId: ${context.chatbotId}`);
-  console.log(`   userPlan: ${userPlan}`);
-  console.log(`   chatbotOwnerPlan: ${chatbotOwnerPlan || 'N/A'}`);
-  console.log(`   effectivePlan (usado): ${effectivePlan}`);
-  console.log(`${'🔧'.repeat(40)}\n`);
 
   const tools = [];
 
@@ -533,9 +525,11 @@ export const getToolsForPlan = (
     tools.push(createGoogleSearchTool(context));
   }
 
-  // Context Search (RAG) - ✅ CRÍTICO: Usar effectivePlan (plan del dueño) para usuarios anónimos
+  // Context Search (RAG) - ✅ DISPONIBLE PARA TODOS LOS CHATBOTS
   // Requiere vector search index en MongoDB Atlas
-  if (['PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan) && context.chatbotId) {
+  // Nota: FREE/STARTER pueden generar embeddings vía Parser API (pagan créditos)
+  // Una vez generados, DEBEN poder consultarlos. RAG es feature core de Formmy.
+  if (context.chatbotId) {
     tools.push(createContextSearchTool(context));
   }
 
@@ -555,7 +549,6 @@ export const getToolsForPlan = (
 
   // Report generation tools - SOLO para Ghosty (reportes privados del usuario)
   if (context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
-    console.log("📄 [getToolsForPlan] Agregando generate_chatbot_report tool");
     tools.push(
       createGenerateChatbotReportTool(context)
     );
@@ -567,13 +560,11 @@ export const getToolsForPlan = (
   // Gmail tools - Para chatbots públicos con Gmail conectado vía OAuth2
   // Ghosty puede enviar/leer Gmail en nombre de chatbots del usuario
   if (context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
-    console.log("📧 [getToolsForPlan] Agregando Gmail tools para Ghosty");
     tools.push(
       createSendGmailTool(context),
       createReadGmailTool(context)
     );
   } else if (!context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan) && integrations.gmail) {
-    console.log("📧 [getToolsForPlan] Agregando Gmail tools para chatbot público");
     tools.push(
       createSendGmailTool(context),
       createReadGmailTool(context)
@@ -581,7 +572,15 @@ export const getToolsForPlan = (
   }
 
   const toolNames = tools.map((t: any) => t?.metadata?.name || t?.name || "unknown");
-  console.log(`🛠️  [getToolsForPlan] ${tools.length} tools disponibles para ${userPlan} (effectivePlan: ${effectivePlan}):`, toolNames);
+
+  console.error(`\n🛠️🛠️🛠️  [getToolsForPlan] ${tools.length} TOOLS FINALES:\n`);
+  console.error(`   userPlan: ${userPlan}`);
+  console.error(`   effectivePlan: ${effectivePlan}`);
+  console.error(`   chatbotOwnerPlan: ${chatbotOwnerPlan || 'N/A'}`);
+  console.error(`   context.chatbotId: ${context.chatbotId || 'NULL'}`);
+  console.error(`   context.isGhosty: ${context.isGhosty}`);
+  console.error(`\n   Tools: ${toolNames.join(', ')}\n`);
+  console.error(`   search_context incluido: ${toolNames.includes('search_context') ? '✅ SÍ' : '❌ NO'}\n\n`);
 
   return tools;
 };

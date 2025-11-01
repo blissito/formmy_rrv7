@@ -30,7 +30,6 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
     let user = null;
 
     if (devToken && process.env.DEVELOPMENT_TOKEN && devToken === process.env.DEVELOPMENT_TOKEN) {
-      console.log('🛠️ Development token authenticated - fetching admin user');
       const { db } = await import("../../app/utils/db.server");
 
       // Buscar usuario admin real (fixtergeek@gmail.com)
@@ -54,11 +53,6 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
         );
       }
 
-      console.log('✅ Using real user for testing:', {
-        id: user.id,
-        email: user.email,
-        plan: user.plan
-      });
     } else {
       // Autenticación normal por cookie
       user = await getUserOrNull(request);
@@ -145,8 +139,6 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
 
     // 🔧 Cargar integraciones activas del usuario desde BD
     // Ghosty puede usar herramientas de integraciones si ALGÚN chatbot del usuario las tiene
-    console.log(`\n${'🔌'.repeat(40)}`);
-    console.log(`🔌 [Ghosty] Cargando integraciones del usuario: ${user.id}`);
 
     const { getChatbotIntegrationFlags } = await import("server/chatbot/integrationModel.server");
     const { db } = await import("../../app/utils/db.server");
@@ -173,10 +165,19 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
       integrationFlags.gmail = integrationFlags.gmail || flags.gmail;
     }
 
-    console.log(`   Integraciones encontradas:`, integrationFlags);
-    console.log(`${'🔌'.repeat(40)}\n`);
+    // 🔍 CRITICAL: Buscar el chatbot Ghosty real para tener acceso a search_context
+    // Ghosty tiene contexts propios (docs de Formmy) que debe poder buscar
+    const ghostyChatbotDb = await db.chatbot.findFirst({
+      where: {
+        name: 'Ghosty',
+        userId: user.id
+      },
+      select: { id: true }
+    });
 
-    const agentContext = createAgentExecutionContext(user, null, message, {
+    const ghostyChatbotId = ghostyChatbotDb?.id || null;
+
+    const agentContext = createAgentExecutionContext(user, ghostyChatbotId, message, {
       integrations: integrationFlags, // ✅ Desde BD, NO desde cliente
       conversationHistory, // ✅ Desde BD, no desde cliente
       conversationId: conversation.id, // Para rate limiting de tools
@@ -193,7 +194,7 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
 
           try {
             // runStream con eventos LlamaIndex oficiales y context completo
-            for await (const event of streamAgentWorkflow(user, message, null, {
+            for await (const event of streamAgentWorkflow(user, message, ghostyChatbotId, {
               resolvedConfig,
               agentContext
             })) {
