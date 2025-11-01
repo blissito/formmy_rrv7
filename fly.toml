@@ -4,10 +4,17 @@ primary_region = 'dfw'
 [http_service]
   internal_port = 3000
   force_https = true
-  auto_stop_machines = true
+  auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
   processes = ["app"]
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10s"
+  method = "GET"
+  path = "/api/health-check"
 
 [[vm]]
   cpu_kind = "shared"
@@ -21,5 +28,5 @@ primary_region = 'dfw'
 # Proceso principal: App web
 [processes]
   app = "npm start"
-  worker = "npm run voice:start"
+  # worker = "npm run voice:start"  # Comentado temporalmente - requiere LiveKit musl bindings
 
