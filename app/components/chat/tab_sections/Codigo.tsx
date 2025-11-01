@@ -168,8 +168,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         // Gmail: Iniciar como disconnected, luego actualizar con estado real de BD
         status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else if (availableIntegration.id === "WHATSAPP") {
-        // WhatsApp disponible - iniciar como disconnected
-        status[availableIntegration.id.toLowerCase()] = "disconnected";
+        // WhatsApp: Próximamente disponible
+        status[availableIntegration.id.toLowerCase()] = "onhold";
       } else if (availableIntegration.id === "SAT") {
         // SAT: Próximamente disponible
         status[availableIntegration.id.toLowerCase()] = "onhold";
@@ -219,6 +219,13 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         if (platformKey === "sat") {
           status[platformKey] = "onhold";
           console.log("🔒 SAT forzado a estado: onhold (próximamente)");
+          return;
+        }
+
+        // WhatsApp siempre debe estar en "onhold" (próximamente)
+        if (platformKey === "whatsapp") {
+          status[platformKey] = "onhold";
+          console.log("🔒 WhatsApp forzado a estado: onhold (próximamente)");
           return;
         }
 
