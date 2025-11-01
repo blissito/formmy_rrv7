@@ -461,17 +461,30 @@ export const createReadGmailTool = (context: ToolContext) => tool(
 /**
  * Función para obtener tools según plan del usuario con context injection
  * Plan-aware tool selection funcional
+ *
+ * @param userPlan - Plan del usuario visitante (puede ser ANONYMOUS)
+ * @param integrations - Integraciones activas del chatbot
+ * @param context - Contexto de ejecución del tool
+ * @param chatbotOwnerPlan - Plan del dueño del chatbot (para usuarios anónimos)
  */
 export const getToolsForPlan = (
   userPlan: string,
   integrations: Record<string, any> = {},
-  context: ToolContext
+  context: ToolContext,
+  chatbotOwnerPlan?: string // ✅ NUEVO: Plan del dueño del chatbot
 ) => {
+  // 🎯 Para usuarios anónimos, usar el plan del DUEÑO del chatbot
+  const effectivePlan = userPlan === 'ANONYMOUS' && chatbotOwnerPlan
+    ? chatbotOwnerPlan
+    : userPlan;
+
   console.log(`\n${'🔧'.repeat(40)}`);
   console.log(`🔧 [getToolsForPlan] CONSTRUYENDO TOOLS`);
   console.log(`   context.isGhosty: ${context.isGhosty}`);
   console.log(`   context.chatbotId: ${context.chatbotId}`);
   console.log(`   userPlan: ${userPlan}`);
+  console.log(`   chatbotOwnerPlan: ${chatbotOwnerPlan || 'N/A'}`);
+  console.log(`   effectivePlan (usado): ${effectivePlan}`);
   console.log(`${'🔧'.repeat(40)}\n`);
 
   const tools = [];
@@ -496,33 +509,33 @@ export const getToolsForPlan = (
 
   // Payment tools (usuario cobra a SUS clientes) - PENDIENTE IMPLEMENTACIÓN
   // Solo para chatbots públicos con plan PRO+ y Stripe configurado
-  if (!context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) && integrations.stripe) {
+  if (!context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan) && integrations.stripe) {
     tools.push(createPaymentLinkTool(context));
   }
 
   // Contact tools - disponibles para chatbots públicos ANONYMOUS/STARTER+
   // ❌ Ghosty NO necesita esto (usuario ya autenticado)
-  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan)) {
     tools.push(createSaveContactTool(context));
   }
 
   // DateTime tools - disponibles para chatbots públicos ANONYMOUS/STARTER+
   // ❌ Ghosty NO necesita esto (no requiere fecha/hora para sus tareas)
-  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan)) {
+  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan)) {
     tools.push(createGetCurrentDateTimeTool(context));
   }
 
   // Google Search tools - disponibles para chatbots públicos ANONYMOUS/STARTER+ con API configurada
   // ❌ Ghosty NO necesita esto (ya conoce toda la info de Formmy)
-  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) &&
+  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan) &&
       process.env.GOOGLE_SEARCH_API_KEY &&
       process.env.GOOGLE_SEARCH_ENGINE_ID) {
     tools.push(createGoogleSearchTool(context));
   }
 
-  // Context Search (RAG) - disponible para PRO/ENTERPRISE/TRIAL con embeddings configurados
+  // Context Search (RAG) - ✅ CRÍTICO: Usar effectivePlan (plan del dueño) para usuarios anónimos
   // Requiere vector search index en MongoDB Atlas
-  if (['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) && context.chatbotId) {
+  if (['PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan) && context.chatbotId) {
     tools.push(createContextSearchTool(context));
   }
 
@@ -559,7 +572,7 @@ export const getToolsForPlan = (
       createSendGmailTool(context),
       createReadGmailTool(context)
     );
-  } else if (!context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(userPlan) && integrations.gmail) {
+  } else if (!context.isGhosty && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan) && integrations.gmail) {
     console.log("📧 [getToolsForPlan] Agregando Gmail tools para chatbot público");
     tools.push(
       createSendGmailTool(context),
@@ -568,7 +581,7 @@ export const getToolsForPlan = (
   }
 
   const toolNames = tools.map((t: any) => t?.metadata?.name || t?.name || "unknown");
-  console.log(`🛠️  [getToolsForPlan] ${tools.length} tools disponibles para ${userPlan}:`, toolNames);
+  console.log(`🛠️  [getToolsForPlan] ${tools.length} tools disponibles para ${userPlan} (effectivePlan: ${effectivePlan}):`, toolNames);
 
   return tools;
 };

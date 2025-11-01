@@ -19,7 +19,8 @@ export async function getChatbot(chatbotId: string, userId: string, isAnonymous 
           id: realChatbotId
         },
         include: {
-          contexts: true
+          user: true // Cargar user también en modo development
+          // contexts: Ya incluido automáticamente
         }
       });
 
@@ -46,9 +47,11 @@ export async function getChatbot(chatbotId: string, userId: string, isAnonymous 
       : { id: chatbotId, userId: userId };
 
     const chatbot = await db.chatbot.findFirst({
-      where
-      // ⚡ OPTIMIZACIÓN: No incluir contextos por defecto para mejorar performance
-      // Los contextos se cargan solo cuando son necesarios (no include contexts)
+      where,
+      include: {
+        user: true // ✅ CRÍTICO: Cargar user para obtener plan del dueño (necesario para tools)
+        // contexts: Ya incluido automáticamente (es un tipo embebido, no una relación)
+      }
     });
 
     if (!chatbot) {

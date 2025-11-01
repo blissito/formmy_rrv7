@@ -35,6 +35,7 @@ interface WorkflowContext {
   integrations: Record<string, any>;
   resolvedConfig: ResolvedChatbotConfig;
   agentContext?: any; // Incluye conversationId para rate limiting
+  chatbotOwnerPlan?: string; // ✅ NUEVO: Plan del dueño del chatbot (para usuarios anónimos)
 }
 
 /**
@@ -441,9 +442,11 @@ async function createSingleAgent(
   console.log(`   finalToolContext.isGhosty:`, finalToolContext.isGhosty);
   console.log(`   finalToolContext.onSourcesFound:`, !!finalToolContext.onSourcesFound);
   console.log(`   userPlan:`, userPlan);
+  console.log(`   chatbotOwnerPlan:`, context.chatbotOwnerPlan || 'N/A');
   console.log(`${'🔍'.repeat(40)}\n`);
 
-  const allTools = getToolsForPlan(userPlan, context.integrations, finalToolContext);
+  // ✅ CRÍTICO: Pasar chatbotOwnerPlan para que usuarios anónimos tengan acceso a RAG
+  const allTools = getToolsForPlan(userPlan, context.integrations, finalToolContext, context.chatbotOwnerPlan);
 
   // Detectar si tiene acceso a search_context, web_search_google, generate_chatbot_report, y Gmail tools
   const hasContextSearch = allTools.some(
@@ -879,6 +882,7 @@ export const streamAgentWorkflow = async function* (
   options: {
     resolvedConfig: ResolvedChatbotConfig;
     agentContext: any;
+    chatbotOwnerPlan?: string; // ✅ NUEVO: Plan del dueño del chatbot
   } = {} as any
 ) {
   const context: WorkflowContext = {
@@ -889,6 +893,7 @@ export const streamAgentWorkflow = async function* (
     integrations: options.agentContext?.integrations || {},
     resolvedConfig: options.resolvedConfig,
     agentContext: options.agentContext, // Incluir agentContext completo
+    chatbotOwnerPlan: options.chatbotOwnerPlan, // ✅ CRÍTICO: Pasar plan del dueño
   };
 
   // 🔍 TRACING: Iniciar trace para observabilidad

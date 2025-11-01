@@ -398,6 +398,20 @@ async function handleChatV0(params: {
 
     console.log(`✅ AgentContext creado con conversationHistory:`, agentContext.conversationHistory?.length || 0);
 
+    // ✅ CRÍTICO: Extraer plan del dueño del chatbot para usuarios anónimos
+    // Esto permite que usuarios anónimos tengan acceso a RAG si el dueño tiene plan PRO+
+    console.log(`\n${'🔍'.repeat(40)}`);
+    console.log(`🔍 [DEBUG] Verificando chatbot.user:`);
+    console.log(`   chatbot.id: ${chatbot.id}`);
+    console.log(`   chatbot.userId: ${chatbot.userId}`);
+    console.log(`   chatbot.user existe: ${!!(chatbot as any).user}`);
+    console.log(`   chatbot.user?.plan: ${(chatbot as any).user?.plan || 'undefined'}`);
+    console.log(`   visitor plan: ${user.plan}`);
+    console.log(`${'🔍'.repeat(40)}\n`);
+
+    const chatbotOwnerPlan = (chatbot as any).user?.plan;
+    console.log(`📋 Plan del dueño del chatbot: ${chatbotOwnerPlan || 'N/A'} (visitor plan: ${user.plan})`);
+
     // ✅ SIEMPRE STREAMING - CLAUDE.md compliance
     // Eliminado modo JSON - SOLO SSE streaming
 
@@ -410,7 +424,8 @@ async function handleChatV0(params: {
             // Usar AgentWorkflow con configuración personalizada
             const streamGenerator = streamAgentWorkflow(user, message, chatbotId, {
               resolvedConfig,
-              agentContext
+              agentContext,
+              chatbotOwnerPlan // ✅ CRÍTICO: Pasar plan del dueño del chatbot
             });
 
             let hasContent = false;
