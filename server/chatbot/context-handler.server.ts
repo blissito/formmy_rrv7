@@ -79,9 +79,15 @@ export async function handleContextOperation(
                 } else {
                   content = String(result || "").trim();
                 }
+
+                // Validar que se extrajo contenido real
+                if (!content || content.trim().length === 0) {
+                  throw new Error('El archivo PDF está vacío o no contiene texto extraíble');
+                }
               } catch (pdfError) {
-                // No hay fallback necesario con pdf2json
-                content = `[ERROR_PDF: ${pdfError instanceof Error ? pdfError.message : "Error desconocido"} - archivo: ${fileName}]`;
+                // NO guardar el archivo si el parsing falla
+                const errorMessage = pdfError instanceof Error ? pdfError.message : 'Error desconocido';
+                throw new Error(`No se pudo procesar el archivo PDF "${fileName}": ${errorMessage}. Verifica que el PDF no esté protegido o corrupto.`);
               }
             } else if (fileName && fileName.toLowerCase().endsWith(".docx")) {
               // Procesar DOCX con mammoth
@@ -91,8 +97,15 @@ export async function handleContextOperation(
               try {
                 const result = await mammoth.extractRawText({ buffer });
                 content = result.value;
+
+                // Validar que se extrajo contenido real
+                if (!content || content.trim().length === 0) {
+                  throw new Error('El archivo .docx está vacío o no contiene texto extraíble');
+                }
               } catch (docxError) {
-                content = `[ERROR_DOCX: No se pudo extraer texto del archivo ${fileName}]`;
+                // NO guardar el archivo si el parsing falla
+                const errorMessage = docxError instanceof Error ? docxError.message : 'Error desconocido';
+                throw new Error(`No se pudo procesar el archivo .docx "${fileName}": ${errorMessage}. Intenta con otro formato (PDF, TXT) o verifica que el archivo no esté corrupto.`);
               }
             } else if (fileName && fileName.toLowerCase().endsWith(".xlsx")) {
               // Procesar XLSX con xlsx
@@ -109,8 +122,15 @@ export async function handleContextOperation(
                 });
 
                 content = allText.trim();
+
+                // Validar que se extrajo contenido real
+                if (!content || content.trim().length === 0) {
+                  throw new Error('El archivo Excel está vacío o no contiene datos extraíbles');
+                }
               } catch (xlsxError) {
-                content = `[ERROR_XLSX: No se pudo extraer datos del archivo ${fileName}]`;
+                // NO guardar el archivo si el parsing falla
+                const errorMessage = xlsxError instanceof Error ? xlsxError.message : 'Error desconocido';
+                throw new Error(`No se pudo procesar el archivo Excel "${fileName}": ${errorMessage}. Verifica que el archivo no esté corrupto.`);
               }
             } else if (
               fileType.includes("text") ||
