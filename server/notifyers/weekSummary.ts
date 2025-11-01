@@ -76,7 +76,7 @@ export const sendWeekSummaryEmail = async ({ email, name, chatbotName, metrics }
                     text-align: left;
                     "
                 >
-                    ¡Hola ${name || 'amigo'}! aquí está tu resumen semanal de tu chatbot
+                    ¡Hola ${name || '...'}! aquí está tu resumen semanal de tu chatbot
                     <span style="color: #7271cc"> ${chatbotName || 'Ghosty'} 🤖</span>
                 </h2>
                 <p

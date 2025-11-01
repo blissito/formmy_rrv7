@@ -4,6 +4,7 @@ import { getSesRemitent, getSesTransport } from "./ses";
 type PlanCancellationType = {
   email: string;
   endDate: string; // Format: "20 de noviembre de 2025"
+  planName: "Starter" | "Pro" | "Enterprise"; // Plan being cancelled
 };
 
 const host =
@@ -14,7 +15,10 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendPlanCancellation = async ({ email, endDate }: PlanCancellationType) => {
+export const sendPlanCancellation = async ({ email, endDate, planName }: PlanCancellationType) => {
+  // Determinar el ícono según el plan
+  const planIcon = planName === "Enterprise" ? "🤖" : "✨";
+
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
@@ -69,8 +73,8 @@ export const sendPlanCancellation = async ({ email, endDate }: PlanCancellationT
                     font-size: 16px;
                     "
                 >
-                    Tu suscripción a
-                    <strong> Formmy PRO✨ ha sido cancelada exitosamente</strong>.
+                    Tu suscripción al plan
+                    <strong> Formmy ${planName}${planIcon} ha sido cancelada exitosamente</strong>.
                 </p>
                 <p
                     style="
@@ -81,7 +85,7 @@ export const sendPlanCancellation = async ({ email, endDate }: PlanCancellationT
                     font-size: 16px;
                     "
                 >
-                    Tu acceso a las funciones del Plan Pro estará disponible hasta el
+                    Tu acceso a las funciones del Plan ${planName} estará disponible hasta el
                     final del período de facturación actual, el
                     <strong>${endDate}</strong>.
                 </p>

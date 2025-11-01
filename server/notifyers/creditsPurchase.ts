@@ -34,8 +34,7 @@ export const sendCreditsPurchaseEmail = async ({
     <ul style="color: #4b5563; line-height: 140%; font-size: 16px; margin-top: -8px;">
       <li>Procesar documentos con LlamaParse</li>
       <li>Hacer consultas a tu base de conocimiento (RAG)</li>
-      <li>Generar contenido con tu chatbot IA</li>
-      <li>Usar funciones avanzadas de análisis</li>
+      <li>Usar tools en tus chatbots IA</li>
     </ul>
     ${emailParagraph(
       `Consulta tu balance y uso de créditos en tiempo real desde tu dashboard.`
@@ -46,7 +45,6 @@ export const sendCreditsPurchaseEmail = async ({
   const html = createEmailTemplate({
     title: "Compra de créditos exitosa",
     subject: "✅ Tu compra de créditos ha sido procesada",
-    coverImage: "https://i.imgur.com/rbQGsVf.png",
     content,
     button: {
       text: "Ver mi dashboard",

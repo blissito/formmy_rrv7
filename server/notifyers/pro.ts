@@ -23,7 +23,7 @@ export const sendProEmail = async ({ email, name }: ProEmail) => {
       html: `
         <html>
         <head>
-            <title>⏳ Últimos días de Formmy Chat 😱</title>
+            <title>¡Tu experiencia en Formmy PRO acaba de despegar! ✈️</title>
         </head>
         <body style="font-family: Arial; background: #191a20">
             <div style="background: #191a20; margin: 0 auto; padding: 24px 16px">
@@ -45,11 +45,6 @@ export const sendProEmail = async ({ email, name }: ProEmail) => {
                 />
                 </div>
                 <div style="padding: 0 4%">
-                <img
-                    alt="cover"
-                    style="width: 100%; height: auto"
-            src="https://i.imgur.com/RbvF29K.png"
-                />
                 <h2
                     style="
                     color: #000000;
@@ -59,7 +54,7 @@ export const sendProEmail = async ({ email, name }: ProEmail) => {
                     text-align: left;
                     "
                 >
-            ¡${name || 'Amigo'}, tu experiencia en Formmy PRO acaba de despegar! ✨
+            ¡${name || 'Hey'}, tu experiencia en Formmy PRO acaba de despegar! ✨
                 </h2>
                 <p
                     style="
@@ -76,7 +71,7 @@ export const sendProEmail = async ({ email, name }: ProEmail) => {
                     style="
                     margin-top: 16px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "
@@ -87,7 +82,7 @@ export const sendProEmail = async ({ email, name }: ProEmail) => {
                     <p
                     style="
                         margin-top: 16px;
-                        text-align: justify;
+                        text-align: left;
                         color: #4b5563;
                         line-height: 140%;
                         font-size: 16px;
@@ -100,7 +95,7 @@ export const sendProEmail = async ({ email, name }: ProEmail) => {
                     style="
                     margin-top: 16px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "

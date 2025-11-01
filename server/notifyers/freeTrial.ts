@@ -59,7 +59,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                     text-align: left;
                     "
                 >
-                    ¡Hola ${name || 'amigo'}! Tu chatbot IA está por desconectarse
+                    ¡Hola ${name || '...'}! Tu chatbot IA está por desconectarse
                 </h2>
                 <p
                     style="
@@ -162,7 +162,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                             font-family: monospace;
                         "
                         >
-                        CHATBOT50
+                        GHOSTY50
                         </p>
                     </div>
                 </div>
@@ -183,7 +183,7 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
                         border: none;
                     "
                     >
-                    Sí, quiero mi 50% y mi chatbot 👻
+                    Sí, quiero mi 50% y mi chatbot 
                     </button>
                 </a>
 

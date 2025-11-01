@@ -16,7 +16,7 @@ export const notifyOwner = async ({
   sendgridTransport
     .sendMail({
       from: getSesRemitent(),
-      subject: "� ¡Tienes un nuevo mensaje en tu Formmy!",
+      subject: "¡Tienes un nuevo mensaje en tu Formmy!",
       bcc: emails,
       html: `
       <html>
@@ -82,7 +82,7 @@ export const notifyOwner = async ({
               >
     Mantente atento para no perder ninguna oportunidad de conectar con tus clientes.
               </p>
-                  <a href="https://www.formmy.app/dash/${projectId}">
+                  <a href="https://www.formmy.app/dashboard/formmys/${projectId}">
                 <button
                   style="
                     background: #9a99ea;

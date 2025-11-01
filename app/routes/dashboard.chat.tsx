@@ -180,7 +180,7 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
   };
 
   return (
-    <>
+    <div >
       <PageContainer>
         <PageContainer.Title
           cta={
@@ -196,7 +196,7 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
             </ChatbotCreateButton>
           }
         >
-          Mis Chats IA
+          Mis Chatbots IA
         </PageContainer.Title>
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {chatbots.length > 0 || (invitedChatbots && invitedChatbots.length > 0) ? (
@@ -375,11 +375,11 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
           }
         />
       )}
-    </>
+    </div>
   );
 }
 
 export const meta = () => [
-  { title: "Mis Chats IA" },
+  { title: "Mis Chatbots IA" },
   { name: "description", content: "Administra tus chatbots IA" },
 ];

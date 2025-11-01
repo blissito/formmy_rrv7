@@ -303,7 +303,7 @@ export default function DashboardFormmys({ loaderData }: { loaderData: LoaderDat
               emojis={"📢 📩"}
               title={"¡Hey! Tienes una invitación pendiente"}
             />
-      <div className={cn("max-w-7xl mx-auto py-4 px-4", "md:py-8 md:px-4")}>
+      <div className={cn("max-w-7xl mx-auto py-4 px-4", "md:py-8 md:px-0")}>
         <nav className="flex gap-2 flex-wrap justify-between items-center mb-6 md:mb-8">
           <div>
             <h2 className={cn("text-2xl font-bold dark:text-white text-space-800", "md:text-3xl")}>

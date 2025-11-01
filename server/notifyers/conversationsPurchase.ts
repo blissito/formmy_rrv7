@@ -34,7 +34,6 @@ export const sendConversationsPurchaseEmail = async ({
     <ul style="color: #4b5563; line-height: 140%; font-size: 16px; margin-top: -8px;">
       <li>Mantener más conversaciones activas simultáneamente</li>
       <li>Atender a más clientes sin interrupciones</li>
-      <li>Escalar tu servicio de atención 24/7</li>
       <li>Captar más leads y cerrar más ventas</li>
     </ul>
     ${emailParagraph(
@@ -46,7 +45,6 @@ export const sendConversationsPurchaseEmail = async ({
   const html = createEmailTemplate({
     title: "Compra de conversaciones exitosa",
     subject: "✅ Tu compra de conversaciones ha sido procesada",
-    coverImage: "https://i.imgur.com/LpPvhSi.png",
     content,
     button: {
       text: "Ver mi dashboard",

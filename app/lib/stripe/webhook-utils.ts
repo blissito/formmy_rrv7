@@ -3,6 +3,8 @@ import { Effect } from "effect";
 import { referralService } from "~/services/referral.service";
 
 import { sendProEmail } from "server/notifyers/pro";
+import { sendStarterEmail } from "server/notifyers/starter";
+import { sendEnterpriseEmail } from "server/notifyers/enterprise";
 import { sendPlanCancellation } from "server/notifyers/planCancellation";
 
 import { getDefaultModelForPlan } from "~/utils/aiModels";
@@ -23,7 +25,14 @@ export interface StripeSubscription {
   customer: string;
   status: SubscriptionStatus;
   current_period_end?: number; // Unix timestamp
-  // Otros campos de Stripe que podamos necesitar
+  metadata?: Record<string, string>; // Metadatos de Stripe
+  items?: {
+    data: Array<{
+      price: {
+        id: string;
+      };
+    }>;
+  };
 }
 
 /**
@@ -49,6 +58,41 @@ async function updateUserChatbotModels(userId: string, newPlan: string) {
   });
   
   console.log(`[Webhook] Modelos de chatbots actualizados para el usuario ${userId} con plan ${newPlan}, modelo por defecto: ${defaultModel}`);
+}
+
+/**
+ * Determina el plan según el price ID o metadata de Stripe
+ */
+function determinePlanFromSubscription(subscription: StripeSubscription): "STARTER" | "PRO" | "ENTERPRISE" {
+  // Primero chequear metadata (usado por Enterprise)
+  if (subscription.metadata?.plan === 'ENTERPRISE') {
+    return 'ENTERPRISE';
+  }
+
+  // Obtener el price ID del primer item de la suscripción
+  const priceId = subscription.items?.data[0]?.price?.id;
+
+  if (!priceId) {
+    console.warn('[Webhook] No se pudo determinar el price ID, defaulting a PRO');
+    return 'PRO';
+  }
+
+  // Price IDs de producción
+  const PRICE_IDS = {
+    STARTER: 'price_1S5AqXDtYmGT70YtepLAzwk4',
+    PRO: 'price_1S5CqADtYmGT70YtTZUtJOiS',
+  };
+
+  // Determinar plan basado en price ID
+  if (priceId === PRICE_IDS.STARTER) {
+    return 'STARTER';
+  } else if (priceId === PRICE_IDS.PRO) {
+    return 'PRO';
+  }
+
+  // Default a PRO si no coincide
+  console.warn(`[Webhook] Price ID desconocido: ${priceId}, defaulting a PRO`);
+  return 'PRO';
 }
 
 /**
@@ -82,27 +126,36 @@ export async function handleSubscriptionCreated(
     return;
   }
 
-  // Actualizar el plan del usuario a PRO
+  // Determinar el plan según la suscripción
+  const plan = determinePlanFromSubscription(subscription);
+
+  // Actualizar el plan del usuario
   await db.user.update({
     where: { id: user.id },
     data: {
-      plan: "PRO",
+      plan,
       subscriptionIds: { push: subscription.id },
     },
   });
 
   // Actualizar modelos de chatbots según el nuevo plan
-  await updateUserChatbotModels(user.id, "PRO");
+  await updateUserChatbotModels(user.id, plan);
 
   console.log(
-    `[Webhook] Suscripción PRO creada para el usuario: ${user.email}`
+    `[Webhook] Suscripción ${plan} creada para el usuario: ${user.email}`
   );
 
-  // Send PRO upgrade email
+  // Enviar email según el plan
   try {
-    await sendProEmail({ email: user.email, name: user.name });
+    if (plan === 'ENTERPRISE') {
+      await sendEnterpriseEmail({ email: user.email, name: user.name });
+    } else if (plan === 'PRO') {
+      await sendProEmail({ email: user.email, name: user.name });
+    } else if (plan === 'STARTER') {
+      await sendStarterEmail({ email: user.email, name: user.name });
+    }
   } catch (error) {
-    console.error('Error sending PRO upgrade email:', error);
+    console.error(`Error sending ${plan} upgrade email:`, error);
   }
 
   // Si el usuario fue referido, registrar la conversión
@@ -113,7 +166,7 @@ export async function handleSubscriptionCreated(
 
     if (result.success) {
       console.log(
-        `[Webhook] Conversión a Pro registrada para referido: ${user.email}`
+        `[Webhook] Conversión a ${plan} registrada para referido: ${user.email}`
       );
     } else {
       console.error(
@@ -170,6 +223,9 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
     return;
   }
 
+  // Guardar el plan actual antes de actualizarlo
+  const currentPlan = user.plan as "Starter" | "Pro" | "Enterprise" | "FREE";
+
   await db.user.update({
     where: { id: user.id },
     data: {
@@ -187,18 +243,22 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
   // Send cancellation email
   try {
     // Format end date from Unix timestamp to Spanish date format
-    const endDate = subscription.current_period_end 
+    const endDate = subscription.current_period_end
       ? new Date(subscription.current_period_end * 1000).toLocaleDateString("es-MX", {
           day: "numeric",
           month: "long",
           year: "numeric"
         })
       : "31 de diciembre de 2025"; // Fallback date
-    
-    await sendPlanCancellation({ 
-      email: user.email,
-      endDate 
-    });
+
+    // Solo enviar email si el plan cancelado no es FREE
+    if (currentPlan !== "FREE") {
+      await sendPlanCancellation({
+        email: user.email,
+        endDate,
+        planName: currentPlan as "Starter" | "Pro" | "Enterprise"
+      });
+    }
   } catch (error) {
     console.error('Error sending plan cancellation email:', error);
   }

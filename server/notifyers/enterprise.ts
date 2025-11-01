@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { getSesRemitent, getSesTransport } from "./ses";
 
-type NoUsageEmail = {
+type EnterpriseEmail = {
   email: string;
   name?: string;
 };
@@ -14,16 +14,16 @@ const host =
 // create transporter
 export const sendgridTransport = getSesTransport();
 
-export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
+export const sendEnterpriseEmail = async ({ email, name }: EnterpriseEmail) => {
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
       to: email,
-      subject: "¡Tu Formmy aún no está en acción!",
+      subject: "¡Tu experiencia en Formmy Enterprise acaba de despegar! 🛫 ",
       html: `
         <html>
         <head>
-            <title>¡Tu Formmy aún no está en acción!</title>
+            <title>¡Tu experiencia en Formmy Enterprise acaba de despegar! 🛫 </title>
         </head>
         <body style="font-family: Arial; background: #191a20">
             <div style="background: #191a20; margin: 0 auto; padding: 24px 16px">
@@ -48,7 +48,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                 <img
                     alt="cover"
                     style="width: 100%; height: auto"
-                    src="https://i.imgur.com/N8uvxtt.png"
+                    src="https://i.imgur.com/SICIsJA.png"
                 />
                 <h2
                     style="
@@ -59,7 +59,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     text-align: left;
                     "
                 >
-                    ¡Hey ${name || '...'}! Tu cuenta ya está lista… pero tu Chatbot aún no.
+                    ¡${name || 'Hey'}, tu experiencia en Formmy ENTERPRISE acaba de despegar! 🛫
                 </h2>
                 <p
                     style="
@@ -70,71 +70,67 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     font-size: 16px;
                     "
                 >
-                    Con Formmy puedes crear un formulario personalizado o activar un
-                    chatbot con IA en minutos. Sin código, sin enredos. Ya diste el
-                    primer paso… ahora deja que tu web haga el resto.
-                </p>
-                <p
-                    style="
-                    margin-top: 16px;
-                    margin-bottom: 4px;
-                    color: #4b5563;
-                    text-align: left;
-                    line-height: 140%;
-                    font-size: 16px;
-                    "
-                >
-                    ¿Qué puedes hacer hoy mismo?
-                </p>
-                <p
-                    style="
-                    margin-top: 4px;
-                    margin-bottom: 4px;
-                    color: #4b5563;
-                    text-align: left;
-                    line-height: 140%;
-                    font-size: 16px;
-                    "
-                >
-                    📋 Crear tu primer formulario
-                </p>
-                <p
-                    style="
-                    margin-top: 4px;
-                    margin-bottom: 4px;
-                    color: #4b5563;
-                    text-align: left;
-                    line-height: 140%;
-                    font-size: 16px;
-                    "
-                >
-                    💬 Configurar un chat con IA
-                </p>
-                <p
-                    style="
-                    margin-top: 4px;
-                    margin-bottom: 16px;
-                    color: #4b5563;
-                    text-align: left;
-                    line-height: 140%;
-                    font-size: 16px;
-                    "
-                >
-                    🚀 Integrarlo a tu sitio ¡solo copia y pega!
+                    Tu suscripción ya está activa y ahora tienes todo lo que necesitas para llevar tu comunicación al siguiente nivel:   <strong>formularios ilimitados</strong> y nuestro   <strong>chatbot impulsado por IA</strong> que hará que tus clientes se sientan escuchados y atendidos, ¡todo el tiempo!
                 </p>
 
                 <p
                     style="
-                    margin-top: 0px;
+                    margin-top: 16px;
                     color: #4b5563;
                     text-align: left;
                     line-height: 140%;
                     font-size: 16px;
-                    font-weight: bold;
                     "
                 >
-                    Hazlo en menos de 5 minutos y empieza a captar leads, responder
-                    preguntas y mejorar la experiencia de tus clientes.
+                    Con Formmy Enterprise tienes acceso a:
+                </p>
+                  <p
+                    style="
+                    margin-top: 16px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 16px;
+                    "
+                >
+                    Imagina chatbots que no solo recogen datos, sino que también<strong> hablan, responden y acompañan a tus visitantes en tiempo real.</strong> Así, puedes enfocarte en lo que realmente importa mientras el chatbot se encarga del resto.
+                </p>
+                <div style="
+                    margin-top: 16px;
+                    margin-bottom:24px;
+                    padding-left:12px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: .7;
+                    font-size: 16px;
+                ">
+                    <p style=" list-style-type: none;">🤖 Chatbots ilimitados</p>
+                    <p style=" list-style-type: none;">💬 2,500 conversaciones para tus chatbots</p>
+                    <p style=" list-style-type: none;">🕣  60 minutos de voz IA/mes</p>
+                    <p style=" list-style-type: none;">🎧 Soporte prioritario y más</p>
+                </div>
+
+                <p
+                    style="
+                        margin-top: 16px;
+                        text-align: left;
+                        color: #4b5563;
+                        line-height: 140%;
+                        font-size: 16px;
+                    "
+                >
+                    Tienes dudas o necesitas ayuda para arrancar? Nuestro equipo está listo para apoyarte en cada paso:   <a style=" color: #7271cc;" href="mailto:hola@formmy.app" target="blank">hola@formmy.app</a> o preguntale a <a style=" color: #7271cc;" href="https://www.formmy.app/dashboard/ghosty" target="blank">Ghosty</a> desde tu dashboard.
+                </p>
+                <p
+                    style="
+                    margin-top: 16px;
+                    color: #4b5563;
+                    text-align: left;
+                    line-height: 140%;
+                    font-size: 16px;
+                    "
+                >
+                    Estamos muy emocionados de acompañarte en esta aventura y ver todo lo que lograrás con Formmy ENTERPRISE 🤖.
                 </p>
 
                 <a href="https://www.formmy.app/dashboard/ghosty" target="blank">
@@ -145,7 +141,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                         font-weight: 500;
                         border-radius: 8px;
                         color: white;
-                        width: 140px;
+                        width: 160px;
                         text-align: center;
                         font-size: 16px;
                         margin-top: 8px;
@@ -153,7 +149,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                         border: none;
                     "
                     >
-                    ¡Empezar ya!
+                    Ir a mi dashboard
                     </button>
                 </a>
 
@@ -165,7 +161,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     font-size: 16px;
                     "
                 >
-                    Nos encantaría ver lo que construyes.
+                    Un abrazo,
                 </p>
                 <p
                     style="
@@ -177,7 +173,7 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
                     font-weight: bold;
                     "
                 >
-                    — El equipo de Formmy 👻
+                - El equipo de Formmy 👻
                 </p>
                 <hr
                     style="
@@ -262,11 +258,10 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
             </div>
         </body>
         </html>
-
       `,
     })
     .then((r: any) => {
-      console.log('No usage email sent successfully:', r);
+      console.log('Enterprise email sent successfully:', r);
     })
-    .catch((e: Error) => console.error('Error sending no usage email:', e));
+    .catch((e: Error) => console.error('Error sending Enterprise email:', e));
 };
