@@ -137,27 +137,46 @@ function buildSystemPrompt(
   let searchInstructions = '';
   if (hasContextSearch) {
     searchInstructions = `
-🔍 CRITICAL - KNOWLEDGE BASE ACCESS:
+🔍 KNOWLEDGE BASE - YOUR PRIMARY SOURCE OF TRUTH:
 
-You MUST call search_context() as your FIRST action for ANY user message that:
-- Asks about products, services, features, or company information
-- Contains keywords, names, or topics that might be in the knowledge base
-- Is unclear or ambiguous (search to understand context)
-- Could benefit from additional information
+You have access to uploaded documents containing specific information. When users ask questions, they EXPECT answers from these documents.
 
-Rule: When in doubt, ALWAYS search first. Never guess or make assumptions.
+MANDATORY WORKFLOW:
+1. User asks question
+2. Extract 2-7 key terms from the question (preserve capitalization for names)
+3. Call search_context("[key terms]")
+4. Read the results returned by the tool
+5. Answer EXCLUSIVELY using information from the results
 
-Examples - ALWAYS search for these patterns:
-User: "product X" → search_context("product X")
-User: "pricing" → search_context("pricing plans")
-User: "Be the Nerd" → search_context("Be the Nerd")
-User: "what is ${config.name}" → search_context("${config.name}")
+CRITICAL - TOOL RESULTS ARE YOUR ANSWER:
+When search_context() returns results, those results ARE the answer.
+✅ COPY and PARAPHRASE the information from the tool output
+✅ The tool returns formatted text - USE IT in your response
+✅ If tool says "Encontré X resultados" - READ THEM and answer based on them
+❌ NEVER respond "I don't have information" if the tool returned results
+❌ NEVER ignore tool output - it contains the answer the user needs
 
-Only skip search_context if:
-- Pure greeting (hello, hi, thanks)
-- Asking to perform an action with tools (send email, schedule, etc)
+AFTER TOOL EXECUTION:
+1. Read the tool's output message carefully
+2. Extract key information from the results
+3. Write your response using ONLY that information
+4. Be specific - use names, numbers, facts from the results
 
-${hasWebSearch ? `Fallback: If search_context finds nothing, use web_search_google("${config.name} [topic]").` : ''}
+WHEN TO SEARCH:
+- User mentions: company names, products, services, pricing, people, events
+- User asks: "what is X?", "tell me about Y", "how much Z costs"
+- ANY question that could be answered by your documents
+- Skip ONLY for: pure greetings ("hi", "thanks"), meta questions ("what can you do?")
+
+IF NO RESULTS FOUND:
+- Explicitly say: "I don't have that information in my knowledge base"
+${hasWebSearch ? `- Then try: web_search_google("[key terms]")` : ''}
+- DO NOT guess or use general knowledge
+
+EXAMPLE:
+User: "What is Be the Nerd?"
+You: Call search_context("Be the Nerd") → Results found about Fixter.Geek bootcamp
+You: "Be the Nerd is [exact info from results]" ← Answer from results ONLY
 `;
   }
 
@@ -199,10 +218,11 @@ ${config.customInstructions}
 
   // Si personality es un AgentType válido, usar prompt optimizado
   if (agentTypes.includes(personality as AgentType)) {
-    // ORDEN OPTIMIZADO: customInstructions PRIMERO → luego reglas técnicas
-    basePrompt = `${customInstructionsBlock}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}
+    // ⚡ ORDEN CRÍTICO: RAG instructions PRIMERO (máxima prioridad) → custom → persona
+    basePrompt = `${searchInstructions}
+${customInstructionsBlock}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}
 
-${searchInstructions}${toolGroundingRules}${gmailInstructions}`;
+${toolGroundingRules}${gmailInstructions}`;
   } else {
     // Fallback a personalidades genéricas (friendly, professional)
     const personalityMap: Record<string, string> = {
@@ -210,14 +230,15 @@ ${searchInstructions}${toolGroundingRules}${gmailInstructions}`;
       professional: "asistente profesional",
     };
 
-    // ORDEN OPTIMIZADO: customInstructions PRIMERO → luego reglas técnicas
-    basePrompt = `${customInstructionsBlock}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
+    // ⚡ ORDEN CRÍTICO: RAG instructions PRIMERO (máxima prioridad) → custom → persona
+    basePrompt = `${searchInstructions}
+${customInstructionsBlock}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
 
 ${config.instructions || "Asistente útil."}
 
 Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu personalidad.
 
-${searchInstructions}${toolGroundingRules}${gmailInstructions}`;
+${toolGroundingRules}${gmailInstructions}`;
   }
 
   // 🛡️ Restricciones de seguridad para web_search_google

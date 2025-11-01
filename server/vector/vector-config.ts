@@ -77,8 +77,9 @@ export const VECTOR_SEARCH_CONFIG = {
 
   /**
    * Límite de resultados por defecto
+   * Aumentado de 5 a 10 para mejor recall
    */
-  defaultLimit: 5,
+  defaultLimit: 10,
 
   /**
    * Límite máximo de resultados

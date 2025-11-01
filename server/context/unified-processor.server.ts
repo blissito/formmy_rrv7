@@ -72,13 +72,44 @@ export interface AddContextResult {
 
 /**
  * Extrae texto procesable para vectorización según tipo de contexto
- * Copia de auto-vectorize.service.ts para mantener lógica consistente
+ * + METADATA ENRICHMENT: Agrega keywords y contexto al inicio para mejorar retrieval
  */
 function extractTextFromContext(
   content: string,
   metadata: AddContextParams['metadata']
 ): string {
   const parts: string[] = [];
+
+  // MEJORA: Agregar keywords/contexto al inicio del documento
+  // Esto mejora semantic search porque el inicio tiene más peso
+  const keywords: string[] = [];
+
+  if (metadata.fileName) {
+    // Extraer nombre sin extensión como keyword
+    const nameWithoutExt = metadata.fileName.replace(/\.[^/.]+$/, '');
+    keywords.push(nameWithoutExt);
+  }
+
+  if (metadata.title) {
+    keywords.push(metadata.title);
+  }
+
+  // Agregar tipo de documento
+  const typeMap: Record<string, string> = {
+    'FILE': 'documento archivo',
+    'LINK': 'página web sitio',
+    'TEXT': 'texto información',
+    'QUESTION': 'pregunta frecuente FAQ'
+  };
+  if (typeMap[metadata.type]) {
+    keywords.push(typeMap[metadata.type]);
+  }
+
+  // Agregar bloque de keywords si existen
+  if (keywords.length > 0) {
+    parts.push(`Keywords: ${keywords.join(', ')}`);
+    parts.push(''); // Línea vacía para separar
+  }
 
   // Título siempre incluido si existe
   if (metadata.title) {
@@ -109,12 +140,18 @@ function extractTextFromContext(
       break;
   }
 
-  // Metadata adicional
+  // Metadata adicional al final
+  const metadataParts: string[] = [];
   if (metadata.type === 'FILE' && metadata.fileName) {
-    parts.push(`Archivo: ${metadata.fileName}`);
+    metadataParts.push(`Archivo: ${metadata.fileName}`);
   }
   if (metadata.type === 'LINK' && metadata.url) {
-    parts.push(`URL: ${metadata.url}`);
+    metadataParts.push(`URL: ${metadata.url}`);
+  }
+
+  if (metadataParts.length > 0) {
+    parts.push(''); // Línea vacía
+    parts.push(...metadataParts);
   }
 
   return parts.join('\n\n');

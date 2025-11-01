@@ -49,7 +49,7 @@ export default function ChatbotConfigRoute(
         "Chatbot creado desde la interfaz web"
       );
 
-      const createResponse = await fetch("/api/v1/chatbot", {
+      const createResponse = await fetch("/api/v0/chatbot", {
         method: "POST",
         body: createFormData,
       });
@@ -79,7 +79,7 @@ export default function ChatbotConfigRoute(
         );
         contextFormData.append("routes", JSON.stringify(entry.routes));
 
-        const contextResponse = await fetch("/api/v1/chatbot", {
+        const contextResponse = await fetch("/api/v0/chatbot", {
           method: "POST",
           body: contextFormData,
         });
@@ -102,7 +102,7 @@ export default function ChatbotConfigRoute(
           fileContextData.append("sizeKB", Math.ceil(file.size / 1024).toString());
           fileContextData.append("file", file); // Enviar el archivo binario completo
 
-          const fileResponse = await fetch("/api/v1/chatbot", {
+          const fileResponse = await fetch("/api/v0/chatbot", {
             method: "POST",
             body: fileContextData,
           });

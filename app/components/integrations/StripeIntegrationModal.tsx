@@ -109,7 +109,7 @@ export default function StripeIntegrationModal({
             ⚠️ Usa claves de prueba (test) mientras desarrollas
           </p>
         </div>
-        <fetcher.Form method="post" action="/api/v1/chatbot" onSubmit={handleSubmit} className="space-y-4">
+        <fetcher.Form method="post" action="/api/v0/chatbot" onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="intent" value={existingIntegration ? "update_integration" : "create_integration"} />
           <input type="hidden" name="chatbotId" value={chatbotId} />
           <input type="hidden" name="platform" value="STRIPE" />

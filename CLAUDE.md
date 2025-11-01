@@ -36,10 +36,36 @@ const memory = createMemory({
 - Sistema dual: Mensuales (reset mes) + Comprados (permanentes)
 - Parser: COST_EFFECTIVE(1), AGENTIC(3), AGENTIC_PLUS(6) créditos/página
 
-### RAG
+### RAG (Retrieval-Augmented Generation)
 **Servicio**: `/server/context/unified-processor.server.ts`
 **Index**: `vector_index_2` MongoDB | **Embeddings**: text-embedding-3-small
 **Chunk**: 2000 chars, 100 overlap (5%)
+
+**Tool**: `search_context` - Búsqueda semántica en knowledge base
+**Handler**: `/server/tools/handlers/context-search.ts`
+**Query Expansion**: `/server/vector/query-expansion.service.ts`
+
+⚠️ **CRÍTICO - Tool Result Usage**:
+LlamaIndex inyecta automáticamente los resultados de tools al contexto, PERO los modelos (especialmente gpt-4o-mini) pueden ignorarlos sin instrucciones explícitas en el system prompt.
+
+**System Prompt Requirements** (`/server/agents/agent-workflow.server.ts:136-173`):
+```typescript
+// ✅ CORRECTO: Prompt imperativo que fuerza uso de resultados
+CRITICAL - TOOL RESULTS ARE YOUR ANSWER:
+When search_context() returns results, those results ARE the answer.
+✅ COPY and PARAPHRASE the information from the tool output
+✅ If tool says "Encontré X resultados" - READ THEM and answer based on them
+❌ NEVER respond "I don't have information" if the tool returned results
+```
+
+**Flujo**:
+1. Usuario pregunta → Agent llama `search_context()`
+2. Tool ejecuta → Retorna "Encontré X resultados: [CONTENIDO]"
+3. LlamaIndex inyecta resultados al contexto automáticamente
+4. Modelo genera respuesta usando los resultados
+
+❌ **ERROR COMÚN**: Prompt débil → Modelo ignora resultados del tool
+✅ **SOLUCIÓN**: Prompt imperativo que ordena usar los resultados como fuente única de verdad
 
 ### Modelos
 **Config**: `/server/config/model-temperatures.ts`

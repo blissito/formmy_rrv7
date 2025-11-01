@@ -84,7 +84,7 @@ export const UserRow = ({
     formData.append("value", String(value));
     
     try {
-      await fetch("/api/v1/chatbot", {
+      await fetch("/api/v0/chatbot", {
         method: "POST",
         body: formData,
       });
@@ -103,7 +103,7 @@ export const UserRow = ({
       formData.append("permissionId", permission.id);
       
       try {
-        await fetch("/api/v1/chatbot", {
+        await fetch("/api/v0/chatbot", {
           method: "POST",
           body: formData,
         });

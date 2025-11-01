@@ -14,7 +14,7 @@ import { db } from '~/utils/db.server';
  */
 export const VECTOR_CONFIG = {
   MAX_CHUNK_SIZE: 2000,
-  CHUNK_OVERLAP: 100,        // 5% overlap optimizado
+  CHUNK_OVERLAP: 300,        // 15% overlap para mejor continuidad y coverage
   SIMILARITY_THRESHOLD: 0.85,
   MAX_RETRIES: 3,
   INITIAL_RETRY_DELAY: 1000,

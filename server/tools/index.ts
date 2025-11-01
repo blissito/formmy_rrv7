@@ -229,7 +229,7 @@ export const createGoogleSearchTool = (context: ToolContext) => tool(
 // ===== CONTEXT SEARCH TOOLS (RAG) =====
 
 export const createContextSearchTool = (context: ToolContext) => tool(
-  async ({ query, topK = 5 }) => {
+  async ({ query, topK = 10 }) => {
     const { contextSearchHandler } = await import('./handlers/context-search');
     const result = await contextSearchHandler({ query, topK }, context);
     return result.message;
@@ -239,7 +239,7 @@ export const createContextSearchTool = (context: ToolContext) => tool(
     description: "Search the chatbot's knowledge base for information about products, services, pricing, policies, documentation, and any business-specific content.",
     parameters: z.object({
       query: z.string().describe("Specific search query with relevant keywords"),
-      topK: z.number().optional().default(5).describe("Number of results to return (1-10)")
+      topK: z.number().optional().default(10).describe("Number of results to return (1-20)")
     })
   }
 );

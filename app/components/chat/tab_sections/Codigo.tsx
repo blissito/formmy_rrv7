@@ -407,7 +407,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
       if (existingIntegration) {
         // Hacer llamada al API para desactivar la integración
-        const response = await fetch("/api/v1/chatbot", {
+        const response = await fetch("/api/v0/chatbot", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",

@@ -259,7 +259,7 @@ export const ChatCard = ({
     const program = pipe(
       Effect.tryPromise({
         try: () =>
-          fetch("/api/v1/chatbot", {
+          fetch("/api/v0/chatbot", {
             method: "post",
             body: new URLSearchParams({
               intent: "get_conversations_count",

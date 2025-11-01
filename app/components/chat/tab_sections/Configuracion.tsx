@@ -67,7 +67,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     formData.append("configChanges", String(newNotifications.configChanges));
     
     try {
-      await fetch("/api/v1/chatbot", {
+      await fetch("/api/v0/chatbot", {
         method: "POST",
         body: formData,
       });
@@ -90,7 +90,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     formData.append("chatbotId", chatbot.id);
     
     try {
-      const response = await fetch("/api/v1/chatbot", {
+      const response = await fetch("/api/v0/chatbot", {
         method: "POST",
         body: formData,
       });
@@ -114,7 +114,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     formData.append("role", role);
     
     try {
-      const response = await fetch("/api/v1/chatbot", {
+      const response = await fetch("/api/v0/chatbot", {
         method: "POST",
         body: formData,
       });
@@ -144,7 +144,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     formData.append("rateLimit", String(security.rateLimit));
     
     try {
-      await fetch("/api/v1/chatbot", {
+      await fetch("/api/v0/chatbot", {
         method: "POST",
         body: formData,
       });
@@ -163,7 +163,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
       formData.append('intent', 'delete_chatbot');
       formData.append('chatbotId', chatbot.id);
       
-      const response = await fetch('/api/v1/chatbot', {
+      const response = await fetch('/api/v0/chatbot', {
         method: 'POST',
         body: formData,
       });

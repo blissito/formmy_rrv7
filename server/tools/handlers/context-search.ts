@@ -1,10 +1,12 @@
 /**
  * Context Search Tool Handler
  * Búsqueda semántica en la base de conocimiento del chatbot usando RAG
+ * + Query Expansion para mejorar recall
  */
 
 import type { ToolContext } from '../types';
 import { vectorSearch, type VectorSearchResult } from '../../vector/vector-search.service';
+import { expandQuery } from '../../vector/query-expansion.service';
 
 export interface ContextSearchParams {
   query: string;
@@ -27,7 +29,7 @@ export async function contextSearchHandler(
   params: ContextSearchParams,
   context: ToolContext
 ): Promise<ContextSearchResponse> {
-  const { query, topK = 5 } = params;
+  const { query, topK = 10 } = params;
 
   console.log(`\n${'🔧'.repeat(60)}`);
   console.log(`🔧 [CONTEXT SEARCH TOOL] Ejecutando búsqueda RAG`);
@@ -46,10 +48,45 @@ export async function contextSearchHandler(
   }
 
   try {
-    // Realizar búsqueda vectorial
-    console.log(`🔍 Llamando a vectorSearch...`);
-    const results = await vectorSearch(query, context.chatbotId, topK);
-    console.log(`✅ vectorSearch completado: ${results.length} resultados`);
+    // 1. Expandir query en múltiples variaciones (sin LLM - más rápido)
+    const expansion = await expandQuery(query, {
+      maxQueries: 2,
+      includeOriginal: true,
+      useLLM: false // 🚀 Usar expansión simple sin LLM para velocidad
+    });
+    console.log(`📝 [EXPANSION] Original: "${query}"`);
+    console.log(`📝 [EXPANSION] Variaciones: ${expansion.expanded.length}`);
+    expansion.expanded.forEach((q, i) => {
+      console.log(`   ${i + 1}. "${q}"`);
+    });
+
+    // 2. Buscar con cada query expandida
+    const allResults: VectorSearchResult[] = [];
+    const resultsPerQuery = Math.ceil(topK / expansion.all.length); // Dividir topK entre queries
+
+    for (const expandedQuery of expansion.all) {
+      console.log(`🔍 Buscando con: "${expandedQuery}"`);
+      const results = await vectorSearch(expandedQuery, context.chatbotId, resultsPerQuery);
+      console.log(`   → ${results.length} resultados (score promedio: ${results.length > 0 ? (results.reduce((sum, r) => sum + r.score, 0) / results.length).toFixed(3) : 'N/A'})`);
+      allResults.push(...results);
+    }
+
+    // 3. Deduplicar por ID (mismo chunk puede aparecer en múltiples queries)
+    const seen = new Set<string>();
+    const uniqueResults = allResults.filter(r => {
+      if (seen.has(r.id)) {
+        return false;
+      }
+      seen.add(r.id);
+      return true;
+    });
+
+    // 4. Ordenar por score (mayor a menor) y limitar a topK
+    const results = uniqueResults
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
+
+    console.log(`✅ [SEARCH] ${results.length} resultados únicos (de ${allResults.length} totales, top score: ${results[0]?.score.toFixed(3) || 'N/A'})`);
 
     // 🔔 Emitir fuentes al stream si hay callback disponible
     if (context.onSourcesFound && results.length > 0) {
