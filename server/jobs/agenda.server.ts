@@ -26,7 +26,7 @@ export async function getAgenda(): Promise<Agenda> {
         address: MONGO_URI,
         collection: 'agendaJobs', // Separate collection from Prisma models
       },
-      processEvery: '10 seconds', // How often to check for new jobs
+      processEvery: '30 seconds', // How often to check for new jobs (optimized for lower resource usage)
       maxConcurrency: 5, // Max parallel jobs
       defaultConcurrency: 3, // Default per job type
       defaultLockLifetime: 10 * 60 * 1000, // 10 minutes max job time

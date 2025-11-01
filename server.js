@@ -12,22 +12,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Inicializar workers de Agenda.js (jobs programados)
-async function initializeWorkers() {
-  try {
-    // Importar dinámicamente para evitar issues con CommonJS/ESM
-    const { registerWeeklyEmailsWorker } = await import('./build/server/jobs/workers/weekly-emails-worker.js');
-    await registerWeeklyEmailsWorker();
-    console.log('✅ Weekly emails worker initialized (runs every Monday at 9:00 AM)');
-  } catch (error) {
-    console.error('❌ Failed to initialize weekly emails worker:', error);
-    // No fallar el inicio del servidor si el worker no se puede inicializar
-  }
-}
-
-// Inicializar workers después de que el servidor esté listo
-initializeWorkers();
-
 // Servir archivos estáticos desde build/client y public
 app.use(express.static(path.join(__dirname, 'build/client')));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -52,5 +36,18 @@ app.all(
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+  console.log(`✅ Server listening on port ${port}`);
+
+  // Inicializar Agenda.js workers DESPUÉS de que el servidor esté listo
+  // Esto NO bloquea el servidor y se ejecuta en background
+  (async () => {
+    try {
+      const { registerWeeklyEmailsWorker } = await import('./build/server/jobs/workers/weekly-emails-worker.js');
+      await registerWeeklyEmailsWorker();
+      console.log('✅ Agenda.js: Weekly emails worker registered (Mondays 9:00 AM)');
+    } catch (error) {
+      console.error('⚠️  Agenda.js: Failed to register weekly emails worker:', error.message);
+      // El servidor sigue funcionando aunque el worker falle
+    }
+  })();
 });
