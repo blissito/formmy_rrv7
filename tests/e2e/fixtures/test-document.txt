@@ -1,0 +1,18 @@
+Este es un documento de prueba para testing de RAG en Formmy.
+
+Información de Ejemplo:
+- Producto: Formmy
+- Descripción: Plataforma de chatbots con IA
+- Features: RAG, Voice AI, WhatsApp, Gmail
+
+Preguntas de Prueba:
+1. ¿Qué es Formmy?
+   R: Una plataforma para crear chatbots con IA
+
+2. ¿Qué modelos soporta?
+   R: GPT-4o-mini, GPT-5, Claude Haiku, etc.
+
+3. ¿Tiene integración con WhatsApp?
+   R: Sí, mediante Meta Embedded Signup
+
+Este documento puede ser usado para probar el sistema de RAG.
