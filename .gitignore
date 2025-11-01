@@ -5,3 +5,28 @@
 /.react-router/
 /build/
 .env
+
+# Playwright
+/tests/e2e/screenshots/
+/tests/e2e/.auth/
+/playwright-report/
+/test-results/
+
+# Database backups and sensitive data
+respaldo/
+backup/
+backups/
+*.json.backup
+*.db.json
+*-backup.json
+dump/
+dumps/
+
+# Migration logs and reports
+migration-*.log
+migration-*.txt
+migration-*.json
+MIGRATION-*.md
+recovery.log
+*-report.txt
+*-report.json
