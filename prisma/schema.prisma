@@ -621,7 +621,7 @@ model Trace {
   id             String  @id @default(auto()) @map("_id") @db.ObjectId
   chatbotId      String? @db.ObjectId
   conversationId String? @db.ObjectId
-  userId         String  @db.ObjectId
+  userId         String? @db.ObjectId // Opcional para usuarios anónimos
 
   // Input/Output
   input  String
@@ -641,7 +641,7 @@ model Trace {
 
   // Relaciones
   chatbot Chatbot?     @relation(fields: [chatbotId], references: [id], onDelete: SetNull)
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   spans   Span[]
   events  TraceEvent[]
 

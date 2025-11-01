@@ -62,15 +62,26 @@ export interface CompleteTraceParams {
 // ============================================================================
 
 /**
+ * Validar si un string es un ObjectId válido de MongoDB
+ */
+function isValidObjectId(id: string): boolean {
+  return /^[a-f\d]{24}$/i.test(id);
+}
+
+/**
  * Crear un nuevo trace para una conversación
  */
 export async function createTrace(params: CreateTraceParams) {
   const { userId, chatbotId, conversationId, input, model, metadata } = params;
 
   try {
+    // Solo guardar userId si es un ObjectId válido (usuarios autenticados)
+    // Usuarios anónimos tienen IDs como "anon-1762032294689-atiasm" que no son ObjectIds
+    const validUserId = isValidObjectId(userId) ? userId : null;
+
     const trace = await db.trace.create({
       data: {
-        userId,
+        userId: validUserId,
         chatbotId: chatbotId || null,
         conversationId: conversationId || null,
         input,
