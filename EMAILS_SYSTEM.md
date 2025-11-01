@@ -21,9 +21,19 @@ Sistema unificado de envío de correos con Agenda.js para cron jobs semanales.
 
 | # | Nombre | Archivo | Schedule | Estado |
 |---|--------|---------|----------|--------|
-| 9 | **Trial expiry** | `/app/utils/notifyers/freeTrial.ts` | Lunes 9 AM | ✅ Configurado |
-| 10 | **No usage** | `/app/utils/notifyers/noUsage.ts` | Lunes 9 AM | ✅ Configurado |
-| 11 | **Resumen semanal** | `/app/utils/notifyers/weekSummary.ts` | Lunes 9 AM | ✅ Configurado |
+| 9 | **Trial expiry** | `/server/notifyers/freeTrial.ts` | Lunes 9:00 AM | ✅ Activo |
+| 10 | **No usage** | `/server/notifyers/noUsage.ts` | Lunes 9:00 AM | ✅ Activo |
+| 11 | **Resumen semanal** | `/server/notifyers/weekSummary.ts` | Lunes 9:00 AM | ✅ Activo |
+
+### Procesos Automáticos (Sin Email)
+
+| # | Nombre | Descripción | Schedule | Estado |
+|---|--------|-------------|----------|--------|
+| 12 | **Trial → FREE conversion** | Convierte usuarios TRIAL expirados (365 días) a plan FREE y desactiva chatbots | Lunes 9:00 AM | ✅ Activo |
+
+**Worker**: `/server/jobs/workers/weekly-emails-worker.ts`
+**Schedule**: Corre automáticamente cada lunes a las 9:00 AM via Agenda.js
+**Inicialización**: `server.js` - Se registra al inicio del servidor
 
 ## 🏗️ Arquitectura
 
@@ -56,19 +66,18 @@ Sistema unificado de envío de correos con Agenda.js para cron jobs semanales.
 - ✅ Logging detallado
 - ✅ Rate limiting para batches
 
-### Agenda.js Worker
-**Ubicación**: `/server/jobs/workers/weekly-emails-worker.ts`
+### Agenda.js
+**Ubicación**: `/server/jobs/agenda.server.ts`
 
-**Schedule**: Lunes 9:00 AM (cron: `0 9 * * 1`)
+**Workers activos**:
+1. `/server/jobs/workers/parser-worker.ts` - Procesamiento asíncrono de documentos
+2. `/server/jobs/workers/weekly-emails-worker.ts` - Emails semanales + conversión de trials expirados
 
-**Chequeos**:
-1. **Trial Expiry**: Usuarios en trial 5-7 días sin crear chatbots
-2. **No Usage**: Usuarios con chatbots pero sin actividad 14+ días
-3. **Weekly Summary**: Usuarios con actividad en últimos 7 días
+**Schedule**:
+- Parser: On-demand (cuando se sube un documento)
+- Weekly emails: Lunes a las 9:00 AM (cron: `0 9 * * 1`)
 
-**Límites**: 50 emails por chequeo (configurable)
-
-**Registro**: `/server.js` línea 45
+**Estado**: ✅ Activo en producción
 
 ## 🔌 Integraciones
 
@@ -109,16 +118,16 @@ Sistema unificado de envío de correos con Agenda.js para cron jobs semanales.
 
 ## 🛠️ Testing
 
-### Ejecutar worker manualmente
-```typescript
-import { runWeeklyEmailsNow } from '~/server/jobs/workers/weekly-emails-worker';
-await runWeeklyEmailsNow();
-```
-
 ### Enviar email individual
 ```typescript
-import { sendWelcomeEmail } from '~/utils/notifyers/welcome';
+import { sendWelcomeEmail } from 'server/notifyers/welcome';
 await sendWelcomeEmail({ email: 'test@example.com', name: 'Test' });
+```
+
+### Probar notifyers
+```bash
+# Crear un script de prueba en scripts/
+npx tsx scripts/test-email-notifier.ts
 ```
 
 ## 📝 Convenciones
@@ -142,12 +151,6 @@ await sendWelcomeEmail({ email: 'test@example.com', name: 'Test' });
 - **Rate limits**: Respetar límites de AWS SES
 - **Retry**: Máximo 3 intentos con backoff exponencial
 - **Batch**: Máximo 5 emails concurrentes
-- **Agenda.js**: Collection separada `agendaJobs`
-- **Cron**: Un solo worker para todos los emails semanales
+- **Agenda.js**: Collection separada `agendaJobs` - Solo para parser jobs
 - **Branding**: NUNCA modificar estilos de templates
-
-## 🗑️ Código Eliminado
-
-- ❌ `/server/email-scheduler.server.js` (reemplazado por Agenda.js)
-- ❌ `/app/utils/notifyers/enterprise.ts` (nunca usado)
-- ❌ Lógica de cron diario en `server.js` (reemplazado por Agenda.js)
+- **Weekly emails**: NO implementados actualmente (notifyers existen pero sin scheduler)
