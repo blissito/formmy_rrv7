@@ -354,6 +354,7 @@ export async function callGhostyWithTools(
   // Crear provider manager con las API keys disponibles
   const providerManager = createProviderManager(
     process.env.ANTHROPIC_API_KEY,
+    process.env.GOOGLE_API_KEY,
     process.env.OPENROUTER_API_KEY,
     process.env.CHATGPT_API_KEY
   );

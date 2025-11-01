@@ -89,16 +89,24 @@ export const truncateConversationHistory = (
   return truncatedHistory;
 };
 
-export const createProviderManager = (anthropicApiKey?: string, openRouterApiKey?: string, openaiApiKey?: string) => {
+export const createProviderManager = (
+  anthropicApiKey?: string,
+  googleApiKey?: string,
+  openRouterApiKey?: string,
+  openaiApiKey?: string
+) => {
   return new AIProviderManager({
-    ...(anthropicApiKey && { 
-      anthropic: { apiKey: anthropicApiKey } 
+    ...(anthropicApiKey && {
+      anthropic: { apiKey: anthropicApiKey }
     }),
-    ...(openRouterApiKey && { 
-      openrouter: { apiKey: openRouterApiKey } 
+    ...(googleApiKey && {
+      google: { apiKey: googleApiKey }
     }),
-    ...(openaiApiKey && { 
-      openai: { apiKey: openaiApiKey } 
+    ...(openRouterApiKey && {
+      openrouter: { apiKey: openRouterApiKey }
+    }),
+    ...(openaiApiKey && {
+      openai: { apiKey: openaiApiKey }
     })
   });
 };

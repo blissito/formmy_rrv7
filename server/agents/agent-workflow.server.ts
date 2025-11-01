@@ -11,6 +11,7 @@ import {
 } from "@llamaindex/workflow";
 import { OpenAI } from "@llamaindex/openai";
 import { Anthropic } from "@llamaindex/anthropic";
+import { Gemini } from "@llamaindex/google";
 import { createMemory, staticBlock } from "llamaindex";
 import { getToolsForPlan, type ToolContext } from "../tools";
 import type { ResolvedChatbotConfig } from "../chatbot/configResolver.server";
@@ -59,12 +60,21 @@ function createLLM(model: string, temperature?: number) {
   config.timeout = 60000;
   config.maxRetries = 3;
 
+  // Log del modelo usado
+  console.log(`🤖 Creating LLM: ${model} (temp: ${config.temperature})`);
+
   // Return appropriate provider based on model
   if (model.includes("claude")) {
     config.apiKey = process.env.ANTHROPIC_API_KEY;
+    console.log(`   Provider: Anthropic (${model})`);
     return new Anthropic(config);
+  } else if (model.includes("gemini")) {
+    config.apiKey = process.env.GOOGLE_API_KEY;
+    console.log(`   Provider: Google Gemini (${model})`);
+    return new Gemini(config);
   } else {
     config.apiKey = process.env.OPENAI_API_KEY;
+    console.log(`   Provider: OpenAI (${model})`);
     return new OpenAI(config);
   }
 }

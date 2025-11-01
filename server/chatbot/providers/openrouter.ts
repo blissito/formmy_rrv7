@@ -3,30 +3,54 @@ import type { ChatRequest, ChatResponse, StreamChunk, ChatMessage } from './type
 
 /**
  * Proveedor para OpenRouter (múltiples modelos)
+ *
+ * Nota: OpenRouter es el fallback cuando no hay provider directo disponible.
+ * Prioridad: Google directo > Anthropic directo > OpenAI directo > OpenRouter
  */
 export class OpenRouterProvider extends AIProvider {
-  // OpenRouter soporta muchos modelos, pero excluimos Anthropic y OpenAI directo
+  // OpenRouter soporta muchos modelos, pero excluimos los que tienen API directa
   private static readonly UNSUPPORTED_MODELS = [
     // Anthropic models (usar API directa)
     'claude-3-5-sonnet-20241022',
-    'claude-3-5-haiku-20241022', 
+    'claude-3-5-haiku-20241022',
+    'claude-haiku-4.5',
     'claude-3-haiku-20240307',
     'claude-3-sonnet-20240229',
-    // Google/Gemini models (temporal hasta implementar API directo)
+    // Google/Gemini models (usar API directa)
+    'google/gemini-2.0-flash',
+    'google/gemini-2.0-flash-lite',
+    'google/gemini-2.5-flash',
     'google/gemini-2.5-flash-lite',
+    'google/gemini-1.5-pro',
     'google/gemini-flash-1.5',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-1.5-pro',
     // Meta, Mistral y otros terceros
     'meta-llama/llama-2-70b-chat',
     'mistralai/mistral-7b-instruct'
   ];
 
   supportsModel(model: string): boolean {
-    // OpenRouter SOLO para Google/Gemini, Meta, Mistral y otros terceros
-    // NO para GPT (usar OpenAI directo) ni Anthropic (usar Anthropic directo)
-    return model.startsWith('google/') || 
-           model.startsWith('meta-llama/') || 
+    // OpenRouter es FALLBACK - solo si no hay provider directo
+    // En la práctica, el manager ya da prioridad a providers directos,
+    // pero mantenemos esta lógica por seguridad
+    const isUnsupported = OpenRouterProvider.UNSUPPORTED_MODELS.some(unsupported =>
+      model.includes(unsupported) || unsupported.includes(model)
+    );
+
+    if (isUnsupported) {
+      return false;
+    }
+
+    // Soporta otros modelos de terceros
+    return model.startsWith('meta-llama/') ||
            model.startsWith('mistralai/') ||
-           model.includes('gemini');
+           model.startsWith('deepseek/') ||
+           // Fallback para otros proveedores sin API directa
+           true; // OpenRouter como último recurso
   }
 
   /**

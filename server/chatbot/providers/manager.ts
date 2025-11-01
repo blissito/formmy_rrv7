@@ -1,6 +1,7 @@
 import { AIProvider } from './types';
 import type { ProviderConfig, ChatRequest, ChatResponse, StreamChunk } from './types';
 import { AnthropicProvider } from './anthropic';
+import { GoogleProvider } from './google';
 import { OpenRouterProvider } from './openrouter';
 import { OpenAIProvider } from './openai';
 
@@ -10,9 +11,10 @@ import { OpenAIProvider } from './openai';
  */
 export class AIProviderManager {
   private providers: Map<string, AIProvider> = new Map();
-  
-  constructor(configs: { 
+
+  constructor(configs: {
     anthropic?: ProviderConfig;
+    google?: ProviderConfig;
     openrouter?: ProviderConfig;
     // Preparado para futuros proveedores
     openai?: ProviderConfig;
@@ -24,10 +26,14 @@ export class AIProviderManager {
       this.providers.set('anthropic', new AnthropicProvider('anthropic', configs.anthropic));
     }
 
+    if (configs.google) {
+      this.providers.set('google', new GoogleProvider('google', configs.google));
+    }
+
     if (configs.openai) {
       this.providers.set('openai', new OpenAIProvider('openai', configs.openai));
     }
-    
+
     if (configs.openrouter) {
       this.providers.set('openrouter', new OpenRouterProvider('openrouter', configs.openrouter));
     }

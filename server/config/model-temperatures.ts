@@ -21,9 +21,15 @@ export const OPTIMAL_TEMPERATURES: Record<string, number> = {
   'claude-3-5-sonnet-20241022': 0.7,     // Sonnet 3.5
   'claude-3-opus-20240229': 0.7,         // Opus - conversacional
 
-  // Gemini models (via OpenRouter)
-  'gemini-2.0-flash': 0.7,
-  'gemini-1.5-pro': 0.7,
+  // Gemini models (directo desde Google API - FREE TIER disponible!)
+  'gemini-2.0-flash': 0.7,               // $0.10/$0.40 (vs $0.125/$0.50 en OpenRouter)
+  'gemini-2.0-flash-lite': 0.7,          // $0.075/$0.30 - óptimo para trial/starter
+  'gemini-2.5-flash': 0.7,               // Nueva generación
+  'gemini-2.5-flash-lite': 0.7,          // Lite de nueva generación
+  'gemini-1.5-pro': 0.7,                 // Legacy pero aún soportado
+
+  // Claude 4.x models
+  'claude-haiku-4.5': 0.8,               // Haiku 4.5 - 73.3% SWE-bench, mejor coding model (Oct 2025)
 };
 
 /**
@@ -86,7 +92,13 @@ export const MODEL_TEMPERATURE_RANGES: Record<string, TemperatureRange> = {
 
   // Gemini models
   'gemini-2.0-flash': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gemini-2.0-flash-lite': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gemini-2.5-flash': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gemini-2.5-flash-lite': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
   'gemini-1.5-pro': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+
+  // Claude 4.x models
+  'claude-haiku-4.5': { min: 0.8, max: 0.8, optimal: 0.8, step: 0, fixed: true },
 };
 
 /**

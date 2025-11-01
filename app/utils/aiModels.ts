@@ -1,4 +1,11 @@
-// Tipos para los modelos
+import {
+  MODEL_REGISTRY,
+  getDefaultModelForPlan as _getDefaultModelForPlan,
+  getModelsForPlan as _getModelsForPlan,
+  getModelProvider as _getModelProvider,
+} from './model-registry';
+
+// Tipos para los modelos (compatible con código existente)
 export type AIModel = {
   value: string;
   label: string;
@@ -9,56 +16,19 @@ export type AIModel = {
   badge?: string;
 };
 
-// Modelos disponibles - priorizando calidad y estabilidad
-export const AI_MODELS: AIModel[] = [
-  // Modelos Enterprise - GPT-5 Mini y Claude 3.5 Haiku
-  {
-    value: "gpt-5-mini",
-    label: "GPT-5 Mini",
-    category: "ENTERPRISE",
-    provider: "openai-direct",
-    tier: "enterprise",
-    badge: "Enterprise default",
-  },
-  
-  {
-    value: "claude-3-5-haiku-20241022", 
-    label: "Claude 3.5 Haiku",
-    category: "ENTERPRISE",
-    provider: "anthropic-direct",
-    tier: "enterprise",
-  },
-  
-  // Modelos Pro - Ultra económicos con herramientas
-  {
-    value: "gpt-5-nano",
-    label: "GPT-5 Nano",
-    category: "PRO",
-    provider: "openai-direct",
-    tier: "pro",
-    recommended: true,
-    badge: "Mejor elección",
-  },
-  
-  {
-    value: "claude-3-haiku-20240307",
-    label: "Claude 3 Haiku",
-    category: "PRO",
-    provider: "anthropic-direct",
-    tier: "pro",
-  },
-
-  {
-    value: "gpt-3.5-turbo",
-    label: "GPT-3.5 Turbo",
-    category: "STARTER",
-    provider: "openai-direct",
-    tier: "starter",
-  },
-
-  // Nota: Gemini 2.5 Flash-Lite removido por incompatibilidad con herramientas via OpenRouter
-  // Nota: Llama 3.3 70B y Nemotron Ultra 253B removidos por generar respuestas problemáticas
-];
+/**
+ * Lista de modelos disponibles
+ * IMPORTADO DESDE model-registry.ts - ÚNICA FUENTE DE VERDAD
+ */
+export const AI_MODELS: AIModel[] = MODEL_REGISTRY.map(model => ({
+  value: model.id,
+  label: model.label,
+  category: model.category,
+  provider: model.provider,
+  tier: model.tier,
+  recommended: model.recommended,
+  badge: model.badge,
+}));
 
 export const MODEL_LABELS: Record<string, string> = Object.fromEntries(
   AI_MODELS.map((m) => [m.value, m.label])
@@ -68,20 +38,10 @@ export const DEFAULT_AI_MODEL = "gpt-5-nano";
 
 /**
  * Obtiene el modelo por defecto según el plan del usuario
- * Chatbots inician con gpt-5-nano (4o-mini)
+ * IMPORTADO DESDE model-registry.ts
  */
 export function getDefaultModelForPlan(plan: string): string {
-  switch (plan) {
-    case "FREE":
-      return "gpt-3.5-turbo"; // FREE usa turbo como fallback
-    case "TRIAL":
-    case "PRO":
-    case "STARTER":
-    case "ENTERPRISE":
-      return "gpt-5-nano"; // Todos usan gpt-5-nano por defecto
-    default:
-      return "gpt-5-nano";
-  }
+  return _getDefaultModelForPlan(plan);
 }
 
 // Alias para compatibilidad
@@ -102,27 +62,29 @@ export function getSmartModelForPro(hasActiveIntegrations: boolean, isComplexQue
 export const ALL_MODELS = AI_MODELS.map((m) => m.value);
 
 export const DEFAULT_MODEL_ROTATION = [
-  "claude-3-haiku-20240307", // Más económico como predeterminado
-  "claude-3-5-haiku-20241022",
-  "gpt-3.5-turbo",
+  "gemini-2.0-flash-lite", // Gemini reemplaza a GPT-3.5 Turbo
+  "claude-3-haiku-20240307",
+  "gpt-5-nano",
 ];
 
-export const FALLBACK_MODELS = {
+export const FALLBACK_MODELS: Record<string, string> = {
   "claude-3-5-sonnet-20241022": "claude-3-5-haiku-20241022",
   "claude-3-5-haiku-20241022": "claude-3-haiku-20240307",
-  "claude-3-haiku-20240307": "gpt-3.5-turbo",
-  "gpt-3.5-turbo": "gpt-5-nano", // Fallback a Nano si Turbo falla
-  "gpt-5-nano": "gpt-5-mini", // Fallback a GPT-5-mini de la misma familia
-  "gpt-5-mini": "claude-3-haiku-20240307", // Luego a Claude si falla
+  "claude-3-haiku-20240307": "gemini-2.0-flash",
+  "gemini-2.0-flash": "gemini-2.0-flash-lite",
+  "gemini-2.0-flash-lite": "gpt-5-nano",
+  "gpt-5-nano": "gpt-5-mini",
+  "gpt-5-mini": "claude-3-haiku-20240307",
+  // Legacy
+  "gpt-3.5-turbo": "gemini-2.0-flash-lite",
 };
 
 /**
  * Genera la lista de modelos fallback priorizando calidad y estabilidad
  * Se usa en endpoints para recuperación automática ante fallos
  */
-export function getModelProvider(modelValue: string): "anthropic-direct" | "openrouter" | "openai-direct" {
-  const model = AI_MODELS.find(m => m.value === modelValue);
-  return model?.provider as "anthropic-direct" | "openrouter" | "openai-direct" || "openrouter";
+export function getModelProvider(modelValue: string): "anthropic-direct" | "google-direct" | "openrouter" | "openai-direct" {
+  return _getModelProvider(modelValue) as any;
 }
 
 export function isAnthropicDirectModel(modelValue: string): boolean {
@@ -131,31 +93,19 @@ export function isAnthropicDirectModel(modelValue: string): boolean {
 
 export function generateFallbackModels(currentModel?: string): string[] {
   if (!currentModel) return DEFAULT_MODEL_ROTATION;
-  
+
   // Obtener el modelo de fallback específico o usar rotación por defecto
   const fallbackModel = FALLBACK_MODELS[currentModel];
-  
+
   return fallbackModel ? [fallbackModel] : DEFAULT_MODEL_ROTATION;
 }
 
 /**
  * Obtiene los modelos disponibles para un plan específico
+ * IMPORTADO DESDE model-registry.ts
  */
 export function getModelsForPlan(plan: string): string[] {
-  switch (plan) {
-    case "FREE":
-      return []; // Sin acceso después del trial
-    case "TRIAL":
-      return AI_MODELS.filter(m => m.tier === "starter" || m.tier === "pro").map(m => m.value); // Mismos modelos que PRO
-    case "STARTER":
-      return AI_MODELS.filter(m => m.tier === "starter").map(m => m.value);
-    case "PRO":
-      return AI_MODELS.filter(m => m.tier === "starter" || m.tier === "pro").map(m => m.value);
-    case "ENTERPRISE":
-      return AI_MODELS.map(m => m.value); // Acceso a todos
-    default:
-      return [];
-  }
+  return _getModelsForPlan(plan).map(m => m.id);
 }
 
 /**

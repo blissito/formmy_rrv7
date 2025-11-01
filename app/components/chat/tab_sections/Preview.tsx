@@ -136,7 +136,7 @@ export const PreviewForm = ({
     imageResult?.publicUrl &&
       formData.append("avatarUrl", imageResult.publicUrl);
     try {
-      const response = await fetch("/api/v0/chatbot", {
+      const response = await fetch("/api/v1/chatbot", {
         method: "POST",
         body: formData,
       });

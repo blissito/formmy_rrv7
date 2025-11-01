@@ -129,6 +129,7 @@ export default [
 
   // API v0 routes - Motor AgentEngine_v0
   route("api/v0/chatbot", "routes/api.v0.chatbot.ts"),
+  route("api/v1/chatbot", "routes/api.v1.chatbot.ts"),
   route("api/v1/messages", "routes/api.v1.messages.ts"),
   route("api/v1/apikey", "routes/api.v1.apikey.ts"),
   route("api/v1/context", "routes/api.v1.context.ts"),

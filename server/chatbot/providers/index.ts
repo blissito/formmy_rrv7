@@ -1,11 +1,12 @@
 /**
  * Sistema modular de proveedores de IA
- * 
+ *
  * Exporta todas las clases y tipos necesarios para usar el sistema de proveedores
  */
 
 export * from './types';
 export * from './anthropic';
+export * from './google';
 export * from './openrouter';
 export * from './openai';
 export * from './manager';
