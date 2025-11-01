@@ -40,7 +40,7 @@ export function FormSteps({ steps, title = "Crea tu primer Formmy en 5 minutos" 
   const videoElement = (
     <video
       ref={videoRef}
-      className="object-cover h-full w-full rounded-3xl border border-outlines"
+      className="object-cover h-full w-full border rounded-3xl  border-outlines "
       muted
       playsInline
       preload="auto"

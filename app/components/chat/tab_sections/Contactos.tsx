@@ -44,11 +44,13 @@ const StatusDropdown = ({
   onChange,
   disabled,
   statusLabels,
+  hasLimitedSpace,
 }: {
   value: ContactStatus;
   onChange: (status: ContactStatus) => void;
   disabled: boolean;
   statusLabels: Record<ContactStatus, string>;
+  hasLimitedSpace?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -84,7 +86,9 @@ const StatusDropdown = ({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-2 w-40 bg-white rounded-lg shadow-lg border border-outlines overflow-hidden">
+        <div className={`absolute z-50 mt-2 w-40 bg-white rounded-lg shadow-lg border border-outlines ${
+          hasLimitedSpace ? "max-h-32 overflow-y-auto" : "overflow-hidden"
+        }`}>
           {Object.entries(statusLabels).map(([statusValue, label]) => (
             <button
               key={statusValue}
@@ -209,7 +213,6 @@ export const Contactos = ({
       t('contacts.email'),
       t('contacts.phone'),
       t('contacts.company'),
-      t('contacts.position'),
       t('contacts.contactStatus'),
       t('contacts.source'),
       t('contacts.date')
@@ -219,9 +222,8 @@ export const Contactos = ({
       contact.email || "",
       contact.phone || "",
       contact.company || "",
-      contact.position || "",
       STATUS_LABELS[contact.status || "NEW"],
-      contact.source,
+      contact.source === "chatbot" ? "web" : contact.source,
       new Date(contact.capturedAt).toLocaleDateString("es-MX"),
     ]);
 
@@ -274,7 +276,7 @@ export const Contactos = ({
   }
 
   return (
-    <section className="h-full w-full pb-4 md:pb-8">
+    <section className="min-h-fit w-full pb-4 md:pb-8">
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h3 className="text-xl font-semibold text-dark">
@@ -309,8 +311,8 @@ export const Contactos = ({
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-outlines overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-3xl border border-outlines">
+        <div className="">
           <table className="w-full table-fixed">
             <thead className="bg-surfaceTwo border-b border-outlines">
               <tr>
@@ -320,13 +322,10 @@ export const Contactos = ({
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
                   {t('contacts.phone')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[14%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[16%]">
                   {t('contacts.company')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
-                  {t('contacts.position')}
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[11%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[13%]">
                   {t('contacts.date')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[9%]">
@@ -365,11 +364,6 @@ export const Contactos = ({
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="text-sm text-metal truncate">
-                      {contact.position || "-"}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-irongray truncate">
                       {new Date(contact.capturedAt).toLocaleDateString("es-MX", {
                         year: "numeric",
@@ -396,6 +390,7 @@ export const Contactos = ({
                         onChange={(newStatus) => handleStatusChange(contact.id, newStatus)}
                         disabled={statusFetcher.state !== "idle"}
                         statusLabels={STATUS_LABELS}
+                        hasLimitedSpace={filteredContacts.length < 3}
                       />
                     </div>
                   </td>
@@ -428,7 +423,6 @@ export const Contactos = ({
             </tbody>
           </table>
         </div>
-
         {filteredContacts.length === 0 && searchTerm && (
           <div className="py-12 text-center">
             <p className="text-metal">

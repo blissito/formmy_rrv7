@@ -26,6 +26,7 @@ export interface ExportedConversation {
   sessionId: string;
   visitorIp?: string | null;
   visitorId?: string | null;
+  origin: string; // "whatsapp" | "web"
   status: ConversationStatus;
   startedAt: Date;
   endedAt?: Date | null;
@@ -58,6 +59,28 @@ export class ExportError extends Error {
 }
 
 /**
+ * Determine conversation origin (whatsapp or web) based on multiple signals
+ */
+function getConversationOrigin(conversation: Conversation, messages: Message[]): string {
+  // Check sessionId format
+  if (conversation.sessionId?.startsWith("whatsapp_")) {
+    return "whatsapp";
+  }
+
+  // Check if any message has WhatsApp channel
+  if (messages.some(msg => msg.channel === "whatsapp")) {
+    return "whatsapp";
+  }
+
+  // Check if visitorId looks like a phone number
+  if (conversation.visitorId && /^\+[\d\s-()]{10,}$/.test(conversation.visitorId)) {
+    return "whatsapp";
+  }
+
+  return "web";
+}
+
+/**
  * Fetches conversations for export with optional date filtering
  */
 async function fetchConversationsForExport(
@@ -87,28 +110,32 @@ async function fetchConversationsForExport(
     orderBy: { createdAt: "desc" },
   });
 
-  // If no messages are needed, return conversations as is
-  if (!includeMessages) {
-    return conversations as ExportedConversation[];
-  }
-
-  // Fetch messages for each conversation
+  // If no messages are needed, fetch messages just to determine origin
   const exportedConversations: ExportedConversation[] = [];
 
   for (const conversation of conversations) {
     const messages = await getMessagesByConversationId(conversation.id);
+    const origin = getConversationOrigin(conversation, messages);
 
-    exportedConversations.push({
-      ...conversation,
-      messages: messages.map((message) => ({
-        id: message.id,
-        content: message.content,
-        role: message.role,
-        tokens: message.tokens,
-        responseTime: message.responseTime,
-        createdAt: message.createdAt,
-      })),
-    });
+    if (!includeMessages) {
+      exportedConversations.push({
+        ...conversation,
+        origin,
+      });
+    } else {
+      exportedConversations.push({
+        ...conversation,
+        origin,
+        messages: messages.map((message) => ({
+          id: message.id,
+          content: message.content,
+          role: message.role,
+          tokens: message.tokens,
+          responseTime: message.responseTime,
+          createdAt: message.createdAt,
+        })),
+      });
+    }
   }
 
   return exportedConversations;
@@ -189,12 +216,12 @@ export async function exportConversationsToCSV(
 
     // If there are no conversations, return empty CSV with headers
     if (conversations.length === 0) {
-      return "id,sessionId,visitorIp,visitorId,status,startedAt,endedAt,messageCount,createdAt,updatedAt\n";
+      return "id,sessionId,visitorIp,visitorId,origen,status,startedAt,endedAt,messageCount,createdAt,updatedAt\n";
     }
 
     // Generate CSV for conversations
     let csv =
-      "id,sessionId,visitorIp,visitorId,status,startedAt,endedAt,messageCount,createdAt,updatedAt\n";
+      "id,sessionId,visitorIp,visitorId,origen,status,startedAt,endedAt,messageCount,createdAt,updatedAt\n";
 
     for (const conv of conversations) {
       csv +=
@@ -203,6 +230,7 @@ export async function exportConversationsToCSV(
           escapeCSV(conv.sessionId),
           escapeCSV(conv.visitorIp),
           escapeCSV(conv.visitorId),
+          escapeCSV(conv.origin),
           escapeCSV(conv.status),
           formatDateForCSV(conv.startedAt),
           formatDateForCSV(conv.endedAt),

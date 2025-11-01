@@ -1,4 +1,5 @@
-import type { Chatbot, Message, User } from "@prisma/client";
+import type { Chatbot, User } from "@prisma/client";
+import type { UIMessage } from "~/server/chatbot/conversationTransformer.server";
 import { ChipTabs, useChipTabs } from "../common/ChipTabs";
 import { Avatar } from "../Avatar";
 import { useState, useEffect, useRef, type ReactNode, forwardRef } from "react";
@@ -25,7 +26,7 @@ type ConversationsProps = {
 interface Conversation {
   id: string;
   chatbotId: string;
-  messages: Message[];
+  messages: UIMessage[];
   userName: string;
   userEmail: string;
   lastMessage: string;
@@ -1040,20 +1041,30 @@ const ActionButtons = ({ conversation }: { conversation?: Conversation }) => {
   const handleDownloadCSV = () => {
     if (!conversation) return;
 
-    const headers = ["Fecha/Hora", "Rol", "Mensaje"];
+    const headers = ["Fecha", "Hora", "Rol", "Mensaje"];
     const rows = conversation.messages.map(message => {
-      const timestamp = new Date(message.createdAt).toLocaleString('es-MX', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
+      // Manejar fecha que puede venir como string o Date desde el servidor
+      let fecha = "Sin fecha";
+      let hora = "";
+
+      if (message.createdAt) {
+        const dateObj = new Date(message.createdAt);
+        fecha = dateObj.toLocaleDateString('es-MX', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        hora = dateObj.toLocaleTimeString('es-MX', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      }
+
       const role = message.role === "USER" ? "Usuario" : "Asistente";
       const content = `"${message.content.replace(/"/g, '""')}"`;
 
-      return [timestamp, role, content].join(",");
+      return [fecha, hora, role, content].join(",");
     });
 
     const csvContent = [headers.join(","), ...rows].join("\n");
@@ -1218,7 +1229,7 @@ export const ConversationsPreview = ({
   );
 };
 
-export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: Message; chatbotAvatarUrl?: string }) => {
+export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: UIMessage; chatbotAvatarUrl?: string }) => {
   return message.role === "USER" ? (
     <UserMessage message={message} />
   ) : (
@@ -1226,7 +1237,7 @@ export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: Message;
   );
 };
 
-const UserMessage = ({ message }: { message: Message }) => {
+const UserMessage = ({ message }: { message: UIMessage }) => {
   return (
     <div className="justify-end flex items-start gap-2">
       <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
@@ -1371,7 +1382,7 @@ const LIST_STYLES = `
  * puede guardarse como "SHOT" (Ejemplo) para este agente.
  * Pueden existir ejemplos positivos y negativos 👎🏼
  */
-const AssistantMessage = ({ message, avatarUrl }: { message: Message; avatarUrl?: string }) => {
+const AssistantMessage = ({ message, avatarUrl }: { message: UIMessage; avatarUrl?: string }) => {
   const markdownComponents = {
     a: ({ children, href }: any) => (
       <a href={href} target="_blank" rel="noopener noreferrer">

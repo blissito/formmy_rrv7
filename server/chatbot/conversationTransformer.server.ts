@@ -31,6 +31,7 @@ export interface UIMessage {
   role: "USER" | "ASSISTANT" | "SYSTEM";
   content: string;
   picture?: string;
+  createdAt: Date;
 }
 
 /**
@@ -96,7 +97,8 @@ function transformMessageToUI(message: Message, chatbotAvatarUrl?: string): UIMe
     content: message.content,
     picture: message.role === "USER"
       ? "/assets/chat/user-default.svg"
-      : (chatbotAvatarUrl || "/assets/chat/ghosty.svg")
+      : (chatbotAvatarUrl || "/assets/chat/ghosty.svg"),
+    createdAt: message.createdAt
   };
 }
 
