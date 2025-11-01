@@ -31,7 +31,6 @@ export class WebSearchService {
       });
       
       if (!response.ok) {
-        console.log('Búsqueda falló, devolviendo resultados vacíos');
         return {
           query,
           timestamp: new Date(),
@@ -102,7 +101,6 @@ export class WebSearchService {
             }
           } catch (error) {
             // Si falla, usar solo el snippet
-            console.log('No se pudo obtener contenido adicional para:', url);
           }
           
           results.push({

@@ -54,7 +54,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // Modo mock para desarrollo
     if (body.code === 'mock_code_12345') {
-      console.log('🧪 MOCK: Procesando embedded signup mock');
 
       return Response.json({
         success: true,
@@ -78,7 +77,6 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ error: "Usuario no autenticado" }, { status: 401 });
     }
 
-    console.log(`✅ [Embedded Signup] Usuario autenticado: ${userIdOrEmail}`);
 
     // Validar si es un ObjectID válido o email
     const isValidObjectId = /^[a-f\d]{24}$/i.test(userIdOrEmail);
@@ -94,7 +92,6 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    console.log(`✅ [Embedded Signup] Usuario encontrado en BD: ${user.id}`);
 
     // Extraer parámetros - soportar tanto formato antiguo como nuevo
     const chatbotId = body.chatbotId;
@@ -102,13 +99,6 @@ export async function action({ request }: ActionFunctionArgs) {
     const accessToken = body.accessToken;
     const userID = body.authResponse?.userID || body.userID;
 
-    console.log(`\n${'📊'.repeat(40)}`);
-    console.log(`📊 [Embedded Signup] Parámetros recibidos del cliente:`);
-    console.log(`   chatbotId: ${chatbotId}`);
-    console.log(`   code: ${code ? `${code.substring(0, 30)}...` : 'NO RECIBIDO'}`);
-    console.log(`   userID: ${userID || 'N/A'}`);
-    console.log(`   status: ${body.status || 'N/A'}`);
-    console.log(`${'📊'.repeat(40)}\n`);
 
     // Validar que el código fue recibido
     if (!code) {
@@ -136,26 +126,16 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ error: "Chatbot no encontrado" }, { status: 404 });
     }
 
-    console.log(`✅ [Embedded Signup] Chatbot validado: ${chatbot.id}`);
 
     // Extraer datos del message event si están disponibles
     const messageEventData = body.embeddedSignupData;
     if (messageEventData) {
-      console.log(`\n${'📱'.repeat(40)}`);
-      console.log(`📱 [Message Event] Datos capturados del flujo de Meta:`);
-      console.log(`   phone_number_id: ${messageEventData.phone_number_id || 'N/A'}`);
-      console.log(`   waba_id: ${messageEventData.waba_id || 'N/A'}`);
-      console.log(`   business_id: ${messageEventData.business_id || 'N/A'}`);
       if (messageEventData.ad_account_ids && messageEventData.ad_account_ids.length > 0) {
-        console.log(`   ad_account_ids: ${messageEventData.ad_account_ids.join(', ')}`);
       }
       if (messageEventData.page_ids && messageEventData.page_ids.length > 0) {
-        console.log(`   page_ids: ${messageEventData.page_ids.join(', ')}`);
       }
       if (messageEventData.dataset_ids && messageEventData.dataset_ids.length > 0) {
-        console.log(`   dataset_ids: ${messageEventData.dataset_ids.join(', ')}`);
       }
-      console.log(`${'📱'.repeat(40)}\n`);
     } else {
       console.warn(`⚠️ [Message Event] No se recibieron datos del message event (puede ser normal si el evento aún no llegó)`);
     }
@@ -172,9 +152,6 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    console.log(`🔄 [Embedded Signup] Iniciando intercambio de código por token de larga duración...`);
-    console.log(`📋 [Embedded Signup] Client ID (App ID): ${FACEBOOK_APP_ID}`);
-    console.log(`🔐 [Embedded Signup] Code recibido: ${code?.substring(0, 20)}...`);
 
     // Intercambiar el código por un access token de larga duración
     // NOTA: El redirect_uri DEBE coincidir con la URL de la página donde se ejecutó FB.login()
@@ -188,7 +165,6 @@ export async function action({ request }: ActionFunctionArgs) {
     tokenExchangeUrl.searchParams.append('code', code);
     tokenExchangeUrl.searchParams.append('redirect_uri', redirectUri);
 
-    console.log(`🔗 [Embedded Signup] Redirect URI: ${redirectUri}`);
 
     const tokenResponse = await fetch(tokenExchangeUrl.toString());
 
@@ -227,7 +203,6 @@ export async function action({ request }: ActionFunctionArgs) {
     const tokenData: MetaTokenExchangeResponse = await tokenResponse.json();
     const longLivedToken = tokenData.access_token;
 
-    console.log(`✅ [Embedded Signup] Token de larga duración obtenido exitosamente`);
 
     // 2. Obtener información del Business Account y Phone Number
     const businessAccountUrl = `https://graph.facebook.com/v21.0/${userID}/businesses`;
@@ -287,8 +262,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // 3.5. Validación cruzada con datos del message event
     if (messageEventData) {
-      console.log(`\n${'🔍'.repeat(40)}`);
-      console.log(`🔍 [Validación] Comparando IDs del message event vs API de Meta:`);
 
       // Validar phone_number_id
       if (messageEventData.phone_number_id && messageEventData.phone_number_id !== phoneNumber.id) {
@@ -297,7 +270,6 @@ export async function action({ request }: ActionFunctionArgs) {
         console.warn(`   Meta API: ${phoneNumber.id}`);
         console.warn(`   → Usando valor de Meta API (más confiable)`);
       } else if (messageEventData.phone_number_id === phoneNumber.id) {
-        console.log(`✅ [Validación] phone_number_id coincide: ${phoneNumber.id}`);
       }
 
       // Validar waba_id (business account)
@@ -307,16 +279,12 @@ export async function action({ request }: ActionFunctionArgs) {
         console.warn(`   Meta API: ${businessAccount.id}`);
         console.warn(`   → Usando valor de Meta API (más confiable)`);
       } else if (messageEventData.waba_id === businessAccount.id) {
-        console.log(`✅ [Validación] waba_id coincide: ${businessAccount.id}`);
       }
 
       // Informar sobre business_id (es adicional, no lo obtenemos de la API)
       if (messageEventData.business_id) {
-        console.log(`ℹ️ [Validación] business_id del message event: ${messageEventData.business_id}`);
-        console.log(`   (Este ID solo está disponible vía message event)`);
       }
 
-      console.log(`${'🔍'.repeat(40)}\n`);
     }
 
     // 4. Generar un webhook verify token único
@@ -348,7 +316,6 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     // 6. Crear o actualizar la integración en la base de datos
-    console.log(`💾 [Embedded Signup] Guardando integración en BD...`);
 
     const encryptedToken = encryptText(longLivedToken);
 
@@ -363,7 +330,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (existingIntegration) {
       // Actualizar integración existente
-      console.log(`🔄 [Embedded Signup] Actualizando integración existente: ${existingIntegration.id}`);
       integration = await db.integration.update({
         where: { id: existingIntegration.id },
         data: {
@@ -376,7 +342,6 @@ export async function action({ request }: ActionFunctionArgs) {
       });
     } else {
       // Crear nueva integración
-      console.log(`✨ [Embedded Signup] Creando nueva integración para chatbot: ${chatbotId}`);
       integration = await db.integration.create({
         data: {
           chatbotId: chatbotId,
@@ -390,41 +355,24 @@ export async function action({ request }: ActionFunctionArgs) {
       });
     }
 
-    console.log(`✅ [Embedded Signup] Integración guardada en BD: ${integration.id}`);
-    console.log(`📱 [Embedded Signup] Phone Number ID: ${phoneNumber.id}`);
-    console.log(`🏢 [Embedded Signup] Business Account ID: ${businessAccount.id}`);
 
     // 7. Sincronizar historial de conversaciones (opcional, en background)
     // Esto se puede hacer con un job en background para no bloquear la respuesta
     // Por ahora solo marcamos que necesita sincronización
 
-    console.log(`\n${'✅'.repeat(40)}`);
-    console.log(`✅ [Embedded Signup] PROCESO COMPLETADO EXITOSAMENTE`);
-    console.log(`✅ Usuario: ${user.email || user.id}`);
-    console.log(`✅ Chatbot: ${chatbot.name} (${chatbot.id})`);
-    console.log(`✅ Phone: ${phoneNumber.display_phone_number}`);
-    console.log(`✅ Phone Number ID: ${phoneNumber.id}`);
-    console.log(`✅ Business Account ID (WABA): ${businessAccount.id}`);
-    console.log(`✅ Integration ID: ${integration.id}`);
 
     // Información adicional del message event (si está disponible)
     if (messageEventData) {
-      console.log(`\n📊 [Message Event] Assets adicionales capturados:`);
       if (messageEventData.business_id) {
-        console.log(`   💼 Business Portfolio ID: ${messageEventData.business_id}`);
       }
       if (messageEventData.ad_account_ids && messageEventData.ad_account_ids.length > 0) {
-        console.log(`   📢 Ad Accounts (${messageEventData.ad_account_ids.length}): ${messageEventData.ad_account_ids.join(', ')}`);
       }
       if (messageEventData.page_ids && messageEventData.page_ids.length > 0) {
-        console.log(`   📄 Pages (${messageEventData.page_ids.length}): ${messageEventData.page_ids.join(', ')}`);
       }
       if (messageEventData.dataset_ids && messageEventData.dataset_ids.length > 0) {
-        console.log(`   📊 Datasets (${messageEventData.dataset_ids.length}): ${messageEventData.dataset_ids.join(', ')}`);
       }
     }
 
-    console.log(`${'✅'.repeat(40)}\n`);
 
     return Response.json({
       success: true,

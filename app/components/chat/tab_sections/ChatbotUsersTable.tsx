@@ -113,7 +113,6 @@ export const UserRow = ({
       }
     } else if (action === "reenviar") {
       // TODO: Implementar reenvío de invitación
-      console.log("Reenviar invitación");
     }
   };
 

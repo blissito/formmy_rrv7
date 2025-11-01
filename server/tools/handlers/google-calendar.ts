@@ -30,16 +30,6 @@ export async function createCalendarEventHandler(
   context: ToolContext
 ): Promise<ToolResponse> {
   try {
-    console.log(`\n${'📅'.repeat(40)}`);
-    console.log(`📅 [createCalendarEvent] INICIANDO`);
-    console.log(`   userId: ${context.userId}`);
-    console.log(`   isGhosty: ${context.isGhosty}`);
-    console.log(`   chatbotId: ${context.chatbotId}`);
-    console.log(`   selectedChatbotId: ${input.chatbotId}`);
-    console.log(`   summary: ${input.summary}`);
-    console.log(`   startTime: ${input.startTime}`);
-    console.log(`   endTime: ${input.endTime}`);
-    console.log(`${'📅'.repeat(40)}\n`);
 
     // Determinar qué chatbot usar:
     // - Chatbot normal: usa su propio chatbotId
@@ -57,7 +47,6 @@ export async function createCalendarEventHandler(
 
     const entityId = `chatbot_${targetChatbotId}`;
 
-    console.log(`   ➡️  Usando entityId: ${entityId}`);
 
     // Ejecutar la acción usando Composio
     // Composio maneja automáticamente OAuth, refresh tokens, y llamadas API
@@ -77,7 +66,6 @@ export async function createCalendarEventHandler(
       }
     );
 
-    console.log(`✅ Evento creado exitosamente:`, result);
 
     return {
       success: true,
@@ -209,13 +197,6 @@ export async function listCalendarEventsHandler(
   context: ToolContext
 ): Promise<ToolResponse> {
   try {
-    console.log(`\n${'📅'.repeat(40)}`);
-    console.log(`📅 [listCalendarEvents] INICIANDO`);
-    console.log(`   userId: ${context.userId}`);
-    console.log(`   isGhosty: ${context.isGhosty}`);
-    console.log(`   period: ${input.period || 'none'}`);
-    console.log(`   maxResults: ${input.maxResults || 10}`);
-    console.log(`${'📅'.repeat(40)}\n`);
 
     const targetChatbotId = context.isGhosty && input.chatbotId
       ? input.chatbotId
@@ -238,8 +219,6 @@ export async function listCalendarEventsHandler(
       const range = calculateDateRange(input.period);
       timeMin = range.timeMin;
       timeMax = range.timeMax;
-      console.log(`   📅 Período calculado: ${input.period}`);
-      console.log(`   📅 Rango: ${new Date(timeMin).toLocaleString('es-MX')} - ${new Date(timeMax).toLocaleString('es-MX')}`);
     } else {
       timeMin = input.timeMin || new Date().toISOString();
       timeMax = input.timeMax;
@@ -260,7 +239,6 @@ export async function listCalendarEventsHandler(
       }
     );
 
-    console.log(`✅ Eventos obtenidos:`, result);
 
     // Formatear eventos para respuesta
     const events = (result as any).data?.items || [];
@@ -322,11 +300,6 @@ export async function updateCalendarEventHandler(
   context: ToolContext
 ): Promise<ToolResponse> {
   try {
-    console.log(`\n${'📅'.repeat(40)}`);
-    console.log(`📅 [updateCalendarEvent] INICIANDO`);
-    console.log(`   userId: ${context.userId}`);
-    console.log(`   eventId: ${input.eventId}`);
-    console.log(`${'📅'.repeat(40)}\n`);
 
     const targetChatbotId = context.isGhosty && input.chatbotId
       ? input.chatbotId
@@ -362,7 +335,6 @@ export async function updateCalendarEventHandler(
       }
     );
 
-    console.log(`✅ Evento actualizado:`, result);
 
     return {
       success: true,
@@ -392,11 +364,6 @@ export async function deleteCalendarEventHandler(
   context: ToolContext
 ): Promise<ToolResponse> {
   try {
-    console.log(`\n${'📅'.repeat(40)}`);
-    console.log(`📅 [deleteCalendarEvent] INICIANDO`);
-    console.log(`   userId: ${context.userId}`);
-    console.log(`   eventId: ${input.eventId}`);
-    console.log(`${'📅'.repeat(40)}\n`);
 
     const targetChatbotId = context.isGhosty && input.chatbotId
       ? input.chatbotId
@@ -422,7 +389,6 @@ export async function deleteCalendarEventHandler(
       }
     );
 
-    console.log(`✅ Evento eliminado:`, result);
 
     return {
       success: true,

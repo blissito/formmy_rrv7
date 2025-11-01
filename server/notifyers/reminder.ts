@@ -268,7 +268,6 @@ export const sendReminderEmail = async ({ email, title, date, chatbotName }: Rem
     `,
     })
     .then((info) => {
-      console.log("✅ Reminder email sent: %s", info.messageId);
       return info;
     })
     .catch((error) => {

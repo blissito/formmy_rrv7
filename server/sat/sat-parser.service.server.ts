@@ -68,7 +68,6 @@ export interface ParseOptions {
  * Costo: GRATIS
  */
 export async function parseXMLLocal(xmlBuffer: Buffer): Promise<ParsedInvoice> {
-  console.log("📄 [SAT Parser] Parseando XML local (GRATIS)...");
 
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -135,7 +134,6 @@ export async function parseXMLLocal(xmlBuffer: Buffer): Promise<ParsedInvoice> {
  * Costo: GRATIS
  */
 export async function parsePDFSimple(pdfBuffer: Buffer): Promise<ParsedInvoice | { needsAdvancedParsing: true }> {
-  console.log("📄 [SAT Parser] Parseando PDF simple (GRATIS)...");
 
   const uint8Array = new Uint8Array(pdfBuffer);
   const result = await extractText(uint8Array);
@@ -152,7 +150,6 @@ export async function parsePDFSimple(pdfBuffer: Buffer): Promise<ParsedInvoice |
 
   // Si falta data crítica, necesita LlamaParse
   if (!uuid || !rfcEmisor || !total) {
-    console.log("⚠️ [SAT Parser] Datos incompletos, necesita LlamaParse");
     return { needsAdvancedParsing: true };
   }
 
@@ -196,7 +193,6 @@ export async function parseLlamaParse(
   mode: "COST_EFFECTIVE" | "AGENTIC",
   userId: string
 ): Promise<ParsedInvoice> {
-  console.log(`📄 [SAT Parser] Parseando con LlamaParse ${mode}...`);
 
   // Determinar modo de parsing
   const parsingMode: ParsingMode = mode === "COST_EFFECTIVE" ? "COST_EFFECTIVE" : "AGENTIC";
@@ -263,7 +259,6 @@ export async function smartParse(
   userId: string,
   options: ParseOptions = {}
 ): Promise<ParsedInvoice> {
-  console.log(`🧠 [SAT Parser] Smart Parse iniciado para tipo: ${fileType}`);
 
   // Nivel 1: XML Local
   if (fileType === "application/xml" || fileType === "text/xml") {
@@ -280,7 +275,6 @@ export async function smartParse(
     try {
       const result = await parsePDFSimple(fileBuffer);
       if ("needsAdvancedParsing" in result) {
-        console.log("⬆️ [SAT Parser] Escalando a LlamaParse...");
       } else {
         return result;
       }

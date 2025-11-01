@@ -11,7 +11,6 @@ export const useStripe = () => {
       body,
     });
     const url = await response.text();
-    console.log("URL: ", url);
     setIsFetching(false);
     if (!url) return url;
 

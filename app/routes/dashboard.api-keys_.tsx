@@ -29,7 +29,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   } catch (error: any) {
     // Si falla por API keys huérfanas, limpiarlas
     if (error.message?.includes('Field chatbot is required to return data, got `null` instead')) {
-      console.log('[API Keys] Detectadas API keys huérfanas, limpiando...');
 
       // Obtener todas las API keys sin include
       const allKeys = await db.apiKey.findMany({
@@ -53,7 +52,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         await db.apiKey.deleteMany({
           where: { id: { in: keysToDelete } },
         });
-        console.log(`[API Keys] ${keysToDelete.length} API keys huérfanas eliminadas`);
       }
 
       // Reintentar la query
@@ -78,7 +76,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     orderBy: { createdAt: "desc" },
   });
 
-  console.log(`[API Keys] Usuario ${user.email} tiene ${chatbots.length} chatbots ACTIVE`);
 
   // Obtener créditos disponibles
   const credits = await getAvailableCredits(user.id);
@@ -171,7 +168,6 @@ export default function DashboardAPIKeys() {
     ? (actionData as any).apiKey
     : null;
 
-  console.log('[Client] Chatbots cargados:', chatbots.length, chatbots);
 
   const handleBuyCredits = (packageSize: string) => {
     const formData = new FormData();

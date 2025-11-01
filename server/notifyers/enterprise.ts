@@ -261,7 +261,6 @@ export const sendEnterpriseEmail = async ({ email, name }: EnterpriseEmail) => {
       `,
     })
     .then((r: any) => {
-      console.log('Enterprise email sent successfully:', r);
     })
     .catch((e: Error) => console.error('Error sending Enterprise email:', e));
 };

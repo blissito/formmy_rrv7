@@ -36,7 +36,6 @@ export async function loader({ request }: { request: Request }) {
       };
     }
 
-    console.log(chatbot, 'chatbot');
 
     // 🔒 SEGURIDAD: CSP frame-ancestors para bloquear embeddings no autorizados
     // Implementado: Oct 16, 2025
@@ -101,7 +100,6 @@ export default function ChatEmbedRoute() {
       // Procesar mensaje de parent domain
       if (event.data.type === 'formmy-parent-domain') {
         const { domain } = event.data;
-        console.log('🔒 Parent domain recibido:', domain);
         setParentDomain(domain);
       }
     };

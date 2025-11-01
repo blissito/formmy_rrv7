@@ -57,7 +57,6 @@ async function updateUserChatbotModels(userId: string, newPlan: string) {
     }
   });
   
-  console.log(`[Webhook] Modelos de chatbots actualizados para el usuario ${userId} con plan ${newPlan}, modelo por defecto: ${defaultModel}`);
 }
 
 /**
@@ -141,9 +140,6 @@ export async function handleSubscriptionCreated(
   // Actualizar modelos de chatbots según el nuevo plan
   await updateUserChatbotModels(user.id, plan);
 
-  console.log(
-    `[Webhook] Suscripción ${plan} creada para el usuario: ${user.email}`
-  );
 
   // Enviar email según el plan
   try {
@@ -165,9 +161,6 @@ export async function handleSubscriptionCreated(
     );
 
     if (result.success) {
-      console.log(
-        `[Webhook] Conversión a ${plan} registrada para referido: ${user.email}`
-      );
     } else {
       console.error(
         `[Webhook] Error al registrar conversión para referido: ${result.message}`
@@ -204,9 +197,6 @@ export async function handleSubscriptionUpdated(subscription: StripeSubscription
   // Actualizar modelos de chatbots según el nuevo plan
   await updateUserChatbotModels(user.id, newPlan);
 
-  console.log(
-    `[Webhook] Suscripción actualizada para ${user.email}: ${subscription.status}`
-  );
 }
 
 /**
@@ -238,7 +228,6 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
   // Actualizar modelos de chatbots según el nuevo plan FREE
   await updateUserChatbotModels(user.id, "FREE");
 
-  console.log(`[Webhook] Suscripción eliminada para: ${user.email}`);
 
   // Send cancellation email
   try {
@@ -268,13 +257,11 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
  * Maneja completado de checkout (one-time payments como compra de créditos o conversaciones)
  */
 export async function handleCheckoutCompleted(session: any) {
-  console.log(`[Webhook] Processing checkout.session.completed: ${session.id}`);
 
   // Verificar metadata
   const metadata = session.metadata;
 
   if (!metadata || !metadata.type) {
-    console.log("[Webhook] Checkout session sin metadata de tipo, ignorando");
     return;
   }
 
@@ -298,7 +285,6 @@ export async function handleCheckoutCompleted(session: any) {
   } else if (metadata.type === "conversations") {
     await handleConversationsPurchase(user, metadata);
   } else {
-    console.log(`[Webhook] Tipo de compra desconocido: ${metadata.type}`);
   }
 }
 
@@ -316,9 +302,6 @@ async function handleCreditsPurchase(user: any, metadata: any) {
   try {
     const result = await addPurchasedCredits(user.id, creditsAmount);
 
-    console.log(
-      `[Webhook] ✅ ${creditsAmount} créditos agregados a ${user.email}. Nuevo balance: ${result.newBalance}`
-    );
 
     // Enviar email de confirmación de compra
     try {
@@ -359,9 +342,6 @@ async function handleConversationsPurchase(user: any, metadata: any) {
       }
     });
 
-    console.log(
-      `[Webhook] ✅ ${conversationsAmount} conversaciones agregadas a ${user.email}. Nuevo total: ${updatedUser.purchasedConversations}`
-    );
 
     // Enviar email de confirmación de compra
     try {

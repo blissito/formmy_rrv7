@@ -60,22 +60,7 @@ export const Conversations = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const hasMore = allLoadedConversations.length < totalConversations;
 
-  console.log("🔍 DEBUG - Conversations Props:", {
-    conversationsCount: conversations.length,
-    totalConversations,
-    hasToggleManual: !!onToggleManual,
-    hasSendManual: !!onSendManualResponse,
-    hasDeleteConversation: !!onDeleteConversation,
-    firstConversationId: conversations.length > 0 ? conversations[0].id : 'none',
-    conversationIDs: conversations.map(c => c.id)
-  });
 
-  console.log("📊 Pagination state:", {
-    allLoadedCount: allLoadedConversations.length,
-    totalConversations,
-    hasMore,
-    isLoadingMore
-  });
 
   // Actualizar cuando cambien las props
   useEffect(() => {
@@ -84,29 +69,22 @@ export const Conversations = ({
 
   // Función para cargar más conversaciones
   const loadMoreConversations = async () => {
-    console.log("🔄 loadMoreConversations called", { isLoadingMore, hasMore, currentCount: allLoadedConversations.length });
 
     if (isLoadingMore || !hasMore) {
-      console.log("⏸️ Skipping load - already loading or no more to load");
       return;
     }
 
     setIsLoadingMore(true);
     try {
       const url = `/api/v1/conversations/load-more?chatbotId=${chatbot.id}&skip=${allLoadedConversations.length}`;
-      console.log("📡 Fetching:", url);
 
       const response = await fetch(url);
-      console.log("📡 Response status:", response.status);
 
       const data = await response.json();
-      console.log("📦 Data received:", data);
 
       if (data.conversations && data.conversations.length > 0) {
-        console.log("✅ Adding conversations:", data.conversations.length);
         setAllLoadedConversations(prev => [...prev, ...data.conversations]);
       } else {
-        console.log("⚠️ No conversations in response");
       }
     } catch (error) {
       console.error("❌ Error loading more conversations:", error);
@@ -161,7 +139,6 @@ export const Conversations = ({
     if (selectedConversationId && actualConversations.length > 0) {
       const targetConv = actualConversations.find(c => c.id === selectedConversationId);
       if (targetConv && targetConv.id !== conversation?.id) {
-        console.log("🔗 Navigating to conversation from URL:", selectedConversationId);
         setConversation(targetConv);
       }
     }
@@ -172,14 +149,9 @@ export const Conversations = ({
     if (actualConversations.length > 0 && conversation) {
       const updated = actualConversations.find(c => c.id === conversation.id);
       if (updated) {
-        console.log("🔄 Updating selected conversation:", {
-          id: updated.id,
-          manualMode: updated.manualMode
-        });
         setConversation(updated);
       } else {
         // Si la conversación seleccionada ya no existe (fue eliminada), seleccionar la primera
-        console.log("⚠️ Selected conversation no longer exists, selecting first available");
         setConversation(actualConversations[0]);
       }
     }
@@ -199,7 +171,6 @@ export const Conversations = ({
 
   // 🎯 Toggle que sincroniza con backend
   const handleToggleManual = async (conversationId: string) => {
-    console.log("🔄 Toggle with backend sync for:", conversationId);
 
     // Actualizar estado local inmediatamente para UX responsiva
     setLocalManualModes(prev => ({
@@ -211,7 +182,6 @@ export const Conversations = ({
     if (onToggleManual) {
       try {
         await onToggleManual(conversationId);
-        console.log("✅ Backend sync completed");
       } catch (error) {
         console.error("❌ Backend sync failed:", error);
         // Revertir estado local si falló
@@ -224,7 +194,6 @@ export const Conversations = ({
   };
 
   const handleSendManualResponse = onSendManualResponse || (async (conversationId: string, message: string) => {
-    console.log("⚠️ No onSendManualResponse function provided - using fallback");
     alert("⚠️ Función de envío no disponible");
   });
 
@@ -235,7 +204,6 @@ export const Conversations = ({
       event.stopPropagation();
     }
 
-    console.log("⭐ Toggle favorite with backend sync for:", conversationId);
 
     // Actualizar estado local inmediatamente para UX responsiva
     setLocalFavorites(prev => ({
@@ -247,7 +215,6 @@ export const Conversations = ({
     if (onToggleFavorite) {
       try {
         await onToggleFavorite(conversationId);
-        console.log("✅ Favorite backend sync completed");
       } catch (error) {
         console.error("❌ Favorite backend sync failed:", error);
         // Revertir estado local si falló
@@ -606,12 +573,6 @@ const ChatHeader = ({
   const [isToggling, setIsToggling] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  console.log("🔍 DEBUG - ChatHeader:", {
-    conversationId: conversation.id,
-    localManualMode,
-    hasToggleFunction: !!onToggleManual,
-    isToggling
-  });
 
   // Detectar si es conversación de WhatsApp
   // Si tel es un número válido (no "N/A" o "Usuario Web") → es WhatsApp
@@ -619,17 +580,12 @@ const ChatHeader = ({
     (conversation.tel !== "N/A" && conversation.tel.startsWith("+") && conversation.tel.length >= 10);
 
   const handleToggleManual = () => {
-    console.log("🔄 Local toggle clicked:", conversation.id);
     if (onToggleManual) {
       onToggleManual(conversation.id);
     }
   };
 
   const handleDeleteConversation = () => {
-    console.log("🗑️ ChatHeader delete clicked", {
-      conversationId: conversation.id,
-      hasDeleteFunction: !!onDeleteConversation
-    });
 
     if (!onDeleteConversation) {
       console.error("❌ No onDeleteConversation function provided");
@@ -638,10 +594,8 @@ const ChatHeader = ({
     }
 
     if (confirm("¿Estás seguro de que deseas eliminar esta conversación? Esta acción no se puede deshacer.")) {
-      console.log("✅ User confirmed deletion, calling onDeleteConversation");
       onDeleteConversation(conversation.id);
     } else {
-      console.log("❌ User cancelled deletion");
     }
   };
 
@@ -809,7 +763,6 @@ const ManualResponseInput = ({
         // TEMP: Show ALL templates for debugging (including PENDING)
         // TODO: Revert to only APPROVED before production
         const allTemplates = data.templates || [];
-        console.log('📋 Templates recibidos:', allTemplates.map((t: any) => ({ name: t.name, status: t.status })));
         setTemplates(allTemplates);
 
         // Original: Only show APPROVED templates
@@ -1170,12 +1123,6 @@ export const ConversationsPreview = ({
   }, [conversation?.messages]);
 
   // Log conversation state for debugging
-  console.log("🔍 ConversationsPreview render:", {
-    conversationId: conversation?.id,
-    manualMode: conversation?.manualMode,
-    hasToggleFunction: !!onToggleManual,
-    hasSendFunction: !!onSendManualResponse
-  });
 
   return (
     <div className="h-full flex flex-col max-h-[calc(100vh-320px)]">

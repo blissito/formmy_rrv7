@@ -9,7 +9,6 @@ export async function authenticateRequest(request: Request, formData: FormData) 
     const devToken = request.headers.get('x-dev-token') || request.headers.get('x-dev-authorization');
 
     if (devToken && process.env.DEVELOPMENT_TOKEN && devToken === process.env.DEVELOPMENT_TOKEN) {
-      console.log('🛠️ Development token authenticated - using mock PRO user');
       return {
         user: {
           id: 'dev-user-mock-pro',
@@ -24,7 +23,6 @@ export async function authenticateRequest(request: Request, formData: FormData) 
     const apiKey = request.headers.get('x-api-key') || request.headers.get('authorization')?.replace('Bearer ', '');
 
     if (apiKey) {
-      console.log('🔑 Authenticating with API Key');
       const user = await authenticateWithApiKey(apiKey);
       if (user) {
         return {
@@ -53,7 +51,6 @@ export async function authenticateRequest(request: Request, formData: FormData) 
       };
     } catch (authError) {
       // Si falla la autenticación por cookie, permitir acceso anónimo
-      console.log('👤 No authenticated user - creating anonymous visitor');
 
       // Generar visitorId único o usar el existente del cliente
       const visitorId = formData.get('visitorId') as string ||
@@ -103,14 +100,9 @@ async function authenticateWithApiKey(apiKey: string) {
     });
 
     if (!apiKeyRecord || !apiKeyRecord.user) {
-      console.log('❌ Invalid API key');
       return null;
     }
 
-    console.log('✅ API Key authentication successful:', {
-      userId: apiKeyRecord.user.id,
-      plan: apiKeyRecord.user.plan
-    });
 
     return apiKeyRecord.user;
   } catch (error) {

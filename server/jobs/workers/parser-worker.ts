@@ -29,11 +29,9 @@ export async function registerParserWorker() {
     async (job: Job<ParserJobData>) => {
       const { jobId, fileUrl, fileKey, llamaApiKey } = job.attrs.data;
 
-      console.log(`[ParserWorker] Starting job ${jobId}`);
 
       try {
         await processParsingJob(jobId, fileUrl, fileKey, llamaApiKey);
-        console.log(`[ParserWorker] Job ${jobId} completed successfully`);
       } catch (error) {
         console.error(`[ParserWorker] Job ${jobId} failed:`, error);
         throw error; // Re-throw to mark job as failed in Agenda
@@ -41,7 +39,6 @@ export async function registerParserWorker() {
     }
   );
 
-  console.log('[ParserWorker] Registered successfully');
 }
 
 /**
@@ -52,5 +49,4 @@ export async function enqueueParsingJob(data: ParserJobData): Promise<void> {
 
   await agenda.now('process-parsing-job', data);
 
-  console.log(`[ParserWorker] Enqueued job ${data.jobId}`);
 }

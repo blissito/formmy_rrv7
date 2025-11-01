@@ -24,7 +24,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   try {
     // 1. Email de Bienvenida
-    console.log("📧 Enviando email de bienvenida...");
     await sendWelcomeEmail({
       email,
       name: "Héctor (Prueba)"
@@ -32,7 +31,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
     results.push({ type: "welcome", status: "sent" });
 
     // 2. Email de Compra de Créditos
-    console.log("📧 Enviando email de compra de créditos...");
     await sendCreditsPurchaseEmail({
       email,
       name: "Héctor",
@@ -42,7 +40,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
     results.push({ type: "credits_purchase", status: "sent" });
 
     // 3. Email de Compra de Conversaciones
-    console.log("📧 Enviando email de compra de conversaciones...");
     await sendConversationsPurchaseEmail({
       email,
       name: "Héctor",
@@ -52,7 +49,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
     results.push({ type: "conversations_purchase", status: "sent" });
 
     // 4. Email de Recordatorio
-    console.log("📧 Enviando email de recordatorio...");
     const reminderDate = new Date();
     reminderDate.setDate(reminderDate.getDate() + 2); // En 2 días
     await sendReminderEmail({
@@ -63,7 +59,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
     });
     results.push({ type: "reminder", status: "sent" });
 
-    console.log("✅ Todos los emails de prueba fueron enviados exitosamente");
 
     return Response.json({
       success: true,

@@ -29,8 +29,16 @@ export async function contextSearchHandler(
 ): Promise<ContextSearchResponse> {
   const { query, topK = 5 } = params;
 
+  console.log(`\n${'🔧'.repeat(60)}`);
+  console.log(`🔧 [CONTEXT SEARCH TOOL] Ejecutando búsqueda RAG`);
+  console.log(`   Query: "${query}"`);
+  console.log(`   TopK: ${topK}`);
+  console.log(`   ChatbotId: ${context.chatbotId || 'N/A'}`);
+  console.log(`${'🔧'.repeat(60)}\n`);
+
   // Validar que tenga chatbotId (no disponible para usuarios anónimos sin chatbot)
   if (!context.chatbotId) {
+    console.log(`❌ [CONTEXT SEARCH] Sin chatbotId - bloqueando búsqueda`);
     return {
       success: false,
       message: 'No hay base de conocimiento disponible para buscar.'
@@ -39,7 +47,9 @@ export async function contextSearchHandler(
 
   try {
     // Realizar búsqueda vectorial
+    console.log(`🔍 Llamando a vectorSearch...`);
     const results = await vectorSearch(query, context.chatbotId, topK);
+    console.log(`✅ vectorSearch completado: ${results.length} resultados`);
 
     // 🔔 Emitir fuentes al stream si hay callback disponible
     if (context.onSourcesFound && results.length > 0) {

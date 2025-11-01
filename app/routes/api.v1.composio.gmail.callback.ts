@@ -20,18 +20,6 @@ export async function loader({ request }: any) {
     const state = url.searchParams.get("state");
     const error = url.searchParams.get("error");
 
-    console.log(`\n${'📧'.repeat(40)}`);
-    console.log(`📧 [Composio Gmail Callback] OAuth callback recibido`);
-    console.log(`   Composio format:`);
-    console.log(`     status: ${status || 'N/A'}`);
-    console.log(`     connectedAccountId: ${connectedAccountId || 'N/A'}`);
-    console.log(`     appName: ${appName || 'N/A'}`);
-    console.log(`     chatbotId: ${chatbotId || 'N/A'}`);
-    console.log(`   Traditional OAuth:`);
-    console.log(`     code: ${code ? 'presente' : 'ausente'}`);
-    console.log(`     state: ${state || 'N/A'}`);
-    console.log(`     error: ${error || 'ninguno'}`);
-    console.log(`${'📧'.repeat(40)}\n`);
 
     // Handle OAuth error (tradicional)
     if (error) {
@@ -177,7 +165,6 @@ export async function loader({ request }: any) {
 
     // ✅ Composio Auth Config Flow - Ya está todo conectado
     if (status === 'success' && connectedAccountId) {
-      console.log(`✅ Composio Auth exitoso. Connected Account ID: ${connectedAccountId}`);
 
       // Guardar integración en BD si tenemos chatbotId
       if (chatbotId) {
@@ -206,7 +193,6 @@ export async function loader({ request }: any) {
             },
           });
 
-          console.log(`✅ Integración guardada/actualizada en BD para chatbot: ${chatbotId}`);
         } catch (dbError) {
           console.error('❌ Error guardando integración en BD:', dbError);
           // No fallar el OAuth por un error de BD, solo loguear

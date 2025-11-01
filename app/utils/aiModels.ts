@@ -64,11 +64,11 @@ export const MODEL_LABELS: Record<string, string> = Object.fromEntries(
   AI_MODELS.map((m) => [m.value, m.label])
 );
 
-export const DEFAULT_AI_MODEL = "claude-3-haiku-20240307";
+export const DEFAULT_AI_MODEL = "gpt-5-nano";
 
 /**
  * Obtiene el modelo por defecto según el plan del usuario
- * Chatbots inician con Claude Haiku (estable y económico)
+ * Chatbots inician con gpt-5-nano (4o-mini)
  */
 export function getDefaultModelForPlan(plan: string): string {
   switch (plan) {
@@ -76,13 +76,11 @@ export function getDefaultModelForPlan(plan: string): string {
       return "gpt-3.5-turbo"; // FREE usa turbo como fallback
     case "TRIAL":
     case "PRO":
-      return "claude-3-haiku-20240307"; // Haiku como default inicial
     case "STARTER":
-      return "gpt-3.5-turbo"; // Ultra económico para starter
     case "ENTERPRISE":
-      return "gpt-5-mini"; // Mini: máximo rendimiento para Enterprise
+      return "gpt-5-nano"; // Todos usan gpt-5-nano por defecto
     default:
-      return "gpt-3.5-turbo";
+      return "gpt-5-nano";
   }
 }
 

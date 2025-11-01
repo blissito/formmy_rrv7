@@ -536,12 +536,6 @@ export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) =
 
                 case 'widget':
                   // 🆕 Agregar widget al mensaje actual
-                  console.log(`\n${'🎨'.repeat(40)}`);
-                  console.log(`🎨 [Frontend] EVENTO WIDGET RECIBIDO`);
-                  console.log(`   Tipo: ${parsed.widgetType}`);
-                  console.log(`   ID: ${parsed.widgetId}`);
-                  console.log(`   Total widgets en mensaje: ${widgets.length + 1}`);
-                  console.log(`${'🎨'.repeat(40)}\n`);
 
                   widgets.push({
                     type: parsed.widgetType,

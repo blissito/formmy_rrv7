@@ -78,7 +78,6 @@ export const referralService: ReferralService = {
   applyReferralCredit: async (referrerId: string, amount: number) => {
     // Aquí iría la lógica para aplicar el crédito en Stripe
     // Por ahora solo lo registramos en los logs
-    console.log(`Aplicando crédito de $${amount} al referente ${referrerId}`);
     
     // TODO: Implementar lógica real con Stripe
     // await stripe.invoiceItems.create({

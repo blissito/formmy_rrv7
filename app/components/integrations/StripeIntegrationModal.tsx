@@ -30,24 +30,18 @@ export default function StripeIntegrationModal({
   
   // Debug fetcher state changes
   useEffect(() => {
-    console.log("🔍 Debug Modal - Fetcher state changed:", fetcher.state);
   }, [fetcher.state]);
   
   // Cerrar modal cuando la integración se crea exitosamente
   useEffect(() => {
-    console.log("🔍 Debug Modal - fetcher.data:", fetcher.data);
-    console.log("🔍 Debug Modal - fetcher.state:", fetcher.state);
     
     if (fetcher.data?.success && fetcher.state === "idle") {
-      console.log("✅ Debug Modal - Integración exitosa, llamando onSuccess");
-      console.log("🔍 Debug Modal - Integration data:", fetcher.data.integration);
       
       // Llamar al handler de éxito primero (esto actualiza el estado local)
       if (onSuccess) {
         onSuccess(fetcher.data.integration);
       } else {
         // Fallback: solo cerrar modal
-        console.log("⚠️ Debug Modal - No hay onSuccess handler, cerrando modal");
         onClose();
       }
       
@@ -75,8 +69,6 @@ export default function StripeIntegrationModal({
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    console.log("🔍 Debug Modal - Form submit triggered");
-    console.log("🔍 Debug Modal - Form data:", formData);
     // No prevenir default - dejar que fetcher.Form lo maneje
   };
 

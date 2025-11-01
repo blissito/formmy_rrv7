@@ -73,10 +73,6 @@ export class AgentEngine_v0 {
     // Process tools following LlamaIndex patterns
     this.initializeTools();
 
-    console.log(`🤖 AgentEngine_v0 initialized: ${config.name || 'Agent'} with ${config.model}`, {
-      toolsCount: this.availableTools.length,
-      tools: this.availableTools.map(t => t.name)
-    });
   }
 
   private initializeTools(): void {
@@ -95,7 +91,6 @@ export class AgentEngine_v0 {
       }
     }
 
-    console.log(`🔧 Tools initialized: ${this.availableTools.length} tools available`);
   }
 
   async chat(
@@ -107,24 +102,12 @@ export class AgentEngine_v0 {
     const systemMessage = this.buildSystemMessage();
     const messages = this.buildMessageHistory(systemMessage, conversationHistory, message);
 
-    console.log('🚀 AgentEngine_v0 workflow started:', {
-      agent: this.config.name || 'Agent',
-      model: this.config.model,
-      temperature: this.config.temperature,
-      messagesCount: messages.length,
-      hasTools: !!this.config.tools?.length
-    });
 
     try {
       // Workflow step 2: Route to appropriate provider
       const response = await this.executeAgentCall(messages);
 
       // Workflow step 3: Process and return response
-      console.log('✅ AgentEngine_v0 workflow completed:', {
-        contentLength: response.content.length,
-        toolsUsed: response.toolsUsed?.length || 0,
-        model: response.metadata?.model
-      });
 
       return response;
     } catch (error) {
@@ -259,11 +242,6 @@ export class AgentEngine_v0 {
       // Execute tool implementation
       const result = await tool.implementation(validatedParams, context);
 
-      console.log(`🔧 Tool executed: ${toolName}`, {
-        parameters: validatedParams,
-        hasContext: !!context,
-        resultLength: typeof result === 'string' ? result.length : 0
-      });
 
       return typeof result === 'string' ? result : JSON.stringify(result);
     } catch (error) {
@@ -303,14 +281,6 @@ export class AgentEngine_v0 {
       params.tool_choice = 'auto'; // Let the model decide when to use tools
     }
 
-    console.log('🔧 OpenAI call params:', {
-      model: params.model,
-      temperature: params.temperature ?? 'not_supported',
-      maxTokens: params.max_completion_tokens || params.max_tokens,
-      messagesCount: messages.length,
-      hasTemperature: 'temperature' in params,
-      toolsCount: this.availableTools.length
-    });
 
     const completion = await this.openai.chat.completions.create(params);
 
@@ -330,7 +300,6 @@ export class AgentEngine_v0 {
 
     // Handle tool calls (LlamaIndex workflow)
     if (message.tool_calls && message.tool_calls.length > 0) {
-      console.log(`🔧 Processing ${message.tool_calls.length} tool calls`);
 
       const toolResults: string[] = [];
 
@@ -366,14 +335,6 @@ export class AgentEngine_v0 {
     const content = message.content;
 
     // Log para debug
-    console.log('🔍 OpenAI response details:', {
-      hasChoice: !!choice,
-      hasMessage: !!message,
-      hasContent: !!content,
-      contentType: typeof content,
-      contentLength: content?.length || 0,
-      hasToolCalls: !!(message.tool_calls && message.tool_calls.length > 0)
-    });
 
     // Manejo más flexible del contenido
     if (!content) {
@@ -429,12 +390,6 @@ export class AgentEngine_v0 {
       throw new Error('No chat messages provided to Anthropic');
     }
 
-    console.log('🔧 Anthropic call params:', {
-      model: this.config.model,
-      temperature: this.config.temperature || 0.7,
-      systemLength: systemPrompt.length,
-      messagesCount: chatMessages.length
-    });
 
     const completion = await this.anthropic.messages.create({
       model: this.config.model,

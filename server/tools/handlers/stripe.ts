@@ -53,13 +53,6 @@ export async function createPaymentLinkHandler(
       chatbotId: context.chatbotId
     });
 
-    console.log(`\n${'💳'.repeat(40)}`);
-    console.log(`💳 [Stripe Tool] WIDGET CREADO EN BD`);
-    console.log(`   Widget ID: ${widget.id}`);
-    console.log(`   Tipo: payment`);
-    console.log(`   Amount: ${formattedAmount}`);
-    console.log(`   Marcador que se retornará: 🎨WIDGET:payment:${widget.id}🎨`);
-    console.log(`${'💳'.repeat(40)}\n`);
 
     // Track usage (solo si hay chatbotId - Ghosty no tiene chatbot asociado)
     if (context.chatbotId) {

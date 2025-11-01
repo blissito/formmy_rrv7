@@ -81,12 +81,6 @@ export async function createTrace(params: CreateTraceParams) {
       },
     });
 
-    console.log(`\n${"🔍".repeat(40)}`);
-    console.log(`🔍 [Trace Created] ID: ${trace.id}`);
-    console.log(`   User: ${userId}`);
-    console.log(`   Chatbot: ${chatbotId || "N/A"}`);
-    console.log(`   Input: ${input.substring(0, 80)}...`);
-    console.log(`${"🔍".repeat(40)}\n`);
 
     return trace;
   } catch (error) {
@@ -127,14 +121,6 @@ export async function completeTrace(params: CompleteTraceParams) {
       },
     });
 
-    console.log(`\n${"✅".repeat(40)}`);
-    console.log(`✅ [Trace Completed] ID: ${trace.id}`);
-    console.log(`   Status: ${trace.status}`);
-    console.log(`   Duration: ${durationMs}ms`);
-    console.log(`   Tokens: ${totalTokens}`);
-    console.log(`   Cost: $${totalCost.toFixed(6)}`);
-    console.log(`   Credits: ${creditsUsed}`);
-    console.log(`${"✅".repeat(40)}\n`);
 
     return trace;
   } catch (error) {
@@ -170,11 +156,6 @@ export async function errorTrace(traceId: string, errorMessage: string) {
       },
     });
 
-    console.log(`\n${"❌".repeat(40)}`);
-    console.log(`❌ [Trace Error] ID: ${trace.id}`);
-    console.log(`   Error: ${errorMessage}`);
-    console.log(`   Duration: ${durationMs}ms`);
-    console.log(`${"❌".repeat(40)}\n`);
 
     return trace;
   } catch (error) {
@@ -206,7 +187,6 @@ export async function createSpan(params: CreateSpanParams) {
       },
     });
 
-    console.log(`🔧 [Span Created] ${type}: ${name} (${span.id})`);
 
     return span;
   } catch (error) {
@@ -249,9 +229,6 @@ export async function completeSpan(params: UpdateSpanParams) {
       },
     });
 
-    console.log(
-      `✅ [Span Completed] ${startSpan.type}: ${startSpan.name} - ${durationMs}ms`
-    );
 
     return span;
   } catch (error) {
@@ -281,7 +258,6 @@ export async function createEvent(params: CreateEventParams) {
       },
     });
 
-    console.log(`📌 [Event] ${type}: ${name}`);
 
     return event;
   } catch (error) {

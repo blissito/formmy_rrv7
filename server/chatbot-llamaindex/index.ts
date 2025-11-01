@@ -57,7 +57,6 @@ export class ChatbotLlamaIndex {
     // Set global LLM
     Settings.llm = this.llm;
 
-    console.log(`🤖 ChatbotLlamaIndex initialized: ${options.model} for user ${options.user.id}`);
   }
 
   /**
@@ -80,8 +79,6 @@ export class ChatbotLlamaIndex {
         systemPrompt: systemMessage,
       });
 
-      console.log(`✅ LlamaIndex agent initialized with ${this.tools.length} tools`);
-      console.log(`🛠️ Available tools: [${this.tools.map(t => t.metadata.name).join(', ')}]`);
 
     } catch (error) {
       console.error("❌ Error initializing LlamaIndex agent:", error);
@@ -105,7 +102,6 @@ export class ChatbotLlamaIndex {
           userPlan: user.plan,
         });
         this.tools.push(...reminderTools);
-        console.log(`✅ Added ${reminderTools.length} reminder tools`);
       } catch (error) {
         console.error("❌ Error creating reminder tools:", error);
       }
@@ -120,7 +116,6 @@ export class ChatbotLlamaIndex {
           stripeConfig: integrations.stripe,
         });
         this.tools.push(...stripeTools);
-        console.log(`✅ Added ${stripeTools.length} Stripe tools`);
       } catch (error) {
         console.error("❌ Error creating Stripe tools:", error);
       }
@@ -175,7 +170,6 @@ MANEJO DE INFORMACIÓN:
   ): Promise<LlamaIndexResponse> {
 
     const startTime = Date.now();
-    console.log(`🚀 ChatbotLlamaIndex: "${message.substring(0, 50)}..."`);
 
     try {
       // Initialize agent if needed
@@ -210,7 +204,6 @@ MANEJO DE INFORMACIÓN:
       // This will be populated based on actual LlamaIndex response structure
 
       const duration = Date.now() - startTime;
-      console.log(`✅ LlamaIndex chat completed in ${duration}ms`);
 
       return {
         content: response.response,

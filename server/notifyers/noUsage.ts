@@ -266,7 +266,6 @@ export const sendNoUsageEmail = async ({ email, name }: NoUsageEmail) => {
       `,
     })
     .then((r: any) => {
-      console.log('No usage email sent successfully:', r);
     })
     .catch((e: Error) => console.error('Error sending no usage email:', e));
 };

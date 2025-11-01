@@ -150,11 +150,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     const status: Record<string, IntegrationStatus> = {};
 
     // Debug: Verificar qué integraciones están llegando
-    console.log("🔍 Debug - Integraciones recibidas:", integrations);
-    console.log(
-      "🔍 Debug - Cantidad de integraciones:",
-      integrations?.length || 0
-    );
 
     // Inicializar todas las integraciones disponibles
     availableIntegrations.forEach((availableIntegration) => {
@@ -185,47 +180,36 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     // Verificar si hay integraciones existentes y actualizar su estado
     if (integrations && integrations.length > 0) {
       integrations.forEach((integration, index) => {
-        console.log(`🔍 Debug - Integración ${index}:`, {
-          id: integration.id,
-          platform: integration.platform,
-          isActive: integration.isActive,
-          chatbotId: integration.chatbotId,
-        });
 
         const platformKey = integration.platform.toLowerCase();
 
         // Stripe siempre debe estar en "onhold" (deshabilitado temporalmente)
         if (platformKey === "stripe") {
           status[platformKey] = "onhold";
-          console.log("🔒 Stripe forzado a estado: onhold (deshabilitado temporalmente)");
           return;
         }
 
         // Google Calendar siempre debe estar en "onhold" (próximamente)
         if (platformKey === "google_calendar") {
           status[platformKey] = "onhold";
-          console.log("🔒 Google Calendar forzado a estado: onhold (próximamente)");
           return;
         }
 
         // VOICE siempre debe estar en "onhold" (próximamente)
         if (platformKey === "voice") {
           status[platformKey] = "onhold";
-          console.log("🔒 VOICE forzado a estado: onhold (próximamente)");
           return;
         }
 
         // SAT siempre debe estar en "onhold" (próximamente)
         if (platformKey === "sat") {
           status[platformKey] = "onhold";
-          console.log("🔒 SAT forzado a estado: onhold (próximamente)");
           return;
         }
 
         // WhatsApp siempre debe estar en "onhold" (próximamente)
         if (platformKey === "whatsapp") {
           status[platformKey] = "onhold";
-          console.log("🔒 WhatsApp forzado a estado: onhold (próximamente)");
           return;
         }
 
@@ -236,23 +220,14 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
           : "disconnected";
         status[platformKey] = integrationStatus;
 
-        console.log(
-          `✅ Debug - ${integration.platform} encontrado, estado:`,
-          integrationStatus,
-          "(isActive:",
-          integration.isActive,
-          ")"
-        );
       });
     } else {
-      console.log("⚠️ Debug - No hay integraciones o array vacío");
     }
 
     // VOICE: Inicializar estado basándose en chatbot.voiceEnabled
     // Nota: chatbot se pasa como contexto global del componente
     // El estado se actualiza después en useEffect basándose en chatbot.voiceEnabled
 
-    console.log("🔍 Debug - Estado final de integraciones:", status);
     return status;
   };
 
@@ -263,9 +238,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   // Sincronizar estado cuando cambien las props de integrations
   // pero preservar estados "connected" del estado local
   useEffect(() => {
-    console.log(
-      "🔄 Debug - Props de integrations cambiaron, sincronizando estado inteligentemente"
-    );
 
     setIntegrationStatus((prevStatus) => {
       const newStatus = initializeIntegrationStatus(integrations);
@@ -283,18 +255,11 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
           // 2. La integración en BD está activa
           if (!integration || integration.isActive) {
             mergedStatus[key] = "connected";
-            console.log(`🔄 Debug - Preservando estado conectado para ${key}`);
           } else {
-            console.log(
-              `🔄 Debug - Integración ${key} existe pero está inactiva, respetando BD`
-            );
           }
         }
       });
 
-      console.log("🔄 Debug - Estado anterior:", prevStatus);
-      console.log("🔄 Debug - Estado de BD:", newStatus);
-      console.log("🔄 Debug - Estado merged:", mergedStatus);
 
       return mergedStatus;
     });
@@ -317,29 +282,19 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   // Solo Embedded Signup - sin manual
   const useEmbeddedSignup = true;
 
-  console.log("🔍 Debug - Embedded Signup only:", { useEmbeddedSignup });
 
   const handleConnect = (integrationId: string) => {
-    console.log("🔍 Debug - Conectando integración:", integrationId);
 
     // No hacer nada para integraciones permanentes o en onhold
     const integration = availableIntegrations.find(
       (i) => i.id === integrationId
     );
     if (integration?.isPermanent) {
-      console.log(
-        "🔍 Debug - Integración permanente, no requiere conexión:",
-        integrationId
-      );
       return;
     }
 
     // No permitir conexión de integraciones en "onhold"
     if (integrationStatus[integrationId.toLowerCase()] === "onhold") {
-      console.log(
-        "🔍 Debug - Integración en onhold, próximamente disponible:",
-        integrationId
-      );
       return;
     }
 
@@ -357,10 +312,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     } else if (integrationId === "GMAIL") {
       setGmailModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
-      console.log("🔒 Google Calendar está en onhold, no se puede conectar");
       return; // Integración deshabilitada temporalmente
     } else if (integrationId === "STRIPE") {
-      console.log("🔒 Stripe está en onhold temporalmente");
       return; // Deshabilitado temporalmente
     } else if (integrationId === "VOICE") {
       // VOICE: Abrir modal de configuración
@@ -439,7 +392,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   };
 
   const handleDisconnect = async (integrationId: string) => {
-    console.log("🔍 Debug - Desconectando integración:", integrationId);
 
     // Actualizar estado local inmediatamente para UI responsiva
     setIntegrationStatus((prev) => ({
@@ -472,9 +424,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         }
 
         const data = await response.json();
-        console.log("✅ Debug - Integración desconectada exitosamente:", data);
       } else {
-        console.log("⚠️ Debug - No se encontró integración para desconectar");
       }
     } catch (error) {
       console.error("❌ Error al desconectar integración:", error);
@@ -491,9 +441,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   };
 
   const handleEdit = (integrationId: string) => {
-    console.log("🔍 Debug - Editando integración:", integrationId);
-    console.log("🔍 Debug - currentTab actual:", currentTab);
-    console.log("🔍 Debug - ¿Estamos en integrations?:", currentTab === "integrations");
     setSelectedIntegration(integrationId);
 
     if (integrationId === "WHATSAPP") {
@@ -502,10 +449,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     } else if (integrationId === "GMAIL") {
       setGmailModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
-      console.log("🔒 Google Calendar está en onhold, no se puede editar");
       return; // Integración deshabilitada temporalmente
     } else if (integrationId === "STRIPE") {
-      console.log("🔒 Stripe está en onhold temporalmente");
       return; // Deshabilitado temporalmente
     } else if (integrationId === "VOICE") {
       // VOICE: Abrir modal de configuración
@@ -518,7 +463,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
   // Manejador de éxito para la integración de WhatsApp
   const handleWhatsAppSuccess = (integration: any) => {
-    console.log("🔍 Debug - WhatsApp integración exitosa:", integration);
 
     if (selectedIntegration) {
       // Actualizar el estado local
@@ -579,7 +523,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
   // Manejador de éxito para la integración de Gmail
   const handleGmailSuccess = (data: any) => {
-    console.log("🔍 Debug - Gmail integración exitosa:", data);
 
     // Actualizar el estado local para mostrar como conectado
     setIntegrationStatus((prev) => ({
@@ -596,7 +539,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
   // Manejador de éxito para la integración de Voz
   const handleVoiceSuccess = (data: any) => {
-    console.log("🔍 Debug - Voice integración exitosa:", data);
 
     if (data.connected) {
       // Actualizar el estado local para mostrar como conectado
@@ -622,8 +564,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   // Manejador de éxito para la integración de Stripe (deshabilitado)
 
   const handleStripeSuccess = (integration: any) => {
-    console.log("🔍 Debug - Stripe integración exitosa:", integration);
-    console.log("🔍 Debug - Estado anterior:", integrationStatus);
 
     // Actualizar el estado local para mostrar como conectado
     setIntegrationStatus((prev) => {
@@ -631,14 +571,12 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         ...prev,
         stripe: "connected" as const,
       };
-      console.log("🔍 Debug - Nuevo estado:", newStatus);
       return newStatus;
     });
 
     // setStripeModalOpen(false); // Comentado porque el modal está deshabilitado
     setSelectedIntegration(null);
 
-    console.log("✅ Debug - Stripe conectado sin recargar página");
   };
 
   // Función para manejar OAuth2 de Google Calendar - Deshabilitada (integración en onhold)
@@ -801,8 +739,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         </section>
       )}
       {currentTab === "integrations" && (() => {
-        console.log("🎯 [INTEGRATIONS TAB] Tab de integraciones activa");
-        console.log("🎯 [INTEGRATIONS TAB] selectedIntegration:", selectedIntegration);
         return null;
       })()}
       {currentTab === "integrations" && (
@@ -953,7 +889,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                     <WhatsAppTemplateCreator
                       chatbotId={chatbot.id}
                       onSuccess={(template) => {
-                        console.log('Template created:', template);
                         // Optionally trigger a refresh or show a toast
                       }}
                     />
@@ -1022,7 +957,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                 setSelectedIntegration(null);
               }}
               onSuccess={() => {
-                console.log("✅ Google Calendar conectado exitosamente");
                 setIntegrationStatus((prev) => ({
                   ...prev,
                   google_calendar: "connected" as const,

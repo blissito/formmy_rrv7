@@ -32,8 +32,6 @@ export async function createScheduleReminderTool(context: ReminderToolContext): 
       time: string; // HH:MM format
       email?: string;
     }) => {
-      console.log(`📅 LLAMAINDEX TOOL: schedule_reminder ejecutándose...`);
-      console.log(`📧 Datos:`, { title, date, time, email, chatbotId: context.chatbotId });
 
       try {
         // Validate date format
@@ -48,7 +46,6 @@ export async function createScheduleReminderTool(context: ReminderToolContext): 
 
         if (date.startsWith('2023') || date.startsWith('2024')) {
           correctedDate = date.replace(/^(2023|2024)/, currentYear);
-          console.log(`🔧 Auto-corrección: ${date} → ${correctedDate}`);
         }
 
         // Verificar que la fecha sea futura
@@ -56,14 +53,12 @@ export async function createScheduleReminderTool(context: ReminderToolContext): 
         if (targetDateTime <= new Date()) {
           const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
           correctedDate = tomorrow.toISOString().split('T')[0];
-          console.log(`🔧 Fallback a mañana: ${correctedDate}`);
         }
 
         // Filtrar emails sospechosos
         let finalEmail = email;
         const suspiciousEmails = ['cliente@ejemplo.com', 'example@email.com', 'test@test.com'];
         if (email && suspiciousEmails.includes(email.toLowerCase())) {
-          console.log(`🚫 Email sospechoso detectado: ${email}`);
           finalEmail = undefined;
         }
 
@@ -163,7 +158,6 @@ export async function createListRemindersTool(context: ReminderToolContext): Pro
     name: "list_reminders",
     description: "Consultar todos los recordatorios pendientes del usuario",
     fn: async () => {
-      console.log(`📋 LLAMAINDEX TOOL: list_reminders ejecutándose...`);
 
       try {
         const { db } = await import("~/utils/db.server");
@@ -236,7 +230,6 @@ export async function createReminderTools(context: ReminderToolContext): Promise
     const listReminders = await createListRemindersTool(context);
     tools.push(listReminders);
 
-    console.log(`✅ Created ${tools.length} reminder tools for user ${context.userId}`);
     return tools;
 
   } catch (error) {

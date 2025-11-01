@@ -57,7 +57,6 @@ export class VoiceAgentHandler {
       throw new Error(`Voice session not found: ${this.sessionId}`);
     }
 
-    console.log(`🎙️ Starting voice agent for session: ${this.sessionId}`);
 
     // Conectar al room de LiveKit como agente
     // NOTA: En producción, este handler correría como un servidor separado
@@ -69,7 +68,6 @@ export class VoiceAgentHandler {
     // 2. Plugins de STT (AssemblyAI, Deepgram)
     // 3. Plugins de TTS (Cartesia, ElevenLabs)
 
-    console.log(`✅ Voice agent ready for room: ${session.roomName}`);
   }
 
   /**
@@ -89,13 +87,11 @@ export class VoiceAgentHandler {
     // ✅ Si el usuario interrumpe mientras procesamos, registrar interrupción
     // pero NO ignorar el mensaje (las interrupciones son naturales en voz)
     if (this.isProcessing) {
-      console.log(`⚠️ User interrupted while processing. Queuing new message: "${userMessage}"`);
       // En una implementación completa, aquí podríamos cancelar el procesamiento actual
       // Por ahora, simplemente dejamos que termine y procesamos el nuevo mensaje después
       return;
     }
 
-    console.log(`👤 User said: ${userMessage}`);
     this.isProcessing = true;
 
     try {
@@ -155,17 +151,6 @@ export class VoiceAgentHandler {
         integrations,
       };
 
-      console.log(`\n${'🎙️'.repeat(40)}`);
-      console.log(`🎙️ [VoiceHandler] Llamando a streamAgentWorkflow`);
-      console.log(`   user.id: ${user.id}`);
-      console.log(`   user.plan: ${user.plan}`);
-      console.log(`   chatbotId: ${session.chatbotId}`);
-      console.log(`   message: "${userMessage}"`);
-      console.log(`   chatbot.name: "${session.chatbot.name}"`);
-      console.log(`   customInstructions: "${resolvedConfig.customInstructions?.substring(0, 100)}..."`);
-      console.log(`   conversationHistory: ${this.conversationHistory.length} mensajes`);
-      console.log(`   isGhosty: ${agentContext.isGhosty}`);
-      console.log(`${'🎙️'.repeat(40)}\n`);
 
       // Llamar al agente de Formmy con streaming (firma correcta)
       let agentResponse = "";
@@ -182,11 +167,9 @@ export class VoiceAgentHandler {
         if (chunk.type === "text") {
           agentResponse += chunk.content;
         } else if (chunk.type === "tool_call") {
-          console.log(`🔧 Tool called: ${chunk.tool}`);
         }
       }
 
-      console.log(`🤖 Agent response: ${agentResponse}`);
 
       // Agregar respuesta al historial
       this.conversationHistory.push({
@@ -225,7 +208,6 @@ export class VoiceAgentHandler {
     // NOTA: Esta es una implementación simplificada
     // En producción, usaríamos LiveKit Inference API o plugins de TTS
 
-    console.log(`🔊 Sending voice response (${ttsProvider}): ${text.substring(0, 50)}...`);
 
     // TODO: Implementar TTS con LiveKit Inference API
     // const ttsUrl = `https://api.livekit.io/inference/tts`;
@@ -251,7 +233,6 @@ export class VoiceAgentHandler {
    * Limpia recursos cuando la sesión termina
    */
   async cleanup() {
-    console.log(`🧹 Cleaning up voice agent for session: ${this.sessionId}`);
 
     if (this.room) {
       // Desconectar del room

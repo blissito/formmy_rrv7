@@ -108,7 +108,6 @@ export async function loader({ request }: Route.LoaderArgs) {
       });
 
       // Log successful list request
-      console.log(`[RAG API] List - userId: ${userId}, chatbotId: ${chatbotId}, contexts: ${chatbot.contexts?.length || 0}`);
 
       return Response.json({
         chatbotId: chatbot.id,
@@ -289,7 +288,6 @@ export async function action({ request }: Route.ActionArgs) {
       }
 
       // Log successful upload
-      console.log(`[RAG API] Upload - userId: ${userId}, chatbotId: ${chatbotId}, contextId: ${result.contextId}, embeddings: ${result.embeddingsCreated}, credits: ${CREDIT_COSTS.upload}`);
 
       return Response.json({
         success: true,
@@ -392,7 +390,6 @@ export async function action({ request }: Route.ActionArgs) {
         .join("\n\n");
 
       // Log successful query
-      console.log(`[RAG API] Query - userId: ${userId}, chatbotId: ${chatbotId}, results: ${results.length}, topK: ${limit}, credits: ${CREDIT_COSTS.query}`);
 
       return Response.json({
         query: trimmedQuery,

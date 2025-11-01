@@ -32,19 +32,15 @@ const parser = new FormmyParser('YOUR_API_KEY');
 
 // 1. Parsear documento GRATIS (DEFAULT mode)
 const job = await parser.parse('./document.pdf'); // DEFAULT = gratis
-console.log('Job ID:', job.id);
-console.log('Créditos usados:', job.creditsUsed); // 0
 
 // 2. O usar parsing avanzado con mayor precisión (costo por página)
 const jobPremium = await parser.parse('./document.pdf', 'AGENTIC');
-console.log('Créditos usados:', jobPremium.creditsUsed); // 3 * páginas
 
 // 3. Esperar resultado con progreso
 const result = await parser.waitFor(job.id, {
   onProgress: (job) => console.log(\`Status: \${job.status}\`)
 });
 
-console.log('Markdown:', result.markdown);
 
 // 4. Query RAG
 const ragResult = await parser.query(
@@ -52,9 +48,7 @@ const ragResult = await parser.query(
   'chatbot_id_xxx',
   { mode: 'accurate' }
 );
-
-console.log('Answer:', ragResult.answer);
-console.log('Sources:', ragResult.sources);`;
+`;
 
   const curlParserCode = `# Parsing GRATUITO (default)
 curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\

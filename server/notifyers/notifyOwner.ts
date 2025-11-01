@@ -211,6 +211,5 @@ export const notifyOwner = async ({
         `,
     })
     .then((r: any) => {
-      console.log(r);
     })
-    .catch((e: Error) => console.log(e));
+    .catch((e: Error) => {});

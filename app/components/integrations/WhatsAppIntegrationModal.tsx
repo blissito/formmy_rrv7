@@ -158,13 +158,6 @@ export default function WhatsAppIntegrationModal({
       const businessAccountId = formData.businessAccountId.trim();
 
       // Debug logs
-      console.log('🔍 Testing WhatsApp connection from UI:', {
-        phoneNumberId,
-        businessAccountId,
-        tokenLength: token.length,
-        tokenFirst20: token.substring(0, 20),
-        tokenLast20: token.substring(token.length - 20),
-      });
 
       // Validar longitud mínima del token
       if (token.length < 100) {
@@ -184,7 +177,6 @@ export default function WhatsAppIntegrationModal({
         requestBody.integrationId = existingIntegration.id;
       }
 
-      console.log('📤 Sending request with token length:', token.length);
 
       const response = await fetch('/api/v1/integrations/whatsapp', {
         method: 'POST',
@@ -195,7 +187,6 @@ export default function WhatsAppIntegrationModal({
       });
 
       const data = await response.json();
-      console.log('📥 Test connection response:', data);
 
       if (response.ok && data.success) {
         setTestResult({

@@ -35,7 +35,6 @@ export const action = async ({ request }: ActionArgs) => {
       return new Response(null, { status: 400 }); // Bad Request
     }
 
-    console.log(`[Webhook] Evento recibido: ${event.type}`);
 
     // Manejar el tipo de evento
     switch (event.type) {
@@ -56,7 +55,6 @@ export const action = async ({ request }: ActionArgs) => {
         break;
 
       default:
-        console.log(`[Webhook] Evento no manejado: ${event.type}`);
     }
 
     return new Response(null, { status: 200 });

@@ -236,40 +236,10 @@ export const createContextSearchTool = (context: ToolContext) => tool(
   },
   {
     name: "search_context",
-    description: `🔍 HERRAMIENTA PRINCIPAL - Búsqueda semántica en la base de conocimiento del chatbot.
-
-⚠️ REGLA CRÍTICA: Esta herramienta debe ser tu PRIMERA OPCIÓN para responder preguntas sobre el negocio.
-
-📋 USAR OBLIGATORIAMENTE cuando el usuario pregunta sobre:
-- Productos, servicios, características, actualizaciones, roadmap
-- Precios, planes, costos, políticas de pago
-- Documentación, tutoriales, guías, FAQs
-- Políticas de la empresa, términos, condiciones
-- Información del equipo, empresa, historia
-- CUALQUIER dato específico del negocio
-
-🚫 PROHIBIDO responder SIN buscar sobre estos temas. Si no buscas, fallas.
-
-🎯 ESTRATEGIA AGÉNTICA (OBLIGATORIA):
-1. Ejecuta search_context ANTES de formular respuesta
-2. Si pregunta compleja → DIVIDE en sub-preguntas → BUSCA CADA UNA
-3. Si resultados insuficientes → REFORMULA query → BUSCA DE NUEVO
-4. Haz MÍNIMO 2 búsquedas para preguntas multi-tema
-5. Combina resultados para respuesta completa
-
-📊 EJEMPLOS CORRECTOS:
-✅ User: "características nuevas" → search_context("características nuevas actualizaciones features")
-✅ User: "planes y precios" → search_context("planes") + search_context("precios") → combinar
-✅ User: "compara X vs Y" → search_context("X") + search_context("Y") → tabla comparativa
-
-❌ ERRORES CRÍTICOS A EVITAR:
-- No buscar antes de responder sobre el negocio
-- Decir "no tengo información" sin intentar buscar
-- Una sola búsqueda genérica para pregunta compleja
-- Redirigir al usuario a "buscar en el sitio" en lugar de buscar tú mismo`,
+    description: "Search the chatbot's knowledge base for information about products, services, pricing, policies, documentation, and any business-specific content.",
     parameters: z.object({
-      query: z.string().describe("Consulta específica y precisa. Usa keywords relevantes. Ejemplo: 'características nuevas actualizaciones 2025' mejor que solo 'novedades'"),
-      topK: z.number().optional().default(5).describe("Resultados a obtener (1-10). Usa 3 para búsqueda específica, 5-7 para tema amplio, 10 para investigación exhaustiva.")
+      query: z.string().describe("Specific search query with relevant keywords"),
+      topK: z.number().optional().default(5).describe("Number of results to return (1-10)")
     })
   }
 );

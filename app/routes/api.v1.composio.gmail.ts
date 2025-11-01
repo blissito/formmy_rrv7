@@ -116,11 +116,6 @@ export async function loader({ request }: any) {
  */
 async function handleConnect(entityId: string, chatbotId: string, request: Request) {
   try {
-    console.log(`\n${'📧'.repeat(40)}`);
-    console.log(`📧 [Composio] Iniciando conexión Gmail`);
-    console.log(`   entityId: ${entityId}`);
-    console.log(`   chatbotId: ${chatbotId}`);
-    console.log(`${'📧'.repeat(40)}\n`);
 
     // Verificar que existe el Auth Config ID
     const authConfigId = process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID;
@@ -131,13 +126,11 @@ async function handleConnect(entityId: string, chatbotId: string, request: Reque
       );
     }
 
-    console.log(`   Using authConfigId: ${authConfigId}`);
 
     // Obtener base URL desde el request (funciona en dev y prod)
     const requestUrl = new URL(request.url);
     const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
 
-    console.log(`   Base URL: ${baseUrl}`);
 
     // Iniciar conexión a Gmail
     const connection = await composio.connectedAccounts.initiate(
@@ -150,7 +143,6 @@ async function handleConnect(entityId: string, chatbotId: string, request: Reque
       }
     );
 
-    console.log(`📝 Conexión iniciada:`, connection);
 
     // ✅ Retornar JSON con authUrl (no redirect directo)
     // Frontend abrirá esta URL en popup
@@ -187,10 +179,6 @@ async function handleConnect(entityId: string, chatbotId: string, request: Reque
  */
 async function handleStatus(entityId: string) {
   try {
-    console.log(`\n${'🔍'.repeat(40)}`);
-    console.log(`🔍 [Composio] Verificando estado de conexión`);
-    console.log(`   entityId: ${entityId}`);
-    console.log(`${'🔍'.repeat(40)}\n`);
 
     // Extraer chatbotId del entityId
     const chatbotId = entityId.replace('chatbot_', '');
@@ -203,11 +191,9 @@ async function handleStatus(entityId: string) {
       },
     });
 
-    console.log(`📊 Integración en BD:`, integration ? `isActive=${integration.isActive}` : 'No existe');
 
     // Si no hay integración en BD o está desactivada, retornar desconectado
     if (!integration || !integration.isActive) {
-      console.log(`⚠️ Integración no activa en BD, retornando desconectado`);
       return new Response(
         JSON.stringify({
           isConnected: false,
@@ -225,7 +211,6 @@ async function handleStatus(entityId: string) {
       toolkitSlugs: ['gmail'], // ✅ Filtro correcto para Gmail
     });
 
-    console.log(`📊 Cuentas de Gmail en Composio:`, connectedAccounts.items?.length || 0);
 
     const hasComposioConnection = connectedAccounts.items && connectedAccounts.items.length > 0;
     const account = connectedAccounts.items?.[0];
@@ -235,7 +220,6 @@ async function handleStatus(entityId: string) {
 
     // Si BD dice activo pero Composio no tiene conexión, desincronización detectada
     if (!hasComposioConnection) {
-      console.log(`⚠️ DESINCRONIZACIÓN: BD activo pero Composio sin conexión`);
       // Marcar como inactivo en BD para próxima consulta
       await db.integration.updateMany({
         where: { chatbotId, platform: 'GMAIL' },
@@ -280,11 +264,6 @@ async function handleStatus(entityId: string) {
  */
 async function handleDisconnect(entityId: string, chatbotId: string) {
   try {
-    console.log(`\n${'🔌'.repeat(40)}`);
-    console.log(`🔌 [Composio] Desconectando Gmail`);
-    console.log(`   entityId: ${entityId}`);
-    console.log(`   chatbotId: ${chatbotId}`);
-    console.log(`${'🔌'.repeat(40)}\n`);
 
     // Obtener cuenta conectada (USAR toolkitSlugs, NO app)
     const connectedAccounts = await composio.connectedAccounts.list({
@@ -309,7 +288,6 @@ async function handleDisconnect(entityId: string, chatbotId: string) {
     const accountId = connectedAccounts.items[0].id;
     await composio.connectedAccounts.delete(accountId);
 
-    console.log(`✅ Cuenta desconectada de Composio: ${accountId}`);
 
     // ✅ Desactivar integración en BD
     await db.integration.updateMany({
@@ -324,7 +302,6 @@ async function handleDisconnect(entityId: string, chatbotId: string) {
       },
     });
 
-    console.log(`✅ Integración desactivada en BD para chatbot: ${chatbotId}`);
 
     return new Response(
       JSON.stringify({

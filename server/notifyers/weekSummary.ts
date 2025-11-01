@@ -294,7 +294,6 @@ export const sendWeekSummaryEmail = async ({ email, name, chatbotName, metrics }
       `,
     })
     .then((r: any) => {
-      console.log('Week summary email sent successfully:', r);
     })
     .catch((e: Error) => console.error('Error sending week summary email:', e));
 };

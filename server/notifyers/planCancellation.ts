@@ -233,7 +233,6 @@ export const sendPlanCancellation = async ({ email, endDate, planName }: PlanCan
       `,
     })
     .then((r: any) => {
-      console.log('Cancellation email sent successfully:', r);
     })
     .catch((e: Error) => console.error('Error sending cancellation email:', e));
 };

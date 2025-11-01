@@ -400,7 +400,6 @@ export const AddImages = ({
     set(images ?? []);
   }, []);
 
-  console.log("IMAGES: ", images);
 
   return (
     <>

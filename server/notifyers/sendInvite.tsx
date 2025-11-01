@@ -221,7 +221,6 @@ export const sendInvite = async ({ project, email }: SuccessfulSubmitType) => {
         `,
     })
     .then((r: any) => {
-      console.log(r);
     })
-    .catch((e: Error) => console.log(e));
+    .catch((e: Error) => {});
 };

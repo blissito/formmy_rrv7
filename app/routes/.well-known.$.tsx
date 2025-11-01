@@ -6,7 +6,6 @@ export const loader = async ({ request }: { request: Request }) => {
   const url = new URL(request.url);
 
   // Log the request for debugging if needed
-  console.log(`Blocked .well-known request: ${url.pathname}`);
 
   // Return 404 for all .well-known requests
   return new Response(null, {

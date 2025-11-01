@@ -30,13 +30,6 @@ export const action = async ({ request }: Route.ActionArgs): Promise<Response> =
       );
     }
 
-    console.log('🚀 AgentV0 endpoint:', {
-      userId: user.id,
-      plan: user.plan || 'FREE',
-      messageLength: message.length,
-      chatbotId: chatbotId || 'none',
-      integrationsCount: Object.keys(integrations).length
-    });
 
     // Obtener chatbot o usar configuración por defecto
     let targetChatbot;

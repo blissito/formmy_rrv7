@@ -22,7 +22,6 @@ setInterval(() => {
   for (const [id, data] of reportStorage.entries()) {
     if (now - data.createdAt > TTL) {
       reportStorage.delete(id);
-      console.log(`[Report Storage] Cleaned up expired report: ${id}`);
     }
   }
 }, 60 * 1000);
@@ -43,17 +42,11 @@ export async function handleGenerateChatbotReport(
   params: GenerateReportParams,
   context: ToolContext
 ): Promise<ToolResponse> {
-  console.log("🎯 [generate-chatbot-report] EJECUTÁNDOSE!", {
-    userId: context.userId,
-    userPlan: context.userPlan,
-    params,
-  });
 
   try {
     const { userId } = context;
     const { format = "pdf", includeMetrics = true } = params;
 
-    console.log("📊 [generate-chatbot-report] Consultando chatbots para userId:", userId);
 
     // 1. Obtener chatbots del usuario
     const chatbots = await prisma.chatbot.findMany({

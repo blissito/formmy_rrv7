@@ -26,8 +26,6 @@ export async function createPaymentLinkTool(context: StripeToolContext): Promise
       description: string;
       currency?: "mxn" | "usd";
     }) => {
-      console.log(`💳 LLAMAINDEX TOOL: create_payment_link ejecutándose...`);
-      console.log(`💰 Datos:`, { amount, description, currency });
 
       try {
         // Importar handler de stripe existente
@@ -86,7 +84,6 @@ export async function createStripeTools(context: StripeToolContext): Promise<Fun
     const paymentLink = await createPaymentLinkTool(context);
     tools.push(paymentLink);
 
-    console.log(`✅ Created ${tools.length} Stripe tools for user ${context.userId}`);
     return tools;
 
   } catch (error) {

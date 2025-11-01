@@ -102,7 +102,6 @@ export function calculateCost(
     
     if (matchingModel) {
       modelPricing = providerPricing[matchingModel as keyof typeof providerPricing];
-      console.log(`📊 Usando pricing de ${matchingModel} para modelo ${model}`);
     } else {
       console.warn(`⚠️ Pricing no encontrado para modelo: ${model} en proveedor ${provider}`);
       return {
@@ -136,7 +135,6 @@ export function calculateCost(
       savingsFromCache
     };
     
-    console.log(`💰 GPT-5-nano Cache Savings: ${usage.cachedTokens} tokens = $${savingsFromCache.toFixed(6)} saved (${((savingsFromCache / (regularInputCost + cachedCost)) * 100).toFixed(1)}% discount)`);
   } else {
     // Fallback para otros modelos sin cached tokens
     inputCost = (usage.inputTokens / 1_000_000) * modelPricing.input;

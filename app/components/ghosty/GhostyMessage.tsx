@@ -150,11 +150,6 @@ export const GhostyMessageComponent = ({
           {!isUser && message.widgets && message.widgets.length > 0 && (
             <div className="mt-4">
               {message.widgets.map((widget) => {
-                console.log(`🎨 [GhostyMessage] Renderizando widget iframe:`, {
-                  type: widget.type,
-                  id: widget.id,
-                  url: `/widgets/${widget.id}`
-                });
 
                 return (
                   <iframe
@@ -164,7 +159,6 @@ export const GhostyMessageComponent = ({
                     style={{ height: '400px' }}
                     sandbox="allow-scripts allow-same-origin allow-popups"
                     title={`Widget ${widget.type}`}
-                    onLoad={() => console.log(`✅ [GhostyMessage] Widget iframe cargado: ${widget.id}`)}
                     onError={(e) => console.error(`❌ [GhostyMessage] Error cargando widget iframe:`, widget.id, e)}
                   />
                 );

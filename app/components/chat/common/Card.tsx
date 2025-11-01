@@ -162,9 +162,6 @@ export const IntegrationCard = ({
 }) => {
   // Debug log para ver qué está recibiendo el componente - solo para Stripe y Google Calendar
   if (name === "Stripe" || name === "Google Calendar") {
-    console.log(
-      `🔍 ${name} Card - status: ${status}, exists: ${!!integration}, active: ${integration?.isActive}`
-    );
   }
 
   // Usar el status pasado como prop, o fallback a integration?.isActive

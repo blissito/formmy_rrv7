@@ -81,14 +81,7 @@ export async function sendGmailHandler(
       toolkitSlugs: ['gmail'],
     });
 
-    console.log(`📧 [Gmail Handler] Conexiones encontradas:`, connections.items?.length || 0);
     if (connections.items && connections.items.length > 0) {
-      console.log(`📧 [Gmail Handler] Primera conexión:`, {
-        id: connections.items[0].id,
-        toolkit: connections.items[0].toolkit,
-        status: connections.items[0].status,
-        isDisabled: connections.items[0].authConfig?.isDisabled,
-      });
     }
 
     // ✅ MÉTODO CORRECTO según docs oficiales de Composio
@@ -106,25 +99,12 @@ export async function sendGmailHandler(
     );
 
     if (!finalConnection) {
-      console.log(`❌ [Gmail Handler] No se encontró conexión ACTIVE. Conexiones:`,
-        connections.items?.map((c: any) => ({
-          toolkit: c.toolkit?.slug,
-          status: c.status,
-          is_disabled: c.is_disabled
-        }))
-      );
       return {
         success: false,
         message: "🔐 Gmail no está conectado para este chatbot. Conéctalo desde tu dashboard en la sección de Integraciones."
       };
     }
 
-    console.log(`✅ [Gmail Handler] Usando conexión:`, {
-      id: finalConnection.id,
-      toolkit: finalConnection.toolkit?.slug,
-      status: finalConnection.status,
-      isDisabled: finalConnection.authConfig?.isDisabled,
-    });
 
     // Ejecutar tool de Composio para enviar email
     const result = await composio.tools.execute(
@@ -277,7 +257,6 @@ export async function readGmailHandler(
       toolkitSlugs: ['gmail'],
     });
 
-    console.log(`📧 [Gmail Read Handler] Conexiones encontradas:`, connections.items?.length || 0);
 
     // ✅ MÉTODO CORRECTO según docs oficiales de Composio
     // Buscar conexión ACTIVE (no disabled) que coincida con toolkit 'gmail'
@@ -294,25 +273,12 @@ export async function readGmailHandler(
     );
 
     if (!finalConnection) {
-      console.log(`❌ [Gmail Read Handler] No se encontró conexión ACTIVE. Conexiones:`,
-        connections.items?.map((c: any) => ({
-          toolkit: c.toolkit?.slug,
-          status: c.status,
-          is_disabled: c.is_disabled
-        }))
-      );
       return {
         success: false,
         message: "🔐 Gmail no está conectado para este chatbot. Conéctalo desde tu dashboard."
       };
     }
 
-    console.log(`✅ [Gmail Read Handler] Usando conexión:`, {
-      id: finalConnection.id,
-      toolkit: finalConnection.toolkit?.slug,
-      status: finalConnection.status,
-      isDisabled: finalConnection.authConfig?.isDisabled,
-    });
 
     // Ejecutar tool de Composio para leer emails
     const result = await composio.tools.execute(

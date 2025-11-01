@@ -150,7 +150,6 @@ export class OpenAIProvider extends AIProvider {
     if ((!content || content.trim().length === 0) && toolCalls.length > 0) {
       if (retryCount === 0) {
         // Primer intento falló - hacer retry con temperatura baja
-        console.log(`🔄 OpenAI retry: Empty response with tools, attempting with lower temperature`);
         return this.chatCompletionWithRetry(request, 1);
       } else {
         // Retry también falló - generar respuesta contextual
@@ -159,7 +158,6 @@ export class OpenAIProvider extends AIProvider {
     } else if (!content || content.trim().length === 0) {
       // No hay contenido ni tool calls
       if (retryCount === 0) {
-        console.log(`🔄 OpenAI retry: Completely empty response, attempting with lower temperature`);
         return this.chatCompletionWithRetry(request, 1);
       } else {
         content = 'Entiendo tu solicitud, pero no puedo proporcionar una respuesta específica en este momento.';
@@ -202,7 +200,6 @@ export class OpenAIProvider extends AIProvider {
     try {
       return await this.chatCompletionStreamAttempt(request);
     } catch (error) {
-      console.log('🔄 Streaming failed, falling back to non-streaming with retry:', error.message);
       // Fallback: usar non-streaming con retry y convertir a stream
       const response = await this.chatCompletionWithRetry(request);
       return this.convertResponseToStream(response);
@@ -264,7 +261,6 @@ export class OpenAIProvider extends AIProvider {
       stream: true,
     };
 
-    console.log(`🔍 [OpenAI Request] Model: ${model}, Body:`, JSON.stringify(requestBody, null, 2));
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

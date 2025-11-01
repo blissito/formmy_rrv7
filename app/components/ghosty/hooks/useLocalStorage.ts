@@ -102,7 +102,6 @@ export const useLocalStorage = () => {
       
       // Version check for future migrations
       if (history.version !== CURRENT_VERSION) {
-        console.log('Ghosty: Version mismatch, clearing history');
         localStorage.removeItem(CHAT_STORAGE_KEY);
         return [];
       }

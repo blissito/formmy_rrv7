@@ -312,7 +312,6 @@ export const CardRow = ({
   subtitle?: string;
 }) => {
   const handleAction = (action: string) => {
-    console.log(`Acción seleccionada: ${action}`);
     if (action === "eliminar" && onRemove) {
       onRemove();
     }

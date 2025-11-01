@@ -27,7 +27,6 @@ interface VoiceChatProps {
 type VoiceState = "idle" | "connecting" | "ready" | "listening" | "thinking" | "speaking" | "error";
 
 export default function VoiceChat({ chatbotId, isOpen, onClose }: VoiceChatProps) {
-  console.log("🔍 [VOICE DEBUG] VoiceChat rendered with:", { chatbotId, isOpen });
 
   const [state, setState] = useState<VoiceState>("idle");
   const [isMuted, setIsMuted] = useState(false);
@@ -94,7 +93,6 @@ export default function VoiceChat({ chatbotId, isOpen, onClose }: VoiceChatProps
       const data = await response.json();
       sessionIdRef.current = data.sessionId;
 
-      console.log("✅ Voice session created:", data.sessionId);
 
       // 2. Conectar a LiveKit room
       const room = new Room();
@@ -102,49 +100,33 @@ export default function VoiceChat({ chatbotId, isOpen, onClose }: VoiceChatProps
 
       // Escuchar eventos del room
       room.on(RoomEvent.Connected, () => {
-        console.log("✅ Connected to LiveKit room");
-        console.log("👤 Local participant:", room.localParticipant.identity);
-        console.log("👥 Remote participants count:", room.remoteParticipants.size);
         setState("connecting"); // ✅ Esperar a que llegue el agente
         startTimer();
       });
 
       room.on(RoomEvent.Disconnected, () => {
-        console.log("⚠️ Disconnected from LiveKit room");
         handleDisconnect();
       });
 
       // ✅ Detectar cuando hay un nuevo participante (el agente)
       room.on(RoomEvent.ParticipantConnected, (participant) => {
-        console.log("👤 Participant connected:", participant.identity);
         if (participant.identity !== room.localParticipant.identity) {
           setState("speaking"); // ✅ Agente conectado, esperando mensaje
-          console.log("🤖 Agent joined the room");
         }
       });
 
       // ✅ Detectar cuando el AGENTE publica un track
       room.on(RoomEvent.TrackPublished, (publication, participant) => {
-        console.log("📡 TrackPublished:", publication.kind, "by", participant.identity, "isAgent:", participant.identity !== room.localParticipant.identity);
-        console.log("   Publication details:", {
-          trackSid: publication.trackSid,
-          trackName: publication.trackName,
-          source: publication.source,
-          muted: publication.isMuted,
-        });
         if (publication.kind === "audio" && participant.identity !== room.localParticipant.identity) {
-          console.log("🎙️ ✅ AGENT AUDIO TRACK PUBLISHED");
         }
       });
 
       // ✅ Detectar cuando el AGENTE habla
       room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-        console.log("🔔 TrackSubscribed:", track.kind, "from", participant.identity);
 
         if (track.kind === "audio" && participant.identity !== room.localParticipant.identity) {
           // Agente está hablando
           setState("speaking");
-          console.log("🎙️ Agent is speaking - attaching audio");
 
           // ⚠️ CRÍTICO: Attachear el track de audio al DOM para reproducirlo
           const audioElement = track.attach();
@@ -156,7 +138,6 @@ export default function VoiceChat({ chatbotId, isOpen, onClose }: VoiceChatProps
           });
           document.body.appendChild(audioElement);
           audioElementsRef.current.push(audioElement); // Para cleanup posterior
-          console.log("✅ Audio track attached to DOM and playing");
         }
       });
 
@@ -170,14 +151,12 @@ export default function VoiceChat({ chatbotId, isOpen, onClose }: VoiceChatProps
       // ✅ Detectar cuando el USUARIO habla
       room.on(RoomEvent.LocalTrackPublished, (publication) => {
         if (publication.kind === "audio") {
-          console.log("🎤 User started speaking");
           setState("listening");
         }
       });
 
       room.on(RoomEvent.LocalTrackUnpublished, (publication) => {
         if (publication.kind === "audio" && state === "listening") {
-          console.log("🎤 User stopped speaking");
           setState("ready");
         }
       });
@@ -188,7 +167,6 @@ export default function VoiceChat({ chatbotId, isOpen, onClose }: VoiceChatProps
       // 4. Habilitar micrófono del usuario
       await room.localParticipant.setMicrophoneEnabled(true);
 
-      console.log("🎤 Microphone enabled");
     } catch (err: any) {
       console.error("❌ Error connecting to voice:", err);
       const errorMessage = err.message || "Error al conectar con el sistema de voz";
@@ -271,7 +249,6 @@ export default function VoiceChat({ chatbotId, isOpen, onClose }: VoiceChatProps
           credentials: "include", // ✅ Incluir cookies de sesión
         });
 
-        console.log("✅ Voice session ended");
       } catch (err) {
         console.error("❌ Error ending session:", err);
       }

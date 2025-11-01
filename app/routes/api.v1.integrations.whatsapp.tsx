@@ -72,13 +72,6 @@ const testWhatsAppConnection = (config: WhatsAppConnectionConfig) => {
     try: async () => {
 
       // Debug log to see what we're receiving
-      console.log('Testing WhatsApp connection with:', {
-        businessAccountId: config.businessAccountId,
-        phoneNumberId: config.phoneNumberId,
-        tokenLength: config.accessToken?.length,
-        tokenFirst20: config.accessToken?.substring(0, 20),
-        tokenLast20: config.accessToken?.substring(config.accessToken.length - 20)
-      });
 
       // First, try to get business account info
       const accountResponse = await fetch(businessAccountUrl, {
@@ -286,7 +279,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     // Handle list_templates intent
     if (intent === "list_templates") {
-      console.log("📋 Fetching WhatsApp templates for chatbot:", chatbotId);
 
       // Get active WhatsApp integration
       const integration = await db.integration.findFirst({
@@ -342,7 +334,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
 
         const data = await response.json();
-        console.log(`✅ Fetched ${data.data?.length || 0} templates from Meta`);
 
         return new Response(
           JSON.stringify({

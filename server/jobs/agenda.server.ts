@@ -42,12 +42,10 @@ export async function getAgenda(): Promise<Agenda> {
     });
 
     agendaInstance.on('success', (job) => {
-      console.log(`[Agenda] Job ${job.attrs.name} succeeded`);
     });
 
     // Start agenda and wait for connection
     agendaReady = agendaInstance.start().then(() => {
-      console.log('[Agenda] Started and connected to MongoDB successfully');
     });
   }
 
@@ -66,19 +64,16 @@ export async function shutdownAgenda(): Promise<void> {
   if (agendaInstance) {
     await agendaInstance.stop();
     agendaInstance = null;
-    console.log('[Agenda] Shutdown complete');
   }
 }
 
 // Handle process termination
 process.on('SIGTERM', async () => {
-  console.log('[Agenda] SIGTERM received, shutting down...');
   await shutdownAgenda();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('[Agenda] SIGINT received, shutting down...');
   await shutdownAgenda();
   process.exit(0);
 });

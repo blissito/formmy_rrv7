@@ -80,24 +80,9 @@ export async function getDefaultAIModelForUser(userId: string): Promise<string |
   if (user.plan === Plans.FREE && !inTrial) {
     return null;
   }
-  
-  // Si es STARTER o FREE en trial, usar el modelo más económico
-  if (user.plan === Plans.STARTER || (user.plan === Plans.FREE && inTrial)) {
-    return "gpt-3.5-turbo"; // Modelo más económico
-  }
-  
-  // Para TRIAL, usar Anthropic Haiku como PRO
-  if (user.plan === Plans.TRIAL) {
-    return "claude-3-haiku-20240307";
-  }
-  
-  // Para PRO, usar Anthropic Haiku
-  if (user.plan === Plans.PRO) {
-    return "claude-3-haiku-20240307";
-  }
-  
-  // Para ENTERPRISE, usar el modelo más avanzado
-  return "claude-3-5-haiku-20241022";
+
+  // Todos los planes (STARTER, TRIAL, PRO, ENTERPRISE) usan gpt-5-nano por defecto
+  return "gpt-5-nano";
 }
 
 // Configuración por defecto para nuevos chatbots
@@ -107,7 +92,7 @@ export const DEFAULT_CHATBOT_CONFIG = {
     "Eres un asistente virtual amigable, profesional y servicial. Respondes de manera clara y concisa, siempre tratando de ser útil.",
   welcomeMessage:
     "¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?",
-  aiModel: "claude-3-haiku-20240307", // Será reemplazado por getDefaultAIModelForUser
+  aiModel: "gpt-5-nano", // Será reemplazado por getDefaultAIModelForUser
   primaryColor: "#3B82F6",
   theme: "light",
   temperature: 0.7,
@@ -117,8 +102,5 @@ export const DEFAULT_CHATBOT_CONFIG = {
 
 // Función para generar nombre aleatorio
 export function generateRandomChatbotName(): string {
-  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
-  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const id = nanoid(3);
-  return `${animal}-${adjective}-${id}`;
+  return "Ghosty";
 }

@@ -260,7 +260,6 @@ export const sendStarterEmail = async ({ email, name }: StarterEmail) => {
       `,
     })
     .then((r: any) => {
-      console.log('Starter email sent successfully:', r);
     })
     .catch((e: Error) => console.error('Error sending Starter email:', e));
 };

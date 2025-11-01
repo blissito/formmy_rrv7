@@ -234,7 +234,6 @@ export default function ChatbotDetailRoute({
 
   // Toggle manual mode for conversation
   const handleToggleManual = async (conversationId: string) => {
-    console.log("🔄 Route handleToggleManual called:", conversationId);
 
     try {
       const response = await fetch(`/api/v1/conversations`, {
@@ -246,11 +245,6 @@ export default function ChatbotDetailRoute({
         }),
       });
 
-      console.log("📡 Toggle response:", response.status, response.statusText);
-      console.log(
-        "📡 Toggle response headers:",
-        Object.fromEntries(response.headers.entries())
-      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -271,7 +265,6 @@ export default function ChatbotDetailRoute({
       }
 
       const result = await response.json();
-      console.log("✅ Toggle result:", result);
 
       if (!result.success) {
         throw new Error(result.error || "Unknown error toggling manual mode");
@@ -290,10 +283,6 @@ export default function ChatbotDetailRoute({
     conversationId: string,
     message: string
   ) => {
-    console.log("🚀 Route handleSendManualResponse called:", {
-      conversationId,
-      messageLength: message.length,
-    });
 
     try {
       const response = await fetch(`/api/v1/conversations`, {
@@ -306,7 +295,6 @@ export default function ChatbotDetailRoute({
         }),
       });
 
-      console.log("📡 Send response:", response.status, response.statusText);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -317,7 +305,6 @@ export default function ChatbotDetailRoute({
       }
 
       const result = await response.json();
-      console.log("✅ Send result:", result);
 
       if (!result.success) {
         throw new Error(
@@ -326,11 +313,6 @@ export default function ChatbotDetailRoute({
       }
 
       // Log result (no alert - no interrumpir flujo de conversación)
-      console.log("✅ Manual response sent:", {
-        channel: result.channel,
-        whatsappSent: result.whatsappSent,
-        message: result.message
-      });
 
       // Solo mostrar error si realmente falló
       if (result.channel === "whatsapp" && result.whatsappError) {
@@ -348,7 +330,6 @@ export default function ChatbotDetailRoute({
 
   // Delete conversation
   const handleDeleteConversation = async (conversationId: string) => {
-    console.log("🗑️ Route handleDeleteConversation called:", conversationId);
 
     try {
       const response = await fetch(`/api/v1/conversations`, {
@@ -367,14 +348,12 @@ export default function ChatbotDetailRoute({
       }
 
       const result = await response.json();
-      console.log("✅ Delete result:", result);
 
       if (!result.success) {
         throw new Error(result.error || "Error desconocido");
       }
 
       // Trigger revalidation explicitly
-      console.log("🔄 Triggering revalidation...");
       revalidator.revalidate();
     } catch (error) {
       console.error("❌ Error deleting conversation:", error);
@@ -384,7 +363,6 @@ export default function ChatbotDetailRoute({
 
   // Toggle favorite
   const handleToggleFavorite = async (conversationId: string) => {
-    console.log("⭐ Route handleToggleFavorite called:", conversationId);
 
     try {
       const response = await fetch(`/api/v1/conversations`, {
@@ -396,7 +374,6 @@ export default function ChatbotDetailRoute({
         }),
       });
 
-      console.log("📡 Toggle favorite response:", response.status, response.statusText);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -417,7 +394,6 @@ export default function ChatbotDetailRoute({
       }
 
       const result = await response.json();
-      console.log("✅ Toggle favorite result:", result);
 
       if (!result.success) {
         throw new Error(result.error || "Unknown error toggling favorite");

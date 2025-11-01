@@ -75,7 +75,6 @@ export const Website = ({
       updateFrequency: formData.updateFrequency,
     });
 
-    console.log("RESULT?", result);
 
     if (result) {
       // Si no se encontraron rutas automáticamente, usar solo la página principal
@@ -122,9 +121,6 @@ export const Website = ({
           : `Sitio web agregado (página principal únicamente - no se encontraron enlaces)`;
 
       toast.success(message);
-      console.log("Rutas encontradas:", result.routes);
-      console.log("Rutas usadas:", routes);
-      console.log("Contenido del sitio web:", result.content);
     }
   };
 

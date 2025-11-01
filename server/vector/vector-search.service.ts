@@ -78,16 +78,20 @@ export async function vectorSearch(
   topK: number = VECTOR_SEARCH_CONFIG.defaultLimit
 ): Promise<VectorSearchResult[]> {
   try {
+    console.log(`\n${'🔍'.repeat(60)}`);
+    console.log(`🔍 [VECTOR SEARCH] INICIO`);
+    console.log(`   Query: "${query}"`);
+    console.log(`   ChatbotId: ${chatbotId}`);
+    console.log(`   TopK: ${topK}`);
+    console.log(`${'🔍'.repeat(60)}\n`);
+
     // Validar límite
     const limit = Math.min(topK, VECTOR_SEARCH_CONFIG.maxLimit);
 
     // 1. Generar embedding del query
+    console.log(`📊 Generando embedding para query...`);
     const queryEmbedding = await generateEmbedding(query);
-
-    console.log('[Vector Search] Query:', query);
-    console.log('[Vector Search] ChatbotId:', chatbotId);
-    console.log('[Vector Search] Index:', VECTOR_INDEX_NAME);
-    console.log('[Vector Search] Limit:', limit);
+    console.log(`✅ Embedding generado: ${queryEmbedding.length} dimensiones`);
 
     // 2. Realizar vector search usando $vectorSearch aggregation
     // Docs: https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/
@@ -119,7 +123,21 @@ export async function vectorSearch(
     });
 
     const resultsArray = results as unknown as any[];
-    console.log('[Vector Search] Results count:', resultsArray.length);
+
+    console.log(`\n📊 Vector Search completado:`);
+    console.log(`   Resultados encontrados: ${resultsArray.length}`);
+
+    if (resultsArray.length > 0) {
+      console.log(`\n📄 Top ${Math.min(3, resultsArray.length)} resultados:`);
+      resultsArray.slice(0, 3).forEach((r: any, idx: number) => {
+        console.log(`\n   ${idx + 1}. Score: ${r.score?.toFixed(4) || 'N/A'}`);
+        console.log(`      Content: ${r.content?.substring(0, 100)}...`);
+        console.log(`      Metadata:`, JSON.stringify(r.metadata || {}, null, 2));
+      });
+    } else {
+      console.log(`   ⚠️  NO se encontraron resultados para query: "${query}"`);
+    }
+    console.log(`\n${'🔍'.repeat(60)}\n`);
 
     // 3. Mapear resultados al formato esperado
     return resultsArray.map((result: any) => ({
@@ -180,10 +198,6 @@ export async function vectorSearchWithFilters(
     filter['metadata.contextId'] = filters.contextId;
   }
 
-  console.log('[Vector Search] Query:', query);
-  console.log('[Vector Search] Index:', VECTOR_INDEX_NAME);
-  console.log('[Vector Search] Filter:', JSON.stringify(filter, null, 2));
-  console.log('[Vector Search] Limit:', limit);
 
   const results = await db.embedding.aggregateRaw({
     pipeline: [
@@ -210,7 +224,6 @@ export async function vectorSearchWithFilters(
   });
 
   const resultsArray = results as unknown as any[];
-  console.log('[Vector Search] Results count:', resultsArray.length);
 
   return resultsArray.map((result: any) => ({
     id: result._id.$oid || result._id,

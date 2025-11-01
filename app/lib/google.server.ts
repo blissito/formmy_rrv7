@@ -73,7 +73,6 @@ export function redirectToGoogle<Redirect extends (arg0: string) => Response>(
   state?: string
 ): Response {
   const redirect_uri = getredirectUri(host);
-  console.log("?? =>>", redirect_uri);
 
   if (!GOOGLE_SECRET || !GOOGLE_CLIENT_ID) {
     throw new Error("Missing env variables");
@@ -165,7 +164,6 @@ export const createSession = async (code: string, request: Request, state?: stri
       try {
         const { createDemoChatbot } = await import("../../server/chatbot/createDemoChatbot.server");
         await createDemoChatbot(newUser.id, extra.email, 'TRIAL');
-        console.log(`✅ Chatbot demo creado automáticamente para ${extra.email}`);
       } catch (error) {
         console.error('Error creando chatbot demo:', error);
         // No fallar el registro si el chatbot demo no se puede crear

@@ -7,7 +7,6 @@ export async function getChatbot(chatbotId: string, userId: string, isAnonymous 
   try {
     // 🛠️ Development mode - Use REAL chatbot for testing
     if (userId === 'dev-user-mock-pro' && process.env.DEVELOPMENT_TOKEN) {
-      console.log('🛠️ Development mode - Using REAL chatbot for testing');
 
       // Override to use YOUR real chatbot ID
       const realChatbotId = '687edb4e7656b411c6a6c628';
@@ -25,16 +24,8 @@ export async function getChatbot(chatbotId: string, userId: string, isAnonymous 
       });
 
       if (realChatbot) {
-        console.log('🎯 Found REAL chatbot:', {
-          id: realChatbot.id,
-          name: realChatbot.name,
-          model: realChatbot.aiModel,
-          isActive: realChatbot.isActive,
-          contextsCount: realChatbot.contexts?.length || 0
-        });
         return realChatbot;
       } else {
-        console.log('❌ Real chatbot not found, falling back to mock');
       }
     }
 
@@ -55,7 +46,6 @@ export async function getChatbot(chatbotId: string, userId: string, isAnonymous 
     });
 
     if (!chatbot) {
-      console.log('❌ Chatbot not found:', { chatbotId, userId, isAnonymous });
       return null;
     }
 

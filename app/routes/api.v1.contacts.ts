@@ -124,39 +124,32 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  console.log("📥 API Contact Action - Starting");
 
   // Verificar autenticación
   const user = await getUserOrNull(request);
   if (!user) {
-    console.log("❌ No user found");
     return json(
       { success: false, error: "No autorizado" },
       { status: 401 }
     );
   }
 
-  console.log("✅ User authenticated:", user.email);
 
   try {
     const body = await request.json();
     const { intent, contactId, status } = body;
 
-    console.log("📥 API Contact Action:", { intent, contactId, status });
 
     if (intent === "update_status") {
-      console.log("🔄 Updating status...", { contactId, status });
 
       // Validar que el status sea válido
       if (!Object.values(ContactStatus).includes(status)) {
-        console.log("❌ Invalid status:", status);
         return json(
           { success: false, error: "Estatus inválido" },
           { status: 400 }
         );
       }
 
-      console.log("✅ Status is valid");
 
       // Verificar que el contacto existe y pertenece a un chatbot del usuario
       const contact = await db.contact.findUnique({
@@ -171,7 +164,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
 
       if (!contact) {
-        console.log("❌ Contact not found:", contactId);
         return json(
           { success: false, error: "Contacto no encontrado" },
           { status: 404 }
@@ -179,11 +171,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
 
       if (contact.chatbot.userId !== user.id) {
-        console.log("❌ Unauthorized access attempt:", {
-          contactId,
-          contactOwnerId: contact.chatbot.userId,
-          requestUserId: user.id,
-        });
         return json(
           { success: false, error: "No tienes permiso para modificar este contacto" },
           { status: 403 }
@@ -191,13 +178,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
 
       // Actualizar el contacto
-      console.log("📝 Updating contact in database...");
       const updatedContact = await db.contact.update({
         where: { id: contactId },
         data: { status },
       });
 
-      console.log("✅ Contact updated:", updatedContact);
 
       return json({ success: true, contact: updatedContact });
     }
@@ -216,7 +201,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
 
       if (!contact) {
-        console.log("❌ Contact not found:", contactId);
         return json(
           { success: false, error: "Contacto no encontrado" },
           { status: 404 }
@@ -224,11 +208,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
 
       if (contact.chatbot.userId !== user.id) {
-        console.log("❌ Unauthorized delete attempt:", {
-          contactId,
-          contactOwnerId: contact.chatbot.userId,
-          requestUserId: user.id,
-        });
         return json(
           { success: false, error: "No tienes permiso para eliminar este contacto" },
           { status: 403 }

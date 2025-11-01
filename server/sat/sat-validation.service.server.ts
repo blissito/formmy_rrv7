@@ -66,7 +66,6 @@ class FacturamaClient {
         ? "https://api.facturama.mx"
         : "https://apisandbox.facturama.mx";
 
-    console.log(`🔐 [Facturama] Initialized in ${process.env.FACTURAMA_ENV || "sandbox"} mode`);
   }
 
   /**
@@ -87,7 +86,6 @@ class FacturamaClient {
     url.searchParams.append("receiverRfc", params.receiverRfc);
     url.searchParams.append("total", params.total.toString());
 
-    console.log(`🔍 [Facturama] Validating invoice: ${params.uuid}`);
 
     const response = await fetch(url.toString(), {
       method: "GET",
@@ -105,7 +103,6 @@ class FacturamaClient {
 
     const data = await response.json();
 
-    console.log(`✅ [Facturama] Invoice ${params.uuid} status: ${data.status}`);
 
     return {
       uuid: params.uuid,
@@ -133,7 +130,6 @@ export async function validateInvoicesWithFacturama(
   invoices: InvoiceToValidate[],
   userId: string
 ): Promise<ValidationResult[]> {
-  console.log(`🔍 [SAT Validation] Validando ${invoices.length} facturas con Facturama...`);
 
   // Calcular créditos necesarios (1 por factura)
   const creditsNeeded = invoices.length;
@@ -178,7 +174,6 @@ export async function validateInvoicesWithFacturama(
         validatedAt: validation.validatedAt,
       });
 
-      console.log(`✅ [SAT Validation] ${invoice.uuid}: ${satStatus}`);
     } catch (error) {
       console.error(`❌ [SAT Validation] Error validating ${invoice.uuid}:`, error);
 
@@ -192,7 +187,6 @@ export async function validateInvoicesWithFacturama(
     }
   }
 
-  console.log(`✅ [SAT Validation] Validación completada: ${results.length} facturas procesadas`);
 
   return results;
 }
@@ -249,7 +243,6 @@ export async function validateInvoicesBatch(
   errors: number;
   results: ValidationResult[];
 }> {
-  console.log(`📦 [SAT Validation] Validación batch: ${invoiceIds.length} facturas`);
 
   // Buscar facturas en BD
   const invoices = await db.satInvoice.findMany({
@@ -278,7 +271,6 @@ export async function validateInvoicesBatch(
   const allResults: ValidationResult[] = [];
   for (let i = 0; i < invoicesToValidate.length; i += chunkSize) {
     const chunk = invoicesToValidate.slice(i, i + chunkSize);
-    console.log(`📦 [SAT Validation] Procesando chunk ${i / chunkSize + 1}/${Math.ceil(invoicesToValidate.length / chunkSize)}`);
 
     const chunkResults = await validateInvoicesWithFacturama(chunk, userId);
     allResults.push(...chunkResults);
@@ -299,7 +291,6 @@ export async function validateInvoicesBatch(
     results: allResults,
   };
 
-  console.log(`✅ [SAT Validation] Batch completado:`, stats);
 
   return stats;
 }

@@ -139,7 +139,6 @@ export const Contactos = ({
   });
 
   const handleStatusChange = (contactId: string, newStatus: ContactStatus) => {
-    console.log("🔄 Actualizando status:", { contactId, newStatus });
 
     // Actualización optimista
     setOptimisticStatuses(prev => ({ ...prev, [contactId]: newStatus }));
@@ -163,7 +162,6 @@ export const Contactos = ({
   useEffect(() => {
     if (statusFetcher.state === "idle" && statusFetcher.data) {
       if (statusFetcher.data.success) {
-        console.log("✅ Status update successful");
         setOptimisticStatuses({});
         revalidator.revalidate();
       } else {
@@ -196,7 +194,6 @@ export const Contactos = ({
   useEffect(() => {
     if (deleteFetcher.state === "idle" && deleteFetcher.data) {
       if (deleteFetcher.data.success) {
-        console.log("✅ Contact deleted successfully");
         revalidator.revalidate();
       } else {
         console.error("❌ Delete failed:", deleteFetcher.data.error);

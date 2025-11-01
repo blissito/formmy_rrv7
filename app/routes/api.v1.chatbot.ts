@@ -98,11 +98,9 @@ export async function action({ request }: any) {
 
   // Framework temporalmente deshabilitado durante refactor
 
-  console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
   try {
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
-    console.log('🎯 Intent received:', intent);
 
     const { getUserOrNull } = await import("server/getUserUtils.server");
 
@@ -114,7 +112,6 @@ export async function action({ request }: any) {
 
     // Si no hay usuario autenticado, verificar API key
     if (!user && apiKey === testApiKey) {
-      console.log('🔑 Using test API key for authentication');
       // Usuario de testing - fixtergeek@gmail.com con plan TRIAL para testing real
       user = {
         id: '687d43b46e2021a1de9d6ed3',
@@ -384,11 +381,6 @@ export async function action({ request }: any) {
         const { normalizeDomainsForStorage } = await import("../../server/utils/domain-validator.server");
         const allowedDomains = normalizeDomainsForStorage(rawDomains);
 
-        console.log('🔒 Guardando dominios permitidos:', {
-          chatbotId,
-          raw: rawDomains,
-          normalized: allowedDomains
-        });
 
         const rateLimit = parseInt(formData.get("rateLimit") as string) || 100;
         const status = formData.get("status") as string || "public";

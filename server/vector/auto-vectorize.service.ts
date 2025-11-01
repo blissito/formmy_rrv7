@@ -76,7 +76,6 @@ export async function vectorizeContext(
     // Dividir en chunks si es necesario
     const chunks = chunkContent(fullText);
 
-    console.log(`📝 Verificando y creando embeddings (${chunks.length} chunks)...`);
 
     // Generar embeddings para cada chunk
     let created = 0;
@@ -96,7 +95,6 @@ export async function vectorizeContext(
         const isDuplicate = await isDuplicateChunk(embedding, chatbotId);
 
         if (isDuplicate) {
-          console.log(`⏭️  Chunk ${i + 1}/${chunks.length} saltado (duplicado semántico)`);
           skipped++;
           continue; // NO insertar chunk duplicado
         }
@@ -147,14 +145,12 @@ export async function vectorizeContext(
         });
 
         created++;
-        console.log(`✅ Chunk ${i + 1}/${chunks.length} agregado (único)`);
       } catch (chunkError) {
         console.error(`Error generando embedding para chunk ${i}:`, chunkError);
         // Continuar con los demás chunks aunque falle uno
       }
     }
 
-    console.log(`✅ Resultado: ${created} creados, ${skipped} duplicados (de ${chunks.length} chunks totales)`);
 
     return {
       success: true,

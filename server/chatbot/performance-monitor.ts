@@ -116,13 +116,6 @@ export class PerformanceMonitor {
     }
     
     // Log structured data
-    console.log(`🎯 [${requestId}] Agent Decision:`, {
-      confidence: metrics.agentConfidence,
-      needsTools: metrics.agentNeedsTools,
-      decisionTime: `${metrics.agentDecisionTime}ms`,
-      tools: metrics.agentSuggestedTools,
-      reasoning: metrics.agentReasoning
-    });
   }
   
   /**
@@ -140,13 +133,6 @@ export class PerformanceMonitor {
       Object.assign(existing, metrics);
     }
     
-    console.log(`🤖 [${requestId}] Model Selection:`, {
-      requested: metrics.modelRequested,
-      used: metrics.modelUsed,
-      provider: metrics.providerUsed,
-      fallback: metrics.usedFallback,
-      streaming: metrics.streamingEnabled
-    });
   }
   
   /**
@@ -163,11 +149,6 @@ export class PerformanceMonitor {
     }
     
     if (metrics.integrationQueriesCount > 0) {
-      console.log(`💾 [${requestId}] Resource Usage:`, {
-        dbQueries: metrics.integrationQueriesCount,
-        cacheHit: `${(metrics.cacheHitRate * 100).toFixed(1)}%`,
-        toolsUsed: metrics.toolsExecuted
-      });
     }
   }
   
@@ -201,12 +182,6 @@ export class PerformanceMonitor {
     const performanceLevel = metrics.totalResponseTime < 2000 ? '⚡' : 
                            metrics.totalResponseTime < 5000 ? '⏱️' : '🐌';
     
-    console.log(`${performanceLevel} [${requestId}] Request Complete:`, {
-      totalTime: `${metrics.totalResponseTime}ms`,
-      tokens: metrics.tokensGenerated,
-      firstToken: metrics.firstTokenLatency ? `${metrics.firstTokenLatency}ms` : 'N/A',
-      error: metrics.errorOccurred ? metrics.errorType : false
-    });
     
     // Cleanup old metrics
     if (this.metrics.length > this.MAX_METRICS_STORED) {
@@ -225,7 +200,6 @@ export class PerformanceMonitor {
    * Log de optimización sugerida
    */
   logOptimizationSuggestion(requestId: string, suggestion: string, impact: string): void {
-    console.log(`💡 [${requestId}] Optimization: ${suggestion} (Impact: ${impact})`);
   }
   
   /**

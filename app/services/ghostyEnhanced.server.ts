@@ -134,7 +134,6 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
     
     switch (toolCall.function.name) {
       case "web_search": {
-        console.log(`🔧 Modelo solicitó herramientas: [ 'web_search' ]`);
         try {
           const searchService = await getUnifiedWebSearchService();
           const searchResults = await searchService.search(
@@ -196,7 +195,6 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
       }
 
       case "web_fetch": {
-        console.log(`🔧 Modelo solicitó herramientas: [ 'web_fetch' ]`);
         try {
           // Llamar directamente a la función en lugar de HTTP request
           const mockRequest = {
@@ -263,7 +261,6 @@ async function executeToolCalls(toolCalls: ToolCall[]): Promise<{
       }
 
       case "generate_payment_link": {
-        console.log(`🔧 Modelo solicitó herramientas: [ 'generate_payment_link' ]`);
         try {
           const { amount, description, currency = 'mxn' } = args;
           
@@ -353,7 +350,6 @@ export async function callGhostyWithTools(
 ): Promise<{ content: string; toolsUsed?: string[]; sources?: any[] }> {
   // Usar GPT-5 nano para Ghosty (plan PRO por defecto)
   const selectedModel = getModelForPlan('PRO'); // Esto retorna gpt-5-nano
-  console.log("🤖 Ghosty usando modelo:", selectedModel);
   
   // Crear provider manager con las API keys disponibles
   const providerManager = createProviderManager(
@@ -430,7 +426,6 @@ export async function callGhostyWithTools(
   try {
     // Primera llamada: con herramientas si están habilitadas
     if (enableTools && tools.length > 0) {
-      console.log("🔧 Llamando con herramientas disponibles:", tools.map(t => t.name));
       
       const toolResponse = await providerManager.chatCompletion({
         model: selectedModel,
@@ -442,7 +437,6 @@ export async function callGhostyWithTools(
       
       // Si el modelo usó herramientas
       if (toolResponse.toolCalls && toolResponse.toolCalls.length > 0) {
-        console.log("🔧 Modelo solicitó herramientas:", toolResponse.toolCalls.map(tc => tc.name));
         
         // Notificar que estamos ejecutando herramientas
         if (onChunk) {
@@ -479,7 +473,6 @@ export async function callGhostyWithTools(
         ];
         
         // Segunda llamada: obtener respuesta final
-        console.log("🎯 Obteniendo respuesta final después de herramientas...");
         
         const finalResponse = await providerManager.chatCompletion({
           model: selectedModel,
@@ -507,7 +500,6 @@ export async function callGhostyWithTools(
     }
     
     // Si no hay herramientas o no se usaron, hacer llamada normal con streaming
-    console.log("💬 Llamada directa sin herramientas...");
     
     if (onChunk) {
       // Usar streaming

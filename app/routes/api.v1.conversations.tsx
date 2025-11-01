@@ -18,13 +18,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
 };
 export const action = async ({ request }: ActionFunctionArgs) => {
-  console.log("🎯 API Conversations - Method:", request.method);
-  console.log("🎯 API Conversations - URL:", request.url);
-  console.log("🎯 API Conversations - Headers:", Object.fromEntries(request.headers.entries()));
 
   try {
     const user = await getUserOrRedirect(request);
-    console.log("🎯 API Conversations - User:", user.id);
 
     // Read intent from URL query params OR body (support both)
     const url = new URL(request.url);
@@ -32,7 +28,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const intent = url.searchParams.get("intent") || body.intent;
     const { conversationId, message } = body;
 
-    console.log("🎯 API Conversations - Intent:", { intent, conversationId, message: message ? `${message.length} chars` : 'none' });
 
     if (!conversationId) {
       return json({ error: "ID de conversación requerido" }, {
@@ -84,18 +79,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return await handleToggleFavorite(conversationId);
 
       case "send_template":
-        console.log("🔥 SEND_TEMPLATE CASE REACHED!");
-        console.log("🔥 Body:", JSON.stringify(body, null, 2));
         const { templateName, templateLanguage } = body;
-        console.log("🔥 Template details:", { templateName, templateLanguage });
         if (!templateName) {
-          console.log("🔥 ERROR: No template name!");
           return json({ error: "Template name required" }, {
             status: 400,
             headers: { 'Content-Type': 'application/json' }
           });
         }
-        console.log("🔥 Calling handleSendTemplate...");
         return await handleSendTemplate(conversationId, templateName, templateLanguage || 'en_US', conversation);
 
       default:
@@ -121,28 +111,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
  * Toggle manual mode para una conversación
  */
 async function handleToggleManualMode(conversationId: string) {
-  console.log("🔄 [PROD] Toggle manual mode for conversation:", conversationId);
 
   const conversation = await db.conversation.findUnique({
     where: { id: conversationId }
   });
 
   if (!conversation) {
-    console.log("❌ Conversation not found:", conversationId);
     return json({ error: "Conversación no encontrada" }, {
       status: 404,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 
-  console.log("🔄 Current manual mode:", conversation.manualMode);
 
   const updatedConversation = await db.conversation.update({
     where: { id: conversationId },
     data: { manualMode: !conversation.manualMode }
   });
 
-  console.log("✅ Updated manual mode:", updatedConversation.manualMode);
 
   return json({
     success: true,
@@ -195,17 +181,8 @@ async function handleManualResponse(
   let whatsappResult = null;
 
   // Debug logging para diagnosticar problemas de envío
-  console.log("🔍 WhatsApp detection check:", {
-    sessionId: conversation.sessionId,
-    visitorId: conversation.visitorId,
-    chatbotId: conversation.chatbotId,
-    isWhatsApp: conversation.sessionId?.includes("whatsapp"),
-    hasVisitorId: !!conversation.visitorId,
-    willAttemptSend: conversation.sessionId?.includes("whatsapp") && !!conversation.visitorId
-  });
 
   if (conversation.sessionId?.includes("whatsapp") && conversation.visitorId) {
-    console.log("📱 Attempting to send manual WhatsApp message...");
     try {
       whatsappResult = await sendManualWhatsAppMessage(
         conversation.visitorId,
@@ -246,12 +223,6 @@ async function handleManualResponse(
     responseMessage = "Respuesta guardada en base de datos";
   }
 
-  console.log("✅ Manual response result:", {
-    messageId: assistantMessage.id,
-    channel: isWhatsAppConversation ? "whatsapp" : "web",
-    whatsappSent: whatsappResult?.success || false,
-    message: responseMessage
-  });
 
   return json({
     success: true,
@@ -272,11 +243,6 @@ async function sendManualWhatsAppMessage(
   message: string,
   chatbotId: string
 ) {
-  console.log("📱 sendManualWhatsAppMessage called:", {
-    phoneNumber: phoneNumber?.substring(0, 8) + "***",
-    messageLength: message.length,
-    chatbotId
-  });
 
   // Obtener integración de WhatsApp para este chatbot
   const integration = await db.integration.findFirst({
@@ -287,12 +253,6 @@ async function sendManualWhatsAppMessage(
     }
   });
 
-  console.log("🔍 WhatsApp integration found:", {
-    exists: !!integration,
-    isActive: integration?.isActive,
-    hasToken: !!integration?.token,
-    hasPhoneNumberId: !!integration?.phoneNumberId
-  });
 
   if (!integration) {
     console.error("❌ WhatsApp integration not found or inactive for chatbot:", chatbotId);
@@ -319,7 +279,6 @@ async function sendManualWhatsAppMessage(
     }
   };
 
-  console.log(`📱 Enviando mensaje manual WhatsApp a ${phoneNumber.substring(0, 8)}***`);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -338,7 +297,6 @@ async function sendManualWhatsAppMessage(
   }
 
   const result = await response.json();
-  console.log('Mensaje manual WhatsApp enviado:', result);
 
   return {
     messageId: result.messages?.[0]?.id,
@@ -355,12 +313,6 @@ async function handleSendTemplate(
   templateLanguage: string,
   conversation: any
 ) {
-  console.log("📱 handleSendTemplate called:", {
-    conversationId,
-    templateName,
-    templateLanguage,
-    chatbotId: conversation.chatbotId
-  });
 
   // Verify conversation is WhatsApp
   if (!conversation.sessionId?.includes("whatsapp") || !conversation.visitorId) {
@@ -406,7 +358,6 @@ async function handleSendTemplate(
     }
   };
 
-  console.log(`📱 Sending WhatsApp template "${templateName}" to ${conversation.visitorId.substring(0, 8)}***`);
 
   try {
     const response = await fetch(url, {
@@ -429,7 +380,6 @@ async function handleSendTemplate(
     }
 
     const result = await response.json();
-    console.log('WhatsApp template sent:', result);
 
     // Fetch template details to get the actual content
     let templateContent = `📨 WhatsApp Template: ${templateName}`;
@@ -454,7 +404,6 @@ async function handleSendTemplate(
         }
       }
     } catch (error) {
-      console.log('Could not fetch template content, using fallback');
     }
 
     // Save assistant message to DB
@@ -496,14 +445,12 @@ async function handleSendTemplate(
  * Soft delete de conversación (marca como DELETED)
  */
 async function handleDeleteConversation(conversationId: string) {
-  console.log("🗑️ Deleting conversation:", conversationId);
 
   const conversation = await db.conversation.findUnique({
     where: { id: conversationId }
   });
 
   if (!conversation) {
-    console.log("❌ Conversation not found:", conversationId);
     return json({ error: "Conversación no encontrada" }, {
       status: 404,
       headers: { 'Content-Type': 'application/json' }
@@ -516,7 +463,6 @@ async function handleDeleteConversation(conversationId: string) {
     data: { status: "DELETED" }
   });
 
-  console.log("✅ Conversation marked as deleted:", updatedConversation.id);
 
   return json({
     success: true,
@@ -530,28 +476,24 @@ async function handleDeleteConversation(conversationId: string) {
  * Toggle favorite status para una conversación
  */
 async function handleToggleFavorite(conversationId: string) {
-  console.log("⭐ Toggle favorite for conversation:", conversationId);
 
   const conversation = await db.conversation.findUnique({
     where: { id: conversationId }
   });
 
   if (!conversation) {
-    console.log("❌ Conversation not found:", conversationId);
     return json({ error: "Conversación no encontrada" }, {
       status: 404,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 
-  console.log("🔄 Current favorite status:", conversation.isFavorite);
 
   const updatedConversation = await db.conversation.update({
     where: { id: conversationId },
     data: { isFavorite: !conversation.isFavorite }
   });
 
-  console.log("✅ Updated favorite status:", updatedConversation.isFavorite);
 
   return json({
     success: true,

@@ -295,7 +295,6 @@ export const sendFreeTrialEmail = async ({ email, name }: FreeTrialEmail) => {
       `,
     })
     .then((r: any) => {
-      console.log('Free Trial email sent successfully:', r);
     })
     .catch((e: Error) => console.error('Error sending free trial email:', e));
 };

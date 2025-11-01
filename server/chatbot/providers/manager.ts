@@ -72,7 +72,6 @@ export class AIProviderManager {
    */
   async chatCompletion(request: ChatRequest): Promise<ChatResponse> {
     const provider = this.findProviderForModel(request.model);
-    console.log(`🎯 Using provider: ${provider.getName()} for model: ${request.model}`);
     
     try {
       return await provider.chatCompletion(request);
@@ -87,7 +86,6 @@ export class AIProviderManager {
    */
   async chatCompletionStream(request: ChatRequest): Promise<ReadableStream<StreamChunk>> {
     const provider = this.findProviderForModel(request.model);
-    console.log(`🚀 Using provider: ${provider.getName()} for streaming model: ${request.model}`);
     
     try {
       return await provider.chatCompletionStream(request);
@@ -113,14 +111,12 @@ export class AIProviderManager {
       
       try {
         const provider = this.findProviderForModel(modelToTry);
-        console.log(`${isFirstAttempt ? '🎯' : '⚠️'} Attempting ${provider.getName()} with model: ${modelToTry}${isFirstAttempt ? '' : ' (fallback)'}`);
         
         const response = await provider.chatCompletion({
           ...request,
           model: modelToTry
         });
         
-        console.log(`✅ Success with ${provider.getName()} - ${modelToTry}${isFirstAttempt ? ' (preferred)' : ' (fallback)'}`);
         
         return {
           response,
@@ -152,14 +148,12 @@ export class AIProviderManager {
       
       try {
         const provider = this.findProviderForModel(modelToTry);
-        console.log(`${isFirstAttempt ? '🎯' : '⚠️'} Streaming ${provider.getName()} with model: ${modelToTry}${isFirstAttempt ? '' : ' (fallback)'}`);
         
         const stream = await provider.chatCompletionStream({
           ...request,
           model: modelToTry
         });
         
-        console.log(`✅ Streaming success with ${provider.getName()} - ${modelToTry}${isFirstAttempt ? ' (preferred)' : ' (fallback)'}`);
         
         return {
           stream,

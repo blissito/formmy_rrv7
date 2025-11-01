@@ -232,7 +232,6 @@ export const sendProEmail = async ({ email, name }: ProEmail) => {
       `,
     })
     .then((r: any) => {
-      console.log(' Pro email sent successfully:', r);
     })
     .catch((e: Error) => console.error('Error sending Pro email:', e));
 };

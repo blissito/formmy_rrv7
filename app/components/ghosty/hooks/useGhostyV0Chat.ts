@@ -148,7 +148,6 @@ export const useGhostyV0Chat = (initialMessages: GhostyMessage[] = []) => {
                 }
               } else if (parsed.type === 'sources') {
                 // 🔍 Handler para fuentes de RAG (search_context)
-                console.log('[useGhostyV0Chat] Recibiendo fuentes de RAG:', parsed.sources);
                 ragSources = parsed.sources || [];
               } else if (parsed.type === 'chunk') {
                 setCurrentState('streaming');

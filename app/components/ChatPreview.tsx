@@ -50,15 +50,6 @@ export default function ChatPreview({
   const voiceMetadata = (voiceIntegration?.metadata as any) || {};
 
   // Debug: Log de integraciones
-  console.log("🔍 [VOICE DEBUG] Total integrations:", integrations.length);
-  console.log("🔍 [VOICE DEBUG] Integrations:", integrations.map((i) => ({
-    platform: i.platform,
-    isActive: i.isActive
-  })));
-  console.log("🔍 [VOICE DEBUG] voiceIntegration found:", voiceIntegration);
-  console.log("🔍 [VOICE DEBUG] voiceEnabled:", voiceEnabled);
-  console.log("🔍 [VOICE DEBUG] production:", production);
-  console.log("🔍 [VOICE DEBUG] Modal will render:", voiceEnabled && production);
   const [chatMessages, setChatMessages] = useState<
     Array<{ role: "user" | "assistant"; content: string }>
   >([
@@ -97,7 +88,6 @@ export default function ChatPreview({
 
         // Si la sesión tiene menos de 24h, reutilizarla
         if (age < MAX_AGE) {
-          console.log(`♻️ Reutilizando sessionId existente: ${sessionId.substring(0, 20)}...`);
           return sessionId;
         }
       } catch (e) {
@@ -112,7 +102,6 @@ export default function ChatPreview({
       timestamp: Date.now()
     }));
 
-    console.log(`🆕 Nuevo sessionId creado: ${newSessionId.substring(0, 20)}...`);
     return newSessionId;
   };
 
@@ -249,7 +238,6 @@ export default function ChatPreview({
     const currentSessionId = getOrCreateSessionId();
     const sseUrl = `/api/v1/conversations/${encodeURIComponent(currentSessionId)}/stream`;
 
-    console.log("🌊 Conectando SSE para respuestas manuales...", sseUrl);
 
     const eventSource = new EventSource(sseUrl);
 
@@ -257,10 +245,8 @@ export default function ChatPreview({
     eventSource.addEventListener("message", (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("📩 SSE event received:", data.type);
 
         if (data.type === "new_messages" && data.messages && data.messages.length > 0) {
-          console.log(`✅ Recibidos ${data.messages.length} mensaje(s) nuevo(s) del admin`);
 
           // Agregar mensajes nuevos a la UI
           setChatMessages((prev) => {
@@ -293,13 +279,11 @@ export default function ChatPreview({
 
     // Error handling (conexión perdida, reconexión automática)
     eventSource.onerror = (error) => {
-      console.log("⚠️ SSE connection error, will auto-retry...", error);
       // EventSource automáticamente reintenta la conexión
     };
 
     // Cleanup al desmontar o cambiar sesión
     return () => {
-      console.log("🔌 Cerrando conexión SSE");
       eventSource.close();
     };
   }, [production, chatMessages.length, isConversationEnded, resetInactivityTimer]);
@@ -311,7 +295,6 @@ export default function ChatPreview({
     const handleFocusMessage = (event: MessageEvent) => {
       // Verificar que el mensaje sea para hacer focus
       if (event.data.type === 'formmy-focus-input') {
-        console.log('🎯 Focus solicitado en input del chat');
         // Hacer focus en el input usando la ref
         if (inputRef.current?.focus) {
           inputRef.current.focus();
@@ -344,7 +327,6 @@ export default function ChatPreview({
       timestamp: Date.now()
     }));
 
-    console.log(`🗑️ Conversación limpiada - Nuevo sessionId: ${newSessionId.substring(0, 20)}...`);
   };
 
   const handleChatSend = async () => {
@@ -374,7 +356,6 @@ export default function ChatPreview({
     {
       // 🔑 CRÍTICO: Obtener sessionId SIEMPRE de localStorage (fuente única de verdad)
       const currentSessionId = getOrCreateSessionId();
-      console.log(`📤 Enviando mensaje con sessionId: ${currentSessionId.substring(0, 20)}...`);
 
       const formData = new FormData();
       formData.append("intent", "chat");
@@ -388,7 +369,6 @@ export default function ChatPreview({
       // 🔒 SEGURIDAD: Incluir parent domain para validación (Oct 16, 2025)
       if (parentDomain) {
         formData.append("parentDomain", parentDomain);
-        console.log('🔒 Parent domain incluido en request:', parentDomain);
       }
 
       // Timeout de seguridad para evitar loading infinito
@@ -516,7 +496,6 @@ export default function ChatPreview({
                     // ✅ Manejar metadata final
                     if (data.type === "metadata" && data.metadata) {
                       // Log metadata para debugging (opcional)
-                      console.log("✅ AgentWorkflow completed:", data.metadata);
                     }
 
                     // ✅ Manejar errores del workflow
@@ -652,7 +631,6 @@ export default function ChatPreview({
           onClose={onClose}
           voiceEnabled={voiceEnabled} // ✅ Disponible en preview y production
           onVoiceClick={() => {
-            console.log("🔍 [VOICE DEBUG] Voice button clicked! Opening modal...");
             setVoiceChatOpen(true);
           }}
         />

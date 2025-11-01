@@ -70,9 +70,6 @@ export async function pauseChatbotIfLimitReached(chatbotId: string): Promise<{
     const chatbot = await deactivateChatbot(chatbotId);
 
     // Log the event
-    console.log(
-      `Chatbot ${chatbotId} was paused due to reaching monthly limit of ${usageInfo.maxAllowed} conversations`
-    );
 
     return {
       wasPaused: true,
@@ -124,9 +121,6 @@ export async function checkAndPauseAllLimitedChatbots(): Promise<{
       pausedChatbots.push(pausedChatbot);
 
       // Log the event
-      console.log(
-        `Chatbot ${chatbot.id} was paused due to reaching monthly limit of ${maxAllowed} conversations`
-      );
     }
   }
 

@@ -209,7 +209,6 @@ export async function addContextWithEmbeddings(
 
     // 3. Construir ContextItem completo
     const contextItem = buildContextItem(params);
-    console.log(`📝 Creating context ${contextItem.id} (type: ${contextItem.type})`);
 
     // 4. Insertar con $push atómico (MongoDB)
     const { ObjectId } = await import('mongodb');
@@ -227,14 +226,12 @@ export async function addContextWithEmbeddings(
       ],
     });
 
-    console.log(`✅ Context added to chatbot ${chatbotId}`);
 
     // 4. Extraer texto procesable según tipo de contexto
     const textToVectorize = extractTextFromContext(content, params.metadata);
 
     // 5. Dividir en chunks
     const chunks = chunkContent(textToVectorize);
-    console.log(`📝 Verificando y creando embeddings (${chunks.length} chunks)...`);
 
     let created = 0;
     let skipped = 0;
@@ -254,7 +251,6 @@ export async function addContextWithEmbeddings(
         const isDuplicate = await isDuplicateChunk(embedding, chatbotId);
 
         if (isDuplicate) {
-          console.log(`⏭️  Chunk ${i + 1}/${chunks.length} saltado (duplicado semántico)`);
           skipped++;
           continue;
         }
@@ -306,16 +302,12 @@ export async function addContextWithEmbeddings(
         });
 
         created++;
-        console.log(`✅ Chunk ${i + 1}/${chunks.length} agregado (único)`);
       } catch (chunkError) {
         console.error(`Error generando embedding para chunk ${i}:`, chunkError);
         // Continuar con los demás chunks aunque falle uno
       }
     }
 
-    console.log(
-      `✅ Resultado: ${created} creados, ${skipped} duplicados (de ${chunks.length} chunks totales)`
-    );
 
     return {
       success: true,

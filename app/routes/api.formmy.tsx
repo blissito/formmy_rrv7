@@ -58,7 +58,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const permissionId = formData.get("permissionId") as string;
     // TODO: Implement resend invitation logic
     // This could involve sending an email notification or updating status
-    console.log("Resending invitation for permission:", permissionId);
     return json({ ok: true, message: "Invitation resent" });
   }
 

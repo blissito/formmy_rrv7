@@ -271,7 +271,6 @@ export const ChatCard = ({
       Effect.flatMap((response) => {
         // Handle 403 (access denied) gracefully
         if (response.status === 403) {
-          console.log("Access denied to chatbot - user needs to upgrade");
           return Effect.succeed({ needsUpgrade: true, count: 0 });
         }
         return Effect.tryPromise({

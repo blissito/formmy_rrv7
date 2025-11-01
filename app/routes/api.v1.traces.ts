@@ -28,7 +28,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
   const intent = url.searchParams.get("intent");
 
-  console.log(`[Traces API] Intent: ${intent}, User: ${user.email}`);
 
   try {
     switch (intent) {

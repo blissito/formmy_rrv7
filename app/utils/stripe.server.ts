@@ -111,7 +111,6 @@ export const getStripeEvent = async (
   if (process.env.NODE_ENV === "development") {
     try {
       const payload = await request.text();
-      console.log('[Webhook] Modo desarrollo: omitiendo verificación de firma');
       return JSON.parse(payload) as StripeEvent;
     } catch (error) {
       console.error('Error al parsear el payload en modo desarrollo:', error);

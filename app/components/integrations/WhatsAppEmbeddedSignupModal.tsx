@@ -63,7 +63,6 @@ export default function WhatsAppEmbeddedSignupModal({
           return;
         }
 
-        console.log(`✅ [Modal] Inicializando Facebook SDK con App ID: ${appId}`);
 
         window.FB.init({
           appId: appId,
@@ -106,15 +105,12 @@ export default function WhatsAppEmbeddedSignupModal({
         const data = JSON.parse(event.data);
 
         if (data.type === 'WA_EMBEDDED_SIGNUP') {
-          console.log('📱 [Meta Message Event] Embedded Signup data recibida:', data);
 
           // Manejar diferentes eventos del flujo
           switch (data.event) {
             case 'FINISH':
             case 'FINISH_ONLY_WABA':
             case 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING':
-              console.log('✅ [Meta Message Event] Flujo completado exitosamente:', data.event);
-              console.log('📊 [Meta Message Event] Assets generados:', data.data);
 
               // Guardar datos capturados
               setEmbeddedSignupData({
@@ -139,12 +135,10 @@ export default function WhatsAppEmbeddedSignupModal({
               break;
 
             default:
-              console.log('ℹ️ [Meta Message Event] Evento desconocido:', data.event);
           }
         }
       } catch (parseError) {
         // Si no es JSON parseable, intentar con event.data directamente
-        console.log('ℹ️ [Meta Message Event] Mensaje no-JSON recibido:', event.data);
       }
     };
 
@@ -167,33 +161,17 @@ export default function WhatsAppEmbeddedSignupModal({
 
     try {
       const appId = import.meta.env.VITE_FACEBOOK_APP_ID;
-      console.log(`\n${'🚀'.repeat(40)}`);
-      console.log(`🚀 [Modal] Iniciando Facebook Login for Business`);
-      console.log(`   App ID: ${appId}`);
-      console.log(`   Config ID: ${import.meta.env.VITE_FACEBOOK_CONFIG_ID || 'No configurado (opcional)'}`);
-      console.log(`   Chatbot ID: ${chatbotId}`);
-      console.log(`${'🚀'.repeat(40)}\n`);
 
       // Iniciar Embedded Signup usando Facebook Login for Business
       window.FB.login(
         (response: any) => {
-          console.log(`\n${'📥'.repeat(40)}`);
-          console.log('📥 [Modal] Facebook Login Response recibido:');
-          console.log('   Status:', response.status);
-          console.log('   AuthResponse:', response.authResponse ? {
-            code: response.authResponse.code ? `${response.authResponse.code.substring(0, 30)}...` : 'NO CODE',
-            userID: response.authResponse.userID || 'N/A'
-          } : 'No authResponse');
-          console.log(`${'📥'.repeat(40)}\n`);
 
           if (response.status === 'connected' && response.authResponse?.code) {
             // Procesar respuesta sin async en el callback
             const processResponse = async () => {
               try {
-                console.log('🚀 [Modal] Iniciando proceso de conexión WhatsApp...');
 
                 // PASO 1: Intercambiar código por tokens con Meta
-                console.log('📞 [Modal] PASO 1: Intercambiando código por tokens con Meta...');
 
                 // Esperar a que el message event capture los IDs (máx 2 segundos)
                 let attempts = 0;
@@ -202,7 +180,6 @@ export default function WhatsAppEmbeddedSignupModal({
                   attempts++;
                 }
 
-                console.log('📊 [Modal] Datos del message event:', embeddedSignupData);
 
                 const exchangeResponse = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
                   method: 'POST',
@@ -225,14 +202,8 @@ export default function WhatsAppEmbeddedSignupModal({
                   throw new Error(exchangeData.error || 'Error al intercambiar tokens con Meta');
                 }
 
-                console.log('✅ [Modal] PASO 1 COMPLETADO - Tokens obtenidos de Meta:', {
-                  hasAccessToken: !!exchangeData.integration?.token,
-                  phoneNumberId: exchangeData.integration?.phoneNumberId,
-                  waba: exchangeData.integration?.businessAccountId
-                });
 
                 // WhatsApp conectado exitosamente (sin Composio - deprecado)
-                console.log('🎉 [Modal] PROCESO COMPLETO - Actualizando UI...');
                 setStatus('success');
                 onSuccess({
                   ...exchangeData.integration,
@@ -241,9 +212,7 @@ export default function WhatsAppEmbeddedSignupModal({
                 });
 
                 // Cerrar modal después de un breve retraso (SOLO si todo fue exitoso)
-                console.log('⏱️  [Modal] Cerrando modal en 1.5 segundos...');
                 setTimeout(() => {
-                  console.log('✅ [Modal] Modal cerrado exitosamente');
                   onClose();
                 }, 1500);
 
@@ -256,14 +225,12 @@ export default function WhatsAppEmbeddedSignupModal({
                     : 'Error al conectar WhatsApp'
                 );
                 // NO cerrar modal en caso de error
-                console.log('⚠️  [Modal] Modal permanece abierto para mostrar error');
               }
             };
 
             // Ejecutar función async por separado
             processResponse();
           } else {
-            console.log('User cancelled or failed to authorize');
             setStatus('error');
             setError('Autorización cancelada o fallida');
           }

@@ -45,7 +45,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       let lastCheck = new Date();
       let isActive = true;
 
-      console.log(`🌊 SSE connection opened for conversation: ${conversationId}`);
 
       // Helper para enviar eventos SSE
       const sendEvent = (data: any) => {
@@ -79,9 +78,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
           });
 
           if (newMessages.length > 0) {
-            console.log(`📩 Found ${newMessages.length} new message(s) for conversation ${conversationId}`, {
-              roles: newMessages.map(m => m.role).join(', ')
-            });
 
             // Enviar mensajes nuevos al cliente (USER y ASSISTANT)
             sendEvent({
@@ -120,7 +116,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
       // Auto-cleanup después de 10 minutos
       const cleanupTimeout = setTimeout(() => {
-        console.log(`⏱️ SSE connection timeout (10min) for conversation: ${conversationId}`);
         isActive = false;
         clearInterval(pollingInterval);
         clearInterval(heartbeatInterval);
@@ -138,7 +133,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
       // Cleanup cuando el cliente cierra la conexión
       request.signal.addEventListener("abort", () => {
-        console.log(`🔌 SSE connection closed by client for conversation: ${conversationId}`);
         isActive = false;
         clearInterval(pollingInterval);
         clearInterval(heartbeatInterval);

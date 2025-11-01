@@ -24,8 +24,6 @@ export const testToolHandler = async (
   params: any = {},
   context?: ToolContext
 ) => {
-  console.log(`\n🧪 Testing tool: ${handlerName}`);
-  console.log(`📥 Params:`, JSON.stringify(params, null, 2));
 
   const testContext = context || createMockContext();
 
@@ -62,8 +60,6 @@ export const testToolHandler = async (
     const result = await handler(params, testContext);
     const duration = Date.now() - startTime;
 
-    console.log(`✅ Success (${duration}ms)`);
-    console.log(`📤 Result:`, JSON.stringify(result, null, 2));
 
     return {
       success: true,
@@ -75,8 +71,6 @@ export const testToolHandler = async (
     };
 
   } catch (error) {
-    console.log(`❌ Error:`, error instanceof Error ? error.message : error);
-    console.log(`📍 Stack:`, error instanceof Error ? error.stack : 'No stack trace');
 
     return {
       success: false,
@@ -93,11 +87,9 @@ export const testToolHandler = async (
  * Test de schema validation - verifica que los campos existen en la BD
  */
 export const validateSchemaFields = async () => {
-  console.log('\n🔍 Validating Prisma schema fields...');
 
   try {
     // Test Chatbot model
-    console.log('Testing Chatbot model...');
     const chatbot = await db.chatbot.findFirst({
       select: {
         id: true,
@@ -108,20 +100,16 @@ export const validateSchemaFields = async () => {
         conversationCount: true
       }
     });
-    console.log('✅ Chatbot fields valid');
 
     // Test Integration model
-    console.log('Testing Integration model...');
     const integration = await db.integration.findFirst({
       select: {
         platform: true, // Verificar que sea 'platform' y no 'type'
         isActive: true
       }
     });
-    console.log('✅ Integration fields valid');
 
     // Test Message model
-    console.log('Testing Message model...');
     const message = await db.message.findFirst({
       select: {
         id: true,
@@ -130,10 +118,8 @@ export const validateSchemaFields = async () => {
         tokens: true // Verificar que sea 'tokens' y no 'tokenCount'
       }
     });
-    console.log('✅ Message fields valid');
 
     // Test Conversation model
-    console.log('Testing Conversation model...');
     const conversation = await db.conversation.findFirst({
       select: {
         id: true,
@@ -144,12 +130,10 @@ export const validateSchemaFields = async () => {
         messageCount: true
       }
     });
-    console.log('✅ Conversation fields valid');
 
     return { success: true, message: 'All schema fields validated successfully' };
 
   } catch (error) {
-    console.log('❌ Schema validation failed:', error instanceof Error ? error.message : error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error)
@@ -161,7 +145,6 @@ export const validateSchemaFields = async () => {
  * Test suite completo para todos los handlers
  */
 export const runCompleteToolsTest = async () => {
-  console.log('\n🚀 Running complete tools test suite...');
 
   const results = [];
 
@@ -170,7 +153,6 @@ export const runCompleteToolsTest = async () => {
   results.push({ type: 'schema', ...schemaResult });
 
   if (!schemaResult.success) {
-    console.log('❌ Schema validation failed, skipping tool tests');
     return results;
   }
 
@@ -200,7 +182,6 @@ export const runCompleteToolsTest = async () => {
   const successful = results.filter(r => r.success).length;
   const total = results.length;
 
-  console.log(`\n📊 Test Summary: ${successful}/${total} passed`);
 
   return results;
 };
@@ -217,14 +198,11 @@ export const quickHealthCheck = async () => {
     'save_contact_info'
   ];
 
-  console.log('\n🏥 Quick health check for all tools...');
 
   for (const tool of tools) {
     try {
       await testToolHandler(tool, {}, createMockContext());
-      console.log(`✅ ${tool} - OK`);
     } catch (error) {
-      console.log(`❌ ${tool} - FAILED: ${error instanceof Error ? error.message : error}`);
     }
   }
 };

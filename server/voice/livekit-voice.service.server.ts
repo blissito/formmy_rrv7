@@ -128,7 +128,6 @@ export async function createVoiceSession({
     },
   });
 
-  console.log(`✅ Voice session created: ${session.id} (room: ${roomName})`);
 
   return {
     sessionId: session.id,
@@ -223,7 +222,6 @@ export async function endVoiceSession({
   if (roomClient) {
     try {
       await roomClient.deleteRoom(session.roomName);
-      console.log(`🗑️ LiveKit room deleted: ${session.roomName}`);
     } catch (error) {
       console.error(`⚠️ Failed to delete LiveKit room: ${error}`);
     }
@@ -241,7 +239,6 @@ export async function endVoiceSession({
     },
   });
 
-  console.log(`✅ Voice session ended: ${sessionId} (${durationMinutes.toFixed(2)} min, ${creditsUsed} credits)`);
 
   return {
     sessionId: updatedSession.id,

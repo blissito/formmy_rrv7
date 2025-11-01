@@ -78,11 +78,21 @@ export async function createChatbot({
   }
 
   // Generate a unique slug based on the name
-  const slug = generateUniqueSlug(name);
+  let slug: string;
+  let finalName = name;
+
+  // Si el nombre es "Ghosty", generar un ID único y usarlo en nombre y slug
+  if (name === "Ghosty") {
+    const ghostyId = nanoid(6);
+    finalName = `Ghosty ${ghostyId}`;
+    slug = `ghosty_${ghostyId}`;
+  } else {
+    slug = generateUniqueSlug(name);
+  }
 
   return db.chatbot.create({
     data: {
-      name,
+      name: finalName,
       description,
       slug,
       userId,

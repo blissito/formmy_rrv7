@@ -50,7 +50,6 @@ export async function createOrUpdateContact(
   chatbotId: string,
   userId: string
 ): Promise<SatContact> {
-  console.log(`👤 [SAT Contacts] Procesando contacto: ${invoice.rfcEmisor}`);
 
   // Buscar contacto existente por RFC
   let contact = await db.satContact.findFirst({
@@ -62,7 +61,6 @@ export async function createOrUpdateContact(
 
   if (!contact) {
     // Crear nuevo contacto
-    console.log(`✨ [SAT Contacts] Creando nuevo contacto: ${invoice.nombreEmisor}`);
 
     contact = await db.satContact.create({
       data: {
@@ -80,11 +78,9 @@ export async function createOrUpdateContact(
     });
 
     // ⭐ Validar automáticamente con SAT
-    console.log(`🔍 [SAT Contacts] Validando nuevo contacto con SAT...`);
     await validateContactWithSAT(contact.id);
   } else {
     // Actualizar estadísticas existentes
-    console.log(`📊 [SAT Contacts] Actualizando estadísticas de: ${contact.name}`);
 
     contact = await db.satContact.update({
       where: { id: contact.id },
@@ -97,7 +93,6 @@ export async function createOrUpdateContact(
 
     // Re-validar si han pasado más de 7 días desde última validación
     if (shouldRevalidate(contact.lastSATCheck)) {
-      console.log(`🔄 [SAT Contacts] Re-validando contacto (>7 días)...`);
       await validateContactWithSAT(contact.id);
     }
   }
@@ -142,7 +137,6 @@ export async function validateContactWithSAT(contactId: string): Promise<void> {
     throw new Error(`Contacto ${contactId} no encontrado`);
   }
 
-  console.log(`🔍 [SAT Contacts] Validando RFC: ${contact.rfc}`);
 
   try {
     // Consultar SAT Web Service (simulado)
@@ -173,7 +167,6 @@ export async function validateContactWithSAT(contactId: string): Promise<void> {
       await createEDOSAlert(contact);
     }
 
-    console.log(`✅ [SAT Contacts] Validación completada: ${contact.rfc} - ${satData.satStatus}`);
   } catch (error) {
     console.error(`❌ [SAT Contacts] Error validando ${contact.rfc}:`, error);
     // No fallar el proceso si la validación falla
@@ -194,7 +187,6 @@ async function querySATWebService(rfc: string): Promise<SATValidationResult> {
   // TODO: Integrar con API real del SAT o Facturama
 
   // Por ahora, simular validación
-  console.log(`🔍 [SAT WS] Consultando RFC: ${rfc} (SIMULADO)`);
 
   // Simulación: 95% de RFCs están ACTIVOS, 5% en lista negra
   const isEFOS = Math.random() < 0.02; // 2% EFOS
@@ -218,7 +210,6 @@ async function querySATWebService(rfc: string): Promise<SATValidationResult> {
  * Crea una alerta cuando un contacto es detectado en lista EFOS.
  */
 async function createEFOSAlert(contact: SatContact): Promise<void> {
-  console.log(`🚨 [SAT Alerts] Creando alerta EFOS para: ${contact.name}`);
 
   // TODO: Implementar sistema de notificaciones/alertas
   // Por ahora, solo loggear
@@ -238,7 +229,6 @@ async function createEFOSAlert(contact: SatContact): Promise<void> {
  * Crea una alerta cuando un contacto es detectado en lista EDOS.
  */
 async function createEDOSAlert(contact: SatContact): Promise<void> {
-  console.log(`🚨 [SAT Alerts] Creando alerta EDOS para: ${contact.name}`);
 
   console.warn(`
     ⚠️ ALERTA EDOS DETECTADA
@@ -267,7 +257,6 @@ export async function parseConstanciaFiscal(
   userId: string,
   chatbotId: string
 ): Promise<SatContact> {
-  console.log(`📄 [SAT Contacts] Parseando Constancia Fiscal...`);
 
   // Importar LlamaParse
   const { llamaParse } = await import("../llamaparse/llamaparse.service");

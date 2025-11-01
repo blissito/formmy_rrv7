@@ -405,7 +405,6 @@ export default function SATDashboard() {
     }));
 
     // TODO: Implementar exportación real con librería xlsx
-    console.log("Exportando:", dataToExport);
     alert(`Exportando ${dataToExport.length} facturas del periodo ${data.periodLabel}`);
   };
 

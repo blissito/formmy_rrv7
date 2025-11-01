@@ -209,13 +209,11 @@ export const MessageBubble = ({
             
             // Si no hay contenido principal pero sí reasoning, es probable que todo sea reasoning
             if (mainContent.trim().length < 10 && allReasoning.length > 50) {
-              console.log('🔄 FIXING: Looks like everything is reasoning, extracting actual response...');
               // Intentar extraer la respuesta real del reasoning
               const responsePattern = /(?:response|answer|resultado):\s*([\s\S]*?)(?:\n|$)/i;
               const match = allReasoning.match(responsePattern);
               if (match) {
                 mainContent = match[1].trim();
-                console.log('✅ EXTRACTED: Found response in reasoning:', mainContent.substring(0, 100));
               }
             }
             

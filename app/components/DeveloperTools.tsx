@@ -317,11 +317,9 @@ export function DocumentList({ chatbots, apiKey }: DocumentListProps) {
         }
       );
 
-      console.log('[DocumentList] Response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('[DocumentList] Data received:', data);
         setDocuments(data.contexts || []);
         setError(null);
       } else {

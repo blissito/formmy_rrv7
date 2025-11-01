@@ -33,7 +33,6 @@ export async function createConversation({
 
   // ✅ Usar sessionId del cliente si se proporciona, sino generar uno nuevo
   const sessionId = clientSessionId || nanoid();
-  console.log(`🆕 Creando conversación con sessionId: ${clientSessionId ? 'del cliente' : 'generado'} → ${sessionId.substring(0, 20)}...`);
 
   // Create the conversation
   const conversation = await db.conversation.create({

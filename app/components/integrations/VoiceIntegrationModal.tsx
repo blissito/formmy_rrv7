@@ -59,7 +59,6 @@ export default function VoiceIntegrationModal({
     setIsActivating(true);
 
     try {
-      console.log("🎤 [VOICE MODAL] Iniciando activación...");
 
       // Crear integración de voz
       const createRes = await fetch("/api/v1/integration", {
@@ -104,7 +103,6 @@ export default function VoiceIntegrationModal({
       }
 
       setIsConnected(true);
-      console.log("✅ [VOICE MODAL] Voz activada exitosamente");
 
       if (onSuccess) {
         onSuccess({ connected: true, provider: "voice" });
@@ -178,7 +176,6 @@ export default function VoiceIntegrationModal({
         throw new Error("Error al guardar configuración");
       }
 
-      console.log("✅ Configuración guardada");
 
       if (onSuccess) {
         onSuccess({ updated: true });

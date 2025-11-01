@@ -48,11 +48,11 @@ function createLLM(model: string, temperature?: number) {
   // Si no se proporciona temperature, usar la óptima del modelo
   config.temperature = temperature !== undefined ? temperature : getOptimalTemperature(model);
 
-  // 🛡️ Token limits ESTRICTOS (reducidos para evitar loops infinitos)
+  // 🛡️ Token limits (suficientes para tool calling + respuesta)
   if (model.startsWith("gpt-5") || model.startsWith("gpt-4")) {
-    config.maxCompletionTokens = 500; // Reducido de 1000 a 500
+    config.maxCompletionTokens = 2000; // Suficiente para tool calls + respuesta
   } else {
-    config.maxTokens = 500; // Reducido de 1000 a 500
+    config.maxTokens = 2000; // Suficiente para tool calls + respuesta
   }
 
   // Timeout and retries
@@ -137,35 +137,28 @@ function buildSystemPrompt(
   let searchInstructions = '';
   if (hasContextSearch) {
     searchInstructions = `
-🔍 SEARCH INSTRUCTIONS:
+IMPORTANT: You have access to a knowledge base through search_context().
 
-When the user asks about business information, use search_context() to find the answer.
-
-Examples of when to search:
-- Products, services, features, pricing
-- Company policies, terms, documentation
-- Technical specifications, capabilities
+ALWAYS use search_context() for questions about:
+- Products, services, features
+- Pricing, plans, costs
+- Company policies, documentation
+- Technical details
 - ANY business-specific information
 
-How to use search_context():
-1. Create a specific search query with relevant keywords
-2. If first search doesn't find what you need, try different keywords
-3. You can search multiple times for complex questions
+Examples (copy this pattern):
+User: "what is product X"
+→ search_context("product X")
 
-Example:
-User: "What are your pricing plans?"
-→ search_context("pricing plans costs")
+User: "pricing"
+→ search_context("pricing plans")
 
-User: "Do you offer refunds?"
-→ search_context("refund policy money back guarantee")
+User: "what is ${config.name}"
+→ search_context("${config.name}")
 
-Personal information (from chat history):
-- User's name, company, preferences → Answer from chat history, don't search
-- Business information → Always search first
+If unsure whether information is in the knowledge base, search anyway. It's free and fast.${hasWebSearch ? `
 
-Keep responses concise and relevant to the question.${hasWebSearch ? `
-
-If search_context doesn't find the answer, you can use web_search_google("${config.name} [topic]") as backup.` : ''}
+If search_context doesn't find what you need, try web_search_google("${config.name} [topic]").` : ''}
 `;
   }
 

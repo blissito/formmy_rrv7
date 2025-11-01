@@ -45,12 +45,10 @@ async function authenticateRequest(request: Request): Promise<string | null> {
       });
 
       if (user) {
-        console.log("✅ [AUTH] Session auth successful for user:", user.id);
         return user.id;
       }
     }
   } catch (err) {
-    console.log("⚠️ [AUTH] Session auth failed:", err);
   }
 
   // 2. Intentar autenticación por API key (externo)
@@ -58,14 +56,11 @@ async function authenticateRequest(request: Request): Promise<string | null> {
     const apiKey = await extractApiKeyFromRequest(request);
     if (apiKey) {
       const authResult = await authenticateApiKey(apiKey);
-      console.log("✅ [AUTH] API key auth successful for user:", authResult.apiKey.user.id);
       return authResult.apiKey.user.id;
     }
   } catch (err) {
-    console.log("⚠️ [AUTH] API key auth failed:", err);
   }
 
-  console.log("❌ [AUTH] Both auth methods failed");
   return null;
 }
 
@@ -327,9 +322,6 @@ export async function action({ request }: ActionFunctionArgs) {
       // Consumir créditos
       if (result.durationMinutes > 0) {
         const creditResult = await consumeVoiceCredits(userId, result.durationMinutes);
-        console.log(
-          `✅ Voice credits consumed: ${creditResult.creditsUsed} (${result.durationMinutes.toFixed(2)} min)`
-        );
       }
 
       return Response.json({

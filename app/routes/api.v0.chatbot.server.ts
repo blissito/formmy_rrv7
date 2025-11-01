@@ -225,14 +225,6 @@ async function handleChatV0(params: {
       // Validar dominio usando referer (funciona en iframes)
       const validation = validateDomainAccess(referer || origin, allowedDomains);
 
-      console.log('🔒 Validación de dominio:', {
-        chatbotId,
-        chatbotName: chatbot.name,
-        allowedDomains,
-        referer,
-        origin,
-        validation
-      });
 
       if (!validation.allowed) {
         return new Response(
@@ -252,11 +244,6 @@ async function handleChatV0(params: {
         );
       }
     } else {
-      console.log('🔓 Dashboard de Formmy detectado - validación de dominio omitida:', {
-        chatbotId,
-        referer,
-        origin
-      });
     }
   }
   */
@@ -295,7 +282,6 @@ async function handleChatV0(params: {
     }
   } else {
     // Usuarios anónimos: usar el modelo configurado del chatbot sin validaciones
-    console.log('👤 Usuario anónimo usando modelo:', chatbot.aiModel);
   }
 
   try {
@@ -328,20 +314,17 @@ async function handleChatV0(params: {
     // Si se proporcionó sessionId pero no existe → crear NUEVA conversación (no recuperar antigua)
     if (!conversation && !sessionIdProvided && effectiveVisitorId) {
       // No hay sessionId → buscar última activa del visitor (recuperación de sesión)
-      console.log(`🔍 Buscando última conversación activa para visitorId: ${effectiveVisitorId}, chatbotId: ${chatbotId} ${isAnonymous ? '(anónimo)' : '(autenticado)'}`);
       conversation = await findLastActiveConversation({
         chatbotId,
         visitorId: effectiveVisitorId
       });
 
       if (conversation) {
-        console.log(`✅ Conversación activa encontrada: ${conversation.sessionId} (recuperada automáticamente)`);
       }
     }
 
     if (!conversation) {
       // No existe conversación previa → crear nueva
-      console.log(`🆕 Creando nueva conversación para visitorId: ${effectiveVisitorId}, chatbotId: ${chatbotId} ${isAnonymous ? '(anónimo)' : '(autenticado)'}`);
       conversation = await createConversation({
         chatbotId,
         visitorId: effectiveVisitorId,
@@ -353,7 +336,6 @@ async function handleChatV0(params: {
     const { getMessagesByConversationId } = await import("../../server/chatbot/messageModel.server");
     const allMessages = await getMessagesByConversationId(conversation.id);
 
-    console.log(`📚 Historial cargado: ${allMessages.length} mensajes totales (ANTES del mensaje actual)`);
 
     // Truncar a últimos 50 mensajes (todos los planes)
     const recentMessages = allMessages.slice(-50);
@@ -364,7 +346,6 @@ async function handleChatV0(params: {
       content: msg.content
     }));
 
-    console.log(`🔹 Historial para agente: ${history.length} mensajes (truncado a 50, SIN mensaje actual)`);
 
     // Ahora sí guardar mensaje del usuario (después de cargar historial)
     await addUserMessage(conversation.id, message, undefined, "web");
@@ -378,16 +359,13 @@ async function handleChatV0(params: {
 
     const resolvedConfig = resolveChatbotConfig(chatbot, user);
 
-    console.log(`🎯 Pasando historial al agentContext: ${history.length} mensajes`);
     if (history.length > 0) {
-      console.log(`  Primera mensaje: ${history[0].role} - "${history[0].content.substring(0, 60)}..."`);
     }
 
     // ✅ Cargar integraciones activas del chatbot
     const { getChatbotIntegrationFlags } = await import("../../server/chatbot/integrationModel.server");
     const integrations = await getChatbotIntegrationFlags(chatbotId);
 
-    console.log(`🔌 Integraciones del chatbot ${chatbotId}:`, integrations);
 
     const agentContext = createAgentExecutionContext(user, chatbotId, message, {
       sessionId: conversation.sessionId,
@@ -396,21 +374,11 @@ async function handleChatV0(params: {
       integrations // ✅ Pasar integraciones al contexto
     });
 
-    console.log(`✅ AgentContext creado con conversationHistory:`, agentContext.conversationHistory?.length || 0);
 
     // ✅ CRÍTICO: Extraer plan del dueño del chatbot para usuarios anónimos
     // Esto permite que usuarios anónimos tengan acceso a RAG si el dueño tiene plan PRO+
-    console.log(`\n${'🔍'.repeat(40)}`);
-    console.log(`🔍 [DEBUG] Verificando chatbot.user:`);
-    console.log(`   chatbot.id: ${chatbot.id}`);
-    console.log(`   chatbot.userId: ${chatbot.userId}`);
-    console.log(`   chatbot.user existe: ${!!(chatbot as any).user}`);
-    console.log(`   chatbot.user?.plan: ${(chatbot as any).user?.plan || 'undefined'}`);
-    console.log(`   visitor plan: ${user.plan}`);
-    console.log(`${'🔍'.repeat(40)}\n`);
 
     const chatbotOwnerPlan = (chatbot as any).user?.plan;
-    console.log(`📋 Plan del dueño del chatbot: ${chatbotOwnerPlan || 'N/A'} (visitor plan: ${user.plan})`);
 
     // ✅ SIEMPRE STREAMING - CLAUDE.md compliance
     // Eliminado modo JSON - SOLO SSE streaming
@@ -509,7 +477,6 @@ async function handleChatV0(params: {
             // 💾 Guardar respuesta del asistente en la base de datos
             // ✅ CRÍTICO: Guardar ANTES de cerrar el stream
             if (fullResponse && fullResponse.trim().length > 0) {
-              console.log(`💾 Guardando respuesta del asistente (${fullResponse.length} caracteres) para conversación ${conversation.id}`);
 
               const { addAssistantMessage } = await import("../../server/chatbot/messageModel.server");
 
@@ -529,7 +496,6 @@ async function handleChatV0(params: {
                     "web"
                   );
 
-                  console.log(`✅ Mensaje del asistente guardado exitosamente (intento ${attempt})`);
                   saved = true;
                 } catch (err) {
                   lastError = err;

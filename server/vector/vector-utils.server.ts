@@ -125,7 +125,6 @@ export async function isDuplicateChunk(
       const similarity = cosineSimilarity(embedding, existing.embedding as number[]);
 
       if (similarity >= threshold) {
-        console.log(`⚠️  Chunk duplicado detectado (similaridad: ${(similarity * 100).toFixed(1)}%)`);
         return true; // Es duplicado
       }
     }

@@ -33,13 +33,11 @@ export function buildEnrichedSystemPrompt(
     // Usar prompt especializado del agente seleccionado
     enrichedSystemPrompt = getAgentPrompt(chatbot.personality as AgentType);
     if (enableLogging) {
-      console.log(`🎯 [DEBUG] Usando prompt especializado para agente: ${chatbot.personality}`);
     }
   } else {
     // Fallback a instructions genéricas
     enrichedSystemPrompt = chatbot.instructions || "Eres un asistente útil.";
     if (enableLogging) {
-      console.log("📝 [DEBUG] Usando instructions genéricas del chatbot");
     }
   }
   
@@ -57,10 +55,6 @@ export function buildEnrichedSystemPrompt(
   }
   
   if (enableLogging) {
-    console.log("📝 [DEBUG] buildEnrichedSystemPrompt - Datos del chatbot:");
-    console.log("   - instructions:", chatbot.instructions?.substring(0, 100) + "...");
-    console.log("   - customInstructions:", chatbot.customInstructions?.substring(0, 100) + "...");
-    console.log("   - customInstructions length:", chatbot.customInstructions?.length || 0);
   }
   
   // Agregar instrucciones personalizadas si existen
@@ -70,12 +64,9 @@ export function buildEnrichedSystemPrompt(
     enrichedSystemPrompt += "\n=== FIN INSTRUCCIONES ESPECÍFICAS ===\n";
     
     if (enableLogging) {
-      console.log("✅ [DEBUG] customInstructions agregadas al prompt");
     }
   } else {
     if (enableLogging) {
-      console.log("❌ [DEBUG] NO se agregaron customInstructions al prompt");
-      console.log("   - customInstructions valor:", JSON.stringify(chatbot.customInstructions));
     }
   }
   
@@ -158,8 +149,6 @@ export function buildEnrichedSystemPrompt(
     if (finalTokens > 1500) {
       console.warn(`ALERTA COSTOS: Enviando ${finalTokens} tokens = ~$${(finalTokens * 0.015 / 1000).toFixed(3)} USD solo en INPUT`);
     }
-    console.log("🎯 [DEBUG] Prompt final generado (primeros 200 chars):");
-    console.log(enrichedSystemPrompt.substring(0, 200) + "...");
   }
   
   return enrichedSystemPrompt;
@@ -210,7 +199,6 @@ export async function buildEnrichedSystemPromptWithIntegrations(
       enrichedSystemPrompt += "=== FIN CAPACIDADES ESPECIALES ===\n";
       
       if (options.enableLogging) {
-        console.log("✅ Stripe integration found - payment capabilities added to prompt");
       }
     }
   } catch (error) {

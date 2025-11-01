@@ -164,7 +164,6 @@ const FloatingItem = ({
     <motion.img
       onHoverStart={() => {
         scale.set(1.1);
-        console.log("panfilo");
       }}
       onHoverEnd={() => {
         scale.set(1);

@@ -34,15 +34,6 @@ export async function chatWithLlamaIndex(
   error?: string;
 }> {
 
-  console.log(`🚀 LLAMAINDEX ADAPTER: Starting chat for chatbot ${chatbot.id}`);
-  console.log(`📝 Message: "${message.substring(0, 100)}..."`);
-  console.log(`🛠️ Options:`, {
-    model: options.model,
-    hasContexts: !!options.contexts?.length,
-    hasHistory: !!options.conversationHistory?.length,
-    hasIntegrations: !!Object.keys(options.integrations || {}).length,
-    stream: options.stream
-  });
 
   try {
     // Crear instancia de ChatbotLlamaIndex
@@ -62,13 +53,6 @@ export async function chatWithLlamaIndex(
       stream: options.stream,
     });
 
-    console.log(`✅ LLAMAINDEX ADAPTER: Chat completed successfully`);
-    console.log(`📊 Results:`, {
-      contentLength: response.content.length,
-      toolsUsed: response.toolsUsed.length,
-      iterations: response.iterations,
-      hasError: !!response.error
-    });
 
     return response;
 
@@ -98,7 +82,6 @@ export async function testLlamaIndexTools(
 }> {
 
   try {
-    console.log(`🧪 TESTING LLAMAINDEX TOOLS for chatbot ${chatbot.id}`);
 
     const llamaIndexChatbot = new ChatbotLlamaIndex({
       chatbot,
@@ -110,7 +93,6 @@ export async function testLlamaIndexTools(
     // Get available tools
     const availableTools = llamaIndexChatbot.getAvailableTools();
 
-    console.log(`✅ Test successful. Available tools:`, availableTools);
 
     return {
       success: true,

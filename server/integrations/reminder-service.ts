@@ -58,7 +58,6 @@ export class ReminderService {
     // Programar con agenda.js (compatible con MongoDB + ScheduledAction)
     // El tipo "reminder" será reconocido por agenda.js para ejecutar automáticamente
     
-    console.log(`✅ Recordatorio programado: ${title} para ${date} ${time} (ID: ${reminder.id})`);
     return reminder;
   }
 
@@ -108,7 +107,6 @@ export class ReminderService {
         data: { status: "done" }
       });
 
-      console.log(`📧 Recordatorio enviado: ${reminderData.title} → ${recipientEmail}`);
       return true;
 
     } catch (error) {
@@ -145,7 +143,6 @@ export class ReminderService {
       data: { status: "cancelled" }
     });
     
-    console.log(`❌ Recordatorio cancelado: ${reminderId}`);
     return true;
   }
 }

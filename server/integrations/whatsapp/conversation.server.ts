@@ -28,12 +28,6 @@ export async function getOrCreateConversation(
   if (anyConversation) {
     // If found but DELETED, reactivate it
     if (anyConversation.status === ConversationStatus.DELETED) {
-      console.log("♻️ Reactivating DELETED WhatsApp conversation", {
-        conversationId: anyConversation.id,
-        sessionId,
-        phoneNumber,
-        previousStatus: anyConversation.status,
-      });
 
       const reactivatedConversation = await db.conversation.update({
         where: { id: anyConversation.id },
@@ -47,11 +41,6 @@ export async function getOrCreateConversation(
     }
 
     // If found and ACTIVE (or other status), use it
-    console.log("✅ Found existing ACTIVE conversation", {
-      conversationId: anyConversation.id,
-      sessionId,
-      status: anyConversation.status,
-    });
     return anyConversation;
   }
 
@@ -68,11 +57,6 @@ export async function getOrCreateConversation(
     data: { sessionId },
   });
 
-  console.log("🆕 Created new WhatsApp conversation", {
-    conversationId: updatedConversation.id,
-    sessionId,
-    phoneNumber,
-  });
 
   return updatedConversation;
 }

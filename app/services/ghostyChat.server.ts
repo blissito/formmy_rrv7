@@ -136,9 +136,7 @@ ${searchContext && searchContext.length === 0 ? '**NOTA**: Se intentó realizar 
 
 **TONO**: Honesto, útil, conciso. Emojis moderados.`;
 
-  console.log(`📋 System prompt incluye búsqueda: ${!!searchContext}`);
   if (searchContext) {
-    console.log(`📝 Contexto de búsqueda length: ${searchContext.length} caracteres`);
   }
 
   // Construir historial de mensajes para el contexto

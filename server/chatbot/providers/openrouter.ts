@@ -200,7 +200,6 @@ export class OpenRouterProvider extends AIProvider {
 
               // Manejar fin del stream
               if (parsed.choices?.[0]?.finish_reason) {
-                console.log(`🏁 OpenRouter stream finished with reason: ${parsed.choices[0].finish_reason}`);
                 controller.enqueue({
                   content: '',
                   finishReason: parsed.choices[0].finish_reason,

@@ -58,7 +58,6 @@ export class EmailService {
           html,
         });
 
-        console.log(`[EmailService] Email sent successfully to ${to}:`, result);
         return; // Éxito
       } catch (error) {
         lastError = error as Error;
@@ -70,7 +69,6 @@ export class EmailService {
         if (attempt < retries) {
           // Esperar antes del siguiente intento (exponential backoff)
           const delay = retryDelay * Math.pow(2, attempt - 1);
-          console.log(`[EmailService] Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -114,7 +112,6 @@ export class EmailService {
       }
     }
 
-    console.log(`[EmailService] Batch complete: ${sent} sent, ${failed} failed`);
     return { sent, failed };
   }
 

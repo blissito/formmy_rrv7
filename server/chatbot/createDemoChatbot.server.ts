@@ -19,11 +19,11 @@ export async function createDemoChatbot(userId: string, userEmail: string, userP
 
     // Si ya tiene chatbots, no crear el demo
     if (existingChatbots > 0) {
-      console.log(`ℹ️ Usuario ${userEmail} ya tiene ${existingChatbots} chatbot(s), omitiendo demo`);
       return null;
     }
     // Generar slug único para el chatbot demo
-    const slug = `demo-chatbot-${nanoid(6)}`;
+    const ghostyId = nanoid(6);
+    const slug = `ghosty_${ghostyId}`;
 
     // Obtener el modelo por defecto según el plan
     const defaultModel = getDefaultModelForPlan(userPlan);
@@ -31,7 +31,7 @@ export async function createDemoChatbot(userId: string, userEmail: string, userP
     // Crear el chatbot demo con configuración inicial
     const demoChatbot = await db.chatbot.create({
       data: {
-        name: "Mi Asistente Demo",
+        name: `Ghosty ${ghostyId}`,
         description: "Chatbot de demostración con contextos de ejemplo para explorar las funcionalidades de Formmy",
         slug,
         userId,
@@ -150,7 +150,6 @@ Puedes entrenar tu chatbot con:
       }
     });
 
-    console.log(`✅ Chatbot demo creado para usuario ${userEmail} (Plan: ${userPlan})`);
     return demoChatbot;
 
   } catch (error) {

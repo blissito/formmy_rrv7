@@ -22,7 +22,6 @@ export interface WeeklyEmailsJobData {
  * Usuarios en trial que llevan 5-7 días sin uso
  */
 async function checkTrialExpiry(): Promise<{ sent: number }> {
-  console.log('[WeeklyEmailsWorker] Checking trial expiry...');
 
   try {
     // Fecha de hace 5 días
@@ -67,7 +66,6 @@ async function checkTrialExpiry(): Promise<{ sent: number }> {
       }
     }
 
-    console.log(`[WeeklyEmailsWorker] Trial expiry: ${sent}/${users.length} emails sent`);
     return { sent };
   } catch (error) {
     console.error('[WeeklyEmailsWorker] Error in checkTrialExpiry:', error);
@@ -80,7 +78,6 @@ async function checkTrialExpiry(): Promise<{ sent: number }> {
  * Usuarios con chatbots pero sin actividad en 14+ días
  */
 async function checkNoUsage(): Promise<{ sent: number }> {
-  console.log('[WeeklyEmailsWorker] Checking no usage...');
 
   try {
     // Fecha de hace 14 días
@@ -123,7 +120,6 @@ async function checkNoUsage(): Promise<{ sent: number }> {
       }
     }
 
-    console.log(`[WeeklyEmailsWorker] No usage: ${sent}/${users.length} emails sent`);
     return { sent };
   } catch (error) {
     console.error('[WeeklyEmailsWorker] Error in checkNoUsage:', error);
@@ -136,7 +132,6 @@ async function checkNoUsage(): Promise<{ sent: number }> {
  * Usuarios con actividad en la última semana
  */
 async function checkWeeklySummary(): Promise<{ sent: number }> {
-  console.log('[WeeklyEmailsWorker] Checking weekly summaries...');
 
   try {
     // Fecha de hace 7 días
@@ -233,7 +228,6 @@ async function checkWeeklySummary(): Promise<{ sent: number }> {
       }
     }
 
-    console.log(`[WeeklyEmailsWorker] Weekly summaries: ${sent}/${users.length} emails sent`);
     return { sent };
   } catch (error) {
     console.error('[WeeklyEmailsWorker] Error in checkWeeklySummary:', error);
@@ -246,7 +240,6 @@ async function checkWeeklySummary(): Promise<{ sent: number }> {
  * Usuarios TRIAL que ya expiraron su período de 365 días → Convertir a FREE
  */
 async function convertExpiredTrials(): Promise<{ converted: number; errors: number }> {
-  console.log('[WeeklyEmailsWorker] Checking expired trials for conversion...');
 
   try {
     // Obtener todos los usuarios TRIAL
@@ -263,7 +256,6 @@ async function convertExpiredTrials(): Promise<{ converted: number; errors: numb
       }
     });
 
-    console.log(`[WeeklyEmailsWorker] Found ${trialUsers.length} TRIAL users to check`);
 
     let converted = 0;
     let errors = 0;
@@ -274,9 +266,6 @@ async function convertExpiredTrials(): Promise<{ converted: number; errors: numb
         const { isExpired, daysRemaining, trialEndDate } = await checkTrialExpiration(user.id);
 
         if (isExpired) {
-          console.log(
-            `[WeeklyEmailsWorker] Converting ${user.email} from TRIAL to FREE (trial ended: ${trialEndDate?.toISOString()})`
-          );
 
           // 1. Convertir usuario a FREE
           await db.user.update({
@@ -287,18 +276,12 @@ async function convertExpiredTrials(): Promise<{ converted: number; errors: numb
           // 2. Aplicar restricciones FREE (desactivar chatbots y formmys excedentes)
           const restrictions = await applyFreeRestrictions(user.id);
 
-          console.log(
-            `[WeeklyEmailsWorker] ✅ ${user.email} converted to FREE: ${restrictions.message}`
-          );
 
           converted++;
 
           // TODO: Enviar email notificando la conversión a FREE y cómo reactivar con plan de pago
           // await sendTrialExpiredEmail({ email: user.email, name: user.name });
         } else {
-          console.log(
-            `[WeeklyEmailsWorker] ${user.email} still in trial (${daysRemaining} days remaining)`
-          );
         }
       } catch (error) {
         console.error(
@@ -309,9 +292,6 @@ async function convertExpiredTrials(): Promise<{ converted: number; errors: numb
       }
     }
 
-    console.log(
-      `[WeeklyEmailsWorker] Trial conversion: ${converted} converted, ${errors} errors (${trialUsers.length} checked)`
-    );
     return { converted, errors };
   } catch (error) {
     console.error('[WeeklyEmailsWorker] Error in convertExpiredTrials:', error);
@@ -333,7 +313,6 @@ export async function registerWeeklyEmailsWorker() {
     },
     async (job: Job<WeeklyEmailsJobData>) => {
       const startTime = Date.now();
-      console.log('[WeeklyEmailsWorker] Starting weekly email checks + trial conversions...');
 
       try {
         // Ejecutar todos los chequeos en paralelo
@@ -347,16 +326,6 @@ export async function registerWeeklyEmailsWorker() {
         const totalSent = trialResult.sent + noUsageResult.sent + summaryResult.sent;
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
-        console.log(
-          `[WeeklyEmailsWorker] Completed in ${duration}s. Total emails sent: ${totalSent}, Trials converted: ${conversionResult.converted}`,
-          {
-            trial: trialResult.sent,
-            noUsage: noUsageResult.sent,
-            summary: summaryResult.sent,
-            trialsConverted: conversionResult.converted,
-            conversionErrors: conversionResult.errors
-          }
-        );
 
         return {
           totalSent,
@@ -377,7 +346,6 @@ export async function registerWeeklyEmailsWorker() {
     runDate: new Date()
   });
 
-  console.log('[WeeklyEmailsWorker] Registered successfully (runs every Monday at 9:00 AM)');
 }
 
 /**
@@ -386,5 +354,4 @@ export async function registerWeeklyEmailsWorker() {
 export async function runWeeklyEmailsNow(): Promise<void> {
   const agenda = await getAgenda();
   await agenda.now('send-weekly-emails', { runDate: new Date() });
-  console.log('[WeeklyEmailsWorker] Manual execution enqueued');
 }

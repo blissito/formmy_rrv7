@@ -22,25 +22,16 @@ const handlers = {
   
   sms: async (data: any) => {
     // TODO: Implement SMS when needed
-    console.log('SMS not implemented yet:', data);
   }
 };
 
 export class Scheduler {
   // Schedule any action
   static async schedule(chatbotId: string, type: string, data: any, runAt: Date) {
-    console.log(`📅 SCHEDULER: Creating scheduled action:`, {
-      chatbotId,
-      type,
-      data,
-      runAt: runAt.toISOString()
-    });
     
     try {
       // Test database connection first
-      console.log(`🔗 SCHEDULER: Testing database connection...`);
       await db.$connect();
-      console.log(`✅ SCHEDULER: Database connected`);
       
       const result = await db.scheduledAction.create({
         data: {
@@ -52,7 +43,6 @@ export class Scheduler {
         }
       });
       
-      console.log(`✅ SCHEDULER: Created scheduled action with ID: ${result.id}`);
       
       // Verify the record was actually created
       const verification = await db.scheduledAction.findUnique({
@@ -60,7 +50,6 @@ export class Scheduler {
       });
       
       if (verification) {
-        console.log(`✅ SCHEDULER: Verified record exists in DB:`, verification);
       } else {
         console.error(`❌ SCHEDULER: Record not found after creation! ID: ${result.id}`);
       }
@@ -97,7 +86,6 @@ export class Scheduler {
           data: { status: 'done' }
         });
         
-        console.log(`✅ Executed ${task.type} task: ${task.id}`);
         
       } catch (error) {
         await db.scheduledAction.update({

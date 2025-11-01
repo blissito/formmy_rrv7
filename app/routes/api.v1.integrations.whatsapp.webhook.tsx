@@ -102,11 +102,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
     // Para embedded signup, verificamos contra tokens dinámicos guardados en BD
-    console.log("Webhook verification request", {
-      mode,
-      token: token ? '***' : 'missing',
-      challenge: challenge ? 'present' : 'missing',
-    });
 
     // Verify that this is a webhook verification request
     if (mode !== "subscribe") {
@@ -134,7 +129,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
       if (integration) {
         isValidToken = true;
-        console.log("Token verified against dynamic webhook token from Integration");
       }
     }
 
@@ -148,7 +142,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       return new Response("No challenge provided", { status: 400 });
     }
 
-    console.log("Webhook verification successful");
     return new Response(challenge, {
       status: 200,
       headers: {
@@ -170,10 +163,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     // Parse the webhook payload
     const payload = await request.json() as WhatsAppWebhookPayload;
-    console.log("Received webhook payload", {
-      object: payload.object,
-      entryCount: payload.entry?.length
-    });
 
     // Process each entry in the webhook
     const results = [];
@@ -186,7 +175,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             try {
               // ✅ DEDUPLICATION: Skip if already processed
               if (processedMessages.has(message.id)) {
-                console.log("⏭️  Skipping duplicate message", { messageId: message.id });
                 results.push({
                   success: true,
                   messageId: message.id,
@@ -223,11 +211,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           // Process echo messages - save but don't respond
           for (const echoMessage of (change.value as any).message_echoes) {
             try {
-              console.log("Processing echo message", {
-                messageId: echoMessage.id,
-                from: echoMessage.from,
-                to: echoMessage.to
-              });
 
               // Find integration and conversation for echo message
               const integration = await findIntegrationByPhoneNumber(
@@ -298,11 +281,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
  * Process an incoming WhatsApp message - simplified direct approach
  */
 async function processIncomingMessage(message: IncomingMessage) {
-  console.log("Processing incoming message", {
-    messageId: message.messageId,
-    from: message.from,
-    type: message.type,
-  });
 
   try {
     // Find the integration for this phone number
@@ -339,10 +317,6 @@ async function processIncomingMessage(message: IncomingMessage) {
 
     // Check if conversation is in manual mode
     if (conversation.manualMode) {
-      console.log("Conversation is in manual mode - skipping automatic response", {
-        conversationId: conversation.id,
-        messageId: message.messageId
-      });
 
       return {
         success: true,
@@ -402,11 +376,6 @@ async function processIncomingMessage(message: IncomingMessage) {
       }
     }
 
-    console.log("Message processed successfully", {
-      messageId: message.messageId,
-      conversationId: conversation.id,
-      responseMessageId: messageResponse.messageId,
-    });
 
     return {
       success: true,
@@ -454,7 +423,6 @@ async function sendWhatsAppMessage(
     }
   };
 
-  console.log(`Sending WhatsApp message to ${to}: "${text.substring(0, 100)}..."`);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -472,7 +440,6 @@ async function sendWhatsAppMessage(
   }
 
   const result = await response.json();
-  console.log('WhatsApp message sent successfully:', result);
 
   return {
     messageId: result.messages?.[0]?.id,
@@ -493,11 +460,6 @@ async function generateChatbotResponse(
 ) {
   const startTime = Date.now();
 
-  console.log("Generating chatbot response", {
-    userMessage: userMessage.substring(0, 100),
-    chatbotId: chatbot.id,
-    conversationId,
-  });
 
   try {
     // Get user info from chatbot owner
@@ -535,10 +497,6 @@ async function generateChatbotResponse(
 
     const responseTime = Date.now() - startTime;
 
-    console.log("Chatbot response generated", {
-      responseLength: responseContent.length,
-      responseTime,
-    });
 
     return {
       content: responseContent.trim() || "Lo siento, no pude generar una respuesta. Intenta de nuevo.",

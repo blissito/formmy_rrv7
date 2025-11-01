@@ -320,7 +320,6 @@ export const sendWelcomeEmail = async ({ email, name }: WelcomeEmail) => {
       `,
     })
     .then((r: any) => {
-      console.log('Welcome email sent successfully:', r);
     })
     .catch((e: Error) => console.error('Error sending welcome email:', e));
 };

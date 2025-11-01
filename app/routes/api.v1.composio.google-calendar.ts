@@ -116,11 +116,6 @@ export async function loader({ request }: any) {
  */
 async function handleConnect(entityId: string, chatbotId: string, request: Request) {
   try {
-    console.log(`\n${'📅'.repeat(40)}`);
-    console.log(`📅 [Composio] Iniciando conexión Google Calendar`);
-    console.log(`   entityId: ${entityId}`);
-    console.log(`   chatbotId: ${chatbotId}`);
-    console.log(`${'📅'.repeat(40)}\n`);
 
     // Verificar que existe el Auth Config ID
     const authConfigId = process.env.COMPOSIO_GOOGLE_CALENDAR_AUTH_CONFIG_ID;
@@ -131,13 +126,11 @@ async function handleConnect(entityId: string, chatbotId: string, request: Reque
       );
     }
 
-    console.log(`   Using authConfigId: ${authConfigId}`);
 
     // Obtener base URL desde el request (funciona en dev y prod)
     const requestUrl = new URL(request.url);
     const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
 
-    console.log(`   Base URL: ${baseUrl}`);
 
     // Iniciar conexión a Google Calendar
     // https://docs.composio.dev/api-reference/connected-accounts/initiate-connection
@@ -151,7 +144,6 @@ async function handleConnect(entityId: string, chatbotId: string, request: Reque
       }
     );
 
-    console.log(`📝 Conexión iniciada:`, connection);
 
     return new Response(
       JSON.stringify({
@@ -185,10 +177,6 @@ async function handleConnect(entityId: string, chatbotId: string, request: Reque
  */
 async function handleStatus(entityId: string) {
   try {
-    console.log(`\n${'🔍'.repeat(40)}`);
-    console.log(`🔍 [Composio] Verificando estado de conexión`);
-    console.log(`   entityId: ${entityId}`);
-    console.log(`${'🔍'.repeat(40)}\n`);
 
     // Obtener cuentas conectadas del usuario (USAR toolkitSlugs, NO app)
     const connectedAccounts = await composio.connectedAccounts.list({
@@ -196,7 +184,6 @@ async function handleStatus(entityId: string) {
       toolkitSlugs: ['googlecalendar'], // ✅ Filtro correcto para Google Calendar
     });
 
-    console.log(`📊 Cuentas de Google Calendar encontradas:`, connectedAccounts.items?.length || 0);
 
     const isConnected = connectedAccounts.items && connectedAccounts.items.length > 0;
     const account = connectedAccounts.items?.[0];
@@ -238,11 +225,6 @@ async function handleStatus(entityId: string) {
  */
 async function handleDisconnect(entityId: string, chatbotId: string) {
   try {
-    console.log(`\n${'🔌'.repeat(40)}`);
-    console.log(`🔌 [Composio] Desconectando Google Calendar`);
-    console.log(`   entityId: ${entityId}`);
-    console.log(`   chatbotId: ${chatbotId}`);
-    console.log(`${'🔌'.repeat(40)}\n`);
 
     // Obtener cuenta conectada (USAR toolkitSlugs, NO app)
     const connectedAccounts = await composio.connectedAccounts.list({
@@ -267,7 +249,6 @@ async function handleDisconnect(entityId: string, chatbotId: string) {
     const accountId = connectedAccounts.items[0].id;
     await composio.connectedAccounts.delete(accountId);
 
-    console.log(`✅ Cuenta desconectada de Composio: ${accountId}`);
 
     // ✅ Desactivar integración en BD
     await db.integration.updateMany({
@@ -282,7 +263,6 @@ async function handleDisconnect(entityId: string, chatbotId: string) {
       },
     });
 
-    console.log(`✅ Integración desactivada en BD para chatbot: ${chatbotId}`);
 
     return new Response(
       JSON.stringify({

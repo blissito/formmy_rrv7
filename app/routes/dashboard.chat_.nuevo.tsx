@@ -43,7 +43,7 @@ export default function ChatbotConfigRoute(
       // 1. Crear el chatbot básico
       const createFormData = new FormData();
       createFormData.append("intent", "create_chatbot");
-      createFormData.append("name", "Mi Chatbot");
+      createFormData.append("name", "Ghosty");
       createFormData.append(
         "description",
         "Chatbot creado desde la interfaz web"

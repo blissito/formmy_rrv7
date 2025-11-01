@@ -11,22 +11,17 @@ export class WebSearchBetaService {
     const cached = this.cache.get(query);
     if (cached && cached.expires > Date.now()) {
       if (this.isDebugMode) {
-        console.log('✅ Search cache hit for:', query);
       }
       return cached.data;
     }
 
-    console.log('🔍 Web Search Beta for:', query);
-    console.log('📋 Strategy: Google → DuckDuckGo → Wikipedia fallback');
 
     // Step 1: Try Google Custom Search (if available)
     if (process.env.GOOGLE_SEARCH_API_KEY && process.env.GOOGLE_SEARCH_ENGINE_ID) {
       try {
-        console.log('🔍 Attempting Google Custom Search...');
         const googleResults = await this.searchGoogle(query, numResults);
         
         if (googleResults.results.length > 0) {
-          console.log(`✅ Google successful: ${googleResults.results.length} results`);
           
           // Cache and return
           this.cache.set(query, {
@@ -36,23 +31,17 @@ export class WebSearchBetaService {
           
           return googleResults;
         } else {
-          console.log('⚠️ Google returned 0 results, trying DuckDuckGo...');
         }
       } catch (googleError) {
-        console.log('❌ Google failed:', googleError instanceof Error ? googleError.message : googleError);
-        console.log('🔄 Falling back to DuckDuckGo...');
       }
     } else {
-      console.log('⚠️ Google API credentials not found, using DuckDuckGo...');
     }
 
     // Step 2: Try DuckDuckGo
     try {
-      console.log('🦆 Attempting DuckDuckGo search...');
       const duckResults = await this.searchDuckDuckGo(query, numResults);
       
       if (duckResults.results.length > 0) {
-        console.log(`✅ DuckDuckGo successful: ${duckResults.results.length} results`);
         
         // Cache and return
         this.cache.set(query, {
@@ -62,11 +51,8 @@ export class WebSearchBetaService {
         
         return duckResults;
       } else {
-        console.log('⚠️ DuckDuckGo returned 0 results, trying Wikipedia...');
       }
     } catch (duckError) {
-      console.log('❌ DuckDuckGo failed:', duckError instanceof Error ? duckError.message : duckError);
-      console.log('🔄 Falling back to Wikipedia...');
     }
 
     // Step 2: Try Wikipedia as fallback

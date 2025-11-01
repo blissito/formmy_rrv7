@@ -97,7 +97,6 @@ export class AnthropicProvider extends AIProvider {
       ...(request.tools && request.tools.length > 0 && { tools: request.tools }),
     };
 
-    console.log(`🔍 [Anthropic Request] Model: ${request.model}, Body:`, JSON.stringify(body, null, 2));
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -126,7 +125,6 @@ export class AnthropicProvider extends AIProvider {
     if ((!textContent || textContent.trim().length === 0) && toolCalls.length > 0) {
       if (retryCount === 0) {
         // Primer intento falló - hacer retry con temperatura baja
-        console.log(`🔄 Anthropic retry: Empty response with tools, attempting with lower temperature`);
         return this.chatCompletionWithRetry(request, 1);
       } else {
         // Retry también falló - generar respuesta contextual
@@ -135,7 +133,6 @@ export class AnthropicProvider extends AIProvider {
     } else if (!textContent || textContent.trim().length === 0) {
       // No hay contenido ni tool calls
       if (retryCount === 0) {
-        console.log(`🔄 Anthropic retry: Completely empty response, attempting with lower temperature`);
         return this.chatCompletionWithRetry(request, 1);
       } else {
         textContent = 'Entiendo tu solicitud, pero no puedo proporcionar una respuesta específica en este momento.';
@@ -191,7 +188,6 @@ export class AnthropicProvider extends AIProvider {
       ...(request.tools && request.tools.length > 0 && { tools: request.tools }),
     };
 
-    console.log(`🔍 [Anthropic Stream] Model: ${request.model}, Body:`, JSON.stringify(body, null, 2));
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -279,7 +275,6 @@ export class AnthropicProvider extends AIProvider {
               
               // Manejar fin del stream
               else if (parsed.type === 'message_delta' && parsed.delta?.stop_reason) {
-                console.log(`🏁 Anthropic stream finished with reason: ${parsed.delta.stop_reason}`);
                 controller.enqueue({
                   content: '',
                   finishReason: parsed.delta.stop_reason,

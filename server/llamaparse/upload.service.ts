@@ -59,7 +59,6 @@ export async function uploadParserFile(
     // Generar URL pública
     const publicUrl = `${PUBLIC_ENDPOINT}/${fileKey}`;
 
-    console.log(`✅ Archivo subido a S3: ${fileKey}`);
 
     return { fileKey, publicUrl };
   } catch (error) {
@@ -80,7 +79,6 @@ export async function deleteParserFile(fileKey: string): Promise<void> {
       })
     );
 
-    console.log(`🗑️ Archivo eliminado de S3: ${fileKey}`);
   } catch (error) {
     // No lanzar error, solo logear (lifecycle policy lo limpiará)
     console.error("⚠️ Error deleting file from S3 (will be auto-deleted in 24h):", error);

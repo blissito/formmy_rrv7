@@ -34,11 +34,9 @@ export async function createParsingJob(params: CreateParsingJobParams) {
     // Solo contar páginas si es PDF
     if (params.fileType === "application/pdf" || params.fileName.toLowerCase().endsWith(".pdf")) {
       pageCount = await countPDFPages(params.fileBuffer);
-      console.log(`📄 PDF detectado: ${params.fileName} tiene ${pageCount} páginas`);
     } else {
       // Para otros formatos (DOCX, XLSX, TXT), asumir 5 páginas
       pageCount = 5;
-      console.log(`📄 Documento no-PDF: ${params.fileName}, asumiendo ${pageCount} páginas`);
     }
   } catch (error) {
     console.error("Error contando páginas, usando fallback:", error);
@@ -48,7 +46,6 @@ export async function createParsingJob(params: CreateParsingJobParams) {
   // 2. Calcular créditos según páginas
   const credits = calculateCreditsForPages(params.mode, pageCount);
 
-  console.log(`💎 Créditos calculados: ${credits} (${params.mode}, ${pageCount} páginas)`);
 
   // 3. Validar y descontar créditos ANTES de crear el job
   await validateAndDeduct(params.userId, credits);
@@ -176,7 +173,6 @@ async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingR
   const startTime = Date.now();
 
   try {
-    console.log(`📄 Basic parsing (FREE) for ${fileName}...`);
 
     // Descargar archivo
     const response = await fetch(fileUrl);
@@ -211,7 +207,6 @@ async function basicParsing(fileUrl: string, fileName: string): Promise<ParsingR
     }
 
     const processingTime = (Date.now() - startTime) / 1000;
-    console.log(`✅ Basic parsed ${pages} pages in ${processingTime.toFixed(2)}s (FREE)`);
 
     // ✅ CRÍTICO: Garantizar que SOLO retornamos primitivos (string, number)
     // Esto evita errores de serialización en Agenda.js workers
@@ -254,7 +249,6 @@ async function realParsing(
       ...getParseConfig(mode, options),
     });
 
-    console.log(`📄 Parsing ${fileName} with mode ${mode}...`);
 
     // Procesar documento
     const documents = await reader.loadData(fileUrl);
@@ -273,7 +267,6 @@ async function realParsing(
 
     const processingTime = (Date.now() - startTime) / 1000;
 
-    console.log(`✅ Parsed ${totalPages} pages in ${processingTime.toFixed(2)}s`);
 
     return {
       markdown,
@@ -327,7 +320,6 @@ export async function processParsingJob(
 
     // 5. Agregar a contexts[] del chatbot usando servicio unificado
     if (completedJob.chatbotId && result.markdown) {
-      console.log(`📝 Adding ParsingJob ${jobId} to chatbot.contexts[] using unified processor`);
 
       try {
         const { addContextWithEmbeddings } = await import("server/context/unified-processor.server");
@@ -352,7 +344,6 @@ export async function processParsingJob(
         // - embeddingsCreated > 0 (nuevo contenido vectorizado)
         // - embeddingsSkipped > 0 (todo era duplicado, pero es válido)
         if (vectorResult.success) {
-          console.log(`✅ Context vectorized: ${vectorResult.embeddingsCreated} embeddings created, ${vectorResult.embeddingsSkipped} skipped`);
         } else {
           // Solo fallar si vectorResult.success === false (error real)
           throw new Error(`Vectorization failed: ${vectorResult.error || 'Unknown error'}`);
@@ -376,7 +367,6 @@ export async function processParsingJob(
       }
     }
 
-    console.log(`✅ Job ${jobId} completed successfully`);
   } catch (error) {
     // 5. Manejar error
     console.error(`❌ Job ${jobId} failed:`, error);

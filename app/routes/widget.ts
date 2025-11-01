@@ -120,7 +120,6 @@ const FormMyWidget = {
           domain: parentDomain,
           href: window.location.href
         }, apiHost);
-        console.log('🔒 Parent domain enviado al iframe:', parentDomain);
       }
     };
 

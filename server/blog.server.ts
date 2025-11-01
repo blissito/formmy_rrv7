@@ -188,7 +188,6 @@ Estamos emocionados de lanzar nuestro blog oficial donde compartiremos:
 
       const filePath = path.join(BLOG_POSTS_DIR, 'bienvenido-al-blog.md');
       await promisify(fs.writeFile)(filePath, samplePost);
-      console.log('Sample blog post created');
     }
   } catch (error) {
     console.error('Error creating sample posts:', error);

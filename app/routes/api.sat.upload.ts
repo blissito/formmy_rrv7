@@ -66,7 +66,6 @@ export async function action({ request }: ActionFunctionArgs) {
   // Procesar cada archivo
   for (const file of files) {
     try {
-      console.log(`📄 [SAT Upload] Procesando archivo: ${file.name}`);
       const buffer = Buffer.from(await file.arrayBuffer());
       const fileName = file.name;
 
@@ -75,20 +74,16 @@ export async function action({ request }: ActionFunctionArgs) {
       let selectedParseMode = parseMode;
 
       if (selectedParseMode === "auto") {
-        console.log(`🔍 [SAT Upload] Detectando tipo de archivo...`);
         if (isValidSATXML(buffer)) {
           selectedParseMode = "XML_LOCAL";
-          console.log(`✅ [SAT Upload] Detectado como XML SAT`);
         } else if (isValidPDF(buffer)) {
           selectedParseMode = "PDF_SIMPLE";
-          console.log(`✅ [SAT Upload] Detectado como PDF`);
         } else {
           throw new Error("Formato de archivo no soportado. Solo se aceptan archivos XML (CFDI) o PDF de facturas SAT.");
         }
       }
 
       // Parsear según método
-      console.log(`⚙️ [SAT Upload] Parseando con método: ${selectedParseMode}`);
       if (selectedParseMode === "XML_LOCAL") {
         parsedData = await parseXMLInvoice(buffer);
       } else if (selectedParseMode === "PDF_SIMPLE") {
@@ -97,7 +92,6 @@ export async function action({ request }: ActionFunctionArgs) {
         throw new Error(`Método de parseo no implementado: ${selectedParseMode}`);
       }
 
-      console.log(`✅ [SAT Upload] Archivo parseado exitosamente. UUID: ${parsedData.uuid}`);
 
       // Validar datos parseados
       const validation = validateInvoice(parsedData);
@@ -224,7 +218,6 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   }
 
-  console.log(`📊 [SAT Upload] Resumen: ${processedCount} procesadas, ${approvedCount} aprobadas, ${needsReviewCount} requieren revisión, ${errorCount} errores`);
 
   return Response.json({
     success: true,

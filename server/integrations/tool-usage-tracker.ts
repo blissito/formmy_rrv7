@@ -19,7 +19,6 @@ export class ToolUsageTracker {
     try {
       // 🛡️ Skip tracking si chatbotId es null (Ghosty) o inválido
       if (!data.chatbotId || data.chatbotId === 'unknown') {
-        console.log(`📊 [Tool Tracker] Skipping ${data.toolName} (no chatbotId - Ghosty internal tool)`);
         return null;
       }
 
@@ -36,7 +35,6 @@ export class ToolUsageTracker {
         },
       });
 
-      console.log(`📊 [Tool Tracker] ${data.toolName} registrado: ${usage.id}`);
       return usage;
     } catch (error) {
       console.error("Error tracking tool usage:", error);
@@ -143,7 +141,6 @@ export class ToolUsageTracker {
         },
       });
 
-      console.log(`🧹 Limpieza: ${deleted.count} registros de tool usage eliminados`);
       return deleted.count;
     } catch (error) {
       console.error("Error cleaning old records:", error);

@@ -31,43 +31,30 @@ if (!process.env.ELEVEN_API_KEY) {
   process.exit(1);
 }
 
-console.log("🚀 LiveKit Agent Worker starting...");
-console.log(`📡 LiveKit URL: ${process.env.LIVEKIT_URL || 'wss://webrtcblissmo-ughbu8uu.livekit.cloud'}`);
 
 export default defineAgent({
   // Prewarm: cargar modelos antes de procesar jobs
   prewarm: async (proc: JobProcess) => {
-    console.log("🔥 Prewarming: Cargando modelo Silero VAD...");
     proc.userData.vad = await silero.VAD.load();
-    console.log("✅ Silero VAD cargado");
   },
 
   entry: async (ctx: JobContext) => {
-    console.log(`🎙️ Nuevo job de voz: Room ${ctx.room.name}`);
 
     // Obtener VAD del prewarm
     const vad = ctx.proc.userData.vad! as silero.VAD;
 
     // 🔍 AUDITORÍA: Ver TODOS los lugares donde puede estar el metadata
-    console.log(`\n${'🔍'.repeat(40)}`);
-    console.log(`🔍 [AUDITORÍA] Buscando metadata en TODOS los lugares posibles:`);
-    console.log(`   1. ctx.room.metadata: ${ctx.room.metadata}`);
-    console.log(`   2. ctx.job disponible: ${!!ctx.job}`);
 
     // Intentar leer desde el job primero (donde SÍ viene en los logs)
     let roomMetadataString = ctx.room.metadata;
 
     if (!roomMetadataString && (ctx as any).job?.room?.metadata) {
-      console.log(`   ✅ Metadata encontrado en ctx.job.room.metadata`);
       roomMetadataString = (ctx as any).job.room.metadata;
     }
 
-    console.log(`   3. Metadata string final a parsear: ${roomMetadataString?.substring(0, 100)}...`);
 
     const metadata = roomMetadataString ? JSON.parse(roomMetadataString) : {};
 
-    console.log(`\n   Metadata PARSEADO:`, JSON.stringify(metadata, null, 2));
-    console.log(`${'🔍'.repeat(40)}\n`);
 
     const {
       instructions = "Eres un asistente de voz útil y profesional.",
@@ -76,10 +63,6 @@ export default defineAgent({
       ttsVoiceId = "3l9iCMrNSRR0w51JvFB0", // Leo Moreno - ÚNICA voz nativa mexicana en nuestra cuenta ElevenLabs
     } = metadata;
 
-    console.log(`📌 Valores extraídos del metadata:`);
-    console.log(`   instructions: "${instructions}"`);
-    console.log(`   customInstructions: "${customInstructions}"`);
-    console.log(`   customInstructions.length: ${customInstructions.length}`);
 
     // 🎯 CONSTRUIR PROMPT CON PRIORIDAD A CUSTOM INSTRUCTIONS
     let systemPrompt = "";
@@ -106,15 +89,8 @@ IMPORTANTE PARA VOZ:
 - Sin listas largas ni explicaciones extensas`;
     }
 
-    console.log(`\n${'📋'.repeat(40)}`);
-    console.log(`📋 [VOICE WORKER] System prompt construido:`);
-    console.log(`   customInstructions presente: ${!!customInstructions && !!customInstructions.trim()}`);
     if (customInstructions) {
-      console.log(`   customInstructions: "${customInstructions}"`);
     }
-    console.log(`\n   SYSTEM PROMPT COMPLETO:\n${systemPrompt}`);
-    console.log(`${'📋'.repeat(40)}\n`);
-    console.log(`🎤 Voice ID configurada: ${ttsVoiceId}`);
 
     // Crear el agente
     const assistant = new voice.Agent({
@@ -139,11 +115,9 @@ IMPORTANTE PARA VOZ:
       tts, // ✅ ElevenLabs Plugin con voz custom (Leo Moreno)
     });
 
-    console.log(`🎙️ Configuración: VAD=Silero, STT=deepgram/nova-2:es, LLM=gpt-4o-mini, TTS=ElevenLabs Plugin (${ttsVoiceId})`);
 
     // Conectarse al room
     await ctx.connect();
-    console.log(`✅ Conectado a room: ${ctx.room.name}`);
 
     // Iniciar sesión con mejores opciones de input
     await session.start({
@@ -151,17 +125,14 @@ IMPORTANTE PARA VOZ:
       room: ctx.room,
     });
 
-    console.log("✅ Sesión de voz iniciada con VAD y turn-detection");
 
     // ⚠️ IMPORTANTE: Esperar a que el participante (usuario) se conecte antes de enviar saludo
-    console.log("⏳ Esperando a que el usuario se conecte...");
 
     // Esperar a que haya al menos 1 participante remoto (el usuario)
     const waitForParticipant = new Promise<void>((resolve) => {
       const checkParticipants = () => {
         const remoteParticipants = Array.from(ctx.room.remoteParticipants.values());
         if (remoteParticipants.length > 0) {
-          console.log(`✅ Usuario conectado: ${remoteParticipants[0].identity}`);
           resolve();
         } else {
           setTimeout(checkParticipants, 100); // Revisar cada 100ms
@@ -177,31 +148,25 @@ IMPORTANTE PARA VOZ:
     // 1. Conectarse al room
     // 2. Configurar event listeners
     // 3. Estar listo para suscribirse a tracks del agente
-    console.log("⏳ Esperando 2 segundos para que cliente esté listo...");
     await new Promise(r => setTimeout(r, 2000)); // Aumentado de 500ms a 2s
 
     // Ahora sí, enviar mensaje de bienvenida usando say() para TTS directo
-    console.log(`💬 Enviando mensaje de bienvenida: "${voiceWelcome}"`);
-    console.log(`🎤 Con voz: ${ttsVoiceId} (Leo Moreno - Voz nativa mexicana)`);
 
     try {
       await session.say(voiceWelcome, {
         allowInterruptions: true, // ✅ Permitir que el usuario interrumpa
       });
-      console.log("✅ Mensaje de bienvenida enviado exitosamente");
     } catch (error) {
       console.error("❌ Error al enviar mensaje de bienvenida:", error);
     }
 
     // Auto-disconnect a los 10 minutos
     setTimeout(async () => {
-      console.log("⏱️ Límite de 10 minutos alcanzado");
       await session.say("Hemos llegado al límite de tiempo. Fue un placer ayudarte. ¡Hasta luego!");
       await new Promise(r => setTimeout(r, 5000));
       await ctx.disconnect();
     }, 10 * 60 * 1000);
 
-    console.log("✅ Agente de voz activo y escuchando con turn-taking...");
   },
 });
 

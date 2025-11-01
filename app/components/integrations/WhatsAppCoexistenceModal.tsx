@@ -96,7 +96,6 @@ export default function WhatsAppCoexistenceModal({
 
   // Manejar la respuesta del login con Facebook
   const handleSignupComplete = useCallback(async (response: any) => {
-    console.log('Facebook auth response:', response);
 
     if (!response.authResponse || response.status !== 'connected') {
       return; // Solo procesar si está conectado
