@@ -20,12 +20,20 @@ npm run dev
 
 Espera a que aparezca: `Local: http://localhost:5173`
 
-## Paso 3: Loguearte (una sola vez)
+## Paso 3: Loguearte (una sola vez) - INTERACTIVO
 
-1. Abre http://localhost:5173 en tu navegador
-2. Click en "Iniciar sesión" o "Login"
-3. Loguéate con tu cuenta de Google
-4. Verifica que puedas ver el dashboard
+**Modo fácil** - El test hace pause para que te loguees:
+
+```bash
+npm run test:e2e:setup-auth
+```
+
+Esto abre el navegador y espera a que:
+1. Hagas click en "Continuar con Google"
+2. Selecciones tu cuenta
+3. Completes el login
+
+Una vez logueado, guarda automáticamente tu sesión. ¡Solo lo haces una vez!
 
 ## Paso 4: Ejecutar smoke tests
 

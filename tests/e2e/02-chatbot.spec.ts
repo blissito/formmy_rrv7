@@ -7,6 +7,9 @@ import { isLoggedIn } from './helpers/auth.helper';
  * PREREQUISITO: Usuario debe estar logueado
  */
 
+// Cargar sesión guardada
+test.use({ storageState: './tests/e2e/.auth/user.json' });
+
 test.describe('Chatbot - Flujo completo', () => {
   test.beforeEach(async ({ page }) => {
     const loggedIn = await isLoggedIn(page);

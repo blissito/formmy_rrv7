@@ -14,15 +14,62 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
 
   // Obtener API keys del usuario
-  const apiKeys = await db.apiKey.findMany({
-    where: { userId: user.id },
-    include: {
-      chatbot: {
-        select: { id: true, name: true },
+  // Si hay API keys huérfanas (chatbot eliminado), eliminarlas automáticamente
+  let apiKeys;
+  try {
+    apiKeys = await db.apiKey.findMany({
+      where: { userId: user.id },
+      include: {
+        chatbot: {
+          select: { id: true, name: true },
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (error: any) {
+    // Si falla por API keys huérfanas, limpiarlas
+    if (error.message?.includes('Field chatbot is required to return data, got `null` instead')) {
+      console.log('[API Keys] Detectadas API keys huérfanas, limpiando...');
+
+      // Obtener todas las API keys sin include
+      const allKeys = await db.apiKey.findMany({
+        where: { userId: user.id },
+        select: { id: true, chatbotId: true },
+      });
+
+      // Buscar cuáles tienen chatbots que no existen
+      const keysToDelete = [];
+      for (const key of allKeys) {
+        const chatbot = await db.chatbot.findUnique({
+          where: { id: key.chatbotId },
+        });
+        if (!chatbot) {
+          keysToDelete.push(key.id);
+        }
+      }
+
+      // Eliminar API keys huérfanas
+      if (keysToDelete.length > 0) {
+        await db.apiKey.deleteMany({
+          where: { id: { in: keysToDelete } },
+        });
+        console.log(`[API Keys] ${keysToDelete.length} API keys huérfanas eliminadas`);
+      }
+
+      // Reintentar la query
+      apiKeys = await db.apiKey.findMany({
+        where: { userId: user.id },
+        include: {
+          chatbot: {
+            select: { id: true, name: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    } else {
+      throw error;
+    }
+  }
 
   // Obtener chatbots del usuario
   const chatbots = await db.chatbot.findMany({

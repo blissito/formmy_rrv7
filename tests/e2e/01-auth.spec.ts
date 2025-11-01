@@ -1,20 +1,28 @@
 import { test, expect } from '@playwright/test';
 import { isLoggedIn, saveAuthState } from './helpers/auth.helper';
+import * as fs from 'fs';
 
 /**
  * Tests de autenticación básica
  *
- * PREREQUISITO: Necesitas estar logueado previamente o configurar variables de entorno:
- * - TEST_USER_EMAIL
- * - TEST_USER_PASSWORD
+ * PREREQUISITO: Cookie __session debe estar en tests/e2e/.auth/user.json
+ * Ejecutar: npm run test:e2e:inject-session
  */
+
+// Cargar sesión si existe
+const authFile = './tests/e2e/.auth/user.json';
+if (fs.existsSync(authFile)) {
+  test.use({ storageState: authFile });
+}
 
 test.describe('Autenticación', () => {
   test('la página principal carga correctamente', async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('load');
 
-    // Verificar que el título o algún elemento principal esté presente
-    await expect(page).toHaveTitle(/Formmy/i);
+    // Si el usuario está logueado, puede ser redirigido al dashboard (Ghosty)
+    // Si no está logueado, verá la home page pública
+    await expect(page).toHaveTitle(/Chatbots|formularios|Formmy|Ghosty|Dashboard/i);
 
     // Tomar screenshot
     await page.screenshot({ path: 'tests/e2e/screenshots/01-home.png', fullPage: true });
@@ -27,7 +35,8 @@ test.describe('Autenticación', () => {
     const chatLink = page.locator('a[href*="chat"]').first();
     if (await chatLink.isVisible()) {
       await chatLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('load');
+      await page.waitForTimeout(2000);
 
       // Verificar que estamos en alguna página de chat
       expect(page.url()).toMatch(/chat/);
@@ -68,21 +77,25 @@ test.describe('Autenticación', () => {
 
     // Dashboard principal
     await page.goto('/dashboard');
+    await page.waitForLoadState('load');
     await page.screenshot({ path: 'tests/e2e/screenshots/01-dashboard-main.png' });
 
     // Chatbots
     await page.goto('/dashboard/chat');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(1000);
     await page.screenshot({ path: 'tests/e2e/screenshots/01-dashboard-chat.png' });
 
     // API Keys
     await page.goto('/dashboard/api-keys');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(1000);
     await page.screenshot({ path: 'tests/e2e/screenshots/01-dashboard-apikeys.png' });
 
     // Formularios
     await page.goto('/dashboard/formmys');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(1000);
     await page.screenshot({ path: 'tests/e2e/screenshots/01-dashboard-forms.png' });
   });
 });

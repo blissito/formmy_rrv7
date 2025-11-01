@@ -8,6 +8,9 @@ import path from 'path';
  * PREREQUISITO: Usuario debe estar logueado y tener un chatbot creado
  */
 
+// Cargar sesión guardada
+test.use({ storageState: './tests/e2e/.auth/user.json' });
+
 test.describe('RAG - Documentos y Contexto', () => {
   test.beforeEach(async ({ page }) => {
     const loggedIn = await isLoggedIn(page);

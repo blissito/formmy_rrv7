@@ -46,7 +46,8 @@ export async function login(page: Page) {
  */
 export async function isLoggedIn(page: Page): Promise<boolean> {
   await page.goto('/dashboard');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
+  await page.waitForTimeout(2000);
 
   // Si estamos en /dashboard y no redirige a login, estamos logueados
   return page.url().includes('/dashboard');

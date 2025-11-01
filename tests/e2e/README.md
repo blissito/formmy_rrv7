@@ -48,11 +48,31 @@ Formmy usa **Google OAuth** (sin passwords). Para los tests necesitas:
 
 Para CI/CD o automatización completa, necesitas configurar una cuenta de Google de prueba. Ver `tests/e2e/helpers/auth.helper.ts` para más detalles.
 
+## ⚠️ LIMITACIÓN IMPORTANTE: Google OAuth
+
+**NO es posible automatizar login con Google OAuth.**
+
+Google detecta y bloquea todos los navegadores automatizados (Playwright, Puppeteer, Selenium, etc).
+
+**Tests disponibles SIN login:**
+- ✅ Smoke tests (páginas públicas)
+- ✅ Navegación básica
+- ✅ Recursos estáticos
+
+**Tests que requieren login:**
+- ❌ No funcionan sin mocks
+- Ver `SETUP-LOGIN.md` para alternativas
+
 ## 🚀 Ejecutar Tests
+
+### Smoke tests (NO requieren login) ✅
+```bash
+npm run test:e2e:smoke
+```
 
 ### Ver todos los tests (modo visual)
 ```bash
-npm run test:e2e
+npm run test:e2e  # Tests con login se saltarán
 ```
 
 ### Tests específicos (modo visual)

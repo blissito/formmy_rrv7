@@ -17,11 +17,14 @@
     "test:e2e": "playwright test --headed",
     "test:e2e:headless": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:inject-session": "tsx tests/e2e/inject-session.ts",
+    "test:e2e:setup-auth": "playwright test tests/e2e/setup-auth.spec.ts --headed",
     "test:e2e:smoke": "playwright test tests/e2e/00-smoke.spec.ts --headed",
     "test:e2e:auth": "playwright test tests/e2e/01-auth.spec.ts --headed",
     "test:e2e:chatbot": "playwright test tests/e2e/02-chatbot.spec.ts --headed",
     "test:e2e:rag": "playwright test tests/e2e/03-rag.spec.ts --headed",
     "test:e2e:apikeys": "playwright test tests/e2e/04-apikeys.spec.ts --headed",
+    "test:e2e:ghosty": "playwright test tests/e2e/05-ghosty.spec.ts --headed",
     "test:e2e:report": "playwright show-report",
     "typecheck": "react-router typegen && tsc",
     "postinstall": "prisma generate",
@@ -127,6 +130,7 @@
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@react-router/dev": "^7.1.3",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20.19.9",

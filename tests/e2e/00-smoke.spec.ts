@@ -5,6 +5,9 @@ import { test, expect } from '@playwright/test';
  * Ejecuta estos primero para validar que todo funciona
  */
 
+// NO usar autenticación en smoke tests (páginas públicas)
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test.describe('Smoke Tests', () => {
   test('el servidor está corriendo', async ({ page }) => {
     const response = await page.goto('/');
@@ -20,7 +23,9 @@ test.describe('Smoke Tests', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    // Usar 'load' en vez de 'networkidle' para páginas con conexiones activas (WebSockets, SSE, etc)
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(2000); // Esperar 2s adicionales
 
     expect(errors.length).toBe(0);
 
@@ -58,12 +63,15 @@ test.describe('Smoke Tests', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(2000);
 
     // Permitir algunos errores de third-party (analytics, etc)
     // pero no debería haber errores de recursos locales
     const localFailures = failedRequests.filter(req =>
-      req.includes('localhost') || req.includes('formmy')
+      (req.includes('localhost') || req.includes('formmy')) &&
+      !req.includes('google-analytics') &&
+      !req.includes('gtm')
     );
 
     if (localFailures.length > 0) {
@@ -87,7 +95,8 @@ test.describe('Smoke Tests', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(2000);
 
     if (criticalErrors.length > 0) {
       console.warn('⚠️  Errores de consola encontrados:', criticalErrors);
