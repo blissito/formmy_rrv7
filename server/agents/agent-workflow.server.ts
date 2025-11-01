@@ -40,10 +40,36 @@ interface WorkflowContext {
 }
 
 /**
+ * Normalizar modelo de Gemini para que use la versión exacta con tool calling
+ * LlamaIndex requiere nombres exactos de modelo para detectar supportToolCall
+ */
+function normalizeGeminiModel(model: string): string {
+  const normalizations: Record<string, string> = {
+    "gemini-2.0-flash": "gemini-2.0-flash-001",
+    "gemini-2.0-flash-lite": "gemini-2.0-flash-lite-001",
+    "gemini-2.5-pro": "gemini-2.5-pro",
+    "gemini-2.5-flash": "gemini-2.5-flash",
+    "gemini-1.5-pro": "gemini-1.5-pro-002",
+    "gemini-1.5-flash": "gemini-1.5-flash-002",
+  };
+
+  return normalizations[model] || model;
+}
+
+/**
  * Create LLM instance with correct provider (from agent-engine-v0)
  */
 function createLLM(model: string, temperature?: number) {
-  const config: any = { model };
+  // Normalizar modelo Gemini para tool calling
+  let normalizedModel = model;
+  if (model.includes("gemini")) {
+    normalizedModel = normalizeGeminiModel(model);
+    if (normalizedModel !== model) {
+      console.log(`🔄 Gemini model normalized: ${model} → ${normalizedModel}`);
+    }
+  }
+
+  const config: any = { model: normalizedModel };
 
   // Use centralized temperature resolution
   // Si no se proporciona temperature, usar la óptima del modelo
@@ -61,20 +87,20 @@ function createLLM(model: string, temperature?: number) {
   config.maxRetries = 3;
 
   // Log del modelo usado
-  console.log(`🤖 Creating LLM: ${model} (temp: ${config.temperature})`);
+  console.log(`🤖 Creating LLM: ${normalizedModel} (temp: ${config.temperature})`);
 
   // Return appropriate provider based on model
   if (model.includes("claude")) {
     config.apiKey = process.env.ANTHROPIC_API_KEY;
-    console.log(`   Provider: Anthropic (${model})`);
+    console.log(`   Provider: Anthropic (${normalizedModel})`);
     return new Anthropic(config);
   } else if (model.includes("gemini")) {
     config.apiKey = process.env.GOOGLE_API_KEY;
-    console.log(`   Provider: Google Gemini (${model})`);
+    console.log(`   Provider: Google Gemini (${normalizedModel})`);
     return new Gemini(config);
   } else {
     config.apiKey = process.env.OPENAI_API_KEY;
-    console.log(`   Provider: OpenAI (${model})`);
+    console.log(`   Provider: OpenAI (${normalizedModel})`);
     return new OpenAI(config);
   }
 }
@@ -306,8 +332,15 @@ async function createSingleAgent(
   );
 
   // Create LLM with correct provider (OpenAI or Anthropic)
-  // Use nullish coalescing to avoid overriding valid values like 0
-  const llm = createLLM(selectedModel, resolvedConfig.temperature ?? getOptimalTemperature(selectedModel));
+  // Use resolveTemperature to handle fixed temperatures (e.g., gpt-5-mini requires 1.0)
+  const { resolveTemperature } = await import("../config/model-temperatures");
+  const { temperature, wasOverridden, reason } = resolveTemperature(selectedModel, resolvedConfig.temperature);
+
+  if (wasOverridden && reason) {
+    console.log(`⚠️ Temperature adjusted: ${reason}`);
+  }
+
+  const llm = createLLM(selectedModel, temperature);
 
   // Usar el toolContext proporcionado o crear uno por defecto
   const finalToolContext: ToolContext = toolContext || {

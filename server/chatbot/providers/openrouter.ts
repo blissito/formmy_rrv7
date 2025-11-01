@@ -13,7 +13,7 @@ export class OpenRouterProvider extends AIProvider {
     // Anthropic models (usar API directa)
     'claude-3-5-sonnet-20241022',
     'claude-3-5-haiku-20241022',
-    'claude-haiku-4.5',
+    'claude-haiku-4-5',
     'claude-3-haiku-20240307',
     'claude-3-sonnet-20240229',
     // Google/Gemini models (usar API directa)

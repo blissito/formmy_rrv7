@@ -135,6 +135,40 @@ export default function ChatPreview({
     // Nota: El usuario puede cambiar el toggle manualmente
   }, [chatbot]);
 
+  // 🔄 Cargar historial de conversación al montar
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const formData = new FormData();
+        formData.append("intent", "get_history");
+        formData.append("chatbotId", chatbot.id);
+
+        const response = await fetch("/api/v0/chatbot", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await response.json();
+
+        if (result.messages && result.messages.length > 0) {
+          // Agregar welcome message + historial
+          setChatMessages([
+            {
+              role: "assistant",
+              content: chatbot.welcomeMessage || "¡Hola! ¿Cómo puedo ayudarte hoy?",
+            },
+            ...result.messages,
+          ]);
+        }
+      } catch (error) {
+        console.error("Error loading history:", error);
+        // Si falla, mantener solo el welcome message
+      }
+    };
+
+    loadHistory();
+  }, [chatbot.id, chatbot.welcomeMessage]);
+
   // Auto-scroll logic
   const scrollToBottom = () => {
     if (shouldAutoScroll && messagesEndRef.current) {

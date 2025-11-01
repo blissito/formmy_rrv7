@@ -63,7 +63,7 @@ export const MODEL_REGISTRY: ModelDefinition[] = [
     badge: "Enterprise default",
   },
   {
-    id: "claude-haiku-4.5",
+    id: "claude-haiku-4-5",
     label: "Claude Haiku 4.5",
     provider: "anthropic-direct",
     tier: "enterprise",

@@ -29,7 +29,7 @@ export const OPTIMAL_TEMPERATURES: Record<string, number> = {
   'gemini-1.5-pro': 0.7,                 // Legacy pero aún soportado
 
   // Claude 4.x models
-  'claude-haiku-4.5': 0.8,               // Haiku 4.5 - 73.3% SWE-bench, mejor coding model (Oct 2025)
+  'claude-haiku-4-5': 0.8,               // Haiku 4.5 - 73.3% SWE-bench, mejor coding model (Oct 2025)
 };
 
 /**
@@ -98,7 +98,7 @@ export const MODEL_TEMPERATURE_RANGES: Record<string, TemperatureRange> = {
   'gemini-1.5-pro': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
 
   // Claude 4.x models
-  'claude-haiku-4.5': { min: 0.8, max: 0.8, optimal: 0.8, step: 0, fixed: true },
+  'claude-haiku-4-5': { min: 0.8, max: 0.8, optimal: 0.8, step: 0, fixed: true },
 };
 
 /**
@@ -134,6 +134,17 @@ export function resolveTemperature(
   reason?: string;
 } {
   const optimalTemp = getOptimalTemperature(model);
+  const range = MODEL_TEMPERATURE_RANGES[model];
+
+  // ✅ CRÍTICO: Si el modelo tiene temperatura FIJA, SIEMPRE usar esa (ej: gpt-5-mini solo soporta 1.0)
+  if (range?.fixed) {
+    const wasOverridden = userTemperature !== undefined && userTemperature !== null && userTemperature !== optimalTemp;
+    return {
+      temperature: optimalTemp,
+      wasOverridden,
+      reason: wasOverridden ? `Modelo ${model} requiere temperature fija de ${optimalTemp}` : undefined
+    };
+  }
 
   // Si usuario NO especificó temperature, usar óptima del modelo
   if (userTemperature === undefined || userTemperature === null) {
