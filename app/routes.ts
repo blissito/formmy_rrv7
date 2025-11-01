@@ -105,7 +105,6 @@ export default [
   route("api/formmy", "routes/api.formmy.tsx"),
 
   // API v1 routes
-  route("api/v1/chatbot", "routes/api.v1.chatbot.ts"),
   route("api/v1/contacts", "routes/api.v1.contacts.ts"),
   route("api/v1/conversations", "routes/api.v1.conversations.tsx"),
   route("api/v1/conversations/load-more", "routes/api.v1.conversations.load-more.ts"),
