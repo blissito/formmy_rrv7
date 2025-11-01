@@ -136,6 +136,14 @@ const FormMyWidget = {
         chatContainer.classList.remove('closed');
         // Enviar parent domain cada vez que se abre (por si acaso)
         setTimeout(sendParentDomain, 100);
+        // Enviar mensaje al iframe para hacer focus en el input
+        setTimeout(() => {
+          if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+              type: 'formmy-focus-input'
+            }, apiHost);
+          }
+        }, 300); // Esperar a que la animación de apertura termine
       } else {
         bubble.classList.remove('hidden');
         chatContainer.classList.add('closed');

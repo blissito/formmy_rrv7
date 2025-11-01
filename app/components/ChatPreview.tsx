@@ -304,6 +304,25 @@ export default function ChatPreview({
     };
   }, [production, chatMessages.length, isConversationEnded, resetInactivityTimer]);
 
+  // 🎯 Autofocus: Escuchar mensaje del widget para hacer focus en el input al abrir
+  useEffect(() => {
+    if (!production) return; // Solo en modo producción (embebido)
+
+    const handleFocusMessage = (event: MessageEvent) => {
+      // Verificar que el mensaje sea para hacer focus
+      if (event.data.type === 'formmy-focus-input') {
+        console.log('🎯 Focus solicitado en input del chat');
+        // Hacer focus en el input usando la ref
+        if (inputRef.current?.focus) {
+          inputRef.current.focus();
+        }
+      }
+    };
+
+    window.addEventListener('message', handleFocusMessage);
+    return () => window.removeEventListener('message', handleFocusMessage);
+  }, [production]);
+
   // Limpiar conversación
   const handleClearConversation = () => {
     setChatMessages([
