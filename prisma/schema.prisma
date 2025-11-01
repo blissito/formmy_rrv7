@@ -167,7 +167,7 @@ model User {
   refresh_token   String?
   plan            Plans        @default(FREE)
   trialStartedAt  DateTime? // Fecha específica de inicio del trial (para marketing/promociones)
-  customerId      String?      @unique
+  customerId      String? // Removido @unique para permitir migración con múltiples nulls
   subscriptionIds String[]
   projects        Project[]
   chatbots        Chatbot[]
