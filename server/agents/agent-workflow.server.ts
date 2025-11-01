@@ -137,28 +137,27 @@ function buildSystemPrompt(
   let searchInstructions = '';
   if (hasContextSearch) {
     searchInstructions = `
-IMPORTANT: You have access to a knowledge base through search_context().
+🔍 CRITICAL - KNOWLEDGE BASE ACCESS:
 
-ALWAYS use search_context() for questions about:
-- Products, services, features
-- Pricing, plans, costs
-- Company policies, documentation
-- Technical details
-- ANY business-specific information
+You MUST call search_context() as your FIRST action for ANY user message that:
+- Asks about products, services, features, or company information
+- Contains keywords, names, or topics that might be in the knowledge base
+- Is unclear or ambiguous (search to understand context)
+- Could benefit from additional information
 
-Examples (copy this pattern):
-User: "what is product X"
-→ search_context("product X")
+Rule: When in doubt, ALWAYS search first. Never guess or make assumptions.
 
-User: "pricing"
-→ search_context("pricing plans")
+Examples - ALWAYS search for these patterns:
+User: "product X" → search_context("product X")
+User: "pricing" → search_context("pricing plans")
+User: "Be the Nerd" → search_context("Be the Nerd")
+User: "what is ${config.name}" → search_context("${config.name}")
 
-User: "what is ${config.name}"
-→ search_context("${config.name}")
+Only skip search_context if:
+- Pure greeting (hello, hi, thanks)
+- Asking to perform an action with tools (send email, schedule, etc)
 
-If unsure whether information is in the knowledge base, search anyway. It's free and fast.${hasWebSearch ? `
-
-If search_context doesn't find what you need, try web_search_google("${config.name} [topic]").` : ''}
+${hasWebSearch ? `Fallback: If search_context finds nothing, use web_search_google("${config.name} [topic]").` : ''}
 `;
   }
 
