@@ -41,7 +41,10 @@ export const Entrenamiento = ({
 }) => {
   const submit = useSubmit();
   const revalidator = useRevalidator();
-  const { currentTab, setCurrentTab } = useChipTabs("website", `entrenamiento_${chatbot.id}`);
+  const { currentTab, setCurrentTab } = useChipTabs(
+    "website",
+    `entrenamiento_${chatbot.id}`
+  );
   const [fileContexts, setFileContexts] = useState<any[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [existingWebsites, setExistingWebsites] = useState<WebsiteEntry[]>([]);
@@ -52,10 +55,14 @@ export const Entrenamiento = ({
   const [newTextContexts, setNewTextContexts] = useState<any[]>([]);
   const [textContextsToRemove, setTextContextsToRemove] = useState<any[]>([]);
   const [fileContextsToRemove, setFileContextsToRemove] = useState<any[]>([]);
-  const [websiteContextsToRemove, setWebsiteContextsToRemove] = useState<any[]>([]);
+  const [websiteContextsToRemove, setWebsiteContextsToRemove] = useState<any[]>(
+    []
+  );
   const [questionContexts, setQuestionContexts] = useState<any[]>([]);
   const [newQuestionContexts, setNewQuestionContexts] = useState<any[]>([]);
-  const [questionContextsToRemove, setQuestionContextsToRemove] = useState<any[]>([]);
+  const [questionContextsToRemove, setQuestionContextsToRemove] = useState<
+    any[]
+  >([]);
   const [textTitle, setTextTitle] = useState("");
   const [textContent, setTextContent] = useState("");
   const [questionTitle, setQuestionTitle] = useState("");
@@ -64,7 +71,8 @@ export const Entrenamiento = ({
   const [isAddingText, setIsAddingText] = useState(false);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [editingQuestionContext, setEditingQuestionContext] = useState<any>(null);
+  const [editingQuestionContext, setEditingQuestionContext] =
+    useState<any>(null);
   const [editingTextContext, setEditingTextContext] = useState<any>(null);
 
   useEffect(() => {
@@ -118,7 +126,10 @@ export const Entrenamiento = ({
         .map((context: any) => ({
           id: context.id,
           title: context.title,
-          questions: typeof context.questions === 'string' ? context.questions.split('\n').filter((q: string) => q.trim()) : context.questions,
+          questions:
+            typeof context.questions === "string"
+              ? context.questions.split("\n").filter((q: string) => q.trim())
+              : context.questions,
           answer: context.answer,
           sizeKB: context.sizeKB,
         }));
@@ -154,16 +165,21 @@ export const Entrenamiento = ({
       // Actualizar contexto existente en el estado local
       if (editingTextContext.id) {
         // Es un contexto guardado en BD - actualizar en textContexts
-        setTextContexts(prev =>
-          prev.map(ctx =>
+        setTextContexts((prev) =>
+          prev.map((ctx) =>
             ctx.id === editingTextContext.id
-              ? { ...ctx, title: textTitle.trim(), content: textContent.trim(), sizeKB }
+              ? {
+                  ...ctx,
+                  title: textTitle.trim(),
+                  content: textContent.trim(),
+                  sizeKB,
+                }
               : ctx
           )
         );
       } else {
         // Es un contexto nuevo - actualizar en newTextContexts
-        setNewTextContexts(prev =>
+        setNewTextContexts((prev) =>
           prev.map((ctx, idx) =>
             idx === editingTextContext.tempIndex
               ? { title: textTitle.trim(), content: textContent.trim(), sizeKB }
@@ -173,13 +189,13 @@ export const Entrenamiento = ({
       }
     } else {
       // Agregar nuevo contexto al estado local
-      setNewTextContexts(prev => [
+      setNewTextContexts((prev) => [
         ...prev,
         {
           title: textTitle.trim(),
           content: textContent.trim(),
           sizeKB,
-        }
+        },
       ]);
     }
 
@@ -189,11 +205,17 @@ export const Entrenamiento = ({
     setEditingTextContext(null);
   };
 
-  const handleRemoveTextContext = (index: number, context: any, isNew: boolean = false) => {
+  const handleRemoveTextContext = (
+    index: number,
+    context: any,
+    isNew: boolean = false
+  ) => {
     // Si estamos editando este contexto, limpiar el formulario
-    if (editingTextContext &&
-        ((context.id && editingTextContext.id === context.id) ||
-         (!context.id && editingTextContext.tempIndex === index))) {
+    if (
+      editingTextContext &&
+      ((context.id && editingTextContext.id === context.id) ||
+        (!context.id && editingTextContext.tempIndex === index))
+    ) {
       setEditingTextContext(null);
       setTextTitle("");
       setTextContent("");
@@ -201,10 +223,10 @@ export const Entrenamiento = ({
 
     if (isNew) {
       // Remover del array de nuevos (no guardados aún)
-      setNewTextContexts(prev => prev.filter((_, idx) => idx !== index));
+      setNewTextContexts((prev) => prev.filter((_, idx) => idx !== index));
     } else {
       // Marcar para eliminar (contexto guardado en BD)
-      setTextContextsToRemove(prev => [...prev, context]);
+      setTextContextsToRemove((prev) => [...prev, context]);
 
       // Remover del estado local para que no se muestre
       const newContexts = [...textContexts];
@@ -213,7 +235,11 @@ export const Entrenamiento = ({
     }
   };
 
-  const handleEditTextContext = (index: number, context: any, isNew: boolean = false) => {
+  const handleEditTextContext = (
+    index: number,
+    context: any,
+    isNew: boolean = false
+  ) => {
     // Popular el formulario con los datos del contexto
     setTextTitle(context.title || "");
     setTextContent(context.content || "");
@@ -234,40 +260,49 @@ export const Entrenamiento = ({
   };
 
   const handleAddQuestionContext = () => {
-    const validQuestions = questions.filter(q => q.trim());
-    if (!questionTitle.trim() || validQuestions.length === 0 || !answer.trim()) {
+    const validQuestions = questions.filter((q) => q.trim());
+    if (
+      !questionTitle.trim() ||
+      validQuestions.length === 0 ||
+      !answer.trim()
+    ) {
       return;
     }
 
-    const sizeKB = Math.ceil((questionTitle.length + validQuestions.join('\n').length + answer.length) / 1024);
+    const sizeKB = Math.ceil(
+      (questionTitle.length +
+        validQuestions.join("\n").length +
+        answer.length) /
+        1024
+    );
 
     if (editingQuestionContext) {
       // Actualizar contexto existente en el estado local
       if (editingQuestionContext.id) {
         // Es un contexto guardado en BD - actualizar en questionContexts
-        setQuestionContexts(prev =>
-          prev.map(ctx =>
+        setQuestionContexts((prev) =>
+          prev.map((ctx) =>
             ctx.id === editingQuestionContext.id
               ? {
                   ...ctx,
                   title: questionTitle.trim(),
                   questions: validQuestions,
                   answer: answer.trim(),
-                  sizeKB
+                  sizeKB,
                 }
               : ctx
           )
         );
       } else {
         // Es un contexto nuevo - actualizar en newQuestionContexts
-        setNewQuestionContexts(prev =>
+        setNewQuestionContexts((prev) =>
           prev.map((ctx, idx) =>
             idx === editingQuestionContext.tempIndex
               ? {
                   title: questionTitle.trim(),
                   questions: validQuestions,
                   answer: answer.trim(),
-                  sizeKB
+                  sizeKB,
                 }
               : ctx
           )
@@ -275,14 +310,14 @@ export const Entrenamiento = ({
       }
     } else {
       // Agregar nuevo contexto al estado local
-      setNewQuestionContexts(prev => [
+      setNewQuestionContexts((prev) => [
         ...prev,
         {
           title: questionTitle.trim(),
           questions: validQuestions,
           answer: answer.trim(),
           sizeKB,
-        }
+        },
       ]);
     }
 
@@ -293,11 +328,17 @@ export const Entrenamiento = ({
     setEditingQuestionContext(null);
   };
 
-  const handleRemoveQuestionContext = (index: number, context: any, isNew: boolean = false) => {
+  const handleRemoveQuestionContext = (
+    index: number,
+    context: any,
+    isNew: boolean = false
+  ) => {
     // Si estamos editando este contexto, limpiar el formulario
-    if (editingQuestionContext &&
-        ((context.id && editingQuestionContext.id === context.id) ||
-         (!context.id && editingQuestionContext.tempIndex === index))) {
+    if (
+      editingQuestionContext &&
+      ((context.id && editingQuestionContext.id === context.id) ||
+        (!context.id && editingQuestionContext.tempIndex === index))
+    ) {
       setEditingQuestionContext(null);
       setQuestionTitle("");
       setQuestions([""]);
@@ -306,10 +347,10 @@ export const Entrenamiento = ({
 
     if (isNew) {
       // Remover del array de nuevos (no guardados aún)
-      setNewQuestionContexts(prev => prev.filter((_, idx) => idx !== index));
+      setNewQuestionContexts((prev) => prev.filter((_, idx) => idx !== index));
     } else {
       // Marcar para eliminar (contexto guardado en BD)
-      setQuestionContextsToRemove(prev => [...prev, context]);
+      setQuestionContextsToRemove((prev) => [...prev, context]);
 
       // Remover del estado local para que no se muestre
       const newContexts = [...questionContexts];
@@ -318,14 +359,18 @@ export const Entrenamiento = ({
     }
   };
 
-  const handleEditQuestionContext = (index: number, context: any, isNew: boolean = false) => {
+  const handleEditQuestionContext = (
+    index: number,
+    context: any,
+    isNew: boolean = false
+  ) => {
     // Popular el formulario con los datos del contexto
     setQuestionTitle(context.title);
 
     // Manejar tanto arrays como strings para las preguntas
     const contextQuestions = Array.isArray(context.questions)
       ? context.questions
-      : context.questions?.split('\n').filter((q: string) => q.trim()) || [""];
+      : context.questions?.split("\n").filter((q: string) => q.trim()) || [""];
 
     setQuestions(contextQuestions.length > 0 ? contextQuestions : [""]);
     setAnswer(context.answer || "");
@@ -382,7 +427,7 @@ export const Entrenamiento = ({
         );
         fileContextData.append("file", file);
 
-        const response = await fetch("/api/v0/chatbot", {
+        const response = await fetch("/api/v1/chatbot", {
           method: "POST",
           body: fileContextData,
         });
@@ -402,7 +447,10 @@ export const Entrenamiento = ({
         }
       } catch (error) {
         // Si el error no es del if (!response.ok), mostrarlo también
-        if (error instanceof Error && !error.message.includes("Error subiendo")) {
+        if (
+          error instanceof Error &&
+          !error.message.includes("Error subiendo")
+        ) {
           const errorMsg = `Error de red al subir ${file.name}: ${error.message}`;
           toast.error(errorMsg, { duration: 6000 });
           console.error("Network error:", error);
@@ -413,7 +461,9 @@ export const Entrenamiento = ({
 
     // Limpiar archivos subidos y recargar datos SOLO si todo fue exitoso
     if (uploadedFiles.length > 0) {
-      toast.success(`${uploadedFiles.length} archivo(s) subido(s) correctamente`);
+      toast.success(
+        `${uploadedFiles.length} archivo(s) subido(s) correctamente`
+      );
     }
     setUploadedFiles([]);
     submit({});
@@ -421,7 +471,7 @@ export const Entrenamiento = ({
 
   const handleRemoveContext = (index: number, context: any) => {
     // Marcar archivo para eliminar (virtual)
-    setFileContextsToRemove(prev => [...prev, context]);
+    setFileContextsToRemove((prev) => [...prev, context]);
 
     // Remover del estado local para que no se muestre
     const newContexts = [...fileContexts];
@@ -429,10 +479,14 @@ export const Entrenamiento = ({
     setFileContexts(newContexts);
   };
 
-  const handleRenameContext = async (index: number, context: any, newName: string) => {
+  const handleRenameContext = async (
+    index: number,
+    context: any,
+    newName: string
+  ) => {
     // Actualizar el estado local inmediatamente para feedback visual optimista
     const previousFileName = context.fileName;
-    setFileContexts(prev =>
+    setFileContexts((prev) =>
       prev.map((ctx, idx) =>
         idx === index ? { ...ctx, fileName: newName } : ctx
       )
@@ -454,7 +508,7 @@ export const Entrenamiento = ({
 
       if (!response.ok) {
         // Revertir el cambio si falla
-        setFileContexts(prev =>
+        setFileContexts((prev) =>
           prev.map((ctx, idx) =>
             idx === index ? { ...ctx, fileName: previousFileName } : ctx
           )
@@ -465,9 +519,8 @@ export const Entrenamiento = ({
       // Éxito - revalidar para obtener datos actualizados del servidor
       revalidator.revalidate();
     } catch (error) {
-
       // Revertir el cambio si hay error
-      setFileContexts(prev =>
+      setFileContexts((prev) =>
         prev.map((ctx, idx) =>
           idx === index ? { ...ctx, fileName: previousFileName } : ctx
         )
@@ -515,9 +568,12 @@ export const Entrenamiento = ({
           formData.append("intent", "add_question_context");
           formData.append("chatbotId", chatbot.id);
           formData.append("title", questionContext.title);
-          formData.append("questions", Array.isArray(questionContext.questions)
-            ? questionContext.questions.join('\n')
-            : questionContext.questions);
+          formData.append(
+            "questions",
+            Array.isArray(questionContext.questions)
+              ? questionContext.questions.join("\n")
+              : questionContext.questions
+          );
           formData.append("answer", questionContext.answer);
           formData.append("sizeKB", questionContext.sizeKB.toString());
 
@@ -572,8 +628,13 @@ export const Entrenamiento = ({
       }
 
       // Eliminar contextos marcados para eliminar (archivos, websites, texto, preguntas)
-      const allContextsToRemove = [...fileContextsToRemove, ...websiteContextsToRemove, ...textContextsToRemove, ...questionContextsToRemove];
-      
+      const allContextsToRemove = [
+        ...fileContextsToRemove,
+        ...websiteContextsToRemove,
+        ...textContextsToRemove,
+        ...questionContextsToRemove,
+      ];
+
       for (const context of allContextsToRemove) {
         try {
           const formData = new FormData();
@@ -587,7 +648,9 @@ export const Entrenamiento = ({
           });
 
           if (!response.ok) {
-            throw new Error(`Error eliminando contexto: ${context.title || context.fileName || context.url}`);
+            throw new Error(
+              `Error eliminando contexto: ${context.title || context.fileName || context.url}`
+            );
           }
         } catch (error) {
           throw error;
@@ -595,10 +658,11 @@ export const Entrenamiento = ({
       }
 
       // Limpiar estados después de subirlos y recargar datos
-      const hasChanges = newWebsiteEntries.length > 0 ||
-                        newTextContexts.length > 0 ||
-                        newQuestionContexts.length > 0 ||
-                        allContextsToRemove.length > 0;
+      const hasChanges =
+        newWebsiteEntries.length > 0 ||
+        newTextContexts.length > 0 ||
+        newQuestionContexts.length > 0 ||
+        allContextsToRemove.length > 0;
       if (hasChanges) {
         toast.success("Chatbot actualizado correctamente");
         setNewWebsiteEntries([]);
@@ -674,7 +738,6 @@ export const Entrenamiento = ({
             {/* Mostrar contextos existentes */}
             {fileContexts.length > 0 && (
               <div>
-
                 <ListFiles
                   files={fileContexts}
                   onRemoveFile={handleRemoveContext}
@@ -713,7 +776,7 @@ export const Entrenamiento = ({
             }}
             onMarkForRemoval={(entry) => {
               // Marcar para eliminar (virtual)
-              setWebsiteContextsToRemove(prev => [...prev, entry]);
+              setWebsiteContextsToRemove((prev) => [...prev, entry]);
             }}
             chatbotId={chatbot.id}
           />
@@ -742,7 +805,7 @@ export const Entrenamiento = ({
           <ExtraccionAvanzada chatbot={chatbot} user={user} />
         )}
 
-        <section >
+        <section>
           <InfoSources
             contexts={fileContexts}
             uploadedFiles={uploadedFiles}
@@ -752,7 +815,16 @@ export const Entrenamiento = ({
             mode="edit"
             onCreateChatbot={handleUpdateChatbot}
             isCreating={isUpdating}
-            hasPendingChanges={uploadedFiles.length > 0 || newWebsiteEntries.length > 0 || newTextContexts.length > 0 || newQuestionContexts.length > 0 || textContextsToRemove.length > 0 || fileContextsToRemove.length > 0 || websiteContextsToRemove.length > 0 || questionContextsToRemove.length > 0}
+            hasPendingChanges={
+              uploadedFiles.length > 0 ||
+              newWebsiteEntries.length > 0 ||
+              newTextContexts.length > 0 ||
+              newQuestionContexts.length > 0 ||
+              textContextsToRemove.length > 0 ||
+              fileContextsToRemove.length > 0 ||
+              websiteContextsToRemove.length > 0 ||
+              questionContextsToRemove.length > 0
+            }
             maxContextSizeKB={PLAN_LIMITS_CLIENT[user.plan].maxContextSizeKB}
           />
         </section>
