@@ -49,7 +49,7 @@ export default function ChatbotConfigRoute(
         "Chatbot creado desde la interfaz web"
       );
 
-      const createResponse = await fetch("/api/v0/chatbot", {
+      const createResponse = await fetch("/api/v1/chatbot", {
         method: "POST",
         body: createFormData,
       });
@@ -79,7 +79,7 @@ export default function ChatbotConfigRoute(
         );
         contextFormData.append("routes", JSON.stringify(entry.routes));
 
-        const contextResponse = await fetch("/api/v0/chatbot", {
+        const contextResponse = await fetch("/api/v1/chatbot", {
           method: "POST",
           body: contextFormData,
         });
@@ -102,7 +102,7 @@ export default function ChatbotConfigRoute(
           fileContextData.append("sizeKB", Math.ceil(file.size / 1024).toString());
           fileContextData.append("file", file); // Enviar el archivo binario completo
 
-          const fileResponse = await fetch("/api/v0/chatbot", {
+          const fileResponse = await fetch("/api/v1/chatbot", {
             method: "POST",
             body: fileContextData,
           });
@@ -219,22 +219,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   return { user, accessInfo };
 };
 
-export const meta = ({ data }: { data: any }) => {
-  if (!data?.chatbot) {
-    return [
-      { title: "Chatbot Not Found" },
-      {
-        name: "description",
-        content: "The requested chatbot could not be found",
-      },
-    ];
-  }
-
+export const meta = () => {
   return [
-    { title: `Configure: ${data.chatbot.name}` },
+    { title: "Crear Nuevo Chatbot" },
     {
       name: "description",
-      content: `Configure your chatbot: ${data.chatbot.name}`,
+      content: "Crea un nuevo chatbot con inteligencia artificial para tu negocio",
     },
   ];
 };

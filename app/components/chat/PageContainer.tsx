@@ -247,11 +247,13 @@ export const ChatCard = ({
   chatbot,
   userRole,
   isInvited,
+  index = 0,
 }: {
   onDelete?: () => void;
   chatbot: Chatbot & { canAccess?: boolean; needsUpgrade?: boolean };
   userRole?: string;
   isInvited?: boolean;
+  index?: number;
 }) => {
   const [conversationsCount, setConversationsCount] = useState(0);
 
@@ -303,11 +305,13 @@ export const ChatCard = ({
 
   return (
     <motion.div
+      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.8, y: -20 }}
       transition={{
         duration: 0.4,
-        // delay: index * 0.05,
+        delay: index * 0.05,
         ease: [0.25, 0.1, 0.25, 1],
       }}
       className="col-span-1"
@@ -664,8 +668,8 @@ export const TabSelector = ({
         </div>
       </nav>
 
-      {/* Toggle de Idioma Global */}
-      <button
+      {/* Toggle de Idioma Global - COMENTADO */}
+      {/* <button
         onClick={toggleLanguage}
         className={cn(
           "px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
@@ -677,7 +681,7 @@ export const TabSelector = ({
       >
         <span className="text-base">{lang === 'en' ? '🇺🇸' : '🇪🇸'}</span>
         <span className="font-semibold">{lang === 'en' ? 'EN' : 'ES'}</span>
-      </button>
+      </button> */}
     </div>
   );
 };

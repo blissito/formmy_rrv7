@@ -82,7 +82,7 @@ export const plans: Plan[] = [
         "🚀 Integraciones premium",
         "👩🏻‍🏫 Claude 3 Haiku premium - Calidad Anthropic",
         "🪪 250 conversaciones",
-        "🎤 30 minutos de voz IA/mes",
+        // "🎤 30 minutos de voz IA/mes",
         "⚡ Respuestas 3x más rápidas",
     ],
     extra: [
@@ -110,8 +110,8 @@ export const plans: Plan[] = [
         "🚀 Integraciones enterprise",
         "👩🏻‍🏫 GPT-5 Mini + Claude 3.5 Haiku",
         "📊 Dashboard de analytics profesional",
-        "🪪 1,000 conversaciones",
-        "🎤 60 minutos de voz IA/mes",
+        "🪪 2,500 conversaciones",
+        // "🎤 60 minutos de voz IA/mes",
         "🎧 Soporte prioritario",
     ],
     extra: [

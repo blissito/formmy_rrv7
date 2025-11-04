@@ -249,31 +249,6 @@ export const GhostyChatInterface = ({
               ))}
             </AnimatePresence>
 
-            {/* Simple thinking indicator */}
-            {isProcessing && (
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center flex-shrink-0">
-                  <img src="/home/ghosty-avatar.svg" alt="ghosty" className="w-full h-full" />
-                </div>
-                <div className="flex-1 bg-gray-50 rounded-2xl p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
-                      <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
-                      <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
-                    </div>
-                    <span className="text-sm text-gray-600">
-                      {toolProgress.length > 0 && toolProgress.slice(-1)[0]?.status === 'running'
-                        ? getToolDisplayName(toolProgress.slice(-1)[0].toolName)
-                        : getSimpleStateMessage(currentState, currentThought)
-                      }
-                    </span>
-                  </div>
-{/* Tool progress ya se muestra en el mensaje principal, eliminando duplicación */}
-                </div>
-              </div>
-            )}
-
             {/* Error message */}
             <AnimatePresence>
               {error && (
@@ -324,8 +299,8 @@ export const GhostyChatInterface = ({
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
         className={cn(
-          "p-4 bg-white",
-          "md:p-6"
+          "pb-4 px-4 pt-2 bg-white",
+          "md:pb-6 md:px-6 md:pt-3"
         )}
       >
         <form onSubmit={handleSubmit} className="flex gap-3">

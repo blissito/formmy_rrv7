@@ -95,8 +95,8 @@ export const GeneralConfig = ({
         onClose={() => onSetShowConfirm(false)}
         isOpen={showConfirm}
         title="¿Estás segur@ de eliminar este Formmy?"
-        message="Si lo eliminas, dejarás de recibir mensajes y todos los mensajes que
-            tenías se eliminarán automáticamente."
+        message="Si lo eliminas, todos los mensajes serán eliminados de forma permanente."
+        emojis="🗑️"
         footer={
           <div className="flex gap-6 mt-8 justify-center">
             <Button

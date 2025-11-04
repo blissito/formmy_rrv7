@@ -33,16 +33,19 @@ export const PLAN_LIMITS = {
     toolCreditsPerMonth: 1000, // Créditos generosos como PRO
   },
   [Plans.STARTER]: {
-    maxChatbots: 0, // Sin chatbots (solo formularios)
+    maxChatbots: 1, // 1 chatbot incluido
     maxFormmys: Infinity, // Formmys ilimitados desde STARTER
-    maxContextSizeKB: 0, // Sin contexto manual (deben usar parser pagando créditos)
-    maxConversationsPerMonth: 0, // Sin chatbots = sin conversaciones
-    maxTokensPerQuery: 0, // Sin chatbots = sin queries
-    maxContextQueriesPerDay: 0, // Sin chatbots = sin queries
-    availableModels: [], // Sin chatbots = sin modelos
+    maxContextSizeKB: 10240, // 10MB de contexto
+    maxConversationsPerMonth: 50, // 50 conversaciones mensuales
+    maxTokensPerQuery: 4000, // Límite moderado para queries
+    maxContextQueriesPerDay: 50, // 50 queries RAG por día
+    availableModels: [
+      "gpt-5-nano",
+      "gemini-2.0-flash-lite"
+    ], // Modelos básicos de última generación
     showBranding: true,
     trialDays: 0,
-    toolCreditsPerMonth: 0, // Sin créditos de herramientas
+    toolCreditsPerMonth: 200, // 200 créditos mensuales según CLAUDE.md
   },
   [Plans.PRO]: {
     maxChatbots: 10,
@@ -64,7 +67,7 @@ export const PLAN_LIMITS = {
     maxChatbots: Infinity,
     maxFormmys: Infinity, // Sin límite en formmys
     maxContextSizeKB: 102400, // 100MB para enterprise
-    maxConversationsPerMonth: 1000,
+    maxConversationsPerMonth: 2500,
     maxTokensPerQuery: 16000, // Límite alto pero protegido
     maxContextQueriesPerDay: 500, // Límite empresarial
     availableModels: ALL_MODELS, // Acceso a todos los modelos incluyendo Sonnet

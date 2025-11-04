@@ -569,14 +569,8 @@ export const ProjectCard = ({
       <ConfirmModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="¿Eliminar este Formmy?"
-        message={
-          <div className="text-base font-normal text-center mb-6 text-gray-600 dark:text-space-400">
-            <p>
-              ¿Seguro que quieres eliminar <strong>{name}</strong>?
-            </p>
-          </div>
-        }
+        title="¿Estás segur@ de eliminar este Formmy?"
+        message="Si lo eliminas, todos los mensajes serán eliminados de forma permanente."
         footer={
           <div className="flex justify-center gap-4">
             <Button

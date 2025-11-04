@@ -96,8 +96,8 @@ export default function Page() {
         onClose={() => setShowConfirm(false)}
         isOpen={showConfirm}
         title="¿Estás segur@ de eliminar este Formmy?"
-        message="Si lo eliminas, dejarás de recibir mensajes y todos los mensajes que
-            tenías se eliminarán automáticamente."
+        message="Si lo eliminas, todos los mensajes serán eliminados de forma permanente."
+        emojis="🗑️"
         footer={
           <div className="flex mb-8">
             <Button

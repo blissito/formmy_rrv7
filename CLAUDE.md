@@ -77,7 +77,7 @@ When search_context() returns results, those results ARE the answer.
 |------|---|------|------|---------|-------|
 | Starter | 149 | 1 | 50 | 200 | 50min |
 | Pro | 499 | 10 | 250 | 1000 | 200min |
-| Enterprise | 2490 | ∞ | 1000 | 5000 | 1000min |
+| Enterprise | 2490 | ∞ | 2500 | 5000 | 1000min |
 
 ## Integraciones
 

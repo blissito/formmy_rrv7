@@ -11,7 +11,7 @@ const FORMMY_PLANS = {
     priceId: 'price_1S5AqXDtYmGT70YtepLAzwk4',
     chatbots: 1,
     conversations: 50,
-    credits: 0
+    credits: 200
   },
   PRO: {
     name: 'Plan Pro',
@@ -26,7 +26,7 @@ const FORMMY_PLANS = {
     price: 2490,
     priceId: null, // Custom price_data
     chatbots: Infinity,
-    conversations: 1000,
+    conversations: 2500,
     credits: 5000
   }
 } as const;

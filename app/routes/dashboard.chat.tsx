@@ -5,8 +5,8 @@ import { PageContainer } from "~/components/chat/PageContainer";
 import type { Route } from "./+types/chat";
 import type { Chatbot, Permission } from "@prisma/client";
 import toast from "react-hot-toast";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import ConfirmModal from "~/components/ConfirmModal";
 import { effect } from "../utils/effect";
 import { db } from "~/utils/db.server";
@@ -133,7 +133,10 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
     invitedChatbots = [],
     accessInfo,
   } = loaderData;
-  
+
+  // Estado local para manejar chatbots con animaciones
+  const [allChatbots, setAllChatbots] = useState<Chatbot[]>(chatbots);
+  const [allInvitedChatbots, setAllInvitedChatbots] = useState<InvitedChatbot[]>(invitedChatbots);
 
   // Estado para controlar la visibilidad del modal de límite
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -147,11 +150,26 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
   const [shouldDelete, setShouldDelete] = useState("");
   const [isLoading, setLoading] = useState(false);
 
+  // Actualizar estado local cuando cambien los datos del loader
+  useEffect(() => {
+    setAllChatbots(chatbots);
+    setAllInvitedChatbots(invitedChatbots);
+  }, [chatbots, invitedChatbots]);
+
+  // Eliminación optimista
+  const handleOptimisticDelete = (chatbotId: string) => {
+    setAllChatbots((prev) => prev.filter((c) => c.id !== chatbotId));
+  };
+
   const handleDelete = async () => {
     setLoading(true);
+
+    // Eliminación optimista - remover de la UI inmediatamente
+    handleOptimisticDelete(shouldDelete);
+
     await effect(
       async () => {
-        const response = await fetch("/api/v0/chatbot", {
+        const response = await fetch("/api/v1/chatbot", {
           method: "post",
           body: new URLSearchParams({
             intent: "delete_chatbot",
@@ -162,14 +180,17 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
 
         if (!data.success && data.error) {
           toast.error(data.error);
-        } else {
+          // Restaurar el chatbot si falla
           submit({});
+        } else {
           setShouldDelete("");
         }
       },
       (error) => {
         console.error("Error al eliminar chatbot:", error);
         toast.error("Error al eliminar chatbot: " + error.message);
+        // Restaurar el chatbot si falla
+        submit({});
       }
     );
     setLoading(false);
@@ -199,27 +220,29 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
           Mis Chatbots IA
         </PageContainer.Title>
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {chatbots.length > 0 || (invitedChatbots && invitedChatbots.length > 0) ? (
-            <>
+          {allChatbots.length > 0 || (allInvitedChatbots && allInvitedChatbots.length > 0) ? (
+            <AnimatePresence mode="popLayout">
               {/* Chatbots propios */}
-              {chatbots.map((chatbot: Chatbot, i: number) => (
+              {allChatbots.map((chatbot: Chatbot, i: number) => (
                 <PageContainer.ChatCard
                   onDelete={handleDeleteIntention(chatbot.id)}
-                  key={`own-${i}`}
+                  key={chatbot.id}
                   chatbot={chatbot}
+                  index={i}
                 />
               ))}
-              
+
               {/* Chatbots invitados */}
-              {invitedChatbots && invitedChatbots.map((chatbot: InvitedChatbot, i: number) => (
+              {allInvitedChatbots && allInvitedChatbots.map((chatbot: InvitedChatbot, i: number) => (
                 <PageContainer.ChatCard
-                  key={`invited-${i}`}
+                  key={chatbot.id}
                   chatbot={chatbot}
                   userRole={chatbot.userRole}
                   isInvited={true}
+                  index={allChatbots.length + i}
                 />
               ))}
-            </>
+            </AnimatePresence>
           ) : (
             <motion.div 
               className="mx-auto text-center flex flex-col justify-start md:justify-center w-full min-h-fit md:min-h-[60vh] col-span-full"
@@ -274,9 +297,9 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
           onClose={() => setShouldDelete("")}
           title="¿Estás segur@ de eliminar este chatbot?"
           message={`Si lo eliminas, toda la información y todas las conversaciones serán eliminadas de forma permanente.`}
-          emojis="✋🏻⛔️🤖"
+          emojis="🗑️"
           footer={
-            <div className="flex justify-center gap-4 md:gap-6 ">
+            <div className="flex justify-center gap-4 ">
            
               <Button
                 onClick={() => {
@@ -289,9 +312,10 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
               </Button>
               <button
                 onClick={handleDelete}
-                className="bg-danger hover:bg-[#DF4D42] text-white block  cursor-pointer rounded-full py-3 px-6"
+                disabled={isLoading}
+                className="bg-danger hover:bg-[#DF4D42] text-white block cursor-pointer rounded-full py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sí, quiero eliminarlo
+                {isLoading ? 'Eliminando...' : 'Sí, quiero eliminarlo'}
               </button>
             </div>
           }
