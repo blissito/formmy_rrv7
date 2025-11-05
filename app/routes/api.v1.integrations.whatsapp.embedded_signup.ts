@@ -160,23 +160,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
 
     // Intercambiar el código por un access token de larga duración
-    // CRÍTICO: El redirect_uri DEBE ser exactamente el mismo usado en el OAuth dialog
-    // Ahora usamos un flujo manual de OAuth con redirect_uri fijo y controlado
-    const redirectUri = body.redirectUri;
-
-    if (!redirectUri) {
-      console.error(`❌ [Token Exchange] ERROR: redirect_uri no fue enviado por el frontend`);
-      return Response.json(
-        { error: "redirect_uri es requerido" },
-        { status: 400 }
-      );
-    }
-
-    console.log(`🔄 [Token Exchange] redirect_uri: ${redirectUri}`);
+    // ✅ FB.login() maneja el popup automáticamente, NO requiere redirect_uri
     console.log(`🔄 [Token Exchange] Code: ${code?.substring(0, 20)}...`);
+    console.log(`🔄 [Token Exchange] wabaId: ${body.wabaId || 'N/A'}`);
+    console.log(`🔄 [Token Exchange] phoneNumberId: ${body.phoneNumberId || 'N/A'}`);
 
     // Intercambiar código por token
-    // ✅ NUEVO: FB.login() NO requiere redirect_uri para token exchange
+    // ✅ FB.login() NO requiere redirect_uri para token exchange
     const tokenExchangeUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
     tokenExchangeUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
     tokenExchangeUrl.searchParams.append('client_secret', FACEBOOK_APP_SECRET);
