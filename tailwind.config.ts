@@ -44,6 +44,7 @@ export default {
         fiusha:"#D56D80",
         sky:"#76D3CB",
         grass:"#7FBE60",
+        lime:"#BFDD78",
         salmon:"#E4AE8E",
         // Dracula Theme Colors for Code Snippets
         dracula: {
@@ -97,7 +98,9 @@ export default {
         actionsBack: "url('/dash/actions-back.svg')",
         chatPattern:"url('/dash/chat-pattern.webp')",
         city:"url('/dash/city.svg')",
-        lines:"url('/home/lines.svg')"  
+        lines:"url('/home/lines.svg')",
+        banner1:"url('/dash/banner-1.svg')",  
+        banner2:"url('/dash/banner-2.svg')",
       },
       boxShadow: {
         standard: "8px 16px 14px #F8F8FB",

@@ -106,7 +106,7 @@ export const sendEnterpriseEmail = async ({ email, name }: EnterpriseEmail) => {
                 ">
                     <p style=" list-style-type: none;">🤖 Chatbots ilimitados</p>
                     <p style=" list-style-type: none;">💬 2,500 conversaciones para tus chatbots</p>
-                    <p style=" list-style-type: none;">🕣  60 minutos de voz IA/mes</p>
+
                     <p style=" list-style-type: none;">🎧 Soporte prioritario y más</p>
                 </div>
 

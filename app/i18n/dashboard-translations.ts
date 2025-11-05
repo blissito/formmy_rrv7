@@ -631,7 +631,7 @@ export const dashboardTranslations = {
       typing: "Escribe un mensaje...",
       noConversations: "No hay conversaciones aún",
       noConversationsDescription: "Las conversaciones con tus clientes aparecerán aquí.",
-      installScript: "Instala el script en tu sitio web para comenzar a recibir conversaciones",
+      installScript: "Agrega el iframe de tu chatbot a tu sitio web para comenzar a recibir mensajes.",
       noFavorites: "¡No tienes favoritos!",
       noFavoritesDescription: "Marca como favoritos tus conversaciones más importantes.",
       loadMore: "Cargar Más",

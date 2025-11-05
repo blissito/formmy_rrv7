@@ -807,8 +807,8 @@ const Card = ({
         <Avatar fill="#B2B3BE" />
       </div>
 
-      <div className="grid text-left">
-        <p className="text-xs">{answer.data.email}</p>
+      <div className="grid text-left overflow-hidden">
+        <p className="text-xs truncate">{answer.data.email}</p>
         <p
           className={twMerge(
             "text-xs mt-[2px] text-gray-500 dark:text-space-400 font-light",

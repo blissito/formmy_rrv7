@@ -5,6 +5,17 @@ import type { GhostyLlamaMessage } from './hooks/useGhostyLlamaChat';
 import { useState } from 'react';
 import { formatReasoningContent } from '~/utils/formatReasoningContent';
 
+// Simple loading indicator (3 bouncing dots) - igual al widget
+const LoadingIndicator = () => {
+  return (
+    <div className="items-center justify-center flex text-3xl h-3">
+      <div className="animate-bounce text-metal">.</div>
+      <div className="animate-bounce text-metal" style={{ animationDelay: "0.1s" }}>.</div>
+      <div className="animate-bounce text-metal" style={{ animationDelay: "0.2s" }}>.</div>
+    </div>
+  );
+};
+
 interface GhostyMessageProps {
   message: GhostyLlamaMessage;
   onCopy?: (content: string) => void | Promise<void>;
@@ -55,7 +66,7 @@ export const GhostyMessageComponent = ({
           "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
           "bg-brand-500 text-clear text-sm font-medium mt-1"
         )}>
-          <img src="/home/ghosty-avatar.svg" alt="ghosty" className="w-5 h-5" />
+          <img src="/home/ghosty-avatar.svg" alt="ghosty" className="w-5 h-5 object-cover scale-150" />
         </div>
       )}
 
@@ -77,73 +88,78 @@ export const GhostyMessageComponent = ({
               {message.content}
             </p>
           ) : (
-            // Assistant message - markdown
-            <div className={cn(
-              "prose prose-sm md:prose-base max-w-none break-words",
-              "prose-headings:text-dark prose-p:text-dark prose-strong:text-dark",
-              "prose-code:text-brand-500 prose-code:bg-brand-100/20 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm",
-              "prose-pre:bg-gray-50 prose-pre:border prose-pre:border-outlines prose-pre:rounded-lg prose-pre:overflow-hidden",
-              "prose-pre>code:before:content-none prose-pre>code:after:content-none", // Remove backticks from code blocks
-              "prose-blockquote:border-l-2 prose-blockquote:border-l-brand-500 prose-blockquote:pl-4 prose-blockquote:py-1 prose-blockquote:text-irongray",
-              "prose-ul:pl-4 prose-ol:pl-4 prose-li:my-0.5",
-              "prose-table:border-collapse prose-table:border prose-table:border-outlines prose-table:w-full prose-table:my-4 prose-table:text-sm",
-              "prose-th:border prose-th:border-outlines prose-th:bg-brand-100/20 prose-th:p-3 prose-th:text-dark prose-th:font-semibold prose-th:text-left",
-              "prose-td:border prose-td:border-outlines prose-td:p-3 prose-td:text-dark prose-td:align-top",
-              "prose-tr:even:bg-brand-50/30",
-              isStreaming && "animate-pulse"
-            )}>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  code({ node, inline, className, children, ...props }) {
-                    const match = /language-(\w+)/.exec(className || '');
-                    if (!inline && match) {
-                      // Estilo especial para bloques de pensamiento
-                      const isThinking = match[1] === 'thinking';
-                      return (
-                        <div className="relative">
-                          <pre className={cn(
-                            isThinking 
-                              ? "bg-gradient-to-r from-purple-50 to-blue-50 text-purple-900 p-4 rounded-lg overflow-x-auto border-2 border-purple-200 italic"
-                              : "bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto border border-gray-700"
-                          )}>
-                            <code className={className} {...props}>
-                              {String(children).replace(/\n$/, '')}
-                            </code>
-                          </pre>
-                          <button
-                            onClick={() => navigator.clipboard.writeText(String(children))}
-                            className={cn(
-                              "absolute top-2 right-2 px-2 py-1 text-xs",
-                              "bg-gray-700 text-gray-300 rounded opacity-0 group-hover:opacity-100",
-                              "hover:bg-gray-600 transition-all duration-200"
-                            )}
-                          >
-                            Copy
-                          </button>
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <code className={cn(className, "bg-brand-100/20 px-1 rounded text-brand-500")} {...props}>
-                          {children}
-                        </code>
-                      );
-                    }
-                  },
-                }}
-              >
-                {formatReasoningContent(
-                  // 🧹 Limpiar marcadores técnicos de widgets (no deben mostrarse al usuario)
-                  message.content.replace(/🎨WIDGET:\w+:[a-zA-Z0-9_-]+🎨/gi, '')
+            // Assistant message - markdown or loading
+            message.content === '' ? (
+              // Show loading indicator when content is empty (processing state)
+              <LoadingIndicator />
+            ) : (
+              <div className={cn(
+                "prose prose-sm md:prose-base max-w-none break-words",
+                "prose-headings:text-dark prose-p:text-dark prose-strong:text-dark",
+                "prose-code:text-brand-500 prose-code:bg-brand-100/20 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm",
+                "prose-pre:bg-gray-50 prose-pre:border prose-pre:border-outlines prose-pre:rounded-lg prose-pre:overflow-hidden",
+                "prose-pre>code:before:content-none prose-pre>code:after:content-none", // Remove backticks from code blocks
+                "prose-blockquote:border-l-2 prose-blockquote:border-l-brand-500 prose-blockquote:pl-4 prose-blockquote:py-1 prose-blockquote:text-irongray",
+                "prose-ul:pl-4 prose-ol:pl-4 prose-li:my-0.5",
+                "prose-table:border-collapse prose-table:border prose-table:border-outlines prose-table:w-full prose-table:my-4 prose-table:text-sm",
+                "prose-th:border prose-th:border-outlines prose-th:bg-brand-100/20 prose-th:p-3 prose-th:text-dark prose-th:font-semibold prose-th:text-left",
+                "prose-td:border prose-td:border-outlines prose-td:p-3 prose-td:text-dark prose-td:align-top",
+                "prose-tr:even:bg-brand-50/30",
+                isStreaming && "animate-pulse"
+              )}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code({ node, inline, className, children, ...props }) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      if (!inline && match) {
+                        // Estilo especial para bloques de pensamiento
+                        const isThinking = match[1] === 'thinking';
+                        return (
+                          <div className="relative">
+                            <pre className={cn(
+                              isThinking
+                                ? "bg-gradient-to-r from-purple-50 to-blue-50 text-purple-900 p-4 rounded-lg overflow-x-auto border-2 border-purple-200 italic"
+                                : "bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto border border-gray-700"
+                            )}>
+                              <code className={className} {...props}>
+                                {String(children).replace(/\n$/, '')}
+                              </code>
+                            </pre>
+                            <button
+                              onClick={() => navigator.clipboard.writeText(String(children))}
+                              className={cn(
+                                "absolute top-2 right-2 px-2 py-1 text-xs",
+                                "bg-gray-700 text-gray-300 rounded opacity-0 group-hover:opacity-100",
+                                "hover:bg-gray-600 transition-all duration-200"
+                              )}
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <code className={cn(className, "bg-brand-100/20 px-1 rounded text-brand-500")} {...props}>
+                            {children}
+                          </code>
+                        );
+                      }
+                    },
+                  }}
+                >
+                  {formatReasoningContent(
+                    // 🧹 Limpiar marcadores técnicos de widgets (no deben mostrarse al usuario)
+                    message.content.replace(/🎨WIDGET:\w+:[a-zA-Z0-9_-]+🎨/gi, '')
+                  )}
+                </ReactMarkdown>
+
+                {/* Streaming cursor */}
+                {isStreaming && (
+                  <span className="inline-block w-[2px] h-4 bg-brand-500 animate-pulse ml-1" />
                 )}
-              </ReactMarkdown>
-              
-              {/* Streaming cursor */}
-              {isStreaming && (
-                <span className="inline-block w-2 h-4 bg-brand-500 animate-pulse ml-1" />
-              )}
-            </div>
+              </div>
+            )
           )}
 
           {/* 🆕 Widgets inline (después del texto) */}
@@ -375,12 +391,11 @@ export const GhostyMessageComponent = ({
           )}
         </div>
 
-        {/* Actions */}
+        {/* Actions - Comentado temporalmente
         <div className={cn(
           "flex items-center gap-2 mt-1.5 opacity-100 transition-opacity duration-200",
           isUser ? "justify-end hidden" : "justify-start"
         )}>
-          {/* Copy button */}
           <button
             onClick={handleCopy}
             className={cn(
@@ -398,6 +413,7 @@ export const GhostyMessageComponent = ({
             <span>{showCopied ? "Copiado" : "Copiar"}</span>
           </button>
         </div>
+        */}
 
         {/* Follow-up Suggestions */}
         {!isUser && message.suggestedFollowUp && message.suggestedFollowUp.length > 0 && onSuggestionClick && (
@@ -420,10 +436,10 @@ export const GhostyMessageComponent = ({
 
         {/* Timestamp */}
         <div className={cn(
-          "text-xs text-lightgray mt-1.5 flex items-center",
+          "text-xs text-irongray mt-1.5 flex items-center",
           isUser ? "justify-end" : "justify-start"
         )}>
-          <span className="inline-flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1  px-2 py-0.5 rounded-full">
             <span className="text-xs">
               {message.timestamp.toLocaleTimeString('es-ES', {
                 hour: '2-digit',

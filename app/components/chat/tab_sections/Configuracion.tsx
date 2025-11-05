@@ -162,12 +162,12 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
       const formData = new FormData();
       formData.append('intent', 'delete_chatbot');
       formData.append('chatbotId', chatbot.id);
-      
-      const response = await fetch('/api/v0/chatbot', {
+
+      const response = await fetch('/api/v1/chatbot', {
         method: 'POST',
         body: formData,
       });
-      
+
       if (response.ok) {
         // Redirect to chat dashboard after successful deletion
         navigate('/dashboard/chat');
@@ -284,9 +284,9 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                 onClose={() => setShowDeleteModal(false)}
                 title="¿Estás segur@ de eliminar este chatbot?"
                 message="Si lo eliminas, toda la información y todas las conversaciones serán eliminadas de forma permanente."
-                emojis="✋🏻⛔️🤖"
+                emojis="🗑️"
                 footer={
-                  <div className="flex justify-center gap-4 md:gap-6">
+                  <div className="flex justify-center gap-4">
                 
                     <Button
                       onClick={() => setShowDeleteModal(false)}

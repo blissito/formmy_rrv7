@@ -279,12 +279,12 @@ export const Conversations = ({
 const EmptyConversations = ({ t }: { t: (key: string) => string }) => {
   return (
     <div className="text-center mt-12 flex flex-col items-center justify-center min-h-[400px]">
-      <Empty className="w-[200px] md:w-[240px] dark:hidden flex" />
+      <Empty className="w-[220px] md:w-[280px] dark:hidden flex" />
       <EmptyDark className="w-[240px] hidden dark:flex" />
-      <h3 className="font-bold text-lg text-space-800 dark:text-clear mt-6">
+      <h3 className="font-bold text-xl lg:text-2xl text-space-800 dark:text-clear mt-6">
         {t('conversations.noConversations')}
       </h3>
-      <p className="text-gray-600 text-sm dark:text-gray-400 font-light mt-2 max-w-md">
+      <p className="text-gray-600 text-sm lg:text-base dark:text-gray-400 font-light mt-2 max-w-md">
         {t('conversations.noConversationsDescription')}<br />
         {t('conversations.installScript')}
       </p>

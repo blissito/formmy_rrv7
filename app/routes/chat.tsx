@@ -118,7 +118,7 @@ export default function ChatListRoute({ loaderData }: Route.ComponentProps) {
           message={`Si lo eliminas, toda la información y todas las conversaciones serán eliminadas de forma permanente.`}
           emojis="✋🏻⛔️🤖"
           footer={
-            <div className="flex justify-center gap-6">
+            <div className="flex justify-center gap-4">
               <button
                 onClick={handleDelete}
                 className="bg-gray-100 text-gray-600 mt-6 block mx-auto cursor-pointer rounded-full py-3 px-6"

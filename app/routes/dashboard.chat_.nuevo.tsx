@@ -219,22 +219,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   return { user, accessInfo };
 };
 
-export const meta = ({ data }: { data: any }) => {
-  if (!data?.chatbot) {
-    return [
-      { title: "Chatbot Not Found" },
-      {
-        name: "description",
-        content: "The requested chatbot could not be found",
-      },
-    ];
-  }
-
+export const meta = () => {
   return [
-    { title: `Configure: ${data.chatbot.name}` },
+    { title: "Crear Nuevo Chatbot" },
     {
       name: "description",
-      content: `Configure your chatbot: ${data.chatbot.name}`,
+      content: "Crea un nuevo chatbot con inteligencia artificial para tu negocio",
     },
   ];
 };
