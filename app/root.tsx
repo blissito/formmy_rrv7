@@ -16,6 +16,27 @@ import useFacebookPixel from "./utils/useFacebookPixel";
 import { Toaster } from "react-hot-toast";
 import { useTagManager } from "./utils/useTagManager";
 
+// Flag to ensure server initialization happens only once
+let serverInitialized = false;
+
+/**
+ * Root loader - initializes server background tasks
+ */
+export async function loader() {
+  if (!serverInitialized && typeof window === "undefined") {
+    serverInitialized = true;
+
+    // Dynamic import to ensure this only runs on the server
+    const { initializeServer } = await import("server/init.server");
+
+    await initializeServer().catch((error) => {
+      console.error("⚠️  Server initialization failed:", error);
+    });
+  }
+
+  return null;
+}
+
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {

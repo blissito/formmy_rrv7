@@ -39,6 +39,7 @@ export default function WhatsAppEmbeddedSignupModal({
     phone_number_id?: string;
     waba_id?: string;
     business_id?: string;
+    sessionInfoVerified?: boolean;
   } | null>(null);
 
   // Cargar Facebook SDK para Embedded Signup
@@ -117,6 +118,7 @@ export default function WhatsAppEmbeddedSignupModal({
                 phone_number_id: data.data.phone_number_id,
                 waba_id: data.data.waba_id,
                 business_id: data.data.business_id,
+                sessionInfoVerified: data.data.sessionInfoVerified, // Para coexistencia
               });
               break;
 
@@ -162,6 +164,15 @@ export default function WhatsAppEmbeddedSignupModal({
     try {
       const appId = import.meta.env.VITE_FACEBOOK_APP_ID;
 
+      // Facebook IGNORA el redirect_uri que pasamos y usa window.location.origin
+      // Por lo tanto, debemos usar exactamente eso (SIN barra final)
+      let redirectUri = window.location.origin;  // Sin barra final
+      if (redirectUri.includes('formmy.app') && !redirectUri.includes('www.')) {
+        redirectUri = redirectUri.replace('formmy.app', 'www.formmy.app');
+      }
+
+      console.log(`🔄 [Frontend] Using redirect_uri: ${redirectUri}`);
+
       // Iniciar Embedded Signup usando Facebook Login for Business
       window.FB.login(
         (response: any) => {
@@ -190,6 +201,7 @@ export default function WhatsAppEmbeddedSignupModal({
                     chatbotId,
                     authResponse: response.authResponse,
                     status: response.status,
+                    redirectUri, // Enviar el redirect_uri usado en FB.login()
                     // Datos adicionales del message event (si están disponibles)
                     embeddedSignupData: embeddedSignupData || undefined,
                   }),
@@ -197,11 +209,17 @@ export default function WhatsAppEmbeddedSignupModal({
 
                 const exchangeData = await exchangeResponse.json();
 
-                if (!exchangeResponse.ok) {
+                if (!exchangeResponse.ok && exchangeResponse.status !== 207) {
                   console.error('❌ [Modal] PASO 1 FALLÓ:', exchangeData.error);
                   throw new Error(exchangeData.error || 'Error al intercambiar tokens con Meta');
                 }
 
+                // Manejar warning de webhook (status 207)
+                if (exchangeResponse.status === 207 && exchangeData.webhookWarning) {
+                  console.warn('⚠️ [Modal] Webhook warning:', exchangeData.details);
+                  setError('⚠️ Conexión parcial: WhatsApp conectado pero webhook pendiente. Verifica configuración.');
+                  // Continuar de todos modos, mostrar como success con warning
+                }
 
                 // WhatsApp conectado exitosamente (sin Composio - deprecado)
                 setStatus('success');
@@ -239,6 +257,7 @@ export default function WhatsAppEmbeddedSignupModal({
           ...(import.meta.env.VITE_FACEBOOK_CONFIG_ID && {
             config_id: import.meta.env.VITE_FACEBOOK_CONFIG_ID
           }),
+          redirect_uri: redirectUri, // Especificar explícitamente el redirect_uri
           scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management', // Permisos requeridos
           response_type: 'code', // Requerido para Embedded Signup
           override_default_response_type: true,
@@ -246,6 +265,8 @@ export default function WhatsAppEmbeddedSignupModal({
             setup: {
               // Configuración específica para WhatsApp
               external_business_id: chatbotId,
+              // Habilitar modo coexistencia (WhatsApp Business App + Cloud API)
+              featureType: "whatsapp_business_app_onboarding",
             }
           }
         }

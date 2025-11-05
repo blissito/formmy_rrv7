@@ -187,6 +187,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               // Mark as processed BEFORE processing (prevent race conditions)
               processedMessages.add(message.id);
 
+              // ✅ FILTER OLD MESSAGES: Meta best practice (skip messages >12 minutes old)
+              const messageTimestamp = message.timestamp * 1000; // Convert to ms
+              const ageMinutes = (Date.now() - messageTimestamp) / 1000 / 60;
+
+              if (ageMinutes > 12) {
+                console.warn(`⏱️ [Webhook] Skipping old message (${ageMinutes.toFixed(1)} min old):`, message.id);
+                results.push({
+                  success: true,
+                  messageId: message.id,
+                  skipped: true,
+                  reason: "too_old"
+                });
+                continue;
+              }
+
               const incomingMessage: IncomingMessage = {
                 messageId: message.id,
                 from: message.from,
@@ -252,6 +267,50 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 error: error instanceof Error ? error.message : "Unknown error"
               });
             }
+          }
+        } else if ((change.field as string) === "smb_app_state_sync" && change.value) {
+          // Process app state sync - tracks mobile app online/offline status
+          try {
+            const phoneNumberId = (change.value as any).phone_number_id;
+            const appState = (change.value as any).app_state; // "ONLINE" | "OFFLINE"
+
+            console.log(`📱 [App State Sync] Phone ${phoneNumberId}: ${appState}`);
+
+            // Find integration by phone number
+            const integration = await findIntegrationByPhoneNumber(phoneNumberId);
+
+            if (integration) {
+              // Update metadata with app mobile state
+              await db.integration.update({
+                where: { id: integration.id },
+                data: {
+                  metadata: {
+                    ...(integration.metadata as any || {}),
+                    appMobileActive: appState === "ONLINE",
+                    lastAppStateSync: new Date().toISOString(),
+                  },
+                  lastActivity: new Date(),
+                }
+              });
+
+              console.log(`✅ [App State Sync] Updated metadata for integration ${integration.id}`);
+
+              results.push({
+                success: true,
+                type: 'app_state_sync',
+                phoneNumberId,
+                appState
+              });
+            } else {
+              console.warn(`⚠️ [App State Sync] Integration not found for phone ${phoneNumberId}`);
+            }
+          } catch (error) {
+            console.error("Error processing app_state_sync:", error);
+            results.push({
+              success: false,
+              type: 'app_state_sync',
+              error: error instanceof Error ? error.message : "Unknown error"
+            });
           }
         }
       }

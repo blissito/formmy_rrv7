@@ -223,6 +223,28 @@ export const IntegrationCard = ({
           </div>
         )} */}
       </div>
+
+      {/* WhatsApp Coexistence Badges */}
+      {name === "WhatsApp" && integration?.metadata && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {(integration.metadata as any).coexistence && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              Coexistencia
+            </span>
+          )}
+          {(integration.metadata as any).appMobileActive && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              App Activa
+            </span>
+          )}
+          {(integration.metadata as any).webhookConfigured === false && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              ⚠️ Webhook
+            </span>
+          )}
+        </div>
+      )}
+
       <p className="text-sm mb-2 text-metal font-normal">{description}</p>
 
       {/* Status indicator */}

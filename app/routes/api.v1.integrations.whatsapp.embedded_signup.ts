@@ -10,6 +10,7 @@ interface EmbeddedSignupRequest {
   code: string;
   accessToken: string;
   userID: string;
+  redirectUri?: string; // Optional: redirect_uri usado en frontend
   authResponse?: {
     code?: string;
     userID?: string;
@@ -22,6 +23,7 @@ interface EmbeddedSignupRequest {
     ad_account_ids?: string[];
     page_ids?: string[];
     dataset_ids?: string[];
+    sessionInfoVerified?: boolean;
   };
 }
 
@@ -154,10 +156,23 @@ export async function action({ request }: ActionFunctionArgs) {
 
 
     // Intercambiar el código por un access token de larga duración
-    // NOTA: El redirect_uri DEBE coincidir con la URL de la página donde se ejecutó FB.login()
-    // Para Embedded Signup con popup, Facebook usa implícitamente la URL de la página actual
-    // Por lo tanto, debemos usar la URL base de la aplicación
-    const redirectUri = 'https://formmy-v2.fly.dev/';
+    // NOTA: El redirect_uri DEBE coincidir EXACTAMENTE con el usado en FB.login()
+    // Facebook IGNORA el redirect_uri que pasamos y usa window.location.origin (SIN barra final)
+    const redirectUri = body.redirectUri || (() => {
+      // Fallback: calcular desde request headers si el frontend no lo envió
+      let origin = request.headers.get('origin') || request.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://www.formmy.app';
+
+      // Normalizar a www.formmy.app para que coincida con OAuth Redirect URIs de Facebook
+      if (origin.includes('formmy.app') && !origin.includes('www.')) {
+        origin = origin.replace('formmy.app', 'www.formmy.app');
+      }
+
+      // SIN barra final - Facebook usa window.location.origin
+      return origin;
+    })();
+
+    console.log(`🔄 [Token Exchange] redirect_uri recibido del frontend: ${body.redirectUri}`);
+    console.log(`🔄 [Token Exchange] redirect_uri final a usar: ${redirectUri}`);
 
     const tokenExchangeUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
     tokenExchangeUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
@@ -290,29 +305,78 @@ export async function action({ request }: ActionFunctionArgs) {
     // 4. Generar un webhook verify token único
     const webhookVerifyToken = `formmy_${chatbotId}_${Date.now()}`;
 
-    // 5. Configurar el webhook automáticamente en Meta
+    // 5. Configurar el webhook automáticamente en Meta con retry logic
     const webhookUrl = `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`;
-
     const webhookConfigUrl = `https://graph.facebook.com/v21.0/${FACEBOOK_APP_ID}/subscriptions`;
-    const webhookResponse = await fetch(webhookConfigUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${longLivedToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        object: 'whatsapp_business_account',
-        callback_url: webhookUrl,
-        fields: 'messages,smb_message_echoes,smb_app_state_sync',
-        verify_token: webhookVerifyToken,
-        include_values: true,
-      }),
-    });
 
-    if (!webhookResponse.ok) {
-      const errorData = await webhookResponse.text();
-      console.error("Failed to configure webhook:", errorData);
-      // No es crítico, continuamos con la creación
+    let webhookConfigured = false;
+    let lastError: string | null = null;
+
+    // Intentar suscripción con 3 reintentos (exponential backoff)
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      console.log(`🔄 [Webhook] Intento ${attempt}/3 - Configurando webhook...`);
+
+      const webhookResponse = await fetch(webhookConfigUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${longLivedToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          object: 'whatsapp_business_account',
+          callback_url: webhookUrl,
+          fields: 'messages,smb_message_echoes,smb_app_state_sync',
+          verify_token: webhookVerifyToken,
+          include_values: true,
+        }),
+      });
+
+      if (webhookResponse.ok) {
+        const webhookData = await webhookResponse.json();
+        webhookConfigured = webhookData.success === true;
+
+        if (webhookConfigured) {
+          console.log(`✅ [Webhook] Suscripción exitosa en intento ${attempt}`);
+          break;
+        }
+      } else {
+        lastError = await webhookResponse.text();
+        console.error(`⚠️ [Webhook] Intento ${attempt}/3 falló:`, lastError);
+
+        // Esperar antes de reintentar (exponential backoff: 1s, 2s, 3s)
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    }
+
+    // Verificar suscripción llamando a Graph API
+    if (webhookConfigured) {
+      try {
+        console.log(`🔍 [Webhook] Verificando suscripción...`);
+        const verifyUrl = `https://graph.facebook.com/v21.0/${businessAccount.id}/subscribed_apps`;
+        const verifyResponse = await fetch(verifyUrl, {
+          headers: { 'Authorization': `Bearer ${longLivedToken}` }
+        });
+
+        if (verifyResponse.ok) {
+          const verifyData = await verifyResponse.json();
+          webhookConfigured = verifyData.data?.some((app: any) =>
+            app.subscribed_fields?.includes('messages')
+          );
+
+          if (webhookConfigured) {
+            console.log(`✅ [Webhook] Verificación exitosa - webhook activo`);
+          } else {
+            console.warn(`⚠️ [Webhook] Verificación falló - webhook no encontrado en subscribed_apps`);
+          }
+        } else {
+          console.warn(`⚠️ [Webhook] No se pudo verificar suscripción:`, await verifyResponse.text());
+        }
+      } catch (verifyError) {
+        console.error(`❌ [Webhook] Error al verificar suscripción:`, verifyError);
+        // No marcar como fallido si la verificación falla (la suscripción puede estar ok)
+      }
     }
 
     // 6. Crear o actualizar la integración en la base de datos
@@ -338,6 +402,14 @@ export async function action({ request }: ActionFunctionArgs) {
           businessAccountId: businessAccount.id,
           webhookVerifyToken: webhookVerifyToken,
           isActive: true,
+          metadata: {
+            coexistence: true,
+            featureType: "whatsapp_business_app_onboarding",
+            sessionInfoVerified: messageEventData?.sessionInfoVerified || false,
+            webhookConfigured,
+            webhookError: webhookConfigured ? null : lastError,
+            subscriptionTimestamp: new Date().toISOString(),
+          },
         },
       });
     } else {
@@ -351,6 +423,14 @@ export async function action({ request }: ActionFunctionArgs) {
           businessAccountId: businessAccount.id,
           webhookVerifyToken: webhookVerifyToken,
           isActive: true,
+          metadata: {
+            coexistence: true,
+            featureType: "whatsapp_business_app_onboarding",
+            sessionInfoVerified: messageEventData?.sessionInfoVerified || false,
+            webhookConfigured,
+            webhookError: webhookConfigured ? null : lastError,
+            subscriptionTimestamp: new Date().toISOString(),
+          },
         },
       });
     }
@@ -373,6 +453,34 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
+    // Verificar si webhook falló y retornar warning
+    if (!webhookConfigured) {
+      console.warn(`⚠️ [Embedded Signup] WhatsApp conectado pero webhook falló`);
+      return Response.json({
+        error: "WhatsApp conectado pero webhook falló. Verifica configuración en Meta.",
+        integration: {
+          id: integration.id,
+          phoneNumber: phoneNumber.display_phone_number,
+          verifiedName: phoneNumber.verified_name,
+          businessAccountId: businessAccount.id,
+          phoneNumberId: phoneNumber.id,
+          coexistenceMode: true,
+          embeddedSignup: true,
+          token: longLivedToken,
+          ...(messageEventData && {
+            messageEventData: {
+              businessPortfolioId: messageEventData.business_id,
+              adAccountIds: messageEventData.ad_account_ids,
+              pageIds: messageEventData.page_ids,
+              datasetIds: messageEventData.dataset_ids,
+            }
+          })
+        },
+        webhookWarning: true,
+        details: lastError,
+        message: "Integración creada con advertencias. El webhook debe configurarse manualmente.",
+      }, { status: 207 }); // 207 Multi-Status
+    }
 
     return Response.json({
       success: true,

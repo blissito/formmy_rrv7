@@ -35,7 +35,7 @@ async function checkTrialExpiry(): Promise<{ sent: number }> {
     // Usuarios en trial sin actividad en 5-7 días
     const users = await db.user.findMany({
       where: {
-        stripeSubscriptionStatus: null, // Sin plan pago
+        plan: Plans.TRIAL, // Usuarios en trial
         createdAt: {
           gte: sevenDaysAgo,
           lte: fiveDaysAgo

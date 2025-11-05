@@ -37,17 +37,5 @@ app.all(
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`✅ Server listening on port ${port}`);
-
-  // Inicializar Agenda.js workers DESPUÉS de que el servidor esté listo
-  // Esto NO bloquea el servidor y se ejecuta en background
-  (async () => {
-    try {
-      const { registerWeeklyEmailsWorker } = await import('./build/server/jobs/workers/weekly-emails-worker.js');
-      await registerWeeklyEmailsWorker();
-      console.log('✅ Agenda.js: Weekly emails worker registered (Mondays 9:00 AM)');
-    } catch (error) {
-      console.error('⚠️  Agenda.js: Failed to register weekly emails worker:', error.message);
-      // El servidor sigue funcionando aunque el worker falle
-    }
-  })();
+  console.log('📋 Background jobs will initialize when the app loads');
 });
