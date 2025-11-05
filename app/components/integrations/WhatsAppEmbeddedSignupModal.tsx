@@ -157,9 +157,75 @@ export default function WhatsAppEmbeddedSignupModal({
     };
   }, [isOpen]);
 
+  // Procesar respuesta de FB.login() (función async separada)
+  const processAuthResponse = useCallback(async (response: any) => {
+    console.log('📥 [FB.login] Response:', response);
+
+    if (response.authResponse) {
+      const code = response.authResponse.code;
+      console.log('✅ [FB.login] Code recibido:', code?.substring(0, 20) + '...');
+
+      try {
+        // Esperar a que el message event capture waba_id y phone_number_id
+        // (usualmente llega antes que authResponse, pero por si acaso esperamos un poco)
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        if (!embeddedSignupData?.waba_id || !embeddedSignupData?.phone_number_id) {
+          console.warn('⚠️ [FB.login] No se recibió waba_id del message event');
+          // Continuar de todas formas, el backend intentará obtenerlo
+        }
+
+        // Enviar al backend: code + waba_id + phone_number_id
+        const exchangeResponse = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chatbotId,
+            code,
+            // Enviar datos del message event si están disponibles
+            wabaId: embeddedSignupData?.waba_id,
+            phoneNumberId: embeddedSignupData?.phone_number_id,
+          }),
+        });
+
+        const exchangeData = await exchangeResponse.json();
+
+        if (!exchangeResponse.ok && exchangeResponse.status !== 207) {
+          console.error('❌ [FB.login] Backend error:', exchangeData.error);
+          throw new Error(exchangeData.error || 'Error al conectar WhatsApp');
+        }
+
+        // ✅ Éxito
+        console.log('✅ [FB.login] WhatsApp conectado exitosamente!');
+        setStatus('success');
+        onSuccess({
+          ...exchangeData.integration,
+          embeddedSignup: true,
+        });
+
+        // Cerrar modal después de un breve retraso
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+
+      } catch (err) {
+        console.error('❌ [FB.login] Error procesando respuesta:', err);
+        setStatus('error');
+        setError(err instanceof Error ? err.message : 'Error al conectar WhatsApp');
+      }
+
+    } else {
+      console.warn('⚠️ [FB.login] Usuario canceló login');
+      setStatus('error');
+      setError('Autorización cancelada');
+    }
+  }, [chatbotId, embeddedSignupData, onSuccess, onClose]);
+
   // Handler para el Embedded Signup usando FB.login() con popup
   // ✅ Patrón basado en código real en producción
-  const handleEmbeddedSignup = useCallback(async () => {
+  const handleEmbeddedSignup = useCallback(() => {
     if (!window.FB) {
       setError('Facebook SDK no está cargado');
       return;
@@ -174,65 +240,12 @@ export default function WhatsAppEmbeddedSignupModal({
       console.log('🚀 [FB.login] Lanzando popup de Embedded Signup...');
       console.log('🚀 [FB.login] Config ID:', configId);
 
-      // ✅ CORRECTO: Usar FB.login() que abre popup automáticamente
-      // El message event ya capturó waba_id y phone_number_id
+      // ✅ CORRECTO: FB.login() con callback SÍNCRONO
+      // El callback NO puede ser async, así que llamamos a processAuthResponse() dentro
       window.FB.login(
-        async (response: any) => {
-          console.log('📥 [FB.login] Response:', response);
-
-          if (response.authResponse) {
-            const code = response.authResponse.code;
-            console.log('✅ [FB.login] Code recibido:', code?.substring(0, 20) + '...');
-
-            // Esperar a que el message event capture waba_id y phone_number_id
-            // (usualmente llega antes que authResponse, pero por si acaso esperamos un poco)
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            if (!embeddedSignupData?.waba_id || !embeddedSignupData?.phone_number_id) {
-              console.warn('⚠️ [FB.login] No se recibió waba_id del message event');
-              // Continuar de todas formas, el backend intentará obtenerlo
-            }
-
-            // Enviar al backend: code + waba_id + phone_number_id
-            const exchangeResponse = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                chatbotId,
-                code,
-                // Enviar datos del message event si están disponibles
-                wabaId: embeddedSignupData?.waba_id,
-                phoneNumberId: embeddedSignupData?.phone_number_id,
-              }),
-            });
-
-            const exchangeData = await exchangeResponse.json();
-
-            if (!exchangeResponse.ok && exchangeResponse.status !== 207) {
-              console.error('❌ [FB.login] Backend error:', exchangeData.error);
-              throw new Error(exchangeData.error || 'Error al conectar WhatsApp');
-            }
-
-            // ✅ Éxito
-            console.log('✅ [FB.login] WhatsApp conectado exitosamente!');
-            setStatus('success');
-            onSuccess({
-              ...exchangeData.integration,
-              embeddedSignup: true,
-            });
-
-            // Cerrar modal después de un breve retraso
-            setTimeout(() => {
-              onClose();
-            }, 1500);
-
-          } else {
-            console.warn('⚠️ [FB.login] Usuario canceló login');
-            setStatus('error');
-            setError('Autorización cancelada');
-          }
+        (response: any) => {
+          // ✅ Callback síncrono - llama a función async separada
+          processAuthResponse(response);
         },
         {
           config_id: configId,
@@ -252,7 +265,7 @@ export default function WhatsAppEmbeddedSignupModal({
       setStatus('error');
       setError(err instanceof Error ? err.message : 'Error al inicializar Embedded Signup');
     }
-  }, [chatbotId, embeddedSignupData, onSuccess, onClose]);
+  }, [processAuthResponse]);
 
   // Ya NO necesitamos procesar callback de OAuth porque usamos popup (FB.login)
 
