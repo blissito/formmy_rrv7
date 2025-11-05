@@ -53,6 +53,7 @@ export const Entrenamiento = ({
   );
   const [textContexts, setTextContexts] = useState<any[]>([]);
   const [newTextContexts, setNewTextContexts] = useState<any[]>([]);
+  const [textContextsToUpdate, setTextContextsToUpdate] = useState<any[]>([]);
   const [textContextsToRemove, setTextContextsToRemove] = useState<any[]>([]);
   const [fileContextsToRemove, setFileContextsToRemove] = useState<any[]>([]);
   const [websiteContextsToRemove, setWebsiteContextsToRemove] = useState<any[]>(
@@ -60,6 +61,7 @@ export const Entrenamiento = ({
   );
   const [questionContexts, setQuestionContexts] = useState<any[]>([]);
   const [newQuestionContexts, setNewQuestionContexts] = useState<any[]>([]);
+  const [questionContextsToUpdate, setQuestionContextsToUpdate] = useState<any[]>([]);
   const [questionContextsToRemove, setQuestionContextsToRemove] = useState<
     any[]
   >([]);
@@ -164,19 +166,30 @@ export const Entrenamiento = ({
     if (editingTextContext) {
       // Actualizar contexto existente en el estado local
       if (editingTextContext.id) {
-        // Es un contexto guardado en BD - actualizar en textContexts
+        // Es un contexto guardado en BD - actualizar en textContexts y marcarlo para update
+        const updatedContext = {
+          id: editingTextContext.id,
+          title: textTitle.trim(),
+          content: textContent.trim(),
+          sizeKB,
+        };
+
         setTextContexts((prev) =>
           prev.map((ctx) =>
-            ctx.id === editingTextContext.id
-              ? {
-                  ...ctx,
-                  title: textTitle.trim(),
-                  content: textContent.trim(),
-                  sizeKB,
-                }
-              : ctx
+            ctx.id === editingTextContext.id ? updatedContext : ctx
           )
         );
+
+        // Agregar a la lista de contextos a actualizar (si no está ya)
+        setTextContextsToUpdate((prev) => {
+          const existing = prev.find((ctx) => ctx.id === editingTextContext.id);
+          if (existing) {
+            return prev.map((ctx) =>
+              ctx.id === editingTextContext.id ? updatedContext : ctx
+            );
+          }
+          return [...prev, updatedContext];
+        });
       } else {
         // Es un contexto nuevo - actualizar en newTextContexts
         setNewTextContexts((prev) =>
@@ -279,20 +292,31 @@ export const Entrenamiento = ({
     if (editingQuestionContext) {
       // Actualizar contexto existente en el estado local
       if (editingQuestionContext.id) {
-        // Es un contexto guardado en BD - actualizar en questionContexts
+        // Es un contexto guardado en BD - actualizar en questionContexts y marcarlo para update
+        const updatedContext = {
+          id: editingQuestionContext.id,
+          title: questionTitle.trim(),
+          questions: validQuestions,
+          answer: answer.trim(),
+          sizeKB,
+        };
+
         setQuestionContexts((prev) =>
           prev.map((ctx) =>
-            ctx.id === editingQuestionContext.id
-              ? {
-                  ...ctx,
-                  title: questionTitle.trim(),
-                  questions: validQuestions,
-                  answer: answer.trim(),
-                  sizeKB,
-                }
-              : ctx
+            ctx.id === editingQuestionContext.id ? updatedContext : ctx
           )
         );
+
+        // Agregar a la lista de contextos a actualizar (si no está ya)
+        setQuestionContextsToUpdate((prev) => {
+          const existing = prev.find((ctx) => ctx.id === editingQuestionContext.id);
+          if (existing) {
+            return prev.map((ctx) =>
+              ctx.id === editingQuestionContext.id ? updatedContext : ctx
+            );
+          }
+          return [...prev, updatedContext];
+        });
       } else {
         // Es un contexto nuevo - actualizar en newQuestionContexts
         setNewQuestionContexts((prev) =>
@@ -466,7 +490,7 @@ export const Entrenamiento = ({
       );
     }
     setUploadedFiles([]);
-    submit({});
+    revalidator.revalidate();
   };
 
   const handleRemoveContext = (index: number, context: any) => {
@@ -535,6 +559,32 @@ export const Entrenamiento = ({
       // Subir archivos automáticamente cuando se presiona "Actualizar Chatbot"
       await handleUploadFiles();
 
+      // Actualizar contextos de texto modificados
+      for (const textContext of textContextsToUpdate) {
+        try {
+          const formData = new FormData();
+          formData.append("intent", "update_text_context");
+          formData.append("chatbotId", chatbot.id);
+          formData.append("contextId", textContext.id);
+          formData.append("title", textContext.title);
+          formData.append("content", textContext.content);
+
+          const response = await fetch("/api/v1/chatbot", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              `Error al actualizar contexto de texto ${textContext.title}: ${errorData.error}`
+            );
+          }
+        } catch (error) {
+          throw error;
+        }
+      }
+
       // Agregar nuevos contextos de texto
       for (const textContext of newTextContexts) {
         try {
@@ -554,6 +604,38 @@ export const Entrenamiento = ({
             const errorData = await response.json();
             throw new Error(
               `Error al agregar contexto de texto ${textContext.title}: ${errorData.error}`
+            );
+          }
+        } catch (error) {
+          throw error;
+        }
+      }
+
+      // Actualizar contextos de preguntas modificados
+      for (const questionContext of questionContextsToUpdate) {
+        try {
+          const formData = new FormData();
+          formData.append("intent", "update_question_context");
+          formData.append("chatbotId", chatbot.id);
+          formData.append("contextId", questionContext.id);
+          formData.append("title", questionContext.title);
+          formData.append(
+            "questions",
+            Array.isArray(questionContext.questions)
+              ? questionContext.questions.join("\n")
+              : questionContext.questions
+          );
+          formData.append("answer", questionContext.answer);
+
+          const response = await fetch("/api/v1/chatbot", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              `Error al actualizar contexto de pregunta ${questionContext.title}: ${errorData.error}`
             );
           }
         } catch (error) {
@@ -662,17 +744,21 @@ export const Entrenamiento = ({
         newWebsiteEntries.length > 0 ||
         newTextContexts.length > 0 ||
         newQuestionContexts.length > 0 ||
+        textContextsToUpdate.length > 0 ||
+        questionContextsToUpdate.length > 0 ||
         allContextsToRemove.length > 0;
       if (hasChanges) {
         toast.success("Chatbot actualizado correctamente");
         setNewWebsiteEntries([]);
         setNewTextContexts([]);
         setNewQuestionContexts([]);
+        setTextContextsToUpdate([]);
+        setQuestionContextsToUpdate([]);
         setTextContextsToRemove([]);
         setFileContextsToRemove([]);
         setWebsiteContextsToRemove([]);
         setQuestionContextsToRemove([]);
-        submit({});
+        revalidator.revalidate();
       }
     } catch (error) {
       // Error ya mostrado por las sub-funciones (handleUploadFiles, etc.)
@@ -820,6 +906,8 @@ export const Entrenamiento = ({
               newWebsiteEntries.length > 0 ||
               newTextContexts.length > 0 ||
               newQuestionContexts.length > 0 ||
+              textContextsToUpdate.length > 0 ||
+              questionContextsToUpdate.length > 0 ||
               textContextsToRemove.length > 0 ||
               fileContextsToRemove.length > 0 ||
               websiteContextsToRemove.length > 0 ||
