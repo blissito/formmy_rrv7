@@ -163,8 +163,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         // Gmail: Iniciar como disconnected, luego actualizar con estado real de BD
         status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else if (availableIntegration.id === "WHATSAPP") {
-        // WhatsApp: Próximamente disponible
-        status[availableIntegration.id.toLowerCase()] = "onhold";
+        // WhatsApp: Disponible con Embedded Signup
+        status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else if (availableIntegration.id === "SAT") {
         // SAT: Próximamente disponible
         status[availableIntegration.id.toLowerCase()] = "onhold";
@@ -203,12 +203,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
         // SAT siempre debe estar en "onhold" (próximamente)
         if (platformKey === "sat") {
-          status[platformKey] = "onhold";
-          return;
-        }
-
-        // WhatsApp siempre debe estar en "onhold" (próximamente)
-        if (platformKey === "whatsapp") {
           status[platformKey] = "onhold";
           return;
         }
@@ -407,7 +401,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
       if (existingIntegration) {
         // Hacer llamada al API para desactivar la integración
-        const response = await fetch("/api/v0/chatbot", {
+        const response = await fetch("/api/v1/chatbot", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",

@@ -151,7 +151,7 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
     setLoading(true);
     await effect(
       async () => {
-        const response = await fetch("/api/v0/chatbot", {
+        const response = await fetch("/api/v1/chatbot", {
           method: "post",
           body: new URLSearchParams({
             intent: "delete_chatbot",

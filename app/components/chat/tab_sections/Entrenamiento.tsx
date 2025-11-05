@@ -499,7 +499,7 @@ export const Entrenamiento = ({
       formData.append("contextItemId", context.id);
       formData.append("newFileName", newName);
 
-      const response = await fetch("/api/v0/chatbot", {
+      const response = await fetch("/api/v1/chatbot", {
         method: "POST",
         body: formData,
       });
@@ -545,7 +545,7 @@ export const Entrenamiento = ({
           formData.append("content", textContext.content);
           formData.append("sizeKB", textContext.sizeKB.toString());
 
-          const response = await fetch("/api/v0/chatbot", {
+          const response = await fetch("/api/v1/chatbot", {
             method: "POST",
             body: formData,
           });
@@ -577,7 +577,7 @@ export const Entrenamiento = ({
           formData.append("answer", questionContext.answer);
           formData.append("sizeKB", questionContext.sizeKB.toString());
 
-          const response = await fetch("/api/v0/chatbot", {
+          const response = await fetch("/api/v1/chatbot", {
             method: "POST",
             body: formData,
           });
@@ -611,7 +611,7 @@ export const Entrenamiento = ({
           );
           contextFormData.append("routes", JSON.stringify(entry.routes));
 
-          const contextResponse = await fetch("/api/v0/chatbot", {
+          const contextResponse = await fetch("/api/v1/chatbot", {
             method: "POST",
             body: contextFormData,
           });
@@ -642,7 +642,7 @@ export const Entrenamiento = ({
           formData.append("chatbotId", chatbot.id);
           formData.append("contextItemId", context.id || context.contextId);
 
-          const response = await fetch("/api/v0/chatbot", {
+          const response = await fetch("/api/v1/chatbot", {
             method: "POST",
             body: formData,
           });

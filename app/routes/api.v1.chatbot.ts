@@ -267,6 +267,7 @@ export async function action({ request }: any) {
       case "add_question_context":
       case "update_question_context":
       case "remove_context":
+      case "rename_context":
       case "get_contexts": {
         const { handleContextOperation } = await import("../../server/chatbot/context-handler.server");
         return await handleContextOperation(intent, formData, userId);
