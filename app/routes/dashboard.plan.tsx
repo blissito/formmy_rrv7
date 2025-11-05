@@ -239,7 +239,7 @@ export default function DashboardPlan() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur flex items-center justify-center z-50 p-4"
                 onClick={() => setShowCreditsModal(false)}
               >
                 <motion.div
@@ -257,39 +257,28 @@ export default function DashboardPlan() {
                   <img
                     alt="close"
                     src="/assets/close.svg"
-                    className="w-6 h-6"
+                    className="w-8 h-8"
                   />
                 </button>
                 <div className="mb-2">
-                  <h2 className="text-dark text-2xl font-bold">Comprar Créditos</h2>
+                  <h2 className="text-dark text-2xl font-bold">Comprar créditos</h2>
                 </div>
 
                 <p className="text-metal text-base mb-6 leading-relaxed">
-                  Para parsear documentos (PDF, Word, Excel) con OCR, búsqueda web, enlaces de pago, y más.
+                  Para parsear documentos (PDF, Word, Excel) con OCR, búsqueda web y más.    Primero se usan los del plan, luego los comprados. Los del plan se restablecen cada mes.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-6 text-base mb-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-metal font-medium">Disponibles:</span>
-                    <span className="font-bold text-green-600 text-xl">
-                      {(credits.monthlyAvailable + credits.purchasedCredits).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-metal font-medium">Plan:</span>
-                    <span className="font-bold text-brand-600 text-xl">{credits.monthlyAvailable.toLocaleString()}</span>
+                    <span className="text-metal ">Usadas:</span>
+                    <span className="font-bold text-teal-700 text-lg">{credits.monthlyAvailable.toLocaleString()}</span>
                     <span className="text-metal text-sm">/ {credits.planLimit.toLocaleString()}</span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-metal font-medium">Comprados:</span>
-                    <span className="font-bold text-cloud text-xl">{credits.purchasedCredits.toLocaleString()}</span>
+                    <span className="text-metal ">Comprados:</span>
+                    <span className="font-bold text-teal-700 text-xl">{credits.purchasedCredits.toLocaleString()}</span>
                   </div>
                 </div>
-
-                <div className="text-sm text-metal bg-cloud/10 p-4 rounded-xl mb-8 border border-cloud/20">
-                  Primero se usan los del plan, luego los comprados. Los del plan se resetean cada mes.
-                </div>
-
                 <h3 className="text-lg text-dark font-bold mb-4">Selecciona un paquete</h3>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
@@ -298,8 +287,11 @@ export default function DashboardPlan() {
                       setShowCreditsModal(false);
                     }}
                     disabled={buyCredits.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-cloud/20 to-cloud/10 border-2 border-cloud/40 rounded-2xl px-5 py-4 hover:border-cloud hover:shadow-lg transition-all disabled:opacity-50 hover:scale-105"
+                    className="flex-1 bg-gradient-to-br from-cloud/20 to-cloud/10 border-2 border-cloud/40 rounded-2xl p-4 hover:border-cloud hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%]"
                   >
+                    <span className="text-2xl">
+                      🪙
+                    </span>
                     <p className="text-lg font-bold text-dark">500 créditos</p>
                     <p className="text-sm text-metal mt-1">$99 MXN</p>
                   </button>
@@ -309,10 +301,13 @@ export default function DashboardPlan() {
                       setShowCreditsModal(false);
                     }}
                     disabled={buyCredits.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-cloud to-cloud/60 border-2 border-cloud rounded-2xl px-5 py-4 hover:shadow-xl transition-all disabled:opacity-50 relative hover:scale-105"
+                    className="flex-1 bg-gradient-to-br from-cloud to-cloud/60 border-2 border-cloud rounded-2xl p-4 hover:shadow-xl transition-all disabled:opacity-50 relative hover:scale-[103%]"
                   >
                     <span className="absolute -top-2 -right-2 bg-dark text-white text-[10px] px-3 py-1 rounded-full font-bold">
                       TOP
+                    </span>
+                        <span className="text-2xl">
+                      💵
                     </span>
                     <p className="text-lg font-bold text-dark">2,000 créditos</p>
                     <p className="text-sm text-dark/70 mt-1 font-medium">$349 MXN</p>
@@ -323,8 +318,11 @@ export default function DashboardPlan() {
                       setShowCreditsModal(false);
                     }}
                     disabled={buyCredits.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-cloud/20 to-cloud/10 border-2 border-cloud/40 rounded-2xl px-5 py-4 hover:border-cloud hover:shadow-lg transition-all disabled:opacity-50 hover:scale-105"
+                    className="flex-1 bg-gradient-to-br from-cloud/20 to-cloud/10 border-2 border-cloud/40 rounded-2xl p-4 hover:border-cloud hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%]"
                   >
+                        <span className="text-2xl">
+                      💰
+                    </span>
                     <p className="text-lg font-bold text-dark">5,000 créditos</p>
                     <p className="text-sm text-metal mt-1">$799 MXN</p>
                   </button>
@@ -342,7 +340,7 @@ export default function DashboardPlan() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur flex items-center justify-center z-50 p-4"
                 onClick={() => setShowConversationsModal(false)}
               >
                 <motion.div
@@ -360,7 +358,7 @@ export default function DashboardPlan() {
                   <img
                     alt="close"
                     src="/assets/close.svg"
-                    className="w-6 h-6"
+                    className="w-8 h-8"
                   />
                 </button>
                 <div className="mb-2">
@@ -368,19 +366,13 @@ export default function DashboardPlan() {
                 </div>
 
                 <p className="text-metal text-base mb-6 leading-relaxed">
-                  Compra conversaciones cuando alcances el límite mensual de tu plan.
+                  Compra conversaciones cuando alcances el límite mensual de tu plan. La conversación se restablece cada mes.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-6 text-base mb-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-metal font-medium">Disponibles:</span>
-                    <span className="font-bold text-bird text-xl">
-                      {conversations.remaining === Infinity ? "∞" : conversations.remaining.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-metal font-medium">Plan:</span>
-                    <span className="font-bold text-brand-600 text-xl">
+                    <span className="text-metal ">Usadas:</span>
+                    <span className="font-bold text-amber-600 text-xl">
                       {conversations.used.toLocaleString()}
                     </span>
                     <span className="text-metal text-sm">
@@ -388,15 +380,10 @@ export default function DashboardPlan() {
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-metal font-medium">Compradas:</span>
-                    <span className="font-bold text-bird text-xl">{conversations.purchased.toLocaleString()}</span>
+                    <span className="text-metal ">Compradas:</span>
+                    <span className="font-bold text-amber-600 text-xl">{conversations.purchased.toLocaleString()}</span>
                   </div>
                 </div>
-
-                <div className="text-sm text-metal bg-bird/10 p-4 rounded-xl mb-8 border border-bird/20">
-                  Las conversaciones compradas se suman a tu límite del plan. Resetean cada mes.
-                </div>
-
                 <div className="flex items-baseline justify-between mb-4">
                   <h3 className="text-lg text-dark font-bold">Selecciona un paquete</h3>
                   <span className="text-sm text-metal font-medium">
@@ -410,9 +397,12 @@ export default function DashboardPlan() {
                       setShowConversationsModal(false);
                     }}
                     disabled={buyConversations.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-bird/20 to-bird/10 border-2 border-bird/40 rounded-2xl px-5 py-4 hover:border-bird hover:shadow-lg transition-all disabled:opacity-50 hover:scale-105"
+                    className="flex-1 bg-gradient-to-br from-bird/20 to-bird/10 border-2 border-bird/40 rounded-2xl p-4 hover:border-bird hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%]"
                   >
-                    <p className="text-lg font-bold text-dark">50 conversaciones</p>
+                            <span className="text-2xl">
+                      🪙
+                    </span>
+                    <p className="text-lg font-bold text-dark">50 convers</p>
                     <p className="text-sm text-metal mt-1">${pricing.price50.toFixed(0)} MXN</p>
                   </button>
                   <button
@@ -421,12 +411,15 @@ export default function DashboardPlan() {
                       setShowConversationsModal(false);
                     }}
                     disabled={buyConversations.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-bird to-bird/60 border-2 border-bird rounded-2xl px-5 py-4 hover:shadow-xl transition-all disabled:opacity-50 relative hover:scale-105"
+                    className="flex-1 bg-gradient-to-br from-bird to-bird/60 border-2 border-bird rounded-2xl p-4 hover:shadow-xl transition-all disabled:opacity-50 relative hover:scale-[103%]"
                   >
                     <span className="absolute -top-2 -right-2 bg-dark text-white text-[10px] px-3 py-1 rounded-full font-bold">
                       TOP
                     </span>
-                    <p className="text-lg font-bold text-dark">150 conversaciones</p>
+                            <span className="text-2xl">
+                      💵
+                    </span>
+                    <p className="text-lg font-bold text-dark">150 convers</p>
                     <p className="text-sm text-dark/70 mt-1 font-medium">${pricing.price150.toFixed(0)} MXN</p>
                   </button>
                   <button
@@ -435,9 +428,12 @@ export default function DashboardPlan() {
                       setShowConversationsModal(false);
                     }}
                     disabled={buyConversations.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-bird/20 to-bird/10 border-2 border-bird/40 rounded-2xl px-5 py-4 hover:border-bird hover:shadow-lg transition-all disabled:opacity-50 hover:scale-105"
+                    className="flex-1 bg-gradient-to-br from-bird/20 to-bird/10 border-2 border-bird/40 rounded-2xl p-4 hover:border-bird hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%]"
                   >
-                    <p className="text-lg font-bold text-dark">500 conversaciones</p>
+                            <span className="text-2xl">
+                      💰
+                    </span>
+                    <p className="text-lg font-bold text-dark">500 convers</p>
                     <p className="text-sm text-metal mt-1">${pricing.price500.toFixed(0)} MXN</p>
                   </button>
                 </div>
