@@ -93,54 +93,60 @@ export default function WhatsAppEmbeddedSignupModal({
     };
   }, [isOpen]);
 
-  // Message Event Listener - Según documentación oficial de Meta
-  // Captura phone_number_id, waba_id, business_id, etc.
+  // Message Event Listener - Captura waba_id y phone_number_id
+  // Basado en ejemplos reales en producción (github.com/tchindje/sema, github.com/cleancodify/gpt4sale)
   useEffect(() => {
     if (!isOpen) return;
 
     const handleMessage = (event: MessageEvent) => {
       // Verificar origen de Facebook
-      if (!event.origin.endsWith('facebook.com')) return;
+      if (event.origin !== 'https://www.facebook.com') return;
 
       try {
         const data = JSON.parse(event.data);
 
         if (data.type === 'WA_EMBEDDED_SIGNUP') {
+          console.log('📨 [Message Event] Received:', data.event, data.data);
 
           // Manejar diferentes eventos del flujo
           switch (data.event) {
             case 'FINISH':
             case 'FINISH_ONLY_WABA':
             case 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING':
+              // ✅ CRÍTICO: Guardar waba_id y phone_number_id del message event
+              // Estos datos llegan ANTES que authResponse
+              const wabaId = data.data.waba_id;
+              const phoneNumberId = data.data.phone_number_id;
 
-              // Guardar datos capturados
+              console.log('✅ [Message Event] Captured:', { wabaId, phoneNumberId });
+
               setEmbeddedSignupData({
-                phone_number_id: data.data.phone_number_id,
-                waba_id: data.data.waba_id,
+                phone_number_id: phoneNumberId,
+                waba_id: wabaId,
                 business_id: data.data.business_id,
-                sessionInfoVerified: data.data.sessionInfoVerified, // Para coexistencia
+                sessionInfoVerified: data.data.sessionInfoVerified,
               });
               break;
 
             case 'CANCEL':
-              console.warn('⚠️ [Meta Message Event] Flujo cancelado');
+              console.warn('⚠️ [Message Event] Flujo cancelado');
               if (data.data.current_step) {
-                console.warn('📍 [Meta Message Event] Usuario abandonó en:', data.data.current_step);
+                console.warn('📍 [Message Event] Abandonó en:', data.data.current_step);
                 setError(`Flujo cancelado en: ${data.data.current_step}`);
               }
               if (data.data.error_message) {
-                console.error('❌ [Meta Message Event] Error reportado:', data.data.error_message);
-                console.error('🆔 [Meta Message Event] Error ID:', data.data.error_id);
-                setError(`Error: ${data.data.error_message} (ID: ${data.data.error_id})`);
+                console.error('❌ [Message Event] Error:', data.data.error_message);
+                setError(`Error: ${data.data.error_message}`);
               }
               setStatus('error');
               break;
 
             default:
+              console.log('📨 [Message Event] Evento desconocido:', data.event);
           }
         }
       } catch (parseError) {
-        // Si no es JSON parseable, intentar con event.data directamente
+        // Ignorar mensajes que no son JSON parseables
       }
     };
 
@@ -151,8 +157,108 @@ export default function WhatsAppEmbeddedSignupModal({
     };
   }, [isOpen]);
 
-  // Handler para el Embedded Signup
+  // Handler para el Embedded Signup usando FB.login() con popup
+  // ✅ Patrón basado en código real en producción
   const handleEmbeddedSignup = useCallback(async () => {
+    if (!window.FB) {
+      setError('Facebook SDK no está cargado');
+      return;
+    }
+
+    setStatus('loading');
+    setError(null);
+
+    try {
+      const configId = import.meta.env.VITE_FACEBOOK_CONFIG_ID;
+
+      console.log('🚀 [FB.login] Lanzando popup de Embedded Signup...');
+      console.log('🚀 [FB.login] Config ID:', configId);
+
+      // ✅ CORRECTO: Usar FB.login() que abre popup automáticamente
+      // El message event ya capturó waba_id y phone_number_id
+      window.FB.login(
+        async (response: any) => {
+          console.log('📥 [FB.login] Response:', response);
+
+          if (response.authResponse) {
+            const code = response.authResponse.code;
+            console.log('✅ [FB.login] Code recibido:', code?.substring(0, 20) + '...');
+
+            // Esperar a que el message event capture waba_id y phone_number_id
+            // (usualmente llega antes que authResponse, pero por si acaso esperamos un poco)
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            if (!embeddedSignupData?.waba_id || !embeddedSignupData?.phone_number_id) {
+              console.warn('⚠️ [FB.login] No se recibió waba_id del message event');
+              // Continuar de todas formas, el backend intentará obtenerlo
+            }
+
+            // Enviar al backend: code + waba_id + phone_number_id
+            const exchangeResponse = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                chatbotId,
+                code,
+                // Enviar datos del message event si están disponibles
+                wabaId: embeddedSignupData?.waba_id,
+                phoneNumberId: embeddedSignupData?.phone_number_id,
+              }),
+            });
+
+            const exchangeData = await exchangeResponse.json();
+
+            if (!exchangeResponse.ok && exchangeResponse.status !== 207) {
+              console.error('❌ [FB.login] Backend error:', exchangeData.error);
+              throw new Error(exchangeData.error || 'Error al conectar WhatsApp');
+            }
+
+            // ✅ Éxito
+            console.log('✅ [FB.login] WhatsApp conectado exitosamente!');
+            setStatus('success');
+            onSuccess({
+              ...exchangeData.integration,
+              embeddedSignup: true,
+            });
+
+            // Cerrar modal después de un breve retraso
+            setTimeout(() => {
+              onClose();
+            }, 1500);
+
+          } else {
+            console.warn('⚠️ [FB.login] Usuario canceló login');
+            setStatus('error');
+            setError('Autorización cancelada');
+          }
+        },
+        {
+          config_id: configId,
+          response_type: 'code',
+          override_default_response_type: true,
+          scope: 'whatsapp_business_management,whatsapp_business_messaging',
+          extras: {
+            setup: {},
+            featureType: 'whatsapp_business_app_onboarding', // ✅ Coexistencia
+            sessionInfoVersion: 3,
+          },
+        }
+      );
+
+    } catch (err) {
+      console.error('❌ [Embedded Signup] Error:', err);
+      setStatus('error');
+      setError(err instanceof Error ? err.message : 'Error al inicializar Embedded Signup');
+    }
+  }, [chatbotId, embeddedSignupData, onSuccess, onClose]);
+
+  // Ya NO necesitamos procesar callback de OAuth porque usamos popup (FB.login)
+
+  // ELIMINAR: Ya no usamos FB.login(), así que comentar todo el código relacionado
+  /*
+  const handleEmbeddedSignup_OLD = useCallback(async () => {
     if (!window.FB) {
       setError('Facebook SDK no está cargado');
       return;
@@ -164,119 +270,16 @@ export default function WhatsAppEmbeddedSignupModal({
     try {
       const appId = import.meta.env.VITE_FACEBOOK_APP_ID;
 
-      // Facebook IGNORA el redirect_uri que pasamos y usa window.location.origin
-      // Por lo tanto, debemos usar exactamente eso (SIN barra final)
-      let redirectUri = window.location.origin;  // Sin barra final
-      if (redirectUri.includes('formmy.app') && !redirectUri.includes('www.')) {
-        redirectUri = redirectUri.replace('formmy.app', 'www.formmy.app');
-      }
+      // Capturar la URL completa desde donde se ejecuta FB.login()
+      const redirectUri = `${window.location.origin}${window.location.pathname}`;
 
-      console.log(`🔄 [Frontend] Using redirect_uri: ${redirectUri}`);
+      console.log(`🔄 [Frontend] Iniciando Embedded Signup`);
+      console.log(`🔄 [Frontend] App ID: ${appId}`);
+      console.log(`🔄 [Frontend] redirect_uri: ${redirectUri}`);
 
-      // Iniciar Embedded Signup usando Facebook Login for Business
-      window.FB.login(
-        (response: any) => {
-
-          if (response.status === 'connected' && response.authResponse?.code) {
-            // Procesar respuesta sin async en el callback
-            const processResponse = async () => {
-              try {
-
-                // PASO 1: Intercambiar código por tokens con Meta
-
-                // Esperar a que el message event capture los IDs (máx 2 segundos)
-                let attempts = 0;
-                while (!embeddedSignupData && attempts < 20) {
-                  await new Promise(resolve => setTimeout(resolve, 100));
-                  attempts++;
-                }
-
-
-                const exchangeResponse = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    chatbotId,
-                    authResponse: response.authResponse,
-                    status: response.status,
-                    redirectUri, // Enviar el redirect_uri usado en FB.login()
-                    // Datos adicionales del message event (si están disponibles)
-                    embeddedSignupData: embeddedSignupData || undefined,
-                  }),
-                });
-
-                const exchangeData = await exchangeResponse.json();
-
-                if (!exchangeResponse.ok && exchangeResponse.status !== 207) {
-                  console.error('❌ [Modal] PASO 1 FALLÓ:', exchangeData.error);
-                  throw new Error(exchangeData.error || 'Error al intercambiar tokens con Meta');
-                }
-
-                // Manejar warning de webhook (status 207)
-                if (exchangeResponse.status === 207 && exchangeData.webhookWarning) {
-                  console.warn('⚠️ [Modal] Webhook warning:', exchangeData.details);
-                  setError('⚠️ Conexión parcial: WhatsApp conectado pero webhook pendiente. Verifica configuración.');
-                  // Continuar de todos modos, mostrar como success con warning
-                }
-
-                // WhatsApp conectado exitosamente (sin Composio - deprecado)
-                setStatus('success');
-                onSuccess({
-                  ...exchangeData.integration,
-                  embeddedSignup: true,
-                  businessIntegrationToken: true,
-                });
-
-                // Cerrar modal después de un breve retraso (SOLO si todo fue exitoso)
-                setTimeout(() => {
-                  onClose();
-                }, 1500);
-
-              } catch (exchangeError) {
-                console.error('❌ [Modal] ERROR GENERAL en proceso de conexión:', exchangeError);
-                setStatus('error');
-                setError(
-                  exchangeError instanceof Error
-                    ? exchangeError.message
-                    : 'Error al conectar WhatsApp'
-                );
-                // NO cerrar modal en caso de error
-              }
-            };
-
-            // Ejecutar función async por separado
-            processResponse();
-          } else {
-            setStatus('error');
-            setError('Autorización cancelada o fallida');
-          }
-        },
-        {
-          ...(import.meta.env.VITE_FACEBOOK_CONFIG_ID && {
-            config_id: import.meta.env.VITE_FACEBOOK_CONFIG_ID
-          }),
-          redirect_uri: redirectUri, // Especificar explícitamente el redirect_uri
-          scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management', // Permisos requeridos
-          response_type: 'code', // Requerido para Embedded Signup
-          override_default_response_type: true,
-          extras: {
-            setup: {
-              // Configuración específica para WhatsApp
-              external_business_id: chatbotId,
-              // Habilitar modo coexistencia (WhatsApp Business App + Cloud API)
-              featureType: "whatsapp_business_app_onboarding",
-            }
-          }
-        }
-      );
-    } catch (err) {
-      console.error('Embedded Signup error:', err);
-      setStatus('error');
-      setError(err instanceof Error ? err.message : 'Error al inicializar Embedded Signup');
+      // Código viejo de FB.login() eliminado - ahora usamos OAuth manual
     }
-  }, [chatbotId, onSuccess, onClose, embeddedSignupData]);
+  */
 
   // Reset cuando se abre/cierra el modal
   useEffect(() => {

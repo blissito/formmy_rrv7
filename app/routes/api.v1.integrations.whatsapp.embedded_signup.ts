@@ -8,9 +8,13 @@ const encryptText = (text: string) => `encrypted_${text}`;
 interface EmbeddedSignupRequest {
   chatbotId: string;
   code: string;
-  accessToken: string;
-  userID: string;
-  redirectUri?: string; // Optional: redirect_uri usado en frontend
+  // ✅ Datos del message event (llegan del frontend)
+  wabaId?: string;
+  phoneNumberId?: string;
+  // Legacy fields (mantener por compatibilidad)
+  accessToken?: string;
+  userID?: string;
+  redirectUri?: string;
   authResponse?: {
     code?: string;
     userID?: string;
@@ -156,30 +160,29 @@ export async function action({ request }: ActionFunctionArgs) {
 
 
     // Intercambiar el código por un access token de larga duración
-    // NOTA: El redirect_uri DEBE coincidir EXACTAMENTE con el usado en FB.login()
-    // Facebook IGNORA el redirect_uri que pasamos y usa window.location.origin (SIN barra final)
-    const redirectUri = body.redirectUri || (() => {
-      // Fallback: calcular desde request headers si el frontend no lo envió
-      let origin = request.headers.get('origin') || request.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://www.formmy.app';
+    // CRÍTICO: El redirect_uri DEBE ser exactamente el mismo usado en el OAuth dialog
+    // Ahora usamos un flujo manual de OAuth con redirect_uri fijo y controlado
+    const redirectUri = body.redirectUri;
 
-      // Normalizar a www.formmy.app para que coincida con OAuth Redirect URIs de Facebook
-      if (origin.includes('formmy.app') && !origin.includes('www.')) {
-        origin = origin.replace('formmy.app', 'www.formmy.app');
-      }
+    if (!redirectUri) {
+      console.error(`❌ [Token Exchange] ERROR: redirect_uri no fue enviado por el frontend`);
+      return Response.json(
+        { error: "redirect_uri es requerido" },
+        { status: 400 }
+      );
+    }
 
-      // SIN barra final - Facebook usa window.location.origin
-      return origin;
-    })();
+    console.log(`🔄 [Token Exchange] redirect_uri: ${redirectUri}`);
+    console.log(`🔄 [Token Exchange] Code: ${code?.substring(0, 20)}...`);
 
-    console.log(`🔄 [Token Exchange] redirect_uri recibido del frontend: ${body.redirectUri}`);
-    console.log(`🔄 [Token Exchange] redirect_uri final a usar: ${redirectUri}`);
-
+    // Intercambiar código por token
+    // ✅ NUEVO: FB.login() NO requiere redirect_uri para token exchange
     const tokenExchangeUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
     tokenExchangeUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
     tokenExchangeUrl.searchParams.append('client_secret', FACEBOOK_APP_SECRET);
     tokenExchangeUrl.searchParams.append('code', code);
-    tokenExchangeUrl.searchParams.append('redirect_uri', redirectUri);
 
+    console.log(`🔄 [Token Exchange] Intercambiando código con Meta...`);
 
     const tokenResponse = await fetch(tokenExchangeUrl.toString());
 
@@ -218,88 +221,145 @@ export async function action({ request }: ActionFunctionArgs) {
     const tokenData: MetaTokenExchangeResponse = await tokenResponse.json();
     const longLivedToken = tokenData.access_token;
 
+    console.log(`✅ [Token Exchange] Token obtenido exitosamente`);
 
-    // 2. Obtener información del Business Account y Phone Number
-    const businessAccountUrl = `https://graph.facebook.com/v21.0/${userID}/businesses`;
-    const businessResponse = await fetch(businessAccountUrl, {
-      headers: {
-        'Authorization': `Bearer ${longLivedToken}`,
-      },
-    });
+    // 2. ✅ USAR wabaId y phoneNumberId del message event (si están disponibles)
+    let wabaId = body.wabaId;
+    let phoneNumberId = body.phoneNumberId;
+    let phoneNumber: any = null;
+    let waba: any = null;
 
-    if (!businessResponse.ok) {
-      const errorData = await businessResponse.text();
-      console.error("Failed to get business account:", errorData);
-      return Response.json(
-        { error: "Error al obtener información de la cuenta de negocio" },
-        { status: 400 }
-      );
-    }
+    if (wabaId && phoneNumberId) {
+      console.log(`✅ [Message Event] Usando datos del frontend:`);
+      console.log(`   WABA ID: ${wabaId}`);
+      console.log(`   Phone Number ID: ${phoneNumberId}`);
 
-    const businessData: MetaBusinessAccountResponse = await businessResponse.json();
+      // Obtener información del phone number para display_phone_number y verified_name
+      const phoneInfoUrl = `https://graph.facebook.com/v21.0/${phoneNumberId}?fields=id,display_phone_number,verified_name,quality_rating`;
+      const phoneInfoResponse = await fetch(phoneInfoUrl, {
+        headers: { 'Authorization': `Bearer ${longLivedToken}` }
+      });
 
-    if (!businessData.data || businessData.data.length === 0) {
-      return Response.json(
-        { error: "No se encontró una cuenta de negocio asociada" },
-        { status: 404 }
-      );
-    }
-
-    const businessAccount = businessData.data[0];
-
-    // 3. Obtener los números de teléfono asociados
-    const phoneNumbersUrl = `https://graph.facebook.com/v21.0/${businessAccount.id}/phone_numbers`;
-    const phoneResponse = await fetch(phoneNumbersUrl, {
-      headers: {
-        'Authorization': `Bearer ${longLivedToken}`,
-      },
-    });
-
-    if (!phoneResponse.ok) {
-      const errorData = await phoneResponse.text();
-      console.error("Failed to get phone numbers:", errorData);
-      return Response.json(
-        { error: "Error al obtener números de teléfono" },
-        { status: 400 }
-      );
-    }
-
-    const phoneData = await phoneResponse.json();
-
-    if (!phoneData.data || phoneData.data.length === 0) {
-      return Response.json(
-        { error: "No se encontraron números de teléfono configurados" },
-        { status: 404 }
-      );
-    }
-
-    const phoneNumber = phoneData.data[0];
-
-    // 3.5. Validación cruzada con datos del message event
-    if (messageEventData) {
-
-      // Validar phone_number_id
-      if (messageEventData.phone_number_id && messageEventData.phone_number_id !== phoneNumber.id) {
-        console.warn(`⚠️ [Validación] ADVERTENCIA: phone_number_id no coincide!`);
-        console.warn(`   Message Event: ${messageEventData.phone_number_id}`);
-        console.warn(`   Meta API: ${phoneNumber.id}`);
-        console.warn(`   → Usando valor de Meta API (más confiable)`);
-      } else if (messageEventData.phone_number_id === phoneNumber.id) {
+      if (phoneInfoResponse.ok) {
+        phoneNumber = await phoneInfoResponse.json();
+        console.log(`✅ [Phone Info] Número: ${phoneNumber.display_phone_number}`);
+        console.log(`✅ [Phone Info] Nombre verificado: ${phoneNumber.verified_name}`);
+      } else {
+        console.warn(`⚠️ [Phone Info] No se pudo obtener info del número`);
+        // Crear objeto mínimo
+        phoneNumber = { id: phoneNumberId };
       }
 
-      // Validar waba_id (business account)
-      if (messageEventData.waba_id && messageEventData.waba_id !== businessAccount.id) {
-        console.warn(`⚠️ [Validación] ADVERTENCIA: waba_id no coincide!`);
-        console.warn(`   Message Event: ${messageEventData.waba_id}`);
-        console.warn(`   Meta API: ${businessAccount.id}`);
-        console.warn(`   → Usando valor de Meta API (más confiable)`);
-      } else if (messageEventData.waba_id === businessAccount.id) {
+      // Crear objeto waba mínimo
+      waba = { id: wabaId };
+
+    } else {
+      // ❌ FALLBACK: Si no llegaron del message event, intentar obtenerlos manualmente
+      // NOTA: Esto requiere business_management permission
+      console.warn(`⚠️ [Message Event] No se recibió wabaId/phoneNumberId del frontend`);
+      console.warn(`⚠️ [Fallback] Intentando obtenerlos manualmente (requiere business_management permission)...`);
+
+      const businessAccountUrl = `https://graph.facebook.com/v21.0/me/businesses`;
+      const businessResponse = await fetch(businessAccountUrl, {
+        headers: { 'Authorization': `Bearer ${longLivedToken}` },
+      });
+
+      if (!businessResponse.ok) {
+        const errorData = await businessResponse.text();
+        console.error("❌ Failed to get business account:", errorData);
+        return Response.json(
+          { error: "Error al obtener información de la cuenta de negocio. Asegúrate de que la app tenga permiso business_management." },
+          { status: 400 }
+        );
       }
 
-      // Informar sobre business_id (es adicional, no lo obtenemos de la API)
-      if (messageEventData.business_id) {
+      const businessData: MetaBusinessAccountResponse = await businessResponse.json();
+
+      if (!businessData.data || businessData.data.length === 0) {
+        return Response.json(
+          { error: "No se encontró una cuenta de negocio asociada" },
+          { status: 404 }
+        );
       }
 
+      const businessAccount = businessData.data[0];
+
+      const wabaUrl = `https://graph.facebook.com/v21.0/${businessAccount.id}/owned_whatsapp_business_accounts`;
+      const wabaResponse = await fetch(wabaUrl, {
+        headers: { 'Authorization': `Bearer ${longLivedToken}` },
+      });
+
+      if (!wabaResponse.ok) {
+        const errorData = await wabaResponse.text();
+        console.error("❌ Failed to get WABA:", errorData);
+        return Response.json(
+          { error: "Error al obtener WhatsApp Business Account" },
+          { status: 400 }
+        );
+      }
+
+      const wabaData = await wabaResponse.json();
+
+      if (!wabaData.data || wabaData.data.length === 0) {
+        return Response.json(
+          { error: "No se encontró una WhatsApp Business Account configurada" },
+          { status: 404 }
+        );
+      }
+
+      waba = wabaData.data[0];
+      wabaId = waba.id;
+
+      const phoneNumbersUrl = `https://graph.facebook.com/v21.0/${waba.id}/phone_numbers`;
+      const phoneResponse = await fetch(phoneNumbersUrl, {
+        headers: { 'Authorization': `Bearer ${longLivedToken}` },
+      });
+
+      if (!phoneResponse.ok) {
+        const errorData = await phoneResponse.text();
+        console.error("❌ Failed to get phone numbers:", errorData);
+        return Response.json(
+          { error: "Error al obtener números de teléfono" },
+          { status: 400 }
+        );
+      }
+
+      const phoneData = await phoneResponse.json();
+
+      if (!phoneData.data || phoneData.data.length === 0) {
+        return Response.json(
+          { error: "No se encontraron números de teléfono configurados" },
+          { status: 404 }
+        );
+      }
+
+      phoneNumber = phoneData.data[0];
+      phoneNumberId = phoneNumber.id;
+
+      console.log(`✅ [Fallback] Datos obtenidos exitosamente:`);
+      console.log(`   WABA ID: ${waba.id}`);
+      console.log(`   Phone Number ID: ${phoneNumber.id}`);
+      console.log(`   Display Phone Number: ${phoneNumber.display_phone_number || 'N/A'}`);
+    }
+
+    // 3. Obtener businessAccountId (si no lo tenemos)
+    let businessAccountId = body.embeddedSignupData?.business_id;
+
+    if (!businessAccountId) {
+      // Obtener desde el WABA
+      const wabaInfoUrl = `https://graph.facebook.com/v21.0/${wabaId}?fields=id,owner_business_info`;
+      const wabaInfoResponse = await fetch(wabaInfoUrl, {
+        headers: { 'Authorization': `Bearer ${longLivedToken}` }
+      });
+
+      if (wabaInfoResponse.ok) {
+        const wabaInfo = await wabaInfoResponse.json();
+        businessAccountId = wabaInfo.owner_business_info?.id || 'unknown';
+        console.log(`✅ [WABA Info] Business Account ID: ${businessAccountId}`);
+      } else {
+        console.warn(`⚠️ [WABA Info] No se pudo obtener business account ID`);
+        businessAccountId = 'unknown';
+      }
     }
 
     // 4. Generar un webhook verify token único
@@ -350,11 +410,11 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    // Verificar suscripción llamando a Graph API
-    if (webhookConfigured) {
+    // Verificar suscripción llamando a Graph API (si tenemos businessAccountId)
+    if (webhookConfigured && businessAccountId && businessAccountId !== 'unknown') {
       try {
         console.log(`🔍 [Webhook] Verificando suscripción...`);
-        const verifyUrl = `https://graph.facebook.com/v21.0/${businessAccount.id}/subscribed_apps`;
+        const verifyUrl = `https://graph.facebook.com/v21.0/${businessAccountId}/subscribed_apps`;
         const verifyResponse = await fetch(verifyUrl, {
           headers: { 'Authorization': `Bearer ${longLivedToken}` }
         });
@@ -398,8 +458,8 @@ export async function action({ request }: ActionFunctionArgs) {
         where: { id: existingIntegration.id },
         data: {
           token: encryptedToken,
-          phoneNumberId: phoneNumber.id,
-          businessAccountId: businessAccount.id,
+          phoneNumberId: phoneNumberId,
+          businessAccountId: businessAccountId,
           webhookVerifyToken: webhookVerifyToken,
           isActive: true,
           metadata: {
@@ -419,8 +479,8 @@ export async function action({ request }: ActionFunctionArgs) {
           chatbotId: chatbotId,
           platform: "WHATSAPP",
           token: encryptedToken,
-          phoneNumberId: phoneNumber.id,
-          businessAccountId: businessAccount.id,
+          phoneNumberId: phoneNumberId,
+          businessAccountId: businessAccountId,
           webhookVerifyToken: webhookVerifyToken,
           isActive: true,
           metadata: {
@@ -460,10 +520,10 @@ export async function action({ request }: ActionFunctionArgs) {
         error: "WhatsApp conectado pero webhook falló. Verifica configuración en Meta.",
         integration: {
           id: integration.id,
-          phoneNumber: phoneNumber.display_phone_number,
-          verifiedName: phoneNumber.verified_name,
-          businessAccountId: businessAccount.id,
-          phoneNumberId: phoneNumber.id,
+          phoneNumber: phoneNumber?.display_phone_number || 'N/A',
+          verifiedName: phoneNumber?.verified_name || 'N/A',
+          businessAccountId: businessAccountId,
+          phoneNumberId: phoneNumberId,
           coexistenceMode: true,
           embeddedSignup: true,
           token: longLivedToken,
@@ -486,10 +546,10 @@ export async function action({ request }: ActionFunctionArgs) {
       success: true,
       integration: {
         id: integration.id,
-        phoneNumber: phoneNumber.display_phone_number,
-        verifiedName: phoneNumber.verified_name,
-        businessAccountId: businessAccount.id,
-        phoneNumberId: phoneNumber.id,
+        phoneNumber: phoneNumber?.display_phone_number || 'N/A',
+        verifiedName: phoneNumber?.verified_name || 'N/A',
+        businessAccountId: businessAccountId,
+        phoneNumberId: phoneNumberId,
         coexistenceMode: true,
         embeddedSignup: true,
         token: longLivedToken,
