@@ -44,6 +44,7 @@ export default {
         fiusha:"#D56D80",
         sky:"#76D3CB",
         grass:"#7FBE60",
+        lime:"#BFDD78",
         salmon:"#E4AE8E",
         // Dracula Theme Colors for Code Snippets
         dracula: {

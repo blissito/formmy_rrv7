@@ -271,15 +271,25 @@ export default function DashboardPlan() {
                 <div className="flex flex-wrap items-center gap-6 text-base mb-6">
                   <div className="flex items-baseline gap-2">
                     <span className="text-metal ">Usadas:</span>
-                    <span className="font-bold text-teal-700 text-lg">{credits.monthlyAvailable.toLocaleString()}</span>
+                    <span className="font-bold text-teal-700 text-lg">{credits.monthlyUsed.toLocaleString()}</span>
                     <span className="text-metal text-sm">/ {credits.planLimit.toLocaleString()}</span>
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-metal ">Comprados:</span>
-                    <span className="font-bold text-teal-700 text-xl">{credits.purchasedCredits.toLocaleString()}</span>
+                    <span className="font-bold text-teal-700 text-lg">{credits.purchasedCredits.toLocaleString()}</span>
                   </div>
                 </div>
-                <h3 className="text-lg text-dark font-bold mb-4">Selecciona un paquete</h3>
+
+                {/* Header de paquetes con fondo */}
+                <div className="flex items-center justify-between mb-4 mt-10">
+                  <h3 className="text-lg text-dark font-semibold">Selecciona un paquete</h3>
+                  <div className="text-right">
+                    <div className="text-sm text-metal">
+                      <span className="font-semibold text-dark">Desde $99</span> MXN
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={() => {
@@ -287,13 +297,18 @@ export default function DashboardPlan() {
                       setShowCreditsModal(false);
                     }}
                     disabled={buyCredits.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-cloud/20 to-cloud/10 border-2 border-cloud/40 rounded-2xl p-4 hover:border-cloud hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%]"
+                    className="group flex-1 bg-gradient-to-br from-cloud/20 to-cloud/10 border-2 border-cloud/40 rounded-2xl p-4 hover:border-cloud hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%] relative overflow-hidden"
                   >
-                    <span className="text-2xl">
-                      🪙
-                    </span>
-                    <p className="text-lg font-bold text-dark">500 créditos</p>
-                    <p className="text-sm text-metal mt-1">$99 MXN</p>
+                    {/* Círculo animado */}
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-cloud/20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
+
+                    <div className="relative z-10">
+                      <span className="text-2xl">
+                        🪙
+                      </span>
+                      <p className="text-lg font-bold text-dark">500 créditos</p>
+                      <p className="text-sm text-metal mt-1">$99 MXN</p>
+                    </div>
                   </button>
                   <button
                     onClick={() => {
@@ -301,16 +316,21 @@ export default function DashboardPlan() {
                       setShowCreditsModal(false);
                     }}
                     disabled={buyCredits.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-cloud to-cloud/60 border-2 border-cloud rounded-2xl p-4 hover:shadow-xl transition-all disabled:opacity-50 relative hover:scale-[103%]"
+                    className="group flex-1 bg-gradient-to-br from-cloud to-cloud/60 border-2 border-cloud rounded-2xl p-4 hover:shadow-xl transition-all disabled:opacity-50 relative hover:scale-[103%] overflow-hidden"
                   >
-                    <span className="absolute -top-2 -right-2 bg-dark text-white text-[10px] px-3 py-1 rounded-full font-bold">
+                    <span className="absolute top-2 right-2 bg-dark text-white text-[10px] px-3 py-1 rounded-full font-bold z-20">
                       TOP
                     </span>
-                        <span className="text-2xl">
-                      💵
-                    </span>
-                    <p className="text-lg font-bold text-dark">2,000 créditos</p>
-                    <p className="text-sm text-dark/70 mt-1 font-medium">$349 MXN</p>
+                    {/* Círculo animado */}
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500" />
+
+                    <div className="relative z-10">
+                      <span className="text-2xl">
+                        💵
+                      </span>
+                      <p className="text-lg font-bold text-dark">2,000 créditos</p>
+                      <p className="text-sm text-dark/70 mt-1 font-medium">$349 MXN</p>
+                    </div>
                   </button>
                   <button
                     onClick={() => {
@@ -318,13 +338,18 @@ export default function DashboardPlan() {
                       setShowCreditsModal(false);
                     }}
                     disabled={buyCredits.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-cloud/20 to-cloud/10 border-2 border-cloud/40 rounded-2xl p-4 hover:border-cloud hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%]"
+                    className="group flex-1 bg-gradient-to-br from-cloud/20 to-cloud/10 border-2 border-cloud/40 rounded-2xl p-4 hover:border-cloud hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%] relative overflow-hidden"
                   >
-                        <span className="text-2xl">
-                      💰
-                    </span>
-                    <p className="text-lg font-bold text-dark">5,000 créditos</p>
-                    <p className="text-sm text-metal mt-1">$799 MXN</p>
+                    {/* Círculo animado */}
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-cloud/20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
+
+                    <div className="relative z-10">
+                      <span className="text-2xl">
+                        💰
+                      </span>
+                      <p className="text-lg font-bold text-dark">5,000 créditos</p>
+                      <p className="text-sm text-metal mt-1">$799 MXN</p>
+                    </div>
                   </button>
                 </div>
               </motion.div>
@@ -362,7 +387,7 @@ export default function DashboardPlan() {
                   />
                 </button>
                 <div className="mb-2">
-                  <h2 className="text-dark text-2xl font-bold">Comprar Conversaciones</h2>
+                  <h2 className="text-dark text-2xl font-bold">Comprar conversaciones</h2>
                 </div>
 
                 <p className="text-metal text-base mb-6 leading-relaxed">
@@ -372,7 +397,7 @@ export default function DashboardPlan() {
                 <div className="flex flex-wrap items-center gap-6 text-base mb-6">
                   <div className="flex items-baseline gap-2">
                     <span className="text-metal ">Usadas:</span>
-                    <span className="font-bold text-amber-600 text-xl">
+                    <span className="font-bold text-amber-600 text-lg">
                       {conversations.used.toLocaleString()}
                     </span>
                     <span className="text-metal text-sm">
@@ -381,15 +406,20 @@ export default function DashboardPlan() {
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-metal ">Compradas:</span>
-                    <span className="font-bold text-amber-600 text-xl">{conversations.purchased.toLocaleString()}</span>
+                    <span className="font-bold text-amber-600 text-lg">{conversations.purchased.toLocaleString()}</span>
                   </div>
                 </div>
-                <div className="flex items-baseline justify-between mb-4">
-                  <h3 className="text-lg text-dark font-bold">Selecciona un paquete</h3>
-                  <span className="text-sm text-metal font-medium">
-                    ${pricing.perConv} MXN c/u
-                  </span>
+
+                {/* Header de paquetes con fondo */}
+                <div className="flex items-center justify-between mb-4 mt-10 ">
+                  <h3 className="text-lg text-dark font-semibold">Selecciona un paquete</h3>
+                  <div className="text-right">
+                    <div className="text-sm text-metal">
+                      <span className="font-semibold text-dark">${pricing.perConv}</span> MXN c/u
+                    </div>
+                  </div>
                 </div>
+
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={() => {
@@ -397,13 +427,18 @@ export default function DashboardPlan() {
                       setShowConversationsModal(false);
                     }}
                     disabled={buyConversations.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-bird/20 to-bird/10 border-2 border-bird/40 rounded-2xl p-4 hover:border-bird hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%]"
+                    className="group flex-1 bg-gradient-to-br from-bird/20 to-bird/10 border-2 border-bird/40 rounded-2xl p-4 hover:border-bird hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%] relative overflow-hidden"
                   >
-                            <span className="text-2xl">
-                      🪙
-                    </span>
-                    <p className="text-lg font-bold text-dark">50 convers</p>
-                    <p className="text-sm text-metal mt-1">${pricing.price50.toFixed(0)} MXN</p>
+                    {/* Círculo animado */}
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-bird/20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
+
+                    <div className="relative z-10">
+                      <span className="text-2xl">
+                        🪙
+                      </span>
+                      <p className="text-lg font-bold text-dark">50 convers</p>
+                      <p className="text-sm text-metal mt-1">${pricing.price50.toFixed(0)} MXN</p>
+                    </div>
                   </button>
                   <button
                     onClick={() => {
@@ -411,16 +446,21 @@ export default function DashboardPlan() {
                       setShowConversationsModal(false);
                     }}
                     disabled={buyConversations.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-bird to-bird/60 border-2 border-bird rounded-2xl p-4 hover:shadow-xl transition-all disabled:opacity-50 relative hover:scale-[103%]"
+                    className="group flex-1 bg-gradient-to-br from-bird to-bird/60 border-2 border-bird rounded-2xl p-4 hover:shadow-xl transition-all disabled:opacity-50 relative hover:scale-[103%] overflow-hidden"
                   >
-                    <span className="absolute -top-2 -right-2 bg-dark text-white text-[10px] px-3 py-1 rounded-full font-bold">
+                    <span className="absolute top-2 right-2 bg-dark text-white text-[10px] px-3 py-1 rounded-full font-bold z-20">
                       TOP
                     </span>
-                            <span className="text-2xl">
-                      💵
-                    </span>
-                    <p className="text-lg font-bold text-dark">150 convers</p>
-                    <p className="text-sm text-dark/70 mt-1 font-medium">${pricing.price150.toFixed(0)} MXN</p>
+                    {/* Círculo animado */}
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500" />
+
+                    <div className="relative z-10">
+                      <span className="text-2xl">
+                        💵
+                      </span>
+                      <p className="text-lg font-bold text-dark">150 convers</p>
+                      <p className="text-sm text-dark/70 mt-1 font-medium">${pricing.price150.toFixed(0)} MXN</p>
+                    </div>
                   </button>
                   <button
                     onClick={() => {
@@ -428,13 +468,18 @@ export default function DashboardPlan() {
                       setShowConversationsModal(false);
                     }}
                     disabled={buyConversations.state === "submitting"}
-                    className="flex-1 bg-gradient-to-br from-bird/20 to-bird/10 border-2 border-bird/40 rounded-2xl p-4 hover:border-bird hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%]"
+                    className="group flex-1 bg-gradient-to-br from-bird/20 to-bird/10 border-2 border-bird/40 rounded-2xl p-4 hover:border-bird hover:shadow-lg transition-all disabled:opacity-50 hover:scale-[103%] relative overflow-hidden"
                   >
-                            <span className="text-2xl">
-                      💰
-                    </span>
-                    <p className="text-lg font-bold text-dark">500 convers</p>
-                    <p className="text-sm text-metal mt-1">${pricing.price500.toFixed(0)} MXN</p>
+                    {/* Círculo animado */}
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-bird/20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500" />
+
+                    <div className="relative z-10">
+                      <span className="text-2xl">
+                        💰
+                      </span>
+                      <p className="text-lg font-bold text-dark">500 convers</p>
+                      <p className="text-sm text-metal mt-1">${pricing.price500.toFixed(0)} MXN</p>
+                    </div>
                   </button>
                 </div>
               </motion.div>
