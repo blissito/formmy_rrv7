@@ -398,77 +398,75 @@ export async function action({ request }: ActionFunctionArgs) {
     // 4. Generar un webhook verify token único
     const webhookVerifyToken = `formmy_${chatbotId}_${Date.now()}`;
 
-    // 5. Configurar el webhook automáticamente en Meta con retry logic
+    // 5. Suscribir WABA del usuario a nuestra app con override callback
+    // Según docs oficiales: https://developers.facebook.com/docs/whatsapp/embedded-signup/custom-flows/onboarding-business-app-users
+    // "As a reminder, make sure that you subscribed to the business's WABA when you onboarded the business"
     const webhookUrl = `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`;
-    const webhookConfigUrl = `https://graph.facebook.com/v21.0/${FACEBOOK_APP_ID}/subscriptions`;
+    const subscribeUrl = `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`;
 
     let webhookConfigured = false;
     let lastError: string | null = null;
 
-    // Intentar suscripción con 3 reintentos (exponential backoff)
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      console.log(`🔄 [Webhook] Intento ${attempt}/3 - Configurando webhook...`);
+    console.log(`🔄 [WABA Subscription] Suscribiendo WABA ${wabaId} a la app...`);
 
-      const webhookResponse = await fetch(webhookConfigUrl, {
+    try {
+      const subscribeResponse = await fetch(subscribeUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${longLivedToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          object: 'whatsapp_business_account',
-          callback_url: webhookUrl,
-          fields: 'messages,smb_message_echoes,smb_app_state_sync',
+          // ✅ override_callback_uri: permite multi-tenancy (cada usuario con query param único)
+          override_callback_uri: `${webhookUrl}?chatbotId=${chatbotId}`,
           verify_token: webhookVerifyToken,
-          include_values: true,
         }),
       });
 
-      if (webhookResponse.ok) {
-        const webhookData = await webhookResponse.json();
-        webhookConfigured = webhookData.success === true;
+      if (subscribeResponse.ok) {
+        const subscribeData = await subscribeResponse.json();
+        webhookConfigured = subscribeData.success === true;
 
         if (webhookConfigured) {
-          console.log(`✅ [Webhook] Suscripción exitosa en intento ${attempt}`);
-          break;
+          console.log(`✅ [WABA Subscription] WABA ${wabaId} suscrito exitosamente`);
+          console.log(`✅ [WABA Subscription] Callback URI: ${webhookUrl}?chatbotId=${chatbotId}`);
+        } else {
+          console.warn(`⚠️ [WABA Subscription] Respuesta OK pero success=${subscribeData.success}`);
         }
       } else {
-        lastError = await webhookResponse.text();
-        console.error(`⚠️ [Webhook] Intento ${attempt}/3 falló:`, lastError);
+        lastError = await subscribeResponse.text();
+        console.error(`❌ [WABA Subscription] Falló:`, lastError);
 
-        // Esperar antes de reintentar (exponential backoff: 1s, 2s, 3s)
-        if (attempt < 3) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        try {
+          const errorJson = JSON.parse(lastError);
+          console.error(`   Error Code: ${errorJson.error?.code || 'N/A'}`);
+          console.error(`   Error Message: ${errorJson.error?.message || 'N/A'}`);
+        } catch {
+          // Error no es JSON
         }
       }
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      console.error(`❌ [WABA Subscription] Error:`, err);
     }
 
-    // Verificar suscripción llamando a Graph API (si tenemos businessAccountId)
-    if (webhookConfigured && businessAccountId && businessAccountId !== 'unknown') {
+    // Verificar suscripción (opcional pero recomendado)
+    if (webhookConfigured) {
       try {
-        console.log(`🔍 [Webhook] Verificando suscripción...`);
-        const verifyUrl = `https://graph.facebook.com/v21.0/${businessAccountId}/subscribed_apps`;
+        console.log(`🔍 [WABA Subscription] Verificando suscripción...`);
+        const verifyUrl = `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`;
         const verifyResponse = await fetch(verifyUrl, {
           headers: { 'Authorization': `Bearer ${longLivedToken}` }
         });
 
         if (verifyResponse.ok) {
           const verifyData = await verifyResponse.json();
-          webhookConfigured = verifyData.data?.some((app: any) =>
-            app.subscribed_fields?.includes('messages')
-          );
-
-          if (webhookConfigured) {
-            console.log(`✅ [Webhook] Verificación exitosa - webhook activo`);
-          } else {
-            console.warn(`⚠️ [Webhook] Verificación falló - webhook no encontrado en subscribed_apps`);
-          }
+          console.log(`✅ [WABA Subscription] Apps suscritas:`, JSON.stringify(verifyData, null, 2));
         } else {
-          console.warn(`⚠️ [Webhook] No se pudo verificar suscripción:`, await verifyResponse.text());
+          console.warn(`⚠️ [WABA Subscription] No se pudo verificar:`, await verifyResponse.text());
         }
       } catch (verifyError) {
-        console.error(`❌ [Webhook] Error al verificar suscripción:`, verifyError);
-        // No marcar como fallido si la verificación falla (la suscripción puede estar ok)
+        console.error(`❌ [WABA Subscription] Error verificando:`, verifyError);
       }
     }
 

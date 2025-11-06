@@ -113,9 +113,39 @@ FACEBOOK_BUSINESS_ID=your_business_id
 
 **WhatsApp → Embedded Signup:**
 - Callback URL: `https://formmy-v2.fly.dev/dashboard/integrations`
-- Webhook URL: `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`
 
-### 3. Permisos Requeridos
+### 3. Webhook Configuration (CRÍTICO - UNA VEZ)
+
+**⚠️ IMPORTANTE**: El webhook debe configurarse **manualmente UNA SOLA VEZ** en Meta App Dashboard. WhatsApp NO soporta configuración programática de webhooks.
+
+**Ubicación**: `App Dashboard → WhatsApp → Configuration → Webhooks`
+
+**Configuración requerida:**
+```
+Callback URL: https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook
+Verify Token: FORMMY_WEBHOOK_VERIFY_TOKEN (variable de entorno global)
+```
+
+**Webhook Fields a suscribir:**
+- ✅ `messages` - Mensajes entrantes
+- ✅ `smb_message_echoes` - Mensajes enviados por usuario vía WhatsApp Business App
+- ✅ `smb_app_state_sync` - Estado de la app móvil del usuario
+
+**Cómo funciona el multi-tenancy:**
+
+Por cada usuario que conecte su WhatsApp (Embedded Signup):
+1. Frontend → Embedded Signup → accessToken + WABA ID
+2. Backend llama a: `POST /{WABA_ID}/subscribed_apps` con:
+   ```json
+   {
+     "override_callback_uri": "https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook?chatbotId=abc123",
+     "verify_token": "formmy_abc123_1234567890"
+   }
+   ```
+3. Meta enruta mensajes de ese WABA al callback con `?chatbotId=abc123`
+4. Webhook handler identifica chatbot por `phoneNumberId` del payload
+
+### 4. Permisos Requeridos
 
 **App Review (opcional para Development):**
 - `whatsapp_business_management` (Standard Access)
