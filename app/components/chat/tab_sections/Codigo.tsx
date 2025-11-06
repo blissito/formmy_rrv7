@@ -897,7 +897,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                       }}
                     />
 
-                    <WhatsAppTemplateList chatbotId={chatbot.id} />
+                    {/* TODO: WhatsAppTemplateList debería mostrarse en un modal separado */}
+                    {/* <WhatsAppTemplateList chatbotId={chatbot.id} /> */}
                   </div>
                 );
               })()}

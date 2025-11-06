@@ -16,6 +16,10 @@ RUN npm install --no-save --ignore-scripts @livekit/rtc-node-linux-x64-musl || e
 # Copy source code
 COPY . .
 
+# Build arguments for VITE environment variables
+ARG VITE_FACEBOOK_APP_ID
+ARG VITE_FACEBOOK_CONFIG_ID
+
 # Generate Prisma client for MongoDB and build
 RUN npx prisma generate
 RUN npm run build

@@ -21,6 +21,10 @@ primary_region = 'dfw'
   cpus = 2
   memory = "2048mb"  # Aumentado para soportar app + worker
 
+[build.args]
+  VITE_FACEBOOK_APP_ID = "1128273322061107"
+  VITE_FACEBOOK_CONFIG_ID = "1306050453776674"
+
 [env]
   NODE_ENV = "production"
   PORT = "3000"
