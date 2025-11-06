@@ -19,7 +19,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const userIdOrEmail = session.get("userId");
 
     if (!userIdOrEmail) {
-      return Response.json({ error: "No autenticado" }, { status: 401 });
+      return new Response(JSON.stringify({ error: "No autenticado" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Obtener integrationId de query params
@@ -27,7 +30,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const integrationId = url.searchParams.get("integrationId");
 
     if (!integrationId) {
-      return Response.json({ error: "integrationId requerido" }, { status: 400 });
+      return new Response(JSON.stringify({ error: "integrationId requerido" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Verificar que la integración pertenece al usuario
@@ -37,7 +43,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     if (!integration) {
-      return Response.json({ error: "Integración no encontrada" }, { status: 404 });
+      return new Response(JSON.stringify({ error: "Integración no encontrada" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Obtener userId del usuario autenticado
@@ -47,25 +56,30 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     if (!user || integration.chatbot.userId !== user.id) {
-      return Response.json({ error: "No autorizado" }, { status: 403 });
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Obtener estado de sincronización
     const syncStatus = await WhatsAppSyncService.getSyncStatus(integrationId);
 
-    return Response.json({
+    return new Response(JSON.stringify({
       integrationId,
       syncStatus: syncStatus?.syncStatus || null,
       syncAttempts: syncStatus?.syncAttempts || 0,
       syncError: syncStatus?.syncError || null,
-      syncCompletedAt: syncStatus?.syncCompletedAt || null,
+      syncCompletedAt: syncStatus?.syncCompletedAt?.toISOString() || null,
+    }), {
+      headers: { "Content-Type": "application/json" }
     });
   } catch (error) {
     console.error("[WhatsApp Sync API] Error:", error);
-    return Response.json(
-      { error: "Error al obtener estado de sincronización" },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: "Error al obtener estado de sincronización" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }
 
@@ -74,7 +88,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
  */
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== "POST") {
-    return Response.json({ error: "Method not allowed" }, { status: 405 });
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
   try {
@@ -83,7 +100,10 @@ export async function action({ request }: ActionFunctionArgs) {
     const userIdOrEmail = session.get("userId");
 
     if (!userIdOrEmail) {
-      return Response.json({ error: "No autenticado" }, { status: 401 });
+      return new Response(JSON.stringify({ error: "No autenticado" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Obtener integrationId del body
@@ -91,7 +111,10 @@ export async function action({ request }: ActionFunctionArgs) {
     const { integrationId } = body;
 
     if (!integrationId) {
-      return Response.json({ error: "integrationId requerido" }, { status: 400 });
+      return new Response(JSON.stringify({ error: "integrationId requerido" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Verificar que la integración pertenece al usuario
@@ -101,7 +124,10 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     if (!integration) {
-      return Response.json({ error: "Integración no encontrada" }, { status: 404 });
+      return new Response(JSON.stringify({ error: "Integración no encontrada" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Obtener userId del usuario autenticado
@@ -111,28 +137,33 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     if (!user || integration.chatbot.userId !== user.id) {
-      return Response.json({ error: "No autorizado" }, { status: 403 });
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Reintentar sincronización
     const result = await WhatsAppSyncService.retrySync(integrationId);
 
     if (!result.success) {
-      return Response.json(
-        { error: result.error || "Error al reintentar sincronización" },
-        { status: 500 }
-      );
+      return new Response(JSON.stringify({ error: result.error || "Error al reintentar sincronización" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
-    return Response.json({
+    return new Response(JSON.stringify({
       success: true,
       message: "Sincronización iniciada. Los webhooks llegarán automáticamente.",
+    }), {
+      headers: { "Content-Type": "application/json" }
     });
   } catch (error) {
     console.error("[WhatsApp Sync API] Error:", error);
-    return Response.json(
-      { error: "Error al reintentar sincronización" },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: "Error al reintentar sincronización" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }

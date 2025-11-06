@@ -269,18 +269,27 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             }
           }
         } else if ((change.field as string) === "smb_app_state_sync" && change.value) {
-          // Process app state sync - tracks mobile app online/offline status
+          // Process state_sync webhook - contactos sincronizados desde WhatsApp Business App
           try {
-            const phoneNumberId = (change.value as any).phone_number_id;
-            const appState = (change.value as any).app_state; // "ONLINE" | "OFFLINE"
+            const syncData = change.value as any;
+            const phoneNumberId = syncData.metadata?.phone_number_id || syncData.phone_number_id;
 
-            console.log(`📱 [App State Sync] Phone ${phoneNumberId}: ${appState}`);
+            // Puede contener: app_state (ONLINE/OFFLINE) O state_sync (contactos)
+            const appState = syncData.app_state;
+            const stateSyncArray = syncData.state_sync;
 
             // Find integration by phone number
             const integration = await findIntegrationByPhoneNumber(phoneNumberId);
 
-            if (integration) {
-              // Update metadata with app mobile state
+            if (!integration) {
+              console.warn(`⚠️ [State Sync] Integration not found for phone ${phoneNumberId}`);
+              continue;
+            }
+
+            // Case 1: App State (ONLINE/OFFLINE)
+            if (appState) {
+              console.log(`📱 [App State] Phone ${phoneNumberId}: ${appState}`);
+
               await db.integration.update({
                 where: { id: integration.id },
                 data: {
@@ -293,22 +302,191 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 }
               });
 
-              console.log(`✅ [App State Sync] Updated metadata for integration ${integration.id}`);
-
               results.push({
                 success: true,
-                type: 'app_state_sync',
+                type: 'app_state',
                 phoneNumberId,
                 appState
               });
-            } else {
-              console.warn(`⚠️ [App State Sync] Integration not found for phone ${phoneNumberId}`);
+            }
+
+            // Case 2: Contacts Sync
+            if (stateSyncArray && Array.isArray(stateSyncArray)) {
+              console.log(`📇 [Contacts Sync] Phone ${phoneNumberId}: ${stateSyncArray.length} contacts`);
+
+              let addedCount = 0;
+              let removedCount = 0;
+
+              for (const syncItem of stateSyncArray) {
+                if (syncItem.type === "contact") {
+                  const action = syncItem.action; // "add" or "remove"
+                  const contact = syncItem.contact;
+
+                  if (action === "add") {
+                    // Crear o actualizar contacto
+                    try {
+                      await db.contact.upsert({
+                        where: {
+                          chatbotId_phone: {
+                            chatbotId: integration.chatbotId,
+                            phone: contact.phone_number,
+                          }
+                        },
+                        create: {
+                          chatbotId: integration.chatbotId,
+                          name: contact.full_name || contact.first_name || null,
+                          phone: contact.phone_number,
+                          source: "whatsapp",
+                          status: "NEW",
+                        },
+                        update: {
+                          name: contact.full_name || contact.first_name || null,
+                          source: "whatsapp",
+                        },
+                      });
+                      addedCount++;
+                    } catch (err) {
+                      console.error(`❌ [Contacts Sync] Error upserting contact ${contact.phone_number}:`, err);
+                    }
+                  } else if (action === "remove") {
+                    // Eliminar contacto (opcional - podrías marcar como inactivo en lugar de eliminar)
+                    try {
+                      await db.contact.deleteMany({
+                        where: {
+                          chatbotId: integration.chatbotId,
+                          phone: contact.phone_number,
+                        },
+                      });
+                      removedCount++;
+                    } catch (err) {
+                      console.error(`❌ [Contacts Sync] Error deleting contact ${contact.phone_number}:`, err);
+                    }
+                  }
+                }
+              }
+
+              console.log(`✅ [Contacts Sync] Processed ${addedCount} added, ${removedCount} removed`);
+
+              results.push({
+                success: true,
+                type: 'contacts_sync',
+                phoneNumberId,
+                added: addedCount,
+                removed: removedCount,
+              });
             }
           } catch (error) {
-            console.error("Error processing app_state_sync:", error);
+            console.error("Error processing smb_app_state_sync:", error);
             results.push({
               success: false,
-              type: 'app_state_sync',
+              type: 'state_sync',
+              error: error instanceof Error ? error.message : "Unknown error"
+            });
+          }
+        } else if ((change.field as string) === "history" && change.value) {
+          // Process history sync webhook - historical conversations from WhatsApp Business App
+          try {
+            const historyData = change.value as any;
+            const phoneNumberId = historyData.phone_number_id;
+            const messages = historyData.messages || [];
+            const progress = historyData.progress || 0;
+            const phase = historyData.phase || "unknown";
+
+            console.log(`📜 [History Sync] Phone ${phoneNumberId}: ${messages.length} messages (${progress}% complete, phase: ${phase})`);
+
+            // Find integration by phone number
+            const integration = await findIntegrationByPhoneNumber(phoneNumberId);
+
+            if (!integration) {
+              console.warn(`⚠️ [History Sync] Integration not found for phone ${phoneNumberId}`);
+              results.push({
+                success: false,
+                type: 'history',
+                phoneNumberId,
+                error: 'Integration not found'
+              });
+              continue;
+            }
+
+            // Process each historical message
+            let processedCount = 0;
+            let skippedCount = 0;
+
+            for (const msg of messages) {
+              try {
+                // Determine sender and receiver
+                const isFromCustomer = msg.type === "message"; // Messages from customer
+                const isFromBusiness = msg.type === "message_echo"; // Messages from business (echoes)
+
+                if (!isFromCustomer && !isFromBusiness) {
+                  skippedCount++;
+                  continue;
+                }
+
+                const customerPhone = isFromCustomer ? msg.from : msg.to;
+
+                // Create or get conversation
+                const conversation = await getOrCreateConversation(
+                  customerPhone,
+                  integration.chatbotId
+                );
+
+                // Save message
+                await db.message.create({
+                  data: {
+                    conversationId: conversation.id,
+                    content: msg.text?.body || msg.caption || '',
+                    role: isFromCustomer ? "USER" : "ASSISTANT",
+                    channel: "whatsapp_history",
+                    externalMessageId: msg.id,
+                    tokens: 0,
+                    responseTime: 0,
+                    createdAt: new Date(parseInt(msg.timestamp) * 1000), // Convert Unix timestamp
+                  }
+                });
+
+                processedCount++;
+              } catch (msgError) {
+                console.error(`❌ [History Sync] Error processing message ${msg.id}:`, msgError);
+                skippedCount++;
+              }
+            }
+
+            // Update integration metadata with sync progress
+            await db.integration.update({
+              where: { id: integration.id },
+              data: {
+                metadata: {
+                  ...(integration.metadata as any || {}),
+                  lastHistorySyncProgress: progress,
+                  lastHistorySyncPhase: phase,
+                  lastHistorySyncAt: new Date().toISOString(),
+                },
+                syncStatus: progress === 100 ? "completed" : "syncing",
+                syncCompletedAt: progress === 100 ? new Date() : undefined,
+              }
+            });
+
+            console.log(`✅ [History Sync] Processed ${processedCount}/${messages.length} messages (skipped: ${skippedCount})`);
+
+            if (progress === 100) {
+              console.log(`🎉 [History Sync] Sync completed for integration ${integration.id}`);
+            }
+
+            results.push({
+              success: true,
+              type: 'history',
+              phoneNumberId,
+              progress,
+              phase,
+              processed: processedCount,
+              skipped: skippedCount,
+            });
+          } catch (error) {
+            console.error("Error processing history sync:", error);
+            results.push({
+              success: false,
+              type: 'history',
               error: error instanceof Error ? error.message : "Unknown error"
             });
           }

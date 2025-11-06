@@ -315,6 +315,7 @@ model Contact {
 
   // Índices para búsqueda eficiente
   @@index([email])
+  @@unique([chatbotId, phone]) // Un teléfono único por chatbot
   @@index([chatbotId])
   @@index([capturedAt])
 }
