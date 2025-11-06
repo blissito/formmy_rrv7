@@ -418,7 +418,17 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         }
 
         const data = await response.json();
+
+        // ✅ Solo recargar si la desconexión fue exitosa
+        if (data.success !== false) {
+          // Recargar la página para reflejar los cambios en el loader
+          // Esto evita que los componentes (como WhatsAppTemplateList) intenten usar tokens inválidos
+          window.location.reload();
+        } else {
+          throw new Error(data.error || 'Error al desconectar');
+        }
       } else {
+        console.warn('⚠️ [Disconnect] Integración no encontrada:', integrationId);
       }
     } catch (error) {
       console.error("❌ Error al desconectar integración:", error);

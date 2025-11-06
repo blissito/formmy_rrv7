@@ -29,6 +29,8 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     throw new Response("Chatbot slug is required", { status: 400 });
   }
 
+  // WhatsApp Embedded Signup NO usa OAuth redirect - usa window.postMessage
+
   // Primero intentar encontrar por slug
   let chatbot = await db.chatbot.findFirst({
     where: {
@@ -227,6 +229,75 @@ export default function ChatbotDetailRoute({
       setCurrentTab(tabFromQuery);
     }
   }, [tabFromQuery, currentTab, setCurrentTab]);
+
+  // ✅ Procesar callback de WhatsApp Embedded Signup (Authorization Code Flow)
+  useEffect(() => {
+    const handleWhatsAppCallback = async () => {
+      const code = searchParams.get('code');
+      const state = searchParams.get('state');
+      const error = searchParams.get('error');
+      const errorDescription = searchParams.get('error_description');
+
+      if (error) {
+        console.error('❌ [WhatsApp Callback] Error:', error, errorDescription);
+        alert(`Error conectando WhatsApp: ${errorDescription || error}`);
+        return;
+      }
+
+      if (code) {
+        console.log('✅ [WhatsApp Callback] Authorization code recibido:', code.substring(0, 20) + '...');
+
+        // Validar state (CSRF protection)
+        const storedState = sessionStorage.getItem('whatsapp_oauth_state');
+        if (storedState && state !== storedState) {
+          console.error('❌ [WhatsApp Callback] State mismatch - posible CSRF attack');
+          alert('Error de seguridad: validación de state falló');
+          return;
+        }
+
+        // Limpiar session storage
+        sessionStorage.removeItem('whatsapp_oauth_state');
+        const storedChatbotId = sessionStorage.getItem('whatsapp_oauth_chatbotId');
+        sessionStorage.removeItem('whatsapp_oauth_chatbotId');
+
+        // Intercambiar code por access_token
+        try {
+          const redirectUri = `${window.location.origin}/dashboard/chat/${chatbot.slug || chatbot.id}`;
+
+          const response = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatbotId: storedChatbotId || chatbot.id,
+              code: code,
+              redirectUri: redirectUri
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok && response.status !== 207) {
+            throw new Error(data.error || 'Error al conectar WhatsApp');
+          }
+
+          console.log('✅ [WhatsApp Callback] Integración exitosa!');
+
+          // Limpiar URL (remover query params) y recargar datos
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete('code');
+          cleanUrl.searchParams.delete('state');
+          window.history.replaceState({}, '', cleanUrl.toString());
+
+          revalidator.revalidate();
+        } catch (err) {
+          console.error('❌ [WhatsApp Callback] Error:', err);
+          alert(`Error al procesar WhatsApp: ${err instanceof Error ? err.message : 'Error desconocido'}`);
+        }
+      }
+    };
+
+    handleWhatsAppCallback();
+  }, [searchParams, chatbot.id, chatbot.slug, revalidator]);
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);

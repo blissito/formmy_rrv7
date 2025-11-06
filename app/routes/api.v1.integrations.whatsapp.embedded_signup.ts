@@ -92,17 +92,33 @@ export async function action({ request }: ActionFunctionArgs) {
     const code = body.authResponse?.code || body.code;
 
 
-    // Validar que se recibió accessToken O code
-    if (!body.accessToken && !code) {
-      console.error("❌ [Embedded Signup] ERROR: No se recibió accessToken ni código de autorización");
-      console.error("   authResponse:", JSON.stringify(body.authResponse, null, 2));
+    // ✅ Validar flujo: Coexistencia (wabaId + phoneNumberId) O OAuth (accessToken/code)
+    const isCoexistenceFlow = body.wabaId && body.phoneNumberId;
+    const isOAuthFlow = body.accessToken || code;
+
+    if (!isCoexistenceFlow && !isOAuthFlow) {
+      console.error("❌ [Embedded Signup] ERROR: Flujo desconocido");
+      console.error("   - Coexistencia requiere: wabaId + phoneNumberId");
+      console.error("   - OAuth requiere: accessToken O code");
+      console.error("   Recibido:", JSON.stringify({
+        wabaId: body.wabaId,
+        phoneNumberId: body.phoneNumberId,
+        hasAccessToken: !!body.accessToken,
+        hasCode: !!code
+      }, null, 2));
       return Response.json(
         {
-          error: "No se recibió accessToken ni código de autorización",
-          hint: "Verifica que el flujo de Embedded Signup se completó correctamente"
+          error: "Datos insuficientes para conectar WhatsApp",
+          hint: "Se requiere wabaId + phoneNumberId (coexistencia) O accessToken/code (OAuth)"
         },
         { status: 400 }
       );
+    }
+
+    console.log(`✅ [Embedded Signup] Flujo detectado: ${isCoexistenceFlow ? '🤝 Coexistencia' : '🔐 OAuth'}`);
+    if (isCoexistenceFlow) {
+      console.log(`   WABA ID: ${body.wabaId}`);
+      console.log(`   Phone Number ID: ${body.phoneNumberId}`);
     }
 
     // Validar que el chatbot pertenece al usuario
@@ -145,10 +161,29 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
 
-    // ✅ Obtener access token (puede venir directo o necesitar exchange)
+    // ✅ Obtener access token según el flujo
     let accessToken: string;
 
-    if (body.accessToken) {
+    if (isCoexistenceFlow) {
+      // 🤝 Coexistencia: Usar System User Token de la app
+      // En coexistencia, Meta mantiene el acceso a la WABA y nosotros usamos nuestro System User Token
+      const SYSTEM_USER_TOKEN = process.env.FACEBOOK_SYSTEM_USER_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN;
+
+      if (!SYSTEM_USER_TOKEN) {
+        console.error("❌ [Coexistencia] Missing FACEBOOK_SYSTEM_USER_TOKEN en .env");
+        return Response.json(
+          {
+            error: "Configuración de Sistema incompleta",
+            hint: "Se requiere FACEBOOK_SYSTEM_USER_TOKEN para flujo de coexistencia"
+          },
+          { status: 500 }
+        );
+      }
+
+      accessToken = SYSTEM_USER_TOKEN;
+      console.log(`✅ [Coexistencia] Usando System User Token de la app`);
+
+    } else if (body.accessToken) {
       // ✅ Token directo desde FB.login() sin response_type: 'code'
       console.log(`✅ [Direct Token] Access Token recibido directamente: ${body.accessToken.substring(0, 20)}...`);
       console.log(`🔄 [Direct Token] wabaId: ${body.wabaId || 'N/A'}`);
@@ -161,18 +196,28 @@ export async function action({ request }: ActionFunctionArgs) {
       console.log(`🔄 [Token Exchange] phoneNumberId: ${body.phoneNumberId || 'N/A'}`);
       console.log(`🔄 [Token Exchange] redirectUri: ${body.redirectUri || 'N/A'}`);
 
-      const tokenExchangeUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
-      tokenExchangeUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
-      tokenExchangeUrl.searchParams.append('client_secret', FACEBOOK_APP_SECRET);
-      tokenExchangeUrl.searchParams.append('code', code);
+      console.log(`🔄 [Token Exchange] Intercambiando código con Meta...`);
+      console.log(`🔄 [Token Exchange] Redirect URI: ${body.redirectUri || 'N/A'}`);
+
+      // ✅ Usar application/x-www-form-urlencoded (como requiere Meta)
+      const tokenParams = new URLSearchParams({
+        client_id: FACEBOOK_APP_ID,
+        client_secret: FACEBOOK_APP_SECRET,
+        code: code,
+        grant_type: 'authorization_code'
+      });
 
       if (body.redirectUri) {
-        tokenExchangeUrl.searchParams.append('redirect_uri', body.redirectUri);
+        tokenParams.append('redirect_uri', body.redirectUri);
       }
 
-      console.log(`🔄 [Token Exchange] Intercambiando código con Meta...`);
-
-      const tokenResponse = await fetch(tokenExchangeUrl.toString());
+      const tokenResponse = await fetch('https://graph.facebook.com/v21.0/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: tokenParams.toString()
+      });
 
       if (!tokenResponse.ok) {
         const errorData = await tokenResponse.text();
@@ -398,81 +443,79 @@ export async function action({ request }: ActionFunctionArgs) {
     // 4. Generar un webhook verify token único
     const webhookVerifyToken = `formmy_${chatbotId}_${Date.now()}`;
 
-    // 5. Suscribir WABA del usuario a nuestra app con override callback
-    // Según docs oficiales: https://developers.facebook.com/docs/whatsapp/embedded-signup/custom-flows/onboarding-business-app-users
-    // "As a reminder, make sure that you subscribed to the business's WABA when you onboarded the business"
-    const webhookUrl = `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`;
-    const subscribeUrl = `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`;
+    // 5. Configurar webhook
+    // ✅ En COEXISTENCIA: Meta gestiona el webhook centralmente desde App Dashboard
+    //    NO podemos usar override_callback_uri porque Meta mantiene control del WABA
+    //    El webhook global (configurado en App Dashboard) recibe TODOS los mensajes
+    //    y usa chatbotId del query param para enrutar: /webhook?chatbotId=xxx
+    //
+    // ✅ En OAUTH: Podemos suscribir WABA con override_callback_uri
+    //
+    // Docs: https://developers.facebook.com/docs/whatsapp/embedded-signup/webhooks
 
     let webhookConfigured = false;
     let lastError: string | null = null;
 
-    console.log(`🔄 [WABA Subscription] Suscribiendo WABA ${wabaId} a la app...`);
+    if (isCoexistenceFlow) {
+      // 🤝 Coexistencia: Webhook se configura UNA VEZ en App Dashboard
+      console.log(`✅ [Coexistence] Webhook gestionado por Meta App Dashboard`);
+      console.log(`   URL esperada: https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`);
+      console.log(`   Routing: El webhook usa chatbotId del query param para enrutar mensajes`);
+      webhookConfigured = true; // Asumimos que el webhook global ya está configurado
 
-    try {
-      const subscribeResponse = await fetch(subscribeUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${longLivedToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          // ✅ override_callback_uri: permite multi-tenancy (cada usuario con query param único)
-          override_callback_uri: `${webhookUrl}?chatbotId=${chatbotId}`,
-          verify_token: webhookVerifyToken,
-        }),
-      });
+    } else {
+      // 🔐 OAuth: Suscribir WABA con override_callback_uri
+      const webhookUrl = `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`;
+      const subscribeUrl = `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`;
 
-      if (subscribeResponse.ok) {
-        const subscribeData = await subscribeResponse.json();
-        webhookConfigured = subscribeData.success === true;
+      console.log(`🔄 [OAuth] Suscribiendo WABA ${wabaId} con override callback...`);
 
-        if (webhookConfigured) {
-          console.log(`✅ [WABA Subscription] WABA ${wabaId} suscrito exitosamente`);
-          console.log(`✅ [WABA Subscription] Callback URI: ${webhookUrl}?chatbotId=${chatbotId}`);
-        } else {
-          console.warn(`⚠️ [WABA Subscription] Respuesta OK pero success=${subscribeData.success}`);
-        }
-      } else {
-        lastError = await subscribeResponse.text();
-        console.error(`❌ [WABA Subscription] Falló:`, lastError);
-
-        try {
-          const errorJson = JSON.parse(lastError);
-          console.error(`   Error Code: ${errorJson.error?.code || 'N/A'}`);
-          console.error(`   Error Message: ${errorJson.error?.message || 'N/A'}`);
-        } catch {
-          // Error no es JSON
-        }
-      }
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
-      console.error(`❌ [WABA Subscription] Error:`, err);
-    }
-
-    // Verificar suscripción (opcional pero recomendado)
-    if (webhookConfigured) {
       try {
-        console.log(`🔍 [WABA Subscription] Verificando suscripción...`);
-        const verifyUrl = `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`;
-        const verifyResponse = await fetch(verifyUrl, {
-          headers: { 'Authorization': `Bearer ${longLivedToken}` }
+        const subscribeResponse = await fetch(subscribeUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${longLivedToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            override_callback_uri: `${webhookUrl}?chatbotId=${chatbotId}`,
+            verify_token: webhookVerifyToken,
+          }),
         });
 
-        if (verifyResponse.ok) {
-          const verifyData = await verifyResponse.json();
-          console.log(`✅ [WABA Subscription] Apps suscritas:`, JSON.stringify(verifyData, null, 2));
+        if (subscribeResponse.ok) {
+          const subscribeData = await subscribeResponse.json();
+          webhookConfigured = subscribeData.success === true;
+
+          if (webhookConfigured) {
+            console.log(`✅ [OAuth] WABA ${wabaId} suscrito exitosamente`);
+            console.log(`✅ [OAuth] Callback URI: ${webhookUrl}?chatbotId=${chatbotId}`);
+          } else {
+            console.warn(`⚠️ [OAuth] Respuesta OK pero success=${subscribeData.success}`);
+          }
         } else {
-          console.warn(`⚠️ [WABA Subscription] No se pudo verificar:`, await verifyResponse.text());
+          lastError = await subscribeResponse.text();
+          console.error(`❌ [OAuth] Falló:`, lastError);
+
+          try {
+            const errorJson = JSON.parse(lastError);
+            console.error(`   Error Code: ${errorJson.error?.code || 'N/A'}`);
+            console.error(`   Error Message: ${errorJson.error?.message || 'N/A'}`);
+          } catch {
+            // Error no es JSON
+          }
         }
-      } catch (verifyError) {
-        console.error(`❌ [WABA Subscription] Error verificando:`, verifyError);
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        console.error(`❌ [OAuth] Error:`, err);
       }
     }
 
     // 6. Crear o actualizar la integración en la base de datos
 
-    const encryptedToken = encryptText(longLivedToken);
+    // ✅ En coexistencia NO guardamos token (usamos System User Token global)
+    // Solo guardamos token en flujo OAuth donde cada usuario tiene su propio token
+    const encryptedToken = isCoexistenceFlow ? null : encryptText(longLivedToken);
 
     const existingIntegration = await db.integration.findFirst({
       where: {

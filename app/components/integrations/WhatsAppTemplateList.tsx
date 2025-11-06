@@ -47,6 +47,10 @@ export function WhatsAppTemplateList({ chatbotId, onTemplateSelect }: TemplateLi
       const data = await response.json();
 
       if (!response.ok) {
+        // Si es error 401, significa que la integración está desconectada o tiene token inválido
+        if (response.status === 401) {
+          throw new Error('WhatsApp desconectado o token inválido. Por favor reconecta tu cuenta de WhatsApp.');
+        }
         throw new Error(data.error || 'Failed to fetch templates');
       }
 

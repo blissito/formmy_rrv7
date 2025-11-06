@@ -20,7 +20,7 @@ export default [
     route("plan", "routes/dashboard.plan.tsx"),
     route("uso", "routes/dashboard.uso.tsx"),
     route("api-keys", "routes/dashboard.api-keys_.tsx"),
-    // WhatsApp callback eliminado - ahora se usa popup (FB.login) en lugar de redirect
+    route("integrations/whatsapp/callback", "routes/dashboard.integrations_.whatsapp_.callback.tsx"),
     route("formmys", "routes/dashboard.formmys.tsx"),
     route("formmys/new", "routes/dashboard.formmys.new.tsx"),
     route("formmys/:projectId", "routes/dashboard.formmys_.$projectId.tsx"),
