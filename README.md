@@ -4,7 +4,7 @@
 
 Production SaaS for creating intelligent chatbots with RAG, tool calling, and document parsing capabilities.
 
-**Live**: https://formmy-v2.fly.dev
+**Live**: https://formmy.app
 **Stack**: React Router v7, Prisma, MongoDB, Fly.io, Stripe, AWS SES
 
 ---
@@ -65,7 +65,7 @@ import { FormmyParser } from './sdk/formmy-parser';
 
 const parser = new FormmyParser({
   apiKey: 'sk_live_xxxxx',
-  baseUrl: 'https://formmy-v2.fly.dev',
+  baseUrl: 'https://formmy.app',
   debug: true,
   retries: 3
 });
@@ -773,7 +773,7 @@ Proprietary - All rights reserved
 
 ## 🔗 Links
 
-- 🌐 **Production**: https://formmy-v2.fly.dev
+- 🌐 **Production**: https://formmy.app
 - 📧 **Support**: support@formmy.app
 - 🐛 **Issues**: [GitHub Issues](https://github.com/blissito/formmy_rrv7/issues)
 - 📚 **SDK Docs**: [/sdk/formmy-parser/README.md](./sdk/formmy-parser/README.md)

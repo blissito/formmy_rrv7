@@ -19,7 +19,7 @@ async function debugWhatsAppTemplates() {
 
   try {
     const response = await fetch(
-      `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp?intent=list_templates&chatbotId=${CHATBOT_ID}`
+      `https://formmy.app/api/v1/integrations/whatsapp?intent=list_templates&chatbotId=${CHATBOT_ID}`
     );
 
     if (!response.ok) {

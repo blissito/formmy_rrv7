@@ -447,6 +447,12 @@ model Integration {
   lastActivity DateTime? // Última actividad registrada
   errorMessage String? // Último mensaje de error
 
+  // Sincronización en segundo plano (WhatsApp contacts/history)
+  syncStatus      String? // "pending" | "syncing" | "completed" | "failed"
+  syncAttempts    Int       @default(0) // Número de intentos de sincronización
+  syncError       String? // Mensaje de error si falla la sincronización
+  syncCompletedAt DateTime? // Timestamp cuando se completó la sincronización
+
   // Metadata JSON para configuración específica de cada integración
   // Ej: VOICE → {ttsVoiceId, voiceWelcome, ttsProvider, sttLanguage}
   metadata Json?

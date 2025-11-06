@@ -2,7 +2,7 @@
 
 API_KEY="sk_live_ZY2gfHB4C-xY-71m-AGTstR589mIgkBT"
 CHATBOT_ID="68f456dca443330f35f8c81d"
-BASE_URL="https://formmy-v2.fly.dev"
+BASE_URL="https://formmy.app"
 
 echo "🧪 Testing RAG API Endpoints"
 echo ""

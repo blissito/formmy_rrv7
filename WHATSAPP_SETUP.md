@@ -115,7 +115,7 @@ Para verificar que todo está configurado correctamente:
    ```
 
    - Espera a que el deploy termine
-   - Abre https://formmy-v2.fly.dev/dashboard/integrations
+   - Abre https://formmy.app/dashboard/integrations
    - Verifica que puedas conectar WhatsApp sin errores
 
 ## 🔧 Troubleshooting

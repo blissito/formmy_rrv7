@@ -12,7 +12,7 @@ import { FormmyParser } from "formmy-sdk";
 // Inicializar cliente (una sola vez)
 const formmyClient = new FormmyParser({
   apiKey: process.env.FORMMY_API_KEY!,
-  baseUrl: "https://formmy-v2.fly.dev",
+  baseUrl: "https://formmy.app",
   debug: true, // Para debugging
 });
 ```
@@ -453,7 +453,7 @@ describe("Formmy SDK", () => {
   beforeAll(() => {
     client = new FormmyParser({
       apiKey: process.env.FORMMY_TEST_API_KEY!,
-      baseUrl: "https://formmy-v2.fly.dev",
+      baseUrl: "https://formmy.app",
     });
   });
 
@@ -485,7 +485,7 @@ describe("Formmy SDK", () => {
 ```bash
 # .env
 FORMMY_API_KEY=sk_live_xxxxxxxxxxxxxxxx
-FORMMY_BASE_URL=https://formmy-v2.fly.dev
+FORMMY_BASE_URL=https://formmy.app
 
 # Para testing
 FORMMY_TEST_API_KEY=sk_test_xxxxxxxxxxxxxxxx
@@ -496,7 +496,7 @@ TEST_CHATBOT_ID=chatbot_test_123
 
 ## Recursos
 
-- **Documentación completa**: https://formmy-v2.fly.dev/docs
-- **API Reference**: https://formmy-v2.fly.dev/dashboard/api-keys
+- **Documentación completa**: https://formmy.app/docs
+- **API Reference**: https://formmy.app/dashboard/api-keys
 - **npm Package**: https://www.npmjs.com/package/formmy-sdk
 - **Soporte**: support@formmy.app

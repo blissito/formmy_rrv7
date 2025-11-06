@@ -35,7 +35,7 @@ import { configure } from 'formmy-sdk';
 
 configure({
   apiKey: 'sk_live_xxxxx',
-  baseUrl: 'https://formmy-v2.fly.dev', // Opcional
+  baseUrl: 'https://formmy.app', // Opcional
 });
 
 // O por env variable

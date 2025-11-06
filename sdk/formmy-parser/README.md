@@ -172,7 +172,7 @@ new Formmy(config?: FormmyConfig | string)
   apiKey?: string;       // Your API key (sk_live_xxx or sk_test_xxx)
                          // Default: process.env.FORMMY_API_KEY
   baseUrl?: string;      // Custom base URL
-                         // Default: https://formmy-v2.fly.dev
+                         // Default: https://formmy.app
   debug?: boolean;       // Enable debug logging (default: false)
   timeout?: number;      // Request timeout in ms (default: 30000)
   retries?: number;      // Number of retries (default: 3)
@@ -630,8 +630,8 @@ const parser = new FormmyParser(process.env.FORMMY_API_KEY!);
 
 - 📧 Email: support@formmy.app
 - 🐛 Issues: [GitHub Issues](https://github.com/your-org/formmy/issues)
-- 📖 Docs: https://formmy-v2.fly.dev/docs
-- 🌐 Website: https://formmy-v2.fly.dev
+- 📖 Docs: https://formmy.app/docs
+- 🌐 Website: https://formmy.app
 
 ---
 

@@ -401,7 +401,7 @@ export default function WhatsAppIntegrationModal({
                   <span className="font-medium">Webhook URL:</span>
                   <button
                     type="button"
-                    onClick={() => copyToClipboard('https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook', 'webhook-url')}
+                    onClick={() => copyToClipboard('https://formmy.app/api/v1/integrations/whatsapp/webhook', 'webhook-url')}
                     className="p-1 hover:bg-gray-100 rounded"
                   >
                     {copiedItem === 'webhook-url' ? (
@@ -411,7 +411,7 @@ export default function WhatsAppIntegrationModal({
                     )}
                   </button>
                 </div>
-                <code className="break-all">https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook</code>
+                <code className="break-all">https://formmy.app/api/v1/integrations/whatsapp/webhook</code>
               </div>
 
               <div className="bg-white p-2 rounded border text-xs">

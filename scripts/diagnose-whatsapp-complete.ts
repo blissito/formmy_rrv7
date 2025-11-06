@@ -283,7 +283,7 @@ async function diagnoseWhatsAppIntegration() {
 
   if (integration && integration.token) {
     console.log("\n2. 🔄 Regenerar token WhatsApp:");
-    console.log("   - Ve a: https://formmy-v2.fly.dev/dashboard/integrations");
+    console.log("   - Ve a: https://formmy.app/dashboard/integrations");
     console.log("   - Click en 'Conectar WhatsApp'");
     console.log("   - Completa el flujo de Embedded Signup");
     console.log("   - Esto generará un token válido nuevo\n");

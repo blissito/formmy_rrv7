@@ -105,10 +105,10 @@ export class FormmyRAG {
   constructor(config: RAGConfig | string) {
     if (typeof config === 'string') {
       this.apiKey = config;
-      this.baseUrl = 'https://formmy-v2.fly.dev';
+      this.baseUrl = 'https://formmy.app';
     } else {
       this.apiKey = config.apiKey;
-      this.baseUrl = config.baseUrl || 'https://formmy-v2.fly.dev';
+      this.baseUrl = config.baseUrl || 'https://formmy.app';
     }
   }
 

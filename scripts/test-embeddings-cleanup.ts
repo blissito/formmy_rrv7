@@ -13,7 +13,7 @@ if (!CHATBOT_ID || !API_KEY) {
   process.exit(1);
 }
 
-const BASE_URL = 'https://formmy-v2.fly.dev';
+const BASE_URL = 'https://formmy.app';
 
 async function testCleanup() {
   console.log('🧪 Testing embeddings cleanup endpoint...\n');

@@ -1,7 +1,7 @@
 # Formmy - Context Esencial
 
 **Stack**: React Router v7, Tailwind, Fly.io, Prisma, MongoDB, OpenRouter, Stripe
-**URL**: https://formmy-v2.fly.dev
+**URL**: https://formmy.app
 
 ## ⚠️ REGLAS CRÍTICAS
 

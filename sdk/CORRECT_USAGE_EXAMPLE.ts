@@ -15,7 +15,7 @@ import { FormmyParser } from "formmy-sdk"; // ✅ Import correcto
 
 const formmyClient = new FormmyParser({
   apiKey: process.env.FORMMY_API_KEY!,
-  baseUrl: process.env.FORMMY_BASE_URL || "https://formmy-v2.fly.dev",
+  baseUrl: process.env.FORMMY_BASE_URL || "https://formmy.app",
   debug: true, // Para ver logs
   timeout: 60000, // 60s timeout
   retries: 3, // Reintentos automáticos

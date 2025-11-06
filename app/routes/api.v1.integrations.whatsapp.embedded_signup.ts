@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
 import { db } from "~/utils/db.server";
 import { getSession } from "~/sessions";
+import { WhatsAppSyncService } from "server/integrations/whatsapp/sync.service";
 
 // Mock encryptText para desarrollo
 const encryptText = (text: string) => `encrypted_${text}`;
@@ -115,11 +116,6 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    console.log(`✅ [Embedded Signup] Flujo detectado: ${isCoexistenceFlow ? '🤝 Coexistencia' : '🔐 OAuth'}`);
-    if (isCoexistenceFlow) {
-      console.log(`   WABA ID: ${body.wabaId}`);
-      console.log(`   Phone Number ID: ${body.phoneNumberId}`);
-    }
 
     // Validar que el chatbot pertenece al usuario
     const chatbot = await db.chatbot.findFirst({
@@ -137,16 +133,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // Extraer datos del message event si están disponibles
     const messageEventData = body.embeddedSignupData;
-    if (messageEventData) {
-      if (messageEventData.ad_account_ids && messageEventData.ad_account_ids.length > 0) {
-      }
-      if (messageEventData.page_ids && messageEventData.page_ids.length > 0) {
-      }
-      if (messageEventData.dataset_ids && messageEventData.dataset_ids.length > 0) {
-      }
-    } else {
-      console.warn(`⚠️ [Message Event] No se recibieron datos del message event (puede ser normal si el evento aún no llegó)`);
-    }
 
     // 1. Intercambiar el código por un token de larga duración
     const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
@@ -164,42 +150,9 @@ export async function action({ request }: ActionFunctionArgs) {
     // ✅ Obtener access token según el flujo
     let accessToken: string;
 
-    if (isCoexistenceFlow) {
-      // 🤝 Coexistencia: Usar System User Token de la app
-      // En coexistencia, Meta mantiene el acceso a la WABA y nosotros usamos nuestro System User Token
-      const SYSTEM_USER_TOKEN = process.env.FACEBOOK_SYSTEM_USER_TOKEN || process.env.FACEBOOK_ACCESS_TOKEN;
-
-      if (!SYSTEM_USER_TOKEN) {
-        console.error("❌ [Coexistencia] Missing FACEBOOK_SYSTEM_USER_TOKEN en .env");
-        return Response.json(
-          {
-            error: "Configuración de Sistema incompleta",
-            hint: "Se requiere FACEBOOK_SYSTEM_USER_TOKEN para flujo de coexistencia"
-          },
-          { status: 500 }
-        );
-      }
-
-      accessToken = SYSTEM_USER_TOKEN;
-      console.log(`✅ [Coexistencia] Usando System User Token de la app`);
-
-    } else if (body.accessToken) {
-      // ✅ Token directo desde FB.login() sin response_type: 'code'
-      console.log(`✅ [Direct Token] Access Token recibido directamente: ${body.accessToken.substring(0, 20)}...`);
-      console.log(`🔄 [Direct Token] wabaId: ${body.wabaId || 'N/A'}`);
-      console.log(`🔄 [Direct Token] phoneNumberId: ${body.phoneNumberId || 'N/A'}`);
+    if (body.accessToken) {
       accessToken = body.accessToken;
     } else if (code) {
-      // ✅ Intercambiar código por token (legacy flow)
-      console.log(`🔄 [Token Exchange] Code: ${code?.substring(0, 20)}...`);
-      console.log(`🔄 [Token Exchange] wabaId: ${body.wabaId || 'N/A'}`);
-      console.log(`🔄 [Token Exchange] phoneNumberId: ${body.phoneNumberId || 'N/A'}`);
-      console.log(`🔄 [Token Exchange] redirectUri: ${body.redirectUri || 'N/A'}`);
-
-      console.log(`🔄 [Token Exchange] Intercambiando código con Meta...`);
-      console.log(`🔄 [Token Exchange] Redirect URI: ${body.redirectUri || 'N/A'}`);
-
-      // ✅ Usar application/x-www-form-urlencoded (como requiere Meta)
       const tokenParams = new URLSearchParams({
         client_id: FACEBOOK_APP_ID,
         client_secret: FACEBOOK_APP_SECRET,
@@ -221,12 +174,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
       if (!tokenResponse.ok) {
         const errorData = await tokenResponse.text();
-        console.error(`\n${'❌'.repeat(40)}`);
         console.error(`❌ [Embedded Signup] Token exchange FAILED`);
         console.error(`   HTTP Status: ${tokenResponse.status} ${tokenResponse.statusText}`);
         console.error(`   Client ID usado: ${FACEBOOK_APP_ID}`);
         console.error(`   Code usado: ${code?.substring(0, 20)}...`);
-        console.error(`   Response de Meta:`);
 
         try {
           const errorJson = JSON.parse(errorData);
@@ -238,8 +189,6 @@ export async function action({ request }: ActionFunctionArgs) {
         } catch {
           console.error(`   Raw Error: ${errorData}`);
         }
-
-        console.error(`${'❌'.repeat(40)}\n`);
 
         return Response.json(
           {
@@ -253,8 +202,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
       const tokenData: MetaTokenExchangeResponse = await tokenResponse.json();
       accessToken = tokenData.access_token;
-
-      console.log(`✅ [Token Exchange] Token obtenido exitosamente`);
     } else {
       console.error(`❌ [Embedded Signup] No se recibió accessToken ni code`);
       return Response.json(
@@ -263,8 +210,33 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    // Aquí accessToken ya está definido (directo o desde exchange)
-    const longLivedToken = accessToken;
+    // ✅ Intercambiar short-lived token por long-lived token (60 días)
+    let longLivedToken = accessToken;
+
+    // En coexistencia, el token del message event es short-lived → intercambiar
+    if (isCoexistenceFlow && body.accessToken) {
+      const exchangeUrl = 'https://graph.facebook.com/v21.0/oauth/access_token';
+      const exchangeParams = new URLSearchParams({
+        grant_type: 'fb_exchange_token',
+        client_id: FACEBOOK_APP_ID,
+        client_secret: FACEBOOK_APP_SECRET,
+        fb_exchange_token: accessToken,
+      });
+
+      try {
+        const exchangeResponse = await fetch(`${exchangeUrl}?${exchangeParams.toString()}`);
+
+        if (exchangeResponse.ok) {
+          const exchangeData = await exchangeResponse.json();
+          longLivedToken = exchangeData.access_token;
+        } else {
+          const errorText = await exchangeResponse.text();
+          console.error(`❌ [Token Exchange] Failed:`, errorText);
+        }
+      } catch (err) {
+        console.error(`❌ [Token Exchange] Error:`, err);
+      }
+    }
 
     // 2. ✅ USAR wabaId y phoneNumberId del message event (si están disponibles)
     let wabaId = body.wabaId;
@@ -272,10 +244,6 @@ export async function action({ request }: ActionFunctionArgs) {
     let phoneNumber: any = null;
 
     if (wabaId && phoneNumberId) {
-      console.log(`✅ [Message Event] Usando datos del frontend:`);
-      console.log(`   WABA ID: ${wabaId}`);
-      console.log(`   Phone Number ID: ${phoneNumberId}`);
-
       // Obtener información del phone number para display_phone_number y verified_name
       const phoneInfoUrl = `https://graph.facebook.com/v21.0/${phoneNumberId}?fields=id,display_phone_number,verified_name,quality_rating`;
       const phoneInfoResponse = await fetch(phoneInfoUrl, {
@@ -284,20 +252,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
       if (phoneInfoResponse.ok) {
         phoneNumber = await phoneInfoResponse.json();
-        console.log(`✅ [Phone Info] Número: ${phoneNumber.display_phone_number}`);
-        console.log(`✅ [Phone Info] Nombre verificado: ${phoneNumber.verified_name}`);
       } else {
-        console.warn(`⚠️ [Phone Info] No se pudo obtener info del número`);
-        // Crear objeto mínimo
         phoneNumber = { id: phoneNumberId };
       }
 
     } else {
-      // ✅ FALLBACK: Consultar directamente con el System User Token
-      // Este método siempre funciona sin requerir Business Verification
-      console.warn(`⚠️ [Message Event] No se recibió wabaId/phoneNumberId del frontend`);
-      console.warn(`✅ [Fallback] Usando System User Token para obtener WABA...`);
-
+      // ✅ FALLBACK: Consultar WABA con el token del usuario
       // Estrategia 1: Intentar /me/whatsapp_business_accounts primero
       let wabasData: any = null;
       let strategyUsed = '';
@@ -311,17 +271,13 @@ export async function action({ request }: ActionFunctionArgs) {
         if (wabasResponse.ok) {
           wabasData = await wabasResponse.json();
           strategyUsed = '/me/whatsapp_business_accounts';
-          console.log("✅ [Strategy 1] /me/whatsapp_business_accounts funcionó:", JSON.stringify(wabasData, null, 2));
-        } else {
-          console.warn("⚠️ [Strategy 1] /me/whatsapp_business_accounts falló, intentando estrategia 2...");
         }
       } catch (e) {
-        console.warn("⚠️ [Strategy 1] Error:", e);
+        // Silent fail, intentar estrategia 2
       }
 
-      // Estrategia 2: Si la primera falla, usar debug_token + POST al endpoint de system user
+      // Estrategia 2: Si la primera falla, usar debug_token
       if (!wabasData || !wabasData.data || wabasData.data.length === 0) {
-        console.log("🔄 [Strategy 2] Intentando obtener WABA via business discovery...");
 
         // Primero obtener el business manager ID del token
         const debugTokenUrl = `https://graph.facebook.com/v21.0/debug_token?input_token=${longLivedToken}&access_token=${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`;
@@ -337,7 +293,6 @@ export async function action({ request }: ActionFunctionArgs) {
         }
 
         const debugData = await debugResponse.json();
-        console.log("🔍 [Strategy 2] Debug token data:", JSON.stringify(debugData, null, 2));
 
         // Buscar granular_scopes con whatsapp_business_messaging o whatsapp_business_management
         const granularScopes = debugData.data?.granular_scopes || [];
@@ -355,10 +310,8 @@ export async function action({ request }: ActionFunctionArgs) {
         }
 
         if (whatsappScope && whatsappScope.target_ids && whatsappScope.target_ids.length > 0) {
-          // ✅ Encontramos WABA IDs en granular_scopes
           wabaId = whatsappScope.target_ids[0];
-          strategyUsed = `debug_token granular_scopes (${whatsappScope.scope})`;
-          console.log(`✅ [Strategy 2] WABA ID encontrado en ${whatsappScope.scope}: ${wabaId}`);
+          strategyUsed = 'debug_token';
         } else {
           console.error("❌ [Strategy 2] No se encontró WABA en granular_scopes");
           console.error("   Scopes disponibles:", JSON.stringify(granularScopes, null, 2));
@@ -372,7 +325,6 @@ export async function action({ request }: ActionFunctionArgs) {
       }
 
       // Ya tenemos wabaId, ahora obtener phone numbers
-      console.log(`✅ [${strategyUsed}] WABA ID: ${wabaId}`);
 
       const phoneNumbersUrl = `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers`;
       const phoneResponse = await fetch(phoneNumbersUrl, {
@@ -389,7 +341,6 @@ export async function action({ request }: ActionFunctionArgs) {
       }
 
       const phoneData = await phoneResponse.json();
-      console.log("✅ [Graph API] Phone numbers response:", JSON.stringify(phoneData, null, 2));
 
       if (!phoneData.data || phoneData.data.length === 0) {
         console.error(`❌ [Graph API] El WABA ${wabaId} no tiene números de teléfono configurados`);
@@ -411,13 +362,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
       phoneNumber = phoneData.data[0];
       phoneNumberId = phoneNumber.id;
-
-      console.log(`✅ [Fallback Complete] Datos obtenidos exitosamente:`);
-      console.log(`   Strategy: ${strategyUsed}`);
-      console.log(`   WABA ID: ${wabaId}`);
-      console.log(`   Phone Number ID: ${phoneNumberId}`);
-      console.log(`   Display Phone Number: ${phoneNumber.display_phone_number || 'N/A'}`);
-      console.log(`   Verified Name: ${phoneNumber.verified_name || 'N/A'}`);
     }
 
     // 3. Obtener businessAccountId (si no lo tenemos)
@@ -433,9 +377,7 @@ export async function action({ request }: ActionFunctionArgs) {
       if (wabaInfoResponse.ok) {
         const wabaInfo = await wabaInfoResponse.json();
         businessAccountId = wabaInfo.owner_business_info?.id || 'unknown';
-        console.log(`✅ [WABA Info] Business Account ID: ${businessAccountId}`);
       } else {
-        console.warn(`⚠️ [WABA Info] No se pudo obtener business account ID`);
         businessAccountId = 'unknown';
       }
     }
@@ -443,79 +385,27 @@ export async function action({ request }: ActionFunctionArgs) {
     // 4. Generar un webhook verify token único
     const webhookVerifyToken = `formmy_${chatbotId}_${Date.now()}`;
 
-    // 5. Configurar webhook
-    // ✅ En COEXISTENCIA: Meta gestiona el webhook centralmente desde App Dashboard
-    //    NO podemos usar override_callback_uri porque Meta mantiene control del WABA
+    // 5. Webhook Configuration
+    // ✅ En Embedded Signup, Meta gestiona el webhook centralmente desde el App Dashboard
     //    El webhook global (configurado en App Dashboard) recibe TODOS los mensajes
-    //    y usa chatbotId del query param para enrutar: /webhook?chatbotId=xxx
+    //    y el routing se hace con query params: /webhook?chatbotId=xxx
     //
-    // ✅ En OAUTH: Podemos suscribir WABA con override_callback_uri
+    // ⚠️ NO intentamos override_callback_uri porque:
+    //    - Requiere Business Verification completa
+    //    - Falla con error 400/403 en modo Coexistencia
+    //    - NO es necesario - el webhook global funciona perfectamente
     //
     // Docs: https://developers.facebook.com/docs/whatsapp/embedded-signup/webhooks
 
-    let webhookConfigured = false;
-    let lastError: string | null = null;
-
-    if (isCoexistenceFlow) {
-      // 🤝 Coexistencia: Webhook se configura UNA VEZ en App Dashboard
-      console.log(`✅ [Coexistence] Webhook gestionado por Meta App Dashboard`);
-      console.log(`   URL esperada: https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`);
-      console.log(`   Routing: El webhook usa chatbotId del query param para enrutar mensajes`);
-      webhookConfigured = true; // Asumimos que el webhook global ya está configurado
-
-    } else {
-      // 🔐 OAuth: Suscribir WABA con override_callback_uri
-      const webhookUrl = `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`;
-      const subscribeUrl = `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`;
-
-      console.log(`🔄 [OAuth] Suscribiendo WABA ${wabaId} con override callback...`);
-
-      try {
-        const subscribeResponse = await fetch(subscribeUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${longLivedToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            override_callback_uri: `${webhookUrl}?chatbotId=${chatbotId}`,
-            verify_token: webhookVerifyToken,
-          }),
-        });
-
-        if (subscribeResponse.ok) {
-          const subscribeData = await subscribeResponse.json();
-          webhookConfigured = subscribeData.success === true;
-
-          if (webhookConfigured) {
-            console.log(`✅ [OAuth] WABA ${wabaId} suscrito exitosamente`);
-            console.log(`✅ [OAuth] Callback URI: ${webhookUrl}?chatbotId=${chatbotId}`);
-          } else {
-            console.warn(`⚠️ [OAuth] Respuesta OK pero success=${subscribeData.success}`);
-          }
-        } else {
-          lastError = await subscribeResponse.text();
-          console.error(`❌ [OAuth] Falló:`, lastError);
-
-          try {
-            const errorJson = JSON.parse(lastError);
-            console.error(`   Error Code: ${errorJson.error?.code || 'N/A'}`);
-            console.error(`   Error Message: ${errorJson.error?.message || 'N/A'}`);
-          } catch {
-            // Error no es JSON
-          }
-        }
-      } catch (err) {
-        lastError = err instanceof Error ? err.message : String(err);
-        console.error(`❌ [OAuth] Error:`, err);
-      }
-    }
+    // Detectar URL base dinámicamente desde el request
+    const requestUrl = new URL(request.url);
+    const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
 
     // 6. Crear o actualizar la integración en la base de datos
 
-    // ✅ En coexistencia NO guardamos token (usamos System User Token global)
-    // Solo guardamos token en flujo OAuth donde cada usuario tiene su propio token
-    const encryptedToken = isCoexistenceFlow ? null : encryptText(longLivedToken);
+    // ✅ SIEMPRE guardamos el token del usuario (System User Token deprecado)
+    // Tanto en Coexistencia como en OAuth, cada usuario tiene su propio long-lived token
+    const encryptedToken = encryptText(longLivedToken);
 
     const existingIntegration = await db.integration.findFirst({
       where: {
@@ -536,12 +426,12 @@ export async function action({ request }: ActionFunctionArgs) {
           businessAccountId: businessAccountId,
           webhookVerifyToken: webhookVerifyToken,
           isActive: true,
+          syncStatus: "pending", // Will be updated to "syncing" when sync starts
           metadata: {
             coexistence: true,
             featureType: "whatsapp_business_app_onboarding",
             sessionInfoVerified: messageEventData?.sessionInfoVerified || false,
-            webhookConfigured,
-            webhookError: webhookConfigured ? null : lastError,
+            webhookMethod: "global_app_dashboard",
             subscriptionTimestamp: new Date().toISOString(),
           },
         },
@@ -557,12 +447,12 @@ export async function action({ request }: ActionFunctionArgs) {
           businessAccountId: businessAccountId,
           webhookVerifyToken: webhookVerifyToken,
           isActive: true,
+          syncStatus: "pending", // Will be updated to "syncing" when sync starts
           metadata: {
             coexistence: true,
             featureType: "whatsapp_business_app_onboarding",
             sessionInfoVerified: messageEventData?.sessionInfoVerified || false,
-            webhookConfigured,
-            webhookError: webhookConfigured ? null : lastError,
+            webhookMethod: "global_app_dashboard",
             subscriptionTimestamp: new Date().toISOString(),
           },
         },
@@ -570,52 +460,28 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
 
-    // 7. Sincronizar historial de conversaciones (opcional, en background)
-    // Esto se puede hacer con un job en background para no bloquear la respuesta
-    // Por ahora solo marcamos que necesita sincronización
+    // 7. ✅ Iniciar sincronización de contactos e historial (24h límite)
+    // Esto NO bloquea la respuesta - los webhooks llegarán automáticamente
+    try {
+      const syncResult = await WhatsAppSyncService.initializeSync(
+        integration.id,
+        phoneNumberId,
+        longLivedToken
+      );
 
-
-    // Información adicional del message event (si está disponible)
-    if (messageEventData) {
-      if (messageEventData.business_id) {
+      if (!syncResult.success) {
+        console.error(`⚠️ [Embedded Signup] Sync initialization failed:`, syncResult.error);
+        // NO fallar el onboarding si la sincronización falla
+        // El usuario puede reintentarlo manualmente después
+      } else {
+        console.log(`✅ [Embedded Signup] Sync initialized for Integration ${integration.id}`);
       }
-      if (messageEventData.ad_account_ids && messageEventData.ad_account_ids.length > 0) {
-      }
-      if (messageEventData.page_ids && messageEventData.page_ids.length > 0) {
-      }
-      if (messageEventData.dataset_ids && messageEventData.dataset_ids.length > 0) {
-      }
+    } catch (syncError) {
+      console.error(`⚠️ [Embedded Signup] Sync error:`, syncError);
+      // NO fallar el onboarding - solo logear el error
     }
 
-    // Verificar si webhook falló y retornar warning
-    if (!webhookConfigured) {
-      console.warn(`⚠️ [Embedded Signup] WhatsApp conectado pero webhook falló`);
-      return Response.json({
-        error: "WhatsApp conectado pero webhook falló. Verifica configuración en Meta.",
-        integration: {
-          id: integration.id,
-          phoneNumber: phoneNumber?.display_phone_number || 'N/A',
-          verifiedName: phoneNumber?.verified_name || 'N/A',
-          businessAccountId: businessAccountId,
-          phoneNumberId: phoneNumberId,
-          coexistenceMode: true,
-          embeddedSignup: true,
-          token: longLivedToken,
-          ...(messageEventData && {
-            messageEventData: {
-              businessPortfolioId: messageEventData.business_id,
-              adAccountIds: messageEventData.ad_account_ids,
-              pageIds: messageEventData.page_ids,
-              datasetIds: messageEventData.dataset_ids,
-            }
-          })
-        },
-        webhookWarning: true,
-        details: lastError,
-        message: "Integración creada con advertencias. El webhook debe configurarse manualmente.",
-      }, { status: 207 }); // 207 Multi-Status
-    }
-
+    // 8. Retornar success
     return Response.json({
       success: true,
       integration: {

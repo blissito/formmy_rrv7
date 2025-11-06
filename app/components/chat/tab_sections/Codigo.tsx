@@ -400,16 +400,15 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       );
 
       if (existingIntegration) {
-        // Hacer llamada al API para desactivar la integración
+        // Hacer llamada al API para eliminar la integración
         const response = await fetch("/api/v1/chatbot", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams({
-            intent: "toggle_integration_status",
+            intent: "delete_integration",
             integrationId: existingIntegration.id,
-            isActive: "false",
           }),
         });
 
@@ -988,7 +987,7 @@ const LinkBlock = ({ chatbot }: LinkBlockProps) => {
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : "https://formmy-v2.fly.dev";
+      : "https://formmy.app";
   const chatUrl = `${baseUrl}/chat/embed?slug=${chatbot.slug}`;
 
   const codeToCopy = `
@@ -1018,7 +1017,7 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : "https://formmy-v2.fly.dev";
+      : "https://formmy.app";
 
   const codeToCopy = `
 <script type="module">

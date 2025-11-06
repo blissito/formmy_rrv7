@@ -244,7 +244,7 @@ import { FormmyParser } from "formmy-sdk";
 
 const formmyClient = new FormmyParser({
   apiKey: process.env.FORMMY_API_KEY!,
-  baseUrl: "https://formmy-v2.fly.dev",
+  baseUrl: "https://formmy.app",
 });
 
 // Tool para búsqueda RAG
@@ -322,7 +322,7 @@ const searchTool = new DynamicStructuredTool({
 // Constructor no valida si baseUrl es válida
 constructor(config: ParserConfig | string) {
   // ...
-  this.baseUrl = config.baseUrl || 'https://formmy-v2.fly.dev';
+  this.baseUrl = config.baseUrl || 'https://formmy.app';
   // ❌ No valida que sea una URL válida
 }
 ```
@@ -610,7 +610,7 @@ console.log(result.markdown);
 5. **Release**:
    - Versión **2.0.0** (breaking change: endpoint RAG + nuevos métodos)
    - Publicar en npm
-   - Actualizar docs en formmy-v2.fly.dev
+   - Actualizar docs en formmy.app
    - Agregar migration guide en CHANGELOG
 
 ---

@@ -106,13 +106,13 @@ FACEBOOK_BUSINESS_ID=your_business_id
 - Config ID: `{tu_config_id}` (copiar de la consola)
 
 **Configuración → Básica:**
-- Dominios de la app: `formmy-v2.fly.dev`
+- Dominios de la app: `formmy.app`
 - URL de la política de privacidad: requerida
 
 ### 2. Embedded Signup Configuration
 
 **WhatsApp → Embedded Signup:**
-- Callback URL: `https://formmy-v2.fly.dev/dashboard/integrations`
+- Callback URL: `https://formmy.app/dashboard/integrations`
 
 ### 3. Webhook Configuration (CRÍTICO - UNA VEZ)
 
@@ -122,7 +122,7 @@ FACEBOOK_BUSINESS_ID=your_business_id
 
 **Configuración requerida:**
 ```
-Callback URL: https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook
+Callback URL: https://formmy.app/api/v1/integrations/whatsapp/webhook
 Verify Token: FORMMY_WEBHOOK_VERIFY_TOKEN (variable de entorno global)
 ```
 
@@ -138,7 +138,7 @@ Por cada usuario que conecte su WhatsApp (Embedded Signup):
 2. Backend llama a: `POST /{WABA_ID}/subscribed_apps` con:
    ```json
    {
-     "override_callback_uri": "https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook?chatbotId=abc123",
+     "override_callback_uri": "https://formmy.app/api/v1/integrations/whatsapp/webhook?chatbotId=abc123",
      "verify_token": "formmy_abc123_1234567890"
    }
    ```

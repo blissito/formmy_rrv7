@@ -191,7 +191,7 @@ export class Formmy {
     if (!apiKey) throw new Error('API key required');
 
     this.httpClient = new HTTPClient({
-      baseUrl: config?.baseUrl || 'https://formmy-v2.fly.dev',
+      baseUrl: config?.baseUrl || 'https://formmy.app',
       apiKey,
       timeout: config?.timeout || 30000,
       retries: config?.retries || 3,

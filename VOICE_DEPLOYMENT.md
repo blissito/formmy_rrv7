@@ -75,7 +75,7 @@ fly logs -a formmy-v2
 
 ## Testing en Producción
 
-1. Ve a tu dashboard en producción: https://formmy-v2.fly.dev
+1. Ve a tu dashboard en producción: https://formmy.app
 2. Activa la integración de Voz en un chatbot
 3. Crea una sesión de voz desde el frontend
 4. Deberías ver en los logs del worker:

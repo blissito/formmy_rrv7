@@ -15,7 +15,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
  * Browser-compatible version (no Node.js dependencies)
  *
  * Usage:
- * import { FormmyParser } from 'https://formmy-v2.fly.dev/sdk/formmy-parser.js';
+ * import { FormmyParser } from 'https://formmy.app/sdk/formmy-parser.js';
  *
  * const parser = new FormmyParser('YOUR_API_KEY');
  *
@@ -31,10 +31,10 @@ export class FormmyParser {
   constructor(config) {
     if (typeof config === 'string') {
       this.apiKey = config;
-      this.baseUrl = 'https://formmy-v2.fly.dev';
+      this.baseUrl = 'https://formmy.app';
     } else {
       this.apiKey = config.apiKey;
-      this.baseUrl = config.baseUrl || 'https://formmy-v2.fly.dev';
+      this.baseUrl = config.baseUrl || 'https://formmy.app';
     }
   }
 

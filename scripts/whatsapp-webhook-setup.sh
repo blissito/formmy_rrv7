@@ -30,7 +30,7 @@ fi
 
 APP_ID="$FACEBOOK_APP_ID"
 TOKEN="$FACEBOOK_SYSTEM_USER_TOKEN"
-WEBHOOK_URL="https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook"
+WEBHOOK_URL="https://formmy.app/api/v1/integrations/whatsapp/webhook"
 VERIFY_TOKEN="formmy_wh_2024_secure_token_f7x9k2m8"
 
 echo "📋 Configuration:"

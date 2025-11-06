@@ -7,7 +7,7 @@ async function test() {
   console.log('\n🧪 Testing PRODUCCIÓN con PDF REAL\n');
 
   const parser = new FormmyParser(API_KEY, {
-    baseUrl: 'https://formmy-v2.fly.dev'
+    baseUrl: 'https://formmy.app'
   });
 
   console.log('1️⃣ Subiendo PDF a producción...');

@@ -25,7 +25,7 @@ https://developers.facebook.com/apps/1128273322061107/webhooks/
 
    **Callback URL:**
    ```
-   https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook
+   https://formmy.app/api/v1/integrations/whatsapp/webhook
    ```
 
    **Verify Token:**
@@ -41,7 +41,7 @@ https://developers.facebook.com/apps/1128273322061107/webhooks/
 
    Meta enviará una petición GET a tu webhook con un challenge:
    ```
-   GET https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook
+   GET https://formmy.app/api/v1/integrations/whatsapp/webhook
        ?hub.mode=subscribe
        &hub.verify_token=formmy_wh_2024_secure_token_f7x9k2m8
        &hub.challenge=RANDOM_STRING
@@ -57,7 +57,7 @@ https://developers.facebook.com/apps/1128273322061107/webhooks/
 
 Después de guardar, deberías ver:
 - ✅ Estado: "Verified" o "Active"
-- ✅ Callback URL: `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`
+- ✅ Callback URL: `https://formmy.app/api/v1/integrations/whatsapp/webhook`
 - ✅ Campos suscritos: `messages`, `message_template_status_update`
 
 ### 2.2 Verificar con script
@@ -99,7 +99,7 @@ Deberías ver:
 **Solución**:
 ```bash
 # Verificar que el endpoint responde
-curl "https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=formmy_wh_2024_secure_token_f7x9k2m8&hub.challenge=test123"
+curl "https://formmy.app/api/v1/integrations/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=formmy_wh_2024_secure_token_f7x9k2m8&hub.challenge=test123"
 
 # Debe responder: test123
 ```
@@ -211,7 +211,7 @@ db.integration.findOne({
 Antes de enviar mensajes de prueba, verifica:
 
 - [ ] Webhook configurado en Meta Dashboard
-- [ ] Callback URL: `https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`
+- [ ] Callback URL: `https://formmy.app/api/v1/integrations/whatsapp/webhook`
 - [ ] Verify Token: `formmy_wh_2024_secure_token_f7x9k2m8`
 - [ ] Campos suscritos: `messages` ✓
 - [ ] Estado: "Verified" en Meta Dashboard

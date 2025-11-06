@@ -164,7 +164,7 @@ du -sh dist/
 Verificar que funcionen:
 - [ ] npm badge: `https://img.shields.io/npm/v/formmy-sdk.svg`
 - [ ] Repository: `https://github.com/blissito/formmy_rrv7`
-- [ ] Homepage: `https://formmy-v2.fly.dev`
+- [ ] Homepage: `https://formmy.app`
 
 ---
 

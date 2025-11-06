@@ -187,7 +187,7 @@ new Formmy(config?: FormmyConfig | string)
   apiKey?: string;       // Tu API key (sk_live_xxx o sk_test_xxx)
                          // Default: process.env.FORMMY_API_KEY
   baseUrl?: string;      // Custom base URL
-                         // Default: https://formmy-v2.fly.dev
+                         // Default: https://formmy.app
   debug?: boolean;       // Enable debug logging
                          // Default: false
   timeout?: number;      // Request timeout en ms

@@ -12,7 +12,7 @@ import {
 const LOCATION =
   process.env.NODE_ENV === "development"
     ? "http://localhost:3000"
-    : "https://formmy-v2.fly.dev";
+    : "https://formmy.app";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);

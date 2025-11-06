@@ -138,13 +138,13 @@ export class Formmy {
   constructor(config: ParserConfig | string) {
     if (typeof config === 'string') {
       this.apiKey = config;
-      this.baseUrl = 'https://formmy-v2.fly.dev';
+      this.baseUrl = 'https://formmy.app';
       this.debug = false;
       this.timeout = 30000;
       this.retries = 3;
     } else {
       this.apiKey = config.apiKey;
-      this.baseUrl = config.baseUrl || 'https://formmy-v2.fly.dev';
+      this.baseUrl = config.baseUrl || 'https://formmy.app';
       this.debug = config.debug || false;
       this.timeout = config.timeout || 30000;
       this.retries = config.retries || 3;

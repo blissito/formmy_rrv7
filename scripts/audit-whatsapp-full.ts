@@ -162,11 +162,11 @@ async function fullAudit() {
   // 6. Info para debugging
   console.log("\n🔧 6. INFO PARA DEBUGGING\n");
   console.log(`Webhook URL esperado:`);
-  console.log(`  https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook`);
+  console.log(`  https://formmy.app/api/v1/integrations/whatsapp/webhook`);
   console.log(`\nWebhook Verify Token:`);
   console.log(`  ${integration.webhookVerifyToken || 'N/A'}`);
   console.log(`\nPara probar manualmente:`);
-  console.log(`  curl -X POST https://formmy-v2.fly.dev/api/v1/integrations/whatsapp/webhook \\`);
+  console.log(`  curl -X POST https://formmy.app/api/v1/integrations/whatsapp/webhook \\`);
   console.log(`    -H "Content-Type: application/json" \\`);
   console.log(`    -d '{"entry":[{"changes":[{"value":{"messages":[{"from":"test","text":{"body":"test"}}]}}]}]}'`);
 

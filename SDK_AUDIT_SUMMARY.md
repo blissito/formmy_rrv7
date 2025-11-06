@@ -181,7 +181,7 @@ import { z } from 'zod';
 // Setup
 const formmy = new FormmyParser({
   apiKey: process.env.FORMMY_API_KEY!,
-  baseUrl: 'https://formmy-v2.fly.dev',
+  baseUrl: 'https://formmy.app',
 });
 
 // Tool para agente

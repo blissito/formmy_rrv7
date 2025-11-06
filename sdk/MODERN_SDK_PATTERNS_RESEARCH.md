@@ -455,7 +455,7 @@ Bundle size < Developer Experience en prioridad.
 export class Formmy {
   constructor(config?: { apiKey?: string; baseUrl?: string }) {
     this.apiKey = config?.apiKey || process.env.FORMMY_API_KEY;
-    this.baseUrl = config?.baseUrl || 'https://formmy-v2.fly.dev';
+    this.baseUrl = config?.baseUrl || 'https://formmy.app';
     this.httpClient = new HTTPClient({ baseUrl: this.baseUrl });
   }
 

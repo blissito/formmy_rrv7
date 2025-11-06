@@ -56,7 +56,7 @@
   "author": {
     "name": "Formmy",
     "email": "support@formmy.app",
-    "url": "https://formmy-v2.fly.dev"
+    "url": "https://formmy.app"
   },
   "license": "MIT",
   "repository": {
@@ -64,7 +64,7 @@
     "url": "git+https://github.com/blissito/formmy_rrv7.git",
     "directory": "sdk/formmy-parser"
   },
-  "homepage": "https://formmy-v2.fly.dev",
+  "homepage": "https://formmy.app",
   "bugs": {
     "url": "https://github.com/blissito/formmy_rrv7/issues",
     "email": "support@formmy.app"

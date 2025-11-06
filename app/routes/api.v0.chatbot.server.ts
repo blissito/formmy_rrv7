@@ -218,8 +218,8 @@ async function handleChatV0(params: {
     const origin = request.headers.get('origin');
 
     // Excluir dashboard de Formmy de la validación
-    const isFormmyDashboard = referer?.includes('formmy-v2.fly.dev') ||
-                              origin?.includes('formmy-v2.fly.dev');
+    const isFormmyDashboard = referer?.includes('formmy.app') ||
+                              origin?.includes('formmy.app');
 
     if (!isFormmyDashboard) {
       // Validar dominio usando referer (funciona en iframes)

@@ -117,7 +117,7 @@ npx tsx scripts/verify-mongodb-index.ts
 
 ### Stripe
 1. Ir a: https://dashboard.stripe.com/webhooks
-2. Agregar endpoint: `https://formmy-v2.fly.dev/api/webhooks/stripe`
+2. Agregar endpoint: `https://formmy.app/api/webhooks/stripe`
 3. Eventos requeridos:
    - `payment_intent.succeeded`
    - `customer.subscription.created`
@@ -131,7 +131,7 @@ fly secrets set STRIPE_WEBHOOK_SECRET="whsec_..."
 ### WhatsApp (Meta Business)
 1. Ir a: https://developers.facebook.com
 2. Tu app → WhatsApp → Configuration
-3. Webhook URL: `https://formmy-v2.fly.dev/api/webhooks/whatsapp`
+3. Webhook URL: `https://formmy.app/api/webhooks/whatsapp`
 4. Verify Token: (configura uno custom en tu app)
 5. Subscribe to: `messages`, `message_status`
 
@@ -157,7 +157,7 @@ fly config validate
 fly deploy --ha=false
 
 # 3. Verificar health
-curl https://formmy-v2.fly.dev/api/health-check
+curl https://formmy.app/api/health-check
 
 # 4. Monitorear logs
 fly logs
@@ -249,7 +249,7 @@ fly releases rollback <VERSION_NUMBER>
 ### App no arranca
 1. Verificar logs: `fly logs`
 2. Verificar secrets: `fly secrets list`
-3. Verificar health: `curl https://formmy-v2.fly.dev/api/health-check`
+3. Verificar health: `curl https://formmy.app/api/health-check`
 
 ### RAG no funciona
 1. Ejecutar: `npx tsx scripts/verify-mongodb-index.ts`

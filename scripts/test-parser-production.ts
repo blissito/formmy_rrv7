@@ -39,7 +39,7 @@ Fin del documento de prueba.
   try {
     // Inicializar SDK con URL de producción
     const parser = new FormmyParser(API_KEY, {
-      baseUrl: 'https://formmy-v2.fly.dev'
+      baseUrl: 'https://formmy.app'
     });
 
     // 1. Upload

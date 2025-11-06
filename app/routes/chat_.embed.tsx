@@ -84,9 +84,9 @@ export default function ChatEmbedRoute() {
     // Escuchar mensajes del parent window
     const handleMessage = (event: MessageEvent) => {
       // Verificar que el mensaje venga de un origin confiable
-      // (formmy-v2.fly.dev, formmy.app, o localhost para dev)
+      // (formmy.app, formmy.app, o localhost para dev)
       const trustedOrigins = [
-        'https://formmy-v2.fly.dev',
+        'https://formmy.app',
         'https://formmy.app',
         'http://localhost:5173',
         'http://localhost:3000'

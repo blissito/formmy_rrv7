@@ -4,7 +4,7 @@
  */
 
 async function runProductionTests() {
-  const PROD_API = 'https://formmy-v2.fly.dev/api/v0/chatbot';
+  const PROD_API = 'https://formmy.app/api/v0/chatbot';
 
   console.log('\n' + '='.repeat(70));
   console.log('🧪 TEST DE SEGURIDAD - BUG #3: Bypass sin origin header');

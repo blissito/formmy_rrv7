@@ -278,7 +278,7 @@ npm publish --access public
 **Después de publicar**:
 1. ✅ Verificar en npmjs.com que aparezca
 2. ✅ Test de instalación en proyecto limpio
-3. ✅ Actualizar docs en formmy-v2.fly.dev (opcional)
+3. ✅ Actualizar docs en formmy.app (opcional)
 4. ✅ Anunciar en comunidad (opcional)
 
 ---

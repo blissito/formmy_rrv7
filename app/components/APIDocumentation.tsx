@@ -25,7 +25,7 @@ export function APIDocumentation({ onDownloadSDK }: APIDocumentationProps) {
   }, [docTab]);
 
   const sdkCode = `// Importar directamente desde CDN (ES Module)
-import { FormmyParser } from 'https://formmy-v2.fly.dev/sdk/formmy-parser.js';
+import { FormmyParser } from 'https://formmy.app/sdk/formmy-parser.js';
 
 // Inicializar cliente
 const parser = new FormmyParser('YOUR_API_KEY');
@@ -51,13 +51,13 @@ const ragResult = await parser.query(
 `;
 
   const curlParserCode = `# Parsing GRATUITO (default)
-curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\
+curl -X POST https://formmy.app/api/parser/v1?intent=upload \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -F "file=@document.pdf" \\
   -F "mode=DEFAULT"
 
 # Parsing avanzado (costo por página)
-curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\
+curl -X POST https://formmy.app/api/parser/v1?intent=upload \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -F "file=@document.pdf" \\
   -F "mode=AGENTIC"
@@ -72,7 +72,7 @@ curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\
 #   "createdAt": "2025-01-18T10:00:00Z"
 # }`;
 
-  const curlStatusCode = `curl https://formmy-v2.fly.dev/api/parser/v1?intent=status&jobId=job_abc123 \\
+  const curlStatusCode = `curl https://formmy.app/api/parser/v1?intent=status&jobId=job_abc123 \\
   -H "Authorization: Bearer YOUR_API_KEY"
 
 # Response (COMPLETED):
@@ -86,7 +86,7 @@ curl -X POST https://formmy-v2.fly.dev/api/parser/v1?intent=upload \\
 # }`;
 
   const curlRAGListCode = `# Listar contextos del chatbot
-curl https://formmy-v2.fly.dev/api/v1/rag?intent=list \\
+curl https://formmy.app/api/v1/rag?intent=list \\
   -H "Authorization: Bearer YOUR_API_KEY"
 
 # Response:
@@ -111,7 +111,7 @@ curl https://formmy-v2.fly.dev/api/v1/rag?intent=list \\
 # }`;
 
   const curlRAGUploadCode = `# Subir contexto manualmente
-curl -X POST https://formmy-v2.fly.dev/api/v1/rag?intent=upload \\
+curl -X POST https://formmy.app/api/v1/rag?intent=upload \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -132,7 +132,7 @@ curl -X POST https://formmy-v2.fly.dev/api/v1/rag?intent=upload \\
 # }`;
 
   const curlRAGQueryCode = `# Consultar RAG con búsqueda semántica
-curl -X POST https://formmy-v2.fly.dev/api/v1/rag?intent=query \\
+curl -X POST https://formmy.app/api/v1/rag?intent=query \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -163,7 +163,7 @@ import time
 
 # Upload documento GRATIS (DEFAULT mode)
 response = requests.post(
-    "https://formmy-v2.fly.dev/api/parser/v1?intent=upload",
+    "https://formmy.app/api/parser/v1?intent=upload",
     headers={"Authorization": "Bearer YOUR_API_KEY"},
     files={"file": open("document.pdf", "rb")},
     data={"mode": "DEFAULT"}  # GRATIS - 0 créditos
@@ -174,7 +174,7 @@ print(f"Job ID: {job['id']} - Créditos: {job['creditsUsed']}")
 # Polling para esperar resultado
 while True:
     status_response = requests.get(
-        f"https://formmy-v2.fly.dev/api/parser/v1?intent=status&jobId={job['id']}",
+        f"https://formmy.app/api/parser/v1?intent=status&jobId={job['id']}",
         headers={"Authorization": "Bearer YOUR_API_KEY"}
     )
     result = status_response.json()
@@ -493,7 +493,7 @@ while True:
               <div className="bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 rounded-lg p-3 mb-3">
                 <p className="text-xs text-dark font-semibold mb-2">✨ Importa directamente desde CDN</p>
                 <code className="block bg-white px-3 py-2 rounded text-xs font-mono text-brand-600 border border-green-200">
-                  import {`{FormmyParser}`} from 'https://formmy-v2.fly.dev/sdk/formmy-parser.js';
+                  import {`{FormmyParser}`} from 'https://formmy.app/sdk/formmy-parser.js';
                 </code>
                 <p className="text-xs text-metal mt-2">
                   Zero instalación, cero dependencias. Funciona en navegadores modernos y Deno.

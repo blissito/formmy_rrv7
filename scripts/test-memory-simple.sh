@@ -10,7 +10,7 @@ if [ -n "$1" ]; then
   SERVER_URL="$1"
 else
   # Default: producción fly.io
-  SERVER_URL="https://formmy-v2.fly.dev"
+  SERVER_URL="https://formmy.app"
 fi
 
 echo ""

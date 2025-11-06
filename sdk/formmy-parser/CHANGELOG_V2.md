@@ -306,7 +306,7 @@ Generados durante la auditoría:
 
 1. **Testing manual**: Probar en proyecto real
 2. **Versión**: Publicar como v2.0.0 en npm
-3. **Docs**: Actualizar docs en formmy-v2.fly.dev
+3. **Docs**: Actualizar docs en formmy.app
 4. **Anuncio**: Migration guide para usuarios 1.x
 
 ---

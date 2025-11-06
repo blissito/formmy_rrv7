@@ -35,7 +35,7 @@ import { FormmyParser } from "formmy-sdk"; // ✅ Correcto
 
 const client = new FormmyParser({
   apiKey: "sk_live_xxxxx",
-  baseUrl: "https://formmy-v2.fly.dev", // Opcional
+  baseUrl: "https://formmy.app", // Opcional
   debug: false, // Opcional
   timeout: 30000, // Opcional (ms)
   retries: 3, // Opcional
@@ -264,7 +264,7 @@ interface RAGSource {
 ```bash
 # .env
 FORMMY_API_KEY=sk_live_xxxxxxxxxxxxxxxx
-FORMMY_BASE_URL=https://formmy-v2.fly.dev # Opcional
+FORMMY_BASE_URL=https://formmy.app # Opcional
 ```
 
 ```typescript
@@ -321,8 +321,8 @@ const result = await client.waitFor(jobId, {
 
 - **npm**: https://www.npmjs.com/package/formmy-sdk
 - **GitHub**: https://github.com/blissito/formmy_rrv7
-- **Docs**: https://formmy-v2.fly.dev/docs
-- **API Keys**: https://formmy-v2.fly.dev/dashboard/api-keys
+- **Docs**: https://formmy.app/docs
+- **API Keys**: https://formmy.app/dashboard/api-keys
 - **Soporte**: support@formmy.app
 
 ---
