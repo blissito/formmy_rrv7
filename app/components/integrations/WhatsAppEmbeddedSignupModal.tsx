@@ -42,39 +42,34 @@ export default function WhatsAppEmbeddedSignupModal({
     sessionInfoVerified?: boolean;
   } | null>(null);
 
-  // Cargar Facebook SDK para Embedded Signup
+  // Cargar Facebook SDK para FB.login()
   useEffect(() => {
     if (!isOpen) return;
 
     const loadFacebookSDK = () => {
-      // Si ya está cargado
       if (window.FB) {
         setIsSDKLoaded(true);
         return;
       }
 
-      // Configurar callback para cuando el SDK esté listo
       window.fbAsyncInit = function() {
         const appId = import.meta.env.VITE_FACEBOOK_APP_ID;
 
-        // Validar que el App ID esté configurado
         if (!appId) {
-          console.error('❌ [Modal] VITE_FACEBOOK_APP_ID no está configurado en .env');
+          console.error('❌ [Modal] VITE_FACEBOOK_APP_ID no configurado');
           setError('Facebook App ID not configured');
           return;
         }
-
 
         window.FB.init({
           appId: appId,
           autoLogAppEvents: true,
           xfbml: true,
-          version: 'v24.0' // Usar última versión estable (actualizado según docs oficiales)
+          version: 'v24.0'
         });
         setIsSDKLoaded(true);
       };
 
-      // Cargar script del SDK
       const script = document.createElement('script');
       script.id = 'facebook-jssdk';
       script.src = 'https://connect.facebook.net/en_US/sdk.js';
@@ -87,10 +82,6 @@ export default function WhatsAppEmbeddedSignupModal({
     };
 
     loadFacebookSDK();
-
-    return () => {
-      // Cleanup si es necesario
-    };
   }, [isOpen]);
 
   // Message Event Listener - Captura waba_id y phone_number_id
@@ -99,10 +90,17 @@ export default function WhatsAppEmbeddedSignupModal({
     if (!isOpen) return;
 
     const handleMessage = (event: MessageEvent) => {
+      // ✅ CRÍTICO: Log TODOS los mensajes de Facebook para debug
+      if (event.origin === 'https://www.facebook.com' || event.origin === 'https://staticxx.facebook.com') {
+        console.log('📨 [Message Event] Origen:', event.origin);
+        console.log('📨 [Message Event] Data raw:', event.data);
+      }
+
       // Verificar origen de Facebook
       if (event.origin !== 'https://www.facebook.com') return;
 
       try {
+        // Intentar parsear como JSON primero
         const data = JSON.parse(event.data);
 
         if (data.type === 'WA_EMBEDDED_SIGNUP') {
@@ -146,7 +144,40 @@ export default function WhatsAppEmbeddedSignupModal({
           }
         }
       } catch (parseError) {
-        // Ignorar mensajes que no son JSON parseables
+        // ✅ Si no es JSON, intentar parsear como URL-encoded string
+        // El event.data puede venir en formato: "cb=xxx&domain=yyy&signed_request=zzz&..."
+        if (typeof event.data === 'string' && event.data.includes('signed_request=')) {
+          try {
+            console.log('🔍 [Message Event] Parseando URL-encoded data...');
+            const params = new URLSearchParams(event.data);
+            const signedRequest = params.get('signed_request');
+
+            if (signedRequest) {
+              console.log('🔍 [Message Event] signed_request encontrado');
+
+              // Decodificar el signed_request (formato: signature.payload)
+              const parts = signedRequest.split('.');
+              if (parts.length === 2) {
+                // Decodificar base64 payload
+                const payload = parts[1];
+                // Base64 URL-safe decode
+                const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = atob(base64);
+                const decoded = JSON.parse(jsonPayload);
+
+                console.log('✅ [Message Event] Signed request decoded:', decoded);
+
+                // El signed_request no incluye waba_id directamente,
+                // pero podemos guardarlo para usarlo en el backend si es necesario
+                setEmbeddedSignupData({
+                  sessionInfoVerified: true,
+                });
+              }
+            }
+          } catch (decodeError) {
+            console.warn('⚠️ [Message Event] Error decodificando signed_request:', decodeError);
+          }
+        }
       }
     };
 
@@ -162,8 +193,8 @@ export default function WhatsAppEmbeddedSignupModal({
     console.log('📥 [FB.login] Response:', response);
 
     if (response.authResponse) {
-      const code = response.authResponse.code;
-      console.log('✅ [FB.login] Code recibido:', code?.substring(0, 20) + '...');
+      const accessToken = response.authResponse.accessToken;
+      console.log('✅ [FB.login] Access Token recibido:', accessToken?.substring(0, 20) + '...');
 
       try {
         // Esperar a que el message event capture waba_id y phone_number_id
@@ -175,7 +206,7 @@ export default function WhatsAppEmbeddedSignupModal({
           // Continuar de todas formas, el backend intentará obtenerlo
         }
 
-        // Enviar al backend: code + waba_id + phone_number_id
+        // Enviar al backend: accessToken + waba_id + phone_number_id
         const exchangeResponse = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
           method: 'POST',
           headers: {
@@ -183,7 +214,7 @@ export default function WhatsAppEmbeddedSignupModal({
           },
           body: JSON.stringify({
             chatbotId,
-            code,
+            accessToken, // ✅ Token directo, no code
             // Enviar datos del message event si están disponibles
             wabaId: embeddedSignupData?.waba_id,
             phoneNumberId: embeddedSignupData?.phone_number_id,
@@ -194,6 +225,17 @@ export default function WhatsAppEmbeddedSignupModal({
 
         if (!exchangeResponse.ok && exchangeResponse.status !== 207) {
           console.error('❌ [FB.login] Backend error:', exchangeData.error);
+
+          // Si hay instrucciones detalladas, mostrarlas
+          if (exchangeData.instructions && Array.isArray(exchangeData.instructions)) {
+            const instructionsText = [
+              exchangeData.error || 'Error al conectar WhatsApp',
+              '',
+              ...exchangeData.instructions
+            ].join('\n');
+            throw new Error(instructionsText);
+          }
+
           throw new Error(exchangeData.error || 'Error al conectar WhatsApp');
         }
 
@@ -223,8 +265,8 @@ export default function WhatsAppEmbeddedSignupModal({
     }
   }, [chatbotId, embeddedSignupData, onSuccess, onClose]);
 
-  // Handler para el Embedded Signup usando FB.login() con popup
-  // ✅ Patrón basado en código real en producción
+  // ✅ OPCIÓN FINAL: FB.login() SIN response_type: 'code' (token directo)
+  // Basado en código oficial de Facebook/WooCommerce + ejemplos reales
   const handleEmbeddedSignup = useCallback(() => {
     if (!window.FB) {
       setError('Facebook SDK no está cargado');
@@ -240,21 +282,18 @@ export default function WhatsAppEmbeddedSignupModal({
       console.log('🚀 [FB.login] Lanzando popup de Embedded Signup...');
       console.log('🚀 [FB.login] Config ID:', configId);
 
-      // ✅ CORRECTO: FB.login() con callback SÍNCRONO
-      // El callback NO puede ser async, así que llamamos a processAuthResponse() dentro
+      // ✅ FB.login() SIN response_type (obtiene token directo, no code)
       window.FB.login(
         (response: any) => {
-          // ✅ Callback síncrono - llama a función async separada
           processAuthResponse(response);
         },
         {
           config_id: configId,
-          response_type: 'code',
-          override_default_response_type: true,
+          // ✅ NO incluir response_type: 'code' - obtenemos token directo
           scope: 'whatsapp_business_management,whatsapp_business_messaging',
           extras: {
             setup: {},
-            featureType: 'whatsapp_business_app_onboarding', // ✅ Coexistencia
+            featureType: 'whatsapp_business_app_onboarding',
             sessionInfoVersion: 3,
           },
         }
@@ -294,14 +333,111 @@ export default function WhatsAppEmbeddedSignupModal({
     }
   */
 
-  // Reset cuando se abre/cierra el modal
+  // Capturar código de autorización cuando Facebook redirige de vuelta
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const error = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+
+    // Manejar errores de OAuth
+    if (error) {
+      console.error('❌ [OAuth Callback] Error:', error, errorDescription);
+      setStatus('error');
+      setError(`OAuth error: ${error} - ${errorDescription || 'Unknown error'}`);
+      // Limpiar URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    // Si hay código de autorización, procesarlo
+    if (code) {
+      // Validar state para prevenir CSRF
+      const storedState = sessionStorage.getItem('oauth_state');
+      const storedChatbotId = sessionStorage.getItem('oauth_chatbotId');
+
+      if (storedState && state !== storedState) {
+        console.error('❌ [OAuth Callback] State mismatch - posible ataque CSRF');
+        setStatus('error');
+        setError('OAuth state validation failed - possible CSRF attack');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      // Limpiar sessionStorage
+      sessionStorage.removeItem('oauth_state');
+      sessionStorage.removeItem('oauth_chatbotId');
+
+      console.log('✅ [OAuth Callback] Code recibido:', code.substring(0, 20) + '...');
+      console.log('✅ [OAuth Callback] State validado correctamente');
+
+      // Procesar token exchange
+      const processOAuthCallback = async () => {
+        setStatus('loading');
+
+        try {
+          const redirectUri = `${window.location.origin}/dashboard/integrations`;
+
+          // Esperar un poco para capturar datos del message event (si están disponibles)
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          const exchangeResponse = await fetch('/api/v1/integrations/whatsapp/embedded_signup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              chatbotId: storedChatbotId || chatbotId,
+              code,
+              redirectUri,
+              wabaId: embeddedSignupData?.waba_id,
+              phoneNumberId: embeddedSignupData?.phone_number_id,
+            }),
+          });
+
+          const exchangeData = await exchangeResponse.json();
+
+          if (!exchangeResponse.ok && exchangeResponse.status !== 207) {
+            console.error('❌ [OAuth Callback] Backend error:', exchangeData.error);
+            throw new Error(exchangeData.error || 'Error al conectar WhatsApp');
+          }
+
+          // ✅ Éxito
+          console.log('✅ [OAuth Callback] WhatsApp conectado exitosamente!');
+          setStatus('success');
+          onSuccess({
+            ...exchangeData.integration,
+            embeddedSignup: true,
+          });
+
+          // Limpiar URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          // Cerrar modal después de un breve retraso
+          setTimeout(() => {
+            onClose();
+          }, 1500);
+
+        } catch (err) {
+          console.error('❌ [OAuth Callback] Error procesando respuesta:', err);
+          setStatus('error');
+          setError(err instanceof Error ? err.message : 'Error al conectar WhatsApp');
+          // Limpiar URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      };
+
+      processOAuthCallback();
+    } else {
+      // No hay código, resetear estado
       setStatus('idle');
       setError(null);
       setEmbeddedSignupData(null);
     }
-  }, [isOpen]);
+  }, [isOpen, chatbotId, embeddedSignupData, onSuccess, onClose]);
 
   if (!isOpen) return null;
 
@@ -376,9 +512,21 @@ export default function WhatsAppEmbeddedSignupModal({
 
         {error && (
           <div className="bg-red-50 border-l-4 border-red-400 p-4">
-            <div className="flex items-center">
-              <FiAlertCircle className="h-5 w-5 text-red-400 mr-2" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="flex items-start">
+              <FiAlertCircle className="h-5 w-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-red-700 whitespace-pre-line">{error}</p>
+                {error.includes('business.facebook.com') && (
+                  <a
+                    href="https://business.facebook.com/latest/whatsapp_manager"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-3 text-sm font-medium text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Abrir Meta Business Suite →
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         )}

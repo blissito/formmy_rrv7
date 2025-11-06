@@ -7,7 +7,7 @@ const encryptText = (text: string) => `encrypted_${text}`;
 
 interface EmbeddedSignupRequest {
   chatbotId: string;
-  code: string;
+  code?: string; // Opcional ahora
   // ✅ Datos del message event (llegan del frontend)
   wabaId?: string;
   phoneNumberId?: string;
@@ -36,18 +36,6 @@ interface MetaTokenExchangeResponse {
   token_type: string;
   expires_in?: number;
   scope?: string;
-}
-
-interface MetaBusinessAccountResponse {
-  data: Array<{
-    id: string;
-    name: string;
-    phone_numbers?: Array<{
-      id: string;
-      display_phone_number: string;
-      verified_name: string;
-    }>;
-  }>;
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -102,17 +90,15 @@ export async function action({ request }: ActionFunctionArgs) {
     // Extraer parámetros - soportar tanto formato antiguo como nuevo
     const chatbotId = body.chatbotId;
     const code = body.authResponse?.code || body.code;
-    const accessToken = body.accessToken;
-    const userID = body.authResponse?.userID || body.userID;
 
 
-    // Validar que el código fue recibido
-    if (!code) {
-      console.error("❌ [Embedded Signup] ERROR: No se recibió código de autorización");
+    // Validar que se recibió accessToken O code
+    if (!body.accessToken && !code) {
+      console.error("❌ [Embedded Signup] ERROR: No se recibió accessToken ni código de autorización");
       console.error("   authResponse:", JSON.stringify(body.authResponse, null, 2));
       return Response.json(
         {
-          error: "No se recibió código de autorización",
+          error: "No se recibió accessToken ni código de autorización",
           hint: "Verifica que el flujo de Embedded Signup se completó correctamente"
         },
         { status: 400 }
@@ -159,65 +145,86 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
 
-    // Intercambiar el código por un access token de larga duración
-    // ✅ FB.login() maneja el popup automáticamente, NO requiere redirect_uri
-    console.log(`🔄 [Token Exchange] Code: ${code?.substring(0, 20)}...`);
-    console.log(`🔄 [Token Exchange] wabaId: ${body.wabaId || 'N/A'}`);
-    console.log(`🔄 [Token Exchange] phoneNumberId: ${body.phoneNumberId || 'N/A'}`);
+    // ✅ Obtener access token (puede venir directo o necesitar exchange)
+    let accessToken: string;
 
-    // Intercambiar código por token
-    // ✅ FB.login() NO requiere redirect_uri para token exchange
-    const tokenExchangeUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
-    tokenExchangeUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
-    tokenExchangeUrl.searchParams.append('client_secret', FACEBOOK_APP_SECRET);
-    tokenExchangeUrl.searchParams.append('code', code);
+    if (body.accessToken) {
+      // ✅ Token directo desde FB.login() sin response_type: 'code'
+      console.log(`✅ [Direct Token] Access Token recibido directamente: ${body.accessToken.substring(0, 20)}...`);
+      console.log(`🔄 [Direct Token] wabaId: ${body.wabaId || 'N/A'}`);
+      console.log(`🔄 [Direct Token] phoneNumberId: ${body.phoneNumberId || 'N/A'}`);
+      accessToken = body.accessToken;
+    } else if (code) {
+      // ✅ Intercambiar código por token (legacy flow)
+      console.log(`🔄 [Token Exchange] Code: ${code?.substring(0, 20)}...`);
+      console.log(`🔄 [Token Exchange] wabaId: ${body.wabaId || 'N/A'}`);
+      console.log(`🔄 [Token Exchange] phoneNumberId: ${body.phoneNumberId || 'N/A'}`);
+      console.log(`🔄 [Token Exchange] redirectUri: ${body.redirectUri || 'N/A'}`);
 
-    console.log(`🔄 [Token Exchange] Intercambiando código con Meta...`);
+      const tokenExchangeUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
+      tokenExchangeUrl.searchParams.append('client_id', FACEBOOK_APP_ID);
+      tokenExchangeUrl.searchParams.append('client_secret', FACEBOOK_APP_SECRET);
+      tokenExchangeUrl.searchParams.append('code', code);
 
-    const tokenResponse = await fetch(tokenExchangeUrl.toString());
-
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text();
-      console.error(`\n${'❌'.repeat(40)}`);
-      console.error(`❌ [Embedded Signup] Token exchange FAILED`);
-      console.error(`   HTTP Status: ${tokenResponse.status} ${tokenResponse.statusText}`);
-      console.error(`   Client ID usado: ${FACEBOOK_APP_ID}`);
-      console.error(`   Code usado: ${code?.substring(0, 20)}...`);
-      console.error(`   Response de Meta:`);
-
-      try {
-        const errorJson = JSON.parse(errorData);
-        console.error(`   Error Type: ${errorJson.error?.type || 'N/A'}`);
-        console.error(`   Error Code: ${errorJson.error?.code || 'N/A'}`);
-        console.error(`   Error Message: ${errorJson.error?.message || errorData}`);
-        console.error(`   Error Subcode: ${errorJson.error?.error_subcode || 'N/A'}`);
-        console.error(`   Fbtrace ID: ${errorJson.error?.fbtrace_id || 'N/A'}`);
-      } catch {
-        console.error(`   Raw Error: ${errorData}`);
+      if (body.redirectUri) {
+        tokenExchangeUrl.searchParams.append('redirect_uri', body.redirectUri);
       }
 
-      console.error(`${'❌'.repeat(40)}\n`);
+      console.log(`🔄 [Token Exchange] Intercambiando código con Meta...`);
 
-      return Response.json(
-        {
-          error: "Error al intercambiar el código por token",
-          details: errorData,
+      const tokenResponse = await fetch(tokenExchangeUrl.toString());
+
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.text();
+        console.error(`\n${'❌'.repeat(40)}`);
+        console.error(`❌ [Embedded Signup] Token exchange FAILED`);
+        console.error(`   HTTP Status: ${tokenResponse.status} ${tokenResponse.statusText}`);
+        console.error(`   Client ID usado: ${FACEBOOK_APP_ID}`);
+        console.error(`   Code usado: ${code?.substring(0, 20)}...`);
+        console.error(`   Response de Meta:`);
+
+        try {
+          const errorJson = JSON.parse(errorData);
+          console.error(`   Error Type: ${errorJson.error?.type || 'N/A'}`);
+          console.error(`   Error Code: ${errorJson.error?.code || 'N/A'}`);
+          console.error(`   Error Message: ${errorJson.error?.message || errorData}`);
+          console.error(`   Error Subcode: ${errorJson.error?.error_subcode || 'N/A'}`);
+          console.error(`   Fbtrace ID: ${errorJson.error?.fbtrace_id || 'N/A'}`);
+        } catch {
+          console.error(`   Raw Error: ${errorData}`);
+        }
+
+        console.error(`${'❌'.repeat(40)}\n`);
+
+        return Response.json(
+          {
+            error: "Error al intercambiar el código por token",
+            details: errorData,
           hint: "Verifica que FACEBOOK_APP_ID y VITE_FACEBOOK_APP_ID sean iguales en .env"
         },
         { status: 400 }
       );
+      }
+
+      const tokenData: MetaTokenExchangeResponse = await tokenResponse.json();
+      accessToken = tokenData.access_token;
+
+      console.log(`✅ [Token Exchange] Token obtenido exitosamente`);
+    } else {
+      console.error(`❌ [Embedded Signup] No se recibió accessToken ni code`);
+      return Response.json(
+        { error: "Se requiere accessToken o code" },
+        { status: 400 }
+      );
     }
 
-    const tokenData: MetaTokenExchangeResponse = await tokenResponse.json();
-    const longLivedToken = tokenData.access_token;
-
-    console.log(`✅ [Token Exchange] Token obtenido exitosamente`);
+    // Aquí accessToken ya está definido (directo o desde exchange)
+    const longLivedToken = accessToken;
 
     // 2. ✅ USAR wabaId y phoneNumberId del message event (si están disponibles)
     let wabaId = body.wabaId;
     let phoneNumberId = body.phoneNumberId;
     let phoneNumber: any = null;
-    let waba: any = null;
 
     if (wabaId && phoneNumberId) {
       console.log(`✅ [Message Event] Usando datos del frontend:`);
@@ -240,96 +247,132 @@ export async function action({ request }: ActionFunctionArgs) {
         phoneNumber = { id: phoneNumberId };
       }
 
-      // Crear objeto waba mínimo
-      waba = { id: wabaId };
-
     } else {
-      // ❌ FALLBACK: Si no llegaron del message event, intentar obtenerlos manualmente
-      // NOTA: Esto requiere business_management permission
+      // ✅ FALLBACK: Consultar directamente con el System User Token
+      // Este método siempre funciona sin requerir Business Verification
       console.warn(`⚠️ [Message Event] No se recibió wabaId/phoneNumberId del frontend`);
-      console.warn(`⚠️ [Fallback] Intentando obtenerlos manualmente (requiere business_management permission)...`);
+      console.warn(`✅ [Fallback] Usando System User Token para obtener WABA...`);
 
-      const businessAccountUrl = `https://graph.facebook.com/v21.0/me/businesses`;
-      const businessResponse = await fetch(businessAccountUrl, {
-        headers: { 'Authorization': `Bearer ${longLivedToken}` },
-      });
+      // Estrategia 1: Intentar /me/whatsapp_business_accounts primero
+      let wabasData: any = null;
+      let strategyUsed = '';
 
-      if (!businessResponse.ok) {
-        const errorData = await businessResponse.text();
-        console.error("❌ Failed to get business account:", errorData);
-        return Response.json(
-          { error: "Error al obtener información de la cuenta de negocio. Asegúrate de que la app tenga permiso business_management." },
-          { status: 400 }
-        );
+      try {
+        const wabasUrl = `https://graph.facebook.com/v21.0/me/whatsapp_business_accounts`;
+        const wabasResponse = await fetch(wabasUrl, {
+          headers: { 'Authorization': `Bearer ${longLivedToken}` },
+        });
+
+        if (wabasResponse.ok) {
+          wabasData = await wabasResponse.json();
+          strategyUsed = '/me/whatsapp_business_accounts';
+          console.log("✅ [Strategy 1] /me/whatsapp_business_accounts funcionó:", JSON.stringify(wabasData, null, 2));
+        } else {
+          console.warn("⚠️ [Strategy 1] /me/whatsapp_business_accounts falló, intentando estrategia 2...");
+        }
+      } catch (e) {
+        console.warn("⚠️ [Strategy 1] Error:", e);
       }
 
-      const businessData: MetaBusinessAccountResponse = await businessResponse.json();
+      // Estrategia 2: Si la primera falla, usar debug_token + POST al endpoint de system user
+      if (!wabasData || !wabasData.data || wabasData.data.length === 0) {
+        console.log("🔄 [Strategy 2] Intentando obtener WABA via business discovery...");
 
-      if (!businessData.data || businessData.data.length === 0) {
-        return Response.json(
-          { error: "No se encontró una cuenta de negocio asociada" },
-          { status: 404 }
+        // Primero obtener el business manager ID del token
+        const debugTokenUrl = `https://graph.facebook.com/v21.0/debug_token?input_token=${longLivedToken}&access_token=${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`;
+        const debugResponse = await fetch(debugTokenUrl);
+
+        if (!debugResponse.ok) {
+          const errorData = await debugResponse.text();
+          console.error("❌ [Strategy 2] Failed to debug token:", errorData);
+          return Response.json(
+            { error: "Error al obtener WhatsApp Business Account" },
+            { status: 400 }
+          );
+        }
+
+        const debugData = await debugResponse.json();
+        console.log("🔍 [Strategy 2] Debug token data:", JSON.stringify(debugData, null, 2));
+
+        // Buscar granular_scopes con whatsapp_business_messaging o whatsapp_business_management
+        const granularScopes = debugData.data?.granular_scopes || [];
+
+        // Intentar en whatsapp_business_messaging primero
+        let whatsappScope = granularScopes.find((scope: any) =>
+          scope.scope === 'whatsapp_business_messaging' && scope.target_ids && scope.target_ids.length > 0
         );
+
+        // Si no se encuentra, intentar en whatsapp_business_management
+        if (!whatsappScope) {
+          whatsappScope = granularScopes.find((scope: any) =>
+            scope.scope === 'whatsapp_business_management' && scope.target_ids && scope.target_ids.length > 0
+          );
+        }
+
+        if (whatsappScope && whatsappScope.target_ids && whatsappScope.target_ids.length > 0) {
+          // ✅ Encontramos WABA IDs en granular_scopes
+          wabaId = whatsappScope.target_ids[0];
+          strategyUsed = `debug_token granular_scopes (${whatsappScope.scope})`;
+          console.log(`✅ [Strategy 2] WABA ID encontrado en ${whatsappScope.scope}: ${wabaId}`);
+        } else {
+          console.error("❌ [Strategy 2] No se encontró WABA en granular_scopes");
+          console.error("   Scopes disponibles:", JSON.stringify(granularScopes, null, 2));
+          return Response.json(
+            { error: "No se pudo obtener el WhatsApp Business Account. El flujo de Embedded Signup puede no haberse completado correctamente." },
+            { status: 404 }
+          );
+        }
+      } else {
+        wabaId = wabasData.data[0].id;
       }
 
-      const businessAccount = businessData.data[0];
+      // Ya tenemos wabaId, ahora obtener phone numbers
+      console.log(`✅ [${strategyUsed}] WABA ID: ${wabaId}`);
 
-      const wabaUrl = `https://graph.facebook.com/v21.0/${businessAccount.id}/owned_whatsapp_business_accounts`;
-      const wabaResponse = await fetch(wabaUrl, {
-        headers: { 'Authorization': `Bearer ${longLivedToken}` },
-      });
-
-      if (!wabaResponse.ok) {
-        const errorData = await wabaResponse.text();
-        console.error("❌ Failed to get WABA:", errorData);
-        return Response.json(
-          { error: "Error al obtener WhatsApp Business Account" },
-          { status: 400 }
-        );
-      }
-
-      const wabaData = await wabaResponse.json();
-
-      if (!wabaData.data || wabaData.data.length === 0) {
-        return Response.json(
-          { error: "No se encontró una WhatsApp Business Account configurada" },
-          { status: 404 }
-        );
-      }
-
-      waba = wabaData.data[0];
-      wabaId = waba.id;
-
-      const phoneNumbersUrl = `https://graph.facebook.com/v21.0/${waba.id}/phone_numbers`;
+      const phoneNumbersUrl = `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers`;
       const phoneResponse = await fetch(phoneNumbersUrl, {
         headers: { 'Authorization': `Bearer ${longLivedToken}` },
       });
 
       if (!phoneResponse.ok) {
         const errorData = await phoneResponse.text();
-        console.error("❌ Failed to get phone numbers:", errorData);
+        console.error("❌ [Graph API] Failed to get phone numbers:", errorData);
         return Response.json(
-          { error: "Error al obtener números de teléfono" },
+          { error: "Error al obtener números de teléfono del WABA" },
           { status: 400 }
         );
       }
 
       const phoneData = await phoneResponse.json();
+      console.log("✅ [Graph API] Phone numbers response:", JSON.stringify(phoneData, null, 2));
 
       if (!phoneData.data || phoneData.data.length === 0) {
+        console.error(`❌ [Graph API] El WABA ${wabaId} no tiene números de teléfono configurados`);
         return Response.json(
-          { error: "No se encontraron números de teléfono configurados" },
-          { status: 404 }
+          {
+            error: "WhatsApp Business Account conectado pero sin números de teléfono",
+            details: "Completa la configuración en Meta Business Suite",
+            wabaId: wabaId,
+            instructions: [
+              "1. Ve a https://business.facebook.com/latest/whatsapp_manager",
+              "2. Selecciona tu WhatsApp Business Account",
+              "3. Agrega y verifica un número de teléfono",
+              "4. Vuelve a intentar la conexión en Formmy"
+            ]
+          },
+          { status: 424 } // 424 Failed Dependency
         );
       }
 
       phoneNumber = phoneData.data[0];
       phoneNumberId = phoneNumber.id;
 
-      console.log(`✅ [Fallback] Datos obtenidos exitosamente:`);
-      console.log(`   WABA ID: ${waba.id}`);
-      console.log(`   Phone Number ID: ${phoneNumber.id}`);
+      console.log(`✅ [Fallback Complete] Datos obtenidos exitosamente:`);
+      console.log(`   Strategy: ${strategyUsed}`);
+      console.log(`   WABA ID: ${wabaId}`);
+      console.log(`   Phone Number ID: ${phoneNumberId}`);
       console.log(`   Display Phone Number: ${phoneNumber.display_phone_number || 'N/A'}`);
+      console.log(`   Verified Name: ${phoneNumber.verified_name || 'N/A'}`);
     }
 
     // 3. Obtener businessAccountId (si no lo tenemos)
