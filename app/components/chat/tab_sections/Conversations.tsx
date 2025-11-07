@@ -227,15 +227,15 @@ export const Conversations = ({
     }
   };
 
-  // Mostrar empty state si no hay conversaciones
-  if (conversations.length === 0) {
-    return <EmptyConversations t={t} />;
-  }
-
   return (
     <>
       {/* Banner de sincronización de WhatsApp - Siempre visible para debugging */}
       <WhatsAppSyncBanner chatbotId={chatbot.id} />
+
+      {/* Mostrar empty state si no hay conversaciones */}
+      {conversations.length === 0 ? (
+        <EmptyConversations t={t} />
+      ) : (
 
       <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
         <article className={cn("col-span-12 md:col-span-3", "flex flex-col h-full gap-4 md:gap-6")}>
@@ -276,6 +276,7 @@ export const Conversations = ({
         />
       </section>
     </main>
+      )}
     </>
   );
 };
