@@ -18,7 +18,7 @@ export function useWhatsAppIntegration(chatbotId: string) {
 
     const fetchIntegration = async () => {
       try {
-        const response = await fetch(`/api/v1/integration?chatbotId=${chatbotId}&platform=WHATSAPP`);
+        const response = await fetch(`/api/v1/integration?chatbotId=${chatbotId}`);
 
         if (!response.ok) {
           setIntegration(null);
@@ -26,7 +26,13 @@ export function useWhatsAppIntegration(chatbotId: string) {
         }
 
         const data = await response.json();
-        setIntegration(data);
+
+        // El endpoint retorna { integrations: [...] }
+        const whatsappIntegration = data.integrations?.find(
+          (int: any) => int.platform === "WHATSAPP"
+        );
+
+        setIntegration(whatsappIntegration || null);
       } catch (error) {
         console.error("[useWhatsAppIntegration] Error:", error);
         setIntegration(null);
