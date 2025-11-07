@@ -13,6 +13,8 @@ import { getChatbotById } from "../../server/chatbot/chatbotModel.server";
 import { db } from "../utils/db.server";
 import { createAgent } from "../../server/agent-engine-v0";
 import { agentStreamEvent } from "@llamaindex/workflow";
+import { isMessageProcessed } from "../../server/integrations/whatsapp/deduplication.service";
+import { downloadWhatsAppSticker } from "../../server/integrations/whatsapp/media.service";
 
 // Types for WhatsApp webhook payload
 interface WhatsAppWebhookEntry {
@@ -37,7 +39,7 @@ interface WhatsAppWebhookEntry {
         text?: {
           body: string;
         };
-        type: "text" | "image" | "document" | "audio" | "video";
+        type: "text" | "image" | "document" | "audio" | "video" | "sticker";
         image?: {
           id: string;
           mime_type: string;
@@ -62,6 +64,12 @@ interface WhatsAppWebhookEntry {
           sha256: string;
           caption?: string;
         };
+        sticker?: {
+          id: string;
+          mime_type: string;
+          sha256: string;
+          animated: boolean;
+        };
       }>;
       statuses?: Array<{
         id: string;
@@ -80,16 +88,9 @@ interface WhatsAppWebhookPayload {
 }
 
 /**
- * Deduplication cache for webhook messages (in-memory)
- * WhatsApp may send the same webhook multiple times if we don't respond fast enough
+ * DEPRECATED: Old in-memory deduplication (no funciona en múltiples instancias)
+ * Ahora usamos MongoDB para deduplicación cross-instance
  */
-const processedMessages = new Set<string>();
-const MESSAGE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-// Clean up old entries periodically
-setInterval(() => {
-  processedMessages.clear();
-}, MESSAGE_CACHE_TTL);
 
 /**
  * Loader function - handles GET requests for webhook verification
@@ -173,8 +174,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           // Process regular messages
           for (const message of change.value.messages) {
             try {
-              // ✅ DEDUPLICATION: Skip if already processed
-              if (processedMessages.has(message.id)) {
+              // ✅ DEDUPLICATION: Check MongoDB para cross-instance deduplication
+              const alreadyProcessed = await isMessageProcessed(
+                message.id,
+                change.value.metadata.phone_number_id,
+                "message"
+              );
+
+              if (alreadyProcessed) {
                 results.push({
                   success: true,
                   messageId: message.id,
@@ -183,9 +190,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 });
                 continue;
               }
-
-              // Mark as processed BEFORE processing (prevent race conditions)
-              processedMessages.add(message.id);
 
               // ✅ FILTER OLD MESSAGES: Meta best practice (skip messages >12 minutes old)
               const messageTimestamp = message.timestamp * 1000; // Convert to ms
@@ -202,16 +206,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 continue;
               }
 
+              // Extract contact name from webhook payload (if available)
+              const contactName = change.value.contacts?.[0]?.profile?.name;
+
               const incomingMessage: IncomingMessage = {
                 messageId: message.id,
                 from: message.from,
                 to: change.value.metadata.phone_number_id,
                 type: message.type as any,
                 body: message.text?.body || '',
-                timestamp: message.timestamp
+                timestamp: message.timestamp,
+                // Agregar sticker metadata si existe
+                sticker: message.sticker ? {
+                  id: message.sticker.id,
+                  mimeType: message.sticker.mime_type,
+                  animated: message.sticker.animated
+                } : undefined
               };
 
-              const result = await processIncomingMessage(incomingMessage);
+              const result = await processIncomingMessage(incomingMessage, contactName, change.value.metadata.phone_number_id);
               results.push(result);
             } catch (error) {
               console.error("Error processing individual message:", error);
@@ -223,9 +236,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             }
           }
         } else if ((change.field as string) === "smb_message_echoes" && (change.value as any).message_echoes) {
-          // Process echo messages - save but don't respond
+          // Process echo messages - save AND activate manual mode (auto-takeover)
           for (const echoMessage of (change.value as any).message_echoes) {
             try {
+              // ✅ DEDUPLICATION: Check if echo already processed
+              const alreadyProcessed = await isMessageProcessed(
+                echoMessage.id,
+                change.value.metadata.phone_number_id,
+                "echo"
+              );
+
+              if (alreadyProcessed) {
+                results.push({
+                  success: true,
+                  messageId: echoMessage.id,
+                  type: 'echo',
+                  skipped: true,
+                  reason: "duplicate"
+                });
+                continue;
+              }
 
               // Find integration and conversation for echo message
               const integration = await findIntegrationByPhoneNumber(
@@ -251,11 +281,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                   }
                 });
 
+                // 🔥 AUTO-TAKEOVER: Activar modo manual cuando el negocio responde desde su teléfono
+                await db.conversation.update({
+                  where: { id: conversation.id },
+                  data: {
+                    manualMode: true,
+                    lastEchoAt: new Date(),
+                  },
+                });
+
+                console.log(`✅ [Auto-Takeover] Activated manual mode for conversation ${conversation.id} (echo from business)`);
+
                 results.push({
                   success: true,
                   messageId: echoMessage.id,
                   type: 'echo',
-                  conversationId: conversation.id
+                  conversationId: conversation.id,
+                  autoTakeover: true,
                 });
               }
             } catch (error) {
@@ -577,7 +619,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 /**
  * Process an incoming WhatsApp message - simplified direct approach
  */
-async function processIncomingMessage(message: IncomingMessage) {
+async function processIncomingMessage(message: IncomingMessage, contactName?: string, phoneNumberId?: string) {
 
   try {
     // Find the integration for this phone number
@@ -599,17 +641,72 @@ async function processIncomingMessage(message: IncomingMessage) {
       throw new Error("Chatbot not found");
     }
 
+    // ✅ CREATE/UPDATE CONTACT: Save contact info from WhatsApp when message arrives
+    if (contactName) {
+      try {
+        const normalizedPhone = message.from.replace(/\D/g, "").slice(-10);
+
+        await db.contact.upsert({
+          where: {
+            chatbotId_phone: {
+              chatbotId: integration.chatbotId,
+              phone: normalizedPhone,
+            }
+          },
+          create: {
+            chatbotId: integration.chatbotId,
+            name: contactName,
+            phone: normalizedPhone,
+            source: "WHATSAPP",
+            status: "NEW",
+          },
+          update: {
+            name: contactName,
+            lastUpdated: new Date(),
+          },
+        });
+
+        console.log(`✅ Contact saved: ${contactName} (${normalizedPhone})`);
+      } catch (contactError) {
+        console.error("⚠️ Failed to save contact, continuing:", contactError);
+        // Don't fail the message processing if contact save fails
+      }
+    }
+
     // Create or find conversation
     const conversation = await getOrCreateConversation(
       message.from,
       integration.chatbotId
     );
 
+    // 🎨 HANDLE STICKERS: Download and save sticker media
+    let stickerUrl: string | undefined;
+    if (message.type === "sticker" && message.sticker && integration.token) {
+      try {
+        console.log(`📎 [Sticker] Downloading sticker ${message.sticker.id}...`);
+        const stickerResult = await downloadWhatsAppSticker(
+          message.sticker.id,
+          integration.token
+        );
+
+        if (stickerResult.success && stickerResult.url) {
+          stickerUrl = stickerResult.url;
+          console.log(`✅ [Sticker] Downloaded successfully (${message.sticker.animated ? 'animated' : 'static'})`);
+        } else {
+          console.error(`❌ [Sticker] Download failed: ${stickerResult.error}`);
+        }
+      } catch (stickerError) {
+        console.error(`❌ [Sticker] Error downloading:`, stickerError);
+        // Continue processing even if sticker download fails
+      }
+    }
+
     // Save the incoming message first
     const userMessage = await addWhatsAppUserMessage(
       conversation.id,
-      message.body,
-      message.messageId
+      message.type === "sticker" ? "📎 Sticker" : message.body,
+      message.messageId,
+      stickerUrl // Pass sticker URL to save in picture field
     );
 
     // Check if conversation is in manual mode

@@ -257,14 +257,18 @@ export async function addSystemMessage(
 export async function addWhatsAppUserMessage(
   conversationId: string,
   content: string,
-  whatsappMessageId: string
+  whatsappMessageId: string,
+  picture?: string // Sticker or image URL (data URL format)
 ): Promise<Message> {
-  return createMessage({
-    conversationId,
-    content,
-    role: MessageRole.USER,
-    channel: "whatsapp",
-    externalMessageId: whatsappMessageId,
+  return db.message.create({
+    data: {
+      conversationId,
+      content,
+      role: MessageRole.USER,
+      channel: "whatsapp",
+      externalMessageId: whatsappMessageId,
+      picture, // Save sticker/image
+    },
   });
 }
 

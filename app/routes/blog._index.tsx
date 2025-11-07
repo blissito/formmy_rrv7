@@ -102,20 +102,20 @@ const BlogCardBasic = ({
 );
 
 // Componente para la tarjeta de blog sólida
-const BlogCardSolid = ({ 
-  image, 
-  title, 
-  excerpt, 
-  slug, 
+const BlogCardSolid = ({
+  image,
+  title,
+  excerpt,
+  slug,
   variant = 'useCase',
   tags = [],
   index = 0,
   className = ''
-}: { 
-  image: string; 
-  title: string; 
-  excerpt?: string; 
-  slug: string; 
+}: {
+  image: string;
+  title: string;
+  excerpt?: string;
+  slug: string;
   variant?: 'useCase' | 'tutorial';
   tags?: string[];
   index?: number;
@@ -129,16 +129,22 @@ const BlogCardSolid = ({
     transition={{ delay: index * 0.1 }}
     className={cn(
       'w-full h-full col-span-1 md:col-span-2 rounded-3xl overflow-hidden ',
-      variant === 'useCase' ? 'bg-dark' : 'bg-brand-500',
       className
     )}
   >
     <Link to={`/blog/${slug}`} className="block h-full">
       <div className="rounded-3xl overflow-hidden h-full min-h-[400px] relative group">
+        <motion.img
+          className='w-full h-full object-cover group-hover:scale-110 transition-all'
+          src={image}
+          alt={title}
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.3 }}
+        />
         <span className="absolute top-6 left-6 text-white z-20 flex gap-2 items-center">
           <div className="w-2 h-2 bg-white rounded-full"></div> {variant === 'useCase' ? 'Caso de Uso' : 'Tutorial'}
         </span>
-        <div className='w-full h-full absolute top-0 left-0 flex flex-col justify-end z-10 items-start p-6 '>
+        <div className='w-full h-full absolute top-0 left-0 flex flex-col justify-end z-10 items-start p-6 bg-black/50'>
           <h2 className='text-white text-4xl mb-8'>{title}</h2>
           <div className="flex justify-between w-full items-center gap-2 h-10">
             <div className="flex gap-2 flex-wrap">
@@ -146,7 +152,7 @@ const BlogCardSolid = ({
                 <BlogTag key={index} tag={tag} />
               ))}
             </div>
-            <motion.div 
+            <motion.div
               className="w-10 h-10 grid place-items-center"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}

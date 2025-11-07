@@ -374,6 +374,7 @@ model Conversation {
   messageCount Int                @default(0)
   isFavorite   Boolean            @default(false)
   manualMode   Boolean            @default(false) // Para controlar respuestas manuales vs automáticas
+  lastEchoAt   DateTime?          // Última vez que se recibió un eco (mensaje del negocio desde teléfono)
   chatbotId    String?            @db.ObjectId // ✅ Nullable para permitir Ghosty (sin chatbot real)
   chatbot      Chatbot?           @relation(fields: [chatbotId], references: [id])
   messages     Message[]
@@ -891,4 +892,20 @@ model VoiceSession {
   @@index([userId, status])
   @@index([chatbotId, startTime])
   @@index([status])
+}
+
+// ============================================================================
+// WHATSAPP MESSAGE DEDUPLICATION
+// ============================================================================
+
+model ProcessedWebhook {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  externalId     String   @unique // WhatsApp message ID o echo ID
+  type           String   // "message" | "echo" | "status"
+  phoneNumberId  String   // ID del número de WhatsApp
+  processedAt    DateTime @default(now())
+  expiresAt      DateTime // TTL index - auto-delete después de X tiempo
+
+  @@index([expiresAt])
+  @@index([phoneNumberId, type])
 }

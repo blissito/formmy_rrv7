@@ -497,12 +497,6 @@ const Conversation = forwardRef<
     }
   };
 
-  // Mostrar número de WhatsApp formateado si está disponible en lugar de "Usuario xxxx"
-  // Si el número existe y no es "N/A", formatearlo; de lo contrario, usar userName
-  const displayName = (conversation.tel && conversation.tel !== "N/A")
-    ? formatPhoneNumber(conversation.tel)
-    : conversation.userName;
-
   return (
     <section
       ref={ref}
@@ -521,7 +515,12 @@ const Conversation = forwardRef<
     >
       <Avatar className="w-10" src={pic} />
       <div className="flex-1 truncate">
-        <p className="font-medium text-base mb-0 pb-0">{displayName}</p>
+        <div className="flex items-baseline gap-2">
+          <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
+          {conversation.tel && conversation.tel !== "N/A" && (
+            <p className="text-[10px] text-gray-400 truncate">{formatPhoneNumber(conversation.tel)}</p>
+          )}
+        </div>
         <p className="text-xs text-irongray truncate -mt-[2px] grow">
           {lastUserMessage?.content}
         </p>
@@ -633,10 +632,14 @@ const ChatHeader = ({
       <Avatar className="h-10 w-10" src={conversation.messages[0]?.picture || "/assets/chat/ghosty.svg"} />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-dark ">
-            {/* Mostrar número de WhatsApp formateado si está disponible en lugar de "Usuario xxxx" */}
-            {tel && tel !== "N/A" ? formatPhoneNumber(tel) : (conversation.userName || "User")}
-          </h3>
+          <div className="flex flex-col">
+            <h3 className="text-sm font-semibold text-dark ">
+              {conversation.userName || "User"}
+            </h3>
+            {tel && tel !== "N/A" && (
+              <p className="text-[10px] text-gray-400">{formatPhoneNumber(tel)}</p>
+            )}
+          </div>
           {/* Logo WhatsApp si es conversación de WhatsApp */}
           {isWhatsAppConversation && (
             <img src="/assets/chat/whatsapp.svg" alt="WhatsApp" className="w-5 h-5" />
@@ -1186,12 +1189,28 @@ export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: UIMessag
 };
 
 const UserMessage = ({ message }: { message: UIMessage }) => {
+  // Detectar si el mensaje contiene un sticker (picture es una data URL o URL de imagen)
+  const isSticker = message.picture && message.content === "📎 Sticker";
+
   return (
     <div className="justify-end flex items-start gap-2">
-      <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
-        {message.content}
-      </div>
-      <Avatar className="w-8 h-8 flex-shrink-0" src={message.picture} />
+      {isSticker ? (
+        // Mostrar sticker como imagen
+        <div className="max-w-[200px]">
+          <img
+            src={message.picture}
+            alt="Sticker"
+            className="rounded-xl w-full h-auto"
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        // Mensaje de texto normal
+        <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
+          {message.content}
+        </div>
+      )}
+      <Avatar className="w-8 h-8 flex-shrink-0" src={!isSticker ? message.picture : undefined} />
     </div>
   );
 };

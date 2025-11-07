@@ -38,6 +38,7 @@ export type MessageType =
   | "document"
   | "audio"
   | "video"
+  | "sticker"
   | "template";
 
 export interface MessageResponse {
@@ -54,6 +55,11 @@ export interface IncomingMessage {
   readonly timestamp: string;
   readonly type: MessageType;
   readonly mediaId?: string;
+  readonly sticker?: {
+    readonly id: string;
+    readonly mimeType: string;
+    readonly animated: boolean;
+  };
 }
 
 // ============================================================================
