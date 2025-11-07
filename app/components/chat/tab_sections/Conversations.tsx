@@ -1189,13 +1189,13 @@ export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: UIMessag
 };
 
 const UserMessage = ({ message }: { message: UIMessage }) => {
-  // Detectar si el mensaje contiene un sticker (picture es una data URL o URL de imagen)
-  const isSticker = message.picture && message.content === "📎 Sticker";
+  // Detectar si el mensaje contiene un sticker (picture contiene imagen, content es "📎 Sticker")
+  const hasMultimedia = message.picture && message.content === "📎 Sticker";
 
   return (
     <div className="justify-end flex items-start gap-2">
-      {isSticker ? (
-        // Mostrar sticker como imagen
+      {hasMultimedia ? (
+        // Mostrar sticker/imagen como contenido
         <div className="max-w-[200px]">
           <img
             src={message.picture}
@@ -1210,7 +1210,8 @@ const UserMessage = ({ message }: { message: UIMessage }) => {
           {message.content}
         </div>
       )}
-      <Avatar className="w-8 h-8 flex-shrink-0" src={!isSticker ? message.picture : undefined} />
+      {/* ✅ Avatar del usuario siempre visible (foto de perfil de WhatsApp) */}
+      <Avatar className="w-8 h-8 flex-shrink-0" src={message.avatarUrl} />
     </div>
   );
 };
