@@ -39,7 +39,7 @@ export function WhatsAppSyncBanner({ chatbotId }: WhatsAppSyncBannerProps) {
   const statusConfig: Record<SyncStatus, { icon: string; text: string; color: string; showRetry: boolean }> = {
     not_synced: {
       icon: "📱",
-      text: "WhatsApp conectado",
+      text: "No sincronizado",
       color: "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300",
       showRetry: false,
     },
