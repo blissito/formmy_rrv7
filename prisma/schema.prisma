@@ -302,6 +302,9 @@ model Contact {
   source   String        @default("chatbot") // Fuente: chatbot, whatsapp, etc.
   status   ContactStatus @default(NEW) // Estado del lead en el embudo
 
+  // WhatsApp Profile Data
+  profilePictureUrl String? // URL de la foto de perfil de WhatsApp
+
   // Relaciones
   chatbotId String  @db.ObjectId
   chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
