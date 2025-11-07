@@ -234,9 +234,8 @@ export const Conversations = ({
 
   return (
     <>
-      {/* Banner de sincronización de WhatsApp (solo se muestra si está activo) */}
-      {/* TEMPORALMENTE DESHABILITADO - Causaba problemas de carga */}
-      {/* <WhatsAppSyncBanner chatbotId={chatbot.id} /> */}
+      {/* Banner de sincronización de WhatsApp - Siempre visible para debugging */}
+      <WhatsAppSyncBanner chatbotId={chatbot.id} />
 
       <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
         <article className={cn("col-span-12 md:col-span-3", "flex flex-col h-full gap-4 md:gap-6")}>

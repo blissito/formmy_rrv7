@@ -1,6 +1,6 @@
 /**
- * Banner minimalista para mostrar sincronización de WhatsApp
- * Solo aparece en Conversaciones cuando hay sync activo
+ * Banner para debugging de sincronización de WhatsApp
+ * SIEMPRE VISIBLE - Muestra estado real de la sincronización
  */
 
 import { useWhatsAppSyncStatus } from "~/hooks/useWhatsAppSyncStatus";
@@ -12,70 +12,127 @@ interface WhatsAppSyncBannerProps {
 
 export function WhatsAppSyncBanner({ chatbotId }: WhatsAppSyncBannerProps) {
   const { integration, isLoading: isLoadingIntegration } = useWhatsAppIntegration(chatbotId);
-  const { syncStatus } = useWhatsAppSyncStatus(integration?.id || null, !!integration);
+  const { syncStatus, retrySync } = useWhatsAppSyncStatus(integration?.id || null, !!integration);
 
-  // TEMPORALMENTE COMENTADO: SIEMPRE MOSTRAR EL BANNER PARA DEBUG
-  // // No mostrar nada mientras carga
-  // if (isLoadingIntegration) {
-  //   return null;
-  // }
+  // Determinar el estado visual
+  const status = syncStatus?.syncStatus || "no_integration";
 
-  // // No mostrar nada si no hay integración o ya completó
-  // if (!syncStatus || syncStatus.syncStatus === "completed" || syncStatus.syncStatus === null) {
-  //   return null;
-  // }
+  // Configuración por estado
+  const statusConfig = {
+    no_integration: {
+      color: "gray",
+      icon: "❌",
+      title: "Sin integración de WhatsApp",
+      spinning: false,
+    },
+    pending: {
+      color: "yellow",
+      icon: "⏳",
+      title: "Sincronización pendiente",
+      spinning: false,
+    },
+    syncing: {
+      color: "blue",
+      icon: "🔄",
+      title: "Sincronizando WhatsApp...",
+      spinning: true,
+    },
+    completed: {
+      color: "green",
+      icon: "✅",
+      title: "Sincronización completada",
+      spinning: false,
+    },
+    failed: {
+      color: "red",
+      icon: "⚠️",
+      title: "Error en sincronización",
+      spinning: false,
+    },
+  };
 
-  // Estado: Pending o Sincronizando (SIEMPRE VISIBLE AHORA)
-  // if (syncStatus.syncStatus === "pending" || syncStatus.syncStatus === "syncing") {
-    return (
-      <div className="relative z-[9999] mb-4 rounded-xl border-4 border-orange-500 bg-orange-100 px-6 py-4 shadow-2xl">
-        <div className="flex items-center gap-3">
-          <div className="flex-shrink-0">
-            <div className="h-8 w-8 rounded-full border-4 border-orange-600 border-t-transparent animate-spin" />
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.no_integration;
+
+  // Estilos por estado usando las clases del app
+  const getStylesByStatus = () => {
+    switch (status) {
+      case "pending":
+        return {
+          container: "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20",
+          spinner: "border-yellow-600",
+          title: "text-yellow-900 dark:text-yellow-100",
+        };
+      case "syncing":
+        return {
+          container: "border-brand-400 bg-brand-50 dark:bg-brand-900/20",
+          spinner: "border-brand-600",
+          title: "text-brand-900 dark:text-brand-100",
+        };
+      case "completed":
+        return {
+          container: "border-green-400 bg-green-50 dark:bg-green-900/20",
+          spinner: "border-green-600",
+          title: "text-green-900 dark:text-green-100",
+        };
+      case "failed":
+        return {
+          container: "border-red-400 bg-red-50 dark:bg-red-900/20",
+          spinner: "border-red-600",
+          title: "text-red-900 dark:text-red-100",
+        };
+      default: // no_integration
+        return {
+          container: "border-gray-400 bg-gray-50 dark:bg-gray-900/20",
+          spinner: "border-gray-600",
+          title: "text-gray-900 dark:text-gray-100",
+        };
+    }
+  };
+
+  const styles = getStylesByStatus();
+
+  return (
+    <div className={`mb-4 rounded-xl border-2 ${styles.container} px-4 py-3 shadow-sm`}>
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0">
+          {config.spinning ? (
+            <div className={`h-6 w-6 rounded-full border-3 ${styles.spinner} border-t-transparent animate-spin`} />
+          ) : (
+            <div className="text-2xl">{config.icon}</div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-semibold ${styles.title}`}>
+            {config.title}
+          </p>
+
+          {/* Debug info */}
+          <div className="mt-2 space-y-1 text-xs font-mono text-irongray dark:text-gray-400">
+            <div>Status: <span className="font-bold text-dark dark:text-clear">{status}</span></div>
+            <div>Integration ID: <span className="font-bold text-dark dark:text-clear">{integration?.id?.slice(0, 12) || "null"}...</span></div>
+            <div>Loading: <span className="font-bold text-dark dark:text-clear">{isLoadingIntegration ? "true" : "false"}</span></div>
+            {syncStatus?.syncAttempts !== undefined && (
+              <div>Attempts: <span className="font-bold text-dark dark:text-clear">{syncStatus.syncAttempts}</span></div>
+            )}
+            {syncStatus?.syncError && (
+              <div className="text-red-600 dark:text-red-400 mt-1">Error: {syncStatus.syncError}</div>
+            )}
+            {syncStatus?.syncCompletedAt && (
+              <div>Completed: {new Date(syncStatus.syncCompletedAt).toLocaleString()}</div>
+            )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-lg font-bold text-orange-900">
-              🔥 BANNER DE DEBUG - SIEMPRE VISIBLE 🔥
-            </p>
-            <p className="text-sm text-orange-700 mt-1 font-mono">
-              syncStatus={syncStatus?.syncStatus || "null"} | integration={integration?.id?.slice(0, 8) || "null"}
-            </p>
-          </div>
+
+          {/* Botón de retry si falló */}
+          {status === "failed" && (
+            <button
+              onClick={retrySync}
+              className="mt-3 px-3 py-1.5 text-xs font-medium bg-brand-500 text-white rounded-lg hover:bg-brand-600 active:scale-95 transition-all"
+            >
+              🔄 Reintentar sincronización
+            </button>
+          )}
         </div>
       </div>
-    );
-  // }
-
-  // TEMPORALMENTE COMENTADO: Estado de Error
-  // return (
-  //   <div className="mb-4 rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-4 py-3">
-  //     <div className="flex items-start gap-3">
-  //       <div className="flex-shrink-0">
-  //         <svg
-  //           className="h-5 w-5 text-red-600 dark:text-red-400"
-  //           fill="none"
-  //           viewBox="0 0 24 24"
-  //           stroke="currentColor"
-  //         >
-  //           <path
-  //             strokeLinecap="round"
-  //             strokeLinejoin="round"
-  //             strokeWidth={2}
-  //             d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-  //           />
-  //         </svg>
-  //       </div>
-  //       <div className="flex-1 min-w-0">
-  //         <p className="text-sm font-medium text-space-800 dark:text-clear">
-  //           Error al sincronizar WhatsApp
-  //         </p>
-  //         {syncStatus.syncError && (
-  //           <p className="text-xs text-space-600 dark:text-gray-400 mt-1">
-  //             {syncStatus.syncError}
-  //           </p>
-  //         )}
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
+    </div>
+  );
 }
