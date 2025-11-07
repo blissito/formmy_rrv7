@@ -19,13 +19,13 @@ export function WhatsAppSyncBanner({ chatbotId }: WhatsAppSyncBannerProps) {
     return null;
   }
 
-  // No mostrar nada si no hay integración o no está sincronizando
-  if (!syncStatus || (syncStatus.syncStatus !== "syncing" && syncStatus.syncStatus !== "failed")) {
+  // No mostrar nada si no hay integración o ya completó
+  if (!syncStatus || syncStatus.syncStatus === "completed" || syncStatus.syncStatus === null) {
     return null;
   }
 
-  // Estado: Sincronizando
-  if (syncStatus.syncStatus === "syncing") {
+  // Estado: Pending o Sincronizando
+  if (syncStatus.syncStatus === "pending" || syncStatus.syncStatus === "syncing") {
     return (
       <div className="mb-4 rounded-xl border border-brand-200 dark:border-brand-500/30 bg-brand-50 dark:bg-brand-500/10 px-4 py-3">
         <div className="flex items-center gap-3">

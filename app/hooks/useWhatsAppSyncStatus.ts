@@ -111,13 +111,8 @@ export function useWhatsAppSyncStatus(
     // Fetch inicial
     fetchSyncStatus();
 
-    // Iniciar polling solo si syncStatus es "pending" o "syncing"
-    if (
-      syncStatus?.syncStatus === "pending" ||
-      syncStatus?.syncStatus === "syncing"
-    ) {
-      startPolling();
-    }
+    // Iniciar polling SIEMPRE (se detendrá cuando syncStatus sea "completed" o "failed")
+    startPolling();
 
     // Cleanup
     return () => {
@@ -126,7 +121,7 @@ export function useWhatsAppSyncStatus(
         intervalRef.current = null;
       }
     };
-  }, [integrationId, enabled, syncStatus?.syncStatus]);
+  }, [integrationId, enabled]);
 
   return {
     syncStatus,
