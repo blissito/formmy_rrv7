@@ -15,6 +15,8 @@ import { createAgent } from "../../server/agent-engine-v0";
 import { agentStreamEvent } from "@llamaindex/workflow";
 import { isMessageProcessed } from "../../server/integrations/whatsapp/deduplication.service";
 import { downloadWhatsAppSticker } from "../../server/integrations/whatsapp/media.service";
+import { shouldProcessMessage } from "../../server/integrations/whatsapp/message-debounce.service";
+import { updateContactAvatar } from "../../server/integrations/whatsapp/avatar.service";
 
 // Types for WhatsApp webhook payload
 interface WhatsAppWebhookEntry {
@@ -174,6 +176,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           // Process regular messages
           for (const message of change.value.messages) {
             try {
+              // 🚀 DEBOUNCING: Verificar ventana de 5 segundos (previene duplicados rápidos)
+              const shouldProcess = await shouldProcessMessage(
+                message.id,
+                change.value.metadata.phone_number_id,
+                "message"
+              );
+
+              if (!shouldProcess) {
+                results.push({
+                  success: true,
+                  messageId: message.id,
+                  skipped: true,
+                  reason: "debounced"
+                });
+                continue;
+              }
+
               // ✅ DEDUPLICATION: Check MongoDB para cross-instance deduplication
               const alreadyProcessed = await isMessageProcessed(
                 message.id,
@@ -239,6 +258,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           // Process echo messages - save AND activate manual mode (auto-takeover)
           for (const echoMessage of (change.value as any).message_echoes) {
             try {
+              // 🚀 DEBOUNCING: Verificar ventana de 5 segundos
+              const shouldProcess = await shouldProcessMessage(
+                echoMessage.id,
+                change.value.metadata.phone_number_id,
+                "echo"
+              );
+
+              if (!shouldProcess) {
+                results.push({
+                  success: true,
+                  messageId: echoMessage.id,
+                  type: 'echo',
+                  skipped: true,
+                  reason: "debounced"
+                });
+                continue;
+              }
+
               // ✅ DEDUPLICATION: Check if echo already processed
               const alreadyProcessed = await isMessageProcessed(
                 echoMessage.id,
@@ -689,6 +726,17 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
         });
 
         console.log(`✅ Contact saved: ${contactName} (${normalizedPhone})`);
+
+        // 📸 FETCH AVATAR: Obtener foto de perfil de WhatsApp (async, no bloqueante)
+        if (integration.token) {
+          updateContactAvatar(
+            integration.chatbotId,
+            normalizedPhone,
+            integration.token
+          ).catch((err) => {
+            console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
+          });
+        }
       } catch (contactError) {
         console.error("⚠️ Failed to save contact, continuing:", contactError);
         // Don't fail the message processing if contact save fails
@@ -748,11 +796,12 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     const recentMessages = await db.message.findMany({
       where: { conversationId: conversation.id },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 20, // Unificado a 20 mensajes (window estándar)
       select: {
         role: true,
         content: true,
-        createdAt: true
+        createdAt: true,
+        channel: true // ✅ Incluir channel para detectar mensajes echo
       }
     });
 
@@ -891,10 +940,17 @@ async function generateChatbotResponse(
     const agent = await createAgent(chatbot, user);
 
     // Build conversation history from recent messages
-    const chatHistory = conversationHistory?.slice(-10).map(msg => ({
-      role: (msg.role === "USER" ? "user" : "assistant") as any,
-      content: msg.content
-    })) || [];
+    const chatHistory = conversationHistory?.slice(-20).map(msg => {
+      const role = (msg.role === "USER" ? "user" : "assistant") as any;
+      let content = msg.content;
+
+      // 📱 Marcar mensajes echo (respuestas manuales del negocio)
+      if (role === "assistant" && (msg as any).channel === "whatsapp_echo") {
+        content = `📱 [Respuesta manual del negocio]: ${content}`;
+      }
+
+      return { role, content };
+    }) || [];
 
     // Generate response using agent - use direct method to avoid streaming complexity
     let responseContent = '';

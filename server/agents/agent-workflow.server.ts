@@ -249,6 +249,20 @@ When user asks to read emails, try using read_gmail() first. If it fails with au
 `;
   }
 
+  // 📱 Instrucciones de modo manual (para WhatsApp)
+  const manualModeInstructions = `
+📱 CONTEXTO DE MODO MANUAL (WHATSAPP):
+En conversaciones de WhatsApp, a veces el negocio responde manualmente desde su teléfono.
+Estos mensajes están marcados con "📱 [Respuesta manual del negocio]".
+
+IMPORTANTE:
+- Cuando veas un mensaje manual, el negocio está interviniendo directamente
+- Mantén coherencia con lo que el negocio dijo manualmente
+- Si el cliente pregunta algo que el negocio ya respondió manualmente, refiere a esa respuesta
+- No repitas información que el negocio ya proporcionó manualmente
+`;
+
+
   // 🎯 CUSTOM INSTRUCTIONS PRIMERO (máxima prioridad)
   let customInstructionsBlock = '';
   if (config.customInstructions) {
@@ -270,7 +284,7 @@ ${config.customInstructions}
     basePrompt = `${searchInstructions}
 ${customInstructionsBlock}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}
 
-${toolGroundingRules}${gmailInstructions}`;
+${toolGroundingRules}${gmailInstructions}${manualModeInstructions}`;
   } else {
     // Fallback a personalidades genéricas (friendly, professional)
     const personalityMap: Record<string, string> = {
@@ -286,7 +300,7 @@ ${config.instructions || "Asistente útil."}
 
 Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu personalidad.
 
-${toolGroundingRules}${gmailInstructions}`;
+${toolGroundingRules}${gmailInstructions}${manualModeInstructions}`;
   }
 
   // 🛡️ Restricciones de seguridad para web_search_google
@@ -411,10 +425,21 @@ async function createSingleAgent(
       return `${roleLabel}: ${msg.content}`;
     }).join('\n\n');
 
+    // 📊 Estimar tamaño del historial (4 chars ≈ 1 token)
+    const estimatedTokens = Math.ceil(historyText.length / 4);
+    const TOKEN_LIMIT = 8000;
+
+    // ⚠️ Logging de advertencia si el historial es muy grande
+    if (estimatedTokens > TOKEN_LIMIT * 0.8) { // 80% del límite
+      console.warn(`⚠️ [Memory] Historial grande detectado: ${estimatedTokens}/${TOKEN_LIMIT} tokens (${conversationHistory.length} mensajes)`);
+      console.warn(`   LlamaIndex puede truncar automáticamente. Considera reducir window size.`);
+    } else if (estimatedTokens > TOKEN_LIMIT * 0.5) { // 50% del límite
+      console.log(`📊 [Memory] Historial: ${estimatedTokens}/${TOKEN_LIMIT} tokens (${conversationHistory.length} mensajes)`);
+    }
 
     // 🚀 Crear memoria con staticBlock (patrón oficial LlamaIndex)
     memory = createMemory({
-      tokenLimit: 8000,
+      tokenLimit: TOKEN_LIMIT,
       memoryBlocks: [
         staticBlock({
           content: `Historial de la conversación:\n\n${historyText}`,

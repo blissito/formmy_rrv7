@@ -337,14 +337,21 @@ async function handleChatV0(params: {
     const allMessages = await getMessagesByConversationId(conversation.id);
 
 
-    // Truncar a últimos 50 mensajes (todos los planes)
-    const recentMessages = allMessages.slice(-50);
+    // Truncar a últimos 20 mensajes (window estándar - cabe en 8K tokens)
+    const recentMessages = allMessages.slice(-20);
 
     // Formatear historial para el agente (SOLO mensajes anteriores)
-    const history = recentMessages.map(msg => ({
-      role: msg.role.toLowerCase() as "user" | "assistant",
-      content: msg.content
-    }));
+    const history = recentMessages.map(msg => {
+      const role = msg.role.toLowerCase() as "user" | "assistant";
+      let content = msg.content;
+
+      // 📱 Marcar mensajes echo (respuestas manuales del negocio en WhatsApp)
+      if (role === "assistant" && (msg as any).channel === "whatsapp_echo") {
+        content = `📱 [Respuesta manual del negocio]: ${content}`;
+      }
+
+      return { role, content };
+    });
 
 
     // Ahora sí guardar mensaje del usuario (después de cargar historial)
