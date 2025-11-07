@@ -5,7 +5,7 @@
  */
 
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { WhatsAppSyncService } from "server/integrations/whatsapp/sync.service";
+import { WhatsAppSyncService } from "server/integrations/whatsapp/sync.service.server";
 import { getSession } from "~/sessions";
 import { db } from "~/utils/db.server";
 

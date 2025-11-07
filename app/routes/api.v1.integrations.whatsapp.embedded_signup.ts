@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
 import { db } from "~/utils/db.server";
 import { getSession } from "~/sessions";
-import { WhatsAppSyncService } from "server/integrations/whatsapp/sync.service";
+import { WhatsAppSyncService } from "server/integrations/whatsapp/sync.service.server";
 
 // Mock encryptText para desarrollo
 const encryptText = (text: string) => `encrypted_${text}`;

@@ -5,7 +5,7 @@
  */
 
 import { getAgenda } from './jobs/agenda.server';
-import { WhatsAppSyncService } from './integrations/whatsapp/sync.service';
+import { WhatsAppSyncService } from './integrations/whatsapp/sync.service.server';
 import { registerWeeklyEmailsWorker } from './jobs/workers/weekly-emails-worker';
 
 /**
