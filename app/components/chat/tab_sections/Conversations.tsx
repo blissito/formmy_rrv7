@@ -1351,6 +1351,9 @@ const LIST_STYLES = `
  * Pueden existir ejemplos positivos y negativos 👎🏼
  */
 const AssistantMessage = ({ message, avatarUrl }: { message: UIMessage; avatarUrl?: string }) => {
+  // Detectar si el mensaje contiene un sticker (picture contiene imagen, content es "📎 Sticker")
+  const hasMultimedia = message.picture && message.content === "📎 Sticker";
+
   const markdownComponents = {
     a: ({ children, href }: any) => (
       <a href={href} target="_blank" rel="noopener noreferrer">
@@ -1395,17 +1398,29 @@ const AssistantMessage = ({ message, avatarUrl }: { message: UIMessage; avatarUr
     <div className="justify-start flex items-start gap-2">
       <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
       <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
-      <div className="text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
-        <div className={PROSE_STYLES}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={markdownComponents}
-          >
-            {message.content}
-          </ReactMarkdown>
+      {hasMultimedia ? (
+        // Mostrar sticker/imagen como contenido
+        <div className="max-w-[200px]">
+          <img
+            src={message.picture}
+            alt="Sticker"
+            className="rounded-xl w-full h-auto"
+            loading="lazy"
+          />
         </div>
-        <MicroLikeButton />
-      </div>
+      ) : (
+        <div className="text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
+          <div className={PROSE_STYLES}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={markdownComponents}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
+          <MicroLikeButton />
+        </div>
+      )}
     </div>
   );
 };
