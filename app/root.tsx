@@ -15,6 +15,7 @@ import useGoogleTM from "./utils/useGoogleTM";
 import useFacebookPixel from "./utils/useFacebookPixel";
 import { Toaster } from "react-hot-toast";
 import { useTagManager } from "./utils/useTagManager";
+import { initializeServer } from "server/init.server";
 
 // Flag to ensure server initialization happens only once
 let serverInitialized = false;
@@ -25,9 +26,6 @@ let serverInitialized = false;
 export async function loader() {
   if (!serverInitialized && typeof window === "undefined") {
     serverInitialized = true;
-
-    // Dynamic import to ensure this only runs on the server
-    const { initializeServer } = await import("server/init.server");
 
     await initializeServer().catch((error) => {
       console.error("⚠️  Server initialization failed:", error);
