@@ -922,6 +922,7 @@ model DebouncedMessage {
   processedAt    DateTime @default(now())
   expiresAt      DateTime // TTL index - auto-delete después de 1 minuto
 
+  @@unique([messageId, phoneNumberId, type])
   @@index([expiresAt])
   @@index([messageId, phoneNumberId, type, processedAt])
 }
