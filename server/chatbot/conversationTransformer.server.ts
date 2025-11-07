@@ -42,12 +42,19 @@ export function transformConversationsToUI(
   chatbotAvatarUrl?: string,
   contacts?: Contact[]
 ): UIConversation[] {
-  // Create phone number to contact map for O(1) lookup
+  // Create phone number to contact map for O(1) lookup with normalized keys
   const contactsByPhone = new Map<string, Contact>();
   if (contacts) {
     for (const contact of contacts) {
       if (contact.phone) {
+        // Store with both original and last 10 digits for flexible matching
         contactsByPhone.set(contact.phone, contact);
+
+        // Also index by last 10 digits for matching across different formats
+        const normalizedPhone = contact.phone.slice(-10);
+        if (normalizedPhone.length === 10) {
+          contactsByPhone.set(normalizedPhone, contact);
+        }
       }
     }
   }
@@ -76,7 +83,15 @@ export function transformConversationToUI(
   // Try to get contact name from synced contacts
   let userName = "Usuario Web";
   if (phoneNumber && contactsByPhone) {
-    const contact = contactsByPhone.get(phoneNumber);
+    // Try exact match first
+    let contact = contactsByPhone.get(phoneNumber);
+
+    // If no exact match, try last 10 digits (normalized)
+    if (!contact && phoneNumber.length >= 10) {
+      const normalizedPhone = phoneNumber.slice(-10);
+      contact = contactsByPhone.get(normalizedPhone);
+    }
+
     if (contact?.name) {
       userName = contact.name;
     } else {
