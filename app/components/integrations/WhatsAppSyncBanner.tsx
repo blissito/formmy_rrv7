@@ -30,16 +30,16 @@ export function WhatsAppSyncBanner({ chatbotId }: WhatsAppSyncBannerProps) {
 
   const status = getStatus();
 
-  // No mostrar banner si está completado o si nunca se ha sincronizado
-  if (status === "completed" || status === "not_synced" || !integration) {
+  // No mostrar banner si no hay integración
+  if (!integration) {
     return null;
   }
 
   // Configuración por estado
   const statusConfig: Record<SyncStatus, { icon: string; text: string; color: string; showRetry: boolean }> = {
     not_synced: {
-      icon: "ℹ️",
-      text: "Sin sincronizar",
+      icon: "📱",
+      text: "WhatsApp conectado",
       color: "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300",
       showRetry: false,
     },
