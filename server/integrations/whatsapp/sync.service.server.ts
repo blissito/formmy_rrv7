@@ -210,13 +210,10 @@ export class WhatsAppSyncService {
       return { success: false, error: "Integration not found or missing credentials" };
     }
 
-    // Remover el prefijo "encrypted_" del token (mock encryption)
-    const accessToken = integration.token.replace("encrypted_", "");
-
     return this.initializeSync(
       integrationId,
       integration.phoneNumberId,
-      accessToken
+      integration.token
     );
   }
 }

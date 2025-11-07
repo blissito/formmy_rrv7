@@ -2,9 +2,6 @@ import type { ActionFunctionArgs } from "react-router";
 import { db } from "~/utils/db.server";
 import { getSession } from "~/sessions";
 
-// Mock encryptText para desarrollo
-const encryptText = (text: string) => `encrypted_${text}`;
-
 interface EmbeddedSignupRequest {
   chatbotId: string;
   code?: string; // Opcional ahora
@@ -404,7 +401,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // ✅ SIEMPRE guardamos el token del usuario (System User Token deprecado)
     // Tanto en Coexistencia como en OAuth, cada usuario tiene su propio long-lived token
-    const encryptedToken = encryptText(longLivedToken);
+    // Token se guarda sin encriptación (confía en seguridad de MongoDB + HTTPS)
 
     const existingIntegration = await db.integration.findFirst({
       where: {
@@ -420,7 +417,7 @@ export async function action({ request }: ActionFunctionArgs) {
       integration = await db.integration.update({
         where: { id: existingIntegration.id },
         data: {
-          token: encryptedToken,
+          token: longLivedToken,
           phoneNumberId: phoneNumberId,
           businessAccountId: businessAccountId,
           webhookVerifyToken: webhookVerifyToken,
@@ -441,7 +438,7 @@ export async function action({ request }: ActionFunctionArgs) {
         data: {
           chatbotId: chatbotId,
           platform: "WHATSAPP",
-          token: encryptedToken,
+          token: longLivedToken,
           phoneNumberId: phoneNumberId,
           businessAccountId: businessAccountId,
           webhookVerifyToken: webhookVerifyToken,
@@ -475,6 +472,35 @@ export async function action({ request }: ActionFunctionArgs) {
     } catch (syncError) {
       console.error(`⚠️ [Embedded Signup] Error scheduling sync job:`, syncError);
       // NO fallar el onboarding - solo logear el error
+    }
+
+    // 7.5. ✅ CRÍTICO: Suscribir WABA a la app para recibir webhooks
+    // Sin este paso, Meta NO envía webhooks de sincronización (smb_app_state_sync, history)
+    // Docs: https://developers.facebook.com/docs/whatsapp/embedded-signup/webhooks
+    try {
+      console.log(`[Embedded Signup] Subscribing WABA ${wabaId} to app...`);
+
+      const subscribeUrl = `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`;
+      const subscribeResponse = await fetch(subscribeUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${longLivedToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!subscribeResponse.ok) {
+        const errorText = await subscribeResponse.text();
+        console.error(`⚠️ [Embedded Signup] Failed to subscribe WABA to app:`, errorText);
+        // NO fallar el onboarding - solo logear
+        // La funcionalidad principal (recibir mensajes) seguirá funcionando
+      } else {
+        const subscribeData = await subscribeResponse.json();
+        console.log(`✅ [Embedded Signup] WABA subscribed to app:`, JSON.stringify(subscribeData));
+      }
+    } catch (subscribeError) {
+      console.error(`⚠️ [Embedded Signup] Error subscribing WABA:`, subscribeError);
+      // NO fallar el onboarding - solo logear
     }
 
     // 8. Retornar success
