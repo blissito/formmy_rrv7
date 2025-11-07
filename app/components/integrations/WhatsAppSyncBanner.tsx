@@ -92,7 +92,7 @@ export function WhatsAppSyncBanner({ chatbotId }: WhatsAppSyncBannerProps) {
   const styles = getStylesByStatus();
 
   return (
-    <div className={`mb-4 rounded-xl border-2 ${styles.container} px-4 py-3 shadow-sm`}>
+    <div className={`relative z-50 mb-4 rounded-xl border-2 ${styles.container} px-4 py-3 shadow-lg`}>
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0">
           {config.spinning ? (
