@@ -460,24 +460,21 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
 
-    // 7. ✅ Iniciar sincronización de contactos e historial (24h límite)
-    // Esto NO bloquea la respuesta - los webhooks llegarán automáticamente
+    // 7. ✅ Iniciar sincronización en SEGUNDO PLANO con Agenda.js
     try {
-      const syncResult = await WhatsAppSyncService.initializeSync(
-        integration.id,
-        phoneNumberId,
-        longLivedToken
-      );
+      const { getAgenda } = await import('server/jobs/agenda.server');
+      const agenda = await getAgenda();
 
-      if (!syncResult.success) {
-        console.error(`⚠️ [Embedded Signup] Sync initialization failed:`, syncResult.error);
-        // NO fallar el onboarding si la sincronización falla
-        // El usuario puede reintentarlo manualmente después
-      } else {
-        console.log(`✅ [Embedded Signup] Sync initialized for Integration ${integration.id}`);
-      }
+      // Programar job AHORA (pero en background)
+      await agenda.now('whatsapp-sync', {
+        integrationId: integration.id,
+        phoneNumberId,
+        accessToken: longLivedToken,
+      });
+
+      console.log(`✅ [Embedded Signup] WhatsApp sync job scheduled for Integration ${integration.id}`);
     } catch (syncError) {
-      console.error(`⚠️ [Embedded Signup] Sync error:`, syncError);
+      console.error(`⚠️ [Embedded Signup] Error scheduling sync job:`, syncError);
       // NO fallar el onboarding - solo logear el error
     }
 
