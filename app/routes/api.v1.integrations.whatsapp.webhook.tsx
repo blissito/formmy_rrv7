@@ -268,16 +268,38 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                   integration.chatbotId
                 );
 
+                // 🎨 HANDLE STICKERS in echo messages
+                let echoStickerUrl: string | undefined;
+                if (echoMessage.type === "sticker" && echoMessage.sticker && integration.token) {
+                  try {
+                    console.log(`📎 [Echo Sticker] Downloading sticker ${echoMessage.sticker.id}...`);
+                    const stickerResult = await downloadWhatsAppSticker(
+                      echoMessage.sticker.id,
+                      integration.token
+                    );
+
+                    if (stickerResult.success && stickerResult.url) {
+                      echoStickerUrl = stickerResult.url;
+                      console.log(`✅ [Echo Sticker] Downloaded successfully (${echoMessage.sticker.animated ? 'animated' : 'static'})`);
+                    } else {
+                      console.error(`❌ [Echo Sticker] Download failed: ${stickerResult.error}`);
+                    }
+                  } catch (stickerError) {
+                    console.error(`❌ [Echo Sticker] Error downloading:`, stickerError);
+                  }
+                }
+
                 // Save echo message using special channel to indicate echo
                 await db.message.create({
                   data: {
                     conversationId: conversation.id,
-                    content: echoMessage.text?.body || '',
+                    content: echoMessage.type === "sticker" ? "📎 Sticker" : (echoMessage.text?.body || ''),
                     role: "ASSISTANT",
                     channel: "whatsapp_echo", // Special channel to indicate echo message
                     externalMessageId: echoMessage.id,
                     tokens: 0,
                     responseTime: 0,
+                    picture: echoStickerUrl, // Save sticker URL
                   }
                 });
 

@@ -30,7 +30,8 @@ export interface UIConversation {
 export interface UIMessage {
   role: "USER" | "ASSISTANT" | "SYSTEM";
   content: string;
-  picture?: string;
+  picture?: string;      // Contenido multimedia (sticker, imagen, etc)
+  avatarUrl?: string;    // Avatar del usuario/bot (foto de perfil)
   createdAt: Date;
 }
 
@@ -72,16 +73,13 @@ export function transformConversationToUI(
   chatbotAvatarUrl?: string,
   contactsByPhone?: Map<string, Contact>
 ): UIConversation {
-  // Filtrar mensajes SYSTEM - solo mostrar USER y ASSISTANT en la UI
-  const visibleMessages = conversation.messages.filter(msg => msg.role !== "SYSTEM");
-  const messages = visibleMessages.map(message => transformMessageToUI(message, chatbotAvatarUrl));
-  const lastMessage = getLastUserOrAssistantMessage(conversation.messages);
-
   // Extract user info from WhatsApp phone number or visitor ID
   const phoneNumber = extractPhoneNumber(conversation.visitorId || conversation.sessionId);
 
-  // Try to get contact name from synced contacts
+  // Try to get contact info (name + profile picture) from synced contacts
   let userName = "Usuario Web";
+  let userAvatarUrl: string | undefined;
+
   if (phoneNumber && contactsByPhone) {
     // Try exact match first
     let contact = contactsByPhone.get(phoneNumber);
@@ -92,14 +90,27 @@ export function transformConversationToUI(
       contact = contactsByPhone.get(normalizedPhone);
     }
 
-    if (contact?.name) {
-      userName = contact.name;
+    if (contact) {
+      if (contact.name) {
+        userName = contact.name;
+      } else {
+        userName = `Usuario ${phoneNumber.slice(-4)}`;
+      }
+      // ✅ Usar avatar de WhatsApp del contacto
+      userAvatarUrl = contact.profilePictureUrl || undefined;
     } else {
       userName = `Usuario ${phoneNumber.slice(-4)}`;
     }
   } else if (phoneNumber) {
     userName = `Usuario ${phoneNumber.slice(-4)}`;
   }
+
+  // Filtrar mensajes SYSTEM - solo mostrar USER y ASSISTANT en la UI
+  const visibleMessages = conversation.messages.filter(msg => msg.role !== "SYSTEM");
+  const messages = visibleMessages.map(message =>
+    transformMessageToUI(message, chatbotAvatarUrl, userAvatarUrl)
+  );
+  const lastMessage = getLastUserOrAssistantMessage(conversation.messages);
 
   const isFromWhatsApp = isWhatsAppConversation(conversation);
 
@@ -132,12 +143,19 @@ export function transformConversationToUI(
 /**
  * Transform message to UI format
  */
-function transformMessageToUI(message: Message, chatbotAvatarUrl?: string): UIMessage {
+function transformMessageToUI(
+  message: Message,
+  chatbotAvatarUrl?: string,
+  userAvatarUrl?: string
+): UIMessage {
   return {
     role: message.role as "USER" | "ASSISTANT" | "SYSTEM",
     content: message.content,
-    picture: message.role === "USER"
-      ? "/assets/chat/user-default.svg"
+    // ✅ picture = contenido multimedia (sticker, imagen) - viene de message.picture en BD
+    picture: message.picture || undefined,
+    // ✅ avatarUrl = foto de perfil del usuario/bot
+    avatarUrl: message.role === "USER"
+      ? (userAvatarUrl || "/assets/chat/user-default.svg")
       : (chatbotAvatarUrl || "/assets/chat/ghosty.svg"),
     createdAt: message.createdAt
   };
