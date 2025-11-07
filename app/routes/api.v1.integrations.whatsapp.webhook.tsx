@@ -387,12 +387,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           // Process history sync webhook - historical conversations from WhatsApp Business App
           try {
             const historyData = change.value as any;
-            const phoneNumberId = historyData.phone_number_id;
-            const messages = historyData.messages || [];
-            const progress = historyData.progress || 0;
-            const phase = historyData.phase || "unknown";
 
-            console.log(`📜 [History Sync] Phone ${phoneNumberId}: ${messages.length} messages (${progress}% complete, phase: ${phase})`);
+            // 🐛 DEBUG: Log the ENTIRE payload to see what Meta actually sends
+            console.log(`[History Sync RAW PAYLOAD] ${JSON.stringify(historyData, null, 2)}`);
+
+            // ✅ CORRECTO: Estructura real de History Sync
+            const phoneNumberId = historyData.metadata?.phone_number_id;
+            const historyArray = historyData.history || [];
+
+            if (!phoneNumberId) {
+              console.warn(`⚠️ [History Sync] No phone_number_id found in metadata`);
+              continue;
+            }
 
             // Find integration by phone number
             const integration = await findIntegrationByPhoneNumber(phoneNumberId);
@@ -411,74 +417,128 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             // Process each historical message
             let processedCount = 0;
             let skippedCount = 0;
+            let totalProgress = 0;
+            let totalPhase = "unknown";
 
-            for (const msg of messages) {
-              try {
-                // Determine sender and receiver
-                const isFromCustomer = msg.type === "message"; // Messages from customer
-                const isFromBusiness = msg.type === "message_echo"; // Messages from business (echoes)
+            // ✅ Iterar sobre history array
+            for (const historyItem of historyArray) {
+              const metadata = historyItem.metadata || {};
+              const progress = metadata.progress || 0;
+              const phase = metadata.phase || "unknown";
+              const threads = historyItem.threads || [];
 
-                if (!isFromCustomer && !isFromBusiness) {
-                  skippedCount++;
-                  continue;
-                }
+              totalProgress = Math.max(totalProgress, progress);
+              totalPhase = phase;
 
-                const customerPhone = isFromCustomer ? msg.from : msg.to;
+              console.log(`📜 [History Sync] Processing chunk (phase: ${phase}, progress: ${progress}%, threads: ${threads.length})`);
 
-                // Create or get conversation
-                const conversation = await getOrCreateConversation(
-                  customerPhone,
-                  integration.chatbotId
-                );
+              // ✅ Iterar sobre threads (conversaciones)
+              for (const thread of threads) {
+                const threadId = thread.id; // ID del contacto
+                const messages = thread.messages || [];
 
-                // Save message
-                await db.message.create({
-                  data: {
-                    conversationId: conversation.id,
-                    content: msg.text?.body || msg.caption || '',
-                    role: isFromCustomer ? "USER" : "ASSISTANT",
-                    channel: "whatsapp_history",
-                    externalMessageId: msg.id,
-                    tokens: 0,
-                    responseTime: 0,
-                    createdAt: new Date(parseInt(msg.timestamp) * 1000), // Convert Unix timestamp
+                console.log(`💬 [History Sync] Thread ${threadId}: ${messages.length} messages`);
+
+                // Optimización: crear conversación una sola vez por thread (no por cada mensaje)
+                let conversationForThread = null;
+
+                // ✅ Iterar sobre mensajes del thread
+                for (const msg of messages) {
+                  try {
+                    // 🐛 DEBUG: Log message type to understand what Meta sends
+                    console.log(`[History Sync Debug] Message type: "${msg.type}", from: ${msg.from}, thread: ${threadId}`);
+
+                    // ✅ CORRECTO: Usar history_context.from_me para determinar dirección
+                    const isFromBusiness = msg.history_context?.from_me === true;
+                    const customerPhone = threadId; // El thread ID es el número del contacto
+
+                    // Skip non-text messages for now
+                    if (msg.type !== "text") {
+                      console.log(`[History Sync Debug] ⚠️ Skipping non-text message type: "${msg.type}"`);
+                      skippedCount++;
+                      continue;
+                    }
+
+                    // Create or get conversation (solo la primera vez que encontramos un mensaje válido)
+                    if (!conversationForThread) {
+                      conversationForThread = await getOrCreateConversation(
+                        customerPhone,
+                        integration.chatbotId
+                      );
+                    }
+
+                    const conversation = conversationForThread;
+
+                    // Save message (upsert to prevent duplicates)
+                    await db.message.upsert({
+                      where: {
+                        conversationId_externalMessageId: {
+                          conversationId: conversation.id,
+                          externalMessageId: msg.id,
+                        }
+                      },
+                      create: {
+                        conversationId: conversation.id,
+                        content: msg.text?.body || '',
+                        role: isFromBusiness ? "ASSISTANT" : "USER",
+                        channel: "whatsapp_history",
+                        externalMessageId: msg.id,
+                        tokens: 0,
+                        responseTime: 0,
+                        createdAt: new Date(parseInt(msg.timestamp) * 1000), // Convert Unix timestamp
+                      },
+                      update: {
+                        // No actualizar si ya existe (mensajes históricos son inmutables)
+                      }
+                    });
+
+                    processedCount++;
+                  } catch (msgError) {
+                    console.error(`❌ [History Sync] Error processing message ${msg.id}:`, msgError);
+                    skippedCount++;
                   }
-                });
-
-                processedCount++;
-              } catch (msgError) {
-                console.error(`❌ [History Sync] Error processing message ${msg.id}:`, msgError);
-                skippedCount++;
+                }
               }
             }
 
             // Update integration metadata with sync progress
+            const now = new Date();
+            const lastSyncAt = integration.metadata && (integration.metadata as any).lastHistorySyncAt
+              ? new Date((integration.metadata as any).lastHistorySyncAt)
+              : null;
+
+            // ✅ PRAGMATIC FIX: Si han pasado 60+ segundos desde el último webhook Y ya recibimos algunos,
+            // marcar como completado (Meta no siempre envía progress:100 en cuentas con poco historial)
+            const timeSinceLastSync = lastSyncAt ? (now.getTime() - lastSyncAt.getTime()) / 1000 : 0;
+            const shouldComplete = totalProgress === 100 || (timeSinceLastSync > 60 && lastSyncAt !== null);
+
             await db.integration.update({
               where: { id: integration.id },
               data: {
                 metadata: {
                   ...(integration.metadata as any || {}),
-                  lastHistorySyncProgress: progress,
-                  lastHistorySyncPhase: phase,
-                  lastHistorySyncAt: new Date().toISOString(),
+                  lastHistorySyncProgress: totalProgress,
+                  lastHistorySyncPhase: totalPhase,
+                  lastHistorySyncAt: now.toISOString(),
                 },
-                syncStatus: progress === 100 ? "completed" : "syncing",
-                syncCompletedAt: progress === 100 ? new Date() : undefined,
+                syncStatus: shouldComplete ? "completed" : "syncing",
+                syncCompletedAt: shouldComplete ? now : undefined,
               }
             });
 
-            console.log(`✅ [History Sync] Processed ${processedCount}/${messages.length} messages (skipped: ${skippedCount})`);
+            const totalMessages = processedCount + skippedCount;
+            console.log(`✅ [History Sync] Processed ${processedCount}/${totalMessages} messages (skipped: ${skippedCount})`);
 
-            if (progress === 100) {
-              console.log(`🎉 [History Sync] Sync completed for integration ${integration.id}`);
+            if (shouldComplete) {
+              console.log(`🎉 [History Sync] Sync completed for integration ${integration.id} (progress: ${totalProgress}%, time since last: ${timeSinceLastSync.toFixed(0)}s)`);
             }
 
             results.push({
               success: true,
               type: 'history',
               phoneNumberId,
-              progress,
-              phase,
+              progress: totalProgress,
+              phase: totalPhase,
               processed: processedCount,
               skipped: skippedCount,
             });

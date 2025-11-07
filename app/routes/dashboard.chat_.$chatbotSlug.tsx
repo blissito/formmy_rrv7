@@ -147,13 +147,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     return timeB.getTime() - timeA.getTime();
   });
 
-  // Transformar a formato UI
-  const conversations = transformConversationsToUI(
-    sortedConversations,
-    chatbot.avatarUrl || undefined
-  );
-
-  // Obtener contactos del chatbot
+  // Obtener contactos del chatbot (cargar ANTES de transformar para usarlos en UI)
   const contacts = await db.contact.findMany({
     where: {
       chatbotId: chatbot.id,
@@ -178,6 +172,13 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       chatbotId: true,
     },
   });
+
+  // Transformar a formato UI (con nombres de contactos)
+  const conversations = transformConversationsToUI(
+    sortedConversations,
+    chatbot.avatarUrl || undefined,
+    contacts
+  );
 
   // Filtrar contextos sin embeddings (documentos eliminados)
   if (chatbot.contexts && chatbot.contexts.length > 0) {

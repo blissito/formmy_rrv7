@@ -10,7 +10,6 @@ import EmptyDark from "~/SVGs/EmptyDark";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
-import { WhatsAppSyncBanner } from "../../integrations/WhatsAppSyncBanner";
 
 type ConversationsProps = {
   chatbot: Chatbot;
@@ -229,9 +228,6 @@ export const Conversations = ({
 
   return (
     <>
-      {/* Banner de sincronización de WhatsApp - Siempre visible para debugging */}
-      <WhatsAppSyncBanner chatbotId={chatbot.id} />
-
       {/* Mostrar empty state si no hay conversaciones */}
       {conversations.length === 0 ? (
         <EmptyConversations t={t} />

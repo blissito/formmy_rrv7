@@ -1,4 +1,4 @@
-import type { Conversation, Message } from "@prisma/client";
+import type { Conversation, Message, Contact } from "@prisma/client";
 
 /**
  * Extended types that include relations
@@ -39,9 +39,22 @@ export interface UIMessage {
  */
 export function transformConversationsToUI(
   conversations: ConversationWithMessages[],
-  chatbotAvatarUrl?: string
+  chatbotAvatarUrl?: string,
+  contacts?: Contact[]
 ): UIConversation[] {
-  return conversations.map(conversation => transformConversationToUI(conversation, chatbotAvatarUrl));
+  // Create phone number to contact map for O(1) lookup
+  const contactsByPhone = new Map<string, Contact>();
+  if (contacts) {
+    for (const contact of contacts) {
+      if (contact.phone) {
+        contactsByPhone.set(contact.phone, contact);
+      }
+    }
+  }
+
+  return conversations.map(conversation =>
+    transformConversationToUI(conversation, chatbotAvatarUrl, contactsByPhone)
+  );
 }
 
 /**
@@ -49,7 +62,8 @@ export function transformConversationsToUI(
  */
 export function transformConversationToUI(
   conversation: ConversationWithMessages,
-  chatbotAvatarUrl?: string
+  chatbotAvatarUrl?: string,
+  contactsByPhone?: Map<string, Contact>
 ): UIConversation {
   // Filtrar mensajes SYSTEM - solo mostrar USER y ASSISTANT en la UI
   const visibleMessages = conversation.messages.filter(msg => msg.role !== "SYSTEM");
@@ -58,7 +72,19 @@ export function transformConversationToUI(
 
   // Extract user info from WhatsApp phone number or visitor ID
   const phoneNumber = extractPhoneNumber(conversation.visitorId || conversation.sessionId);
-  const userName = phoneNumber ? `Usuario ${phoneNumber.slice(-4)}` : "Usuario Web";
+
+  // Try to get contact name from synced contacts
+  let userName = "Usuario Web";
+  if (phoneNumber && contactsByPhone) {
+    const contact = contactsByPhone.get(phoneNumber);
+    if (contact?.name) {
+      userName = contact.name;
+    } else {
+      userName = `Usuario ${phoneNumber.slice(-4)}`;
+    }
+  } else if (phoneNumber) {
+    userName = `Usuario ${phoneNumber.slice(-4)}`;
+  }
 
   const isFromWhatsApp = isWhatsAppConversation(conversation);
 

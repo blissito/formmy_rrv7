@@ -410,6 +410,8 @@ model Message {
   conversation      Conversation @relation(fields: [conversationId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@unique([conversationId, externalMessageId])
 }
 
 enum IntegrationType {
