@@ -16,7 +16,6 @@ import WhatsAppCoexistenceRealModal from "../../integrations/WhatsAppCoexistence
 import WhatsAppEmbeddedSignupModal from "../../integrations/WhatsAppEmbeddedSignupModal";
 import { WhatsAppTemplateCreator } from "../../integrations/WhatsAppTemplateCreator";
 import { WhatsAppTemplateList } from "../../integrations/WhatsAppTemplateList";
-import { WhatsAppSyncStatus } from "../../integrations/WhatsAppSyncStatus";
 import GmailIntegrationModal from "../../integrations/GmailIntegrationModal";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 import VoiceIntegrationModal from "../../integrations/VoiceIntegrationModal";
@@ -756,36 +755,31 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
             const isOnHold = currentStatus === "onhold";
 
             return (
-              <div key={availableIntegration.id} className="flex flex-col gap-3">
-                <IntegrationCard
-                  integration={existingIntegration}
-                  name={availableIntegration.name}
-                  logo={availableIntegration.logo}
-                  description={availableIntegration.description}
-                  status={currentStatus}
-                  lastActivity={
-                    currentStatus === "connected"
-                      ? t('integrations.alwaysActive')
-                      : undefined
-                  }
-                  onConnect={isOnHold ? undefined : () => handleConnect(availableIntegration.id)}
-                  onDisconnect={
-                    availableIntegration.isPermanent || isOnHold
-                      ? undefined // No se puede desconectar integraciones permanentes o en onhold
-                      : () => handleDisconnect(availableIntegration.id)
-                  }
-                  onEdit={
-                    availableIntegration.isPermanent || isOnHold
-                      ? undefined // No se puede editar integraciones permanentes o en onhold
-                      : () => handleEdit(availableIntegration.id)
-                  }
-                  isPermanent={availableIntegration.isPermanent}
-                />
-                {/* Show sync status for WhatsApp if integration exists */}
-                {availableIntegration.id === "WHATSAPP" && existingIntegration && (
-                  <WhatsAppSyncStatus integrationId={existingIntegration.id} />
-                )}
-              </div>
+              <IntegrationCard
+                integration={existingIntegration}
+                key={availableIntegration.id}
+                name={availableIntegration.name}
+                logo={availableIntegration.logo}
+                description={availableIntegration.description}
+                status={currentStatus}
+                lastActivity={
+                  currentStatus === "connected"
+                    ? t('integrations.alwaysActive')
+                    : undefined
+                }
+                onConnect={isOnHold ? undefined : () => handleConnect(availableIntegration.id)}
+                onDisconnect={
+                  availableIntegration.isPermanent || isOnHold
+                    ? undefined // No se puede desconectar integraciones permanentes o en onhold
+                    : () => handleDisconnect(availableIntegration.id)
+                }
+                onEdit={
+                  availableIntegration.isPermanent || isOnHold
+                    ? undefined // No se puede editar integraciones permanentes o en onhold
+                    : () => handleEdit(availableIntegration.id)
+                }
+                isPermanent={availableIntegration.isPermanent}
+              />
             );
           })}
 

@@ -10,6 +10,7 @@ import EmptyDark from "~/SVGs/EmptyDark";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
+import { WhatsAppSyncBanner } from "../../integrations/WhatsAppSyncBanner";
 
 type ConversationsProps = {
   chatbot: Chatbot;
@@ -233,6 +234,9 @@ export const Conversations = ({
 
   return (
     <>
+      {/* Banner de sincronización de WhatsApp (solo se muestra si está activo) */}
+      <WhatsAppSyncBanner chatbotId={chatbot.id} />
+
       <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
         <article className={cn("col-span-12 md:col-span-3", "flex flex-col h-full gap-4 md:gap-6")}>
           <ChipTabs
