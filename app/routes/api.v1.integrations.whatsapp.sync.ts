@@ -4,7 +4,6 @@
  * POST /api/v1/integrations/whatsapp/sync (retry)
  */
 
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { WhatsAppSyncService } from "server/integrations/whatsapp/sync.service.server";
 import { getSession } from "~/sessions";
 import { db } from "~/utils/db.server";
@@ -12,7 +11,7 @@ import { db } from "~/utils/db.server";
 /**
  * GET - Obtener estado de sincronización
  */
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   try {
     // Autenticar usuario
     const session = await getSession(request.headers.get("Cookie"));
@@ -86,7 +85,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 /**
  * POST - Reintentar sincronización
  */
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,

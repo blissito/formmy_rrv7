@@ -1,11 +1,11 @@
 import { data as json } from "react-router";
-import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
+import type { Route } from "./+types/api.v1.contacts";
 import { db } from "~/utils/db.server";
 import { getUserOrNull } from "server/getUserUtils.server";
 import pkg from "@prisma/client";
 const { ContactStatus } = pkg;
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrNull(request);
 
   if (!user) {
@@ -123,7 +123,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }: Route.ActionArgs) => {
 
   // Verificar autenticación
   const user = await getUserOrNull(request);

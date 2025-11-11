@@ -1,4 +1,3 @@
-import type { ActionFunctionArgs } from "react-router";
 import { db } from "~/utils/db.server";
 import { getSession } from "~/sessions";
 
@@ -35,7 +34,7 @@ interface MetaTokenExchangeResponse {
   scope?: string;
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   if (request.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
   }

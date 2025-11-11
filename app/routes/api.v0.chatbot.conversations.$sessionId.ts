@@ -3,10 +3,9 @@
  * POST /api/v0/chatbot/conversations/:sessionId - Acciones (end_conversation)
  */
 
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { authenticateRequest } from "../../server/chatbot-v0/auth";
 
-export async function loader({ request, params }: LoaderFunctionArgs) {
+export async function loader({ request, params }: Route.LoaderArgs) {
   const { sessionId } = params;
 
   if (!sessionId) {
@@ -102,7 +101,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 /**
  * POST action para terminar conversación
  */
-export async function action({ request, params }: ActionFunctionArgs) {
+export async function action({ request, params }: Route.ActionArgs) {
   const { sessionId } = params;
 
   if (!sessionId) {

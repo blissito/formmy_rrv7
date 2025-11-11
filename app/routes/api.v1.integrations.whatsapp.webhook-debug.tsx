@@ -4,12 +4,11 @@
  * Uso temporal para diagnosticar por qué no llegan los webhooks de sync
  */
 
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 
 /**
  * GET - Verificación del webhook (igual que el endpoint normal)
  */
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
   const mode = url.searchParams.get("hub.mode");
   const token = url.searchParams.get("hub.verify_token");
@@ -30,7 +29,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 /**
  * POST - Captura TODA la data que llegue
  */
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }: Route.ActionArgs) => {
   try {
     const rawBody = await request.text();
 

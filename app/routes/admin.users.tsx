@@ -1,11 +1,11 @@
 import { data as json } from "react-router";
 import { useLoaderData } from "react-router";
-import { type LoaderFunctionArgs } from "react-router";
+import type { Route } from "./+types/admin.users";
 import { db } from "~/utils/db.server";
 import { getAdminUserOrRedirect } from "server/getUserUtils.server";
 import { Row } from "./admin.projects";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   await getAdminUserOrRedirect(request);
   const users = await db.user.findMany({
     select: { name: true, createdAt: true, id: true, email: true },

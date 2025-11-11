@@ -3,7 +3,6 @@
  * Solo maneja chat, no CRUD
  */
 
-import type { ActionFunctionArgs } from "react-router";
 
 export function loader() {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {
@@ -11,7 +10,7 @@ export function loader() {
   });
 }
 
-export const action = async (args: ActionFunctionArgs) => {
+export const action = async (args: Route.ActionArgs) => {
   const { handleChatbotV0Action } = await import("./api.v0.chatbot.server");
   return handleChatbotV0Action(args);
 };

@@ -1,6 +1,6 @@
 import { data as json } from "react-router";
 import { useLoaderData } from "react-router";
-import { type LoaderFunctionArgs } from "react-router";
+import type { Route } from "./+types/admin";
 import { db } from "~/utils/db.server";
 import { getAdminUserOrRedirect } from "server/getUserUtils.server";
 import {
@@ -102,7 +102,7 @@ function getPricePerMillionMXN(model: string): string {
   return `$${avgMXN.toFixed(2)}`;
 }
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   await getAdminUserOrRedirect(request);
   
   try {

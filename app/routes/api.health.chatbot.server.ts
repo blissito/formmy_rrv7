@@ -3,7 +3,6 @@
  * Contiene toda la lógica de backend separada del route
  */
 
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { db } from "~/utils/db.server";
 
 interface HealthCheckResult {
@@ -24,12 +23,12 @@ interface HealthCheckResult {
 }
 
 // GET /api/health/chatbot
-export async function handleHealthCheckLoader({ request }: LoaderFunctionArgs) {
+export async function handleHealthCheckLoader({ request }: Route.LoaderArgs) {
   return await performHealthCheck();
 }
 
 // POST /api/health/chatbot (para testing específico)
-export async function handleHealthCheckAction({ request }: ActionFunctionArgs) {
+export async function handleHealthCheckAction({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const component = formData.get("component") as string;
 

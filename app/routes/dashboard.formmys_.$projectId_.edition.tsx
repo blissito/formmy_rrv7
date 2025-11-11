@@ -1,10 +1,9 @@
 import {
   data as json,
   redirect,
-  type ActionFunctionArgs,
-  type LoaderFunctionArgs,
   Link,
 } from "react-router";
+import type { Route } from "./+types/dashboard.formmys_.$projectId_.edition";
 import { useLoaderData, useSubmit, useNavigation } from "react-router";
 import { ChipTabs, useChipTabs } from "~/components/chat/common/ChipTabs";
 import { db } from "~/utils/db.server";
@@ -23,7 +22,7 @@ import {
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
+export const action = async ({ request, params }: Route.ActionArgs) => {
   const formData = await request.formData();
   const form = Object.fromEntries(formData);
   const user = await getUserOrRedirect(request);
@@ -76,7 +75,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   return null;
 };
 
-export const loader = async ({ params, request }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   const projectId = params.projectId!;
   

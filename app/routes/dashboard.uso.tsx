@@ -1,5 +1,4 @@
 import { useLoaderData } from "react-router";
-import type { LoaderFunctionArgs } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
 import { HiOutlineDocumentText } from "react-icons/hi";
@@ -7,7 +6,7 @@ import { BiMessageRounded, BiGhost, BiCoin } from "react-icons/bi";
 import { AiOutlineCalendar, AiOutlineBarChart } from "react-icons/ai";
 import { getAvailableCredits } from "server/llamaparse/credits.service";
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const userFromSession = await getUserOrRedirect(request);
 
   const user = await db.user.findUnique({

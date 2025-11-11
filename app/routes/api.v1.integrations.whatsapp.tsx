@@ -1,4 +1,3 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Effect, pipe } from "effect";
 import { IntegrationType } from "@prisma/client";
 import {
@@ -260,7 +259,7 @@ const testWhatsAppConnection = (config: WhatsAppConnectionConfig) => {
 /**
  * Loader function - handles GET requests
  */
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   try {
     const url = new URL(request.url);
     const chatbotId = url.searchParams.get("chatbotId");
@@ -395,7 +394,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 /**
  * Action function - handles POST, PUT, DELETE requests
  */
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }: Route.ActionArgs) => {
   let data;
   const contentType = request.headers.get("Content-Type") || "";
 

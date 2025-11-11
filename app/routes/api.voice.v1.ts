@@ -10,7 +10,7 @@
  * - GET ?intent=credits - Obtener créditos de voz disponibles
  */
 
-import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
+import type { Route } from "./+types/api.voice.v1";
 import { extractApiKeyFromRequest, authenticateApiKey } from "../../server/chatbot/apiKeyAuth.server";
 import { getSession } from "~/sessions";
 import {
@@ -67,7 +67,7 @@ async function authenticateRequest(request: Request): Promise<string | null> {
 /**
  * GET Requests
  */
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const intent = url.searchParams.get("intent");
 
@@ -142,7 +142,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 /**
  * POST Requests
  */
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const url = new URL(request.url);
   const intent = url.searchParams.get("intent");
 

@@ -1,5 +1,4 @@
 import { data as json } from "react-router";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { db } from "../utils/db.server";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
@@ -11,13 +10,13 @@ import { addAssistantMessage } from "server/chatbot/messageModel.server";
  * - POST: Toggle manual mode, Enviar respuesta manual
  */
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   return json(
     { error: "Method Not Allowed. Use POST with intent parameter." },
     { status: 405, headers: { 'Content-Type': 'application/json' } }
   );
 };
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }: Route.ActionArgs) => {
 
   try {
     const user = await getUserOrRedirect(request);

@@ -1,4 +1,5 @@
-import type { MetaFunction, LoaderFunctionArgs } from 'react-router';
+import type { MetaFunction } from 'react-router';
+import type { Route } from "./+types/blog.$slug";
 import { useLoaderData, Link } from 'react-router';
 import { getBlogPost, type BlogPost } from 'server/blog.server';
 import { BlogMarkdown } from '~/components/blog/BlogMarkdown';
@@ -23,7 +24,7 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
   ];
 };
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+export const loader = async ({ params }: Route.LoaderArgs) => {
   invariant(params.slug, 'slug is required');
   
   const post = await getBlogPost(params.slug);

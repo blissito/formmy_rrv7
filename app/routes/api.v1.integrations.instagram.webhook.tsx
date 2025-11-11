@@ -1,5 +1,4 @@
 import { data as json } from "react-router";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { db } from "../utils/db.server";
 
 /**
@@ -65,7 +64,7 @@ interface InstagramWebhookPayload {
  * Loader function - handles GET requests for webhook verification
  * Meta sends a GET request to verify the webhook endpoint
  */
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   try {
     const url = new URL(request.url);
     const mode = url.searchParams.get("hub.mode");
@@ -132,7 +131,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
  * Action function - handles POST requests for incoming webhooks
  * Processes incoming Instagram messages and events
  */
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }: Route.ActionArgs) => {
   try {
     const payload = (await request.json()) as InstagramWebhookPayload;
 

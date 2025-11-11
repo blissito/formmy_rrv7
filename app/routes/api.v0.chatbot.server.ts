@@ -3,13 +3,12 @@
  * Contiene toda la lógica de backend separada del route
  */
 
-import type { ActionFunctionArgs } from "react-router";
 import { authenticateRequest, createAuthError, createUnsupportedIntentError } from "../../server/chatbot-v0/auth";
 // Rate limiting removed - imports cleaned up
 import { validateModelForPlan, applyModelCorrection } from "../../server/chatbot/modelValidator.server";
 import { validateDomainAccess } from "../../server/utils/domain-validator.server";
 
-export async function handleChatbotV0Action({ request }: ActionFunctionArgs) {
+export async function handleChatbotV0Action({ request }: Route.ActionArgs) {
   try {
     // Rate limiting removed - was causing critical blocking issues
     // Can be re-added later if needed with proper implementation

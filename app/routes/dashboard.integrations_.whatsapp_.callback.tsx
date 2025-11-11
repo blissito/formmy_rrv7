@@ -1,5 +1,3 @@
-import { LoaderFunctionArgs } from 'react-router';
-
 /**
  * Callback de OAuth para WhatsApp Embedded Signup
  *
@@ -8,7 +6,7 @@ import { LoaderFunctionArgs } from 'react-router';
  *
  * URL: /dashboard/integrations/whatsapp/callback?code=...&state=...
  */
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');

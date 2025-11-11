@@ -5,9 +5,8 @@
  * Browser-compatible version sin dependencias de Node.js
  */
 
-import type { LoaderFunctionArgs } from "@remix-run/node";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   // ES Module JavaScript puro (no TypeScript, no Node.js deps)
   // IMPORTANTE: Usamos template literals escapados porque esto es código backend
   const esModuleContent = String.raw`/**

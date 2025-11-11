@@ -1,4 +1,3 @@
-import type { LoaderFunctionArgs } from "react-router";
 import { db } from "../utils/db.server";
 
 /**
@@ -13,7 +12,7 @@ import { db } from "../utils/db.server";
  * Escalabilidad futura: Reemplazar polling interno con Redis pub/sub
  */
 
-export async function loader({ request, params }: LoaderFunctionArgs) {
+export async function loader({ request, params }: Route.LoaderArgs) {
   const { conversationId: sessionIdOrConversationId } = params;
 
   if (!sessionIdOrConversationId) {

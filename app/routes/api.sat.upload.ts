@@ -9,7 +9,6 @@
  * - Auto-aprobación si confianza >= 90%
  */
 
-import type { ActionFunctionArgs } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
 import { parseXMLInvoice, isValidSATXML } from "server/sat/xml-parser.service.server";
@@ -20,7 +19,7 @@ import {
   addBlacklistWarnings,
 } from "server/sat/invoice-validator.service.server";
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const userFromSession = await getUserOrRedirect(request);
 
   const user = await db.user.findUnique({

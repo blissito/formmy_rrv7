@@ -2,7 +2,8 @@ import { db } from "~/utils/db.server";
 import invariant from "tiny-invariant";
 import { saveForm } from "~/utils/savers/saveForm";
 import { validateBasic } from "~/utils/validation";
-import { data as json, type ActionFunctionArgs } from "react-router";
+import { data as json } from "react-router";
+import type { Route } from "./+types/api.formmy";
 import { notifyOwner } from "server/notifyers/notifyOwner";
 
 const sendAllNotifications = async (projectId: string) => {
@@ -30,7 +31,7 @@ const sendAllNotifications = async (projectId: string) => {
   await notifyOwner({ projectId, emails, projectName: project.name });
 };
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
+export const action = async ({ request, params }: Route.ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
 

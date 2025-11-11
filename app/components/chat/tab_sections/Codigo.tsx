@@ -56,6 +56,13 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
     isPermanent: false,
   },
   {
+    id: "MESSENGER",
+    name: "Facebook Messenger",
+    logo: "/assets/chat/messenger.svg",
+    description: "Conecta tu página de Facebook y permite que tu chatbot responda mensajes en Messenger automáticamente. Aumenta el engagement con respuestas instantáneas 24/7.",
+    isPermanent: false,
+  },
+  {
     id: "GMAIL",
     name: "Gmail",
     logo: "/assets/chat/gmail.png",
@@ -165,6 +172,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       } else if (availableIntegration.id === "WHATSAPP") {
         // WhatsApp: Disponible con Embedded Signup
         status[availableIntegration.id.toLowerCase()] = "disconnected";
+      } else if (availableIntegration.id === "MESSENGER") {
+        // Messenger: Disponible con OAuth
+        status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else if (availableIntegration.id === "SAT") {
         // SAT: Próximamente disponible
         status[availableIntegration.id.toLowerCase()] = "onhold";
@@ -269,6 +279,7 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   const [whatsAppEmbeddedSignupModalOpen, setWhatsAppEmbeddedSignupModalOpen] =
     useState(false);
   const [gmailModalOpen, setGmailModalOpen] = useState(false);
+  const [messengerModalOpen, setMessengerModalOpen] = useState(false);
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   // const [googleCalendarModalOpen, setGoogleCalendarModalOpen] = useState(false); // Deshabilitado - Próximamente
   // const [stripeModalOpen, setStripeModalOpen] = useState(false); // Deshabilitado temporalmente
@@ -303,6 +314,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
     if (integrationId === "WHATSAPP") {
       // Usar Embedded Signup ahora que la empresa está activada
       setWhatsAppEmbeddedSignupModalOpen(true);
+    } else if (integrationId === "MESSENGER") {
+      // Messenger: Redirigir a OAuth flow
+      window.location.href = `/dashboard/integrations/messenger/connect?chatbotId=${chatbot.id}`;
     } else if (integrationId === "GMAIL") {
       setGmailModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {

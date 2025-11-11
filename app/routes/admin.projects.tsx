@@ -1,11 +1,11 @@
 import { data as json } from "react-router";
 import { useLoaderData } from "react-router";
 import { Children, type ReactNode } from "react";
-import { type LoaderFunctionArgs } from "react-router";
+import type { Route } from "./+types/admin.projects";
 import { db } from "~/utils/db.server";
 import { getAdminUserOrRedirect } from "server/getUserUtils.server";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   await getAdminUserOrRedirect(request);
   const projects = await db.project.findMany({
     where: {

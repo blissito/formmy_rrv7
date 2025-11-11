@@ -1,9 +1,8 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { getUserOrRedirect } from "~/utils/auth.server";
 import { getCostMetrics, getUserCostMetrics } from "../../server/chatbot/cost-analytics.server";
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const user = await getUserOrRedirect(request);
   
   try {

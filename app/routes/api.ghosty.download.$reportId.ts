@@ -1,4 +1,3 @@
-import type { LoaderFunctionArgs } from "react-router";
 import {
   getReportFromStorage,
   deleteReportFromStorage,
@@ -14,7 +13,7 @@ import {
  * - Headers apropiados para download
  * - Validación de existencia y expiración
  */
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ params }: Route.LoaderArgs) {
   const { reportId } = params;
 
   if (!reportId) {

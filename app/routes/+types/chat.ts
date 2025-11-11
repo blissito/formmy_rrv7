@@ -1,10 +1,4 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import type { ChatbotStatus, Chatbot, Plans } from "@prisma/client";
-
-export namespace Route {
-  export type LoaderArgs = LoaderFunctionArgs;
-  export type ActionArgs = ActionFunctionArgs;
-}
 
 export interface ChatbotListItem extends Chatbot {
   conversationCount: number;

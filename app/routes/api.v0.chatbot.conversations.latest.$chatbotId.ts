@@ -3,10 +3,9 @@
  * Devuelve la última conversación ACTIVA del usuario para un chatbot específico
  */
 
-import type { LoaderFunctionArgs } from "react-router";
 import { authenticateRequest } from "../../server/chatbot-v0/auth";
 
-export async function loader({ request, params }: LoaderFunctionArgs) {
+export async function loader({ request, params }: Route.LoaderArgs) {
   const { chatbotId } = params;
 
   if (!chatbotId) {

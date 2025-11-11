@@ -3,9 +3,8 @@
  * Testing route structure
  */
 
-import type { LoaderFunctionArgs } from "react-router";
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   return new Response(JSON.stringify({
     status: "ok",
     timestamp: new Date().toISOString(),

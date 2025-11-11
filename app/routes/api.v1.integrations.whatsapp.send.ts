@@ -1,4 +1,3 @@
-import type { ActionFunctionArgs } from "react-router";
 import { Effect, pipe } from "effect";
 import { addWhatsAppAssistantMessage } from "server/chatbot/messageModel.server";
 import { json, failWithError, type ApiError, isApiError } from "../utils/effect-utils";
@@ -98,7 +97,7 @@ const sendMessageEffect = (input: SendWhatsAppMessageInput) =>
   });
 
 // Main handler
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const program = pipe(
     // 1. Parse and validate request
     Effect.tryPromise({

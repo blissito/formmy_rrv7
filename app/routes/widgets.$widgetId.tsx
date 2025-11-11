@@ -1,10 +1,10 @@
-import { type LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
+import type { Route } from "./+types/widgets.$widgetId";
 import { getWidget } from "../../server/widgets/widget-creator.server";
 import { getSession } from "~/sessions";
 import { PaymentWidget } from "~/components/widgets/PaymentWidget";
 
-export async function loader({ params, request }: LoaderFunctionArgs) {
+export async function loader({ params, request }: Route.LoaderArgs) {
   const { widgetId } = params;
 
   if (!widgetId) {

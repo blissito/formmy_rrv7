@@ -21,6 +21,8 @@ export default [
     route("uso", "routes/dashboard.uso.tsx"),
     route("api-keys", "routes/dashboard.api-keys_.tsx"),
     route("integrations/whatsapp/callback", "routes/dashboard.integrations_.whatsapp_.callback.tsx"),
+    route("integrations/messenger/connect", "routes/dashboard.integrations_.messenger_.connect.tsx"),
+    route("integrations/messenger/select-page", "routes/dashboard.integrations_.messenger_.select-page.tsx"),
     route("formmys", "routes/dashboard.formmys.tsx"),
     route("formmys/new", "routes/dashboard.formmys.new.tsx"),
     route("formmys/:projectId", "routes/dashboard.formmys_.$projectId.tsx"),
@@ -158,6 +160,10 @@ export default [
   route(
     "api/v1/integrations/messenger/webhook",
     "routes/api.v1.integrations.messenger.webhook.tsx"
+  ),
+  route(
+    "api/v1/integrations/messenger/callback",
+    "routes/api.v1.integrations.messenger.callback.tsx"
   ),
   route(
     "api/v1/integrations/instagram/webhook",

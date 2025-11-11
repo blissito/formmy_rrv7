@@ -1,5 +1,4 @@
 import { useLoaderData, useSearchParams, useFetcher, Form, Link } from "react-router";
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
 import {
@@ -22,7 +21,7 @@ import {
 } from "react-icons/hi";
 import { useState, useEffect } from "react";
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const userFromSession = await getUserOrRedirect(request);
 
   const user = await db.user.findUnique({
@@ -287,7 +286,7 @@ function getPeriodLabel(period: string, startDate: Date, endDate: Date): string 
   }
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const userFromSession = await getUserOrRedirect(request);
   const formData = await request.formData();
   const intent = formData.get("intent");

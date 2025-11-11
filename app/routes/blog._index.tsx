@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FaArrowRight } from 'react-icons/fa';
-import type { MetaFunction, LoaderFunctionArgs } from 'react-router';
+import type { MetaFunction } from 'react-router';
+import type { Route } from "./+types/blog._index";
 import { useLoaderData, Link } from 'react-router';
 import { getBlogPosts, type BlogPost } from 'server/blog.server';
 import { cn } from '~/lib/utils';
@@ -175,7 +176,7 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
   const posts = await getBlogPosts();
   return { posts };
 };
