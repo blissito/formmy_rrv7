@@ -1,11 +1,15 @@
 import {  createCheckoutSessionURL } from "~/utils/stripe.server";
 import type { Route } from "./+types/api.stripe";
+import { getUserOrTriggerLogin } from "server/getUserUtils.server";
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   const isDevelopment = process.env.NODE_ENV === "development";
+
+  // Obtener el usuario logueado para los planes de suscripción
+  const user = await getUserOrTriggerLogin(request);
 
   // Price IDs según entorno
   const PRICES = {
@@ -28,7 +32,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   // New plan intents
   if (intent === "starter_plan") {
     const url = await createCheckoutSessionURL({
-      user: null,
+      user,
       price: PRICES.starter,
       origin: new URL(request.url).origin,
       metadata: { plan: "STARTER" },
@@ -38,7 +42,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   if (intent === "pro_plan") {
     const url = await createCheckoutSessionURL({
-      user: null,
+      user,
       price: PRICES.pro,
       origin: new URL(request.url).origin,
       metadata: { plan: "PRO" },
@@ -48,7 +52,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   if (intent === "enterprise_plan") {
     const url = await createCheckoutSessionURL({
-      user: null,
+      user,
       price: PRICES.enterprise,
       origin: new URL(request.url).origin,
       metadata: { plan: "ENTERPRISE" },
