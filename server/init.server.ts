@@ -7,6 +7,9 @@
 import { getAgenda } from './jobs/agenda.server';
 import { WhatsAppSyncService } from './integrations/whatsapp/sync.service.server';
 import { registerWeeklyEmailsWorker } from './jobs/workers/weekly-emails-worker';
+import { registerParserWorker } from './jobs/workers/parser-worker';
+import { registerAutoReleaseWorker } from './jobs/workers/auto-release-worker';
+import { registerCleanupWorker } from './jobs/workers/cleanup-jobs';
 
 /**
  * Initialize all server background tasks
@@ -35,8 +38,11 @@ export async function initializeServer() {
     }
   });
 
-  // Initialize weekly emails worker
+  // Register all Agenda workers
   await registerWeeklyEmailsWorker();
+  await registerParserWorker();
+  await registerAutoReleaseWorker();
+  await registerCleanupWorker();
 
-  console.log('✅ Agenda.js: All jobs registered');
+  console.log('✅ Agenda.js: All jobs registered (weekly-emails, parser, auto-release, cleanup)');
 }

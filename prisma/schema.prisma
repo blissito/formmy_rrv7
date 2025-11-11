@@ -420,6 +420,8 @@ model Message {
 
 enum IntegrationType {
   WHATSAPP
+  MESSENGER
+  INSTAGRAM
   GOOGLE_CALENDAR
   GMAIL
   STRIPE
@@ -438,6 +440,14 @@ model Integration {
   phoneNumberId      String? // ID del número de teléfono en WhatsApp
   businessAccountId  String? // ID de la cuenta de negocio en WhatsApp
   webhookVerifyToken String? // Token para verificar el webhook de WhatsApp
+
+  // Campos específicos de Messenger
+  pageId          String? // Facebook Page ID
+  pageAccessToken String? // Page Access Token (long-lived)
+
+  // Campos específicos de Instagram
+  instagramUserId String? // Instagram Business Account ID
+  linkedPageId    String? // Facebook Page ID vinculada (requerida para Instagram)
 
   // Campos específicos de Google Calendar
   calendarId   String? // ID del calendario (por defecto 'primary')
@@ -462,6 +472,8 @@ model Integration {
 
   // Metadata JSON para configuración específica de cada integración
   // Ej: VOICE → {ttsVoiceId, voiceWelcome, ttsProvider, sttLanguage}
+  // Ej: MESSENGER → {subscribedFields: ["messages", "messaging_postbacks", "message_reactions"]}
+  // Ej: INSTAGRAM → {subscribedFields: ["messages"], username: "@account"}
   metadata Json?
 
   // Relaciones

@@ -15,7 +15,6 @@ import {
 import { uploadParserFile } from "../../server/llamaparse/upload.service";
 import type { ParsingMode } from "@prisma/client";
 import { enqueueParsingJob } from "../../server/jobs/workers/parser-worker";
-import { registerParserWorker } from "../../server/jobs/workers/parser-worker";
 
 /**
  * GET - Check job status
@@ -183,9 +182,6 @@ export async function action({ request }: Route.ActionArgs) {
 
       // ⭐ Capturar LLAMA_CLOUD_API_KEY para pasar al worker
       const LLAMA_KEY = process.env.LLAMA_CLOUD_API_KEY;
-
-      // Registrar worker (solo se ejecuta una vez gracias al singleton)
-      await registerParserWorker();
 
       // Encolar job en Agenda.js para procesamiento asíncrono
       await enqueueParsingJob({

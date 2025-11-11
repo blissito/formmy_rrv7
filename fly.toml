@@ -28,6 +28,7 @@ primary_region = 'dfw'
 [env]
   NODE_ENV = "production"
   PORT = "3000"
+  TZ = "America/Mexico_City"
 
 # Proceso principal: App web
 [processes]

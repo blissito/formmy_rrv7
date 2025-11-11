@@ -34,14 +34,36 @@ export async function getAgenda(): Promise<Agenda> {
 
     // Error handling
     agendaInstance.on('error', (error) => {
-      console.error('[Agenda] Error:', error);
+      console.error('[Agenda] System error:', error);
     });
 
     agendaInstance.on('fail', (error, job) => {
-      console.error(`[Agenda] Job ${job.attrs.name} failed:`, error);
+      console.error(`❌ [Agenda] Job "${job.attrs.name}" failed:`, {
+        error: error.message,
+        failCount: job.attrs.failCount,
+        lastRunAt: job.attrs.lastRunAt,
+        data: job.attrs.data,
+      });
     });
 
     agendaInstance.on('success', (job) => {
+      const runTime = job.attrs.lastFinishedAt && job.attrs.lastRunAt
+        ? job.attrs.lastFinishedAt.getTime() - job.attrs.lastRunAt.getTime()
+        : 0;
+
+      console.log(`✅ [Agenda] Job "${job.attrs.name}" completed`, {
+        runTimeMs: runTime,
+        runTimeSec: (runTime / 1000).toFixed(2),
+        nextRunAt: job.attrs.nextRunAt,
+        type: job.attrs.type, // 'single' | 'normal'
+      });
+    });
+
+    agendaInstance.on('start', (job) => {
+      console.log(`▶️  [Agenda] Job "${job.attrs.name}" started`, {
+        data: job.attrs.data,
+        scheduledFor: job.attrs.nextRunAt,
+      });
     });
 
     // Start agenda and wait for connection

@@ -341,7 +341,8 @@ export async function registerWeeklyEmailsWorker() {
     }
   );
 
-  // Programar el job para que corra cada lunes a las 9:00 AM
+  // Programar el job para que corra cada lunes a las 9:00 AM (timezone del servidor)
+  // Con TZ=America/Mexico_City en fly.toml, esto será 9 AM hora México
   await agenda.every('0 9 * * 1', 'send-weekly-emails', {
     runDate: new Date()
   });

@@ -8,7 +8,6 @@ import {
 import { uploadParserFile } from "../../server/llamaparse/upload.service";
 import { addContextWithEmbeddings } from "../../server/context/unified-processor.server";
 import { enqueueParsingJob } from "../../server/jobs/workers/parser-worker";
-import { registerParserWorker } from "../../server/jobs/workers/parser-worker";
 import type { ParsingMode } from "@prisma/client";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -177,9 +176,6 @@ export async function action({ request }: Route.ActionArgs) {
 
         // ⭐ Capturar LLAMA_CLOUD_API_KEY para pasar al worker
         const LLAMA_KEY = process.env.LLAMA_CLOUD_API_KEY;
-
-        // Registrar worker (solo se ejecuta una vez gracias al singleton)
-        await registerParserWorker();
 
         // Encolar job en Agenda.js para procesamiento asíncrono (PRODUCCIÓN-READY)
         await enqueueParsingJob({

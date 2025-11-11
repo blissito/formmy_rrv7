@@ -10,7 +10,7 @@
  * - Auto-limpieza via TTL index
  */
 
-import { db } from "../../utils/db.server";
+import { db } from "~/utils/db.server";
 
 const DEBOUNCE_WINDOW_MS = 5000; // 5 segundos
 

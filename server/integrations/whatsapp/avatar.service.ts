@@ -5,7 +5,7 @@
  * https://developers.facebook.com/docs/whatsapp/cloud-api/reference/phone-numbers
  */
 
-import { db } from "../../utils/db.server";
+import { db } from "~/utils/db.server";
 
 interface AvatarResult {
   success: boolean;
