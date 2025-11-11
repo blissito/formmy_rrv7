@@ -75,29 +75,38 @@ async function checkTrialExpiry(): Promise<{ sent: number }> {
 
 /**
  * Chequeo 2: No Usage
- * Usuarios con chatbots pero sin actividad en 14+ días
+ * Usuarios Trial/Pro/Enterprise que NO tienen chatbots creados
+ * Límite: Máximo 3 emails por usuario, con cooldown de 7 días
  */
 async function checkNoUsage(): Promise<{ sent: number }> {
 
   try {
-    // Fecha de hace 14 días
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    // Fecha de hace 7 días (para cooldown)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Usuarios con chatbots pero sin conversaciones recientes
+    // Usuarios con planes Trial, Pro o Enterprise que NO tienen chatbots creados
     const users = await db.user.findMany({
       where: {
+        // Solo planes Trial, Pro o Enterprise
+        plan: {
+          in: [Plans.TRIAL, Plans.PRO, Plans.ENTERPRISE]
+        },
+        // Que NO tengan chatbots creados
         chatbots: {
-          some: {
-            conversations: {
-              none: {
-                createdAt: {
-                  gte: fourteenDaysAgo
-                }
-              }
-            }
-          }
-        }
+          none: {}
+        },
+        // Que nunca hayan creado un chatbot (bandera permanente)
+        hasCreatedChatbot: false,
+        // Que no hayan recibido 3 o más emails
+        noUsageEmailsSent: {
+          lt: 3
+        },
+        // Cooldown: último email hace más de 7 días o nunca enviado
+        OR: [
+          { lastNoUsageEmailAt: null },
+          { lastNoUsageEmailAt: { lt: sevenDaysAgo } }
+        ]
       },
       select: {
         id: true,
@@ -114,6 +123,16 @@ async function checkNoUsage(): Promise<{ sent: number }> {
           email: user.email,
           name: user.name || undefined
         });
+
+        // Actualizar tracking
+        await db.user.update({
+          where: { id: user.id },
+          data: {
+            noUsageEmailsSent: { increment: 1 },
+            lastNoUsageEmailAt: new Date()
+          }
+        });
+
         sent++;
       } catch (error) {
         console.error(`[WeeklyEmailsWorker] Error sending no usage email to ${user.email}:`, error);

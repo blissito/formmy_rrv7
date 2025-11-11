@@ -191,6 +191,11 @@ model User {
   // Conversations Tracking (para compra de conversaciones adicionales)
   purchasedConversations Int @default(0) // Conversaciones COMPRADAS que se suman al límite mensual del plan
 
+  // Email Campaign Tracking (para limitar emails de marketing/reactivación)
+  noUsageEmailsSent  Int       @default(0) // Contador de emails "noUsage" enviados (max 3)
+  lastNoUsageEmailAt DateTime? // Última vez que se envió email "noUsage" (cooldown 7 días)
+  hasCreatedChatbot  Boolean   @default(false) // Bandera permanente: true cuando crea su primer chatbot
+
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 }
@@ -415,7 +420,8 @@ model Message {
 
   createdAt DateTime @default(now())
 
-  @@unique([conversationId, externalMessageId])
+  // TODO: Resolver mensajes duplicados con externalMessageId null antes de habilitar
+  // @@unique([conversationId, externalMessageId])
 }
 
 enum IntegrationType {
@@ -934,7 +940,8 @@ model DebouncedMessage {
   processedAt    DateTime @default(now())
   expiresAt      DateTime // TTL index - auto-delete después de 1 minuto
 
-  @@unique([messageId, phoneNumberId, type])
+  // TODO: Limpiar duplicados antes de habilitar este constraint
+  // @@unique([messageId, phoneNumberId, type])
   @@index([expiresAt])
   @@index([messageId, phoneNumberId, type, processedAt])
 }

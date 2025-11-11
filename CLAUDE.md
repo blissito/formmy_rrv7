@@ -100,6 +100,115 @@ When search_context() returns results, those results ARE the answer.
 
 Modelos `Trace`, `TraceSpan` - Tracking automático de LLM calls, tools, costos
 
+## Email Campaigns & Notifications ✉️
+
+**Worker**: `/server/jobs/workers/weekly-emails-worker.ts`
+**Agenda**: Cron job - Lunes 9:00 AM (TZ: America/Mexico_City)
+**Notifiers**: `/server/notifyers/` (12 templates)
+
+### Email Transaccionales (Event-triggered)
+- `welcome.ts` - Registro nuevo
+- `pro.ts` - Upgrade de plan
+- `planCancellation.ts` - Cancelación
+- `notifyOwner.ts` - Nuevo mensaje formmy
+- `reminder.ts` - Recordatorios programados
+- `creditsPurchase.ts` - Compra de créditos
+- `conversationsPurchase.ts` - Compra de conversaciones
+
+### Email Automatizados (Weekly Cron)
+
+#### 1. Free Trial Expiry (`freeTrial.ts`)
+**Target**: Usuarios TRIAL sin chatbots creados (5-7 días inactivos)
+**Límite**: ❌ Sin límite (basado en fecha de creación)
+
+#### 2. No Usage (`noUsage.ts`) ⭐ **ACTUALIZADO**
+**Target**: Usuarios Trial/Pro/Enterprise SIN chatbots creados
+**Límite**: ✅ Máximo 3 emails por usuario
+**Cooldown**: 7 días entre emails
+**Tracking**: User model - `noUsageEmailsSent`, `lastNoUsageEmailAt`, `hasCreatedChatbot`
+
+**Lógica** (`chatbotModel.server.ts:115-119`):
+```typescript
+// Al crear primer chatbot → marca permanente
+await db.user.update({
+  where: { id: userId },
+  data: { hasCreatedChatbot: true } // ✅ NUNCA más recibirá email noUsage
+});
+```
+
+**Comportamiento**:
+- Usuario sin chatbots: Email semana 1 → 2 → 3 (máx 3)
+- Usuario crea chatbot: ❌ Bloqueado permanente (incluso si elimina chatbot)
+- Query filters: `hasCreatedChatbot: false`, `noUsageEmailsSent < 3`, cooldown 7 días
+
+#### 3. Weekly Summary (`weekSummary.ts`)
+**Target**: Usuarios con conversaciones en últimos 7 días
+**Límite**: ❌ Sin límite (solo envía si hay actividad)
+
+### Trial to FREE Conversion
+**Worker**: `convertExpiredTrials()` - Ejecuta cada lunes
+**Lógica**: Trial > 365 días → Convierte a FREE + Aplica restricciones
+
+## ⚠️ TODOs Pendientes - MongoDB
+
+### Error E11000 DuplicateKey - Indices Únicos Comentados
+
+Durante migración Prisma (2025-01-11) se encontraron **datos duplicados** que impidieron crear índices únicos:
+
+#### 1. Message Model (línea 423-424)
+```typescript
+// TODO: Resolver mensajes duplicados con externalMessageId null antes de habilitar
+// @@unique([conversationId, externalMessageId])
+```
+**Problema**: Múltiples mensajes con `externalMessageId: null` en misma conversación
+**Causa probable**: Mensajes internos sin ID externo de WhatsApp/Messenger
+
+#### 2. DebouncedMessage Model (línea 943-944)
+```typescript
+// TODO: Limpiar duplicados antes de habilitar este constraint
+// @@unique([messageId, phoneNumberId, type])
+```
+**Problema**: Mensaje WhatsApp duplicado detectado:
+```
+messageId: "wamid.HBgNNTIxNTU2NzA2MjYyORUCABIYFDNCMDREQzk1Njg3OEMzQzE4RDM4AA=="
+phoneNumberId: "845237608662425"
+type: "message"
+```
+
+**Causa probable**: Race condition en webhooks de WhatsApp (Meta envía duplicados simultáneos)
+
+### Acciones Recomendadas
+
+**Opción 1: Limpiar duplicados manualmente**
+```javascript
+// MongoDB shell - Encontrar duplicados en DebouncedMessage
+db.DebouncedMessage.aggregate([
+  {
+    $group: {
+      _id: { messageId: "$messageId", phoneNumberId: "$phoneNumberId", type: "$type" },
+      count: { $sum: 1 },
+      ids: { $push: "$_id" }
+    }
+  },
+  { $match: { count: { $gt: 1 } } }
+])
+
+// Eliminar duplicados (mantener solo el más reciente)
+```
+
+**Opción 2: Vaciar tabla temporal** (DebouncedMessage)
+```javascript
+// Seguro - Los mensajes solo duran 1 minuto (TTL)
+db.DebouncedMessage.deleteMany({})
+```
+
+**Opción 3: Configurar TTL Index** en MongoDB Atlas
+- Crear índice TTL en `DebouncedMessage.expiresAt`
+- `expireAfterSeconds: 0` → Auto-elimina cuando `expiresAt < now()`
+- Previene acumulación de duplicados
+
+**Luego**: Re-habilitar constraints únicos en `schema.prisma` y ejecutar `npx prisma db push`
+
 ## APIs Públicas
 
 ### RAG API v1

@@ -52,13 +52,13 @@ export function PricingComparisonTable() {
 
   // Define integrations data
   const integrations = [
-    { name: "Deník Calendario ", key: "denik" },
+    // { name: "Deník Calendario ", key: "denik" },
     { name: "WhatsApp ", key: "whatsapp" },
-    { name: "Google Calendar ", key: "calendar" },
-    { name: "Gmail (Proximamente)", key: "gmail" },
+    // { name: "Google Calendar ", key: "calendar" },
+    // { name: "Gmail (Proximamente)", key: "gmail" },
     { name: "Messenger (Proximamente)", key: "messenger" },
     { name: "Instagram (Proximamente)", key: "instagram" },
-    { name: "Webhooks (Proximamente)", key: "webhooks" },
+    // { name: "Webhooks (Proximamente)", key: "webhooks" },
   ];
 
   // Which plans include which integrations
@@ -76,7 +76,7 @@ export function PricingComparisonTable() {
       denik: true,
       calendar: false,
       gmail: false,
-      whatsapp: false,
+      whatsapp: true,
       messenger: false,
       webhooks: false,
       instagram: false,
@@ -202,16 +202,24 @@ export function PricingComparisonTable() {
       isSectionHeader: false,
       isIntegration: false
     },
-    { 
-      name: "Claude 3.5 Haiku", 
+    {
+      name: "Claude 3.5 Haiku",
       key: "ai_model_claude35_haiku",
       description: "Modelo avanzado Anthropic",
       isModel: true,
       isSectionHeader: false,
       isIntegration: false
     },
-    { 
-      name: "Integraciones", 
+    {
+      name: "Claude 4.5 Haiku",
+      key: "ai_model_claude45_haiku",
+      description: "Modelo premium de última generación Anthropic",
+      isModel: true,
+      isSectionHeader: false,
+      isIntegration: false
+    },
+    {
+      name: "Integraciones",
       key: "integrations_header",
       description: "Conexiones con otras plataformas",
       isSectionHeader: true,
@@ -310,6 +318,7 @@ export function PricingComparisonTable() {
       gpt5_mini: false,
       claude3_haiku: false,
       claude35_haiku: false,
+      claude45_haiku: false,
     },
     "Starter": {
       gemini_flashlite: true,
@@ -317,6 +326,7 @@ export function PricingComparisonTable() {
       gpt5_mini: false,
       claude3_haiku: false,
       claude35_haiku: false,
+      claude45_haiku: false,
     },
     "Pro ✨": {
       gemini_flashlite: true,
@@ -324,6 +334,7 @@ export function PricingComparisonTable() {
       gpt5_mini: false,
       claude3_haiku: true,
       claude35_haiku: false,
+      claude45_haiku: false,
     },
     "Enterprise 🤖": {
       gemini_flashlite: true,
@@ -331,6 +342,7 @@ export function PricingComparisonTable() {
       gpt5_mini: true,
       claude3_haiku: true,
       claude35_haiku: true,
+      claude45_haiku: true,
     },
   };
 

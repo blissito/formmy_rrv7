@@ -90,7 +90,7 @@ export async function createChatbot({
     slug = generateUniqueSlug(name);
   }
 
-  return db.chatbot.create({
+  const chatbot = await db.chatbot.create({
     data: {
       name: finalName,
       description,
@@ -111,6 +111,14 @@ export async function createChatbot({
       contexts: [], // Initialize with empty contexts
     },
   });
+
+  // Marcar que el usuario ha creado su primer chatbot (bandera permanente para email noUsage)
+  await db.user.update({
+    where: { id: userId },
+    data: { hasCreatedChatbot: true }
+  });
+
+  return chatbot;
 }
 
 /**
