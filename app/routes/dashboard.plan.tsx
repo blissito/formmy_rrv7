@@ -158,7 +158,7 @@ export default function DashboardPlan() {
 
   return (
     <>
-      {success && <SuccessModal plan={user.plan} />}
+      {success && <SuccessModal />}
       <section className="max-w-7xl mx-auto py-6 px-4">
         <h2 className="text-2xl md:text-3xl text-dark dark:text-white font-semibold mb-4">
           Administra tu plan
