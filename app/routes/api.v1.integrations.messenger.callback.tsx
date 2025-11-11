@@ -22,12 +22,25 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Si el usuario canceló la autorización
   if (error) {
     console.error("Error de OAuth Messenger:", error, errorDescription);
-    return new Response(null, {
-      status: 302,
+    const errorScript = `
+      <script>
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'MESSENGER_AUTH_ERROR',
+            error: '${errorDescription || "Error al conectar con Facebook Messenger"}'
+          }, window.location.origin);
+          window.close();
+        } else {
+          window.location.href = '/dashboard/chat?error=${encodeURIComponent(
+            errorDescription || "Error al conectar con Facebook Messenger"
+          )}';
+        }
+      </script>
+    `;
+    return new Response(errorScript, {
+      status: 200,
       headers: {
-        Location: `/dashboard/chat?error=${encodeURIComponent(
-          errorDescription || "Error al conectar con Facebook Messenger"
-        )}`,
+        'Content-Type': 'text/html',
       },
     });
   }
@@ -43,12 +56,25 @@ export async function loader({ request }: Route.LoaderArgs) {
     const result = await MessengerOAuthService.completeOAuthFlow(code, chatbotId);
 
     if (!result.success) {
-      return new Response(null, {
-        status: 302,
+      const errorScript = `
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'MESSENGER_AUTH_ERROR',
+              error: '${result.error || "Error al conectar con Messenger"}'
+            }, window.location.origin);
+            window.close();
+          } else {
+            window.location.href = '/dashboard/chat?error=${encodeURIComponent(
+              result.error || "Error al conectar con Messenger"
+            )}';
+          }
+        </script>
+      `;
+      return new Response(errorScript, {
+        status: 200,
         headers: {
-          Location: `/dashboard/chat?error=${encodeURIComponent(
-            result.error || "Error al conectar con Messenger"
-          )}`,
+          'Content-Type': 'text/html',
         },
       });
     }
@@ -74,21 +100,45 @@ export async function loader({ request }: Route.LoaderArgs) {
       );
     }
 
-    // Redirigir de vuelta al dashboard con éxito
-    return new Response(null, {
-      status: 302,
+    // Enviar mensaje al parent window (si está en popup) y redirigir
+    const successScript = `
+      <script>
+        if (window.opener) {
+          window.opener.postMessage({ type: 'MESSENGER_AUTH_SUCCESS' }, window.location.origin);
+          window.close();
+        } else {
+          window.location.href = '/dashboard/chat?messenger=connected';
+        }
+      </script>
+    `;
+
+    return new Response(successScript, {
+      status: 200,
       headers: {
-        Location: `/dashboard/chat?messenger=connected`,
+        'Content-Type': 'text/html',
       },
     });
   } catch (error) {
     console.error("Error en callback de Messenger:", error);
-    return new Response(null, {
-      status: 302,
+    const errorScript = `
+      <script>
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'MESSENGER_AUTH_ERROR',
+            error: 'Error al procesar autorización de Messenger'
+          }, window.location.origin);
+          window.close();
+        } else {
+          window.location.href = '/dashboard/chat?error=${encodeURIComponent(
+            "Error al procesar autorización de Messenger"
+          )}';
+        }
+      </script>
+    `;
+    return new Response(errorScript, {
+      status: 200,
       headers: {
-        Location: `/dashboard/chat?error=${encodeURIComponent(
-          "Error al procesar autorización de Messenger"
-        )}`,
+        'Content-Type': 'text/html',
       },
     });
   }

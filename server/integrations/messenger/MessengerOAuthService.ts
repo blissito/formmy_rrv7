@@ -14,9 +14,10 @@ import { db } from "~/utils/db.server";
 
 const META_APP_ID = process.env.META_APP_ID;
 const META_APP_SECRET = process.env.META_APP_SECRET;
-const REDIRECT_URI = process.env.NODE_ENV === "production"
-  ? "https://formmy.app/api/v1/integrations/messenger/callback"
-  : "http://localhost:3000/api/v1/integrations/messenger/callback";
+const BASE_URL = process.env.NODE_ENV === "production"
+  ? (process.env.APP_URL || "https://formmy.app")
+  : "http://localhost:3000";
+const REDIRECT_URI = `${BASE_URL}/api/v1/integrations/messenger/callback`;
 
 // Scopes requeridos para Messenger
 const REQUIRED_SCOPES = [
