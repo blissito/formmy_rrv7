@@ -60,36 +60,45 @@ async function updateUserChatbotModels(userId: string, newPlan: string) {
 }
 
 /**
- * Determina el plan según el price ID o metadata de Stripe
+ * Determina el plan según metadata de Stripe (con fallback a price ID)
  */
 function determinePlanFromSubscription(subscription: StripeSubscription): "STARTER" | "PRO" | "ENTERPRISE" {
-  // Primero chequear metadata (usado por Enterprise)
-  if (subscription.metadata?.plan === 'ENTERPRISE') {
-    return 'ENTERPRISE';
+  // Primero intentar obtener el plan desde metadata (método preferido)
+  const planFromMetadata = subscription.metadata?.plan;
+
+  if (planFromMetadata === 'STARTER' || planFromMetadata === 'PRO' || planFromMetadata === 'ENTERPRISE') {
+    console.log(`[Webhook] Plan determinado por metadata: ${planFromMetadata}`);
+    return planFromMetadata;
   }
 
-  // Obtener el price ID del primer item de la suscripción
+  // Fallback: usar price ID si no hay metadata
   const priceId = subscription.items?.data[0]?.price?.id;
 
   if (!priceId) {
-    console.warn('[Webhook] No se pudo determinar el price ID, defaulting a PRO');
+    console.warn('[Webhook] No se pudo determinar el plan (sin metadata ni price ID), defaulting a PRO');
     return 'PRO';
   }
 
-  // Price IDs de producción
+  // Price IDs de producción (fallback)
   const PRICE_IDS = {
     STARTER: 'price_1S5AqXDtYmGT70YtepLAzwk4',
     PRO: 'price_1S5CqADtYmGT70YtTZUtJOiS',
+    ENTERPRISE: 'price_1SSPzKDtYmGT70YtIgLWY8d5',
   };
 
   // Determinar plan basado en price ID
   if (priceId === PRICE_IDS.STARTER) {
+    console.log(`[Webhook] Plan determinado por price ID: STARTER`);
     return 'STARTER';
   } else if (priceId === PRICE_IDS.PRO) {
+    console.log(`[Webhook] Plan determinado por price ID: PRO`);
     return 'PRO';
+  } else if (priceId === PRICE_IDS.ENTERPRISE) {
+    console.log(`[Webhook] Plan determinado por price ID: ENTERPRISE`);
+    return 'ENTERPRISE';
   }
 
-  // Default a PRO si no coincide
+  // Default a PRO si no coincide nada
   console.warn(`[Webhook] Price ID desconocido: ${priceId}, defaulting a PRO`);
   return 'PRO';
 }

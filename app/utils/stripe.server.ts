@@ -197,6 +197,12 @@ export const createCheckoutSessionURL = async ({
 
   if (metadata) {
     sessionConfig.metadata = metadata;
+    // Para subscriptions, también agregar metadata a la suscripción
+    if (mode === "subscription") {
+      sessionConfig.subscription_data = {
+        metadata: metadata
+      };
+    }
   }
 
   if (user) {

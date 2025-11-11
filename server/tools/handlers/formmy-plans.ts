@@ -24,7 +24,7 @@ const FORMMY_PLANS = {
   ENTERPRISE: {
     name: 'Plan Enterprise',
     price: 2490,
-    priceId: null, // Custom price_data
+    priceId: 'price_1SSPzKDtYmGT70YtIgLWY8d5',
     chatbots: Infinity,
     conversations: 2500,
     credits: 5000

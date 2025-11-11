@@ -15,8 +15,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
     pro: isDevelopment
       ? process.env.STRIPE_PRO_PRICE_TEST || "price_test_pro"
       : "price_1S5CqADtYmGT70YtTZUtJOiS",
-    // Enterprise usa priceData dinámico (ver línea 46)
+    enterprise: isDevelopment
+      ? process.env.STRIPE_ENTERPRISE_PRICE_TEST || "price_test_enterprise"
+      : "price_1SSPzKDtYmGT70YtIgLWY8d5",
     // Credits one-time purchases - Price IDs reales de producción
+    credits_100: "price_1SLwONRuGQeGCFrvx7YKBzMT", // TODO: Necesita price ID correcto
     credits_500: "price_1SLwONRuGQeGCFrvx7YKBzMT", // $99 MXN
     credits_2000: "price_1SLwPBRuGQeGCFrvwVfKj8Lk", // $349 MXN
     credits_5000: "price_1SLwPqRuGQeGCFrvQZeRStNm", // $799 MXN
@@ -28,6 +31,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       user: null,
       price: PRICES.starter,
       origin: new URL(request.url).origin,
+      metadata: { plan: "STARTER" },
     });
     if (url) return Response.redirect(url);
   }
@@ -37,25 +41,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
       user: null,
       price: PRICES.pro,
       origin: new URL(request.url).origin,
+      metadata: { plan: "PRO" },
     });
     if (url) return Response.redirect(url);
   }
 
   if (intent === "enterprise_plan") {
-    // Usar priceData dinámico en vez de price ID fijo
     const url = await createCheckoutSessionURL({
       user: null,
-      priceData: {
-        currency: 'mxn',
-        unit_amount: 249000, // $2,490.00 MXN (en centavos)
-        recurring: { interval: 'month' },
-        product_data: {
-          name: 'Plan Enterprise',
-          description: 'Chatbots ilimitados, 1,000 conversaciones/mes, 5,000 créditos, 60 min voz'
-        }
-      },
+      price: PRICES.enterprise,
       origin: new URL(request.url).origin,
-      metadata: { plan: 'ENTERPRISE' },
+      metadata: { plan: "ENTERPRISE" },
     });
     if (url) return Response.redirect(url);
   }

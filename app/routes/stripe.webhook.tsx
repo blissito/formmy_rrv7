@@ -39,6 +39,7 @@ export const action = async ({ request }: ActionArgs) => {
     // Manejar el tipo de evento
     switch (event.type) {
       case "customer.subscription.created":
+        console.log("STRIPE_DATA", event.data.object)
         await handleSubscriptionCreated(event.data.object);
         break;
 
