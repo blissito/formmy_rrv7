@@ -156,6 +156,14 @@ export default [
     "routes/api.v1.integrations.whatsapp.embedded_signup.ts"
   ),
   route(
+    "api/v1/integrations/messenger/webhook",
+    "routes/api.v1.integrations.messenger.webhook.tsx"
+  ),
+  route(
+    "api/v1/integrations/instagram/webhook",
+    "routes/api.v1.integrations.instagram.webhook.tsx"
+  ),
+  route(
     "api/v1/oauth2/google/calendar/callback",
     "routes/api.v1.oauth2.google.calendar.callback.ts"
   ),
