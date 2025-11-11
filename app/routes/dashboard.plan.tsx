@@ -8,6 +8,7 @@ import Spinner from "~/components/Spinner";
 import { getAvailableCredits } from "server/llamaparse/credits.service";
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import SuccessModal from "~/components/SuccessModal";
 
 type SubscriptionResponse = {
   current_period_end?: number;
@@ -19,6 +20,10 @@ type SubscriptionResponse = {
 export const loader = async ({ request }: { request: Request }) => {
   const user = await getUserOrRedirect(request);
   const subscription = await searchStripeSubscriptions(user) as SubscriptionResponse | null;
+
+  // Detectar si viene de una compra exitosa
+  const url = new URL(request.url);
+  const success = url.searchParams.get("success") === "1";
 
   // Obtener créditos disponibles
   const credits = await getAvailableCredits(user.id);
@@ -62,7 +67,7 @@ export const loader = async ({ request }: { request: Request }) => {
 
   return {
     user,
-    success: false, // No necesitamos el success aquí, pero lo mantenemos para consistencia
+    success,
     subscription: {
       endDate: subscription?.current_period_end ? subscription.current_period_end * 1000 : 0,
       planPrice: subscription?.plan?.amount_decimal ? Number(subscription.plan.amount_decimal) * 0.01 : 0,
@@ -78,7 +83,7 @@ export const loader = async ({ request }: { request: Request }) => {
 };
 
 export default function DashboardPlan() {
-  const { user, subscription, credits, conversations } = useLoaderData<{
+  const { user, success, subscription, credits, conversations } = useLoaderData<{
     user: any;
     success: boolean;
     subscription: {
@@ -152,7 +157,9 @@ export default function DashboardPlan() {
   const pricing = getConversationPricing();
 
   return (
-    <section className="max-w-7xl mx-auto py-6 px-4">
+    <>
+      {success && <SuccessModal plan={user.plan} />}
+      <section className="max-w-7xl mx-auto py-6 px-4">
         <h2 className="text-2xl md:text-3xl text-dark dark:text-white font-semibold mb-4">
           Administra tu plan
         </h2>
@@ -487,6 +494,7 @@ export default function DashboardPlan() {
           )}
           </AnimatePresence>
     </section>
+    </>
   );
 }
 

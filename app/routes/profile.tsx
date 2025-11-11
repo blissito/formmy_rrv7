@@ -46,7 +46,7 @@ export default function Profile() {
   const navigation = useNavigation();
   return (
     <>
-      {success && <SuccessModal />}
+      {success && <SuccessModal plan={user.plan} />}
       <Nav user={user} />
       <section className="dark:bg-space-900 min-h-screen">
         <section className="pt-32 md:pt-40 pb-20 px-4 md:px-0 lg:max-w-6xl max-w-3xl mx-auto text-space-500 dark:text-space-300">

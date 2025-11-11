@@ -184,7 +184,7 @@ export const createCheckoutSessionURL = async ({
 
   const defaultSuccessUrl = mode === "payment"
     ? `${DOMAIN}/dashboard/plan?credits_purchased=1`
-    : `${DOMAIN}/profile?success=1`;
+    : `${DOMAIN}/dashboard/plan?success=1`;
   const defaultCancelUrl = `${DOMAIN}/planes`;
 
   const sessionConfig: any = {
