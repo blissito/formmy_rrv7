@@ -229,19 +229,14 @@ export default function DashboardUso() {
 
           {/* Mensajes vía Formmy */}
           <div className="bg-white rounded-3xl  border border-outlines/60  p-4">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-3 ">
               <BiMessageRounded className="w-4 h-4 text-gray-600" />
               <span className="text-xs lg:text-sm text-gray-600">Mensajes Formmy</span>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="relative w-12 h-12 flex-shrink-0 hidden md:block opacity-0">
-                <svg className="w-12 h-12"></svg>
-              </div>
-              <div className="flex items-center md:items-end gap-2">
-                <div className="text-2xl font-bold text-gray-900">{usage.messages}</div>
-                <p className="text-sm md:text-base text-gray-600">msjs</p>
-              </div>
+            <div className="flex items-center md:items-end gap-2 -mt-2 md:min-h-[48px]">
+              <div className="text-2xl font-bold text-gray-900">{usage.messages}</div>
+              <p className="text-sm md:text-base text-gray-600">msjs</p>
             </div>
           </div>
 
