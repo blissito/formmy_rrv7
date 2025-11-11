@@ -154,9 +154,17 @@ export const createSession = async (code: string, request: Request, state?: stri
       
       // Send welcome email to new user
       try {
+        console.log('🔧 [Welcome Email] Intentando enviar email a:', extra.email);
+        console.log('🔧 [Welcome Email] SES_REGION:', process.env.SES_REGION);
+        console.log('🔧 [Welcome Email] SES_KEY configurado:', !!process.env.SES_KEY);
+
         await sendWelcomeEmail({ email: extra.email, name: extra.name });
+        console.log('✅ [Welcome Email] Email enviado exitosamente a:', extra.email);
       } catch (error) {
-        console.error('Error sending welcome email:', error);
+        console.error('❌ [Welcome Email] Error enviando email:', error);
+        if (error instanceof Error) {
+          console.error('❌ [Welcome Email] Stack:', error.stack);
+        }
         // Don't fail registration if welcome email fails
       }
 

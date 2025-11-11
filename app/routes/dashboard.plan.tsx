@@ -513,7 +513,7 @@ export const CardFree = () => {
     };
 
     return (
-      <section className="border-outlines border rounded-3xl p-6  flex flex-wrap md:flex-nowrap gap-6">
+      <section className="border-outlines border rounded-3xl p-6  flex flex-wrap md:flex-nowrap gap-6 min-h-[332px]">
         <Form method="post" className="min-w-[280px] relative pb-12 md:pb-0">
           <h3 className="text-dark text-xl font-semibold">
             Free

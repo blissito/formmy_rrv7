@@ -15,6 +15,9 @@ const host =
 export const sendgridTransport = getSesTransport();
 
 export const sendWelcomeEmail = async ({ email, name }: WelcomeEmail) => {
+  console.log('📧 [sendWelcomeEmail] Iniciando envío para:', email);
+  console.log('📧 [sendWelcomeEmail] Remitente:', getSesRemitent());
+
   return sendgridTransport
     .sendMail({
       from: getSesRemitent(),
@@ -320,6 +323,11 @@ export const sendWelcomeEmail = async ({ email, name }: WelcomeEmail) => {
       `,
     })
     .then((r: any) => {
+      console.log('📧 [sendWelcomeEmail] ✅ Email enviado correctamente');
+      return r;
     })
-    .catch((e: Error) => console.error('Error sending welcome email:', e));
+    .catch((e: Error) => {
+      console.error('📧 [sendWelcomeEmail] ❌ Error:', e);
+      throw e; // Re-throw para que el caller pueda manejar el error
+    });
 };
