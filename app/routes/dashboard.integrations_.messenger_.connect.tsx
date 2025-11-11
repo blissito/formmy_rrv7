@@ -1,10 +1,10 @@
 /**
  * Ruta de inicio de OAuth para Facebook Messenger
  *
- * Esta ruta redirige al usuario a Facebook para autorizar la app
- * y permitir que acceda a sus páginas de Facebook.
+ * Esta ruta genera la URL de autorización de Facebook y redirige al usuario.
  */
 
+import { redirect } from "react-router";
 import type { Route } from "./+types/dashboard.integrations_.messenger_.connect";
 import { MessengerOAuthService } from "server/integrations/messenger/MessengerOAuthService";
 import { getUserOrRedirect } from "server/getUserUtils.server";
@@ -20,14 +20,21 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw new Response("chatbotId es requerido", { status: 400 });
   }
 
-  // Generar URL de autorización OAuth
-  const authUrl = MessengerOAuthService.getAuthorizationUrl(chatbotId);
+  try {
+    // Generar URL de autorización de Facebook
+    const authUrl = MessengerOAuthService.getAuthorizationUrl(chatbotId);
 
-  // Redirigir a Facebook para autorización
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: authUrl,
-    },
-  });
+    console.log('🚀 [Messenger OAuth] Redirigiendo a Facebook OAuth...');
+    console.log('   chatbotId:', chatbotId);
+    console.log('   authUrl:', authUrl);
+
+    // Redirigir al usuario a Facebook
+    return redirect(authUrl);
+  } catch (error) {
+    console.error('❌ [Messenger OAuth] Error al generar URL:', error);
+    throw new Response(
+      error instanceof Error ? error.message : "Error al iniciar OAuth",
+      { status: 500 }
+    );
+  }
 }
