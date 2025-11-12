@@ -23,6 +23,7 @@ type SubscriptionStatus =
 export interface StripeSubscription {
   id: string;
   customer: string;
+  customer_email?: string; // Email del customer
   status: SubscriptionStatus;
   current_period_end?: number; // Unix timestamp
   metadata?: Record<string, string>; // Metadatos de Stripe
@@ -30,9 +31,56 @@ export interface StripeSubscription {
     data: Array<{
       price: {
         id: string;
+        product?: string | {
+          id: string;
+          name: string; // Para determinePlanFromSubscription
+        };
       };
     }>;
   };
+}
+
+/**
+ * Busca o crea un usuario basado en el customerId de Stripe.
+ * Usado SOLO en subscription.created para permitir compras sin login.
+ */
+async function findOrCreateUserByCustomer(
+  customerId: string,
+  customerEmail?: string
+): Promise<any | null> {
+  // 1. Buscar por customerId
+  let user = await db.user.findUnique({ where: { customerId } });
+  if (user) return user;
+
+  // 2. Si no existe y tenemos email, buscar por email
+  if (customerEmail) {
+    user = await db.user.findUnique({ where: { email: customerEmail } });
+
+    if (user) {
+      // Vincular customerId al usuario existente
+      user = await db.user.update({
+        where: { id: user.id },
+        data: { customerId }
+      });
+      console.log(`[Webhook] CustomerId vinculado a usuario existente: ${customerEmail}`);
+      return user;
+    }
+
+    // 3. Crear nuevo usuario
+    user = await db.user.create({
+      data: {
+        email: customerEmail,
+        name: customerEmail.split('@')[0],
+        customerId,
+        plan: 'FREE', // Se actualizará inmediatamente
+      }
+    });
+    console.log(`[Webhook] Usuario creado desde Stripe: ${customerEmail}`);
+    return user;
+  }
+
+  console.error(`[Webhook] No se pudo crear usuario sin email: ${customerId}`);
+  return null;
 }
 
 /**
@@ -60,46 +108,27 @@ async function updateUserChatbotModels(userId: string, newPlan: string) {
 }
 
 /**
- * Determina el plan según metadata de Stripe (con fallback a price ID)
+ * Determina el plan según el nombre del producto de Stripe
  */
 function determinePlanFromSubscription(subscription: StripeSubscription): "STARTER" | "PRO" | "ENTERPRISE" {
-  // Primero intentar obtener el plan desde metadata (método preferido)
-  const planFromMetadata = subscription.metadata?.plan;
+  const product = subscription.items?.data[0]?.price?.product;
 
-  if (planFromMetadata === 'STARTER' || planFromMetadata === 'PRO' || planFromMetadata === 'ENTERPRISE') {
-    console.log(`[Webhook] Plan determinado por metadata: ${planFromMetadata}`);
-    return planFromMetadata;
+  if (product && typeof product === 'object' && product.name) {
+    const productName = product.name.toLowerCase();
+
+    // Buscar palabras clave en el nombre del producto
+    if (productName.includes('enterprise')) return 'ENTERPRISE';
+    if (productName.includes('starter')) return 'STARTER';
+    if (productName.includes('pro')) return 'PRO';
   }
 
-  // Fallback: usar price ID si no hay metadata
-  const priceId = subscription.items?.data[0]?.price?.id;
+  // Default a PRO si no se puede determinar
+  console.warn('[Webhook] No se pudo determinar el plan del producto, defaulting a PRO', {
+    productType: typeof product,
+    productName: product && typeof product === 'object' ? product.name : 'N/A',
+    subscriptionId: subscription.id
+  });
 
-  if (!priceId) {
-    console.warn('[Webhook] No se pudo determinar el plan (sin metadata ni price ID), defaulting a PRO');
-    return 'PRO';
-  }
-
-  // Price IDs de producción (fallback)
-  const PRICE_IDS = {
-    STARTER: 'price_1S5AqXDtYmGT70YtepLAzwk4',
-    PRO: 'price_1S5CqADtYmGT70YtTZUtJOiS',
-    ENTERPRISE: 'price_1SSPzKDtYmGT70YtIgLWY8d5',
-  };
-
-  // Determinar plan basado en price ID
-  if (priceId === PRICE_IDS.STARTER) {
-    console.log(`[Webhook] Plan determinado por price ID: STARTER`);
-    return 'STARTER';
-  } else if (priceId === PRICE_IDS.PRO) {
-    console.log(`[Webhook] Plan determinado por price ID: PRO`);
-    return 'PRO';
-  } else if (priceId === PRICE_IDS.ENTERPRISE) {
-    console.log(`[Webhook] Plan determinado por price ID: ENTERPRISE`);
-    return 'ENTERPRISE';
-  }
-
-  // Default a PRO si no coincide nada
-  console.warn(`[Webhook] Price ID desconocido: ${priceId}, defaulting a PRO`);
   return 'PRO';
 }
 
@@ -110,10 +139,21 @@ export async function handleSubscriptionCreated(
   subscription: StripeSubscription
 ) {
   const customerId = subscription.customer;
-  const user = await db.user.findUnique({
-    where: { customerId },
+
+  // UPSERT: Buscar o crear usuario (permite compra sin login)
+  const user = await findOrCreateUserByCustomer(customerId, subscription.customer_email);
+
+  if (!user) {
+    console.warn(
+      `[Webhook] No se pudo obtener/crear usuario para: ${customerId}`
+    );
+    return;
+  }
+
+  // Cargar referrals si existen (necesario para conversión)
+  const userWithReferrals = await db.user.findUnique({
+    where: { id: user.id },
     include: {
-      // Incluir la relación con el usuario que lo refirió
       referrals: {
         select: {
           id: true,
@@ -126,13 +166,6 @@ export async function handleSubscriptionCreated(
       },
     },
   });
-
-  if (!user) {
-    console.warn(
-      `[Webhook] Usuario no encontrado para el cliente de Stripe: ${customerId}`
-    );
-    return;
-  }
 
   // Determinar el plan según la suscripción
   const plan = determinePlanFromSubscription(subscription);
@@ -164,7 +197,7 @@ export async function handleSubscriptionCreated(
   }
 
   // Si el usuario fue referido, registrar la conversión
-  if (user.referrals && user.referrals.length > 0) {
+  if (userWithReferrals?.referrals && userWithReferrals.referrals.length > 0) {
     const result = await Effect.runPromise(
       referralService.trackProConversion(user.id)
     );
@@ -192,20 +225,33 @@ export async function handleSubscriptionUpdated(subscription: StripeSubscription
     return;
   }
 
-  const isActive = subscription.status === "active";
-  const newPlan = isActive ? "PRO" : "FREE";
+  // Solo actualizar si la suscripción está activa
+  if (subscription.status === "active") {
+    const newPlan = determinePlanFromSubscription(subscription);
 
-  await db.user.update({
-    where: { id: user.id },
-    data: {
-      plan: newPlan,
-      subscriptionIds: [subscription.id],
-    },
-  });
+    // Manejar subscriptionIds sin sobrescribir
+    const subscriptionIds = user.subscriptionIds || [];
+    if (!subscriptionIds.includes(subscription.id)) {
+      subscriptionIds.push(subscription.id);
+    }
 
-  // Actualizar modelos de chatbots según el nuevo plan
-  await updateUserChatbotModels(user.id, newPlan);
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        plan: newPlan,
+        subscriptionIds,
+      },
+    });
 
+    // Actualizar modelos de chatbots según el nuevo plan
+    await updateUserChatbotModels(user.id, newPlan);
+
+    console.log(`[Webhook] Plan actualizado: ${user.id} → ${newPlan}`);
+  } else {
+    console.log(
+      `[Webhook] Suscripción no activa: ${subscription.id} (${subscription.status})`
+    );
+  }
 }
 
 /**
