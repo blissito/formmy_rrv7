@@ -54,6 +54,12 @@ const Nav = ({ user, showcta }: { showcta?: boolean; user?: User }) => {
     );
   };
 
+  const handleLogin = () => {
+    // Clear any saved plan intent when user explicitly clicks login
+    // (as opposed to being redirected to login when trying to purchase a plan)
+    localStorage.removeItem('formmy_plan_intent');
+  };
+
   return (
     <nav className=" fixed flex items-center  top-0 z-[90]  bg-clear/60 dark:bg-dark/60 backdrop-blur w-full text-black/80 dark:text-slate-300 shadow-sm dark:shadow h-16 md:h-20">
       <section className="w-full flex items-center justify-between py-4 px-4 max-w-3xl mx-auto lg:max-w-6xl ">
@@ -173,6 +179,7 @@ const Nav = ({ user, showcta }: { showcta?: boolean; user?: User }) => {
                   name="intent"
                   value="google-login"
                   disabled={fetcher.state !== "idle"}
+                  onClick={handleLogin}
                   className={twMerge(
                     "font-normal",
                     "bg-transparent rounded-full dark:bg-[#1D2027] text-space-800 dark:text-white p-3 px-4  hover:scale-105 transition-all"

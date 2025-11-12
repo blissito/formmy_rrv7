@@ -52,7 +52,12 @@ export const StickySection = () => {
                 </p>
                 <div className="max-w-[180px] mt-12">
                   <Form method="post">
-                    <BigCTA type="submit" name="intent" value="google-login" />
+                    <BigCTA
+                      type="submit"
+                      name="intent"
+                      value="google-login"
+                      onClick={() => localStorage.removeItem('formmy_plan_intent')}
+                    />
                   </Form>{" "}
                 </div>
               </div>

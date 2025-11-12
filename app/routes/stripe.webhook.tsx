@@ -35,11 +35,12 @@ export const action = async ({ request }: ActionArgs) => {
       return new Response(null, { status: 400 }); // Bad Request
     }
 
+    console.log(`[Webhook] 📨 Evento recibido: ${event.type}`);
 
     // Manejar el tipo de evento
     switch (event.type) {
       case "customer.subscription.created":
-        console.log("STRIPE_DATA", event.data.object)
+        console.log("[Webhook] 📋 STRIPE_DATA:", JSON.stringify(event.data.object, null, 2));
         await handleSubscriptionCreated(event.data.object);
         break;
 

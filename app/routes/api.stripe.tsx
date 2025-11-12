@@ -1,4 +1,4 @@
-import {  createCheckoutSessionURL } from "~/utils/stripe.server";
+import { createCheckoutSessionURL, createBillingSessionURL } from "~/utils/stripe.server";
 import type { Route } from "./+types/api.stripe";
 import { getUserOrTriggerLogin } from "server/getUserUtils.server";
 
@@ -10,6 +10,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   // Obtener el usuario logueado para los planes de suscripción
   const user = await getUserOrTriggerLogin(request);
+
+  // Handle billing portal intent
+  if (intent === "manage-stripe") {
+    const billingUrl = await createBillingSessionURL(user);
+    return Response.redirect(billingUrl);
+  }
 
   // Price IDs según entorno
   const PRICES = {

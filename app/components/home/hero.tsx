@@ -123,7 +123,12 @@ export const Hero = () => {
             Sin código. Copia, pega y listo.
           </span>
           <Form method="post">
-            <BigCTA type="submit" name="intent" value="google-login" />
+            <BigCTA
+              type="submit"
+              name="intent"
+              value="google-login"
+              onClick={() => localStorage.removeItem('formmy_plan_intent')}
+            />
           </Form>
         </div>
       </div>

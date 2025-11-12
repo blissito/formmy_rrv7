@@ -61,6 +61,7 @@ export const Join = () => {
             type="submit"
             name="intent"
             value="google-login"
+            onClick={() => localStorage.removeItem('formmy_plan_intent')}
           />
         </Form>
       </ScrollReveal>
