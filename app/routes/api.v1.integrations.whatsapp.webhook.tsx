@@ -15,7 +15,7 @@ import { agentStreamEvent } from "@llamaindex/workflow";
 import { isMessageProcessed } from "../../server/integrations/whatsapp/deduplication.service";
 import { downloadWhatsAppSticker } from "../../server/integrations/whatsapp/media.service";
 import { shouldProcessMessage } from "../../server/integrations/whatsapp/message-debounce.service";
-import { updateContactAvatar } from "../../server/integrations/whatsapp/avatar.service";
+// import { updateContactAvatar } from "../../server/integrations/whatsapp/avatar.service"; // TEMPORALMENTE DESHABILITADO - endpoint incorrecto
 
 // Types for WhatsApp webhook payload
 interface WhatsAppWebhookEntry {
@@ -726,16 +726,18 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
 
         console.log(`✅ Contact saved: ${contactName} (${normalizedPhone})`);
 
-        // 📸 FETCH AVATAR: Obtener foto de perfil de WhatsApp (async, no bloqueante)
-        if (integration.token) {
-          updateContactAvatar(
-            integration.chatbotId,
-            normalizedPhone,
-            integration.token
-          ).catch((err) => {
-            console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
-          });
-        }
+        // 📸 FETCH AVATAR: TEMPORALMENTE DESHABILITADO - endpoint incorrecto causa errores
+        // Meta API no soporta /${phoneNumber}/profile_picture directamente
+        // TODO: Implementar método correcto usando Media API o Graph API con formato correcto
+        // if (integration.token) {
+        //   updateContactAvatar(
+        //     integration.chatbotId,
+        //     normalizedPhone,
+        //     integration.token
+        //   ).catch((err) => {
+        //     console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
+        //   });
+        // }
       } catch (contactError) {
         console.error("⚠️ Failed to save contact, continuing:", contactError);
         // Don't fail the message processing if contact save fails
@@ -743,10 +745,12 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     }
 
     // Create or find conversation
+    console.log(`🔍 [Webhook] Creating/finding conversation for ${message.from}, chatbot: ${integration.chatbotId}`);
     const conversation = await getOrCreateConversation(
       message.from,
       integration.chatbotId
     );
+    console.log(`✅ [Webhook] Conversation ready: ${conversation.id}, status: ${conversation.status}, manualMode: ${conversation.manualMode}`);
 
     // 🎨 HANDLE STICKERS: Download and save sticker media
     let stickerUrl: string | undefined;
@@ -771,16 +775,18 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     }
 
     // Save the incoming message first
+    console.log(`💾 [Webhook] Saving user message to conversation ${conversation.id}`);
     const userMessage = await addWhatsAppUserMessage(
       conversation.id,
       message.type === "sticker" ? "📎 Sticker" : message.body,
       message.messageId,
       stickerUrl // Pass sticker URL to save in picture field
     );
+    console.log(`✅ [Webhook] User message saved: ${userMessage.id}`);
 
     // Check if conversation is in manual mode
     if (conversation.manualMode) {
-
+      console.log(`⏸️ [Webhook] Conversation ${conversation.id} in manual mode - skipping bot response`);
       return {
         success: true,
         messageId: message.messageId,
@@ -792,6 +798,7 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     }
 
     // Get recent conversation history for context (only if not in manual mode)
+    console.log(`📚 [Webhook] Loading conversation history for ${conversation.id}`);
     const recentMessages = await db.message.findMany({
       where: { conversationId: conversation.id },
       orderBy: { createdAt: 'desc' },
@@ -803,16 +810,20 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
         channel: true // ✅ Incluir channel para detectar mensajes echo
       }
     });
+    console.log(`📚 [Webhook] Loaded ${recentMessages.length} messages from history`);
 
     // Generate chatbot response with history context
+    console.log(`🤖 [Webhook] Generating bot response for conversation ${conversation.id}`);
     const botResponse = await generateChatbotResponse(
       message.body,
       chatbot,
       conversation.id,
       recentMessages.reverse() // Oldest first for context
     );
+    console.log(`✅ [Webhook] Bot response generated: ${botResponse.content.substring(0, 100)}... (${botResponse.tokens} tokens, ${botResponse.responseTime}ms)`);
 
     // Save the bot response
+    console.log(`💾 [Webhook] Saving assistant message to conversation ${conversation.id}`);
     const assistantMessage = await addWhatsAppAssistantMessage(
       conversation.id,
       botResponse.content,
@@ -820,13 +831,16 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
       botResponse.tokens,
       botResponse.responseTime
     );
+    console.log(`✅ [Webhook] Assistant message saved: ${assistantMessage.id}`);
 
     // Send response back to WhatsApp using simplified HTTP call
+    console.log(`📤 [Webhook] Sending response to WhatsApp for ${message.from}`);
     const messageResponse = await sendWhatsAppMessage(
       message.from,
       botResponse.content,
       integration
     );
+    console.log(`✅ [Webhook] Response sent to WhatsApp, messageId: ${messageResponse.messageId}`);
 
     // Update the assistant message with the WhatsApp message ID
     if (messageResponse.messageId) {
@@ -835,12 +849,13 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
           where: { id: assistantMessage.id },
           data: { externalMessageId: messageResponse.messageId },
         });
+        console.log(`✅ [Webhook] Assistant message updated with WhatsApp ID: ${messageResponse.messageId}`);
       } catch (error) {
-        console.warn("Failed to update message with WhatsApp ID:", error);
+        console.warn("⚠️ [Webhook] Failed to update message with WhatsApp ID:", error);
       }
     }
 
-
+    console.log(`🎉 [Webhook] Message processing completed successfully for ${message.messageId}`);
     return {
       success: true,
       messageId: message.messageId,

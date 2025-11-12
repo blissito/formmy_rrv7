@@ -28,7 +28,7 @@ export async function getOrCreateConversation(
   if (anyConversation) {
     // If found but DELETED, reactivate it
     if (anyConversation.status === ConversationStatus.DELETED) {
-
+      console.log(`🔄 [Conversation] Reactivating DELETED conversation ${anyConversation.id} for ${phoneNumber}`);
       const reactivatedConversation = await db.conversation.update({
         where: { id: anyConversation.id },
         data: {
@@ -36,15 +36,17 @@ export async function getOrCreateConversation(
           updatedAt: new Date(), // Update timestamp to show recent activity
         },
       });
-
+      console.log(`✅ [Conversation] Conversation ${reactivatedConversation.id} reactivated`);
       return reactivatedConversation;
     }
 
     // If found and ACTIVE (or other status), use it
+    console.log(`✅ [Conversation] Found existing conversation ${anyConversation.id} for ${phoneNumber} (status: ${anyConversation.status})`);
     return anyConversation;
   }
 
   // No conversation exists - create new one
+  console.log(`🆕 [Conversation] Creating new conversation for ${phoneNumber}, chatbot: ${chatbotId}`);
   const newConversation = await createConversation({
     chatbotId,
     visitorId: phoneNumber,
@@ -57,6 +59,6 @@ export async function getOrCreateConversation(
     data: { sessionId },
   });
 
-
+  console.log(`✅ [Conversation] New conversation created: ${updatedConversation.id}, sessionId: ${sessionId}`);
   return updatedConversation;
 }

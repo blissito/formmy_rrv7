@@ -49,7 +49,7 @@ async function findOrCreateUserByCustomer(
   customerEmail?: string
 ): Promise<any | null> {
   // 1. Buscar por customerId
-  let user = await db.user.findUnique({ where: { customerId } });
+  let user = await db.user.findFirst({ where: { customerId } });
   if (user) return user;
 
   // 2. Si no existe y tenemos email, buscar por email
@@ -88,23 +88,17 @@ async function findOrCreateUserByCustomer(
  */
 async function updateUserChatbotModels(userId: string, newPlan: string) {
   const defaultModel = getDefaultModelForPlan(newPlan);
-  
-  // Solo actualizar chatbots que no tengan un modelo específico configurado
-  // o que tengan un modelo que ya no esté disponible en su plan
+
+  // Actualizar TODOS los chatbots del usuario al modelo por defecto del nuevo plan
   await db.chatbot.updateMany({
     where: {
       userId,
-      OR: [
-        { aiModel: null },
-        { aiModel: "" },
-        // Podrías agregar aquí lógica para cambiar modelos que ya no están disponibles
-      ]
     },
     data: {
       aiModel: defaultModel
     }
   });
-  
+
 }
 
 /**
@@ -240,7 +234,7 @@ export async function handleSubscriptionCreated(
  */
 export async function handleSubscriptionUpdated(subscription: StripeSubscription) {
   const customerId = subscription.customer;
-  const user = await db.user.findUnique({ where: { customerId } });
+  const user = await db.user.findFirst({ where: { customerId } });
 
   if (!user) {
     console.warn(
@@ -283,7 +277,7 @@ export async function handleSubscriptionUpdated(subscription: StripeSubscription
  */
 export async function handleSubscriptionDeleted(subscription: StripeSubscription) {
   const customerId = subscription.customer;
-  const user = await db.user.findUnique({ where: { customerId } });
+  const user = await db.user.findFirst({ where: { customerId } });
 
   if (!user) {
     console.warn(
@@ -354,7 +348,7 @@ export async function handleCheckoutCompleted(session: any) {
   const customerId = session.customer;
 
   // Buscar usuario por customerId
-  const user = await db.user.findUnique({
+  const user = await db.user.findFirst({
     where: { customerId },
   });
 
