@@ -164,20 +164,11 @@ export async function handleSubscriptionCreated(
     return;
   }
 
-  // Cargar referrals si existen (necesario para conversión)
-  const userWithReferrals = await db.user.findUnique({
+  // Cargar información de referido si existe (necesario para conversión)
+  const userWithReferral = await db.user.findUnique({
     where: { id: user.id },
     include: {
-      referrals: {
-        select: {
-          id: true,
-          referrer: {
-            select: {
-              id: true,
-            },
-          },
-        },
-      },
+      referredBy: true,
     },
   });
 
@@ -215,12 +206,14 @@ export async function handleSubscriptionCreated(
   }
 
   // Si el usuario fue referido, registrar la conversión
-  if (userWithReferrals?.referrals && userWithReferrals.referrals.length > 0) {
+  if (userWithReferral?.referredBy) {
+    console.log(`[Webhook] Usuario ${user.email} fue referido - registrando conversión`);
     const result = await Effect.runPromise(
       referralService.trackProConversion(user.id)
     );
 
     if (result.success) {
+      console.log(`[Webhook] ✅ Conversión de referido registrada exitosamente`);
     } else {
       console.error(
         `[Webhook] Error al registrar conversión para referido: ${result.message}`

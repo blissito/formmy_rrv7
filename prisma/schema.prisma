@@ -178,6 +178,10 @@ model User {
   satInvoices     SatInvoice[] @relation("UserSatInvoices")
   satContacts     SatContact[] @relation("UserSatContacts")
 
+  // Sistema de referidos - quién refirió a este usuario
+  referredById    String?      @db.ObjectId
+  referredBy      Referral?    @relation("ReferredUsers", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   // Tool Credits Tracking (para Parser Avanzado y otras herramientas)
   toolCreditsUsed     Float     @default(0) // Créditos MENSUALES consumidos en el mes actual (soporta decimales: 0.5, 1.5)
   creditsResetAt      DateTime? @default(now()) // Última fecha de reset mensual (nullable para usuarios existentes)
@@ -521,6 +525,7 @@ model Referral {
   referredCount         Int    @default(0)
   successfulConversions Int    @default(0)
   referrer              User   @relation("Referrer", fields: [referrerId], references: [id])
+  referredUsers         User[] @relation("ReferredUsers")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
