@@ -108,13 +108,25 @@ async function updateUserChatbotModels(userId: string, newPlan: string) {
 }
 
 /**
- * Determina el plan según el nombre del producto de Stripe
+ * Determina el plan según metadata de la suscripción o el nombre del producto de Stripe
  */
 function determinePlanFromSubscription(subscription: StripeSubscription): "STARTER" | "PRO" | "ENTERPRISE" {
+  // 1. PRIORIDAD: Leer desde metadata (más confiable, configurado en checkout)
+  if (subscription.metadata?.plan) {
+    const metadataPlan = subscription.metadata.plan.toUpperCase();
+    console.log('[Webhook] Plan detectado desde metadata:', metadataPlan);
+
+    if (metadataPlan === 'STARTER' || metadataPlan === 'PRO' || metadataPlan === 'ENTERPRISE') {
+      return metadataPlan as "STARTER" | "PRO" | "ENTERPRISE";
+    }
+  }
+
+  // 2. FALLBACK: Leer desde nombre del producto
   const product = subscription.items?.data[0]?.price?.product;
 
   if (product && typeof product === 'object' && product.name) {
     const productName = product.name.toLowerCase();
+    console.log('[Webhook] Plan detectado desde nombre de producto:', productName);
 
     // Buscar palabras clave en el nombre del producto
     if (productName.includes('enterprise')) return 'ENTERPRISE';
@@ -123,7 +135,8 @@ function determinePlanFromSubscription(subscription: StripeSubscription): "START
   }
 
   // Default a PRO si no se puede determinar
-  console.warn('[Webhook] No se pudo determinar el plan del producto, defaulting a PRO', {
+  console.warn('[Webhook] No se pudo determinar el plan, defaulting a PRO', {
+    metadata: subscription.metadata,
     productType: typeof product,
     productName: product && typeof product === 'object' ? product.name : 'N/A',
     subscriptionId: subscription.id
@@ -138,6 +151,13 @@ function determinePlanFromSubscription(subscription: StripeSubscription): "START
 export async function handleSubscriptionCreated(
   subscription: StripeSubscription
 ) {
+  console.log('[Webhook] 🎉 customer.subscription.created recibido:', {
+    subscriptionId: subscription.id,
+    customerId: subscription.customer,
+    status: subscription.status,
+    metadata: subscription.metadata,
+  });
+
   const customerId = subscription.customer;
 
   // UPSERT: Buscar o crear usuario (permite compra sin login)
@@ -170,6 +190,8 @@ export async function handleSubscriptionCreated(
   // Determinar el plan según la suscripción
   const plan = determinePlanFromSubscription(subscription);
 
+  console.log(`[Webhook] ✅ Asignando plan ${plan} al usuario ${user.email}`);
+
   // Actualizar el plan del usuario
   await db.user.update({
     where: { id: user.id },
@@ -178,6 +200,8 @@ export async function handleSubscriptionCreated(
       subscriptionIds: { push: subscription.id },
     },
   });
+
+  console.log(`[Webhook] ✅ Plan ${plan} asignado exitosamente a ${user.email}`);
 
   // Actualizar modelos de chatbots según el nuevo plan
   await updateUserChatbotModels(user.id, plan);
@@ -312,11 +336,18 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
  * Maneja completado de checkout (one-time payments como compra de créditos o conversaciones)
  */
 export async function handleCheckoutCompleted(session: any) {
+  console.log('[Webhook] 🛒 checkout.session.completed recibido:', {
+    sessionId: session.id,
+    customerId: session.customer,
+    mode: session.mode,
+    metadata: session.metadata,
+  });
 
   // Verificar metadata
   const metadata = session.metadata;
 
   if (!metadata || !metadata.type) {
+    console.log('[Webhook] ⚠️ checkout.session sin metadata.type, ignorando (probablemente es una suscripción)');
     return;
   }
 
