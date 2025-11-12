@@ -76,24 +76,35 @@ export async function createMessage({
     }
   }
 
-  // Create the message
-  const message = await db.message.create({
-    data: {
-      conversationId,
-      content,
-      role,
-      tokens,
-      inputTokens,
-      outputTokens,
-      cachedTokens,
-      totalCost,
-      provider,
-      responseTime,
-      firstTokenLatency,
-      aiModel,
-      channel,
-      externalMessageId,
-    },
+  // Create the message and update conversation timestamp atomically
+  const message = await db.$transaction(async (tx) => {
+    // Create the message
+    const newMessage = await tx.message.create({
+      data: {
+        conversationId,
+        content,
+        role,
+        tokens,
+        inputTokens,
+        outputTokens,
+        cachedTokens,
+        totalCost,
+        provider,
+        responseTime,
+        firstTokenLatency,
+        aiModel,
+        channel,
+        externalMessageId,
+      },
+    });
+
+    // Update conversation's updatedAt to reflect new activity
+    await tx.conversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() },
+    });
+
+    return newMessage;
   });
 
   // Increment the message count for the conversation
@@ -260,16 +271,30 @@ export async function addWhatsAppUserMessage(
   whatsappMessageId: string,
   picture?: string // Sticker or image URL (data URL format)
 ): Promise<Message> {
-  return db.message.create({
-    data: {
-      conversationId,
-      content,
-      role: MessageRole.USER,
-      channel: "whatsapp",
-      externalMessageId: whatsappMessageId,
-      picture, // Save sticker/image
-    },
+  // Use transaction to update both message and conversation.updatedAt atomically
+  const message = await db.$transaction(async (tx) => {
+    // Create the message
+    const newMessage = await tx.message.create({
+      data: {
+        conversationId,
+        content,
+        role: MessageRole.USER,
+        channel: "whatsapp",
+        externalMessageId: whatsappMessageId,
+        picture, // Save sticker/image
+      },
+    });
+
+    // Update conversation's updatedAt to reflect new activity
+    await tx.conversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() },
+    });
+
+    return newMessage;
   });
+
+  return message;
 }
 
 /**

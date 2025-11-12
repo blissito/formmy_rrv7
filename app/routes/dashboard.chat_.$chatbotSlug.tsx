@@ -113,7 +113,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     },
   });
 
-  // Obtener conversaciones reales con mensajes (primeras 50)
+  // Obtener conversaciones reales con mensajes (primeras 200 para incluir conversaciones con updatedAt antiguo)
   const conversationsFromDB = await db.conversation.findMany({
     where: {
       chatbotId: chatbot.id,
@@ -126,7 +126,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       },
     },
     orderBy: { updatedAt: "desc" },
-    take: 50, // Limitar a las 50 conversaciones más recientes (primera carga)
+    take: 200, // Aumentado temporalmente de 50 a 200 para capturar conversaciones con updatedAt antiguo
   });
 
   // Ordenar conversaciones por el timestamp del último mensaje de USUARIO
