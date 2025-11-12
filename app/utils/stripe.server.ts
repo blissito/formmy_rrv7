@@ -56,20 +56,59 @@ export const getOrCreateCustomerId = async (user: User): Promise<string> => {
       ? process.env.TEST_STRIPE_PV
       : process.env.STRIPE_PRIVATE_KEY) ?? ""
   );
-  if (user.customerId) {
-    const exists = await stripe.customers.retrieve(user.customerId); // @TODO: this could fail
-    if (exists.id) return exists.id;
-    // if (exists.deleted) throw new Error("No such customer");
+
+  // If user has a valid customerId (not temp_migration_*), verify it exists in Stripe
+  if (user.customerId && !user.customerId.startsWith('temp_migration_')) {
+    try {
+      const exists = await stripe.customers.retrieve(user.customerId);
+      if (exists.id && !exists.deleted) return exists.id;
+
+      // Customer is deleted in Stripe, fall through to search by email
+      console.log(`[Stripe] Customer ${user.customerId} is deleted for user ${user.email}`);
+    } catch (error: any) {
+      // Customer doesn't exist in Stripe, fall through to search by email
+      console.log(`[Stripe] Customer ${user.customerId} not found for user ${user.email}`);
+    }
   }
+
+  // Search for existing customer by email (handles temp_migration_* and invalid IDs)
+  try {
+    const existingCustomers = await stripe.customers.list({
+      email: user.email,
+      limit: 1,
+    });
+
+    if (existingCustomers.data.length > 0) {
+      const customer = existingCustomers.data[0];
+      console.log(`[Stripe] Found existing customer ${customer.id} for email ${user.email}`);
+
+      // Update user with real customerId
+      await db.user.update({
+        where: { id: user.id },
+        data: { customerId: customer.id },
+      });
+
+      return customer.id;
+    }
+  } catch (error: any) {
+    console.log(`[Stripe] Error searching customer by email: ${error.message}`);
+  }
+
+  // Create new customer in Stripe
   const customer = await stripe.customers.create({
     name: user.name ?? "",
     email: user.email,
   });
+
   if (!customer) throw new Error("No se pudo crear el customer");
+
+  // Update user with new valid customerId
   await db.user.update({
     where: { id: user.id },
     data: { customerId: customer.id },
   });
+
+  console.log(`[Stripe] Created new customer ${customer.id} for user ${user.email}`);
   return customer.id;
 };
 

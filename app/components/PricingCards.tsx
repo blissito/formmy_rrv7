@@ -128,6 +128,21 @@ const PricingCard = ({ plan }: { plan: Plan }) => {
 
   const handleClick = () => {
     if (plan.buttonAction && plan.intent) {
+      // For google-login (free plan), clear any saved plan intent
+      if (plan.intent === 'google-login') {
+        localStorage.removeItem('formmy_plan_intent');
+        console.log('[PricingCards] Cleared plan intent - user clicking free plan');
+      }
+      // For paid plans, save intent to localStorage before redirect
+      else if (plan.intent.includes('_plan') && plan.buttonAction === '/api/stripe') {
+        const intentData = {
+          intent: plan.intent,
+          timestamp: Date.now(), // Save timestamp to expire old intents
+        };
+        localStorage.setItem('formmy_plan_intent', JSON.stringify(intentData));
+        console.log('[PricingCards] Saved plan intent to localStorage:', plan.intent);
+      }
+
       fetcher.submit(
         { intent: plan.intent },
         { method: "post", action: plan.buttonAction }

@@ -1,6 +1,7 @@
 import { Outlet, redirect, useLoaderData } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { DashboardLayout } from "~/components/dashboard/DashboardLayout";
+import { usePlanRedirect } from "~/hooks/usePlanRedirect";
 import type { Route } from "./+types/dashboard";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
@@ -16,6 +17,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 };
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
+  // Handle automatic redirect to Stripe after OAuth login (if user was trying to purchase a plan)
+  usePlanRedirect();
+
   return (
     <div>
       <DashboardLayout title="Dashboard" user={loaderData.user}>

@@ -16,8 +16,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
   // This needs to be here to catch google login
   const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state"); // For referral codes
   if (code) {
-    await createSession(code, request);
+    await createSession(code, request, state || undefined);
   }
   const success = url.searchParams.get("success") === "1";
   return { success };
