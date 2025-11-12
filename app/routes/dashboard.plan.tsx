@@ -1,14 +1,15 @@
-import { Form, Link, useFetcher } from "react-router";
+import { Form, useFetcher } from "react-router";
 import { useLoaderData, useNavigation } from "react-router";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { twMerge } from "tailwind-merge";
-import useLocalStorage from "~/lib/hooks/useLocalStorage";
 import { searchStripeSubscriptions } from "~/utils/stripe.server";
 import Spinner from "~/components/Spinner";
 import { getAvailableCredits } from "server/llamaparse/credits.service";
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import SuccessModal from "~/components/SuccessModal";
+import { plans } from "~/components/PricingCards";
+import { PricingCard } from "~/components/ProTag";
 
 type SubscriptionResponse = {
   current_period_end?: number;
@@ -105,6 +106,7 @@ export default function DashboardPlan() {
 
   const [showCreditsModal, setShowCreditsModal] = React.useState(false);
   const [showConversationsModal, setShowConversationsModal] = React.useState(false);
+  const [showPlansModal, setShowPlansModal] = React.useState(false);
 
   const handleBuyCredits = (packageSize: string) => {
     const formData = new FormData();
@@ -165,7 +167,7 @@ export default function DashboardPlan() {
         </h2>
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 md:col-span-8">
-        {(user.plan === "FREE" || user.plan === "TRIAL") && <CardFree />}
+        {(user.plan === "FREE" || user.plan === "TRIAL") && <CardFree setShowPlansModal={setShowPlansModal} />}
           {user.plan === "STARTER" && (
             <CardStarter
               isLoading={navigation.state === "submitting"}
@@ -493,6 +495,53 @@ export default function DashboardPlan() {
             </motion.div>
           )}
           </AnimatePresence>
+
+          {/* Modal de Planes */}
+          <AnimatePresence>
+            {showPlansModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur flex items-center justify-center z-50 p-4"
+                onClick={() => setShowPlansModal(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-white rounded-3xl p-8 max-w-7xl w-full max-h-[90vh] overflow-y-auto shadow-xl relative"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                <button
+                  onClick={() => setShowPlansModal(false)}
+                  className="absolute right-4 md:right-8 top-4 md:top-8 hover:opacity-70 transition-opacity z-10"
+                >
+                  <img
+                    alt="close"
+                    src="/assets/close.svg"
+                    className="w-8 h-8"
+                  />
+                </button>
+
+                <div className="mb-6">
+                  <h2 className="text-dark text-3xl font-bold text-center">Elige el plan perfecto para ti</h2>
+                  <p className="text-metal text-base text-center mt-2">Mejora tu plan y desbloquea más funcionalidades</p>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-4 mt-8">
+                  {plans
+                    .filter(plan => plan.name !== 'Free')
+                    .map((plan) => (
+                      <PricingCard key={plan.name} plan={plan} userPlan={user.plan} />
+                    ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+          </AnimatePresence>
     </section>
     </>
   );
@@ -508,21 +557,10 @@ export const TaxesInfo=()=>{
     )
 }
 
-export const CardFree = () => {
-    const fetcher = useFetcher();
-    const { save } = useLocalStorage();
-
-    const handleOnClickMonthlySuscription = () => {
-      save("from_landing", true);
-      fetcher.submit(
-        { intent: "monthly-suscription-checkout" },
-        { method: "post", action: "/api/stripe" }
-      );
-    };
-
+export const CardFree = ({ setShowPlansModal }: { setShowPlansModal: (show: boolean) => void }) => {
     return (
       <section className="border-outlines border rounded-3xl p-6  flex flex-wrap md:flex-nowrap gap-6 min-h-[332px]">
-        <Form method="post" className="min-w-[280px] relative pb-12 md:pb-0">
+        <div className="min-w-[280px] relative pb-12 md:pb-0">
           <h3 className="text-dark text-xl font-semibold">
             Free
           </h3>
@@ -532,18 +570,15 @@ export const CardFree = () => {
           <h4 className="mt-2 text-2xl text-dark font-bold">
             $ 0 <span className="text-metal text-base">/mes</span>
           </h4>
-          <Link to="/planes">
           <button
+            onClick={() => setShowPlansModal(true)}
             className={twMerge(
               "absolute bottom-0 left-0 mt-4 bg-brand-500 text-base font-normal h-10 rounded-full text-[#fff] px-6 hover:bg-brand-600 transition-all mb-1 block disabled:bg-gray-600"
             )}
           >
-            <span onClick={handleOnClickMonthlySuscription}>
-              Mejorar mi plan &rarr;
-            </span>
+            Mejorar mi plan &rarr;
           </button>
-          </Link>
-        </Form>
+        </div>
         <div className="md:mt-0 mt-2">
           <h4 className="font-semibold text-dark text-base mb-1.5">
             Incluye
