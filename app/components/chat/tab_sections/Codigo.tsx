@@ -17,6 +17,7 @@ import WhatsAppEmbeddedSignupModal from "../../integrations/WhatsAppEmbeddedSign
 import { WhatsAppTemplateCreator } from "../../integrations/WhatsAppTemplateCreator";
 import { WhatsAppTemplateList } from "../../integrations/WhatsAppTemplateList";
 import GmailIntegrationModal from "../../integrations/GmailIntegrationModal";
+import MessengerIntegrationModal from "../../integrations/MessengerIntegrationModal";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 import VoiceIntegrationModal from "../../integrations/VoiceIntegrationModal";
 // import GoogleCalendarComposioModal from "../../integrations/GoogleCalendarComposioModal"; // Deshabilitado - Próximamente
@@ -315,8 +316,8 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       // Usar Embedded Signup ahora que la empresa está activada
       setWhatsAppEmbeddedSignupModalOpen(true);
     } else if (integrationId === "MESSENGER") {
-      // Messenger: Redirigir a OAuth flow
-      window.location.href = `/dashboard/integrations/messenger/connect?chatbotId=${chatbot.id}`;
+      // Messenger: Usar modal con Facebook SDK (igual que WhatsApp)
+      setMessengerModalOpen(true);
     } else if (integrationId === "GMAIL") {
       setGmailModalOpen(true);
     } else if (integrationId === "GOOGLE_CALENDAR") {
@@ -549,6 +550,24 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
     setGmailModalOpen(false);
     setSelectedIntegration(null);
+
+    // Recargar para reflejar la integración activa
+    window.location.reload();
+  };
+
+  // Manejador de éxito para la integración de Messenger
+  const handleMessengerSuccess = (data: any) => {
+
+    // Actualizar el estado local para mostrar como conectado
+    setIntegrationStatus((prev) => ({
+      ...prev,
+      messenger: "connected" as const,
+    }));
+
+    setMessengerModalOpen(false);
+    setSelectedIntegration(null);
+
+    alert('¡Messenger conectado exitosamente!');
 
     // Recargar para reflejar la integración activa
     window.location.reload();
@@ -950,6 +969,17 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
               onClose={() => setGmailModalOpen(false)}
               onSuccess={handleGmailSuccess}
               chatbot={chatbot}
+            />
+          )}
+
+          {/* Messenger Integration Modal */}
+          {selectedIntegration === "MESSENGER" && (
+            <MessengerIntegrationModal
+              isOpen={messengerModalOpen}
+              onClose={() => setMessengerModalOpen(false)}
+              onSuccess={handleMessengerSuccess}
+              chatbotId={chatbot.id}
+              existingIntegration={integrations.find((i) => i.platform === "MESSENGER") as any || null}
             />
           )}
 
