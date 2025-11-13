@@ -33,7 +33,8 @@ const sessionId = `whatsapp_${phoneNumber}_${chatbotId}`;
 - `server/integrations/whatsapp/conversation.server.ts` (línea 23)
 
 **Fecha**: 2025-11-13
-**Commit**: [Pendiente de test local]
+**Commit**: `2c80001` - fix: WhatsApp sessionId único por chatbot
+**Estado**: ✅ Desplegado en producción y verificado funcionando
 
 ---
 
