@@ -3,6 +3,40 @@
 **Stack**: React Router v7, Tailwind, Fly.io, Prisma, MongoDB, OpenRouter, Stripe
 **URL**: https://formmy.app
 
+## 🔧 PROBLEMAS RESUELTOS - WhatsApp Conversaciones
+
+### Problema: Conversaciones mezcladas entre chatbots (2025-11-13)
+
+**Síntoma**: Cuando un mismo número de WhatsApp enviaba mensajes a múltiples chatbots, todos los mensajes se guardaban en la conversación del primer chatbot.
+
+**Causa Raíz**: El `sessionId` de WhatsApp no incluía el `chatbotId`, causando 2 problemas:
+
+1. **Mezcla de mensajes**: La función `getOrCreateConversation()` buscaba solo por `sessionId` sin filtrar por `chatbotId`
+2. **Constraint UNIQUE**: El schema de Prisma tiene `sessionId` como UNIQUE, impidiendo que múltiples chatbots tengan conversaciones con el mismo número
+
+**Solución Implementada** (`server/integrations/whatsapp/conversation.server.ts`):
+
+```typescript
+// ❌ ANTES (causaba conflictos):
+const sessionId = `whatsapp_${phoneNumber}`;
+
+// ✅ DESPUÉS (único por chatbot):
+const sessionId = `whatsapp_${phoneNumber}_${chatbotId}`;
+```
+
+**Resultado**:
+- ✅ Cada chatbot tiene su propia conversación con el mismo usuario
+- ✅ No hay conflictos de UNIQUE constraint
+- ✅ Los mensajes se guardan en el chatbot correcto
+
+**Archivos modificados**:
+- `server/integrations/whatsapp/conversation.server.ts` (línea 23)
+
+**Fecha**: 2025-11-13
+**Commit**: [Pendiente de test local]
+
+---
+
 ## ⚠️ REGLAS CRÍTICAS
 
 ### 1. LlamaIndex Agent Workflows

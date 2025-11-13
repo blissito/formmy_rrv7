@@ -18,11 +18,15 @@ export async function getOrCreateConversation(
   phoneNumber: string,
   chatbotId: string
 ) {
-  const sessionId = `whatsapp_${phoneNumber}`;
+  // ✅ FIX: Incluir chatbotId en sessionId para permitir que el mismo número tenga conversaciones únicas por chatbot
+  // Esto resuelve el problema del constraint UNIQUE en sessionId
+  const sessionId = `whatsapp_${phoneNumber}_${chatbotId}`;
 
   // First, search for ANY conversation with this sessionId (including DELETED)
   const anyConversation = await db.conversation.findFirst({
-    where: { sessionId },
+    where: {
+      sessionId,
+    },
   });
 
   if (anyConversation) {
