@@ -10,7 +10,6 @@ import {
 import { getOrCreateConversation } from "../../server/integrations/whatsapp/conversation.server";
 import { getChatbotById } from "../../server/chatbot/chatbotModel.server";
 import { db } from "../utils/db.server";
-import { createAgent } from "../../server/agent-engine-v0";
 import { agentStreamEvent } from "@llamaindex/workflow";
 import { isMessageProcessed } from "../../server/integrations/whatsapp/deduplication.service";
 import { downloadWhatsAppSticker } from "../../server/integrations/whatsapp/media.service";
@@ -929,7 +928,7 @@ async function sendWhatsAppMessage(
 // Removed unused Effect functions - now using simplified direct functions above
 
 /**
- * Generate chatbot response using AgentEngine V0
+ * Generate chatbot response using AgentWorkflow (modern engine)
  */
 async function generateChatbotResponse(
   userMessage: string,
@@ -938,7 +937,6 @@ async function generateChatbotResponse(
   conversationHistory?: any[]
 ) {
   const startTime = Date.now();
-
 
   try {
     // Get user info from chatbot owner
@@ -950,11 +948,16 @@ async function generateChatbotResponse(
       throw new Error("User not found for chatbot");
     }
 
-    // Create agent with V0 engine
-    const agent = await createAgent(chatbot, user);
+    // ✅ USAR MOTOR MODERNO: agent-workflow.server (igual que Web)
+    const { streamAgentWorkflow } = await import("../../server/agents/agent-workflow.server");
+    const { resolveChatbotConfig, createAgentExecutionContext } = await import("../../server/chatbot/configResolver.server");
+    const { getChatbotIntegrationFlags } = await import("../../server/chatbot/integrationModel.server");
+
+    // Resolver configuración usando configResolver
+    const resolvedConfig = resolveChatbotConfig(chatbot, user);
 
     // Build conversation history from recent messages
-    const chatHistory = conversationHistory?.slice(-20).map(msg => {
+    const history = conversationHistory?.slice(-20).map(msg => {
       const role = (msg.role === "USER" ? "user" : "assistant") as any;
       let content = msg.content;
 
@@ -966,32 +969,52 @@ async function generateChatbotResponse(
       return { role, content };
     }) || [];
 
-    // Generate response using agent - use direct method to avoid streaming complexity
-    let responseContent = '';
-    try {
-      const responseStream = agent.runStream(userMessage, { chatHistory }) as any;
+    // Cargar integraciones activas del chatbot
+    const integrations = await getChatbotIntegrationFlags(chatbot.id);
 
-      for await (const event of responseStream) {
-        if (agentStreamEvent.include(event)) {
-          responseContent += event.data.delta || '';
-        }
+    // Crear contexto de ejecución del agente
+    const agentContext = createAgentExecutionContext(user, chatbot.id, userMessage, {
+      sessionId: conversationId, // Usar conversationId como sessionId
+      conversationId: conversationId,
+      conversationHistory: history,
+      integrations
+    });
+
+    // Plan del dueño del chatbot (para usuarios anónimos en WhatsApp)
+    const chatbotOwnerPlan = user.plan;
+
+    // ✅ Generar respuesta usando AgentWorkflow (motor moderno)
+    const streamGenerator = streamAgentWorkflow(user, userMessage, chatbot.id, {
+      resolvedConfig,
+      agentContext,
+      chatbotOwnerPlan
+    });
+
+    // Acumular respuesta completa desde el stream
+    let responseContent = '';
+    let toolsUsed: string[] = [];
+
+    for await (const event of streamGenerator) {
+      if (event.type === "chunk" && event.content) {
+        responseContent += event.content;
+      } else if (event.type === "tool-start" && event.tool) {
+        toolsUsed.push(event.tool);
+      } else if (event.type === "error") {
+        console.error("❌ [WhatsApp] Stream error:", event.content);
       }
-    } catch (streamError) {
-      console.error("Streaming error, falling back to simple response:", streamError);
-      responseContent = `Hola! Soy ${chatbot.name}. Recibí tu mensaje: "${userMessage}". El sistema de IA completo se está configurando, mientras tanto puedo ayudarte con consultas básicas.`;
     }
 
     const responseTime = Date.now() - startTime;
 
-
     return {
-      content: responseContent.trim() || "Lo siento, no pude generar una respuesta. Intenta de nuevo.",
+      content: responseContent.trim() || resolvedConfig.welcomeMessage || "Lo siento, no pude generar una respuesta.",
       tokens: Math.ceil(responseContent.length / 4), // Estimated tokens
       responseTime,
+      toolsUsed // ✅ Ahora rastreamos tools usados correctamente
     };
 
   } catch (error) {
-    console.error("Error generating chatbot response:", error);
+    console.error("❌ [WhatsApp] Error generating chatbot response:", error);
 
     return {
       content: "Lo siento, estoy teniendo problemas para procesar tu mensaje. Por favor intenta de nuevo.",
@@ -1001,5 +1024,5 @@ async function generateChatbotResponse(
   }
 }
 
-// WhatsApp webhook endpoint - simplified implementation with AgentEngine V0
+// WhatsApp webhook endpoint - using AgentWorkflow (modern engine)
 // Handles both regular messages and echo messages from coexistence mode
