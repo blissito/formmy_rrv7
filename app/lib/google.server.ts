@@ -168,15 +168,6 @@ export const createSession = async (code: string, request: Request, state?: stri
         // Don't fail registration if welcome email fails
       }
 
-      // Crear chatbot demo para nuevos usuarios durante revisión de Meta (Sept-Oct 2025)
-      try {
-        const { createDemoChatbot } = await import("../../server/chatbot/createDemoChatbot.server");
-        await createDemoChatbot(newUser.id, extra.email, 'TRIAL');
-      } catch (error) {
-        console.error('Error creando chatbot demo:', error);
-        // No fallar el registro si el chatbot demo no se puede crear
-      }
-      
       // Procesar referido si existe y es un nuevo usuario
       if (state && state.startsWith('ref_')) {
         const refCode = state.replace('ref_', '');

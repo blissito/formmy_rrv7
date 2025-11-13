@@ -112,6 +112,20 @@ export async function getConversationsByChatbotId(
 }
 
 /**
+ * Gets the count of conversations for a chatbot (excludes deleted conversations)
+ */
+export async function getConversationsCountByChatbotId(
+  chatbotId: string
+): Promise<number> {
+  return db.conversation.count({
+    where: {
+      chatbotId,
+      status: { not: ConversationStatus.DELETED },
+    },
+  });
+}
+
+/**
  * Updates the status of a conversation
  */
 export async function updateConversationStatus(

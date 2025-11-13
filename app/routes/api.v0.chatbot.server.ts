@@ -99,6 +99,37 @@ export async function handleChatbotV0Action({ request }: Route.ActionArgs) {
         );
       }
 
+      case "get_conversations_count": {
+        // 📊 Obtener conteo de conversaciones de un chatbot
+        const chatbotId = formData.get("chatbotId") as string;
+
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ success: false, error: "chatbotId requerido" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Verificar acceso al chatbot
+        const { getChatbot } = await import("../../server/chatbot-v0/chatbot");
+        const chatbot = await getChatbot(chatbotId, user.id, false);
+
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ success: false, needsUpgrade: true, count: 0 }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const { getConversationsCountByChatbotId } = await import("../../server/chatbot/conversationModel.server");
+        const count = await getConversationsCountByChatbotId(chatbotId);
+
+        return new Response(
+          JSON.stringify({ success: true, count }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       default: {
         return createUnsupportedIntentError();
       }

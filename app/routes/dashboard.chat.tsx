@@ -138,6 +138,9 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
   const [allChatbots, setAllChatbots] = useState<Chatbot[]>(chatbots);
   const [allInvitedChatbots, setAllInvitedChatbots] = useState<InvitedChatbot[]>(invitedChatbots);
 
+  // Estado para conteos de conversaciones (optimización batch)
+  const [conversationCounts, setConversationCounts] = useState<Record<string, number>>({});
+
   // Estado para controlar la visibilidad del modal de límite
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(!!permission);
@@ -156,12 +159,51 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
     setAllInvitedChatbots(invitedChatbots);
   }, [chatbots, invitedChatbots]);
 
+  // Cargar conteos de conversaciones en batch (optimización de performance)
+  useEffect(() => {
+    const loadConversationCounts = async () => {
+      const allChatbotIds = [
+        ...allChatbots.map(c => c.id),
+        ...(allInvitedChatbots?.map(c => c.id) || [])
+      ];
+
+      if (allChatbotIds.length === 0) return;
+
+      try {
+        const response = await fetch("/api/v0/chatbot", {
+          method: "post",
+          body: new URLSearchParams({
+            intent: "get_conversations_count_batch",
+            chatbotIds: JSON.stringify(allChatbotIds),
+          }),
+        });
+
+        if (!response.ok) {
+          console.error(`Error HTTP ${response.status}:`, await response.text());
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.counts) {
+          setConversationCounts(data.counts);
+        } else {
+          console.error("Error en respuesta:", data);
+        }
+      } catch (error) {
+        console.error("Error cargando conteos de conversaciones:", error);
+      }
+    };
+
+    loadConversationCounts();
+  }, [allChatbots, allInvitedChatbots]);
+
   // Eliminación optimista
   const handleOptimisticDelete = (chatbotId: string) => {
     setAllChatbots((prev) => prev.filter((c) => c.id !== chatbotId));
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async () => {º
     setLoading(true);
 
     // Eliminación optimista - remover de la UI inmediatamente
@@ -229,6 +271,7 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
                   key={chatbot.id}
                   chatbot={chatbot}
                   index={i}
+                  conversationsCount={conversationCounts[chatbot.id] || 0}
                 />
               ))}
 
@@ -240,6 +283,7 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
                   userRole={chatbot.userRole}
                   isInvited={true}
                   index={allChatbots.length + i}
+                  conversationsCount={conversationCounts[chatbot.id] || 0}
                 />
               ))}
             </AnimatePresence>

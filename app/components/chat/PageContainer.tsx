@@ -343,7 +343,15 @@ export const ChatCard = ({
             </p>
             <div className="flex text-sm gap-4 mt-4 justify-between items-end">
               <p className="text-metal font-normal flex gap-1 items-center">
-                <UsersIcon className="w-5 h-5" /> {conversationsCount}{" "}
+                <UsersIcon className="w-5 h-5" />
+                <motion.span
+                  key={conversationsCount}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  {conversationsCount}
+                </motion.span>{" "}
                 {conversationsCount === 1 ? "chat" : "chats"}
               </p>
             </div>
@@ -378,7 +386,15 @@ export const ChatCard = ({
             </p>
             <div className="flex text-sm gap-4 mt-4 justify-between items-end">
               <p className="text-metal font-normal flex gap-1 items-center">
-                <UsersIcon className="w-5 h-5" /> {conversationsCount}{" "}
+                <UsersIcon className="w-5 h-5" />
+                <motion.span
+                  key={conversationsCount}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  {conversationsCount}
+                </motion.span>{" "}
                 {conversationsCount === 1 ? "chat" : "chats"}
               </p>
             </div>
