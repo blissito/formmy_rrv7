@@ -335,6 +335,7 @@ model Lead {
   website         String?       // Sitio web
   notes           String?       // Notas adicionales
   status          ContactStatus @default(NEW) // Estado en el pipeline de ventas
+  source          String        @default("web") // Canal de origen: "whatsapp" o "web"
 
   // Relaciones
   chatbotId String  @db.ObjectId

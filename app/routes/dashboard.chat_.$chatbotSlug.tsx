@@ -184,15 +184,11 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       website: true,
       notes: true,
       status: true,
+      source: true,
       capturedAt: true,
       lastUpdated: true,
       conversationId: true,
       chatbotId: true,
-      conversation: {
-        select: {
-          sessionId: true,
-        },
-      },
     },
   });
 

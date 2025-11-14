@@ -49,8 +49,9 @@ export async function saveContactInfoHandler(
       };
     }
 
-    // Buscar conversación activa si está disponible
+    // Buscar conversación activa si está disponible y detectar el canal de origen
     let conversationId: string | undefined;
+    let source = 'web'; // Default a web
     if (context.message) {
       const recentConversation = await db.conversation.findFirst({
         where: {
@@ -62,6 +63,11 @@ export async function saveContactInfoHandler(
         },
       });
       conversationId = recentConversation?.id;
+
+      // Detectar si es WhatsApp basándose en el sessionId
+      if (recentConversation?.sessionId?.startsWith('whatsapp_')) {
+        source = 'whatsapp';
+      }
     }
 
     // Verificar si ya existe un lead similar
@@ -134,6 +140,7 @@ export async function saveContactInfoHandler(
       };
     } else {
       console.log('➕ [save_contact_info] Creando nuevo lead...');
+      console.log('📍 [save_contact_info] Source detectado:', source);
       // Crear nuevo lead
       const newLead = await db.lead.create({
         data: {
@@ -144,6 +151,7 @@ export async function saveContactInfoHandler(
           position: input.position || null,
           website: input.website || null,
           notes: input.notes || null,
+          source,
           chatbotId: context.chatbotId,
           ...(conversationId && { conversationId }),
         },
