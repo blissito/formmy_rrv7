@@ -229,8 +229,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
               // 📱 HANDLE REACTIONS: Special processing for WhatsApp reactions
               if (message.type === "reaction" && message.reaction) {
-                console.log(`📱 [Webhook] Reaction detected: "${message.reaction.emoji}" to message ${message.reaction.message_id}`);
-
                 // Find integration to get chatbotId
                 const integration = await findIntegrationByPhoneNumber(change.value.metadata.phone_number_id);
 
@@ -265,7 +263,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
                   reactionId: (reactionResult as any).reactionId,
                 });
 
-                console.log(`✅ [Webhook] Reaction processed: ${(reactionResult as any).action}`);
                 continue; // Skip normal message processing for reactions
               }
 

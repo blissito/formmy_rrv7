@@ -88,8 +88,6 @@ export async function handleReaction(
   originalMessageId: string,
   reactionMessageId: string
 ) {
-  console.log(`📱 [Reaction] Processing reaction from ${phoneNumber}: "${emoji}" to message ${originalMessageId}`);
-
   // Get conversation
   const conversation = await getOrCreateConversation(phoneNumber, chatbotId);
 
@@ -109,11 +107,8 @@ export async function handleReaction(
     };
   }
 
-  console.log(`✅ [Reaction] Found original message: ${originalMessage.id}`);
-
   // Check if emoji is empty (user removed reaction)
   if (!emoji || emoji.trim() === "") {
-    console.log(`🗑️ [Reaction] User removed reaction. Looking for existing reaction to delete...`);
 
     // Find and delete existing reaction from this user to this message
     const existingReaction = await db.message.findFirst({
@@ -129,14 +124,12 @@ export async function handleReaction(
       await db.message.delete({
         where: { id: existingReaction.id },
       });
-      console.log(`✅ [Reaction] Deleted existing reaction: ${existingReaction.id}`);
       return {
         success: true,
         action: "deleted",
         reactionId: existingReaction.id,
       };
     } else {
-      console.log(`ℹ️ [Reaction] No existing reaction found to delete`);
       return {
         success: true,
         action: "no_op",
@@ -145,8 +138,6 @@ export async function handleReaction(
   }
 
   // Emoji has value - add or update reaction
-  console.log(`${emoji} [Reaction] Adding/updating reaction...`);
-
   // Check if user already has a reaction to this message
   const existingReaction = await db.message.findFirst({
     where: {
@@ -166,7 +157,6 @@ export async function handleReaction(
         externalMessageId: reactionMessageId, // Update with new reaction message ID
       },
     });
-    console.log(`✅ [Reaction] Updated existing reaction: ${updatedReaction.id} with emoji "${emoji}"`);
     return {
       success: true,
       action: "updated",
@@ -188,7 +178,6 @@ export async function handleReaction(
         responseTime: 0,
       },
     });
-    console.log(`✅ [Reaction] Created new reaction: ${newReaction.id} with emoji "${emoji}"`);
     return {
       success: true,
       action: "created",

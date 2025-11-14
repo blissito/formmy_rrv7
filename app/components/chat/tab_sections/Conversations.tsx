@@ -1157,18 +1157,9 @@ export const ConversationsPreview = ({
             ?.filter((message) => !message.isReaction) // Filtrar reacciones (se muestran como overlay)
             .map((message, index) => {
               // Buscar reacciones para este mensaje
-              // Debug: ver qué mensajes tienen reacciones
               const reactions = conversation.messages.filter(
                 (msg) => msg.isReaction === true && msg.reactionToMsgId === message.externalMessageId
               );
-
-              // Debug temporal: log para ver si hay reacciones
-              if (reactions.length > 0) {
-                console.log('📱 Reacción encontrada:', {
-                  messageId: message.externalMessageId,
-                  reactions: reactions.map(r => ({ emoji: r.reactionEmoji, toMsgId: r.reactionToMsgId }))
-                });
-              }
 
               return (
                 <div key={index} className="mb-4 last:mb-8">
@@ -1227,7 +1218,7 @@ const UserMessage = ({ message, reactions = [] }: { message: UIMessage; reaction
 
   return (
     <div className="justify-end flex items-start gap-2">
-      <div className="relative">
+      <div className="relative w-fit max-w-[70%]">
         {hasMultimedia ? (
           // Mostrar sticker/imagen como contenido
           <div className="max-w-[200px]">
@@ -1240,7 +1231,7 @@ const UserMessage = ({ message, reactions = [] }: { message: UIMessage; reaction
           </div>
         ) : (
           // Mensaje de texto normal
-          <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
+          <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl break-words w-fit">
             {message.content}
           </div>
         )}
@@ -1480,7 +1471,8 @@ const AssistantMessage = ({
                 {message.content}
               </ReactMarkdown>
             </div>
-            <MicroLikeButton />
+            {/* MicroLikeButton comentado - no funcional sin onClick handler */}
+            {/* <MicroLikeButton /> */}
           </div>
         )}
         {/* Mostrar reacción como overlay - mismo estilo que MicroLikeButton */}
