@@ -91,7 +91,7 @@ export const PageContainer = ({
       (child as React.ReactElement).type !== PageContainer.Header
   );
   return (
-    <main className="h-full max-w-7xl mx-auto p-4 md:py-8 md:px-0 ">
+    <main className="h-full max-w-7xl mx-auto p-4 md:pt-8 md:pb-0 md:px-0 ">
       {HeaderComponent && HeaderComponent}
       <article className={cn("h-full")} {...props}>
         <section>{nodes}</section>

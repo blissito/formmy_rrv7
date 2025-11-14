@@ -128,6 +128,12 @@ export const Conversations = ({
   // Estado para controlar visibilidad del panel de detalles de contacto
   const [showContactDetails, setShowContactDetails] = useState(false);
 
+  // Estado para controlar vista mobile (lista vs conversación)
+  const [showConversationInMobile, setShowConversationInMobile] = useState(false);
+
+  // Estado para controlar vista mobile del panel de contacto
+  const [showContactDetailsInMobile, setShowContactDetailsInMobile] = useState(false);
+
   // Inicializar estado local con valores de BD
   useEffect(() => {
     const initialModes: Record<string, boolean> = {};
@@ -239,8 +245,13 @@ export const Conversations = ({
         <EmptyConversations t={t} />
       ) : (
 
-      <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)]">
-        <article className={cn("col-span-12 md:col-span-3", "flex flex-col h-full gap-4 md:gap-6")}>
+      <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-296px)]">
+        {/* Lista de conversaciones - Se oculta en mobile cuando se ve una conversación */}
+        <article className={cn(
+          "col-span-12 md:col-span-3",
+          "flex flex-col h-full gap-4 md:gap-6",
+          showConversationInMobile && "hidden md:flex" // Ocultar en mobile si se muestra conversación
+        )}>
           <ChipTabs
             names={tabNames}
             onTabChange={(tabName) => {
@@ -253,6 +264,7 @@ export const Conversations = ({
           onConversationSelect={(conv) => {
             setConversation(conv);
             setShowContactDetails(false); // Cerrar panel al cambiar de conversación
+            setShowConversationInMobile(true); // Mostrar conversación en mobile
           }}
           conversations={
             parseInt(currentTabIndex) === TAB_FAVORITES
@@ -270,9 +282,12 @@ export const Conversations = ({
           tabAll={TAB_ALL}
         />
       </article>
+      {/* Preview de conversación - En mobile se muestra solo cuando showConversationInMobile es true */}
       <section className={cn(
-        "col-span-12 pb-4 min-h-[calc(100vh-310px)]",
-        showContactDetails ? "md:col-span-6" : "md:col-span-9"
+        "col-span-12 pb-4 min-h-[calc(100vh-296px)]",
+        showContactDetails ? "md:col-span-6" : "md:col-span-9",
+        !showConversationInMobile && "hidden md:block", // Ocultar en mobile si no se ha seleccionado conversación
+        showContactDetailsInMobile && "hidden" // Ocultar completamente (mobile y desktop) cuando se muestra panel de contacto en mobile
       )}>
         <ConversationsPreview
           conversation={conversation}
@@ -283,13 +298,25 @@ export const Conversations = ({
           onToggleFavorite={handleToggleFavorite}
           localManualMode={localManualModes[conversation?.id] || false}
           isFavorite={localFavorites[conversation?.id] ?? conversation?.isFavorite}
-          onAvatarClick={() => setShowContactDetails(!showContactDetails)}
+          onAvatarClick={() => {
+            const newState = !showContactDetails;
+            setShowContactDetails(newState);
+            // Sincronizar estado mobile: true cuando se abre, false cuando se cierra
+            setShowContactDetailsInMobile(newState);
+          }}
+          onBackToList={() => setShowConversationInMobile(false)} // Función para volver a la lista en mobile
         />
       </section>
       {/* Panel de detalles de contacto */}
       {showContactDetails && conversation && (
         <aside
-          className="hidden md:block col-span-3 pb-4"
+          className={cn(
+            "pb-4",
+            // Mobile: full-screen si showContactDetailsInMobile, oculto si no
+            showContactDetailsInMobile ? "col-span-12" : "hidden",
+            // Desktop: siempre visible como sidebar
+            "md:block md:col-span-3"
+          )}
           style={{
             animation: 'slideInFromRight 0.3s ease-out forwards, fadeIn 0.3s ease-out forwards'
           }}
@@ -318,7 +345,14 @@ export const Conversations = ({
           }} />
           <ContactDetailsPanel
             conversation={conversation}
-            onClose={() => setShowContactDetails(false)}
+            onClose={() => {
+              setShowContactDetails(false);
+              setShowContactDetailsInMobile(false); // Cerrar vista mobile también
+            }}
+            onBackToConversation={() => {
+              setShowContactDetailsInMobile(false);
+              setShowContactDetails(false); // Cerrar también el estado principal para sincronizar
+            }}
           />
         </aside>
       )}
@@ -408,7 +442,7 @@ const ConversationsList = ({
   // }, [selectedConversationId]);
 
   return (
-    <section className="flex flex-col gap-1 max-h-[264px] md:max-h-[616px] pb-6 overflow-y-scroll  ">
+    <section className="flex flex-col gap-1 max-h-[calc(100svh-200px)] md:max-h-[616px] pb-3 overflow-y-scroll  ">
       {conversations.length > 0 ? (
         <>
           {conversations.map((conversation) => (
@@ -617,6 +651,7 @@ const ChatHeader = ({
   onToggleFavorite,
   isFavorite = false,
   onAvatarClick,
+  onBackToList,
 }: {
   conversation: Conversation;
   primaryColor?: string;
@@ -627,11 +662,40 @@ const ChatHeader = ({
   onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
   isFavorite?: boolean;
   onAvatarClick?: () => void;
+  onBackToList?: () => void;
 }) => {
-  const { date, tel } = conversation;
+  const { date } = conversation;
   const [manualMessage, setManualMessage] = useState("");
   const [isToggling, setIsToggling] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  // Función para abreviar meses en la fecha
+  const getAbbreviatedDate = (fullDate: string): string => {
+    const monthMap: Record<string, string> = {
+      'enero': 'Ene',
+      'febrero': 'Feb',
+      'marzo': 'Mar',
+      'abril': 'Abr',
+      'mayo': 'May',
+      'junio': 'Jun',
+      'julio': 'Jul',
+      'agosto': 'Ago',
+      'septiembre': 'Sep',
+      'octubre': 'Oct',
+      'noviembre': 'Nov',
+      'diciembre': 'Dic'
+    };
+
+    let abbreviated = fullDate;
+    Object.entries(monthMap).forEach(([full, abbr]) => {
+      abbreviated = abbreviated.replace(new RegExp(full, 'gi'), abbr);
+    });
+    // Remover "de" extra si existe
+    abbreviated = abbreviated.replace(/\sde\s/g, ' ');
+    return abbreviated;
+  };
+
+  const abbreviatedDate = getAbbreviatedDate(date);
 
 
   // Detectar si es conversación de WhatsApp
@@ -737,11 +801,23 @@ const ChatHeader = ({
         "border-t border-l border-r border-outlines",
         "flex",
         "items-center",
-        "gap-2",
+        "gap-1 md:gap-2",
         "rounded-t-3xl",
-        "bg-white w-full p-3"
+        "bg-white w-full py-2 px-3 lg:p-3"
       )}
     >
+      {/* Botón de volver - Solo visible en mobile */}
+      {onBackToList && (
+        <button
+          onClick={onBackToList}
+          className="md:hidden w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors flex-shrink-0"
+          title="Volver a conversaciones"
+        >
+          <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
       <button
         onClick={onAvatarClick}
         className="relative hover:opacity-80 transition-opacity cursor-pointer"
@@ -761,7 +837,10 @@ const ChatHeader = ({
             {conversation.userName || "User"}
           </h3>
         </div>
-        <p className="text-xs text-lightgray -mt-[2px]">{date}</p>
+        {/* Mobile: fecha abreviada */}
+        <p className="md:hidden text-xs text-lightgray -mt-[2px]">{abbreviatedDate}</p>
+        {/* Desktop: fecha completa */}
+        <p className="hidden md:block text-xs text-lightgray -mt-[2px]">{date}</p>
       </div>
       <ToggleButton
         isManual={localManualMode}
@@ -792,7 +871,7 @@ const ChatHeader = ({
       </button>
       <button
         onClick={handleDeleteConversation}
-        className="mr-3 hover:bg-red-50 rounded-full p-1 transition-colors"
+        className=" hover:bg-red-50 rounded-full p-1 transition-colors"
         title="Eliminar conversación"
       >
         <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
@@ -814,14 +893,21 @@ const ToggleButton = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "ml-auto mr-2 px-3 py-2 text-xs rounded-full font-medium transition-colors ",
+      "ml-auto mr-2 px-3 py-2 text-xs rounded-full font-medium transition-colors",
       isManual
         ? "bg-dark text-white"
         : "bg-cloud text-dark",
       "disabled:opacity-50"
     )}
   >
-    {isManual ? "🔧  Manual" : "🤖 Agente"}
+    {/* Mobile: solo emoji */}
+    <span className="md:hidden">
+      {isManual ? "🔧" : "🤖"}
+    </span>
+    {/* Desktop: emoji + texto */}
+    <span className="hidden md:inline">
+      {isManual ? "🔧  Manual" : "🤖 Agente"}
+    </span>
   </button>
 );
 
@@ -1157,6 +1243,7 @@ export const ConversationsPreview = ({
   localManualMode = false,
   isFavorite = false,
   onAvatarClick,
+  onBackToList,
 }: {
   conversation: Conversation | undefined;
   primaryColor?: string;
@@ -1168,6 +1255,7 @@ export const ConversationsPreview = ({
   localManualMode?: boolean;
   isFavorite?: boolean;
   onAvatarClick?: () => void;
+  onBackToList?: () => void;
 }) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef<number>(0);
@@ -1208,7 +1296,7 @@ export const ConversationsPreview = ({
   // Log conversation state for debugging
 
   return (
-    <div className="h-full flex flex-col max-h-[calc(100vh-320px)]">
+    <div className="h-full flex flex-col max-h-[calc(100vh-296px)] ">
       <div className="flex-shrink-0">
         {conversation && (
           <ChatHeader
@@ -1220,6 +1308,7 @@ export const ConversationsPreview = ({
             localManualMode={localManualMode}
             isFavorite={isFavorite}
             onAvatarClick={onAvatarClick}
+            onBackToList={onBackToList}
           />
         )}
       </div>
@@ -1401,7 +1490,7 @@ const UserMessage = ({ message, reactions = [], showTimestamp = true, showAvatar
             </div>
           ) : (
             // Mensaje de texto normal
-            <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl break-words w-fit">
+            <div className="text-sm md:text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl break-words w-fit">
               {message.content}
             </div>
           )}
@@ -1444,8 +1533,13 @@ const PROSE_STYLES = "compact-markdown";
 const LIST_STYLES = `
   .compact-markdown {
     line-height: 1.5;
-    font-size: 0.95rem;
+    font-size: 0.875rem; /* 14px en mobile */
     color: #1f2937;
+  }
+  @media (min-width: 768px) {
+    .compact-markdown {
+      font-size: 0.95rem; /* ~15.2px en desktop */
+    }
   }
   .compact-markdown p {
     margin: 0 0 1.5rem 0;
@@ -1512,19 +1606,29 @@ const LIST_STYLES = `
     color: #4ade80;
     padding: 0.15rem 0.4rem;
     border-radius: 0.25rem;
-    font-size: 0.85rem;
+    font-size: 0.8125rem; /* 13px en mobile */
     font-family: ui-monospace, monospace;
+  }
+  @media (min-width: 768px) {
+    .compact-markdown code {
+      font-size: 0.85rem; /* ~13.6px en desktop */
+    }
   }
   .compact-markdown pre {
     background-color: #1e293b;
     color: #4ade80;
     padding: 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.85rem;
+    font-size: 0.8125rem; /* 13px en mobile */
     font-family: ui-monospace, monospace;
     overflow-x: auto;
     margin: 0.5rem 0;
     border: 1px solid #334155;
+  }
+  @media (min-width: 768px) {
+    .compact-markdown pre {
+      font-size: 0.85rem; /* ~13.6px en desktop */
+    }
   }
   .compact-markdown pre:first-child {
     margin-top: 0;
@@ -1653,7 +1757,7 @@ const AssistantMessage = ({
               />
             </div>
           ) : (
-            <div className="text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
+            <div className="text-sm md:text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
               <div className={PROSE_STYLES}>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -1697,9 +1801,11 @@ const AssistantMessage = ({
 const ContactDetailsPanel = ({
   conversation,
   onClose,
+  onBackToConversation,
 }: {
   conversation: Conversation;
   onClose: () => void;
+  onBackToConversation?: () => void;
 }) => {
   // Obtener la foto del usuario
   const userMessage = conversation.messages.find((message) => message.role === "USER");
@@ -1732,11 +1838,23 @@ const ContactDetailsPanel = ({
   const hasPurchased = false;
 
   return (
-    <div className="bg-white rounded-3xl border border-outlines shadow-standard p-6 h-fit flex flex-col relative">
-      {/* Botón de cerrar en esquina superior derecha */}
+    <div className="bg-white rounded-3xl border border-outlines shadow-standard p-6 h-fit md:h-fit min-h-[calc(100svh-200px)] md:min-h-0 flex flex-col relative">
+      {/* Botón de volver - Solo visible en mobile */}
+      {onBackToConversation && (
+        <button
+          onClick={onBackToConversation}
+          className="md:hidden absolute top-4 left-4 w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors z-10"
+          title="Volver a conversación"
+        >
+          <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+      {/* Botón de cerrar en esquina superior derecha - Solo visible en desktop */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+        className="hidden md:flex absolute top-4 right-4 w-8 h-8 items-center justify-center hover:bg-gray-50 rounded-full transition-colors z-10"
         title="Cerrar"
       >
         <img src="/dash/sunroof.svg" alt="Cerrar" className="w-5 h-5" />
