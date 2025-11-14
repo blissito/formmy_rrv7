@@ -313,25 +313,25 @@ export const Contactos = ({
           <table className="w-full table-fixed">
             <thead className="bg-surfaceTwo border-b border-outlines">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[16%]">
+                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[16%]">
                   {t('contacts.contact')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[10%]">
+                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[10%]">
                   {t('contacts.phone')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[24%]">
+                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[24%]">
                   {t('contacts.company')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[13%]">
+                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[13%]">
                   {t('contacts.date')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[9%]">
+                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[9%]">
                   {t('contacts.source')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
+                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[12%]">
                   {t('contacts.contactStatus')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[8%]">
+                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[8%]">
                   {t('contacts.actions')}
                 </th>
               </tr>
@@ -342,7 +342,7 @@ export const Contactos = ({
                   key={contact.id}
                   className="hover:bg-brand-100/50 transition-colors"
                 >
-                  <td className="px-4 py-4">
+                  <td className="px-2 py-4">
                     <div className="flex flex-col overflow-hidden">
                       <div className="text-sm font-medium text-dark truncate">
                         {contact.name || "-"}
@@ -352,15 +352,15 @@ export const Contactos = ({
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="text-xs text-metal truncate">{contact.phone || "-"}</div>
+                  <td className="px-2 py-4 whitespace-nowrap">
+                    <div className="text-sm text-metal truncate">{contact.phone || "-"}</div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="px-2 py-4 whitespace-nowrap">
                     <div className="text-sm text-metal truncate">
                       {contact.productInterest || "-"}
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="px-2 py-4 whitespace-nowrap">
                     <div className="text-sm text-irongray truncate">
                       {new Date(contact.capturedAt).toLocaleDateString("es-MX", {
                         year: "numeric",
@@ -369,14 +369,14 @@ export const Contactos = ({
                       })}
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="px-2 py-4 whitespace-nowrap">
                     <div className="flex justify-start">
                       <span className="px-2 py-1 text-xs font-medium rounded-full bg-cloud/20 text-teal-700">
                         chatbot
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="px-2 py-4 whitespace-nowrap">
                     <div className="flex justify-start">
                       <StatusDropdown
                         value={optimisticStatuses[contact.id] || contact.status || "NEW"}
@@ -387,7 +387,7 @@ export const Contactos = ({
                       />
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="px-2 py-4 whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => handleViewConversation(contact.conversationId)}
