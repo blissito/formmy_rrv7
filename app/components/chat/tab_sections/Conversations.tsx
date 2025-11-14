@@ -10,6 +10,9 @@ import EmptyDark from "~/SVGs/EmptyDark";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
+import { FaWhatsapp } from "react-icons/fa";
+import { CiStar } from "react-icons/ci";
+import { FaStar } from "react-icons/fa";
 
 type ConversationsProps = {
   chatbot: Chatbot;
@@ -268,7 +271,9 @@ export const Conversations = ({
           onToggleManual={handleToggleManual}
           onSendManualResponse={handleSendManualResponse}
           onDeleteConversation={onDeleteConversation}
+          onToggleFavorite={handleToggleFavorite}
           localManualMode={localManualModes[conversation?.id] || false}
+          isFavorite={localFavorites[conversation?.id] ?? conversation?.isFavorite}
         />
       </section>
     </main>
@@ -560,6 +565,8 @@ const ChatHeader = ({
   onSendManualResponse,
   localManualMode = false,
   onDeleteConversation,
+  onToggleFavorite,
+  isFavorite = false,
 }: {
   conversation: Conversation;
   primaryColor?: string;
@@ -567,6 +574,8 @@ const ChatHeader = ({
   onSendManualResponse?: (conversationId: string, message: string) => void;
   localManualMode?: boolean;
   onDeleteConversation?: (conversationId: string) => void;
+  onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
+  isFavorite?: boolean;
 }) => {
   const { date, tel } = conversation;
   const [manualMessage, setManualMessage] = useState("");
@@ -578,6 +587,12 @@ const ChatHeader = ({
   // Si tel es un número válido (no "N/A" o "Usuario Web") → es WhatsApp
   const isWhatsAppConversation = conversation.isWhatsApp ||
     (conversation.tel !== "N/A" && conversation.tel.startsWith("+") && conversation.tel.length >= 10);
+
+  // Obtener la foto del usuario (misma lógica que en Conversation component)
+  const userMessage = conversation.messages.find(
+    (message) => message.role === "USER"
+  );
+  const userAvatarUrl = userMessage?.picture || conversation.avatar;
 
   const handleToggleManual = () => {
     if (onToggleManual) {
@@ -599,6 +614,13 @@ const ChatHeader = ({
     }
   };
 
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(conversation.id, e);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!onSendManualResponse || !manualMessage.trim() || isSending) return;
     setIsSending(true);
@@ -617,6 +639,46 @@ const ChatHeader = ({
     }
   };
 
+  const handleDownloadCSV = () => {
+    if (!conversation) return;
+
+    const headers = ["Fecha", "Hora", "Rol", "Mensaje"];
+    const rows = conversation.messages.map(message => {
+      // Manejar fecha que puede venir como string o Date desde el servidor
+      let fecha = "Sin fecha";
+      let hora = "";
+
+      if (message.createdAt) {
+        const dateObj = new Date(message.createdAt);
+        fecha = dateObj.toLocaleDateString('es-MX', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        hora = dateObj.toLocaleTimeString('es-MX', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      }
+
+      const role = message.role === "USER" ? "Usuario" : "Asistente";
+      const content = `"${message.content.replace(/"/g, '""')}"`;
+
+      return [fecha, hora, role, content].join(",");
+    });
+
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+
+    const date = new Date().toISOString().split('T')[0];
+    const userName = conversation.userName.replace(/[^a-zA-Z0-9]/g, '_');
+    link.download = `conversacion_${userName}_${date}.csv`;
+    link.click();
+  };
+
   return (
     <header
       style={{ borderColor: primaryColor || "brand-500" }}
@@ -626,32 +688,53 @@ const ChatHeader = ({
         "items-center",
         "gap-2",
         "rounded-t-3xl",
-        "bg-brand-100/40 w-full p-3"
+        "bg-white w-full p-3"
       )}
     >
-      <Avatar className="h-10 w-10" src={conversation.messages[0]?.picture || "/assets/chat/ghosty.svg"} />
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-dark ">
-              {conversation.userName || "User"}
-            </h3>
-            {tel && tel !== "N/A" && (
-              <p className="text-[10px] text-gray-400">{formatPhoneNumber(tel)}</p>
-            )}
+      <div className="relative">
+        <Avatar className="h-10 w-10" src={userAvatarUrl || "/assets/chat/ghosty.svg"} />
+        {/* Badge de WhatsApp - círculo verde con icono */}
+        {isWhatsAppConversation && (
+          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center ">
+            <FaWhatsapp className="w-2.5 h-2.5 text-white" />
           </div>
-          {/* Logo WhatsApp si es conversación de WhatsApp */}
-          {isWhatsAppConversation && (
-            <img src="/assets/chat/whatsapp.svg" alt="WhatsApp" className="w-5 h-5" />
-          )}
+        )}
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center">
+          <h3 className="text-base font-semibold text-dark ">
+            {conversation.userName || "User"}
+          </h3>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">{date}</p>
+        <p className="text-xs text-lightgray -mt-[2px]">{date}</p>
       </div>
       <ToggleButton
         isManual={localManualMode}
         onClick={handleToggleManual}
         disabled={false}
       />
+      <button
+        onClick={handleDownloadCSV}
+        className="hover:bg-gray-50 rounded-full p-1 transition-colors"
+        title="Descargar conversación"
+      >
+        <img className="w-6 h-6" src="/assets/chat/download.svg" alt="download icon" />
+      </button>
+      <button
+        onClick={handleToggleFavorite}
+        className={cn(
+          "rounded-full p-[2px] transition-all hover:scale-110 active:scale-95",
+          "w-8 h-8 flex items-center justify-center",
+          isFavorite ? "text-yellow-500 hover:bg-yellow-50" : "text-metal hover:bg-gray-50"
+        )}
+        title={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"}
+      >
+        {isFavorite ? (
+          <FaStar className="w-5 h-5" />
+        ) : (
+          <CiStar className="w-6 h-6" />
+        )}
+      </button>
       <button
         onClick={handleDeleteConversation}
         className="mr-3 hover:bg-red-50 rounded-full p-1 transition-colors"
@@ -994,84 +1077,6 @@ const ManualResponseInput = ({
   );
 };
 
-const ActionButtons = ({ conversation }: { conversation?: Conversation }) => {
-  const handleDownloadCSV = () => {
-    if (!conversation) return;
-
-    const headers = ["Fecha", "Hora", "Rol", "Mensaje"];
-    const rows = conversation.messages.map(message => {
-      // Manejar fecha que puede venir como string o Date desde el servidor
-      let fecha = "Sin fecha";
-      let hora = "";
-
-      if (message.createdAt) {
-        const dateObj = new Date(message.createdAt);
-        fecha = dateObj.toLocaleDateString('es-MX', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        });
-        hora = dateObj.toLocaleTimeString('es-MX', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        });
-      }
-
-      const role = message.role === "USER" ? "Usuario" : "Asistente";
-      const content = `"${message.content.replace(/"/g, '""')}"`;
-
-      return [fecha, hora, role, content].join(",");
-    });
-
-    const csvContent = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-
-    const date = new Date().toISOString().split('T')[0];
-    const userName = conversation.userName.replace(/[^a-zA-Z0-9]/g, '_');
-    link.download = `conversacion_${userName}_${date}.csv`;
-    link.click();
-  };
-
-  return (
-    <nav className="flex items-center gap-2 w-full justify-end mb-6">
-      <SimpleButton src="/assets/chat/tuning.svg" disabled />
-      <SimpleButton src="/assets/chat/refresh.svg" disabled />
-      <SimpleButton src="/assets/chat/download.svg" onClick={handleDownloadCSV} />
-    </nav>
-  );
-};
-
-const SimpleButton = ({
-  src,
-  onClick,
-  className,
-  disabled = false,
-}: {
-  src: string;
-  onClick?: () => void;
-  className?: string;
-  disabled?: boolean;
-}) => {
-  return (
-    <button
-      className={cn(
-        "enabled:cursor-pointer enabled:active:scale-95",
-        "enabled:hover:bg-gray-50 enabled:hover:shadow-sm transition-all",
-        "rounded-xl p-1 border border-gray-300",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        className
-      )}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <img className="pointer-events-none" src={src} alt="icon" />
-    </button>
-  );
-};
-
 // This should be reusable for any conversation
 export const ConversationsPreview = ({
   conversation,
@@ -1080,7 +1085,9 @@ export const ConversationsPreview = ({
   onToggleManual,
   onSendManualResponse,
   onDeleteConversation,
+  onToggleFavorite,
   localManualMode = false,
+  isFavorite = false,
 }: {
   conversation: Conversation | undefined;
   primaryColor?: string;
@@ -1088,7 +1095,9 @@ export const ConversationsPreview = ({
   onToggleManual?: (conversationId: string) => void;
   onSendManualResponse?: (conversationId: string, message: string) => void;
   onDeleteConversation?: (conversationId: string) => void;
+  onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
   localManualMode?: boolean;
+  isFavorite?: boolean;
 }) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef<number>(0);
@@ -1131,14 +1140,15 @@ export const ConversationsPreview = ({
   return (
     <div className="h-full flex flex-col max-h-[calc(100vh-320px)]">
       <div className="flex-shrink-0">
-        <ActionButtons conversation={conversation} />
         {conversation && (
           <ChatHeader
             conversation={conversation}
             onToggleManual={onToggleManual}
             onSendManualResponse={onSendManualResponse}
             onDeleteConversation={onDeleteConversation}
+            onToggleFavorite={onToggleFavorite}
             localManualMode={localManualMode}
+            isFavorite={isFavorite}
           />
         )}
       </div>
@@ -1151,6 +1161,12 @@ export const ConversationsPreview = ({
           "border border-outlines w-full shadow-standard flex-1 overflow-y-auto",
           localManualMode ? "border-b-0" : "rounded-b-3xl"
         )}
+        style={{
+          backgroundImage: "url('/dash/chat-cover.svg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat"
+        }}
       >
         <div className="p-4">
           {conversation?.messages ? (
