@@ -1153,24 +1153,48 @@ export const ConversationsPreview = ({
         )}
       >
         <div className="p-4">
-          {conversation?.messages
-            ?.filter((message) => !message.isReaction) // Filtrar reacciones (se muestran como overlay)
-            .map((message, index) => {
-              // Buscar reacciones para este mensaje
-              const reactions = conversation.messages.filter(
-                (msg) => msg.isReaction === true && msg.reactionToMsgId === message.externalMessageId
-              );
+          {conversation?.messages ? (
+            groupMessagesByDate(
+              conversation.messages.filter((message) => !message.isReaction)
+            ).map(([date, messages]) => (
+              <div key={date}>
+                <DateSeparator date={date} />
+                {messages.map((message, index) => {
+                  // Buscar reacciones para este mensaje
+                  const reactions = conversation.messages.filter(
+                    (msg) => msg.isReaction === true && msg.reactionToMsgId === message.externalMessageId
+                  );
 
-              return (
-                <div key={index} className="mb-4 last:mb-8">
-                  <SingleMessage
-                    message={message}
-                    chatbotAvatarUrl={chatbot?.avatarUrl || undefined}
-                    reactions={reactions}
-                  />
-                </div>
-              );
-            }) || (
+                  // Determinar si mostrar timestamp (solo si es el último del grupo con misma hora)
+                  const nextMessage = messages[index + 1];
+                  const currentTime = formatMessageTime(new Date(message.createdAt));
+                  const nextTime = nextMessage ? formatMessageTime(new Date(nextMessage.createdAt)) : null;
+                  const showTimestamp = !nextMessage || message.role !== nextMessage.role || currentTime !== nextTime;
+
+                  // Determinar si mostrar avatar (solo si es el primero del grupo con misma hora)
+                  const prevMessage = messages[index - 1];
+                  const prevTime = prevMessage ? formatMessageTime(new Date(prevMessage.createdAt)) : null;
+                  const showAvatar = !prevMessage || message.role !== prevMessage.role || currentTime !== prevTime;
+
+                  // Determinar margen: si el siguiente mensaje es del mismo grupo (mismo remitente, misma hora), usar margen pequeño
+                  const isNextMessageSameGroup = nextMessage && message.role === nextMessage.role && currentTime === nextTime;
+                  const marginClass = isNextMessageSameGroup ? "mb-1" : "mb-4 last:mb-8";
+
+                  return (
+                    <div key={index} className={marginClass}>
+                      <SingleMessage
+                        message={message}
+                        chatbotAvatarUrl={chatbot?.avatarUrl || undefined}
+                        reactions={reactions}
+                        showTimestamp={showTimestamp}
+                        showAvatar={showAvatar}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            ))
+          ) : (
             <div className="text-center text-gray-500 p-8">
               Selecciona una conversación para ver los mensajes
             </div>
@@ -1193,23 +1217,81 @@ export const ConversationsPreview = ({
   );
 };
 
+// Helper: Formatear hora (HH:MM)
+function formatMessageTime(date: Date): string {
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+// Helper: Formatear fecha para separadores (Hoy, Ayer, o fecha completa)
+function formatDateSeparator(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffInMs = today.getTime() - messageDate.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInDays === 0) {
+    return "Hoy";
+  } else if (diffInDays === 1) {
+    return "Ayer";
+  } else if (diffInDays < 7) {
+    const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    return days[date.getDay()];
+  } else {
+    const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    return `${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()}`;
+  }
+}
+
+// Helper: Agrupar mensajes por día
+function groupMessagesByDate(messages: UIMessage[]): [string, UIMessage[]][] {
+  const groups = new Map<string, UIMessage[]>();
+
+  messages.forEach(msg => {
+    const date = new Date(msg.createdAt);
+    const dateKey = formatDateSeparator(date);
+
+    if (!groups.has(dateKey)) {
+      groups.set(dateKey, []);
+    }
+    groups.get(dateKey)!.push(msg);
+  });
+
+  return Array.from(groups.entries());
+}
+
+// Componente: Separador de fecha sticky
+const DateSeparator = ({ date }: { date: string }) => (
+  <div className="sticky top-0 z-10 flex justify-center py-2 mb-3">
+    <span className="bg-gray-200/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-gray-700 shadow-sm">
+      {date}
+    </span>
+  </div>
+);
+
 export const SingleMessage = ({
   message,
   chatbotAvatarUrl,
   reactions = [],
+  showTimestamp = true,
+  showAvatar = true,
 }: {
   message: UIMessage;
   chatbotAvatarUrl?: string;
   reactions?: UIMessage[];
+  showTimestamp?: boolean;
+  showAvatar?: boolean;
 }) => {
   return message.role === "USER" ? (
-    <UserMessage message={message} reactions={reactions} />
+    <UserMessage message={message} reactions={reactions} showTimestamp={showTimestamp} showAvatar={showAvatar} />
   ) : (
-    <AssistantMessage message={message} avatarUrl={chatbotAvatarUrl} reactions={reactions} />
+    <AssistantMessage message={message} avatarUrl={chatbotAvatarUrl} reactions={reactions} showTimestamp={showTimestamp} showAvatar={showAvatar} />
   );
 };
 
-const UserMessage = ({ message, reactions = [] }: { message: UIMessage; reactions?: UIMessage[] }) => {
+const UserMessage = ({ message, reactions = [], showTimestamp = true, showAvatar = true }: { message: UIMessage; reactions?: UIMessage[]; showTimestamp?: boolean; showAvatar?: boolean }) => {
   // Detectar si el mensaje contiene un sticker (picture contiene imagen, content es "📎 Sticker")
   const hasMultimedia = message.picture && message.content === "📎 Sticker";
 
@@ -1218,41 +1300,53 @@ const UserMessage = ({ message, reactions = [] }: { message: UIMessage; reaction
 
   return (
     <div className="justify-end flex items-start gap-2">
-      <div className="relative w-fit max-w-[70%]">
-        {hasMultimedia ? (
-          // Mostrar sticker/imagen como contenido
-          <div className="max-w-[200px]">
-            <img
-              src={message.picture}
-              alt="Sticker"
-              className="rounded-xl w-full h-auto"
-              loading="lazy"
-            />
-          </div>
-        ) : (
-          // Mensaje de texto normal
-          <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl break-words w-fit">
-            {message.content}
-          </div>
-        )}
-        {/* Mostrar reacción como overlay - mismo estilo que MicroLikeButton */}
-        {reaction && reaction.reactionEmoji && (
-          <div
-            className={cn(
-              "grid place-content-center",
-              "min-w-4 min-h-4 shadow aspect-square",
-              "bg-[#fff] rounded-full w-min",
-              "absolute -bottom-3 right-2",
-              "text-xs p-[10px]"
-            )}
-            title="Reacción de WhatsApp"
-          >
-            {reaction.reactionEmoji}
+      <div className="flex flex-col items-end gap-1 max-w-[70%]">
+        <div className="relative w-fit">
+          {hasMultimedia ? (
+            // Mostrar sticker/imagen como contenido
+            <div className="max-w-[200px]">
+              <img
+                src={message.picture}
+                alt="Sticker"
+                className="rounded-xl w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            // Mensaje de texto normal
+            <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl break-words w-fit">
+              {message.content}
+            </div>
+          )}
+          {/* Mostrar reacción como overlay - mismo estilo que MicroLikeButton */}
+          {reaction && reaction.reactionEmoji && (
+            <div
+              className={cn(
+                "grid place-content-center",
+                "min-w-4 min-h-4 shadow aspect-square",
+                "bg-[#fff] rounded-full w-min",
+                "absolute -bottom-3 right-2",
+                "text-xs p-[10px]"
+              )}
+              title="Reacción de WhatsApp"
+            >
+              {reaction.reactionEmoji}
+            </div>
+          )}
+        </div>
+        {/* Timestamp del mensaje - solo si showTimestamp es true */}
+        {showTimestamp && (
+          <div className="text-[10px] text-lightgray pr-1">
+            {formatMessageTime(new Date(message.createdAt))}
           </div>
         )}
       </div>
-      {/* ✅ Avatar del usuario siempre visible (foto de perfil de WhatsApp) */}
-      <Avatar className="w-8 h-8 flex-shrink-0" src={message.avatarUrl} />
+      {/* Avatar del usuario - solo si showAvatar es true */}
+      {showAvatar ? (
+        <Avatar className="w-8 h-8 flex-shrink-0" src={message.avatarUrl} />
+      ) : (
+        <div className="w-8 h-8 flex-shrink-0" />
+      )}
     </div>
   );
 };
@@ -1395,10 +1489,14 @@ const AssistantMessage = ({
   message,
   avatarUrl,
   reactions = [],
+  showTimestamp = true,
+  showAvatar = true,
 }: {
   message: UIMessage;
   avatarUrl?: string;
   reactions?: UIMessage[];
+  showTimestamp?: boolean;
+  showAvatar?: boolean;
 }) => {
   // Detectar si el mensaje contiene un sticker (picture contiene imagen, content es "📎 Sticker")
   const hasMultimedia = message.picture && message.content === "📎 Sticker";
@@ -1449,45 +1547,58 @@ const AssistantMessage = ({
   return (
     <div className="justify-start flex items-start gap-2">
       <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
-      <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
-      <div className="relative">
-        {hasMultimedia ? (
-          // Mostrar sticker/imagen como contenido
-          <div className="max-w-[200px]">
-            <img
-              src={message.picture}
-              alt="Sticker"
-              className="rounded-xl w-full h-auto"
-              loading="lazy"
-            />
-          </div>
-        ) : (
-          <div className="text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
-            <div className={PROSE_STYLES}>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={markdownComponents}
-              >
-                {message.content}
-              </ReactMarkdown>
+      {/* Avatar del bot - solo si showAvatar es true */}
+      {showAvatar ? (
+        <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
+      ) : (
+        <div className="w-8 h-8 flex-shrink-0" />
+      )}
+      <div className="flex flex-col items-start gap-1">
+        <div className="relative">
+          {hasMultimedia ? (
+            // Mostrar sticker/imagen como contenido
+            <div className="max-w-[200px]">
+              <img
+                src={message.picture}
+                alt="Sticker"
+                className="rounded-xl w-full h-auto"
+                loading="lazy"
+              />
             </div>
-            {/* MicroLikeButton comentado - no funcional sin onClick handler */}
-            {/* <MicroLikeButton /> */}
-          </div>
-        )}
-        {/* Mostrar reacción como overlay - mismo estilo que MicroLikeButton */}
-        {reaction && reaction.reactionEmoji && (
-          <div
-            className={cn(
-              "grid place-content-center",
-              "min-w-4 min-h-4 shadow aspect-square",
-              "bg-[#fff] rounded-full w-min",
-              "absolute -bottom-3 left-2",
-              "text-xs p-[10px]"
-            )}
-            title="Reacción de WhatsApp"
-          >
-            {reaction.reactionEmoji}
+          ) : (
+            <div className="text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
+              <div className={PROSE_STYLES}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={markdownComponents}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+              {/* MicroLikeButton comentado - no funcional sin onClick handler */}
+              {/* <MicroLikeButton /> */}
+            </div>
+          )}
+          {/* Mostrar reacción como overlay - mismo estilo que MicroLikeButton */}
+          {reaction && reaction.reactionEmoji && (
+            <div
+              className={cn(
+                "grid place-content-center",
+                "min-w-4 min-h-4 shadow aspect-square",
+                "bg-[#fff] rounded-full w-min",
+                "absolute -bottom-3 left-2",
+                "text-xs p-[10px]"
+              )}
+              title="Reacción de WhatsApp"
+            >
+              {reaction.reactionEmoji}
+            </div>
+          )}
+        </div>
+        {/* Timestamp del mensaje - solo si showTimestamp es true */}
+        {showTimestamp && (
+          <div className="text-[10px] text-lightgray pl-1">
+            {formatMessageTime(new Date(message.createdAt))}
           </div>
         )}
       </div>
