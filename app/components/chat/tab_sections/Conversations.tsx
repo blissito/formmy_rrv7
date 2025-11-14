@@ -495,6 +495,10 @@ const Conversation = forwardRef<
     (message) => message.role === "USER"
   );
 
+  // Detectar si es conversación de WhatsApp
+  const isWhatsAppConversation = conversation.isWhatsApp ||
+    (conversation.tel !== "N/A" && conversation.tel.startsWith("+") && conversation.tel.length >= 10);
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevenir que seleccione la conversación
     if (onToggleFavorite) {
@@ -518,7 +522,15 @@ const Conversation = forwardRef<
         }
       )}
     >
-      <Avatar className="w-10" src={pic} />
+      <div className="relative">
+        <Avatar className="w-10" src={pic} />
+        {/* Badge de WhatsApp - círculo verde con icono */}
+        {isWhatsAppConversation && (
+          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center ">
+            <FaWhatsapp className="w-2.5 h-2.5 text-white" />
+          </div>
+        )}
+      </div>
       <div className="flex-1 truncate">
         <div className="flex items-baseline gap-2">
           <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
@@ -532,25 +544,16 @@ const Conversation = forwardRef<
       </div>
       <div className="flex-2 pr-3 flex flex-col items-end gap-1">
         <p className="text-xs text-gray-500">{conversation.time}</p>
-        {/* Botón de favorito clickeable */}
-        <button
-          onClick={handleFavoriteClick}
-          className={cn(
-            "transition-all hover:scale-110 cursor-pointer active:scale-95",
-            isFavorite ? "text-yellow-500" : "text-gray-400 hover:text-yellow-400"
-          )}
-          title={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"}
-        >
-          {isFavorite ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-            </svg>
-          )}
-        </button>
+        {/* Mostrar estrella solo cuando está marcado como favorito */}
+        {isFavorite && (
+          <button
+            onClick={handleFavoriteClick}
+            className="transition-all h-5 w-5 flex items-center justify-center hover:scale-110 cursor-pointer active:scale-95 text-yellow-500"
+            title="Quitar de favoritos"
+          >
+            <FaStar className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </section>
   );
@@ -762,7 +765,7 @@ const ToggleButton = ({
       "ml-auto mr-2 px-3 py-2 text-xs rounded-full font-medium transition-colors ",
       isManual
         ? "bg-dark text-white"
-        : "bg-lime text-dark",
+        : "bg-cloud text-dark",
       "disabled:opacity-50"
     )}
   >
@@ -1060,7 +1063,7 @@ const ManualResponseInput = ({
             "flex-1 h-10 px-4 border-none rounded-xl",
             "bg-outlines/20 text-dark text-sm",
             "placeholder:text-lightgray",
-            "focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent",
+            "focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-transparent",
             "transition-all duration-200"
           )}
         />
