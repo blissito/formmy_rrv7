@@ -1583,11 +1583,11 @@ const AssistantMessage = ({
           {reaction && reaction.reactionEmoji && (
             <div
               className={cn(
-                "grid place-content-center",
+                "grid place-content-center ",
                 "min-w-4 min-h-4 shadow aspect-square",
-                "bg-[#fff] rounded-full w-min",
-                "absolute -bottom-3 left-2",
-                "text-xs p-[10px]"
+                "bg-white rounded-full w-min",
+                "absolute -bottom-2 left-2",
+                "text-sm p-[3px]"
               )}
               title="Reacción de WhatsApp"
             >
