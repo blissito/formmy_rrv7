@@ -71,6 +71,36 @@ export async function saveContactInfoHandler(
       console.log('⚪ [save_contact_info] Sin conversationId, usando source por defecto: web');
     }
 
+    // Auto-completar datos desde Contact de WhatsApp si es necesario
+    if (source === 'whatsapp' && conversationId && (!input.phone || !input.name)) {
+      console.log('📱 [save_contact_info] Buscando Contact de WhatsApp para auto-completar datos...');
+      const whatsappContact = await db.contact.findFirst({
+        where: {
+          conversationId: conversationId,
+          chatbotId: context.chatbotId,
+        },
+        select: {
+          phone: true,
+          name: true,
+        },
+      });
+
+      if (whatsappContact) {
+        // Auto-completar phone si no viene en el input
+        if (!input.phone && whatsappContact.phone) {
+          input.phone = whatsappContact.phone;
+          console.log('✅ [save_contact_info] Auto-completado phone desde Contact:', input.phone);
+        }
+        // Auto-completar name si no viene en el input
+        if (!input.name && whatsappContact.name) {
+          input.name = whatsappContact.name;
+          console.log('✅ [save_contact_info] Auto-completado name desde Contact:', input.name);
+        }
+      } else {
+        console.log('⚠️ [save_contact_info] No se encontró Contact de WhatsApp asociado a la conversación');
+      }
+    }
+
     // Verificar si ya existe un lead similar
     // Prioridad: 1) Por email, 2) Por phone
     let existingLead = null;

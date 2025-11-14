@@ -201,13 +201,15 @@ NO USAR:
 
 IMPORTANTE:
 - Requiere email O phone REAL proporcionado por el usuario
+- 📱 WHATSAPP: El phone es OPCIONAL (se auto-completa del perfil). Solo necesitas email si el usuario lo proporciona
+- 💻 WEB: Requiere email O phone del usuario explícitamente
 - Captura productInterest si el usuario menciona qué le interesa
 - NO pidas confirmación explícita "¿guardo tu email?" - Si lo proporcionó en contexto de interés, guárdalo
 - Confirma al usuario DESPUÉS de guardarlo: "Perfecto, tengo tu contacto. Te daremos seguimiento."`,
     parameters: z.object({
-      name: z.string().optional().describe("Nombre completo proporcionado por el usuario"),
-      email: z.string().optional().describe("Email REAL proporcionado por el usuario - REQUERIDO si no hay phone"),
-      phone: z.string().optional().describe("Teléfono REAL proporcionado por el usuario - REQUERIDO si no hay email"),
+      name: z.string().optional().describe("Nombre completo proporcionado por el usuario (en WhatsApp se auto-completa del perfil si no se proporciona)"),
+      email: z.string().optional().describe("Email REAL proporcionado por el usuario - REQUERIDO en Web si no hay phone. OPCIONAL en WhatsApp"),
+      phone: z.string().optional().describe("Teléfono REAL proporcionado por el usuario - REQUERIDO en Web si no hay email. En WhatsApp se auto-completa del perfil"),
       productInterest: z.string().optional().describe("Producto o servicio que le interesa al usuario (ej: 'Plan Pro', 'Consultoría', 'Automatización WhatsApp')"),
       position: z.string().optional().describe("Cargo mencionado por el usuario"),
       website: z.string().optional().describe("Website mencionado por el usuario"),
