@@ -7,6 +7,13 @@ import DeleteIcon from "~/components/ui/icons/Delete";
 import { cn } from "~/lib/utils";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 
+// Extended Lead type with conversation relation
+type LeadWithConversation = Lead & {
+  conversation?: {
+    sessionId: string;
+  } | null;
+};
+
 // Helper function to get status labels (must be called inside component with hook)
 const getStatusLabels = (t: (key: string) => string): Record<ContactStatus, string> => ({
   NEW: t('contacts.status.new'),
@@ -115,7 +122,7 @@ export const Contactos = ({
 }: {
   chatbot: Chatbot;
   user: User;
-  contacts: Lead[];
+  contacts: LeadWithConversation[];
 }) => {
   const { t } = useDashboardTranslation();
   const STATUS_LABELS = getStatusLabels(t);
@@ -371,8 +378,12 @@ export const Contactos = ({
                   </td>
                   <td className="px-2 py-4 whitespace-nowrap">
                     <div className="flex justify-start">
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-cloud/20 text-teal-700">
-                        chatbot
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        contact.conversation?.sessionId?.startsWith('whatsapp_')
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {contact.conversation?.sessionId?.startsWith('whatsapp_') ? 'WhatsApp' : 'Web'}
                       </span>
                     </div>
                   </td>

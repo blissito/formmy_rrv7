@@ -188,6 +188,11 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       lastUpdated: true,
       conversationId: true,
       chatbotId: true,
+      conversation: {
+        select: {
+          sessionId: true,
+        },
+      },
     },
   });
 
@@ -195,8 +200,8 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const conversations = transformConversationsToUI(
     sortedConversations,
     chatbot.avatarUrl || undefined,
-    whatsappContacts,
-    leads // ✅ También pasar leads para mostrar nombres
+    whatsappContacts as any,
+    leads as any // ✅ También pasar leads para mostrar nombres
   );
 
   // Filtrar contextos sin embeddings (documentos eliminados)
