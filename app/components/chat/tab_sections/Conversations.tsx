@@ -759,14 +759,14 @@ const ToggleButton = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "ml-auto mr-2 px-3 py-1 text-xs rounded-full font-medium transition-colors",
+      "ml-auto mr-2 px-3 py-2 text-xs rounded-full font-medium transition-colors ",
       isManual
-        ? "bg-bird text-dark"
-        : "bg-cloud text-dark",
+        ? "bg-dark text-white"
+        : "bg-lime text-dark",
       "disabled:opacity-50"
     )}
   >
-    {isManual ? "🔧 MANUAL" : "🤖 BOT"}
+    {isManual ? "🔧  Manual" : "🤖 Agente"}
   </button>
 );
 
@@ -785,25 +785,33 @@ const ManualResponseInput = ({
   const submit = useSubmit();
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [showQuickResponses, setShowQuickResponses] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // 🎯 AUTO-FOCUS: Input listo inmediatamente
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(0, 0);
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
   }, []);
 
-  // 🎯 AUTO-RESIZE: Se expande con el contenido
-  const handleAutoResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
-    e.target.style.height = 'auto';
-    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-  };
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showQuickResponses) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.quick-responses-dropdown') && !target.closest('.quick-responses-button')) {
+          setShowQuickResponses(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showQuickResponses]);
 
   const handleSend = async () => {
     if (!message.trim() || isSending) return;
@@ -817,13 +825,9 @@ const ManualResponseInput = ({
     }
   };
 
-  // 🎯 SMART SHORTCUTS: Ctrl+Enter envía, Esc cancela
+  // 🎯 SMART SHORTCUTS: Enter envía
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       handleSend();
     }
@@ -904,30 +908,39 @@ const ManualResponseInput = ({
   ];
 
   return (
-    <div className="border-l border-t border-r border-b border-outlines bg-gray-100/10 p-4 w-full rounded-b-3xl">
-      {/* 🎯 QUICK RESPONSES */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {quickResponses.map((response, index) => (
-          <button
-            key={index}
-            onClick={() => setMessage(response)}
-            className="px-2.5 py-1.5 text-xs font-medium bg-dark dark:bg-space-700 text-white dark:text-clear border border-dark dark:border-space-600 rounded-full hover:bg-space-800 dark:hover:bg-brand-500/10 transition-all duration-200"
-          >
-            {response}
-          </button>
-        ))}
-
-        {/* WhatsApp Template Button */}
-        {isWhatsApp && (
-          <button
-            onClick={() => setShowTemplateSelector(true)}
-            className="px-2.5 py-1.5 text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-all duration-200 flex items-center gap-1.5"
-          >
-            <img src="/assets/chat/whatsapp.svg" className="w-3 h-3" alt="WhatsApp" />
-            {t('conversations.sendTemplate')}
-          </button>
-        )}
-      </div>
+    <div className="border-l border-t border-r border-b border-outlines bg-white p-4 w-full rounded-b-3xl relative">
+      {/* Dropdown de respuestas rápidas */}
+      {showQuickResponses && (
+        <div className="quick-responses-dropdown absolute bottom-full left-4 mb-2 bg-white border border-outlines rounded-xl shadow-lg p-2 min-w-[300px] max-w-md z-10">
+          <div className="flex flex-col gap-1">
+            {quickResponses.map((response, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setMessage(response);
+                  setShowQuickResponses(false);
+                }}
+                className="px-3 py-2 text-sm text-left text-dark hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                {response}
+              </button>
+            ))}
+            {/* WhatsApp Templates */}
+            {isWhatsApp && (
+              <button
+                onClick={() => {
+                  setShowQuickResponses(false);
+                  setShowTemplateSelector(true);
+                }}
+                className="px-3 py-2 text-sm text-left text-green-700 hover:bg-green-50 rounded-lg transition-colors flex items-center gap-2 border-t border-gray-100 mt-1 pt-2"
+              >
+                <img src="/assets/chat/whatsapp.svg" className="w-4 h-4" alt="WhatsApp" />
+                {t('conversations.sendTemplate')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Template Selector Modal */}
       {showTemplateSelector && (
@@ -1013,63 +1026,63 @@ const ManualResponseInput = ({
         </div>
       )}
 
-      <div className="flex items-start gap-3">
-        <div className="flex-1">
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={handleAutoResize}
-            onKeyDown={handleKeyDown}
-            placeholder="💬 Escribe tu respuesta..."
-            className={cn(
-              "w-full p-3 border border-outlines dark:border-space-600 rounded-xl resize-none",
-            "bg-white text-dark dark:text-clear text-[0.95rem]",
-              "placeholder:text-lightgray dark:placeholder:text-space-400",
-              "focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500",
-              "transition-all duration-200"
-            )}
-            rows={2}
-            maxLength={4096}
-            style={{ minHeight: '64px' }}
-          />
-          <div className="flex justify-between items-center mt-0 text-[10px] text-irongray dark:text-space-400">
-            <span className="flex items-center gap-1">
-              <span className="text-brand-500">⚡</span>
-              <span>Enter envía • Shift+Enter nueva línea</span>
-            </span>
-            <span className={cn(
-              "font-medium tabular-nums",
-              message.length > 3500 ? 'text-orange-500' : ''
-            )}>
-              {message.length}/4096
-            </span>
-          </div>
-        </div>
+      {/* Input de mensaje limpio */}
+      <div className="flex items-center gap-3">
+        {/* Botón de respuestas rápidas */}
+        <button
+          onClick={() => setShowQuickResponses(!showQuickResponses)}
+          className={cn(
+            "quick-responses-button",
+            "w-10 h-10 flex items-center justify-center rounded-xl border border-outlines",
+            "hover:bg-gray-50 transition-colors flex-shrink-0",
+            showQuickResponses ? "bg-gray-50" : "bg-white"
+          )}
+          title="Respuestas rápidas"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-metal" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+          </svg>
+        </button>
+
+        {/* Input de texto */}
+        <input
+          ref={inputRef}
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Escribe un mensaje"
+          maxLength={4096}
+          className={cn(
+            "flex-1 h-10 px-4 border-none rounded-xl",
+            "bg-outlines/20 text-dark text-sm",
+            "placeholder:text-lightgray",
+            "focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent",
+            "transition-all duration-200"
+          )}
+        />
+
+        {/* Botón de enviar */}
         <button
           onClick={handleSend}
           disabled={!message.trim() || isSending}
           className={cn(
-            "px-5 py-2.5 bg-brand-500 text-white rounded-full transition-all font-medium",
+            "w-10 h-10 rounded-full bg-brand-500 text-white",
+            "flex items-center justify-center flex-shrink-0",
             "hover:bg-brand-600 hover:shadow-lg",
             "active:scale-95",
             "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-500 disabled:hover:shadow-none",
-            "flex items-center justify-center gap-2 whitespace-nowrap",
-            "focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            "transition-all duration-200"
           )}
+          title="Enviar mensaje"
         >
           {isSending ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Enviando...</span>
-            </>
+            <div className="w-6 h-6 border-1 border-white border-t-transparent rounded-full animate-spin"></div>
           ) : (
-            <>
-              <span>Enviar</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </>
+            <img src="/dash/send.svg" alt="Enviar" className="w-6 h-6" />
           )}
         </button>
       </div>
