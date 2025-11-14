@@ -239,7 +239,7 @@ export const Conversations = ({
         <EmptyConversations t={t} />
       ) : (
 
-      <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
+      <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)]">
         <article className={cn("col-span-12 md:col-span-3", "flex flex-col h-full gap-4 md:gap-6")}>
           <ChipTabs
             names={tabNames}
@@ -272,7 +272,6 @@ export const Conversations = ({
       </article>
       <section className={cn(
         "col-span-12 pb-4 min-h-[calc(100vh-310px)]",
-        "transition-all duration-300 ease-out",
         showContactDetails ? "md:col-span-6" : "md:col-span-9"
       )}>
         <ConversationsPreview
@@ -289,7 +288,34 @@ export const Conversations = ({
       </section>
       {/* Panel de detalles de contacto */}
       {showContactDetails && conversation && (
-        <aside className="hidden md:block col-span-3 pb-4 animate-in fade-in slide-in-from-right-5 duration-300 ease-out">
+        <aside
+          className="hidden md:block col-span-3 pb-4"
+          style={{
+            animation: 'slideInFromRight 0.3s ease-out forwards, fadeIn 0.3s ease-out forwards'
+          }}
+        >
+          <style dangerouslySetInnerHTML={{
+            __html: `
+              @keyframes slideInFromRight {
+                from {
+                  opacity: 0;
+                  transform: translateX(20px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateX(0);
+                }
+              }
+              @keyframes fadeIn {
+                from {
+                  opacity: 0;
+                }
+                to {
+                  opacity: 1;
+                }
+              }
+            `
+          }} />
           <ContactDetailsPanel
             conversation={conversation}
             onClose={() => setShowContactDetails(false)}
