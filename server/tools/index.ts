@@ -173,19 +173,42 @@ export const createPaymentLinkTool = (context: ToolContext) => tool(
 // ===== CONTACT TOOLS =====
 
 export const createSaveContactTool = (context: ToolContext) => tool(
-  async ({ name, email, phone, company, position, website, notes }) => {
+  async ({ name, email, phone, productInterest, position, website, notes }) => {
     const { saveContactInfoHandler } = await import('./handlers/contact');
-    const result = await saveContactInfoHandler({ name, email, phone, company, position, website, notes }, context);
+    const result = await saveContactInfoHandler({ name, email, phone, productInterest, position, website, notes }, context);
     return result.message;
   },
   {
     name: "save_contact_info",
-    description: "⚠️ SOLO usar cuando el usuario EXPLÍCITAMENTE diga 'guarda mi email', 'anota mi teléfono', etc. y proporcione datos de contacto reales. NO usar para solicitudes de información, planes, o pagos. NO inventar datos. Requiere email O phone válido proporcionado por el usuario.",
+    description: `Guardar información de contacto de leads/prospectos que muestran interés en productos o servicios.
+
+CUÁNDO USAR:
+✅ Usuario proporciona email/teléfono en contexto de interés comercial
+✅ Usuario solicita cotización, información o seguimiento
+✅ Usuario comparte datos para recibir propuesta o demo
+✅ Usuario pregunta precios y deja contacto
+
+EJEMPLOS VÁLIDOS:
+✅ "Me interesa el plan Pro, mi email es juan@empresa.com" → Guardar
+✅ "Envíame cotización a este WhatsApp: +52 55 1234 5678" → Guardar
+✅ "Contáctame al correo info@startup.com" → Guardar
+✅ "Quiero saber más, mi teléfono es..." → Guardar
+
+NO USAR:
+❌ Usuario solo pregunta información SIN proporcionar contacto
+❌ Usuario pregunta precios pero NO deja email/teléfono
+❌ Inventar o adivinar datos de contacto
+
+IMPORTANTE:
+- Requiere email O phone REAL proporcionado por el usuario
+- Captura productInterest si el usuario menciona qué le interesa
+- NO pidas confirmación explícita "¿guardo tu email?" - Si lo proporcionó en contexto de interés, guárdalo
+- Confirma al usuario DESPUÉS de guardarlo: "Perfecto, tengo tu contacto. Te daremos seguimiento."`,
     parameters: z.object({
       name: z.string().optional().describe("Nombre completo proporcionado por el usuario"),
       email: z.string().optional().describe("Email REAL proporcionado por el usuario - REQUERIDO si no hay phone"),
       phone: z.string().optional().describe("Teléfono REAL proporcionado por el usuario - REQUERIDO si no hay email"),
-      company: z.string().optional().describe("Empresa mencionada por el usuario"),
+      productInterest: z.string().optional().describe("Producto o servicio que le interesa al usuario (ej: 'Plan Pro', 'Consultoría', 'Automatización WhatsApp')"),
       position: z.string().optional().describe("Cargo mencionado por el usuario"),
       website: z.string().optional().describe("Website mencionado por el usuario"),
       notes: z.string().optional().describe("Notas adicionales del contexto")
@@ -477,8 +500,14 @@ export const getToolsForPlan = (
 
   // Contact tools - disponibles para chatbots públicos ANONYMOUS/STARTER+
   // ❌ Ghosty NO necesita esto (usuario ya autenticado)
-  if (!context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan)) {
+  const shouldHaveSaveContact = !context.isGhosty && ['ANONYMOUS', 'STARTER', 'PRO', 'ENTERPRISE', 'TRIAL'].includes(effectivePlan);
+  console.error(`[DEBUG save_contact_info] shouldHave: ${shouldHaveSaveContact}, isGhosty: ${context.isGhosty}, effectivePlan: ${effectivePlan}`);
+
+  if (shouldHaveSaveContact) {
     tools.push(createSaveContactTool(context));
+    console.error(`✅ [DEBUG] save_contact_info AGREGADO a tools`);
+  } else {
+    console.error(`❌ [DEBUG] save_contact_info NO agregado - Razón: isGhosty=${context.isGhosty}, plan=${effectivePlan}`);
   }
 
   // DateTime tools - disponibles para chatbots públicos ANONYMOUS/STARTER+

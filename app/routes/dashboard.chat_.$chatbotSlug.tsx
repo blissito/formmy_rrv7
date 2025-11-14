@@ -147,8 +147,27 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     return timeB.getTime() - timeA.getTime();
   });
 
-  // Obtener contactos del chatbot (cargar ANTES de transformar para usarlos en UI)
-  const contacts = await db.contact.findMany({
+  // Obtener contactos de WhatsApp (para mostrar nombres en conversaciones)
+  const whatsappContacts = await db.contact.findMany({
+    where: {
+      chatbotId: chatbot.id,
+    },
+    orderBy: {
+      capturedAt: "desc",
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      profilePictureUrl: true,
+      conversationId: true,
+      chatbotId: true,
+      capturedAt: true,
+    },
+  });
+
+  // Obtener LEADS para la tab de Leads
+  const leads = await db.lead.findMany({
     where: {
       chatbotId: chatbot.id,
     },
@@ -160,11 +179,10 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       name: true,
       email: true,
       phone: true,
-      company: true,
+      productInterest: true,
       position: true,
       website: true,
       notes: true,
-      source: true,
       status: true,
       capturedAt: true,
       lastUpdated: true,
@@ -173,11 +191,12 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     },
   });
 
-  // Transformar a formato UI (con nombres de contactos)
+  // Transformar a formato UI (usando contactos de WhatsApp para mostrar nombres)
   const conversations = transformConversationsToUI(
     sortedConversations,
     chatbot.avatarUrl || undefined,
-    contacts
+    whatsappContacts,
+    leads // ✅ También pasar leads para mostrar nombres
   );
 
   // Filtrar contextos sin embeddings (documentos eliminados)
@@ -202,7 +221,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     integrations,
     conversations,
     totalConversations,
-    contacts,
+    contacts: leads, // Leads para la tab de Leads
     accessInfo: accessValidation,
   };
 };

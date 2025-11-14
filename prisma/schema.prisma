@@ -288,6 +288,7 @@ model Chatbot {
   apiKeys            ApiKey[]
   scheduledActions   ScheduledAction[]
   contacts           Contact[]
+  leads              Lead[]
   toolUsages         ToolUsage[]
   embeddings         Embedding[]
   traces             Trace[]
@@ -299,20 +300,41 @@ model Chatbot {
   updatedAt DateTime @updatedAt
 }
 
+// Contactos automáticos de WhatsApp (solo información básica)
 model Contact {
-  id       String        @id @default(auto()) @map("_id") @db.ObjectId
-  name     String? // Nombre completo
-  email    String? // Email de contacto
-  phone    String? // Teléfono
-  company  String? // Empresa/organización
-  position String? // Cargo/posición
-  website  String? // Sitio web
-  notes    String? // Notas adicionales o contexto
-  source   String        @default("chatbot") // Fuente: chatbot, whatsapp, etc.
-  status   ContactStatus @default(NEW) // Estado del lead en el embudo
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  name     String? // Nombre del perfil de WhatsApp
+  phone    String? // Teléfono de WhatsApp
 
   // WhatsApp Profile Data
   profilePictureUrl String? // URL de la foto de perfil de WhatsApp
+
+  // Relaciones
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
+
+  conversationId String?       @db.ObjectId
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+
+  // Metadatos
+  capturedAt DateTime @default(now())
+
+  // Índices
+  @@unique([chatbotId, phone]) // Un teléfono único por chatbot
+  @@index([chatbotId])
+}
+
+// Leads calificados (guardados con save_contact_info)
+model Lead {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  name            String?       // Nombre completo
+  email           String?       // Email de contacto
+  phone           String?       // Teléfono
+  productInterest String?       // Producto/servicio de interés
+  position        String?       // Cargo/posición
+  website         String?       // Sitio web
+  notes           String?       // Notas adicionales
+  status          ContactStatus @default(NEW) // Estado en el pipeline de ventas
 
   // Relaciones
   chatbotId String  @db.ObjectId
@@ -327,9 +349,10 @@ model Contact {
 
   // Índices para búsqueda eficiente
   @@index([email])
-  @@unique([chatbotId, phone]) // Un teléfono único por chatbot
+  @@index([phone])
   @@index([chatbotId])
   @@index([capturedAt])
+  @@index([status])
 }
 
 model ScheduledAction {
@@ -391,6 +414,7 @@ model Conversation {
   chatbot      Chatbot?           @relation(fields: [chatbotId], references: [id])
   messages     Message[]
   contacts     Contact[]
+  leads        Lead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

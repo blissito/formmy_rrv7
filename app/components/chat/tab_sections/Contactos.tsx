@@ -1,4 +1,4 @@
-import type { Chatbot, User, Contact, ContactStatus } from "@prisma/client";
+import type { Chatbot, User, Lead, ContactStatus } from "@prisma/client";
 import { useState, useRef, useEffect } from "react";
 import { HiOutlineSearch, HiChevronDown, HiOutlineDownload } from "react-icons/hi";
 import { HiOutlineTrash, HiOutlineChat } from "react-icons/hi";
@@ -115,7 +115,7 @@ export const Contactos = ({
 }: {
   chatbot: Chatbot;
   user: User;
-  contacts: Contact[];
+  contacts: Lead[];
 }) => {
   const { t } = useDashboardTranslation();
   const STATUS_LABELS = getStatusLabels(t);
@@ -134,7 +134,7 @@ export const Contactos = ({
       contact.name?.toLowerCase().includes(searchLower) ||
       contact.email?.toLowerCase().includes(searchLower) ||
       contact.phone?.toLowerCase().includes(searchLower) ||
-      contact.company?.toLowerCase().includes(searchLower)
+      contact.productInterest?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -218,9 +218,9 @@ export const Contactos = ({
       contact.name || "",
       contact.email || "",
       contact.phone || "",
-      contact.company || "",
+      contact.productInterest || "",
       STATUS_LABELS[contact.status || "NEW"],
-      contact.source === "chatbot" ? "web" : contact.source,
+      "chatbot", // Leads siempre vienen de save_contact_info
       new Date(contact.capturedAt).toLocaleDateString("es-MX"),
     ]);
 
@@ -234,7 +234,7 @@ export const Contactos = ({
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `contactos_${chatbot.slug}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `leads_${chatbot.slug}_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -357,7 +357,7 @@ export const Contactos = ({
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-metal truncate">
-                      {contact.company || "-"}
+                      {contact.productInterest || "-"}
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
@@ -371,12 +371,8 @@ export const Contactos = ({
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex justify-start">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        contact.source.toLowerCase() === 'whatsapp'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-cloud/20 text-teal-700'
-                      }`}>
-                        {contact.source.toLowerCase() === 'whatsapp' ? t('contacts.sourceWhatsApp') : t('contacts.sourceWeb')}
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-cloud/20 text-teal-700">
+                        chatbot
                       </span>
                     </div>
                   </td>
