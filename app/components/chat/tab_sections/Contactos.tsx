@@ -274,64 +274,64 @@ export const Contactos = ({
 
   return (
     <section className="min-h-fit w-full pb-4 md:pb-8">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h3 className="text-xl font-semibold text-dark">
+          <h3 className="text-lg md:text-xl font-semibold text-dark">
             {t('contacts.title')} ({contacts.length})
           </h3>
-          <p className="text-sm text-metal mt-1">
+          <p className="text-xs md:text-sm text-metal mt-1 hidden sm:block">
             {t('contacts.autoSaveTip')}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <button
             onClick={handleExportCSV}
             disabled={filteredContacts.length === 0}
         className={cn(
-                "enabled:cursor-pointer enabled:active:scale-95 w-10 h-10 grid place-items-center",
+                "enabled:cursor-pointer enabled:active:scale-95 w-9 h-9 md:w-10 md:h-10 grid place-items-center",
                 "enabled:hover:bg-gray-50 enabled:hover:shadow-sm transition-all",
                 "rounded-xl p-1 border border-gray-300",
-              )}          
+              )}
               >
-          <img className="pointer-events-none" src="/assets/chat/download.svg" alt="download" />
+          <img className="pointer-events-none w-5 h-5 md:w-6 md:h-6" src="/assets/chat/download.svg" alt="download" />
           </button>
-          <div className="relative w-80">
-            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-metal w-5 h-5" />
+          <div className="relative flex-1 md:w-80 md:flex-initial">
+            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-metal w-4 h-4 md:w-5 md:h-5" />
             <input
               type="text"
               placeholder={t('contacts.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border placeholder:text-sm border-outlines rounded-full focus:outline-none focus:ring-0 focus:border-brand-500"
+              className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-1.5 md:py-2 border text-sm placeholder:text-xs md:placeholder:text-sm border-outlines rounded-full focus:outline-none focus:ring-0 focus:border-brand-500"
             />
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-outlines">
-        <div className="">
-          <table className="w-full table-fixed">
+      <div className="bg-white rounded-3xl border border-outlines overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full table-fixed md:table-fixed min-w-[800px]">
             <thead className="bg-surfaceTwo border-b border-outlines">
               <tr>
-                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[16%]">
+                <th className="pl-4 md:pl-6 pr-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[20%] md:w-[16%]">
                   {t('contacts.contact')}
                 </th>
-                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[10%]">
+                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[15%] md:w-[10%] hidden sm:table-cell">
                   {t('contacts.phone')}
                 </th>
-                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[24%]">
+                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[25%] md:w-[24%]">
                   {t('contacts.company')}
                 </th>
-                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[13%]">
+                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[13%] hidden lg:table-cell">
                   {t('contacts.date')}
                 </th>
-                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[9%]">
+                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[12%] md:w-[9%] hidden md:table-cell">
                   {t('contacts.source')}
                 </th>
-                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[12%]">
+                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[20%] md:w-[12%]">
                   {t('contacts.contactStatus')}
                 </th>
-                <th className="px-2 py-3 text-left text-sm font-medium text-dark w-[8%]">
+                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[20%] md:w-[8%]">
                   {t('contacts.actions')}
                 </th>
               </tr>
@@ -342,26 +342,26 @@ export const Contactos = ({
                   key={contact.id}
                   className="hover:bg-brand-100/50 transition-colors"
                 >
-                  <td className="px-2 py-4">
+                  <td className="pl-4 md:pl-6 pr-2 py-3 md:py-4">
                     <div className="flex flex-col overflow-hidden">
-                      <div className="text-sm font-medium text-dark truncate">
+                      <div className="text-xs md:text-sm font-medium text-dark truncate">
                         {contact.name || "-"}
                       </div>
-                      <div className="text-xs text-irongray mt-1 truncate">
+                      <div className="text-[10px] md:text-xs text-irongray mt-1 truncate">
                         {contact.email || "-"}
                       </div>
                     </div>
                   </td>
-                  <td className="px-2 py-4 whitespace-nowrap">
-                    <div className="text-sm text-metal truncate">{contact.phone || "-"}</div>
+                  <td className="px-2 md:px-2 py-3 md:py-4 whitespace-nowrap hidden sm:table-cell">
+                    <div className="text-xs md:text-sm text-metal truncate">{contact.phone || "-"}</div>
                   </td>
-                  <td className="px-2 py-4 whitespace-nowrap">
-                    <div className="text-sm text-metal truncate">
+                  <td className="px-2 md:px-2 py-3 md:py-4">
+                    <div className="text-xs md:text-sm text-metal line-clamp-2">
                       {contact.productInterest || "-"}
                     </div>
                   </td>
-                  <td className="px-2 py-4 whitespace-nowrap">
-                    <div className="text-sm text-irongray truncate">
+                  <td className="px-2 md:px-2 py-3 md:py-4 whitespace-nowrap hidden lg:table-cell">
+                    <div className="text-xs md:text-sm text-irongray truncate">
                       {new Date(contact.capturedAt).toLocaleDateString("es-MX", {
                         year: "numeric",
                         month: "short",
@@ -369,9 +369,9 @@ export const Contactos = ({
                       })}
                     </div>
                   </td>
-                  <td className="px-2 py-4 whitespace-nowrap">
+                  <td className="px-2 md:px-2 py-3 md:py-4 whitespace-nowrap hidden md:table-cell">
                     <div className="flex justify-start">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      <span className={`px-2 py-1 text-[10px] md:text-xs font-medium rounded-full ${
                         contact.source === 'whatsapp'
                           ? 'bg-green-100 text-green-700'
                           : 'bg-blue-100 text-blue-700'
@@ -380,7 +380,7 @@ export const Contactos = ({
                       </span>
                     </div>
                   </td>
-                  <td className="px-2 py-4 whitespace-nowrap">
+                  <td className="px-2 md:px-2 py-3 md:py-4 whitespace-nowrap">
                     <div className="flex justify-start">
                       <StatusDropdown
                         value={optimisticStatuses[contact.id] || contact.status || "NEW"}
@@ -391,27 +391,27 @@ export const Contactos = ({
                       />
                     </div>
                   </td>
-                  <td className="px-2 py-4 whitespace-nowrap">
-                    <div className="flex items-center justify-center gap-2">
+                  <td className="px-2 md:px-2 py-3 md:py-4 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 md:gap-2">
                       <button
                         onClick={() => handleViewConversation(contact.conversationId)}
                         disabled={!contact.conversationId}
-                        className={`p-2 rounded-lg transition-colors ${
+                        className={`p-1.5 md:p-2 rounded-lg transition-colors ${
                           contact.conversationId
                             ? 'hover:bg-surfaceThree text-metal '
                             : 'text-gray-300 cursor-not-allowed'
                         }`}
                         title={contact.conversationId ? t('contacts.viewConversation') : t('contacts.noConversation')}
                       >
-                        <HiOutlineChat className="w-5 h-5" />
+                        <HiOutlineChat className="w-4 h-4 md:w-5 md:h-5" />
                       </button>
                       <button
                         onClick={() => handleDeleteContact(contact.id)}
                         disabled={deleteFetcher.state !== "idle"}
-                        className="p-2 rounded-lg  text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
+                        className="p-1.5 md:p-2 rounded-lg text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
                         title={t('contacts.deleteContact')}
                       >
-                        <DeleteIcon className="w-5 h-5" />
+                        <DeleteIcon className="w-4 h-4 md:w-5 md:h-5" />
                       </button>
                     </div>
                   </td>
