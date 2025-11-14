@@ -39,7 +39,7 @@ interface WhatsAppWebhookEntry {
         text?: {
           body: string;
         };
-        type: "text" | "image" | "document" | "audio" | "video" | "sticker";
+        type: "text" | "image" | "document" | "audio" | "video" | "sticker" | "reaction";
         image?: {
           id: string;
           mime_type: string;
@@ -69,6 +69,10 @@ interface WhatsAppWebhookEntry {
           mime_type: string;
           sha256: string;
           animated: boolean;
+        };
+        reaction?: {
+          message_id: string;
+          emoji: string;
         };
       }>;
       statuses?: Array<{
@@ -221,6 +225,48 @@ export const action = async ({ request }: Route.ActionArgs) => {
                   reason: "too_old"
                 });
                 continue;
+              }
+
+              // 📱 HANDLE REACTIONS: Special processing for WhatsApp reactions
+              if (message.type === "reaction" && message.reaction) {
+                console.log(`📱 [Webhook] Reaction detected: "${message.reaction.emoji}" to message ${message.reaction.message_id}`);
+
+                // Find integration to get chatbotId
+                const integration = await findIntegrationByPhoneNumber(change.value.metadata.phone_number_id);
+
+                if (!integration) {
+                  console.warn(`⚠️ [Webhook] Integration not found for reaction, phoneNumberId: ${change.value.metadata.phone_number_id}`);
+                  results.push({
+                    success: false,
+                    messageId: message.id,
+                    type: "reaction",
+                    error: "Integration not found"
+                  });
+                  continue;
+                }
+
+                // Import handleReaction function
+                const { handleReaction } = await import("../../server/integrations/whatsapp/conversation.server");
+
+                // Process reaction
+                const reactionResult = await handleReaction(
+                  message.from,
+                  integration.chatbotId,
+                  message.reaction.emoji,
+                  message.reaction.message_id,
+                  message.id
+                );
+
+                results.push({
+                  success: reactionResult.success,
+                  messageId: message.id,
+                  type: "reaction",
+                  action: (reactionResult as any).action,
+                  reactionId: (reactionResult as any).reactionId,
+                });
+
+                console.log(`✅ [Webhook] Reaction processed: ${(reactionResult as any).action}`);
+                continue; // Skip normal message processing for reactions
               }
 
               // Extract contact name from webhook payload (if available)

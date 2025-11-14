@@ -66,3 +66,133 @@ export async function getOrCreateConversation(
   console.log(`✅ [Conversation] New conversation created: ${updatedConversation.id}, sessionId: ${sessionId}`);
   return updatedConversation;
 }
+
+/**
+ * Handle WhatsApp reactions (add, update, or remove)
+ *
+ * WhatsApp reactions have a unique structure:
+ * - They reference the original message via message_id
+ * - Empty emoji means the user removed their reaction
+ * - User can only have ONE reaction per message (replaces previous)
+ *
+ * @param phoneNumber - User's phone number (from field in webhook)
+ * @param chatbotId - Chatbot ID
+ * @param emoji - Reaction emoji (empty string if removed)
+ * @param originalMessageId - External ID of the message being reacted to
+ * @param reactionMessageId - External ID of the reaction message itself
+ */
+export async function handleReaction(
+  phoneNumber: string,
+  chatbotId: string,
+  emoji: string,
+  originalMessageId: string,
+  reactionMessageId: string
+) {
+  console.log(`📱 [Reaction] Processing reaction from ${phoneNumber}: "${emoji}" to message ${originalMessageId}`);
+
+  // Get conversation
+  const conversation = await getOrCreateConversation(phoneNumber, chatbotId);
+
+  // Find the original message that was reacted to
+  const originalMessage = await db.message.findFirst({
+    where: {
+      conversationId: conversation.id,
+      externalMessageId: originalMessageId,
+    },
+  });
+
+  if (!originalMessage) {
+    console.warn(`⚠️ [Reaction] Original message not found: ${originalMessageId}. Skipping reaction.`);
+    return {
+      success: false,
+      reason: "original_message_not_found",
+    };
+  }
+
+  console.log(`✅ [Reaction] Found original message: ${originalMessage.id}`);
+
+  // Check if emoji is empty (user removed reaction)
+  if (!emoji || emoji.trim() === "") {
+    console.log(`🗑️ [Reaction] User removed reaction. Looking for existing reaction to delete...`);
+
+    // Find and delete existing reaction from this user to this message
+    const existingReaction = await db.message.findFirst({
+      where: {
+        conversationId: conversation.id,
+        isReaction: true,
+        reactionToMsgId: originalMessageId,
+        role: "USER", // Reactions are from users
+      },
+    });
+
+    if (existingReaction) {
+      await db.message.delete({
+        where: { id: existingReaction.id },
+      });
+      console.log(`✅ [Reaction] Deleted existing reaction: ${existingReaction.id}`);
+      return {
+        success: true,
+        action: "deleted",
+        reactionId: existingReaction.id,
+      };
+    } else {
+      console.log(`ℹ️ [Reaction] No existing reaction found to delete`);
+      return {
+        success: true,
+        action: "no_op",
+      };
+    }
+  }
+
+  // Emoji has value - add or update reaction
+  console.log(`${emoji} [Reaction] Adding/updating reaction...`);
+
+  // Check if user already has a reaction to this message
+  const existingReaction = await db.message.findFirst({
+    where: {
+      conversationId: conversation.id,
+      isReaction: true,
+      reactionToMsgId: originalMessageId,
+      role: "USER",
+    },
+  });
+
+  if (existingReaction) {
+    // Update existing reaction
+    const updatedReaction = await db.message.update({
+      where: { id: existingReaction.id },
+      data: {
+        reactionEmoji: emoji,
+        externalMessageId: reactionMessageId, // Update with new reaction message ID
+      },
+    });
+    console.log(`✅ [Reaction] Updated existing reaction: ${updatedReaction.id} with emoji "${emoji}"`);
+    return {
+      success: true,
+      action: "updated",
+      reactionId: updatedReaction.id,
+    };
+  } else {
+    // Create new reaction
+    const newReaction = await db.message.create({
+      data: {
+        conversationId: conversation.id,
+        content: emoji, // Store emoji in content for display
+        role: "USER",
+        channel: "whatsapp",
+        isReaction: true,
+        reactionEmoji: emoji,
+        reactionToMsgId: originalMessageId,
+        externalMessageId: reactionMessageId,
+        tokens: 0,
+        responseTime: 0,
+      },
+    });
+    console.log(`✅ [Reaction] Created new reaction: ${newReaction.id} with emoji "${emoji}"`);
+    return {
+      success: true,
+      action: "created",
+      reactionId: newReaction.id,
+    };
+  }
+}

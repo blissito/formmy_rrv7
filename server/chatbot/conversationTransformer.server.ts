@@ -33,6 +33,12 @@ export interface UIMessage {
   picture?: string;      // Contenido multimedia (sticker, imagen, etc)
   avatarUrl?: string;    // Avatar del usuario/bot (foto de perfil)
   createdAt: Date;
+
+  // WhatsApp Reactions
+  isReaction?: boolean;      // Si es una reacción
+  reactionEmoji?: string;    // Emoji de la reacción
+  reactionToMsgId?: string;  // externalMessageId del mensaje reaccionado
+  externalMessageId?: string; // ID externo del mensaje (para relacionar reacciones)
 }
 
 /**
@@ -105,8 +111,24 @@ export function transformConversationToUI(
     userName = `Usuario ${phoneNumber.slice(-4)}`;
   }
 
-  // Filtrar mensajes SYSTEM - solo mostrar USER y ASSISTANT en la UI
-  const visibleMessages = conversation.messages.filter(msg => msg.role !== "SYSTEM");
+  // Filtrar mensajes SYSTEM pero MANTENER las reacciones
+  // Las reacciones no se mostrarán como burbujas, pero el frontend las necesita para el overlay
+  const visibleMessages = conversation.messages.filter(msg => {
+    // Excluir mensajes SYSTEM
+    if (msg.role === "SYSTEM") return false;
+
+    // ✅ MANTENER reacciones (el frontend las filtrará para bubbles, pero las usará para overlay)
+    if (msg.isReaction === true) return true;
+
+    // Excluir mensajes vacíos que NO sean reacciones
+    // (algunas reacciones antiguas se guardaron como mensajes vacíos antes de la implementación)
+    if (!msg.isReaction && (!msg.content || msg.content.trim() === "" || msg.content.trim().length < 2)) {
+      return false;
+    }
+
+    return true;
+  });
+
   const messages = visibleMessages.map(message =>
     transformMessageToUI(message, chatbotAvatarUrl, userAvatarUrl)
   );
@@ -157,7 +179,12 @@ function transformMessageToUI(
     avatarUrl: message.role === "USER"
       ? (userAvatarUrl || "/assets/chat/user-default.svg")
       : (chatbotAvatarUrl || "/assets/chat/ghosty.svg"),
-    createdAt: message.createdAt
+    createdAt: message.createdAt,
+    // WhatsApp Reactions - preservar valores booleanos explícitos
+    isReaction: message.isReaction === true ? true : undefined,
+    reactionEmoji: message.reactionEmoji || undefined,
+    reactionToMsgId: message.reactionToMsgId || undefined,
+    externalMessageId: message.externalMessageId || undefined,
   };
 }
 

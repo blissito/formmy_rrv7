@@ -409,6 +409,12 @@ model Message {
   deleted           Boolean      @default(false)
   picture           String?
   channel           String?
+
+  // WhatsApp Reaction fields
+  isReaction        Boolean?     @default(false) // Si true, este mensaje es una reacción
+  reactionEmoji     String?      // Emoji de la reacción (ej: "👍", "❤️")
+  reactionToMsgId   String?      // externalMessageId del mensaje al que se reacciona
+
   externalMessageId String?
   tokens            Int? // Tokens totales (deprecated, usar inputTokens + outputTokens)
   inputTokens       Int? // Tokens de entrada (input)

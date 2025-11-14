@@ -38,6 +38,76 @@ const sessionId = `whatsapp_${phoneNumber}_${chatbotId}`;
 
 ---
 
+### Feature: Soporte de Reacciones de WhatsApp (2025-01-13)
+
+**Problema**: Las reacciones de WhatsApp no se guardaban ni mostraban en el dashboard.
+
+**Causa**: El webhook de WhatsApp no procesaba mensajes de tipo `"reaction"`, que tienen una estructura diferente a los mensajes normales.
+
+**Solución Implementada**:
+
+#### 1. Backend - Webhook Handler
+**Archivo**: `app/routes/api.v1.integrations.whatsapp.webhook.tsx`
+- Agregado tipo `"reaction"` al interface TypeScript del webhook (línea 42)
+- Agregado campo `reaction?: { message_id: string; emoji: string }` (líneas 73-76)
+- Handler especial para detectar y procesar reacciones (líneas 230-270)
+- Las reacciones NO generan respuesta del bot (comportamiento WhatsApp nativo)
+- Las reacciones NO envían notificaciones al owner
+
+#### 2. Función de Manejo
+**Archivo**: `server/integrations/whatsapp/conversation.server.ts` (líneas 84-198)
+- `handleReaction()`: Crea/actualiza/elimina reacciones
+- Emoji vacío = Usuario removió reacción
+- Usuario solo puede tener UNA reacción por mensaje (WhatsApp nativo)
+- Busca mensaje original por `externalMessageId`
+
+#### 3. Modelo de Datos
+**Archivo**: `prisma/schema.prisma` (líneas 413-416)
+```prisma
+model Message {
+  // ... campos existentes
+  isReaction        Boolean?  @default(false)
+  reactionEmoji     String?   // Emoji: "👍", "❤️", etc.
+  reactionToMsgId   String?   // externalMessageId del mensaje reaccionado
+}
+```
+
+#### 4. Tipos TypeScript
+**Archivos modificados**:
+- `server/integrations/whatsapp/types.ts`: Agregado `"reaction"` a `MessageType` (línea 43)
+- `server/chatbot/conversationTransformer.server.ts`: Agregados campos de reacción a `UIMessage` (líneas 37-41)
+
+#### 5. Frontend - Visualización
+**Archivo**: `app/components/chat/tab_sections/Conversations.tsx`
+- Filtra mensajes con `isReaction: true` del map principal (línea 1157)
+- Busca reacciones para cada mensaje basado en `externalMessageId` (líneas 1160-1162)
+- Muestra emoji como overlay en esquina de la burbuja (líneas 1239-1246 para USER, 1472-1479 para ASSISTANT)
+- Estilo: emoji grande con fondo blanco, sombra y borde
+
+**Comportamiento**:
+- ✅ Reacciones se guardan en base de datos
+- ✅ Se muestran como overlay sobre el mensaje original (estilo WhatsApp)
+- ✅ Solo se muestra la reacción más reciente por usuario
+- ✅ Remover reacción (emoji vacío) elimina el registro
+- ❌ NO genera respuesta del bot
+- ❌ NO envía notificaciones
+
+**Estructura del Webhook de Reacciones**:
+```json
+{
+  "type": "reaction",
+  "reaction": {
+    "message_id": "wamid.XYZ789...",  // ID del mensaje original
+    "emoji": "👍"  // Emoji (vacío si se remueve)
+  }
+}
+```
+
+**Fecha**: 2025-01-13
+**Estado**: ✅ Implementado y listo para testing
+
+---
+
 ## ⚠️ REGLAS CRÍTICAS
 
 ### 1. LlamaIndex Agent Workflows

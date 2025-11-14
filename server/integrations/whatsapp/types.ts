@@ -39,7 +39,8 @@ export type MessageType =
   | "audio"
   | "video"
   | "sticker"
-  | "template";
+  | "template"
+  | "reaction";
 
 export interface MessageResponse {
   readonly messageId: string;
@@ -59,6 +60,10 @@ export interface IncomingMessage {
     readonly id: string;
     readonly mimeType: string;
     readonly animated: boolean;
+  };
+  readonly reaction?: {
+    readonly message_id: string;
+    readonly emoji: string;
   };
 }
 
@@ -477,6 +482,14 @@ export const WebhookContextSchema = Schema.Struct({
 
 export type WebhookContext = Schema.Schema.Type<typeof WebhookContextSchema>;
 
+// Webhook Reaction Schema
+export const WebhookReactionSchema = Schema.Struct({
+  message_id: Schema.String,
+  emoji: Schema.String,
+});
+
+export type WebhookReaction = Schema.Schema.Type<typeof WebhookReactionSchema>;
+
 // Webhook Message Schema
 export const WebhookMessageSchema = Schema.Struct({
   from: Schema.String,
@@ -495,7 +508,8 @@ export const WebhookMessageSchema = Schema.Struct({
     "interactive",
     "button",
     "order",
-    "system"
+    "system",
+    "reaction"
   ),
   text: Schema.optional(WebhookTextSchema),
   image: Schema.optional(WebhookMediaSchema),
@@ -504,6 +518,7 @@ export const WebhookMessageSchema = Schema.Struct({
   video: Schema.optional(WebhookMediaSchema),
   voice: Schema.optional(WebhookMediaSchema),
   sticker: Schema.optional(WebhookMediaSchema),
+  reaction: Schema.optional(WebhookReactionSchema),
   context: Schema.optional(WebhookContextSchema),
 });
 

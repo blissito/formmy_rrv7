@@ -1153,11 +1153,33 @@ export const ConversationsPreview = ({
         )}
       >
         <div className="p-4">
-          {conversation?.messages?.map((message, index) => (
-            <div key={index} className="mb-4 last:mb-8">
-              <SingleMessage message={message} chatbotAvatarUrl={chatbot?.avatarUrl || undefined} />
-            </div>
-          )) || (
+          {conversation?.messages
+            ?.filter((message) => !message.isReaction) // Filtrar reacciones (se muestran como overlay)
+            .map((message, index) => {
+              // Buscar reacciones para este mensaje
+              // Debug: ver qué mensajes tienen reacciones
+              const reactions = conversation.messages.filter(
+                (msg) => msg.isReaction === true && msg.reactionToMsgId === message.externalMessageId
+              );
+
+              // Debug temporal: log para ver si hay reacciones
+              if (reactions.length > 0) {
+                console.log('📱 Reacción encontrada:', {
+                  messageId: message.externalMessageId,
+                  reactions: reactions.map(r => ({ emoji: r.reactionEmoji, toMsgId: r.reactionToMsgId }))
+                });
+              }
+
+              return (
+                <div key={index} className="mb-4 last:mb-8">
+                  <SingleMessage
+                    message={message}
+                    chatbotAvatarUrl={chatbot?.avatarUrl || undefined}
+                    reactions={reactions}
+                  />
+                </div>
+              );
+            }) || (
             <div className="text-center text-gray-500 p-8">
               Selecciona una conversación para ver los mensajes
             </div>
@@ -1180,36 +1202,64 @@ export const ConversationsPreview = ({
   );
 };
 
-export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: UIMessage; chatbotAvatarUrl?: string }) => {
+export const SingleMessage = ({
+  message,
+  chatbotAvatarUrl,
+  reactions = [],
+}: {
+  message: UIMessage;
+  chatbotAvatarUrl?: string;
+  reactions?: UIMessage[];
+}) => {
   return message.role === "USER" ? (
-    <UserMessage message={message} />
+    <UserMessage message={message} reactions={reactions} />
   ) : (
-    <AssistantMessage message={message} avatarUrl={chatbotAvatarUrl} />
+    <AssistantMessage message={message} avatarUrl={chatbotAvatarUrl} reactions={reactions} />
   );
 };
 
-const UserMessage = ({ message }: { message: UIMessage }) => {
+const UserMessage = ({ message, reactions = [] }: { message: UIMessage; reactions?: UIMessage[] }) => {
   // Detectar si el mensaje contiene un sticker (picture contiene imagen, content es "📎 Sticker")
   const hasMultimedia = message.picture && message.content === "📎 Sticker";
 
+  // Obtener la primera reacción (solo mostramos una según WhatsApp nativo)
+  const reaction = reactions[0];
+
   return (
     <div className="justify-end flex items-start gap-2">
-      {hasMultimedia ? (
-        // Mostrar sticker/imagen como contenido
-        <div className="max-w-[200px]">
-          <img
-            src={message.picture}
-            alt="Sticker"
-            className="rounded-xl w-full h-auto"
-            loading="lazy"
-          />
-        </div>
-      ) : (
-        // Mensaje de texto normal
-        <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
-          {message.content}
-        </div>
-      )}
+      <div className="relative">
+        {hasMultimedia ? (
+          // Mostrar sticker/imagen como contenido
+          <div className="max-w-[200px]">
+            <img
+              src={message.picture}
+              alt="Sticker"
+              className="rounded-xl w-full h-auto"
+              loading="lazy"
+            />
+          </div>
+        ) : (
+          // Mensaje de texto normal
+          <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
+            {message.content}
+          </div>
+        )}
+        {/* Mostrar reacción como overlay - mismo estilo que MicroLikeButton */}
+        {reaction && reaction.reactionEmoji && (
+          <div
+            className={cn(
+              "grid place-content-center",
+              "min-w-4 min-h-4 shadow aspect-square",
+              "bg-[#fff] rounded-full w-min",
+              "absolute -bottom-3 right-2",
+              "text-xs p-[10px]"
+            )}
+            title="Reacción de WhatsApp"
+          >
+            {reaction.reactionEmoji}
+          </div>
+        )}
+      </div>
       {/* ✅ Avatar del usuario siempre visible (foto de perfil de WhatsApp) */}
       <Avatar className="w-8 h-8 flex-shrink-0" src={message.avatarUrl} />
     </div>
@@ -1350,9 +1400,20 @@ const LIST_STYLES = `
  * puede guardarse como "SHOT" (Ejemplo) para este agente.
  * Pueden existir ejemplos positivos y negativos 👎🏼
  */
-const AssistantMessage = ({ message, avatarUrl }: { message: UIMessage; avatarUrl?: string }) => {
+const AssistantMessage = ({
+  message,
+  avatarUrl,
+  reactions = [],
+}: {
+  message: UIMessage;
+  avatarUrl?: string;
+  reactions?: UIMessage[];
+}) => {
   // Detectar si el mensaje contiene un sticker (picture contiene imagen, content es "📎 Sticker")
   const hasMultimedia = message.picture && message.content === "📎 Sticker";
+
+  // Obtener la primera reacción (solo mostramos una según WhatsApp nativo)
+  const reaction = reactions[0];
 
   const markdownComponents = {
     a: ({ children, href }: any) => (
@@ -1398,29 +1459,46 @@ const AssistantMessage = ({ message, avatarUrl }: { message: UIMessage; avatarUr
     <div className="justify-start flex items-start gap-2">
       <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
       <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
-      {hasMultimedia ? (
-        // Mostrar sticker/imagen como contenido
-        <div className="max-w-[200px]">
-          <img
-            src={message.picture}
-            alt="Sticker"
-            className="rounded-xl w-full h-auto"
-            loading="lazy"
-          />
-        </div>
-      ) : (
-        <div className="text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
-          <div className={PROSE_STYLES}>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={markdownComponents}
-            >
-              {message.content}
-            </ReactMarkdown>
+      <div className="relative">
+        {hasMultimedia ? (
+          // Mostrar sticker/imagen como contenido
+          <div className="max-w-[200px]">
+            <img
+              src={message.picture}
+              alt="Sticker"
+              className="rounded-xl w-full h-auto"
+              loading="lazy"
+            />
           </div>
-          <MicroLikeButton />
-        </div>
-      )}
+        ) : (
+          <div className="text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
+            <div className={PROSE_STYLES}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
+            <MicroLikeButton />
+          </div>
+        )}
+        {/* Mostrar reacción como overlay - mismo estilo que MicroLikeButton */}
+        {reaction && reaction.reactionEmoji && (
+          <div
+            className={cn(
+              "grid place-content-center",
+              "min-w-4 min-h-4 shadow aspect-square",
+              "bg-[#fff] rounded-full w-min",
+              "absolute -bottom-3 left-2",
+              "text-xs p-[10px]"
+            )}
+            title="Reacción de WhatsApp"
+          >
+            {reaction.reactionEmoji}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
