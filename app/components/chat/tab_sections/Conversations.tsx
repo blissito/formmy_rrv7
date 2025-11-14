@@ -125,6 +125,9 @@ export const Conversations = ({
 
   const [conversation, setConversation] = useState<Conversation>(initialConversation);
 
+  // Estado para controlar visibilidad del panel de detalles de contacto
+  const [showContactDetails, setShowContactDetails] = useState(false);
+
   // Inicializar estado local con valores de BD
   useEffect(() => {
     const initialModes: Record<string, boolean> = {};
@@ -247,7 +250,10 @@ export const Conversations = ({
             activeTab={tabNames[parseInt(currentTabIndex) || 0]}
           />
         <ConversationsList
-          onConversationSelect={setConversation}
+          onConversationSelect={(conv) => {
+            setConversation(conv);
+            setShowContactDetails(false); // Cerrar panel al cambiar de conversación
+          }}
           conversations={
             parseInt(currentTabIndex) === TAB_FAVORITES
               ? favoriteConversations
@@ -264,7 +270,11 @@ export const Conversations = ({
           tabAll={TAB_ALL}
         />
       </article>
-      <section className="col-span-12 md:col-span-9 pb-4 b  min-h-[calc(100vh-310px)] ">
+      <section className={cn(
+        "col-span-12 pb-4 min-h-[calc(100vh-310px)]",
+        "transition-all duration-300 ease-out",
+        showContactDetails ? "md:col-span-6" : "md:col-span-9"
+      )}>
         <ConversationsPreview
           conversation={conversation}
           chatbot={chatbot}
@@ -274,8 +284,18 @@ export const Conversations = ({
           onToggleFavorite={handleToggleFavorite}
           localManualMode={localManualModes[conversation?.id] || false}
           isFavorite={localFavorites[conversation?.id] ?? conversation?.isFavorite}
+          onAvatarClick={() => setShowContactDetails(!showContactDetails)}
         />
       </section>
+      {/* Panel de detalles de contacto */}
+      {showContactDetails && conversation && (
+        <aside className="hidden md:block col-span-3 pb-4 animate-in fade-in slide-in-from-right-5 duration-300 ease-out">
+          <ContactDetailsPanel
+            conversation={conversation}
+            onClose={() => setShowContactDetails(false)}
+          />
+        </aside>
+      )}
     </main>
       )}
     </>
@@ -570,6 +590,7 @@ const ChatHeader = ({
   onDeleteConversation,
   onToggleFavorite,
   isFavorite = false,
+  onAvatarClick,
 }: {
   conversation: Conversation;
   primaryColor?: string;
@@ -579,6 +600,7 @@ const ChatHeader = ({
   onDeleteConversation?: (conversationId: string) => void;
   onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
   isFavorite?: boolean;
+  onAvatarClick?: () => void;
 }) => {
   const { date, tel } = conversation;
   const [manualMessage, setManualMessage] = useState("");
@@ -694,7 +716,11 @@ const ChatHeader = ({
         "bg-white w-full p-3"
       )}
     >
-      <div className="relative">
+      <button
+        onClick={onAvatarClick}
+        className="relative hover:opacity-80 transition-opacity cursor-pointer"
+        title="Ver detalles del contacto"
+      >
         <Avatar className="h-10 w-10" src={userAvatarUrl || "/assets/chat/ghosty.svg"} />
         {/* Badge de WhatsApp - círculo verde con icono */}
         {isWhatsAppConversation && (
@@ -702,7 +728,7 @@ const ChatHeader = ({
             <FaWhatsapp className="w-2.5 h-2.5 text-white" />
           </div>
         )}
-      </div>
+      </button>
       <div className="flex-1">
         <div className="flex items-center">
           <h3 className="text-base font-semibold text-dark ">
@@ -1104,6 +1130,7 @@ export const ConversationsPreview = ({
   onToggleFavorite,
   localManualMode = false,
   isFavorite = false,
+  onAvatarClick,
 }: {
   conversation: Conversation | undefined;
   primaryColor?: string;
@@ -1114,6 +1141,7 @@ export const ConversationsPreview = ({
   onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
   localManualMode?: boolean;
   isFavorite?: boolean;
+  onAvatarClick?: () => void;
 }) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef<number>(0);
@@ -1165,6 +1193,7 @@ export const ConversationsPreview = ({
             onToggleFavorite={onToggleFavorite}
             localManualMode={localManualMode}
             isFavorite={isFavorite}
+            onAvatarClick={onAvatarClick}
           />
         )}
       </div>
@@ -1633,6 +1662,149 @@ const AssistantMessage = ({
             {formatMessageTime(new Date(message.createdAt))}
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+// Panel de detalles del contacto
+const ContactDetailsPanel = ({
+  conversation,
+  onClose,
+}: {
+  conversation: Conversation;
+  onClose: () => void;
+}) => {
+  // Obtener la foto del usuario
+  const userMessage = conversation.messages.find((message) => message.role === "USER");
+  const userAvatarUrl = userMessage?.picture || conversation.avatar;
+
+  // Detectar si es conversación de WhatsApp
+  const isWhatsAppConversation = conversation.isWhatsApp ||
+    (conversation.tel !== "N/A" && conversation.tel.startsWith("+") && conversation.tel.length >= 10);
+
+  // Filtrar emails falsos generados automáticamente (ej: user-xxx@whatsapp.local)
+  const isValidEmail = conversation.userEmail &&
+    conversation.userEmail !== "N/A" &&
+    !conversation.userEmail.includes("@whatsapp.local");
+
+  const displayEmail = isValidEmail ? conversation.userEmail : "--";
+
+  // Obtener fecha del primer mensaje
+  const firstMessage = conversation.messages.length > 0 ? conversation.messages[0] : null;
+  const firstMessageDate = firstMessage
+    ? new Date(firstMessage.createdAt).toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : 'N/A';
+
+  // TODO: Implementar lógica de compra
+  const hasPurchased = false;
+
+  return (
+    <div className="bg-white rounded-3xl border border-outlines shadow-standard p-6 h-fit flex flex-col relative">
+      {/* Botón de cerrar en esquina superior derecha */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+        title="Cerrar"
+      >
+        <img src="/dash/sunroof.svg" alt="Cerrar" className="w-5 h-5" />
+      </button>
+
+      {/* Avatar grande centrado */}
+      <div className="flex flex-col items-center mb-6">
+        <div className="relative mb-4">
+          <Avatar className="w-24 h-24" src={userAvatarUrl || "/assets/chat/ghosty.svg"} />
+          {isWhatsAppConversation && (
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+              <FaWhatsapp className="w-4 h-4 text-white" />
+            </div>
+          )}
+        </div>
+        <h2 className="text-xl font-bold text-dark mb-1">{conversation.userName}</h2>
+        {conversation.tel && conversation.tel !== "N/A" && (
+          <p className="text-sm text-gray-500">{formatPhoneNumber(conversation.tel)}</p>
+        )}
+      </div>
+
+      {/* Información de contacto */}
+      <div className="space-y-4 flex-1">
+        {/* Email */}
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+          <div className="w-10 h-10 bg-brand-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 mb-0.5">
+              Correo electrónico
+            </p>
+            <p className="text-sm font-medium text-dark truncate">
+              {displayEmail}
+            </p>
+          </div>
+        </div>
+
+        {/* Fecha del primer mensaje */}
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+          <div className="w-10 h-10 bg-bird/10 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-bird" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 mb-0.5">
+              Primer mensaje
+            </p>
+            <p className="text-sm font-medium text-dark">{firstMessageDate}</p>
+          </div>
+        </div>
+
+        {/* Estado de compra */}
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+            hasPurchased ? "bg-lime/10" : "bg-lime/30"
+          )}>
+            <svg className={cn("w-5 h-5", hasPurchased ? "text-lime" : "text-[#7BA31C]")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 mb-0.5">
+              Estado de compra
+            </p>
+            <p className={cn(
+              "text-sm font-medium",
+              hasPurchased ? "text-lime" : "text-metal"
+            )}>
+              {hasPurchased ? 'Ha comprado' : 'No ha comprado'}
+            </p>
+          </div>
+        </div>
+
+        {/* Total de mensajes */}
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+          <div className="w-10 h-10 bg-cloud/30 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-metal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 mb-0.5">
+              Total de mensajes
+            </p>
+            <p className="text-sm font-medium text-dark">
+              {conversation.messages.filter(m => !m.isReaction).length}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
