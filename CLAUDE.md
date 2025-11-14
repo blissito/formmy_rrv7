@@ -108,6 +108,131 @@ model Message {
 
 ---
 
+### Feature: Separación de Contact y Lead (2025-11-14)
+
+**Problema**: El modelo `Contact` mezclaba dos casos de uso diferentes:
+1. Información automática capturada de WhatsApp (nombre, teléfono, foto de perfil)
+2. Leads calificados guardados manualmente con `save_contact_info` (email, productInterest, position, website, notes)
+
+Esto causaba:
+- Unique constraint `Contact_chatbotId_phone_key` fallaba al intentar guardar leads con teléfonos ya registrados automáticamente por WhatsApp
+- Confusión entre contactos automáticos vs leads capturados intencionalmente
+- Campos innecesarios mezclados en un solo modelo
+
+**Solución Implementada**:
+
+#### 1. Nuevos Modelos Separados
+**Archivo**: `prisma/schema.prisma` (líneas 303-356)
+
+**Contact** - Solo info básica de WhatsApp (automático):
+```prisma
+model Contact {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  name              String? // Nombre del perfil de WhatsApp
+  phone             String? // Teléfono de WhatsApp (opcional por datos legacy)
+  profilePictureUrl String? // URL de la foto de perfil de WhatsApp
+
+  chatbotId      String        @db.ObjectId
+  chatbot        Chatbot       @relation(fields: [chatbotId], references: [id])
+  conversationId String?       @db.ObjectId
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+
+  capturedAt DateTime @default(now())
+
+  @@unique([chatbotId, phone]) // Un teléfono único por chatbot
+}
+```
+
+**Lead** - Prospectos calificados (manual con save_contact_info):
+```prisma
+model Lead {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  name            String?       // Nombre completo
+  email           String?       // Email de contacto
+  phone           String?       // Teléfono
+  productInterest String?       // Producto/servicio de interés
+  position        String?       // Cargo/posición
+  website         String?       // Sitio web
+  notes           String?       // Notas adicionales
+  status          ContactStatus @default(NEW) // Estado en el pipeline de ventas
+
+  chatbotId      String        @db.ObjectId
+  chatbot        Chatbot       @relation(fields: [chatbotId], references: [id])
+  conversationId String?       @db.ObjectId
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+
+  capturedAt  DateTime @default(now())
+  lastUpdated DateTime @updatedAt
+
+  @@index([email])
+  @@index([phone])
+  @@index([chatbotId])
+  @@index([status])
+}
+```
+
+#### 2. Tool Handler Actualizado
+**Archivo**: `server/tools/handlers/contact.ts`
+- `saveContactInfoHandler()` ahora crea/actualiza **Lead** (no Contact)
+- Validación: requiere email O teléfono (al menos uno)
+- Búsqueda de duplicados: primero por email, luego por teléfono
+- Update si existe, create si es nuevo
+- Logs detallados para debug
+
+#### 3. UI Actualizada
+**Archivo**: `app/routes/dashboard.chat_.$chatbotSlug.tsx` (líneas 169-192)
+- Loader retorna `db.lead.findMany()` para tab de Contactos
+- Frontend muestra leads con todos los campos (email, productInterest, position, website, notes, status)
+
+**Archivo**: `app/components/chat/tab_sections/Contactos.tsx`
+- UI consume leads del loader
+- Búsqueda por: name, email, phone, productInterest
+- Exportación CSV incluye todos los campos de lead
+
+#### 4. Flujo Completo
+
+**WhatsApp → Contact (Automático)**:
+```typescript
+// server/integrations/whatsapp/conversation.server.ts
+await db.contact.upsert({
+  where: { chatbotId_phone: { chatbotId, phone } },
+  create: { name, phone, profilePictureUrl, chatbotId },
+  update: { name, profilePictureUrl }
+});
+```
+
+**save_contact_info → Lead (Manual)**:
+```typescript
+// server/tools/handlers/contact.ts
+await db.lead.create({
+  data: {
+    name, email, phone, productInterest, position, website, notes,
+    chatbotId, conversationId, status: 'NEW'
+  }
+});
+```
+
+**Comportamiento**:
+- ✅ Contact: Solo info de WhatsApp, unique por (chatbotId, phone)
+- ✅ Lead: Prospectos capturados, sin unique constraint en phone
+- ✅ Mismo usuario puede estar en Contact (automático) Y Lead (manual)
+- ✅ No más errores de duplicate key
+- ✅ Separación clara de responsabilidades
+
+**Archivos modificados**:
+- `prisma/schema.prisma` - Modelos Contact y Lead separados
+- `server/tools/handlers/contact.ts` - Handler usa Lead
+- `server/tools/index.ts` - Tool description actualizada
+- `app/routes/dashboard.chat_.$chatbotSlug.tsx` - Loader de leads
+- `app/components/chat/tab_sections/Contactos.tsx` - UI de leads
+- `server/chatbot/conversationTransformer.server.ts` - Tipos actualizados
+
+**Fecha**: 2025-11-14
+**Commit**: `34314c1` - feat: Separar Contact y Lead - WhatsApp auto vs manual capture
+**Estado**: ✅ Desplegado en producción
+
+---
+
 ## ⚠️ REGLAS CRÍTICAS
 
 ### 1. LlamaIndex Agent Workflows
