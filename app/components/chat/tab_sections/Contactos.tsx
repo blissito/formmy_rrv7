@@ -353,7 +353,7 @@ export const Contactos = ({
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="text-sm text-metal truncate">{contact.phone || "-"}</div>
+                    <div className="text-xs text-metal truncate">{contact.phone || "-"}</div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-sm text-metal truncate">
