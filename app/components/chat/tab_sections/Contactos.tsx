@@ -313,13 +313,13 @@ export const Contactos = ({
           <table className="w-full table-fixed">
             <thead className="bg-surfaceTwo border-b border-outlines">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[22%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[16%]">
                   {t('contacts.contact')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[12%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[10%]">
                   {t('contacts.phone')}
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[16%]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[24%]">
                   {t('contacts.company')}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-dark w-[13%]">
