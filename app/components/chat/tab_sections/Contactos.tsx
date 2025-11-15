@@ -328,7 +328,7 @@ export const Contactos = ({
                 <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[12%] md:w-[9%] hidden md:table-cell">
                   {t('contacts.source')}
                 </th>
-                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[22%] md:w-[12%]">
+                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[18%] md:w-[10%]">
                   {t('contacts.contactStatus')}
                 </th>
                 <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[13%] md:w-[6%]">
