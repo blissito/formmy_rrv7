@@ -316,7 +316,7 @@ export const Contactos = ({
                 <th className="pl-4 md:pl-6 pr-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[20%] md:w-[16%]">
                   {t('contacts.contact')}
                 </th>
-                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[15%] md:w-[10%] hidden sm:table-cell">
+                <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[15%] md:w-[10%]">
                   {t('contacts.phone')}
                 </th>
                 <th className="px-2 md:px-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[25%] md:w-[24%]">
@@ -352,7 +352,7 @@ export const Contactos = ({
                       </div>
                     </div>
                   </td>
-                  <td className="px-2 md:px-2 py-3 md:py-4 whitespace-nowrap hidden sm:table-cell">
+                  <td className="px-2 md:px-2 py-3 md:py-4 whitespace-nowrap">
                     <div className="text-xs md:text-sm text-metal truncate">{contact.phone || "-"}</div>
                   </td>
                   <td className="px-2 md:px-2 py-3 md:py-4">
