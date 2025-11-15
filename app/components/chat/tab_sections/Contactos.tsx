@@ -392,7 +392,7 @@ export const Contactos = ({
                     </div>
                   </td>
                   <td className="px-2 md:px-2 py-3 md:py-4 whitespace-nowrap">
-                    <div className="flex items-center justify-center gap-1 md:gap-2">
+                    <div className="flex items-center justify-start gap-1 md:gap-2">
                       <button
                         onClick={() => handleViewConversation(contact.conversationId)}
                         disabled={!contact.conversationId}
