@@ -1476,8 +1476,8 @@ const UserMessage = ({ message, reactions = [], showTimestamp = true, showAvatar
 
   return (
     <div className="justify-end flex items-start gap-2">
-      <div className="flex flex-col items-end gap-1">
-        <div className="relative">
+      <div className="flex flex-col items-end gap-1 max-w-[70%]">
+        <div className="relative w-fit">
           {hasMultimedia ? (
             // Mostrar sticker/imagen como contenido
             <div className="max-w-[200px]">
@@ -1490,7 +1490,7 @@ const UserMessage = ({ message, reactions = [], showTimestamp = true, showAvatar
             </div>
           ) : (
             // Mensaje de texto normal
-            <div className="text-sm md:text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
+            <div className="text-sm md:text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl break-words w-fit">
               {message.content}
             </div>
           )}
@@ -1535,6 +1535,8 @@ const LIST_STYLES = `
     line-height: 1.5;
     font-size: 0.875rem; /* 14px en mobile */
     color: #1f2937;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
   @media (min-width: 768px) {
     .compact-markdown {
@@ -1744,7 +1746,7 @@ const AssistantMessage = ({
       ) : (
         <div className="w-8 h-8 flex-shrink-0" />
       )}
-      <div className="flex flex-col items-start gap-1">
+      <div className="flex flex-col items-start gap-1 max-w-[80%]">
         <div className="relative">
           {hasMultimedia ? (
             // Mostrar sticker/imagen como contenido
@@ -1757,7 +1759,7 @@ const AssistantMessage = ({
               />
             </div>
           ) : (
-            <div className="text-sm md:text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
+            <div className="text-sm md:text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative">
               <div className={PROSE_STYLES}>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
