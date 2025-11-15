@@ -1476,8 +1476,8 @@ const UserMessage = ({ message, reactions = [], showTimestamp = true, showAvatar
 
   return (
     <div className="justify-end flex items-start gap-2">
-      <div className="flex flex-col items-end gap-1 max-w-[85%] md:max-w-[70%]">
-        <div className="relative w-fit">
+      <div className="flex flex-col items-end gap-1">
+        <div className="relative">
           {hasMultimedia ? (
             // Mostrar sticker/imagen como contenido
             <div className="max-w-[200px]">
@@ -1490,7 +1490,7 @@ const UserMessage = ({ message, reactions = [], showTimestamp = true, showAvatar
             </div>
           ) : (
             // Mensaje de texto normal
-            <div className="text-sm md:text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl whitespace-pre-wrap w-fit">
+            <div className="text-sm md:text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
               {message.content}
             </div>
           )}
