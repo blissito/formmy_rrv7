@@ -189,7 +189,7 @@ export const IntegrationCard = ({
   const isConnected = isPermanent || (exists && isActive);
 
   return (
-    <div className="grid shadow-standard border border-outlines p-3 rounded-2xl min-h-[202px]">
+    <div className="grid shadow-standard border border-outlines p-3 rounded-2xl min-h-[222px]">
       {logo === "voice-icon" ? (
         <div className="w-8 h-8 mb-2 text-purple-600">
           <RiVoiceprintFill className="w-full h-full" />
@@ -197,53 +197,30 @@ export const IntegrationCard = ({
       ) : (
         <img className="w-8 aspect-square mb-2" src={logo} alt="logo" />
       )}
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-left gap-2 mb-1 flex-wrap">
         <h5 className="font-medium text-md mb-0">{name}</h5>
-        {/* {exists && (
-          <div className="">
-            <span
-              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                isActive
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full mr-1 ${
-                  isActive ? "bg-green-400" : "bg-red-400"
-                }`}
-              ></span>
-              {isActive ? "Activo" : "Inactivo"}
-            </span>
-            {lastActivity && (
-              <p className="text-xs text-metal mt-1">
-                Última actividad: {lastActivity}
-              </p>
+
+        {/* WhatsApp Coexistence Badges - Al lado del nombre */}
+        {name === "WhatsApp" && integration?.metadata && (
+          <div className="flex flex-wrap gap-1 ">
+            {(integration.metadata as any).coexistence && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                Coexistencia
+              </span>
+            )}
+            {(integration.metadata as any).appMobileActive && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                App Activa
+              </span>
+            )}
+            {(integration.metadata as any).webhookConfigured === false && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                ⚠️ Webhook
+              </span>
             )}
           </div>
-        )} */}
+        )}
       </div>
-
-      {/* WhatsApp Coexistence Badges */}
-      {name === "WhatsApp" && integration?.metadata && (
-        <div className="flex flex-wrap gap-1.5 mb-2">
-          {(integration.metadata as any).coexistence && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              Coexistencia
-            </span>
-          )}
-          {(integration.metadata as any).appMobileActive && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              App Activa
-            </span>
-          )}
-          {(integration.metadata as any).webhookConfigured === false && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-              ⚠️ Webhook
-            </span>
-          )}
-        </div>
-      )}
 
       <p className="text-sm mb-2 text-metal font-normal">{description}</p>
 

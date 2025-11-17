@@ -162,6 +162,15 @@ export async function saveContactInfoHandler(
         }
       }).catch(console.error);
 
+      // 🔄 SINCRONIZAR con Contact de WhatsApp (si aplica)
+      await syncLeadToContact({
+        source,
+        conversationId,
+        chatbotId: context.chatbotId,
+        email: input.email,
+        name: input.name,
+      });
+
       return {
         success: true,
         message: `✅ Perfecto, ya tengo tu contacto actualizado. Te daremos seguimiento pronto.`,
@@ -207,6 +216,15 @@ export async function saveContactInfoHandler(
         }
       }).catch(console.error);
 
+      // 🔄 SINCRONIZAR con Contact de WhatsApp (si aplica)
+      await syncLeadToContact({
+        source,
+        conversationId,
+        chatbotId: context.chatbotId,
+        email: input.email,
+        name: input.name,
+      });
+
       return {
         success: true,
         message: `✅ Perfecto, ya tengo tu contacto. ${input.name ? `Gracias ${input.name}` : 'Gracias'} por tu interés. Te daremos seguimiento pronto.`,
@@ -249,4 +267,73 @@ export async function saveContactInfoHandler(
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+}
+
+/**
+ * 🔄 Sincronizar datos del Lead con el Contact de WhatsApp (si aplica)
+ * Cuando capturamos un lead con email en una conversación de WhatsApp,
+ * actualizamos el Contact para tener información más completa.
+ */
+async function syncLeadToContact(params: {
+  source: string;
+  conversationId?: string;
+  chatbotId: string;
+  email?: string;
+  name?: string;
+}): Promise<void> {
+  const { source, conversationId, chatbotId, email, name } = params;
+
+  // Solo sincronizar para conversaciones de WhatsApp
+  if (source !== 'whatsapp' || !conversationId) {
+    return;
+  }
+
+  // Si no hay datos para sincronizar, salir
+  if (!email && !name) {
+    return;
+  }
+
+  try {
+    console.log('🔄 [syncLeadToContact] Buscando Contact de WhatsApp para sincronizar...');
+
+    // Buscar Contact asociado a esta conversación
+    const existingContact = await db.contact.findFirst({
+      where: {
+        conversationId,
+        chatbotId,
+      },
+    });
+
+    if (!existingContact) {
+      console.log('⚠️ [syncLeadToContact] No se encontró Contact asociado a la conversación');
+      return;
+    }
+
+    // Preparar datos para actualizar (solo los que se proporcionaron)
+    const updateData: { email?: string; name?: string } = {};
+
+    if (email && !existingContact.email) {
+      updateData.email = email;
+      console.log('✅ [syncLeadToContact] Agregando email al Contact:', email);
+    }
+
+    if (name && existingContact.name !== name) {
+      updateData.name = name;
+      console.log('✅ [syncLeadToContact] Actualizando nombre del Contact:', name);
+    }
+
+    // Si hay datos para actualizar, hacerlo
+    if (Object.keys(updateData).length > 0) {
+      await db.contact.update({
+        where: { id: existingContact.id },
+        data: updateData,
+      });
+      console.log('✅ [syncLeadToContact] Contact actualizado exitosamente:', existingContact.id);
+    } else {
+      console.log('ℹ️ [syncLeadToContact] No hay datos nuevos para sincronizar');
+    }
+  } catch (error) {
+    // No fallar el flujo principal si falla la sincronización
+    console.error('❌ [syncLeadToContact] Error sincronizando Contact:', error);
+  }
 }

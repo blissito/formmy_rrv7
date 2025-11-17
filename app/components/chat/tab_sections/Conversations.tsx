@@ -287,7 +287,7 @@ export const Conversations = ({
         "col-span-12 pb-4 min-h-[calc(100vh-296px)]",
         showContactDetails ? "md:col-span-6" : "md:col-span-9",
         !showConversationInMobile && "hidden md:block", // Ocultar en mobile si no se ha seleccionado conversación
-        showContactDetailsInMobile && "hidden" // Ocultar completamente (mobile y desktop) cuando se muestra panel de contacto en mobile
+        showContactDetailsInMobile && "hidden md:block" // Ocultar solo en mobile cuando se muestra panel de contacto
       )}>
         <ConversationsPreview
           conversation={conversation}
@@ -301,8 +301,10 @@ export const Conversations = ({
           onAvatarClick={() => {
             const newState = !showContactDetails;
             setShowContactDetails(newState);
-            // Sincronizar estado mobile: true cuando se abre, false cuando se cierra
-            setShowContactDetailsInMobile(newState);
+            // Solo sincronizar estado mobile en pantallas mobile (< 768px = breakpoint md:)
+            if (typeof window !== 'undefined' && window.innerWidth < 768) {
+              setShowContactDetailsInMobile(newState);
+            }
           }}
           onBackToList={() => setShowConversationInMobile(false)} // Función para volver a la lista en mobile
         />

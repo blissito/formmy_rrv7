@@ -305,6 +305,7 @@ model Contact {
   id       String  @id @default(auto()) @map("_id") @db.ObjectId
   name     String? // Nombre del perfil de WhatsApp
   phone    String? // Teléfono de WhatsApp
+  email    String? // Email capturado durante la conversación
 
   // WhatsApp Profile Data
   profilePictureUrl String? // URL de la foto de perfil de WhatsApp
@@ -322,6 +323,7 @@ model Contact {
   // Índices
   @@unique([chatbotId, phone]) // Un teléfono único por chatbot
   @@index([chatbotId])
+  @@index([email])
 }
 
 // Leads calificados (guardados con save_contact_info)
