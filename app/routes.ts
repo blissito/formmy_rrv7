@@ -20,9 +20,18 @@ export default [
     route("plan", "routes/dashboard.plan.tsx"),
     route("uso", "routes/dashboard.uso.tsx"),
     route("api-keys", "routes/dashboard.api-keys_.tsx"),
-    route("integrations/whatsapp/callback", "routes/dashboard.integrations_.whatsapp_.callback.tsx"),
-    route("integrations/messenger/connect", "routes/dashboard.integrations_.messenger_.connect.tsx"),
-    route("integrations/messenger/select-page", "routes/dashboard.integrations_.messenger_.select-page.tsx"),
+    route(
+      "integrations/whatsapp/callback",
+      "routes/dashboard.integrations_.whatsapp_.callback.tsx"
+    ),
+    route(
+      "integrations/messenger/connect",
+      "routes/dashboard.integrations_.messenger_.connect.tsx"
+    ),
+    route(
+      "integrations/messenger/select-page",
+      "routes/dashboard.integrations_.messenger_.select-page.tsx"
+    ),
     route("formmys", "routes/dashboard.formmys.tsx"),
     route("formmys/new", "routes/dashboard.formmys.new.tsx"),
     route("formmys/:projectId", "routes/dashboard.formmys_.$projectId.tsx"),
@@ -73,6 +82,7 @@ export default [
   route("chat/embed", "routes/chat_.embed.tsx"),
   route("chat/404", "routes/chat.404.tsx"),
   route("chat-ia", "routes/chat-ia.tsx"),
+  route("chat/vercel", "routes/chat.vercel.tsx"),
 
   // Public content routes
   route("formularios", "routes/formularios.tsx"),
@@ -110,8 +120,14 @@ export default [
   // API v1 routes
   route("api/v1/contacts", "routes/api.v1.contacts.ts"),
   route("api/v1/conversations", "routes/api.v1.conversations.tsx"),
-  route("api/v1/conversations/load-more", "routes/api.v1.conversations.load-more.ts"),
-  route("api/v1/conversations/:conversationId/stream", "routes/api.v1.conversations.$conversationId.stream.tsx"),
+  route(
+    "api/v1/conversations/load-more",
+    "routes/api.v1.conversations.load-more.ts"
+  ),
+  route(
+    "api/v1/conversations/:conversationId/stream",
+    "routes/api.v1.conversations.$conversationId.stream.tsx"
+  ),
   route("api/v1/llamaparse", "routes/api.v1.llamaparse.ts"),
   route("api/v1/credits", "routes/api.v1.credits.ts"),
   route("api/v1/traces", "routes/api.v1.traces.ts"),
@@ -120,12 +136,21 @@ export default [
   route("api/voice/v1", "routes/api.voice.v1.ts"),
 
   // Composio Google Calendar Integration
-  route("api/v1/composio/google-calendar", "routes/api.v1.composio.google-calendar.ts"),
-  route("api/v1/composio/google-calendar/callback", "routes/api.v1.composio.google-calendar.callback.ts"),
+  route(
+    "api/v1/composio/google-calendar",
+    "routes/api.v1.composio.google-calendar.ts"
+  ),
+  route(
+    "api/v1/composio/google-calendar/callback",
+    "routes/api.v1.composio.google-calendar.callback.ts"
+  ),
 
   // Composio Gmail Integration
   route("api/v1/composio/gmail", "routes/api.v1.composio.gmail.ts"),
-  route("api/v1/composio/gmail/callback", "routes/api.v1.composio.gmail.callback.ts"),
+  route(
+    "api/v1/composio/gmail/callback",
+    "routes/api.v1.composio.gmail.callback.ts"
+  ),
 
   // Composio WhatsApp Integration - DEPRECADO (eliminado)
   // WhatsApp ahora usa WhatsAppSDKService directo
@@ -179,7 +204,10 @@ export default [
   route("api/ghosty/chat", "routes/api.ghosty.chat.ts"),
   route("api/ghosty/v0", "routes/api.ghosty.v0.ts"),
   route("api/ghosty/tools", "routes/api.ghosty.tools.ts"),
-  route("api/ghosty/download/:reportId", "routes/api.ghosty.download.$reportId.ts"),
+  route(
+    "api/ghosty/download/:reportId",
+    "routes/api.ghosty.download.$reportId.ts"
+  ),
 
   // API Agent routes - LlamaIndex Workflows
   route("api/agent/v0", "routes/api.agent.v0.ts"),

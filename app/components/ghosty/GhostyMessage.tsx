@@ -1,17 +1,27 @@
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { cn } from "~/lib/utils";
-import type { GhostyLlamaMessage } from './hooks/useGhostyLlamaChat';
-import { useState } from 'react';
-import { formatReasoningContent } from '~/utils/formatReasoningContent';
+import type { GhostyLlamaMessage } from "./hooks/useGhostyLlamaChat";
+import { useState } from "react";
+import { formatReasoningContent } from "~/utils/formatReasoningContent";
 
 // Simple loading indicator (3 bouncing dots) - igual al widget
-const LoadingIndicator = () => {
+export const LoadingIndicator = () => {
   return (
     <div className="items-center justify-center flex text-3xl h-3">
       <div className="animate-bounce text-metal">.</div>
-      <div className="animate-bounce text-metal" style={{ animationDelay: "0.1s" }}>.</div>
-      <div className="animate-bounce text-metal" style={{ animationDelay: "0.2s" }}>.</div>
+      <div
+        className="animate-bounce text-metal"
+        style={{ animationDelay: "0.1s" }}
+      >
+        .
+      </div>
+      <div
+        className="animate-bounce text-metal"
+        style={{ animationDelay: "0.2s" }}
+      >
+        .
+      </div>
     </div>
   );
 };
@@ -29,7 +39,7 @@ export const GhostyMessageComponent = ({
   onCopy,
   onRegenerate,
   onSuggestionClick,
-  userImage
+  userImage,
 }: GhostyMessageProps) => {
   const [showCopied, setShowCopied] = useState(false);
 
@@ -39,7 +49,7 @@ export const GhostyMessageComponent = ({
     } else {
       await navigator.clipboard.writeText(message.content);
     }
-    
+
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
   };
@@ -50,11 +60,11 @@ export const GhostyMessageComponent = ({
     }
   };
 
-  const isUser = message.role === 'user';
+  const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
 
   return (
-    <div 
+    <div
       className={cn(
         "flex w-full gap-3 mb-4 px-2 sm:px-4 py-1",
         isUser ? "justify-end" : "justify-start"
@@ -62,38 +72,48 @@ export const GhostyMessageComponent = ({
     >
       {/* Avatar */}
       {!isUser && (
-        <div className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-          "bg-brand-500 text-clear text-sm font-medium mt-1"
-        )}>
-          <img src="/home/ghosty-avatar.svg" alt="ghosty" className="w-5 h-5 object-cover scale-150" />
+        <div
+          className={cn(
+            "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
+            "bg-brand-500 text-clear text-sm font-medium mt-1"
+          )}
+        >
+          <img
+            src="/home/ghosty-avatar.svg"
+            alt="ghosty"
+            className="w-5 h-5 object-cover scale-150"
+          />
         </div>
       )}
 
       {/* Message Content */}
-      <div className={cn(
-        "max-w-[calc(100%-3rem)] sm:max-w-[80%] group relative",
-        isUser && "order-first"
-      )}>
+      <div
+        className={cn(
+          "max-w-[calc(100%-3rem)] sm:max-w-[80%] group relative",
+          isUser && "order-first"
+        )}
+      >
         {/* Message Bubble */}
-        <div className={cn(
-          "rounded-xl px-3 py-[6px] relative shadow-sm",
-          isUser
-            ? "bg-brand-500 text-clear"
-            : "bg-[#FCFDFE] border border-outlines text-dark"
-        )}>
+        <div
+          className={cn(
+            "rounded-xl px-3 py-[6px] relative shadow-sm",
+            isUser
+              ? "bg-brand-500 text-clear"
+              : "bg-[#FCFDFE] border border-outlines text-dark"
+          )}
+        >
           {isUser ? (
             // User message - plain text
             <p className="text-[0.95rem] leading-relaxed break-words">
               {message.content}
             </p>
+          ) : // Assistant message - markdown or loading
+          message.content === "" ? (
+            // Show loading indicator when content is empty (processing state)
+            <LoadingIndicator />
           ) : (
-            // Assistant message - markdown or loading
-            message.content === '' ? (
-              // Show loading indicator when content is empty (processing state)
-              <LoadingIndicator />
-            ) : (
-              <div className={cn(
+            <div
+              className={cn(
                 "prose prose-sm md:prose-base max-w-none break-words",
                 "prose-headings:text-dark prose-p:text-dark prose-strong:text-dark",
                 "prose-code:text-brand-500 prose-code:bg-brand-100/20 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm",
@@ -106,284 +126,324 @@ export const GhostyMessageComponent = ({
                 "prose-td:border prose-td:border-outlines prose-td:p-3 prose-td:text-dark prose-td:align-top",
                 "prose-tr:even:bg-brand-50/30",
                 isStreaming && "animate-pulse"
-              )}>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    code({ node, inline, className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || '');
-                      if (!inline && match) {
-                        // Estilo especial para bloques de pensamiento
-                        const isThinking = match[1] === 'thinking';
-                        return (
-                          <div className="relative">
-                            <pre className={cn(
+              )}
+            >
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  code({ node, inline, className, children, ...props }) {
+                    const match = /language-(\w+)/.exec(className || "");
+                    if (!inline && match) {
+                      // Estilo especial para bloques de pensamiento
+                      const isThinking = match[1] === "thinking";
+                      return (
+                        <div className="relative">
+                          <pre
+                            className={cn(
                               isThinking
                                 ? "bg-gradient-to-r from-purple-50 to-blue-50 text-purple-900 p-4 rounded-lg overflow-x-auto border-2 border-purple-200 italic"
                                 : "bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto border border-gray-700"
-                            )}>
-                              <code className={className} {...props}>
-                                {String(children).replace(/\n$/, '')}
-                              </code>
-                            </pre>
-                            <button
-                              onClick={() => navigator.clipboard.writeText(String(children))}
-                              className={cn(
-                                "absolute top-2 right-2 px-2 py-1 text-xs",
-                                "bg-gray-700 text-gray-300 rounded opacity-0 group-hover:opacity-100",
-                                "hover:bg-gray-600 transition-all duration-200"
-                              )}
-                            >
-                              Copy
-                            </button>
-                          </div>
-                        );
-                      } else {
-                        return (
-                          <code className={cn(className, "bg-brand-100/20 px-1 rounded text-brand-500")} {...props}>
-                            {children}
-                          </code>
-                        );
-                      }
-                    },
-                  }}
-                >
-                  {formatReasoningContent(
-                    // 🧹 Limpiar marcadores técnicos de widgets (no deben mostrarse al usuario)
-                    message.content.replace(/🎨WIDGET:\w+:[a-zA-Z0-9_-]+🎨/gi, '')
-                  )}
-                </ReactMarkdown>
-
-                {/* Streaming cursor */}
-                {isStreaming && (
-                  <span className="inline-block w-[2px] h-4 bg-brand-500 animate-pulse ml-1" />
+                            )}
+                          >
+                            <code className={className} {...props}>
+                              {String(children).replace(/\n$/, "")}
+                            </code>
+                          </pre>
+                          <button
+                            onClick={() =>
+                              navigator.clipboard.writeText(String(children))
+                            }
+                            className={cn(
+                              "absolute top-2 right-2 px-2 py-1 text-xs",
+                              "bg-gray-700 text-gray-300 rounded opacity-0 group-hover:opacity-100",
+                              "hover:bg-gray-600 transition-all duration-200"
+                            )}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <code
+                          className={cn(
+                            className,
+                            "bg-brand-100/20 px-1 rounded text-brand-500"
+                          )}
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      );
+                    }
+                  },
+                }}
+              >
+                {formatReasoningContent(
+                  // 🧹 Limpiar marcadores técnicos de widgets (no deben mostrarse al usuario)
+                  message.content.replace(/🎨WIDGET:\w+:[a-zA-Z0-9_-]+🎨/gi, "")
                 )}
-              </div>
-            )
+              </ReactMarkdown>
+
+              {/* Streaming cursor */}
+              {isStreaming && (
+                <span className="inline-block w-[2px] h-4 bg-brand-500 animate-pulse ml-1" />
+              )}
+            </div>
           )}
 
           {/* 🆕 Widgets inline (después del texto) */}
           {!isUser && message.widgets && message.widgets.length > 0 && (
             <div className="mt-4">
               {message.widgets.map((widget) => {
-
                 return (
                   <iframe
                     key={widget.id}
                     src={`/widgets/${widget.id}`}
                     className="w-full border-0 rounded-xl my-2 shadow-sm"
-                    style={{ height: '400px' }}
+                    style={{ height: "400px" }}
                     sandbox="allow-scripts allow-same-origin allow-popups"
                     title={`Widget ${widget.type}`}
-                    onError={(e) => console.error(`❌ [GhostyMessage] Error cargando widget iframe:`, widget.id, e)}
+                    onError={(e) =>
+                      console.error(
+                        `❌ [GhostyMessage] Error cargando widget iframe:`,
+                        widget.id,
+                        e
+                      )
+                    }
                   />
                 );
               })}
             </div>
           )}
-          
+
           {/* Sources */}
           {!isUser && message.sources && message.sources.length > 0 && (
             <div className="mt-4 pt-4 border-t border-outlines/50">
-              <p className="text-sm font-semibold text-dark mb-3">📚 Fuentes consultadas</p>
+              <p className="text-sm font-semibold text-dark mb-3">
+                📚 Fuentes consultadas
+              </p>
               <div className="grid gap-3">
                 {message.sources.map((source, index) => {
                   const isFileSource = !!source.fileName; // Es fuente de archivo/documento RAG
 
                   return (
-                  <div
-                    key={index}
-                    {...(!isFileSource && source.url ? {
-                      onClick: () => window.open(source.url, '_blank'),
-                      style: { cursor: 'pointer' }
-                    } : {})}
-                    className={cn(
-                      "flex items-start gap-3 p-3 rounded-lg border border-outlines/30",
-                      !isFileSource && "hover:border-brand-300 hover:bg-brand-50/30 transition-all duration-200",
-                      isFileSource && "bg-purple-50/30 border-purple-200/50",
-                      "group"
-                    )}
-                  >
-                    {/* Thumbnail */}
-                    <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-50 border border-outlines/30 flex items-center justify-center relative">
-                      {isFileSource ? (
-                        /* Fuente de archivo RAG */
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200">
-                          <div className="text-2xl">📄</div>
-                          {source.score && (
-                            <div className="text-[10px] font-bold text-purple-700 mt-1">
-                              {(source.score * 100).toFixed(0)}%
-                            </div>
-                          )}
-                        </div>
-                      ) : source.image ? (
-                        /* Prioridad 1: Open Graph Image (thumbnail principal) */
-                        <>
-                          <img
-                            src={source.image}
-                            alt={source.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              const container = target.parentElement!;
-                              // Si falla la OG image, mostrar favicon + sitio
-                              container.innerHTML = `
+                    <div
+                      key={index}
+                      {...(!isFileSource && source.url
+                        ? {
+                            onClick: () => window.open(source.url, "_blank"),
+                            style: { cursor: "pointer" },
+                          }
+                        : {})}
+                      className={cn(
+                        "flex items-start gap-3 p-3 rounded-lg border border-outlines/30",
+                        !isFileSource &&
+                          "hover:border-brand-300 hover:bg-brand-50/30 transition-all duration-200",
+                        isFileSource && "bg-purple-50/30 border-purple-200/50",
+                        "group"
+                      )}
+                    >
+                      {/* Thumbnail */}
+                      <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-50 border border-outlines/30 flex items-center justify-center relative">
+                        {isFileSource ? (
+                          /* Fuente de archivo RAG */
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200">
+                            <div className="text-2xl">📄</div>
+                            {source.score && (
+                              <div className="text-[10px] font-bold text-purple-700 mt-1">
+                                {(source.score * 100).toFixed(0)}%
+                              </div>
+                            )}
+                          </div>
+                        ) : source.image ? (
+                          /* Prioridad 1: Open Graph Image (thumbnail principal) */
+                          <>
+                            <img
+                              src={source.image}
+                              alt={source.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                const container = target.parentElement!;
+                                // Si falla la OG image, mostrar favicon + sitio
+                                container.innerHTML = `
                                 <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-brand-400 to-brand-600 text-white">
-                                  ${source.favicon ? `
+                                  ${
+                                    source.favicon
+                                      ? `
                                     <img 
                                       src="${source.favicon}" 
                                       alt="favicon" 
                                       class="w-6 h-6 mb-1"
                                       onerror="this.style.display='none'"
                                     />
-                                  ` : ''}
+                                  `
+                                      : ""
+                                  }
                                   <div class="text-xs font-bold">
-                                    ${source.siteName?.charAt(0)?.toUpperCase() || '🌐'}
+                                    ${source.siteName?.charAt(0)?.toUpperCase() || "🌐"}
                                   </div>
                                 </div>
                               `;
-                            }}
-                          />
-                          {/* Favicon pequeño como overlay si hay OG image */}
-                          {source.favicon && (
-                            <div className="absolute bottom-0 right-0 w-4 h-4 bg-white rounded-tl-sm border-l border-t border-outlines/30 flex items-center justify-center">
-                              <img
-                                src={source.favicon}
-                                alt="favicon"
-                                className="w-3 h-3"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        /* Sin OG image: Mostrar favicon más pequeño */
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                          {source.favicon ? (
-                            <img
-                              src={source.favicon}
-                              alt="favicon"
-                              className="w-6 h-6 mb-1"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.parentElement!.innerHTML = `
-                                  <div class="w-8 h-8 rounded-full bg-brand-500 text-white text-sm flex items-center justify-center font-bold">
-                                    ${source.siteName?.charAt(0)?.toUpperCase() || '🌐'}
-                                  </div>
-                                `;
                               }}
                             />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-brand-500 text-white text-sm flex items-center justify-center font-bold">
-                              {source.siteName?.charAt(0)?.toUpperCase() || '🌐'}
-                            </div>
-                          )}
-                          <div className="text-xs text-gray-600 font-medium text-center px-1 leading-tight">
-                            {source.siteName || 'Web'}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="text-sm font-medium text-dark group-hover:text-brand-600 transition-colors overflow-hidden" style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical' as const
-                        }}>
-                          {source.title}
-                        </h4>
-                        <span className="text-xs text-brand-500 font-mono flex-shrink-0">
-                          [{index + 1}]
-                        </span>
-                      </div>
-                      
-                      {source.snippet && (
-                        <p className="text-xs text-irongray mb-2 leading-relaxed overflow-hidden" style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical' as const
-                        }}>
-                          {source.snippet}
-                        </p>
-                      )}
-
-                      <div className="flex items-center gap-2 text-xs text-lightgray flex-wrap">
-                        {isFileSource ? (
-                          <>
-                            <span className="font-medium text-purple-600 truncate">
-                              📄 {source.fileName}
-                            </span>
-                            {source.chunkIndex !== undefined && (
-                              <>
-                                <span>•</span>
-                                <span className="text-[10px] text-metal">
-                                  chunk {source.chunkIndex + 1}
-                                </span>
-                              </>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <span className="truncate">
-                              {source.siteName || (source.url ? new URL(source.url).hostname : 'Web')}
-                            </span>
-                            {source.publishedTime && (
-                              <>
-                                <span>•</span>
-                                <time className="flex-shrink-0">
-                                  {new Date(source.publishedTime).toLocaleDateString('es-ES', {
-                                    day: 'numeric',
-                                    month: 'short'
-                                  })}
-                                </time>
-                              </>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      {/* Gallery de imágenes relacionadas */}
-                      {source.images && source.images.length > 0 && (
-                        <div className="mt-3">
-                          <div className="flex gap-1 overflow-x-auto pb-1">
-                            {source.images.slice(0, 4).map((imageUrl, imgIndex) => (
-                              <div
-                                key={imgIndex}
-                                className="flex-shrink-0 w-16 h-12 rounded border border-outlines/20 overflow-hidden bg-gray-100"
-                              >
+                            {/* Favicon pequeño como overlay si hay OG image */}
+                            {source.favicon && (
+                              <div className="absolute bottom-0 right-0 w-4 h-4 bg-white rounded-tl-sm border-l border-t border-outlines/30 flex items-center justify-center">
                                 <img
-                                  src={imageUrl}
-                                  alt={`Related ${imgIndex + 1}`}
-                                  className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                                  src={source.favicon}
+                                  alt="favicon"
+                                  className="w-3 h-3"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
-                                    target.parentElement!.style.display = 'none';
-                                  }}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    // Abrir imagen en nueva ventana
-                                    window.open(imageUrl, '_blank');
+                                    target.style.display = "none";
                                   }}
                                 />
                               </div>
-                            ))}
-                            {source.images.length > 4 && (
-                              <div className="flex-shrink-0 w-16 h-12 rounded border border-outlines/20 bg-gray-100 flex items-center justify-center text-xs text-gray-600 font-medium">
-                                +{source.images.length - 4}
+                            )}
+                          </>
+                        ) : (
+                          /* Sin OG image: Mostrar favicon más pequeño */
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                            {source.favicon ? (
+                              <img
+                                src={source.favicon}
+                                alt="favicon"
+                                className="w-6 h-6 mb-1"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.parentElement!.innerHTML = `
+                                  <div class="w-8 h-8 rounded-full bg-brand-500 text-white text-sm flex items-center justify-center font-bold">
+                                    ${source.siteName?.charAt(0)?.toUpperCase() || "🌐"}
+                                  </div>
+                                `;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-brand-500 text-white text-sm flex items-center justify-center font-bold">
+                                {source.siteName?.charAt(0)?.toUpperCase() ||
+                                  "🌐"}
                               </div>
                             )}
+                            <div className="text-xs text-gray-600 font-medium text-center px-1 leading-tight">
+                              {source.siteName || "Web"}
+                            </div>
                           </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h4
+                            className="text-sm font-medium text-dark group-hover:text-brand-600 transition-colors overflow-hidden"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical" as const,
+                            }}
+                          >
+                            {source.title}
+                          </h4>
+                          <span className="text-xs text-brand-500 font-mono flex-shrink-0">
+                            [{index + 1}]
+                          </span>
                         </div>
-                      )}
+
+                        {source.snippet && (
+                          <p
+                            className="text-xs text-irongray mb-2 leading-relaxed overflow-hidden"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical" as const,
+                            }}
+                          >
+                            {source.snippet}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2 text-xs text-lightgray flex-wrap">
+                          {isFileSource ? (
+                            <>
+                              <span className="font-medium text-purple-600 truncate">
+                                📄 {source.fileName}
+                              </span>
+                              {source.chunkIndex !== undefined && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-[10px] text-metal">
+                                    chunk {source.chunkIndex + 1}
+                                  </span>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className="truncate">
+                                {source.siteName ||
+                                  (source.url
+                                    ? new URL(source.url).hostname
+                                    : "Web")}
+                              </span>
+                              {source.publishedTime && (
+                                <>
+                                  <span>•</span>
+                                  <time className="flex-shrink-0">
+                                    {new Date(
+                                      source.publishedTime
+                                    ).toLocaleDateString("es-ES", {
+                                      day: "numeric",
+                                      month: "short",
+                                    })}
+                                  </time>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Gallery de imágenes relacionadas */}
+                        {source.images && source.images.length > 0 && (
+                          <div className="mt-3">
+                            <div className="flex gap-1 overflow-x-auto pb-1">
+                              {source.images
+                                .slice(0, 4)
+                                .map((imageUrl, imgIndex) => (
+                                  <div
+                                    key={imgIndex}
+                                    className="flex-shrink-0 w-16 h-12 rounded border border-outlines/20 overflow-hidden bg-gray-100"
+                                  >
+                                    <img
+                                      src={imageUrl}
+                                      alt={`Related ${imgIndex + 1}`}
+                                      className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                                      onError={(e) => {
+                                        const target =
+                                          e.target as HTMLImageElement;
+                                        target.parentElement!.style.display =
+                                          "none";
+                                      }}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        // Abrir imagen en nueva ventana
+                                        window.open(imageUrl, "_blank");
+                                      }}
+                                    />
+                                  </div>
+                                ))}
+                              {source.images.length > 4 && (
+                                <div className="flex-shrink-0 w-16 h-12 rounded border border-outlines/20 bg-gray-100 flex items-center justify-center text-xs text-gray-600 font-medium">
+                                  +{source.images.length - 4}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
                   );
                 })}
               </div>
@@ -416,34 +476,39 @@ export const GhostyMessageComponent = ({
         */}
 
         {/* Follow-up Suggestions */}
-        {!isUser && message.suggestedFollowUp && message.suggestedFollowUp.length > 0 && onSuggestionClick && (
-          <div className="mt-3 flex gap-2 flex-wrap">
-            {message.suggestedFollowUp.map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => onSuggestionClick(suggestion)}
-                className={cn(
-                  "text-sm px-3 py-1.5 bg-gray-50 hover:bg-brand-50 rounded-full",
-                  "text-gray-600 hover:text-brand-600 transition-colors border border-gray-200 hover:border-brand-300",
-                  "hover:shadow-sm"
-                )}
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        )}
+        {!isUser &&
+          message.suggestedFollowUp &&
+          message.suggestedFollowUp.length > 0 &&
+          onSuggestionClick && (
+            <div className="mt-3 flex gap-2 flex-wrap">
+              {message.suggestedFollowUp.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => onSuggestionClick(suggestion)}
+                  className={cn(
+                    "text-sm px-3 py-1.5 bg-gray-50 hover:bg-brand-50 rounded-full",
+                    "text-gray-600 hover:text-brand-600 transition-colors border border-gray-200 hover:border-brand-300",
+                    "hover:shadow-sm"
+                  )}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
 
         {/* Timestamp */}
-        <div className={cn(
-          "text-xs text-irongray mt-1.5 flex items-center",
-          isUser ? "justify-end" : "justify-start"
-        )}>
+        <div
+          className={cn(
+            "text-xs text-irongray mt-1.5 flex items-center",
+            isUser ? "justify-end" : "justify-start"
+          )}
+        >
           <span className="inline-flex items-center gap-1  px-2 py-0.5 rounded-full">
             <span className="text-xs">
-              {message.timestamp.toLocaleTimeString('es-ES', {
-                hour: '2-digit',
-                minute: '2-digit'
+              {message.timestamp.toLocaleTimeString("es-ES", {
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </span>
           </span>
@@ -452,22 +517,24 @@ export const GhostyMessageComponent = ({
 
       {/* User Avatar */}
       {isUser && (
-        <div className={cn(
-          "w-8 h-8 min-w-8 min-h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden",
-          "border-2 border-white shadow-sm",
-          "bg-gradient-to-br from-brand-400 to-brand-600 text-white"
-        )}>
+        <div
+          className={cn(
+            "w-8 h-8 min-w-8 min-h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden",
+            "border-2 border-white shadow-sm",
+            "bg-gradient-to-br from-brand-400 to-brand-600 text-white"
+          )}
+        >
           {userImage ? (
-            <img 
-              src={userImage} 
-              alt="User" 
+            <img
+              src={userImage}
+              alt="User"
               className="w-full h-full object-cover"
               onError={(e) => {
                 // Fallback to default avatar if image fails to load
                 const target = e.target as HTMLImageElement;
-                target.src = '';
+                target.src = "";
                 target.onerror = null;
-                target.parentElement!.innerHTML = '👤';
+                target.parentElement!.innerHTML = "👤";
               }}
             />
           ) : (
