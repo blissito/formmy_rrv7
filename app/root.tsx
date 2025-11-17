@@ -10,6 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import useHotjar from "./utils/useHotjar";
 import useGoogleTM from "./utils/useGoogleTM";
 import useFacebookPixel from "./utils/useFacebookPixel";
@@ -44,9 +45,16 @@ export const links: Route.LinksFunction = () => [
     href: "https://fonts.gstatic.com",
     crossOrigin: "anonymous",
   },
+  // Fuentes críticas (usadas inmediatamente en body, headings)
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Flavors&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Kablammo&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Rubik+Wet+Paint&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap",
+  },
+  // Fuentes decorativas (usadas solo en animaciones HomeHero) - media=print para lazy load
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=Flavors&family=Kablammo&family=Rubik+Wet+Paint&display=swap",
+    media: "print",
   },
   { rel: "stylesheet", href: stylesheet },
 ];
@@ -56,6 +64,27 @@ export function Layout({ children }: { children: ReactNode }) {
   useGoogleTM();
   useFacebookPixel();
   useTagManager();
+
+  // Lazy load non-critical fonts (decorative animations)
+  useEffect(() => {
+    const lazyLoadFonts = () => {
+      const link = document.querySelector(
+        'link[href*="Flavors"][media="print"]'
+      ) as HTMLLinkElement;
+      if (link) {
+        link.media = "all";
+      }
+    };
+
+    // Load after initial render
+    if (document.readyState === "complete") {
+      lazyLoadFonts();
+    } else {
+      window.addEventListener("load", lazyLoadFonts);
+      return () => window.removeEventListener("load", lazyLoadFonts);
+    }
+  }, []);
+
   return (
     <html
       lang="en"

@@ -14,7 +14,7 @@ export const Button = ({
 }: {
   type?: "submit" | "button";
   isDisabled?: boolean;
-  variant?:string;
+  variant?: "secondary" | "ghost" | "outline";
   isLoading?: boolean;
   className?: string;
   children?: ReactNode;
@@ -26,10 +26,19 @@ export const Button = ({
       disabled={isDisabled || isLoading}
       type={type}
       className={cn(
-        "bg-brand-500 text-white hover:bg-brand-600 transition-all mt-6 block mx-auto cursor-pointer rounded-full h-12 px-6 grid place-content-center",
-        { "bg-perl text-metal hover:bg-[#E1E3E7] mt-0 mx-0" : variant === "secondary"},
-        { "bg-transparent text-dark hover:bg-[#E1E3E7] mt-0 mx-0" : variant === "ghost"},
-        { "bg-transparent border border-outlines text-metal hover:bg-[#F6F6FA] h-10 !max-w-[40px] w-[40px] rounded-lg mt-0 px-0" : variant === "outline"},
+        "bg-brand-500 text-white hover:bg-brand-600 transition-all mt-6 mx-auto cursor-pointer rounded-full h-12 px-6 grid place-content-center",
+        {
+          "bg-perl text-metal hover:bg-[#E1E3E7] mt-0 mx-0":
+            variant === "secondary",
+        },
+        {
+          "bg-transparent text-dark hover:bg-[#E1E3E7] mt-0 mx-0":
+            variant === "ghost",
+        },
+        {
+          "bg-transparent border border-outlines text-metal hover:bg-[#F6F6FA] h-10 !max-w-[40px] w-[40px] rounded-lg mt-0 px-0":
+            variant === "outline",
+        },
         className,
         "disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 disabled:border-none"
       )}
