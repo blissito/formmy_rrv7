@@ -74,10 +74,15 @@ export async function getChatbotMetrics(
   const totalMessages = allMessages.length;
   const averagePerConversation = totalConversations > 0 ? totalMessages / totalConversations : 0;
 
-  // Métricas de performance
-  const messagesWithResponseTime = allMessages.filter((m) => m.responseTime);
-  const averageResponseTime = messagesWithResponseTime.length > 0
-    ? messagesWithResponseTime.reduce((sum, m) => sum + (m.responseTime || 0), 0) / messagesWithResponseTime.length
+  // Métricas de performance - Solo mensajes generados por el bot (excluir echo e históricos)
+  const botGeneratedMessages = allMessages.filter((m) =>
+    m.role === 'ASSISTANT' &&
+    m.channel === 'whatsapp' && // Solo mensajes del bot, no echo ni history
+    m.responseTime &&
+    m.responseTime > 0 // Excluir responseTime: 0 (echo/históricos)
+  );
+  const averageResponseTime = botGeneratedMessages.length > 0
+    ? botGeneratedMessages.reduce((sum, m) => sum + (m.responseTime || 0), 0) / botGeneratedMessages.length
     : 0;
 
   const messagesWithTokens = allMessages.filter((m) => m.tokens);
@@ -85,7 +90,13 @@ export async function getChatbotMetrics(
     ? messagesWithTokens.reduce((sum, m) => sum + (m.tokens || 0), 0) / messagesWithTokens.length
     : 0;
 
-  const messagesWithFirstTokenLatency = allMessages.filter((m) => m.firstTokenLatency);
+  // First token latency - Solo mensajes generados por el bot
+  const messagesWithFirstTokenLatency = allMessages.filter((m) =>
+    m.role === 'ASSISTANT' &&
+    m.channel === 'whatsapp' &&
+    m.firstTokenLatency &&
+    m.firstTokenLatency > 0
+  );
   const averageFirstTokenLatency = messagesWithFirstTokenLatency.length > 0
     ? messagesWithFirstTokenLatency.reduce((sum, m) => sum + (m.firstTokenLatency || 0), 0) / messagesWithFirstTokenLatency.length
     : 0;

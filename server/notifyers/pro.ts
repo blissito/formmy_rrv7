@@ -38,6 +38,7 @@ export const sendProEmail = async ({ email, name }: ProEmail) => {
                 "
             >
                 <div style="padding: 4% 4% 16px 4%">
+            
                 <img
                     alt="logo"
                     style="height: 32px; width: auto"
@@ -45,6 +46,11 @@ export const sendProEmail = async ({ email, name }: ProEmail) => {
                 />
                 </div>
                 <div style="padding: 0 4%">
+                   <img
+                    alt="cover"
+                    style="width: 100%; height: auto"
+                    src="https://i.imgur.com/TTdSK45.png"
+                />
                 <h2
                     style="
                     color: #000000;

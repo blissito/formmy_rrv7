@@ -48,7 +48,7 @@ export const sendStarterEmail = async ({ email, name }: StarterEmail) => {
                 <img
                     alt="cover"
                     style="width: 100%; height: auto"
-                    src="https://i.imgur.com/RbvF29K.png"
+                    src="https://i.imgur.com/pzpnKdB.png"
                 />
                 <h2
                     style="
@@ -76,7 +76,7 @@ export const sendStarterEmail = async ({ email, name }: StarterEmail) => {
                     style="
                     margin-top: 16px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "
@@ -87,7 +87,7 @@ export const sendStarterEmail = async ({ email, name }: StarterEmail) => {
                     style="
                     margin-top: 16px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "
@@ -100,7 +100,7 @@ export const sendStarterEmail = async ({ email, name }: StarterEmail) => {
                     margin-bottom:24px;
                     padding-left:12px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: .7;
                     font-size: 16px;
                 ">
@@ -112,7 +112,7 @@ export const sendStarterEmail = async ({ email, name }: StarterEmail) => {
                 <p
                     style="
                         margin-top: 16px;
-                        text-align: justify;
+                        text-align: left;
                         color: #4b5563;
                         line-height: 140%;
                         font-size: 16px;
@@ -124,7 +124,7 @@ export const sendStarterEmail = async ({ email, name }: StarterEmail) => {
                     style="
                     margin-top: 16px;
                     color: #4b5563;
-                    text-align: justify;
+                    text-align: left;
                     line-height: 140%;
                     font-size: 16px;
                     "
