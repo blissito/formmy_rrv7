@@ -32,23 +32,6 @@ export async function saveContactInfoHandler(
       };
     }
 
-    // Validar que al menos se proporcione email o teléfono
-    if (!input.email && !input.phone) {
-      console.log('❌ [save_contact_info] Falta email o teléfono');
-      return {
-        success: false,
-        message: "Se requiere al menos un email o teléfono para guardar el lead. Por favor, proporciona una forma de contacto.",
-      };
-    }
-
-    // Validar formato de email si se proporciona
-    if (input.email && !isValidEmail(input.email)) {
-      return {
-        success: false,
-        message: "El formato del email no es válido.",
-      };
-    }
-
     // Buscar conversación actual y detectar el canal de origen
     let conversationId: string | undefined = context.conversationId;
     let source = 'web'; // Default a web
@@ -71,8 +54,8 @@ export async function saveContactInfoHandler(
       console.log('⚪ [save_contact_info] Sin conversationId, usando source por defecto: web');
     }
 
-    // Auto-completar datos desde Contact de WhatsApp si es necesario
-    if (source === 'whatsapp' && conversationId && (!input.phone || !input.name)) {
+    // 📱 PASO 1: Auto-completar datos desde Contact de WhatsApp si es necesario
+    if (source === 'whatsapp' && conversationId) {
       console.log('📱 [save_contact_info] Buscando Contact de WhatsApp para auto-completar datos...');
       const whatsappContact = await db.contact.findFirst({
         where: {
@@ -99,6 +82,23 @@ export async function saveContactInfoHandler(
       } else {
         console.log('⚠️ [save_contact_info] No se encontró Contact de WhatsApp asociado a la conversación');
       }
+    }
+
+    // ✅ PASO 2: Validar que al menos se proporcione email o teléfono (DESPUÉS de auto-completar)
+    if (!input.email && !input.phone) {
+      console.log('❌ [save_contact_info] Falta email o teléfono (después de auto-completar)');
+      return {
+        success: false,
+        message: "Se requiere al menos un email o teléfono para guardar el lead. Por favor, proporciona una forma de contacto.",
+      };
+    }
+
+    // Validar formato de email si se proporciona
+    if (input.email && !isValidEmail(input.email)) {
+      return {
+        success: false,
+        message: "El formato del email no es válido.",
+      };
     }
 
     // Verificar si ya existe un lead similar
