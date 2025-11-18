@@ -271,10 +271,10 @@ export default function Detail() {
             </div>
           )}
         </AnimatePresence>
-      <article className="max-w-7xl mx-auto p-4 md:px-0 md:py-8 h-full">
+      <article className="max-w-7xl mx-auto p-4 lg:px-0 lg:py-8 h-full">
         <main>
           <nav className="flex items-center h-fit gap-2 flex-wrap ">
-            <div className="flex flex-col items-start ml-8 md:mr-auto mb-0 relative">
+            <div className="flex flex-col items-start ml-8 lg:mr-auto mb-0 relative">
               <Link
                 to="/dashboard/formmys"
                 className="text-4xl absolute -left-10"
@@ -304,11 +304,11 @@ export default function Detail() {
                         onChange={handleNameChange}
                         onKeyDown={handleKeyDown}
                         onBlur={handleBlur}
-                        className="text-lg rounded-lg max-h-9 md:text-3xl font-bold text-dark border border-outlines focus:border-brand-500 focus:outline-none focus:ring-0 w-fit"
+                        className="text-lg rounded-lg max-h-9 lg:text-3xl font-bold text-dark border border-outlines focus:border-brand-500 focus:outline-none focus:ring-0 w-fit"
                       />
                     </motion.div>
                   ) : (
-                    <motion.h2 
+                    <motion.h2
                     onClick={() => setIsEditing(true)}
                     onKeyDown={handleKeyDown}
                       key="title"
@@ -321,7 +321,7 @@ export default function Detail() {
                         opacity: { duration: 0.15 },
                         x: { duration: 0.2 }
                       }}
-                      className="text-2xl md:text-3xl heading text-dark cursor-pointer"
+                      className="text-2xl lg:text-3xl heading text-dark cursor-pointer"
                     >
                       {projectName}
                     </motion.h2>
@@ -458,7 +458,7 @@ export const SearchBar = ({
 }) => {
   const [isLoading, set] = useState(false);
   return (
-    <div className="flex items-start gap-2 flex-row md:flex-row w-full">
+    <div className="flex items-start gap-2 flex-row lg:flex-row w-full">
       <div className="relative w-full">
         <span className="absolute top-3 left-2 text-gray-400">
           <BsSearch />
@@ -558,6 +558,8 @@ const MessagesViewer = ({
   answers: AnswerType[];
 }) => {
   const [active, setActive] = useState(0);
+  // Estado para controlar vista mobile (lista vs detalle)
+  const [showDetailInMobile, setShowDetailInMobile] = useState(false);
 
   const filtered = useMemo(() => {
     if (active === 1) {
@@ -568,8 +570,12 @@ const MessagesViewer = ({
   }, [active, answers]);
 
   return (
-    <article className="flex mt-6 md:mt-8 gap-8 md:gap-4 flex-col-reverse md:flex-row">
-      <section className="flex flex-col md:w-[280px] h-full w-full">
+    <article className="flex mt-6 lg:mt-8 gap-8 lg:gap-4 flex-col-reverse lg:flex-row">
+      {/* Lista de mensajes - Se oculta en mobile cuando se muestra el detalle */}
+      <section className={twMerge(
+        "flex flex-col lg:w-[280px] h-full w-full",
+        showDetailInMobile && "hidden lg:flex"
+      )}>
         <nav className="flex justify-center w-full mb-2 border-b-[1px] border-outlines ">
           <button
             onClick={() => setActive(0)}
@@ -591,7 +597,7 @@ const MessagesViewer = ({
           </button>
         </nav>
         {/* List */}
-        <div className="h-fit md:h-96 overflow-hidden overflow-y-scroll">
+        <div className="h-fit lg:h-96 overflow-hidden overflow-y-scroll">
           <AnimatePresence mode="wait" initial={false}>
             {filtered.length > 0 ? (
               <motion.div key="cards-list">
@@ -600,7 +606,10 @@ const MessagesViewer = ({
                     <Card
                       isCurrent={answer.id == current.id}
                       key={answer.id}
-                      onClick={() => onChange(answer.id)}
+                      onClick={() => {
+                        onChange(answer.id);
+                        setShowDetailInMobile(true); // Mostrar detalle en mobile
+                      }}
                       answer={answer}
                     />
                   ))}
@@ -620,15 +629,25 @@ const MessagesViewer = ({
           </AnimatePresence>
         </div>
       </section>
-      {/* Detail  */}
-      <section className="shadow-standard border border-outlines rounded-3xl md:py-6 md:px-6 px-4 py-4 grow relative">
-        <header className="flex items-center md:mb-8 mb-2">
+      {/* Detail - En mobile solo se muestra cuando showDetailInMobile es true */}
+      <section className={twMerge(
+        "shadow-standard border border-outlines rounded-3xl lg:py-6 lg:px-6 px-4 py-4 grow relative",
+        !showDetailInMobile && "hidden lg:block"
+      )}>
+        <header className="flex items-center lg:mb-8 mb-2">
+          {/* Botón de volver - Solo visible en mobile */}
+          <button
+            onClick={() => setShowDetailInMobile(false)}
+            className="lg:hidden -ml-2 mr-1 flex items-center justify-center flex-shrink-0"
+          >
+            <IoIosArrowRoundBack className="w-7 h-7 text-gray-700" />
+          </button>
           <div className="rounded-full w-12 h-12 mr-2 bg-space-100 dark:bg-clear/5 flex justify-center items-center">
             <img src="/home/ghosty-avatar.svg" alt="avatar" />
           </div>
 
           <div>
-            <p className="text-md mb-[-6px] font-medium text-dark">
+            <p className="text-sm mb-[-6px] font-medium text-dark">
               {current?.data?.email}
             </p>
             <span className="text-irongray font-light text-xs ">
@@ -637,7 +656,7 @@ const MessagesViewer = ({
           </div>
           <button
             disabled={!userPermissions?.delete}
-            onClick={userPermissions?.delete ? () => onClick() : null}
+            onClick={userPermissions?.delete ? () => onClick() : undefined}
             className={twMerge(
               "ml-auto text-red-500 mr-3",
               "disabled:text-gray-500 disabled:cursor-not-allowed"
@@ -674,8 +693,8 @@ const MessagesViewer = ({
 
 const EmptyFavorites = () => {
   return (
-    <div className="text-center mt-0 md:mt-12 flex flex-col items-center ">
-      <Empty className="w-[160px] md:w-[200px] dark:hidden flex" />
+    <div className="text-center mt-0 lg:mt-12 flex flex-col items-center ">
+      <Empty className="w-[160px] lg:w-[200px] dark:hidden flex" />
       {/* <img
         alt="empty"
         className="w-[200px] dark:hidden flex"

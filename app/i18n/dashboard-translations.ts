@@ -708,7 +708,7 @@ export const dashboardTranslations = {
       source: "Origen",
       sourceWhatsApp: "WhatsApp",
       sourceWeb: "Web",
-      autoSaveTip: "💡 Tip: Los leads se guardan automáticamente cuando tu chatbot captura información de contacto usando la herramienta save_contact_info.",
+      autoSaveTip: "Los leads se guardan cuando tu chatbot captura información de contacto usando save_contact_info.",
       viewConversation: "Ver conversación",
       noConversation: "Sin conversación",
       noConversationAssociated: "Este lead no tiene una conversación asociada",

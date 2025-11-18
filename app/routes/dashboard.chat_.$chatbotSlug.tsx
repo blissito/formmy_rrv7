@@ -502,7 +502,7 @@ export default function ChatbotDetailRoute({
   return (
     <PageContainer>
       <div className=" sticky top-0 z-10 bg-white">
-      <PageContainer.Title className="!mb-2 md:!mb-4" back="/dashboard/chat">
+      <PageContainer.Title className="!mb-2 lg:!mb-4" back="/dashboard/chat">
         {chatbot.name}
       </PageContainer.Title>
       <PageContainer.TabSelector
@@ -554,12 +554,12 @@ const Tareas = () => {
   return (
     <section className="h-full min-h-[60vh] place-items-center grid">
     <div>
-      <img className="w-40 md:w-[200px] mx-auto" src="/dash/comming.svg" alt="comming soon" />
+      <img className="w-40 lg:w-[200px] mx-auto" src="/dash/comming.svg" alt="comming soon" />
       <h3 className="text-xl lg:text-2xl font-bold text-dark text-center heading mt-6">Tareas automatizadas en camino</h3>
       <p className="text-sm lg:text-base paragraph text-center text-metal mt-3 max-w-md mx-auto">Estamos trabajando en una poderosa herramienta para que automatices tareas recurrentes y optimices la productividad de tu agente. ¡Muy pronto podrás programar acciones y flujos de trabajo personalizados!</p>
     </div>
   </section>
-  
+
   );
 };
 

@@ -91,7 +91,7 @@ export const PageContainer = ({
       (child as React.ReactElement).type !== PageContainer.Header
   );
   return (
-    <main className="h-full max-w-7xl mx-auto p-4 md:pt-8 md:pb-0 md:px-0 ">
+    <main className="h-full max-w-7xl mx-auto p-4 lg:pt-8 lg:pb-0 lg:px-0 ">
       {HeaderComponent && HeaderComponent}
       <article className={cn("h-full")} {...props}>
         <section>{nodes}</section>
@@ -116,20 +116,20 @@ export const Title = ({
   return (
     <nav
       className={cn(
-        "flex justify-between items-center mb-6 md:mb-8",
+        "flex justify-between items-center mb-6 lg:mb-8",
         className
       )}
     >
       <div className="flex items-end gap-4 relative">
         {back && (
-          <Link to={back} className="text-4xl absolute -left-2 md:-left-10">
+          <Link to={back} className="text-4xl absolute -left-2 lg:-left-10">
             <IoIosArrowRoundBack />
           </Link>
         )}
         <h2
           className={cn(
-            "text-2xl md:text-3xl font-bold ml-0 text-dark",
-            back && "ml-8 md:ml-0"
+            "text-2xl lg:text-3xl font-bold ml-0 text-dark",
+            back && "ml-8 lg:ml-0"
           )}
         >
           {children}
@@ -362,7 +362,7 @@ export const ChatCard = ({
         <Link
           id="chatbot_detail"
           to={`/dashboard/chat/${chatbot.slug}`}
-          className="group relative overflow-hidden transition-all hover:shadow-none md:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] border border-outlines bg-white rounded-2xl w-full h-full block"
+          className="group relative overflow-hidden transition-all hover:shadow-none lg:hover:shadow-[0_4px_16px_0px_rgba(204,204,204,0.25)] border border-outlines bg-white rounded-2xl w-full h-full block"
         >
           <section className="overflow-hidden bg-gradient-to-r from-[#51B8BF] to-brand-500 w-full h-24 flex items-end justify-center border-b border-outlines">
             <img className={`${chatbot.avatarUrl ? 'w-full h-full object-cover object-center' : 'w-[40%] -mb-4'} `} src={chatbot.avatarUrl || "/dash/chat.svg"} alt="chatbot" />
@@ -401,7 +401,7 @@ export const ChatCard = ({
             {!isInvited && (
               <div
                 id="actions"
-                className=" hidden md:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute z-20 -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all  items-center justify-end px-3"
+                className=" hidden lg:flex w-[126px] bg-cover gap-2 h-[36px] bg-actionsBack absolute z-20 -bottom-10 right-0 group-hover:-bottom-[1px] -right-[1px] transition-all  items-center justify-end px-3"
               >
                 <button
                   className="hover:bg-surfaceThree w-7 h-7 rounded-lg grid place-items-center"
@@ -442,14 +442,14 @@ export const ChatCard = ({
 export const StickyGrid = ({ children }: { children: ReactNode }) => {
   const nodes = Children.toArray(children);
   return (
-    <article className="flex gap-2 md:gap-6 w-full pb-8 ">
-      <section className="self-start sticky top-4  md:mr-0">{nodes[0]}</section>
-      <div className="flex flex-col md:flex-row gap-4 md:gap-6 grow  ">
+    <article className="flex gap-2 lg:gap-6 w-full pb-8 ">
+      <section className="self-start sticky top-4  lg:mr-0">{nodes[0]}</section>
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 grow  ">
         <section className={`grow w-full ${nodes[2] ? "max-w-[732px]" : ""}`}>
           {nodes[1]}
         </section>
         {nodes[2] && (
-          <section className="self-start sticky top-4 w-full md:w-[280px]">
+          <section className="self-start sticky top-4 w-full lg:w-[280px]">
             {nodes[2]}
           </section>
         )}
@@ -549,10 +549,11 @@ export const EditionPair = ({
   return (
     <PreviewContext.Provider value={contextValue}>
       <article className="grid grid-cols-12 w-full gap-6 h-full    min-h-[calc(100vh-310px)]">
-        <section className="col-span-12 md:col-span-4">
-          <PreviewForm chatbot={chatbot} user={user} />
+        <section className="col-span-12 lg:col-span-4">
+          <PreviewForm chatbot={chatbot} user={user} integrations={integrations} />
         </section>
-        <section className="col-span-12 md:col-span-8">
+        {/* Preview - Oculto en mobile/tablet, visible en desktop */}
+        <section className="hidden lg:block lg:col-span-8">
           <ChatPreview
             chatbot={{
               ...chatbot,
@@ -649,12 +650,20 @@ export const TabSelector = ({
       <nav
         className={cn(
           "relative flex-1",
-          "flex overflow-y-scroll md:overflow-auto items-start md:items-end justify-start md:justify-center"
+          "flex overflow-x-scroll lg:overflow-auto items-start lg:items-end justify-start lg:justify-center"
         )}
         style={{
           scrollbarWidth: "none",
+          msOverflowStyle: "none",
         }}
       >
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            nav::-webkit-scrollbar {
+              display: none;
+            }
+          `
+        }} />
         <div
           ref={containerRef}
           className="relative flex border-b border-outlines/50 "
@@ -727,11 +736,11 @@ export const TabButton = ({
       className={cn(
         "relative",
         "text-base",
-        "p-3 px-3 md:px-6",
+        "p-3 px-3 lg:px-6",
         "hover:text-black transition-all duration-200",
         "focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-none",
         "border-none outline-none",
-        "select-none",
+        "select-none whitespace-nowrap",
         {
           "text-dark font-medium": isActive,
           "text-irongray font-normal": !isActive,

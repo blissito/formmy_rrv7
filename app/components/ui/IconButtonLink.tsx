@@ -49,11 +49,11 @@ export const IconButtonLink: React.FC<IconButtonLinkProps> = ({
       prefetch='render'
       {...props}
     >
-      <div className="flex flex-col gap-0 md:gap-2 items-center text-center">
-        <div className={`w-full grid place-content-center rounded-xl !w-[60px] h-12 transition-all duration-200 ${isActive ? 'bg-brand-500/20' : 'bg-transparent hover:bg-brand-500/10'}`}>
+      <div className="flex flex-col gap-1 lg:gap-2 items-center text-center">
+        <div className={`w-full grid place-content-center rounded-xl !w-[60px] h-10 lg:h-12 transition-all duration-200 ${isActive ? 'bg-brand-500/20' : 'bg-transparent hover:bg-brand-500/10'}`}>
           {iconElement}
         </div>
-        <span className={`text-base text-dark`}>
+        <span className={`text-sm lg:text-base text-dark`}>
           {title}
         </span>
       </div>

@@ -279,7 +279,7 @@ export const Contactos = ({
           <h3 className="text-lg md:text-xl font-semibold text-dark">
             {t('contacts.title')} ({contacts.length})
           </h3>
-          <p className="text-xs md:text-sm text-metal mt-1 hidden sm:block">
+          <p className="text-xs lg:text-sm text-metal mt-1 hidden sm:block">
             {t('contacts.autoSaveTip')}
           </p>
         </div>

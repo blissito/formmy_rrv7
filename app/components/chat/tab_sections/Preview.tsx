@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { Button, usePreviewContext } from "../PageContainer";
 import { ChipTabs, useChipTabs } from "../common/ChipTabs";
-import type { Chatbot, User } from "@prisma/client";
+import type { Chatbot, User, Integration } from "@prisma/client";
 import toast from "react-hot-toast";
 import { AgentForm } from "../forms/AgentForm";
 import { ChatForm } from "../forms/ChatForm";
 import { useSubmit } from "react-router";
 import { useS3Upload } from "~/hooks/useS3Upload";
+import ChatPreview from "~/components/ChatPreview";
+import { cn } from "~/lib/utils";
+import { IoClose } from "react-icons/io5";
+import { MdOutlineRemoveRedEye } from "react-icons/md";
 // import { getAgentWelcomeMessage, getAgentGoodbyeMessage } from "~/utils/agents/agentPrompts";
 import type { AgentType } from "../common/AgentDropdown";
 
@@ -14,15 +18,18 @@ import type { AgentType } from "../common/AgentDropdown";
 export const PreviewForm = ({
   chatbot,
   user,
+  integrations,
 }: {
   chatbot: Chatbot;
   user: User;
+  integrations?: Integration[];
 }) => {
   const submit = useSubmit();
   const { uploadFile } = useS3Upload();
   // Usar el hook con persistencia en localStorage, usando el chatbot.id como contexto único
   const { currentTab: activeTab, setCurrentTab: setActiveTab } = useChipTabs("Chat", `preview_${chatbot.id}`);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   
   // Usar el contexto para obtener y actualizar el estado
   const {
@@ -160,25 +167,37 @@ export const PreviewForm = ({
   };
 
   return (
-    <article className="w-full h-full ">
-      <header className="flex items-center justify-between w-full mb-6 ">
-        <ChipTabs activeTab={activeTab} onTabChange={setActiveTab} />
-        <Button
-          className="h-10"
-          mode="ghost"
-          onClick={handleSave}
-          isLoading={isSaving}
-        >
-          <div className="flex gap-2 items-center">
-            <img
-              src="/assets/chat/diskette.svg"
-              alt="diskette save button"
-              className="w-5 h-5"
-            />
-            <span>{isSaving ? "Guardando..." : "Guardar"}</span>
+    <>
+      <article className="w-full h-full ">
+        <header className="flex items-center justify-between w-full mb-6 ">
+          <ChipTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          <div className="flex items-center gap-2">
+            {/* Botón Preview - Solo visible en mobile/tablet */}
+            <button
+              onClick={() => setShowPreviewModal(true)}
+              className="lg:hidden h-10 w-10 rounded-lg border border-outlines hover:bg-gray-50 transition-colors flex items-center justify-center"
+              title="Ver preview"
+            >
+              <MdOutlineRemoveRedEye className="w-5 h-5 text-metal" />
+            </button>
+
+            <Button
+              className="h-10"
+              mode="ghost"
+              onClick={handleSave}
+              isLoading={isSaving}
+            >
+              <div className="flex gap-2 items-center">
+                <img
+                  src="/assets/chat/diskette.svg"
+                  alt="diskette save button"
+                  className="w-5 h-5"
+                />
+                <span>{isSaving ? "Guardando..." : "Guardar"}</span>
+              </div>
+            </Button>
           </div>
-        </Button>
-      </header>
+        </header>
       {activeTab === "Chat" && (
         <ChatForm
           name={name}
@@ -212,5 +231,41 @@ export const PreviewForm = ({
         />
       )}
     </article>
+
+      {/* Modal Preview Full Screen - Solo en mobile/tablet */}
+      {showPreviewModal && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-white overflow-hidden">
+          {/* Header del modal */}
+          <div className="sticky top-0 z-10 bg-white border-b border-outlines px-4 py-3 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-dark">Preview</h3>
+            <button
+              onClick={() => setShowPreviewModal(false)}
+              className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors"
+            >
+              <IoClose className="w-6 h-6 text-gray-700" />
+            </button>
+          </div>
+
+          {/* Content del modal */}
+          <div className="h-[calc(100vh-64px)] overflow-y-auto p-4">
+            <ChatPreview
+              chatbot={{
+                ...chatbot,
+                name,
+                primaryColor,
+                welcomeMessage,
+                goodbyeMessage,
+                avatarUrl,
+                aiModel: selectedModel,
+                temperature,
+                instructions,
+                personality: selectedAgent,
+              }}
+              integrations={integrations}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
