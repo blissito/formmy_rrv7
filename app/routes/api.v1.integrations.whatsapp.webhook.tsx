@@ -478,12 +478,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
                           chatbotId: integration.chatbotId,
                           name: contact.full_name || contact.first_name || null,
                           phone: contact.phone_number,
-                          source: "whatsapp",
-                          status: "NEW",
+                          // Note: conversationId is null for state_sync contacts (no specific conversation yet)
                         },
                         update: {
                           name: contact.full_name || contact.first_name || null,
-                          source: "whatsapp",
                         },
                       });
                       addedCount++;
@@ -741,7 +739,16 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
       throw new Error("Chatbot not found");
     }
 
+    // Create or find conversation FIRST (needed for Contact.conversationId)
+    console.log(`🔍 [Webhook] Creating/finding conversation for ${message.from}, chatbot: ${integration.chatbotId}`);
+    const conversation = await getOrCreateConversation(
+      message.from,
+      integration.chatbotId
+    );
+    console.log(`✅ [Webhook] Conversation ready: ${conversation.id}, status: ${conversation.status}, manualMode: ${conversation.manualMode}`);
+
     // ✅ CREATE/UPDATE CONTACT: Save contact info from WhatsApp when message arrives
+    // MUST be AFTER conversation creation to have conversationId
     if (contactName) {
       try {
         const normalizedPhone = message.from.replace(/\D/g, "").slice(-10);
@@ -755,18 +762,17 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
           },
           create: {
             chatbotId: integration.chatbotId,
+            conversationId: conversation.id, // ✅ Link to conversation
             name: contactName,
             phone: normalizedPhone,
-            source: "WHATSAPP",
-            status: "NEW",
           },
           update: {
             name: contactName,
-            lastUpdated: new Date(),
+            conversationId: conversation.id, // ✅ Update conversationId if changed
           },
         });
 
-        console.log(`✅ Contact saved: ${contactName} (${normalizedPhone})`);
+        console.log(`✅ Contact saved: ${contactName} (${normalizedPhone}) - conversationId: ${conversation.id}`);
 
         // 📸 FETCH AVATAR: TEMPORALMENTE DESHABILITADO - endpoint incorrecto causa errores
         // Meta API no soporta /${phoneNumber}/profile_picture directamente
@@ -785,14 +791,6 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
         // Don't fail the message processing if contact save fails
       }
     }
-
-    // Create or find conversation
-    console.log(`🔍 [Webhook] Creating/finding conversation for ${message.from}, chatbot: ${integration.chatbotId}`);
-    const conversation = await getOrCreateConversation(
-      message.from,
-      integration.chatbotId
-    );
-    console.log(`✅ [Webhook] Conversation ready: ${conversation.id}, status: ${conversation.status}, manualMode: ${conversation.manualMode}`);
 
     // 🎨 HANDLE STICKERS: Download and save sticker media
     let stickerUrl: string | undefined;
