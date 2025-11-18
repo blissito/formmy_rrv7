@@ -105,13 +105,8 @@ export const ChatForm = ({
               />
             ) : (
               <img
-                src="/assets/chat/user-placeholder.svg"
+                src="/dash/default-ghosty.svg"
                 alt="Avatar del chatbot"
-                style={{
-                  filter: `hue-rotate(${
-                    primaryColor === "#9A99EA" ? "0" : "180"
-                  }deg)`,
-                }}
                 className="object-cover w-full h-full"
               />
             )}

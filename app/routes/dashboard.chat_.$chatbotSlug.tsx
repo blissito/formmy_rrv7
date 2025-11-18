@@ -195,7 +195,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   // Transformar a formato UI (usando contactos de WhatsApp para mostrar nombres)
   const conversations = transformConversationsToUI(
     sortedConversations,
-    chatbot.avatarUrl || undefined,
+    chatbot.avatarUrl || "/dash/default-ghosty.svg",
     whatsappContacts as any,
     leads as any // ✅ También pasar leads para mostrar nombres
   );
