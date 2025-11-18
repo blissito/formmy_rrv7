@@ -279,6 +279,7 @@ model Chatbot {
   conversationCount  Int               @default(0)
   monthlyUsage       Int               @default(0)
   contextSizeKB      Int               @default(0)
+  whatsappAutoManual Boolean           @default(false) // TRUE = todas las conversaciones de WhatsApp inician en modo manual
   settings           ChatbotSettings?
   userId             String            @db.ObjectId
   user               User              @relation(fields: [userId], references: [id])

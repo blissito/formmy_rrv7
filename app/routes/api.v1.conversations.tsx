@@ -25,9 +25,30 @@ export const action = async ({ request }: Route.ActionArgs) => {
     const url = new URL(request.url);
     const body = await request.json();
     const intent = url.searchParams.get("intent") || body.intent;
-    const { conversationId, message } = body;
+    const { conversationId, message, chatbotId, isManual } = body;
 
+    // Intent toggle_all_whatsapp_manual no requiere conversationId
+    if (intent === "toggle_all_whatsapp_manual") {
+      if (!chatbotId) {
+        return json({ error: "ID de chatbot requerido" }, {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
 
+      // Validar acceso al chatbot
+      const accessValidation = await validateChatbotAccess(user.id, chatbotId);
+      if (!accessValidation.canAccess) {
+        return json({ error: "Sin acceso a este chatbot" }, {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      return await handleToggleAllWhatsAppManual(chatbotId, isManual ?? false);
+    }
+
+    // Para otros intents, conversationId es requerido
     if (!conversationId) {
       return json({ error: "ID de conversación requerido" }, {
         status: 400,
@@ -500,6 +521,41 @@ async function handleToggleFavorite(conversationId: string) {
     message: updatedConversation.isFavorite ?
       "Conversación marcada como favorita" :
       "Conversación desmarcada como favorita"
+  }, {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+/**
+ * Toggle modo manual para TODAS las conversaciones de WhatsApp de un chatbot
+ * Actualiza: 1) Configuración del chatbot, 2) Conversaciones existentes
+ */
+async function handleToggleAllWhatsAppManual(chatbotId: string, isManual: boolean) {
+
+  // 1. Actualizar configuración del chatbot
+  const chatbot = await db.chatbot.update({
+    where: { id: chatbotId },
+    data: { whatsappAutoManual: isManual }
+  });
+
+  // 2. Actualizar TODAS las conversaciones de WhatsApp EXISTENTES (detectadas por sessionId)
+  const result = await db.conversation.updateMany({
+    where: {
+      chatbotId,
+      sessionId: { contains: "whatsapp_" },
+      status: { not: "DELETED" }
+    },
+    data: { manualMode: isManual }
+  });
+
+  const mode = isManual ? "manual" : "automático";
+
+  return json({
+    success: true,
+    chatbotUpdated: true,
+    conversationsUpdated: result.count,
+    whatsappAutoManual: chatbot.whatsappAutoManual,
+    message: `Modo ${mode} ${isManual ? 'activado' : 'desactivado'} para ${result.count} conversaciones de WhatsApp`
   }, {
     headers: { 'Content-Type': 'application/json' }
   });

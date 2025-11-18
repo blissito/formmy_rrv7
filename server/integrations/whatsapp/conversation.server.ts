@@ -29,6 +29,12 @@ export async function getOrCreateConversation(
     },
   });
 
+  // Leer configuración del chatbot para aplicar modo manual automático si está configurado
+  const chatbot = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: { whatsappAutoManual: true }
+  });
+
   if (anyConversation) {
     // If found but DELETED, reactivate it
     if (anyConversation.status === ConversationStatus.DELETED) {
@@ -38,9 +44,10 @@ export async function getOrCreateConversation(
         data: {
           status: ConversationStatus.ACTIVE,
           updatedAt: new Date(), // Update timestamp to show recent activity
+          manualMode: chatbot?.whatsappAutoManual || false, // Aplicar config global
         },
       });
-      console.log(`✅ [Conversation] Conversation ${reactivatedConversation.id} reactivated`);
+      console.log(`✅ [Conversation] Conversation ${reactivatedConversation.id} reactivated (manualMode: ${reactivatedConversation.manualMode})`);
       return reactivatedConversation;
     }
 
@@ -57,13 +64,16 @@ export async function getOrCreateConversation(
     visitorIp: undefined,
   });
 
-  // Update the sessionId to our custom format for WhatsApp
+  // Update the sessionId to our custom format for WhatsApp AND apply auto manual mode
   const updatedConversation = await db.conversation.update({
     where: { id: newConversation.id },
-    data: { sessionId },
+    data: {
+      sessionId,
+      manualMode: chatbot?.whatsappAutoManual || false, // Aplicar config global
+    },
   });
 
-  console.log(`✅ [Conversation] New conversation created: ${updatedConversation.id}, sessionId: ${sessionId}`);
+  console.log(`✅ [Conversation] New conversation created: ${updatedConversation.id}, sessionId: ${sessionId}, manualMode: ${updatedConversation.manualMode}`);
   return updatedConversation;
 }
 

@@ -3,7 +3,7 @@ import type { UIMessage } from "~/server/chatbot/conversationTransformer.server"
 import { ChipTabs, useChipTabs } from "../common/ChipTabs";
 import { Avatar } from "../Avatar";
 import { useState, useEffect, useRef, type ReactNode, forwardRef } from "react";
-import { useNavigate, useSubmit } from "react-router";
+import { useNavigate, useSubmit, useRevalidator } from "react-router";
 import { cn } from "~/lib/utils";
 import Empty from "~/SVGs/Empty";
 import EmptyDark from "~/SVGs/EmptyDark";
@@ -14,8 +14,96 @@ import { FaWhatsapp } from "react-icons/fa";
 import { CiStar } from "react-icons/ci";
 import { FaStar } from "react-icons/fa";
 
+// Extender tipo Chatbot para asegurar que incluye whatsappAutoManual
+type ChatbotWithWhatsAppConfig = Chatbot & {
+  whatsappAutoManual?: boolean | null;
+};
+
+// Componente Tooltip reutilizable
+const Tooltip = ({
+  text,
+  children,
+  icon,
+  position = "bottom",
+  align = "center"
+}: {
+  text: string;
+  children: ReactNode;
+  icon?: string;
+  position?: "top" | "bottom" | "left" | "right";
+  align?: "left" | "center" | "right";
+}) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Posiciones del tooltip según position y align
+  const getPositionClasses = () => {
+    if (position === "top" || position === "bottom") {
+      const vertical = position === "bottom" ? "top-full mt-2" : "bottom-full mb-2";
+      const horizontal = {
+        left: "left-0",
+        center: "left-1/2 -translate-x-1/2",
+        right: "right-0",
+      };
+      return `${vertical} ${horizontal[align]}`;
+    }
+    // Para left/right mantener comportamiento actual
+    if (position === "left") return "right-full top-1/2 -translate-y-1/2 mr-2";
+    if (position === "right") return "left-full top-1/2 -translate-y-1/2 ml-2";
+    return "";
+  };
+
+  // Posiciones de la flecha según position y align
+  const getArrowClasses = () => {
+    if (position === "top" || position === "bottom") {
+      const vertical = position === "bottom" ? "bottom-full -mb-1" : "top-full -mt-1";
+      const horizontal = {
+        left: "left-4",
+        center: "left-1/2 -translate-x-1/2",
+        right: "right-4",
+      };
+      return `${vertical} ${horizontal[align]}`;
+    }
+    if (position === "left") return "left-full top-1/2 -translate-y-1/2 -ml-1";
+    if (position === "right") return "right-full top-1/2 -translate-y-1/2 -mr-1";
+    return "";
+  };
+
+  // Estilos de la flecha según el prop
+  const arrowStyles = {
+    bottom: "border-b-gray-900 dark:border-b-gray-800",
+    top: "border-t-gray-900 dark:border-t-gray-800",
+    left: "border-l-gray-900 dark:border-l-gray-800",
+    right: "border-r-gray-900 dark:border-r-gray-800",
+  };
+
+  return (
+    <div className="relative inline-block" style={{ overflow: 'visible' }}>
+      <div
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        {children}
+      </div>
+      {showTooltip && (
+        <div className={cn(
+          "absolute w-max max-w-xs px-3 py-2 text-xs text-white bg-gray-900 dark:bg-gray-800 rounded-lg shadow-lg pointer-events-none",
+          getPositionClasses()
+        )}
+        style={{ zIndex: 9999 }}>
+          {icon && <span className="mr-1">{icon}</span>}
+          {text}
+          {/* Flecha del tooltip */}
+          <div className={cn("absolute", getArrowClasses())}>
+            <div className={cn("border-4 border-transparent", arrowStyles[position])}></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 type ConversationsProps = {
-  chatbot: Chatbot;
+  chatbot: ChatbotWithWhatsAppConfig;
   user: User;
   conversations?: Conversation[];
   totalConversations?: number;
@@ -105,12 +193,28 @@ export const Conversations = ({
 
   const { currentTab: currentTabIndex, setCurrentTab: setCurrentTabIndex} = useChipTabs(TAB_ALL.toString(), `conversations_${chatbot?.id || 'default'}`);
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
+
+  // ✅ Revalidar al montar componente - asegura datos frescos cuando vuelve de Preview
+  useEffect(() => {
+    revalidator.revalidate();
+  }, []); // Solo al montar
 
   // Estado local para toggle manual (inicializado con valores reales)
   const [localManualModes, setLocalManualModes] = useState<Record<string, boolean>>({});
 
   // Estado local para favoritos (inicializado con valores reales)
   const [localFavorites, setLocalFavorites] = useState<Record<string, boolean>>({});
+
+  // Estado para modo manual global de WhatsApp
+  const [whatsappAutoManualUI, setWhatsappAutoManualUI] = useState(chatbot?.whatsappAutoManual || false);
+  const [isTogglingWhatsAppManual, setIsTogglingWhatsAppManual] = useState(false);
+  const [showWhatsAppPanel, setShowWhatsAppPanel] = useState(false);
+
+  // Sincronizar estado UI con props cuando cambien (después de revalidación)
+  useEffect(() => {
+    setWhatsappAutoManualUI(chatbot?.whatsappAutoManual || false);
+  }, [chatbot?.whatsappAutoManual]);
 
   // Filtrar favoritos usando estado local optimista
   const favoriteConversations = actualConversations.filter(
@@ -135,16 +239,29 @@ export const Conversations = ({
   const [showContactDetailsInMobile, setShowContactDetailsInMobile] = useState(false);
 
   // Inicializar estado local con valores de BD
+  // ✅ MERGE en vez de REPLACE - preserva cambios locales durante polling
   useEffect(() => {
-    const initialModes: Record<string, boolean> = {};
-    const initialFavorites: Record<string, boolean> = {};
-    actualConversations.forEach(conv => {
-      initialModes[conv.id] = conv.manualMode || false;
-      initialFavorites[conv.id] = conv.isFavorite || false;
+    setLocalManualModes(prev => {
+      const updated = { ...prev };
+      allLoadedConversations.forEach(conv => {
+        // Solo inicializar conversaciones nuevas - preservar cambios manuales
+        if (updated[conv.id] === undefined) {
+          updated[conv.id] = conv.manualMode || false;
+        }
+      });
+      return updated;
     });
-    setLocalManualModes(initialModes);
-    setLocalFavorites(initialFavorites);
-  }, [actualConversations]);
+
+    setLocalFavorites(prev => {
+      const updated = { ...prev };
+      allLoadedConversations.forEach(conv => {
+        if (updated[conv.id] === undefined) {
+          updated[conv.id] = conv.isFavorite || false;
+        }
+      });
+      return updated;
+    });
+  }, [allLoadedConversations]);
 
   // 🔄 Actualizar conversación cuando cambia selectedConversationId (desde URL)
   useEffect(() => {
@@ -238,6 +355,92 @@ export const Conversations = ({
     }
   };
 
+  // 🎯 Toggle modo manual global para WhatsApp
+  const handleToggleWhatsAppAutoManual = async () => {
+    if (isTogglingWhatsAppManual) return; // Prevenir múltiples clicks
+
+    const currentValue = whatsappAutoManualUI;
+    const newValue = !currentValue;
+
+    // Confirmar con el usuario
+    const whatsappConversations = actualConversations.filter(
+      (conv) => conv.isWhatsApp
+    );
+
+    if (whatsappConversations.length > 0) {
+      const mode = newValue ? "manual" : "automático";
+
+      // Detectar conversaciones con configuración individual diferente
+      const conversationsWithDifferentConfig = whatsappConversations.filter(
+        (conv) => conv.manualMode !== newValue
+      );
+
+      // Mensaje de confirmación con warning si hay configuraciones individuales
+      let confirmMessage = `¿Activar modo ${mode} para ${whatsappConversations.length} conversaciones de WhatsApp?\n\n`;
+
+      if (conversationsWithDifferentConfig.length > 0) {
+        confirmMessage += `⚠️ ATENCIÓN: Esto cambiará ${conversationsWithDifferentConfig.length} conversación${conversationsWithDifferentConfig.length > 1 ? 'es' : ''} que ${conversationsWithDifferentConfig.length > 1 ? 'tienen' : 'tiene'} configuración individual diferente.\n\n`;
+      }
+
+      confirmMessage += `Esto ${newValue ? 'desactivará' : 'activará'} las respuestas automáticas del bot para TODAS las conversaciones de WhatsApp.`;
+
+      const confirmed = window.confirm(confirmMessage);
+
+      if (!confirmed) return;
+    }
+
+    // ✅ Optimistic update - actualizar UI inmediatamente
+    setWhatsappAutoManualUI(newValue);
+    setIsTogglingWhatsAppManual(true);
+
+    try {
+      const response = await fetch('/api/v1/conversations?intent=toggle_all_whatsapp_manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatbotId: chatbot.id,
+          isManual: newValue
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Actualizar estados locales de conversaciones individuales
+        setLocalManualModes(prev => {
+          const updated = { ...prev };
+          whatsappConversations.forEach(conv => {
+            updated[conv.id] = newValue;
+          });
+          return updated;
+        });
+
+        // Revalidar para traer datos frescos de BD (incluyendo chatbot.whatsappAutoManual)
+        revalidator.revalidate();
+
+        // Feedback al usuario
+        alert(`✅ ${data.message || `Modo ${newValue ? 'manual' : 'automático'} activado`}`);
+      } else {
+        const error = await response.json();
+        console.error("❌ Error toggling WhatsApp manual mode:", error);
+
+        // Revertir estado UI si falló
+        setWhatsappAutoManualUI(currentValue);
+
+        alert(`Error: ${error.error || 'No se pudo actualizar el modo manual'}`);
+      }
+    } catch (error) {
+      console.error("❌ Error toggling WhatsApp manual mode:", error);
+
+      // Revertir estado UI en caso de error
+      setWhatsappAutoManualUI(currentValue);
+
+      alert("Error de conexión. Por favor intenta de nuevo.");
+    } finally {
+      setIsTogglingWhatsAppManual(false);
+    }
+  };
+
   return (
     <>
       {/* Mostrar empty state si no hay conversaciones */}
@@ -252,14 +455,91 @@ export const Conversations = ({
           "flex flex-col h-full gap-4 md:gap-6",
           showConversationInMobile && "hidden md:flex" // Ocultar en mobile si se muestra conversación
         )}>
-          <ChipTabs
-            names={tabNames}
-            onTabChange={(tabName) => {
-              const index = tabNames.indexOf(tabName);
-              setCurrentTabIndex(index.toString());
-            }}
-            activeTab={tabNames[parseInt(currentTabIndex) || 0]}
-          />
+          {/* Tabs + Botón WhatsApp */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <ChipTabs
+                names={tabNames}
+                onTabChange={(tabName) => {
+                  const index = tabNames.indexOf(tabName);
+                  setCurrentTabIndex(index.toString());
+                }}
+                activeTab={tabNames[parseInt(currentTabIndex) || 0]}
+              />
+            </div>
+            {/* Botón WhatsApp - Solo visible si hay conversaciones de WhatsApp */}
+            {actualConversations.some(conv => conv.isWhatsApp) && (
+              <Tooltip text="Activa/desactiva el modo manual para todas las conversaciones de WhatsApp a la vez" icon="⚙️">
+                <button
+                  onClick={() => setShowWhatsAppPanel(!showWhatsAppPanel)}
+                  className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center transition-colors flex-shrink-0",
+                    showWhatsAppPanel
+                      ? "bg-green-500 text-white"
+                      : "text-metal border border-outlines hover:bg-surfaceFour dark:hover:bg-metal/20"
+                  )}
+                >
+                  <FaWhatsapp className="w-5 h-5" />
+                </button>
+              </Tooltip>
+            )}
+          </div>
+
+          {/* Panel de configuración WhatsApp - Se muestra/oculta */}
+          {showWhatsAppPanel && actualConversations.some(conv => conv.isWhatsApp) && (
+            <div
+              className="flex items-center justify-between px-3 py-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700"
+              style={{
+                animation: 'slideDown 0.2s ease-out'
+              }}
+            >
+              <style dangerouslySetInnerHTML={{
+                __html: `
+                  @keyframes slideDown {
+                    from {
+                      opacity: 0;
+                      transform: translateY(-10px);
+                    }
+                    to {
+                      opacity: 1;
+                      transform: translateY(0);
+                    }
+                  }
+                `
+              }} />
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Modo manual WhatsApp
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  ({actualConversations.filter(c => c.isWhatsApp).length} conversaciones)
+                </span>
+              </div>
+              <button
+                onClick={handleToggleWhatsAppAutoManual}
+                disabled={isTogglingWhatsAppManual}
+                className={cn(
+                  "px-3 py-1.5 text-xs rounded-full font-medium transition-colors",
+                  whatsappAutoManualUI
+                    ? "bg-dark text-white"
+                    : "bg-cloud text-dark",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+                title={whatsappAutoManualUI ? "Desactivar modo manual" : "Activar modo manual"}
+              >
+                {isTogglingWhatsAppManual ? (
+                  <span className="flex items-center gap-1">
+                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    {whatsappAutoManualUI ? "🔧 Manual" : "🤖 Agente"}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+
         <ConversationsList
           onConversationSelect={(conv) => {
             setConversation(conv);
@@ -296,7 +576,11 @@ export const Conversations = ({
           onSendManualResponse={handleSendManualResponse}
           onDeleteConversation={onDeleteConversation}
           onToggleFavorite={handleToggleFavorite}
-          localManualMode={localManualModes[conversation?.id] || false}
+          localManualMode={(() => {
+            const value = localManualModes[conversation?.id] ?? conversation?.manualMode ?? false;
+            console.log(`🎯 ConversationsPreview - conv ${conversation?.id}: localManualModes[id]=${localManualModes[conversation?.id]}, conversation.manualMode=${conversation?.manualMode}, final=${value}`);
+            return value;
+          })()}
           isFavorite={localFavorites[conversation?.id] ?? conversation?.isFavorite}
           onAvatarClick={() => {
             const newState = !showContactDetails;
@@ -626,15 +910,25 @@ const Conversation = forwardRef<
       </div>
       <div className="flex-2 pr-3 flex flex-col items-end gap-1">
         <p className="text-xs text-gray-500">{conversation.time}</p>
+        {/* Indicador de mensajes nuevos */}
+        {conversation.unread > 0 && (
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-brand-500" />
+            <span className="text-[10px] text-brand-500 font-medium">
+              {conversation.unread}
+            </span>
+          </div>
+        )}
         {/* Mostrar estrella solo cuando está marcado como favorito */}
         {isFavorite && (
-          <button
-            onClick={handleFavoriteClick}
-            className="transition-all h-5 w-5 flex items-center justify-center hover:scale-110 cursor-pointer active:scale-95 text-yellow-500"
-            title="Quitar de favoritos"
-          >
-            <FaStar className="w-4 h-4" />
-          </button>
+          <Tooltip text="Quitar de favoritos" icon="⭐" position="left">
+            <button
+              onClick={handleFavoriteClick}
+              className="transition-all h-5 w-5 flex items-center justify-center hover:scale-110 cursor-pointer active:scale-95 text-yellow-500"
+            >
+              <FaStar className="w-4 h-4" />
+            </button>
+          </Tooltip>
         )}
       </div>
     </section>
@@ -810,29 +1104,31 @@ const ChatHeader = ({
     >
       {/* Botón de volver - Solo visible en mobile */}
       {onBackToList && (
-        <button
-          onClick={onBackToList}
-          className="md:hidden w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors flex-shrink-0"
-          title="Volver a conversaciones"
-        >
-          <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+        <Tooltip text="Volver a conversaciones">
+          <button
+            onClick={onBackToList}
+            className="md:hidden w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors flex-shrink-0"
+          >
+            <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </Tooltip>
       )}
-      <button
-        onClick={onAvatarClick}
-        className="relative hover:opacity-80 transition-opacity cursor-pointer"
-        title="Ver detalles del contacto"
-      >
-        <Avatar className="h-10 w-10" src={userAvatarUrl || "/assets/chat/ghosty.svg"} />
-        {/* Badge de WhatsApp - círculo verde con icono */}
-        {isWhatsAppConversation && (
-          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center ">
-            <FaWhatsapp className="w-2.5 h-2.5 text-white" />
-          </div>
-        )}
-      </button>
+      <Tooltip text="Ver detalles del contacto" icon="👤">
+        <button
+          onClick={onAvatarClick}
+          className="relative hover:opacity-80 transition-opacity cursor-pointer"
+        >
+          <Avatar className="h-10 w-10" src={userAvatarUrl || "/assets/chat/ghosty.svg"} />
+          {/* Badge de WhatsApp - círculo verde con icono */}
+          {isWhatsAppConversation && (
+            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center ">
+              <FaWhatsapp className="w-2.5 h-2.5 text-white" />
+            </div>
+          )}
+        </button>
+      </Tooltip>
       <div className="flex-1">
         <div className="flex items-center">
           <h3 className="text-base font-semibold text-dark ">
@@ -844,40 +1140,45 @@ const ChatHeader = ({
         {/* Desktop: fecha completa */}
         <p className="hidden md:block text-xs text-lightgray -mt-[2px]">{date}</p>
       </div>
-      <ToggleButton
-        isManual={localManualMode}
-        onClick={handleToggleManual}
-        disabled={false}
-      />
-      <button
-        onClick={handleDownloadCSV}
-        className="hover:bg-gray-50 rounded-full p-1 transition-colors"
-        title="Descargar conversación"
-      >
-        <img className="w-6 h-6" src="/assets/chat/download.svg" alt="download icon" />
-      </button>
-      <button
-        onClick={handleToggleFavorite}
-        className={cn(
-          "rounded-full p-[2px] transition-all hover:scale-110 active:scale-95",
-          "w-8 h-8 flex items-center justify-center",
-          isFavorite ? "text-yellow-500 hover:bg-yellow-50" : "text-metal hover:bg-gray-50"
-        )}
-        title={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"}
-      >
-        {isFavorite ? (
-          <FaStar className="w-5 h-5" />
-        ) : (
-          <CiStar className="w-6 h-6" />
-        )}
-      </button>
-      <button
-        onClick={handleDeleteConversation}
-        className=" hover:bg-red-50 rounded-full p-1 transition-colors"
-        title="Eliminar conversación"
-      >
-        <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
-      </button>
+      <Tooltip text={localManualMode ? "Cambiar a modo automático (bot responde)" : "Cambiar a modo manual (tú respondes)"} icon={localManualMode ? "🤖" : "🔧"} position="bottom">
+        <ToggleButton
+          isManual={localManualMode}
+          onClick={handleToggleManual}
+          disabled={false}
+        />
+      </Tooltip>
+      <Tooltip text="Descargar conversación en CSV" icon="📥" position="bottom">
+        <button
+          onClick={handleDownloadCSV}
+          className="hover:bg-gray-50 rounded-full p-1 transition-colors"
+        >
+          <img className="w-6 h-6" src="/assets/chat/download.svg" alt="download icon" />
+        </button>
+      </Tooltip>
+      <Tooltip text={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"} icon="⭐" position="bottom" align="right">
+        <button
+          onClick={handleToggleFavorite}
+          className={cn(
+            "rounded-full p-[2px] transition-all hover:scale-110 active:scale-95",
+            "w-8 h-8 flex items-center justify-center",
+            isFavorite ? "text-yellow-500 hover:bg-yellow-50" : "text-metal hover:bg-gray-50"
+          )}
+        >
+          {isFavorite ? (
+            <FaStar className="w-5 h-5" />
+          ) : (
+            <CiStar className="w-6 h-6" />
+          )}
+        </button>
+      </Tooltip>
+      <Tooltip text="Eliminar conversación" icon="🗑️" position="bottom" align="right">
+        <button
+          onClick={handleDeleteConversation}
+          className=" hover:bg-red-50 rounded-full p-1 transition-colors"
+        >
+          <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
+        </button>
+      </Tooltip>
     </header>
   );
 };
