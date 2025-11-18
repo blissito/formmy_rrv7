@@ -188,29 +188,34 @@ CUÁNDO USAR:
 ✅ Usuario comparte datos para recibir propuesta o demo
 ✅ Usuario pregunta precios y deja contacto
 
-EJEMPLOS VÁLIDOS:
-✅ "Me interesa el plan Pro, mi email es juan@empresa.com" → Guardar
-✅ "Envíame cotización a este WhatsApp: +52 55 1234 5678" → Guardar
-✅ "Contáctame al correo info@startup.com" → Guardar
-✅ "Quiero saber más, mi teléfono es..." → Guardar
+EJEMPLOS VÁLIDOS CON productInterest:
+✅ "Me interesa el plan Pro, mi email es juan@empresa.com" → productInterest: "Plan Pro"
+✅ "Envíame cotización de consultoría a este WhatsApp" → productInterest: "Consultoría"
+✅ "Quiero saber más de automatización WhatsApp" → productInterest: "Automatización WhatsApp"
+✅ "Necesito ayuda con mi chatbot" → productInterest: "Soporte chatbot"
 
 NO USAR:
 ❌ Usuario solo pregunta información SIN proporcionar contacto
 ❌ Usuario pregunta precios pero NO deja email/teléfono
 ❌ Inventar o adivinar datos de contacto
 
+CRÍTICO - productInterest:
+⚠️ SIEMPRE extrae el productInterest del contexto de la conversación
+⚠️ Revisa los mensajes anteriores para identificar qué le interesa al usuario
+⚠️ Puede ser: plan específico, servicio, producto, consultoría, soporte, etc.
+⚠️ Si el usuario mencionó algo de interés en conversaciones previas, úsalo
+
 IMPORTANTE:
 - Requiere email O phone REAL proporcionado por el usuario
 - 📱 WHATSAPP: El phone es OPCIONAL (se auto-completa del perfil). Solo necesitas email si el usuario lo proporciona
 - 💻 WEB: Requiere email O phone del usuario explícitamente
-- Captura productInterest si el usuario menciona qué le interesa
 - NO pidas confirmación explícita "¿guardo tu email?" - Si lo proporcionó en contexto de interés, guárdalo
 - Confirma al usuario DESPUÉS de guardarlo: "Perfecto, tengo tu contacto. Te daremos seguimiento."`,
     parameters: z.object({
       name: z.string().optional().describe("Nombre completo proporcionado por el usuario (en WhatsApp se auto-completa del perfil si no se proporciona)"),
       email: z.string().optional().describe("Email REAL proporcionado por el usuario - REQUERIDO en Web si no hay phone. OPCIONAL en WhatsApp"),
       phone: z.string().optional().describe("Teléfono REAL proporcionado por el usuario - REQUERIDO en Web si no hay email. En WhatsApp se auto-completa del perfil"),
-      productInterest: z.string().optional().describe("Producto o servicio que le interesa al usuario (ej: 'Plan Pro', 'Consultoría', 'Automatización WhatsApp')"),
+      productInterest: z.string().optional().describe("OBLIGATORIO EXTRAER: Producto, servicio o tema de interés mencionado en la conversación. Revisa el historial completo para identificarlo. Ejemplos: 'Plan Pro', 'Consultoría', 'Automatización WhatsApp', 'Soporte técnico', 'Integración Gmail', etc."),
       position: z.string().optional().describe("Cargo mencionado por el usuario"),
       website: z.string().optional().describe("Website mencionado por el usuario"),
       notes: z.string().optional().describe("Notas adicionales del contexto")
