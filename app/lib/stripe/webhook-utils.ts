@@ -26,6 +26,8 @@ export interface StripeSubscription {
   customer_email?: string; // Email del customer
   status: SubscriptionStatus;
   current_period_end?: number; // Unix timestamp
+  cancel_at_period_end?: boolean; // Si la suscripción está programada para cancelarse
+  canceled_at?: number; // Unix timestamp de cuándo se solicitó la cancelación
   metadata?: Record<string, string>; // Metadatos de Stripe
   items?: {
     data: Array<{
@@ -233,6 +235,40 @@ export async function handleSubscriptionUpdated(subscription: StripeSubscription
     console.warn(
       `[Webhook] Usuario no encontrado para el cliente de Stripe: ${customerId}`
     );
+    return;
+  }
+
+  // ✅ DETECTAR CANCELACIÓN PROGRAMADA
+  if (subscription.cancel_at_period_end === true) {
+    console.log(`[Webhook] 📅 Cancelación programada detectada para ${user.email}`);
+    console.log(`[Webhook] Fecha de fin: ${new Date((subscription.current_period_end || 0) * 1000).toISOString()}`);
+
+    // Enviar email de cancelación inmediatamente
+    try {
+      const currentPlan = user.plan as "Starter" | "Pro" | "Enterprise" | "FREE";
+
+      if (currentPlan !== "FREE") {
+        const endDate = subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toLocaleDateString("es-MX", {
+              day: "numeric",
+              month: "long",
+              year: "numeric"
+            })
+          : "31 de diciembre de 2025";
+
+        await sendPlanCancellation({
+          email: user.email,
+          endDate,
+          planName: currentPlan as "Starter" | "Pro" | "Enterprise"
+        });
+
+        console.log(`[Webhook] ✅ Email de cancelación enviado a ${user.email}`);
+      }
+    } catch (error) {
+      console.error('[Webhook] Error enviando email de cancelación:', error);
+    }
+
+    // No cambiar el plan todavía - el usuario sigue teniendo acceso hasta el período final
     return;
   }
 
