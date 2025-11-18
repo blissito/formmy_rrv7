@@ -285,31 +285,38 @@ function isValidEmail(email: string): boolean {
 
 /**
  * 🔄 Sincronizar datos del Lead con el Contact de WhatsApp (si aplica)
- * Cuando capturamos un lead con email en una conversación de WhatsApp,
- * actualizamos el Contact para tener información más completa.
+ *
+ * ⚠️ IMPORTANTE: Esta función SOLO sincroniza el EMAIL al Contact de WhatsApp.
+ * El nombre del Contact se maneja EXCLUSIVAMENTE por el webhook de WhatsApp y NUNCA debe ser modificado aquí.
+ *
+ * Flujo:
+ * - Lead.name: Viene del usuario O se auto-completa desde Contact.name (líneas 78-81)
+ * - Contact.name: SOLO se actualiza por el webhook de WhatsApp
+ * - Esta función: SOLO agrega/actualiza email en Contact
  */
 async function syncLeadToContact(params: {
   source: string;
   conversationId?: string;
   chatbotId: string;
   email?: string;
-  name?: string;
+  name?: string; // Recibido pero NO usado (solo para mantener firma compatible)
 }): Promise<void> {
-  const { source, conversationId, chatbotId, email, name } = params;
+  const { source, conversationId, chatbotId, email } = params;
 
   // Solo sincronizar para conversaciones de WhatsApp
   if (source !== 'whatsapp' || !conversationId) {
     return;
   }
 
-  // Si no hay datos para sincronizar, salir
-  if (!email && !name) {
+  // Si no hay email para sincronizar, salir
+  if (!email) {
+    console.log('ℹ️ [syncLeadToContact] No hay email para sincronizar');
     return;
   }
 
   try {
-    console.log('🔄 [syncLeadToContact] Iniciando sincronización...');
-    console.log('🔄 [syncLeadToContact] Params:', { source, conversationId, chatbotId, email, name });
+    console.log('🔄 [syncLeadToContact] Iniciando sincronización de email...');
+    console.log('🔄 [syncLeadToContact] Params:', { source, conversationId, chatbotId, email });
 
     // Buscar Contact asociado a esta conversación
     const existingContact = await db.contact.findFirst({
@@ -327,43 +334,24 @@ async function syncLeadToContact(params: {
     console.log('🔍 [syncLeadToContact] Contact encontrado:', {
       id: existingContact.id,
       currentEmail: existingContact.email,
-      currentName: existingContact.name,
       newEmail: email,
-      newName: name,
     });
 
-    // Preparar datos para actualizar (solo los que se proporcionaron)
-    const updateData: { email?: string; name?: string } = {};
-
     // ✅ Actualizar email si viene uno nuevo (incluso si ya existe uno diferente)
-    if (email) {
-      if (!existingContact.email) {
-        updateData.email = email;
-        console.log('✅ [syncLeadToContact] Agregando email nuevo al Contact:', email);
-      } else if (existingContact.email !== email) {
-        updateData.email = email;
-        console.log('✅ [syncLeadToContact] Actualizando email del Contact:', existingContact.email, '→', email);
-      } else {
-        console.log('ℹ️ [syncLeadToContact] Email ya está actualizado:', email);
-      }
-    }
-
-    // ✅ Actualizar nombre si viene uno nuevo
-    if (name && existingContact.name !== name) {
-      updateData.name = name;
-      console.log('✅ [syncLeadToContact] Actualizando nombre del Contact:', existingContact.name, '→', name);
-    }
-
-    // Si hay datos para actualizar, hacerlo
-    if (Object.keys(updateData).length > 0) {
-      console.log('📝 [syncLeadToContact] Actualizando Contact con:', updateData);
+    if (!existingContact.email) {
       await db.contact.update({
         where: { id: existingContact.id },
-        data: updateData,
+        data: { email },
       });
-      console.log('✅ [syncLeadToContact] Contact actualizado exitosamente:', existingContact.id);
+      console.log('✅ [syncLeadToContact] Email agregado al Contact:', email);
+    } else if (existingContact.email !== email) {
+      await db.contact.update({
+        where: { id: existingContact.id },
+        data: { email },
+      });
+      console.log('✅ [syncLeadToContact] Email actualizado en Contact:', existingContact.email, '→', email);
     } else {
-      console.log('ℹ️ [syncLeadToContact] No hay datos nuevos para sincronizar');
+      console.log('ℹ️ [syncLeadToContact] Email ya está actualizado:', email);
     }
   } catch (error) {
     // No fallar el flujo principal si falla la sincronización

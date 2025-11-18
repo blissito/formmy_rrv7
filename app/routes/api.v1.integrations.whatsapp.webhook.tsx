@@ -268,6 +268,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
               // Extract contact name from webhook payload (if available)
               const contactName = change.value.contacts?.[0]?.profile?.name;
+              console.log(`📞 [Webhook] Contact name from payload:`, contactName, '(from:', message.from, ')');
 
               const incomingMessage: IncomingMessage = {
                 messageId: message.id,
@@ -767,8 +768,8 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
             phone: normalizedPhone,
           },
           update: {
-            name: contactName,
-            conversationId: conversation.id, // ✅ Update conversationId if changed
+            name: contactName, // Actualizar nombre del perfil de WhatsApp
+            conversationId: conversation.id,
           },
         });
 

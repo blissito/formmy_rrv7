@@ -212,7 +212,7 @@ IMPORTANTE:
 - NO pidas confirmación explícita "¿guardo tu email?" - Si lo proporcionó en contexto de interés, guárdalo
 - Confirma al usuario DESPUÉS de guardarlo: "Perfecto, tengo tu contacto. Te daremos seguimiento."`,
     parameters: z.object({
-      name: z.string().optional().describe("Nombre completo proporcionado por el usuario (en WhatsApp se auto-completa del perfil si no se proporciona)"),
+      name: z.string().optional().describe("Nombre REAL proporcionado explícitamente por el usuario. En WhatsApp se auto-completa del perfil. NUNCA uses 'Usuario', 'User', 'Contacto' u otros genéricos - déjalo vacío si no lo proporciona."),
       email: z.string().optional().describe("Email REAL proporcionado por el usuario - REQUERIDO en Web si no hay phone. OPCIONAL en WhatsApp"),
       phone: z.string().optional().describe("Teléfono REAL proporcionado por el usuario - REQUERIDO en Web si no hay email. En WhatsApp se auto-completa del perfil"),
       productInterest: z.string().optional().describe("OBLIGATORIO EXTRAER: Producto, servicio o tema de interés mencionado en la conversación. Revisa el historial completo para identificarlo. Ejemplos: 'Plan Pro', 'Consultoría', 'Automatización WhatsApp', 'Soporte técnico', 'Integración Gmail', etc."),
