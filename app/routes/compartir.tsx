@@ -62,13 +62,13 @@ export default function Compartir({ loaderData }: Route.ComponentProps) {
               />
               {/* <CreditsBox /> */}
             </div>
-            <h2 className="text-2xl md:text-3xl text-dark heading text-center mb-2">
+            <h2 className="text-2xl lg:text-3xl text-dark heading text-center mb-2">
               Comparte con tus amigos y{" "}
               <span className="text-brand-500">
                 gana meses de suscripción PRO gratis!
               </span>
             </h2>
-            <p className="paragraph text-metal text-center">
+            <p className="text-sm lg:text-base paragraph text-metal text-center">
               Por cada amigo que se suscriba al plan PRO, obtén 50 créditos que
               puedes canjear por meses de suscripción PRO gratis o más mensajes
               para tu Chat IA.

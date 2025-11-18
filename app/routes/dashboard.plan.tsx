@@ -166,7 +166,7 @@ export default function DashboardPlan() {
           Administra tu plan
         </h2>
         <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 md:col-span-8">
+          <div className="col-span-12 lg:col-span-8">
         {(user.plan === "FREE" || user.plan === "TRIAL") && <CardFree setShowPlansModal={setShowPlansModal} />}
           {user.plan === "STARTER" && (
             <CardStarter
@@ -187,7 +187,7 @@ export default function DashboardPlan() {
             />
           )}
           </div>
-          <div className="col-span-12 md:col-span-4 flex flex-col gap-5">
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-5">
             {/* Banner de compra de créditos */}
             <div className="bg-banner1 bg-cover bg-botton rounded-3xl p-6 relative overflow-hidden">
               {/* Icono decorativo */}
