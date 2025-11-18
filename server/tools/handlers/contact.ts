@@ -163,6 +163,13 @@ export async function saveContactInfoHandler(
       }).catch(console.error);
 
       // 🔄 SINCRONIZAR con Contact de WhatsApp (si aplica)
+      console.log('🔄 [save_contact_info] Llamando syncLeadToContact con:', {
+        source,
+        conversationId,
+        chatbotId: context.chatbotId,
+        email: input.email,
+        name: input.name,
+      });
       await syncLeadToContact({
         source,
         conversationId,
@@ -217,6 +224,13 @@ export async function saveContactInfoHandler(
       }).catch(console.error);
 
       // 🔄 SINCRONIZAR con Contact de WhatsApp (si aplica)
+      console.log('🔄 [save_contact_info] Llamando syncLeadToContact con:', {
+        source,
+        conversationId,
+        chatbotId: context.chatbotId,
+        email: input.email,
+        name: input.name,
+      });
       await syncLeadToContact({
         source,
         conversationId,
@@ -294,7 +308,8 @@ async function syncLeadToContact(params: {
   }
 
   try {
-    console.log('🔄 [syncLeadToContact] Buscando Contact de WhatsApp para sincronizar...');
+    console.log('🔄 [syncLeadToContact] Iniciando sincronización...');
+    console.log('🔄 [syncLeadToContact] Params:', { source, conversationId, chatbotId, email, name });
 
     // Buscar Contact asociado a esta conversación
     const existingContact = await db.contact.findFirst({
@@ -309,21 +324,39 @@ async function syncLeadToContact(params: {
       return;
     }
 
+    console.log('🔍 [syncLeadToContact] Contact encontrado:', {
+      id: existingContact.id,
+      currentEmail: existingContact.email,
+      currentName: existingContact.name,
+      newEmail: email,
+      newName: name,
+    });
+
     // Preparar datos para actualizar (solo los que se proporcionaron)
     const updateData: { email?: string; name?: string } = {};
 
-    if (email && !existingContact.email) {
-      updateData.email = email;
-      console.log('✅ [syncLeadToContact] Agregando email al Contact:', email);
+    // ✅ Actualizar email si viene uno nuevo (incluso si ya existe uno diferente)
+    if (email) {
+      if (!existingContact.email) {
+        updateData.email = email;
+        console.log('✅ [syncLeadToContact] Agregando email nuevo al Contact:', email);
+      } else if (existingContact.email !== email) {
+        updateData.email = email;
+        console.log('✅ [syncLeadToContact] Actualizando email del Contact:', existingContact.email, '→', email);
+      } else {
+        console.log('ℹ️ [syncLeadToContact] Email ya está actualizado:', email);
+      }
     }
 
+    // ✅ Actualizar nombre si viene uno nuevo
     if (name && existingContact.name !== name) {
       updateData.name = name;
-      console.log('✅ [syncLeadToContact] Actualizando nombre del Contact:', name);
+      console.log('✅ [syncLeadToContact] Actualizando nombre del Contact:', existingContact.name, '→', name);
     }
 
     // Si hay datos para actualizar, hacerlo
     if (Object.keys(updateData).length > 0) {
+      console.log('📝 [syncLeadToContact] Actualizando Contact con:', updateData);
       await db.contact.update({
         where: { id: existingContact.id },
         data: updateData,
