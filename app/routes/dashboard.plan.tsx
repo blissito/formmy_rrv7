@@ -195,18 +195,18 @@ export default function DashboardPlan() {
 
         {/* Mensaje de mismo plan (info) */}
         {info === 'same_plan' && planParam && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+          <div className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
-                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-6 h-6 text-teal-600 dark:text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-blue-800 dark:text-blue-300 font-semibold text-lg">
+                <h3 className="text-teal-800 dark:text-teal-300 font-semibold text-lg">
                   Ya tienes el plan {planParam} activo
                 </h3>
-                <p className="text-blue-700 dark:text-blue-400 mt-1">
+                <p className="text-teal-700 dark:text-teal-400 mt-1">
                   Tu suscripción actual sigue vigente. No es necesario volver a comprarla.
                 </p>
               </div>
