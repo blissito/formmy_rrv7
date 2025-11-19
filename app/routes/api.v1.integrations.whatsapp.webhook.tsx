@@ -1019,7 +1019,8 @@ async function generateChatbotResponse(
       sessionId: conversationId, // Usar conversationId como sessionId
       conversationId: conversationId,
       conversationHistory: history,
-      integrations
+      integrations,
+      channel: 'whatsapp' // ✅ Indicar que estamos en WhatsApp
     });
 
     // Plan del dueño del chatbot (para usuarios anónimos en WhatsApp)

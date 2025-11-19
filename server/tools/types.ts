@@ -12,6 +12,7 @@ export interface ToolContext {
   integrations: Record<string, any>;
   isGhosty?: boolean; // Flag para distinguir Ghosty de chatbots públicos
   onSourcesFound?: (sources: any[]) => void; // Callback para emitir fuentes al stream
+  channel?: 'whatsapp' | 'web' | 'voice'; // Canal de comunicación (para lógica específica de canal)
 }
 
 export interface ToolResponse {

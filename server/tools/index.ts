@@ -206,11 +206,12 @@ CRÍTICO - productInterest:
 ⚠️ Si el usuario mencionó algo de interés en conversaciones previas, úsalo
 
 IMPORTANTE:
-- Requiere email O phone REAL proporcionado por el usuario
-- 📱 WHATSAPP: El phone es OPCIONAL (se auto-completa del perfil). Solo necesitas email si el usuario lo proporciona
-- 💻 WEB: Requiere email O phone del usuario explícitamente
+- Requiere email O phone REAL proporcionado explícitamente por el usuario
+- NO uses datos genéricos o inventados
 - NO pidas confirmación explícita "¿guardo tu email?" - Si lo proporcionó en contexto de interés, guárdalo
-- Confirma al usuario DESPUÉS de guardarlo: "Perfecto, tengo tu contacto. Te daremos seguimiento."`,
+- Confirma al usuario DESPUÉS de guardarlo: "Perfecto, tengo tu contacto. Te daremos seguimiento."
+
+NOTA: En WhatsApp, el teléfono ya está disponible del perfil del usuario - NO lo pidas nuevamente.`,
     parameters: z.object({
       name: z.string().optional().describe("Nombre REAL proporcionado explícitamente por el usuario. En WhatsApp se auto-completa del perfil. NUNCA uses 'Usuario', 'User', 'Contacto' u otros genéricos - déjalo vacío si no lo proporciona."),
       email: z.string().optional().describe("Email REAL proporcionado por el usuario - REQUERIDO en Web si no hay phone. OPCIONAL en WhatsApp"),
