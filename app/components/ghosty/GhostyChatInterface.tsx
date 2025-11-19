@@ -363,16 +363,8 @@ export const GhostyChatInterface = ({
                                               className="w-16 h-16 rounded-full hover:scale-110 transition-all"
                                             />
                                             <a target="_blank" href="/profile">
-<<<<<<< HEAD
-                                              <Button
-                                                variant="secondary"
-                                                className="uppercase"
-                                              >
-                                                Ir al perfil!
-=======
                                               <Button variant="secondary">
                                                 Ir al perfil
->>>>>>> main
                                               </Button>
                                             </a>
                                           </div>

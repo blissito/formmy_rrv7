@@ -9,10 +9,23 @@ import { openai } from "@ai-sdk/openai";
 import type { Route } from "./+types/chat.vercel";
 import z from "zod";
 import { getUserOrRedirect } from "@/server/getUserUtils.server";
+import { vectorize } from "@/server/context/vercel_embeddings";
 
 export const action = async ({ request }: Route.ActionArgs) => {
-  const { messages }: { messages: UIMessage[] } = await request.json();
+  const {
+    messages,
+    intent,
+    textToVectorize,
+  }: { messages: UIMessage[]; intent: string; textToVectorize: string } =
+    await request.json();
   const user = await getUserOrRedirect(request);
+
+  // ******** Chunking and embeddings ********
+  if (intent === "vectorize") {
+    await vectorize(textToVectorize);
+    return null;
+    // todo
+  }
 
   const selfUserTool = tool({
     description:

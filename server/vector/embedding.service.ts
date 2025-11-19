@@ -3,8 +3,12 @@
  * Genera vectors de 768 dimensiones para RAG semántico
  */
 
-import OpenAI from 'openai';
-import { EMBEDDING_MODEL, EMBEDDING_DIMENSIONS, validateEmbeddingDimensions } from './vector-config';
+import OpenAI from "openai";
+import {
+  EMBEDDING_MODEL,
+  EMBEDDING_DIMENSIONS,
+  validateEmbeddingDimensions,
+} from "./vector-config";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -17,14 +21,14 @@ const openai = new OpenAI({
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   if (!text || text.trim().length === 0) {
-    throw new Error('Text cannot be empty');
+    throw new Error("Text cannot be empty");
   }
 
   try {
     const response = await openai.embeddings.create({
       model: EMBEDDING_MODEL,
       input: text.trim(),
-      encoding_format: 'float',
+      encoding_format: "float",
       dimensions: EMBEDDING_DIMENSIONS,
     });
 
@@ -32,8 +36,10 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     validateEmbeddingDimensions(embedding);
     return embedding;
   } catch (error) {
-    console.error('Error generating embedding:', error);
-    throw new Error(`Failed to generate embedding: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("Error generating embedding:", error);
+    throw new Error(
+      `Failed to generate embedding: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -42,7 +48,9 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  * @param texts - Array de textos
  * @returns Array de vectors
  */
-export async function generateEmbeddingsBatch(texts: string[]): Promise<number[][]> {
+export async function generateEmbeddingsBatch(
+  texts: string[]
+): Promise<number[][]> {
   if (!texts || texts.length === 0) {
     return [];
   }
@@ -52,7 +60,9 @@ export async function generateEmbeddingsBatch(texts: string[]): Promise<number[]
   const results: number[][] = [];
 
   for (let i = 0; i < texts.length; i += batchSize) {
-    const batch = texts.slice(i, i + batchSize).filter(t => t && t.trim().length > 0);
+    const batch = texts
+      .slice(i, i + batchSize)
+      .filter((t) => t && t.trim().length > 0);
 
     if (batch.length === 0) continue;
 
@@ -60,15 +70,18 @@ export async function generateEmbeddingsBatch(texts: string[]): Promise<number[]
       const response = await openai.embeddings.create({
         model: EMBEDDING_MODEL,
         input: batch,
-        encoding_format: 'float',
+        encoding_format: "float",
         dimensions: EMBEDDING_DIMENSIONS,
       });
 
-      const embeddings = response.data.map(d => d.embedding);
+      const embeddings = response.data.map((d) => d.embedding);
       embeddings.forEach(validateEmbeddingDimensions);
       results.push(...embeddings);
     } catch (error) {
-      console.error(`Error generating batch embeddings (batch ${i / batchSize + 1}):`, error);
+      console.error(
+        `Error generating batch embeddings (batch ${i / batchSize + 1}):`,
+        error
+      );
       throw error;
     }
   }
@@ -84,7 +97,7 @@ export async function generateEmbeddingsBatch(texts: string[]): Promise<number[]
  */
 export function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length) {
-    throw new Error('Vectors must have same dimensions');
+    throw new Error("Vectors must have same dimensions");
   }
 
   let dotProduct = 0;

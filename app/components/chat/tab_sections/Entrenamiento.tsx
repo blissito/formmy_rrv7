@@ -213,9 +213,25 @@ export const Entrenamiento = ({
       ]);
     }
 
+    // VERCEL EXPERIMENT
+    const experiment = async () => {
+      console.log("About to experiment");
+      const r = await fetch("/chat/vercel", {
+        body: JSON.stringify({
+          intent: "vectorize",
+          textToVectorize: textContent.trim(),
+        }),
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    };
+    experiment();
+
     // Limpiar formulario
     setTextTitle("");
-    setTextContent("");
+    // setTextContent("");
     setEditingTextContext(null);
   };
 
@@ -682,7 +698,9 @@ export const Entrenamiento = ({
       }
 
       // Agregar sitios web nuevos como contextos
-      console.log(`🌐 [handleUpdateChatbot] Procesando ${newWebsiteEntries.length} websites...`);
+      console.log(
+        `🌐 [handleUpdateChatbot] Procesando ${newWebsiteEntries.length} websites...`
+      );
       const failedWebsiteEntries: WebsiteEntry[] = [];
       let successfulWebsites = 0;
 
@@ -704,20 +722,21 @@ export const Entrenamiento = ({
           );
           contextFormData.append("routes", JSON.stringify(entry.routes));
 
-          console.log(`   ⏳ [handleUpdateChatbot] Enviando request para ${entry.url}...`);
+          console.log(
+            `   ⏳ [handleUpdateChatbot] Enviando request para ${entry.url}...`
+          );
           const contextResponse = await fetch("/api/v1/chatbot", {
             method: "POST",
             body: contextFormData,
           });
-          console.log(`   ✅ [handleUpdateChatbot] Response recibida: ${contextResponse.status}`);
+          console.log(
+            `   ✅ [handleUpdateChatbot] Response recibida: ${contextResponse.status}`
+          );
 
           if (!contextResponse.ok) {
             const errorData = await contextResponse.json();
             // Mostrar error específico (NO agregar a failedWebsiteEntries para que se quite de la lista)
-            toast.error(
-              `${entry.url}: ${errorData.error}`,
-              { duration: 6000 }
-            );
+            toast.error(`${entry.url}: ${errorData.error}`, { duration: 6000 });
             continue; // Continuar con el siguiente
           }
 
@@ -725,18 +744,20 @@ export const Entrenamiento = ({
           successfulWebsites++;
         } catch (error) {
           // Error de red u otro error (NO agregar a failedWebsiteEntries para que se quite de la lista)
-          const errorMsg = error instanceof Error ? error.message : "Error desconocido";
-          toast.error(
-            `Error de red al agregar ${entry.url}: ${errorMsg}`,
-            { duration: 6000 }
-          );
+          const errorMsg =
+            error instanceof Error ? error.message : "Error desconocido";
+          toast.error(`Error de red al agregar ${entry.url}: ${errorMsg}`, {
+            duration: 6000,
+          });
           continue; // Continuar con el siguiente
         }
       }
 
       // Actualizar estado: mantener solo los que fallaron
       setNewWebsiteEntries(failedWebsiteEntries);
-      console.log(`✅ [handleUpdateChatbot] Websites procesados: ${successfulWebsites} exitosos, ${failedWebsiteEntries.length} fallidos`);
+      console.log(
+        `✅ [handleUpdateChatbot] Websites procesados: ${successfulWebsites} exitosos, ${failedWebsiteEntries.length} fallidos`
+      );
 
       // Eliminar contextos marcados para eliminar (archivos, websites, texto, preguntas)
       const allContextsToRemove = [
@@ -801,7 +822,9 @@ export const Entrenamiento = ({
 
       toast.error(errorMessage, { duration: 6000 });
     } finally {
-      console.log("🏁 [handleUpdateChatbot] Finally ejecutado, limpiando estado...");
+      console.log(
+        "🏁 [handleUpdateChatbot] Finally ejecutado, limpiando estado..."
+      );
       setIsUpdating(false);
     }
   };

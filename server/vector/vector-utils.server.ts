@@ -6,15 +6,15 @@
  * - auto-vectorize.service.ts
  */
 
-import { generateEmbedding, cosineSimilarity } from './embedding.service';
-import { db } from '~/utils/db.server';
+import { generateEmbedding, cosineSimilarity } from "./embedding.service";
+import { db } from "~/utils/db.server";
 
 /**
  * Configuración compartida de chunks
  */
 export const VECTOR_CONFIG = {
   MAX_CHUNK_SIZE: 2000,
-  CHUNK_OVERLAP: 300,        // 15% overlap para mejor continuidad y coverage
+  CHUNK_OVERLAP: 300, // 15% overlap para mejor continuidad y coverage
   SIMILARITY_THRESHOLD: 0.85,
   MAX_RETRIES: 3,
   INITIAL_RETRY_DELAY: 1000,
@@ -24,7 +24,7 @@ export const VECTOR_CONFIG = {
  * Sleep helper para retry delays
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -81,7 +81,7 @@ export function chunkContent(
 
     // Intentar cortar en un espacio para no partir palabras
     if (end < text.length) {
-      const lastSpace = chunk.lastIndexOf(' ');
+      const lastSpace = chunk.lastIndexOf(" ");
       if (lastSpace > maxSize / 2) {
         chunks.push(chunk.slice(0, lastSpace).trim());
         start += lastSpace - overlap;
@@ -95,7 +95,7 @@ export function chunkContent(
     }
   }
 
-  return chunks.filter(c => c.length > 0);
+  return chunks.filter((c) => c.length > 0);
 }
 
 /**
@@ -122,7 +122,10 @@ export async function isDuplicateChunk(
 
     // Comparar con cada embedding existente
     for (const existing of existingEmbeddings) {
-      const similarity = cosineSimilarity(embedding, existing.embedding as number[]);
+      const similarity = cosineSimilarity(
+        embedding,
+        existing.embedding as number[]
+      );
 
       if (similarity >= threshold) {
         return true; // Es duplicado
@@ -131,7 +134,7 @@ export async function isDuplicateChunk(
 
     return false; // Es único
   } catch (error) {
-    console.error('Error verificando duplicados:', error);
+    console.error("Error verificando duplicados:", error);
     return false; // Fail-open: en caso de error, permitir inserción
   }
 }
