@@ -9,6 +9,7 @@ import { sendPlanCancellation } from "server/notifyers/planCancellation";
 
 import { getDefaultModelForPlan } from "~/utils/aiModels";
 import { addPurchasedCredits } from "server/llamaparse/credits.service";
+import { getClient } from "~/utils/stripe.server";
 
 
 type SubscriptionStatus =
@@ -166,6 +167,15 @@ export async function handleSubscriptionCreated(
     return;
   }
 
+  // ✅ VALIDACIÓN DEFENSIVA: Verificar si ya tiene suscripciones activas
+  if (user.subscriptionIds && user.subscriptionIds.length > 0) {
+    console.warn(
+      `[Webhook] ⚠️ Usuario ${user.email} YA TIENE ${user.subscriptionIds.length} suscripción(es). Esto NO debería suceder con upgrade/downgrade automático.`,
+      { existingSubscriptions: user.subscriptionIds, newSubscription: subscription.id }
+    );
+    // Log para detectar si el flujo de upgrade/downgrade falló
+  }
+
   // Cargar información de referido si existe (necesario para conversión)
   const userWithReferral = await db.user.findUnique({
     where: { id: user.id },
@@ -318,17 +328,50 @@ export async function handleSubscriptionDeleted(subscription: StripeSubscription
   // Guardar el plan actual antes de actualizarlo
   const currentPlan = user.plan as "Starter" | "Pro" | "Enterprise" | "FREE";
 
+  // ✅ VALIDACIÓN DEFENSIVA: Verificar si hay otras suscripciones activas en Stripe
+  const stripe = getClient();
+  let newPlan: "FREE" | "STARTER" | "PRO" | "ENTERPRISE" = "FREE";
+
+  try {
+    const activeSubscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'active',
+      limit: 10,
+    });
+
+    // Filtrar la suscripción que se está eliminando
+    const otherActiveSubscriptions = activeSubscriptions.data.filter(
+      (sub: { id: string }) => sub.id !== subscription.id
+    );
+
+    if (otherActiveSubscriptions.length > 0) {
+      // ✅ Hay otras suscripciones activas - mantener el plan activo
+      const remainingSubscription = otherActiveSubscriptions[0] as unknown as StripeSubscription;
+      newPlan = determinePlanFromSubscription(remainingSubscription);
+
+      console.log(
+        `[Webhook] ℹ️ Usuario ${user.email} tiene ${otherActiveSubscriptions.length} suscripción(es) activa(s) adicional(es). Manteniendo plan ${newPlan}.`,
+        { remainingSubscriptions: otherActiveSubscriptions.map((s: { id: string }) => s.id) }
+      );
+    } else {
+      console.log(`[Webhook] Usuario ${user.email} no tiene más suscripciones activas. Cambiando a FREE.`);
+    }
+  } catch (error) {
+    console.error(`[Webhook] Error verificando suscripciones activas:`, error);
+    // Si hay error al consultar Stripe, defaultear a FREE por seguridad
+  }
+
   await db.user.update({
     where: { id: user.id },
     data: {
-      plan: "FREE",
+      plan: newPlan,
       subscriptionIds:
         user.subscriptionIds?.filter((id) => id !== subscription.id) ?? [],
     },
   });
 
-  // Actualizar modelos de chatbots según el nuevo plan FREE
-  await updateUserChatbotModels(user.id, "FREE");
+  // Actualizar modelos de chatbots según el nuevo plan
+  await updateUserChatbotModels(user.id, newPlan);
 
 
   // Send cancellation email

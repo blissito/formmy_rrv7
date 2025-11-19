@@ -22,9 +22,12 @@ export const loader = async ({ request }: { request: Request }) => {
   const user = await getUserOrRedirect(request);
   const subscription = await searchStripeSubscriptions(user) as SubscriptionResponse | null;
 
-  // Detectar si viene de una compra exitosa
+  // Detectar si viene de una compra exitosa, upgrade, o mismo plan
   const url = new URL(request.url);
   const success = url.searchParams.get("success") === "1";
+  const upgraded = url.searchParams.get("upgraded") === "1";
+  const info = url.searchParams.get("info");
+  const planParam = url.searchParams.get("plan") || null;
 
   // Obtener créditos disponibles
   const credits = await getAvailableCredits(user.id);
@@ -69,6 +72,9 @@ export const loader = async ({ request }: { request: Request }) => {
   return {
     user,
     success,
+    upgraded,
+    info,
+    planParam,
     subscription: {
       endDate: subscription?.current_period_end ? subscription.current_period_end * 1000 : 0,
       planPrice: subscription?.plan?.amount_decimal ? Number(subscription.plan.amount_decimal) * 0.01 : 0,
@@ -84,9 +90,12 @@ export const loader = async ({ request }: { request: Request }) => {
 };
 
 export default function DashboardPlan() {
-  const { user, success, subscription, credits, conversations } = useLoaderData<{
+  const { user, success, upgraded, info, planParam, subscription, credits, conversations } = useLoaderData<{
     user: any;
     success: boolean;
+    upgraded: boolean;
+    info: string | null;
+    planParam: string | null;
     subscription: {
       endDate: number;
       planPrice: number;
@@ -162,6 +171,49 @@ export default function DashboardPlan() {
     <>
       {success && <SuccessModal />}
       <section className="max-w-7xl mx-auto py-6 px-4">
+        {/* Mensaje de upgrade exitoso */}
+        {upgraded && planParam && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-green-800 dark:text-green-300 font-semibold text-lg">
+                  Plan actualizado exitosamente
+                </h3>
+                <p className="text-green-700 dark:text-green-400 mt-1">
+                  Tu suscripción se ha cambiado al plan <span className="font-bold">{planParam}</span>.
+                  Stripe ha aplicado la proration automáticamente (cargo o reembolso proporcional).
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mensaje de mismo plan (info) */}
+        {info === 'same_plan' && planParam && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-blue-800 dark:text-blue-300 font-semibold text-lg">
+                  Ya tienes el plan {planParam} activo
+                </h3>
+                <p className="text-blue-700 dark:text-blue-400 mt-1">
+                  Tu suscripción actual sigue vigente. No es necesario volver a comprarla.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <h2 className="text-2xl md:text-3xl text-dark dark:text-white font-semibold mb-4">
           Administra tu plan
         </h2>
