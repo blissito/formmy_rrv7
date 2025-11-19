@@ -162,7 +162,8 @@ function buildSystemPrompt(
   hasWebSearch: boolean,
   hasReportGeneration: boolean,
   hasGmailTools: boolean = false,
-  isOfficialGhosty: boolean = false
+  isOfficialGhosty: boolean = false,
+  channel?: 'whatsapp' | 'web' | 'voice'
 ): string {
   // 🎯 GHOSTY OFICIAL (de Formmy) usa prompt dedicado optimizado
   // Solo si es el Ghosty de Formmy (sin customInstructions) o si está marcado como oficial
@@ -331,6 +332,17 @@ Si pregunta off-topic: "Mi búsqueda web está limitada a ${businessDomain}"`;
 
 🎨 WIDGET MARKERS: When a tool returns a message with 🎨WIDGET:type:id🎨, copy the exact message without modifications. These markers create interactive UI elements.`;
 
+  // 📱 Instrucciones específicas de WhatsApp (cuando aplique)
+  if (channel === 'whatsapp') {
+    basePrompt += `
+
+📱 IMPORTANTE - ESTÁS EN WHATSAPP:
+- El usuario ya tiene su teléfono registrado (viene del perfil de WhatsApp)
+- NO pidas el teléfono del usuario - ya lo tienes
+- Si necesitas guardar información de contacto, solo pide: nombre (opcional) y email (si aplica)
+- Cuando uses save_contact_info, el campo 'phone' es OPCIONAL - se auto-completa`;
+  }
+
   return basePrompt;
 }
 
@@ -377,6 +389,7 @@ async function createSingleAgent(
     message: context.message,
     integrations: context.integrations,
     isGhosty: context.agentContext?.isGhosty || false, // Ghosty tiene acceso a stats
+    channel: context.agentContext?.channel, // ✅ Pasar canal al ToolContext
   };
 
 
@@ -406,7 +419,8 @@ async function createSingleAgent(
     hasWebSearch,
     hasReportGeneration,
     hasGmailTools,
-    isOfficialGhosty
+    isOfficialGhosty,
+    context.agentContext?.channel // ✅ Pasar canal al system prompt
   );
 
   // 🔍 DEBUG: Mostrar system prompt construido

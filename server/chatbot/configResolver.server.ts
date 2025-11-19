@@ -55,6 +55,7 @@ export interface AgentExecutionContext {
   conversationId?: string; // Para rate limiting de herramientas
   conversationHistory?: Array<{ role: string; content: string }>;
   isGhosty?: boolean; // Flag para distinguir Ghosty (asistente interno) de chatbots públicos
+  channel?: 'whatsapp' | 'web' | 'voice'; // Canal de comunicación
 }
 
 /**
@@ -253,6 +254,7 @@ export function createAgentExecutionContext(
     conversationHistory?: Array<{ role: string; content: string }>;
     integrations?: Record<string, any>;
     isGhosty?: boolean; // Flag para Ghosty
+    channel?: 'whatsapp' | 'web' | 'voice'; // Canal de comunicación
   } = {}
 ): AgentExecutionContext {
   return {
@@ -264,7 +266,8 @@ export function createAgentExecutionContext(
     sessionId: options.sessionId,
     conversationId: options.conversationId,
     conversationHistory: options.conversationHistory || [],
-    isGhosty: options.isGhosty || false // Retornar isGhosty desde options
+    isGhosty: options.isGhosty || false, // Retornar isGhosty desde options
+    channel: options.channel // Pasar el canal
   };
 }
 

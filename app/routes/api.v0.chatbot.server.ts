@@ -408,7 +408,8 @@ async function handleChatV0(params: {
       sessionId: conversation.sessionId,
       conversationId: conversation.id, // Para rate limiting de herramientas
       conversationHistory: history, // Desde DB, no desde cliente
-      integrations // ✅ Pasar integraciones al contexto
+      integrations, // ✅ Pasar integraciones al contexto
+      channel: 'web' // ✅ Indicar que estamos en Web
     });
 
 
@@ -416,6 +417,7 @@ async function handleChatV0(params: {
     // Esto permite que usuarios anónimos tengan acceso a RAG si el dueño tiene plan PRO+
 
     const chatbotOwnerPlan = (chatbot as any).user?.plan;
+    console.log(`🔍 [Web API] Chatbot Owner Plan: ${chatbotOwnerPlan}, User Plan: ${user.plan}, Chatbot ID: ${chatbotId}`);
 
     // ✅ SIEMPRE STREAMING - CLAUDE.md compliance
     // Eliminado modo JSON - SOLO SSE streaming
