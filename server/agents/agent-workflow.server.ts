@@ -264,14 +264,13 @@ IMPORTANTE:
 `;
 
 
-  // 🎯 CUSTOM INSTRUCTIONS PRIMERO (máxima prioridad)
+  // 🎯 CUSTOM INSTRUCTIONS (personalización del usuario - NO sobrescribe RAG)
   let customInstructionsBlock = '';
   if (config.customInstructions) {
-    customInstructionsBlock = `🎯 TU PERSONALIZACIÓN (PRIORIDAD MÁXIMA):
+    customInstructionsBlock = `
 
+🎯 PERSONALIZACIÓN:
 ${config.customInstructions}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 `;
   }
@@ -281,10 +280,10 @@ ${config.customInstructions}
 
   // Si personality es un AgentType válido, usar prompt optimizado
   if (agentTypes.includes(personality as AgentType)) {
-    // ⚡ ORDEN CRÍTICO: RAG instructions PRIMERO (máxima prioridad) → custom → persona
+    // ⚡ ORDEN: RAG → Agente → Custom → Tool Grounding
     basePrompt = `${searchInstructions}
-${customInstructionsBlock}${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}
-
+${config.name || "Asistente"} - ${getAgentPrompt(personality as AgentType)}
+${customInstructionsBlock}
 ${toolGroundingRules}${gmailInstructions}${manualModeInstructions}`;
   } else {
     // Fallback a personalidades genéricas (friendly, professional)
@@ -293,12 +292,12 @@ ${toolGroundingRules}${gmailInstructions}${manualModeInstructions}`;
       professional: "asistente profesional",
     };
 
-    // ⚡ ORDEN CRÍTICO: RAG instructions PRIMERO (máxima prioridad) → custom → persona
+    // ⚡ ORDEN: RAG → Personalidad → Custom → Tool Grounding
     basePrompt = `${searchInstructions}
-${customInstructionsBlock}Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
+Eres ${config.name || "asistente"}, ${personalityMap[personality] || "asistente amigable"}.
 
 ${config.instructions || "Asistente útil."}
-
+${customInstructionsBlock}
 Usa las herramientas disponibles cuando las necesites. Sé directo y mantén tu personalidad.
 
 ${toolGroundingRules}${gmailInstructions}${manualModeInstructions}`;
@@ -341,6 +340,20 @@ Si pregunta off-topic: "Mi búsqueda web está limitada a ${businessDomain}"`;
 - NO pidas el teléfono del usuario - ya lo tienes
 - Si necesitas guardar información de contacto, solo pide: nombre (opcional) y email (si aplica)
 - Cuando uses save_contact_info, el campo 'phone' es OPCIONAL - se auto-completa`;
+  }
+
+  // 🔒 CRÍTICO - RECORDATORIO FINAL DE RAG (NO SOBRESCRIBIBLE)
+  // Este bloque se agrega SIEMPRE al final para reforzar el uso correcto de herramientas
+  if (hasContextSearch) {
+    basePrompt += `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔒 REGLA CRÍTICA - NO NEGOCIABLE:
+Cuando el usuario pregunta sobre productos, servicios, precios o información específica:
+1. USA search_context() PRIMERO - es tu fuente de verdad
+2. Responde SOLO con información encontrada en los resultados
+3. NUNCA inventes o asumas información que no encontraste
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   }
 
   return basePrompt;
