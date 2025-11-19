@@ -1,4 +1,4 @@
-import type { Conversation, Message, Contact } from "@prisma/client";
+import type { Conversation, Message, Contact, Lead } from "@prisma/client";
 
 /**
  * Extended types that include relations
@@ -6,6 +6,12 @@ import type { Conversation, Message, Contact } from "@prisma/client";
 type ConversationWithMessages = Conversation & {
   messages: Message[];
 };
+
+/**
+ * Tipo unificado para buscar nombres (Contact o Lead)
+ */
+type ContactOrLead = Pick<Contact, 'id' | 'name' | 'phone' | 'conversationId'> |
+                     Pick<Lead, 'id' | 'name' | 'phone' | 'conversationId'>;
 
 /**
  * UI format expected by Conversations component
@@ -33,6 +39,12 @@ export interface UIMessage {
   picture?: string;      // Contenido multimedia (sticker, imagen, etc)
   avatarUrl?: string;    // Avatar del usuario/bot (foto de perfil)
   createdAt: Date;
+
+  // WhatsApp Reactions
+  isReaction?: boolean;      // Si es una reacción
+  reactionEmoji?: string;    // Emoji de la reacción
+  reactionToMsgId?: string;  // externalMessageId del mensaje reaccionado
+  externalMessageId?: string; // ID externo del mensaje (para relacionar reacciones)
 }
 
 /**
@@ -41,27 +53,48 @@ export interface UIMessage {
 export function transformConversationsToUI(
   conversations: ConversationWithMessages[],
   chatbotAvatarUrl?: string,
-  contacts?: Contact[]
+  contacts?: Contact[],
+  leads?: Lead[]
 ): UIConversation[] {
-  // Create phone number to contact map for O(1) lookup with normalized keys
-  const contactsByPhone = new Map<string, Contact>();
+  // Create maps for O(1) lookup
+  const contactsByPhone = new Map<string, ContactOrLead>();
+  const contactsByConversationId = new Map<string, ContactOrLead>();
+
+  // Index WhatsApp contacts by phone
   if (contacts) {
     for (const contact of contacts) {
       if (contact.phone) {
-        // Store with both original and last 10 digits for flexible matching
         contactsByPhone.set(contact.phone, contact);
-
-        // Also index by last 10 digits for matching across different formats
         const normalizedPhone = contact.phone.slice(-10);
         if (normalizedPhone.length === 10) {
           contactsByPhone.set(normalizedPhone, contact);
+        }
+      }
+      if (contact.conversationId) {
+        contactsByConversationId.set(contact.conversationId, contact);
+      }
+    }
+  }
+
+  // Index Leads by conversationId y phone
+  if (leads) {
+    for (const lead of leads) {
+      if (lead.conversationId) {
+        // Lead tiene prioridad sobre Contact si existe para la misma conversación
+        contactsByConversationId.set(lead.conversationId, lead);
+      }
+      if (lead.phone) {
+        contactsByPhone.set(lead.phone, lead);
+        const normalizedPhone = lead.phone.slice(-10);
+        if (normalizedPhone.length === 10) {
+          contactsByPhone.set(normalizedPhone, lead);
         }
       }
     }
   }
 
   return conversations.map(conversation =>
-    transformConversationToUI(conversation, chatbotAvatarUrl, contactsByPhone)
+    transformConversationToUI(conversation, chatbotAvatarUrl, contactsByPhone, contactsByConversationId)
   );
 }
 
@@ -71,42 +104,63 @@ export function transformConversationsToUI(
 export function transformConversationToUI(
   conversation: ConversationWithMessages,
   chatbotAvatarUrl?: string,
-  contactsByPhone?: Map<string, Contact>
+  contactsByPhone?: Map<string, ContactOrLead>,
+  contactsByConversationId?: Map<string, ContactOrLead>
 ): UIConversation {
   // Extract user info from WhatsApp phone number or visitor ID
   const phoneNumber = extractPhoneNumber(conversation.visitorId || conversation.sessionId);
 
-  // Try to get contact info (name + profile picture) from synced contacts
+  // Try to get contact/lead info
   let userName = "Usuario Web";
   let userAvatarUrl: string | undefined;
 
-  if (phoneNumber && contactsByPhone) {
-    // Try exact match first
-    let contact = contactsByPhone.get(phoneNumber);
+  // Primero intentar por conversationId (más confiable para leads)
+  let contactOrLead = contactsByConversationId?.get(conversation.id);
 
-    // If no exact match, try last 10 digits (normalized)
-    if (!contact && phoneNumber.length >= 10) {
+  // Si no, intentar por teléfono (para WhatsApp)
+  if (!contactOrLead && phoneNumber && contactsByPhone) {
+    contactOrLead = contactsByPhone.get(phoneNumber);
+
+    // Fallback: last 10 digits
+    if (!contactOrLead && phoneNumber.length >= 10) {
       const normalizedPhone = phoneNumber.slice(-10);
-      contact = contactsByPhone.get(normalizedPhone);
+      contactOrLead = contactsByPhone.get(normalizedPhone);
     }
+  }
 
-    if (contact) {
-      if (contact.name) {
-        userName = contact.name;
-      } else {
-        userName = `Usuario ${phoneNumber.slice(-4)}`;
-      }
-      // ✅ Usar avatar de WhatsApp del contacto
-      userAvatarUrl = contact.profilePictureUrl || undefined;
-    } else {
+  // Asignar nombre y avatar
+  if (contactOrLead) {
+    if (contactOrLead.name) {
+      userName = contactOrLead.name;
+    } else if (phoneNumber) {
       userName = `Usuario ${phoneNumber.slice(-4)}`;
+    }
+    // Solo Contact tiene profilePictureUrl
+    if ('profilePictureUrl' in contactOrLead) {
+      userAvatarUrl = contactOrLead.profilePictureUrl || undefined;
     }
   } else if (phoneNumber) {
     userName = `Usuario ${phoneNumber.slice(-4)}`;
   }
 
-  // Filtrar mensajes SYSTEM - solo mostrar USER y ASSISTANT en la UI
-  const visibleMessages = conversation.messages.filter(msg => msg.role !== "SYSTEM");
+  // Filtrar mensajes SYSTEM pero MANTENER las reacciones
+  // Las reacciones no se mostrarán como burbujas, pero el frontend las necesita para el overlay
+  const visibleMessages = conversation.messages.filter(msg => {
+    // Excluir mensajes SYSTEM
+    if (msg.role === "SYSTEM") return false;
+
+    // ✅ MANTENER reacciones (el frontend las filtrará para bubbles, pero las usará para overlay)
+    if (msg.isReaction === true) return true;
+
+    // Excluir mensajes vacíos que NO sean reacciones
+    // (algunas reacciones antiguas se guardaron como mensajes vacíos antes de la implementación)
+    if (!msg.isReaction && (!msg.content || msg.content.trim() === "" || msg.content.trim().length < 2)) {
+      return false;
+    }
+
+    return true;
+  });
+
   const messages = visibleMessages.map(message =>
     transformMessageToUI(message, chatbotAvatarUrl, userAvatarUrl)
   );
@@ -157,7 +211,12 @@ function transformMessageToUI(
     avatarUrl: message.role === "USER"
       ? (userAvatarUrl || "/assets/chat/user-default.svg")
       : (chatbotAvatarUrl || "/assets/chat/ghosty.svg"),
-    createdAt: message.createdAt
+    createdAt: message.createdAt,
+    // WhatsApp Reactions - preservar valores booleanos explícitos
+    isReaction: message.isReaction === true ? true : undefined,
+    reactionEmoji: message.reactionEmoji || undefined,
+    reactionToMsgId: message.reactionToMsgId || undefined,
+    externalMessageId: message.externalMessageId || undefined,
   };
 }
 

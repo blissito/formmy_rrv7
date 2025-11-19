@@ -3,6 +3,236 @@
 **Stack**: React Router v7, Tailwind, Fly.io, Prisma, MongoDB, OpenRouter, Stripe
 **URL**: https://formmy.app
 
+## 🔧 PROBLEMAS RESUELTOS - WhatsApp Conversaciones
+
+### Problema: Conversaciones mezcladas entre chatbots (2025-11-13)
+
+**Síntoma**: Cuando un mismo número de WhatsApp enviaba mensajes a múltiples chatbots, todos los mensajes se guardaban en la conversación del primer chatbot.
+
+**Causa Raíz**: El `sessionId` de WhatsApp no incluía el `chatbotId`, causando 2 problemas:
+
+1. **Mezcla de mensajes**: La función `getOrCreateConversation()` buscaba solo por `sessionId` sin filtrar por `chatbotId`
+2. **Constraint UNIQUE**: El schema de Prisma tiene `sessionId` como UNIQUE, impidiendo que múltiples chatbots tengan conversaciones con el mismo número
+
+**Solución Implementada** (`server/integrations/whatsapp/conversation.server.ts`):
+
+```typescript
+// ❌ ANTES (causaba conflictos):
+const sessionId = `whatsapp_${phoneNumber}`;
+
+// ✅ DESPUÉS (único por chatbot):
+const sessionId = `whatsapp_${phoneNumber}_${chatbotId}`;
+```
+
+**Resultado**:
+- ✅ Cada chatbot tiene su propia conversación con el mismo usuario
+- ✅ No hay conflictos de UNIQUE constraint
+- ✅ Los mensajes se guardan en el chatbot correcto
+
+**Archivos modificados**:
+- `server/integrations/whatsapp/conversation.server.ts` (línea 23)
+
+**Fecha**: 2025-11-13
+**Commit**: `2c80001` - fix: WhatsApp sessionId único por chatbot
+**Estado**: ✅ Desplegado en producción y verificado funcionando
+
+---
+
+### Feature: Soporte de Reacciones de WhatsApp (2025-01-13)
+
+**Problema**: Las reacciones de WhatsApp no se guardaban ni mostraban en el dashboard.
+
+**Causa**: El webhook de WhatsApp no procesaba mensajes de tipo `"reaction"`, que tienen una estructura diferente a los mensajes normales.
+
+**Solución Implementada**:
+
+#### 1. Backend - Webhook Handler
+**Archivo**: `app/routes/api.v1.integrations.whatsapp.webhook.tsx`
+- Agregado tipo `"reaction"` al interface TypeScript del webhook (línea 42)
+- Agregado campo `reaction?: { message_id: string; emoji: string }` (líneas 73-76)
+- Handler especial para detectar y procesar reacciones (líneas 230-270)
+- Las reacciones NO generan respuesta del bot (comportamiento WhatsApp nativo)
+- Las reacciones NO envían notificaciones al owner
+
+#### 2. Función de Manejo
+**Archivo**: `server/integrations/whatsapp/conversation.server.ts` (líneas 84-198)
+- `handleReaction()`: Crea/actualiza/elimina reacciones
+- Emoji vacío = Usuario removió reacción
+- Usuario solo puede tener UNA reacción por mensaje (WhatsApp nativo)
+- Busca mensaje original por `externalMessageId`
+
+#### 3. Modelo de Datos
+**Archivo**: `prisma/schema.prisma` (líneas 413-416)
+```prisma
+model Message {
+  // ... campos existentes
+  isReaction        Boolean?  @default(false)
+  reactionEmoji     String?   // Emoji: "👍", "❤️", etc.
+  reactionToMsgId   String?   // externalMessageId del mensaje reaccionado
+}
+```
+
+#### 4. Tipos TypeScript
+**Archivos modificados**:
+- `server/integrations/whatsapp/types.ts`: Agregado `"reaction"` a `MessageType` (línea 43)
+- `server/chatbot/conversationTransformer.server.ts`: Agregados campos de reacción a `UIMessage` (líneas 37-41)
+
+#### 5. Frontend - Visualización
+**Archivo**: `app/components/chat/tab_sections/Conversations.tsx`
+- Filtra mensajes con `isReaction: true` del map principal (línea 1157)
+- Busca reacciones para cada mensaje basado en `externalMessageId` (líneas 1160-1162)
+- Muestra emoji como overlay en esquina de la burbuja (líneas 1239-1246 para USER, 1472-1479 para ASSISTANT)
+- Estilo: emoji grande con fondo blanco, sombra y borde
+
+**Comportamiento**:
+- ✅ Reacciones se guardan en base de datos
+- ✅ Se muestran como overlay sobre el mensaje original (estilo WhatsApp)
+- ✅ Solo se muestra la reacción más reciente por usuario
+- ✅ Remover reacción (emoji vacío) elimina el registro
+- ❌ NO genera respuesta del bot
+- ❌ NO envía notificaciones
+
+**Estructura del Webhook de Reacciones**:
+```json
+{
+  "type": "reaction",
+  "reaction": {
+    "message_id": "wamid.XYZ789...",  // ID del mensaje original
+    "emoji": "👍"  // Emoji (vacío si se remueve)
+  }
+}
+```
+
+**Fecha**: 2025-01-13
+**Estado**: ✅ Implementado y listo para testing
+
+---
+
+### Feature: Separación de Contact y Lead (2025-11-14)
+
+**Problema**: El modelo `Contact` mezclaba dos casos de uso diferentes:
+1. Información automática capturada de WhatsApp (nombre, teléfono, foto de perfil)
+2. Leads calificados guardados manualmente con `save_contact_info` (email, productInterest, position, website, notes)
+
+Esto causaba:
+- Unique constraint `Contact_chatbotId_phone_key` fallaba al intentar guardar leads con teléfonos ya registrados automáticamente por WhatsApp
+- Confusión entre contactos automáticos vs leads capturados intencionalmente
+- Campos innecesarios mezclados en un solo modelo
+
+**Solución Implementada**:
+
+#### 1. Nuevos Modelos Separados
+**Archivo**: `prisma/schema.prisma` (líneas 303-356)
+
+**Contact** - Solo info básica de WhatsApp (automático):
+```prisma
+model Contact {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  name              String? // Nombre del perfil de WhatsApp
+  phone             String? // Teléfono de WhatsApp (opcional por datos legacy)
+  profilePictureUrl String? // URL de la foto de perfil de WhatsApp
+
+  chatbotId      String        @db.ObjectId
+  chatbot        Chatbot       @relation(fields: [chatbotId], references: [id])
+  conversationId String?       @db.ObjectId
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+
+  capturedAt DateTime @default(now())
+
+  @@unique([chatbotId, phone]) // Un teléfono único por chatbot
+}
+```
+
+**Lead** - Prospectos calificados (manual con save_contact_info):
+```prisma
+model Lead {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  name            String?       // Nombre completo
+  email           String?       // Email de contacto
+  phone           String?       // Teléfono
+  productInterest String?       // Producto/servicio de interés
+  position        String?       // Cargo/posición
+  website         String?       // Sitio web
+  notes           String?       // Notas adicionales
+  status          ContactStatus @default(NEW) // Estado en el pipeline de ventas
+
+  chatbotId      String        @db.ObjectId
+  chatbot        Chatbot       @relation(fields: [chatbotId], references: [id])
+  conversationId String?       @db.ObjectId
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+
+  capturedAt  DateTime @default(now())
+  lastUpdated DateTime @updatedAt
+
+  @@index([email])
+  @@index([phone])
+  @@index([chatbotId])
+  @@index([status])
+}
+```
+
+#### 2. Tool Handler Actualizado
+**Archivo**: `server/tools/handlers/contact.ts`
+- `saveContactInfoHandler()` ahora crea/actualiza **Lead** (no Contact)
+- Validación: requiere email O teléfono (al menos uno)
+- Búsqueda de duplicados: primero por email, luego por teléfono
+- Update si existe, create si es nuevo
+- Logs detallados para debug
+
+#### 3. UI Actualizada
+**Archivo**: `app/routes/dashboard.chat_.$chatbotSlug.tsx` (líneas 169-192)
+- Loader retorna `db.lead.findMany()` para tab de Contactos
+- Frontend muestra leads con todos los campos (email, productInterest, position, website, notes, status)
+
+**Archivo**: `app/components/chat/tab_sections/Contactos.tsx`
+- UI consume leads del loader
+- Búsqueda por: name, email, phone, productInterest
+- Exportación CSV incluye todos los campos de lead
+
+#### 4. Flujo Completo
+
+**WhatsApp → Contact (Automático)**:
+```typescript
+// server/integrations/whatsapp/conversation.server.ts
+await db.contact.upsert({
+  where: { chatbotId_phone: { chatbotId, phone } },
+  create: { name, phone, profilePictureUrl, chatbotId },
+  update: { name, profilePictureUrl }
+});
+```
+
+**save_contact_info → Lead (Manual)**:
+```typescript
+// server/tools/handlers/contact.ts
+await db.lead.create({
+  data: {
+    name, email, phone, productInterest, position, website, notes,
+    chatbotId, conversationId, status: 'NEW'
+  }
+});
+```
+
+**Comportamiento**:
+- ✅ Contact: Solo info de WhatsApp, unique por (chatbotId, phone)
+- ✅ Lead: Prospectos capturados, sin unique constraint en phone
+- ✅ Mismo usuario puede estar en Contact (automático) Y Lead (manual)
+- ✅ No más errores de duplicate key
+- ✅ Separación clara de responsabilidades
+
+**Archivos modificados**:
+- `prisma/schema.prisma` - Modelos Contact y Lead separados
+- `server/tools/handlers/contact.ts` - Handler usa Lead
+- `server/tools/index.ts` - Tool description actualizada
+- `app/routes/dashboard.chat_.$chatbotSlug.tsx` - Loader de leads
+- `app/components/chat/tab_sections/Contactos.tsx` - UI de leads
+- `server/chatbot/conversationTransformer.server.ts` - Tipos actualizados
+
+**Fecha**: 2025-11-14
+**Commit**: `34314c1` - feat: Separar Contact y Lead - WhatsApp auto vs manual capture
+**Estado**: ✅ Desplegado en producción
+
+---
+
 ## ⚠️ REGLAS CRÍTICAS
 
 ### 1. LlamaIndex Agent Workflows

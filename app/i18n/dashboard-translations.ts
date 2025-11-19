@@ -18,7 +18,7 @@ export const dashboardTranslations = {
     tabs: {
       preview: "Preview",
       conversations: "Conversations",
-      contacts: "Contacts",
+      contacts: "Leads",
       training: "Training",
       tasks: "Tasks",
       code: "Code",
@@ -185,24 +185,24 @@ export const dashboardTranslations = {
     },
 
     // ============================================
-    // CONTACTOS TAB
+    // LEADS TAB
     // ============================================
     contacts: {
-      title: "Contacts",
+      title: "Leads",
       searchPlaceholder: "Search by name, email, company...",
       exportCSV: "Export CSV",
       deleteSelected: "Delete Selected",
-      contact: "Contact",
+      contact: "Lead",
       position: "Position",
       date: "Date",
       source: "Source",
       sourceWhatsApp: "WhatsApp",
       sourceWeb: "Web",
-      autoSaveTip: "💡 Tip: Contacts are automatically saved when your chatbot uses the save_contact tool.",
+      autoSaveTip: "💡 Tip: Leads are automatically saved when your chatbot captures contact information using the save_contact_info tool.",
       viewConversation: "View conversation",
       noConversation: "No conversation",
-      noConversationAssociated: "This contact does not have an associated conversation",
-      noSearchResults: "No contacts found with \"{search}\"",
+      noConversationAssociated: "This lead does not have an associated conversation",
+      noSearchResults: "No leads found with \"{search}\"",
 
       // Status Labels
       status: {
@@ -219,25 +219,25 @@ export const dashboardTranslations = {
       name: "Name",
       email: "Email",
       phone: "Phone",
-      company: "Company",
+      company: "Interest",
       contactStatus: "Status",
       lastContact: "Last Contact",
       actions: "Actions",
 
       // Actions
       viewDetails: "View Details",
-      editContact: "Edit Contact",
-      deleteContact: "Delete Contact",
+      editContact: "Edit Lead",
+      deleteContact: "Delete Lead",
 
       // Empty State
-      noContacts: "No Contacts",
-      noContactsDescription: "You haven't captured any contacts with your chatbot yet. Contacts will be automatically saved when users provide their information during conversations.",
+      noContacts: "No Leads",
+      noContactsDescription: "You haven't captured any leads yet. Leads are automatically saved when your chatbot collects contact information from interested prospects.",
 
       // Confirmations
-      confirmDelete: "Are you sure you want to delete this contact?",
-      confirmDeleteMultiple: "Are you sure you want to delete {count} contacts?",
-      contactDeleted: "Contact deleted successfully",
-      contactsDeleted: "Contacts deleted successfully"
+      confirmDelete: "Are you sure you want to delete this lead?",
+      confirmDeleteMultiple: "Are you sure you want to delete {count} leads?",
+      contactDeleted: "Lead deleted successfully",
+      contactsDeleted: "Leads deleted successfully"
     },
 
     // ============================================
@@ -528,7 +528,7 @@ export const dashboardTranslations = {
     tabs: {
       preview: "Preview",
       conversations: "Conversaciones",
-      contacts: "Contactos",
+      contacts: "Leads",
       training: "Entrenamiento",
       tasks: "Tareas",
       code: "Código",
@@ -695,24 +695,24 @@ export const dashboardTranslations = {
     },
 
     // ============================================
-    // CONTACTOS TAB
+    // LEADS TAB
     // ============================================
     contacts: {
-      title: "Contactos",
+      title: "Leads",
       searchPlaceholder: "Buscar por nombre, email, empresa...",
       exportCSV: "Exportar CSV",
       deleteSelected: "Eliminar Seleccionados",
-      contact: "Contacto",
+      contact: "Lead",
       position: "Cargo",
       date: "Fecha",
       source: "Origen",
       sourceWhatsApp: "WhatsApp",
       sourceWeb: "Web",
-      autoSaveTip: "💡 Tip: Los contactos se guardan automáticamente cuando tu chatbot usa la herramienta save_contact.",
+      autoSaveTip: "Los leads se guardan cuando tu chatbot captura información de contacto usando save_contact_info.",
       viewConversation: "Ver conversación",
       noConversation: "Sin conversación",
-      noConversationAssociated: "Este contacto no tiene una conversación asociada",
-      noSearchResults: "No se encontraron contactos con \"{search}\"",
+      noConversationAssociated: "Este lead no tiene una conversación asociada",
+      noSearchResults: "No se encontraron leads con \"{search}\"",
 
       // Status Labels
       status: {
@@ -729,25 +729,25 @@ export const dashboardTranslations = {
       name: "Nombre",
       email: "Email",
       phone: "Teléfono",
-      company: "Empresa",
+      company: "Interés",
       contactStatus: "Estado",
       lastContact: "Último Contacto",
       actions: "Acciones",
 
       // Actions
       viewDetails: "Ver Detalles",
-      editContact: "Editar Contacto",
-      deleteContact: "Eliminar Contacto",
+      editContact: "Editar Lead",
+      deleteContact: "Eliminar Lead",
 
       // Empty State
-      noContacts: "Sin contactos",
-      noContactsDescription: "Los contactos se guardarán automáticamente cuando los usuarios proporcionen su información durante las conversaciones con tu agente.",
+      noContacts: "Sin leads",
+      noContactsDescription: "Aún no has capturado leads. Los leads se guardan automáticamente cuando tu chatbot recopila información de contacto de prospectos interesados.",
 
       // Confirmations
-      confirmDelete: "¿Estás seguro de que quieres eliminar este contacto?",
-      confirmDeleteMultiple: "¿Estás seguro de que quieres eliminar {count} contactos?",
-      contactDeleted: "Contacto eliminado exitosamente",
-      contactsDeleted: "Contactos eliminados exitosamente"
+      confirmDelete: "¿Estás seguro de que quieres eliminar este lead?",
+      confirmDeleteMultiple: "¿Estás seguro de que quieres eliminar {count} leads?",
+      contactDeleted: "Lead eliminado exitosamente",
+      contactsDeleted: "Leads eliminados exitosamente"
     },
 
     // ============================================

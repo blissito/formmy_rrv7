@@ -10,6 +10,8 @@ import { registerWeeklyEmailsWorker } from './jobs/workers/weekly-emails-worker'
 import { registerParserWorker } from './jobs/workers/parser-worker';
 import { registerAutoReleaseWorker } from './jobs/workers/auto-release-worker';
 import { registerCleanupWorker } from './jobs/workers/cleanup-jobs';
+import { registerRefreshWebsiteWorker } from './jobs/workers/refresh-website-worker';
+import { registerCleanupOrphanedEmbeddingsWorker } from './jobs/workers/cleanup-orphaned-embeddings-worker';
 
 /**
  * Initialize all server background tasks
@@ -43,6 +45,8 @@ export async function initializeServer() {
   await registerParserWorker();
   await registerAutoReleaseWorker();
   await registerCleanupWorker();
+  await registerRefreshWebsiteWorker();
+  await registerCleanupOrphanedEmbeddingsWorker();
 
-  console.log('✅ Agenda.js: All jobs registered (weekly-emails, parser, auto-release, cleanup)');
+  console.log('✅ Agenda.js: All jobs registered (weekly-emails, parser, auto-release, cleanup, refresh-website, cleanup-orphaned-embeddings)');
 }

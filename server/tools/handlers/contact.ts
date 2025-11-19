@@ -6,19 +6,22 @@ interface SaveContactInput {
   name?: string;
   email?: string;
   phone?: string;
-  company?: string;
+  productInterest?: string; // Producto o servicio de interés (guardado en campo 'company')
   position?: string;
   website?: string;
   notes?: string;
 }
 
 /**
- * Handler para guardar información de contacto de leads/prospectos
+ * Handler para guardar información de LEADS (prospectos calificados)
  */
 export async function saveContactInfoHandler(
   input: SaveContactInput,
   context: ToolContext
 ): Promise<ToolResponse> {
+  console.log('🔍 [save_contact_info] Handler llamado con input:', JSON.stringify(input, null, 2));
+  console.log('🔍 [save_contact_info] Context chatbotId:', context.chatbotId);
+
   try {
     // 🚫 Ghosty NO debe usar esta tool (usuario ya autenticado)
     if (!context.chatbotId) {
@@ -29,11 +32,64 @@ export async function saveContactInfoHandler(
       };
     }
 
-    // Validar que al menos se proporcione email o teléfono (forma de contacto)
+    // Buscar conversación actual y detectar el canal de origen
+    let conversationId: string | undefined = context.conversationId;
+    let source = 'web'; // Default a web
+
+    // Si tenemos el ID de la conversación, buscarla para detectar el canal
+    if (conversationId) {
+      const conversation = await db.conversation.findUnique({
+        where: { id: conversationId },
+        select: { sessionId: true },
+      });
+
+      // Detectar si es WhatsApp basándose en el sessionId
+      if (conversation?.sessionId?.startsWith('whatsapp_')) {
+        source = 'whatsapp';
+        console.log('🟢 [save_contact_info] Detectado canal: WhatsApp (sessionId:', conversation.sessionId, ')');
+      } else {
+        console.log('🔵 [save_contact_info] Detectado canal: Web (sessionId:', conversation?.sessionId, ')');
+      }
+    } else {
+      console.log('⚪ [save_contact_info] Sin conversationId, usando source por defecto: web');
+    }
+
+    // 📱 PASO 1: Auto-completar datos desde Contact de WhatsApp si es necesario
+    if (source === 'whatsapp' && conversationId) {
+      console.log('📱 [save_contact_info] Buscando Contact de WhatsApp para auto-completar datos...');
+      const whatsappContact = await db.contact.findFirst({
+        where: {
+          conversationId: conversationId,
+          chatbotId: context.chatbotId,
+        },
+        select: {
+          phone: true,
+          name: true,
+        },
+      });
+
+      if (whatsappContact) {
+        // Auto-completar phone si no viene en el input
+        if (!input.phone && whatsappContact.phone) {
+          input.phone = whatsappContact.phone;
+          console.log('✅ [save_contact_info] Auto-completado phone desde Contact:', input.phone);
+        }
+        // Auto-completar name si no viene en el input
+        if (!input.name && whatsappContact.name) {
+          input.name = whatsappContact.name;
+          console.log('✅ [save_contact_info] Auto-completado name desde Contact:', input.name);
+        }
+      } else {
+        console.log('⚠️ [save_contact_info] No se encontró Contact de WhatsApp asociado a la conversación');
+      }
+    }
+
+    // ✅ PASO 2: Validar que al menos se proporcione email o teléfono (DESPUÉS de auto-completar)
     if (!input.email && !input.phone) {
+      console.log('❌ [save_contact_info] Falta email o teléfono (después de auto-completar)');
       return {
         success: false,
-        message: "Se requiere al menos un email o teléfono para guardar el contacto. Por favor, proporciona una forma de contactarte.",
+        message: "Se requiere al menos un email o teléfono para guardar el lead. Por favor, proporciona una forma de contacto.",
       };
     }
 
@@ -45,60 +101,52 @@ export async function saveContactInfoHandler(
       };
     }
 
-    // Buscar conversación activa si está disponible
-    let conversationId: string | undefined;
-    if (context.message) {
-      // Intentar encontrar la conversación más reciente del chatbot
-      const recentConversation = await db.conversation.findFirst({
-        where: {
-          chatbotId: context.chatbotId,
-          status: 'ACTIVE',
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-      conversationId = recentConversation?.id;
-    }
+    // Verificar si ya existe un lead similar
+    // Prioridad: 1) Por email, 2) Por phone
+    let existingLead = null;
 
-    // Verificar si ya existe un contacto similar (mismo email o misma combinación nombre+chatbot)
-    let existingContact = null;
     if (input.email) {
-      existingContact = await db.contact.findFirst({
+      console.log('🔍 [save_contact_info] Buscando lead por email:', input.email);
+      existingLead = await db.lead.findFirst({
         where: {
           chatbotId: context.chatbotId,
           email: input.email,
         },
       });
-    } else if (input.name) {
-      existingContact = await db.contact.findFirst({
-        where: {
-          chatbotId: context.chatbotId,
-          name: input.name,
-          email: null, // Solo si no hay email
-        },
-      });
+      console.log('🔍 [save_contact_info] Lead encontrado por email:', existingLead?.id);
     }
 
-    if (existingContact) {
-      // Actualizar contacto existente con nueva información
-      const updatedContact = await db.contact.update({
-        where: { id: existingContact.id },
+    if (!existingLead && input.phone) {
+      console.log('🔍 [save_contact_info] Buscando lead por teléfono:', input.phone);
+      existingLead = await db.lead.findFirst({
+        where: {
+          chatbotId: context.chatbotId,
+          phone: input.phone,
+        },
+      });
+      console.log('🔍 [save_contact_info] Lead encontrado por teléfono:', existingLead?.id);
+    }
+
+    if (existingLead) {
+      console.log('✏️ [save_contact_info] Actualizando lead existente:', existingLead.id);
+      // Actualizar lead existente
+      const updatedLead = await db.lead.update({
+        where: { id: existingLead.id },
         data: {
           ...(input.name && { name: input.name }),
           ...(input.email && { email: input.email }),
           ...(input.phone && { phone: input.phone }),
-          ...(input.company && { company: input.company }),
+          ...(input.productInterest && { productInterest: input.productInterest }),
           ...(input.position && { position: input.position }),
           ...(input.website && { website: input.website }),
           ...(input.notes && { notes: input.notes }),
           ...(conversationId && { conversationId }),
+          source, // Actualizar source en caso de que el usuario cambie de canal
           lastUpdated: new Date(),
         },
       });
 
-      
-      // Track usage (sin awaitar)
+      // Track usage
       ToolUsageTracker.trackUsage({
         chatbotId: context.chatbotId,
         toolName: 'save_contact_info',
@@ -106,47 +154,60 @@ export async function saveContactInfoHandler(
         userMessage: context.message,
         metadata: {
           action: 'updated',
-          contactId: updatedContact.id,
+          leadId: updatedLead.id,
           hasName: !!input.name,
           hasEmail: !!input.email,
           hasPhone: !!input.phone,
-          hasCompany: !!input.company
+          hasProductInterest: !!input.productInterest
         }
       }).catch(console.error);
-      
+
+      // 🔄 SINCRONIZAR con Contact de WhatsApp (si aplica)
+      console.log('🔄 [save_contact_info] Llamando syncLeadToContact con:', {
+        source,
+        conversationId,
+        chatbotId: context.chatbotId,
+        email: input.email,
+        name: input.name,
+      });
+      await syncLeadToContact({
+        source,
+        conversationId,
+        chatbotId: context.chatbotId,
+        email: input.email,
+        name: input.name,
+      });
+
       return {
         success: true,
-        message: `🤖 **HERRAMIENTA UTILIZADA: Save Contact Info**\n\n✅ **Información de contacto actualizada:**\n👤 ${input.name || input.email}\n\n🔧 *Sistema: Contacto actualizado en base de datos con ID: ${updatedContact.id}*`,
+        message: `✅ Perfecto, ya tengo tu contacto actualizado. Te daremos seguimiento pronto.`,
         data: {
-          contactId: updatedContact.id,
+          leadId: updatedLead.id,
           action: 'updated',
-          toolUsed: 'save_contact_info',
-          contact: {
-            name: updatedContact.name,
-            email: updatedContact.email,
-            company: updatedContact.company,
-          }
         }
       };
     } else {
-      // Crear nuevo contacto
-      const newContact = await db.contact.create({
+      console.log('➕ [save_contact_info] Creando nuevo lead...');
+      console.log('📍 [save_contact_info] Source detectado:', source);
+      // Crear nuevo lead
+      const newLead = await db.lead.create({
         data: {
           name: input.name || null,
           email: input.email || null,
           phone: input.phone || null,
-          company: input.company || null,
+          productInterest: input.productInterest || null,
           position: input.position || null,
           website: input.website || null,
           notes: input.notes || null,
-          source: 'chatbot',
+          source,
           chatbotId: context.chatbotId,
           ...(conversationId && { conversationId }),
         },
       });
 
-      
-      // Track usage (sin awaitar)
+      console.log('✅ [save_contact_info] Lead creado exitosamente:', newLead.id);
+
+      // Track usage
       ToolUsageTracker.trackUsage({
         chatbotId: context.chatbotId,
         toolName: 'save_contact_info',
@@ -154,46 +215,62 @@ export async function saveContactInfoHandler(
         userMessage: context.message,
         metadata: {
           action: 'created',
-          contactId: newContact.id,
+          leadId: newLead.id,
           hasName: !!input.name,
           hasEmail: !!input.email,
           hasPhone: !!input.phone,
-          hasCompany: !!input.company
+          hasProductInterest: !!input.productInterest
         }
       }).catch(console.error);
-      
+
+      // 🔄 SINCRONIZAR con Contact de WhatsApp (si aplica)
+      console.log('🔄 [save_contact_info] Llamando syncLeadToContact con:', {
+        source,
+        conversationId,
+        chatbotId: context.chatbotId,
+        email: input.email,
+        name: input.name,
+      });
+      await syncLeadToContact({
+        source,
+        conversationId,
+        chatbotId: context.chatbotId,
+        email: input.email,
+        name: input.name,
+      });
+
       return {
         success: true,
-        message: `🤖 **HERRAMIENTA UTILIZADA: Save Contact Info**\n\n✅ **Nuevo contacto guardado:**\n👤 ${input.name || input.email}\n\n${input.name ? `Gracias ${input.name}` : 'Gracias'} por proporcionarnos tus datos. Estaremos en contacto contigo pronto.\n\n🔧 *Sistema: Contacto creado en base de datos con ID: ${newContact.id}*`,
+        message: `✅ Perfecto, ya tengo tu contacto. ${input.name ? `Gracias ${input.name}` : 'Gracias'} por tu interés. Te daremos seguimiento pronto.`,
         data: {
-          contactId: newContact.id,
+          leadId: newLead.id,
           action: 'created',
-          toolUsed: 'save_contact_info',
-          contact: {
-            name: newContact.name,
-            email: newContact.email,
-            company: newContact.company,
-          }
         }
       };
     }
 
-  } catch (error) {
-    console.error('❌ Error guardando contacto:', error);
-    
-    // Track error (sin awaitar)
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    const errorType = error instanceof Error ? error.constructor.name : 'Unknown';
+
+    console.error('❌ [save_contact_info] Error guardando lead:');
+    console.error('   Input:', JSON.stringify(input, null, 2));
+    console.error('   ChatbotId:', context.chatbotId);
+    console.error('   Error:', errorMessage);
+
+    // Track error
     ToolUsageTracker.trackUsage({
       chatbotId: context.chatbotId,
       toolName: 'save_contact_info',
       success: false,
-      errorMessage: error.message,
+      errorMessage: errorMessage,
       userMessage: context.message,
-      metadata: input
+      metadata: { ...input, errorType }
     }).catch(console.error);
-    
+
     return {
       success: false,
-      message: "Hubo un error al guardar la información. Por favor, intenta nuevamente.",
+      message: `Hubo un error al guardar tu información. Por favor, intenta nuevamente.`,
     };
   }
 }
@@ -204,4 +281,80 @@ export async function saveContactInfoHandler(
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+}
+
+/**
+ * 🔄 Sincronizar datos del Lead con el Contact de WhatsApp (si aplica)
+ *
+ * ⚠️ IMPORTANTE: Esta función SOLO sincroniza el EMAIL al Contact de WhatsApp.
+ * El nombre del Contact se maneja EXCLUSIVAMENTE por el webhook de WhatsApp y NUNCA debe ser modificado aquí.
+ *
+ * Flujo:
+ * - Lead.name: Viene del usuario O se auto-completa desde Contact.name (líneas 78-81)
+ * - Contact.name: SOLO se actualiza por el webhook de WhatsApp
+ * - Esta función: SOLO agrega/actualiza email en Contact
+ */
+async function syncLeadToContact(params: {
+  source: string;
+  conversationId?: string;
+  chatbotId: string;
+  email?: string;
+  name?: string; // Recibido pero NO usado (solo para mantener firma compatible)
+}): Promise<void> {
+  const { source, conversationId, chatbotId, email } = params;
+
+  // Solo sincronizar para conversaciones de WhatsApp
+  if (source !== 'whatsapp' || !conversationId) {
+    return;
+  }
+
+  // Si no hay email para sincronizar, salir
+  if (!email) {
+    console.log('ℹ️ [syncLeadToContact] No hay email para sincronizar');
+    return;
+  }
+
+  try {
+    console.log('🔄 [syncLeadToContact] Iniciando sincronización de email...');
+    console.log('🔄 [syncLeadToContact] Params:', { source, conversationId, chatbotId, email });
+
+    // Buscar Contact asociado a esta conversación
+    const existingContact = await db.contact.findFirst({
+      where: {
+        conversationId,
+        chatbotId,
+      },
+    });
+
+    if (!existingContact) {
+      console.log('⚠️ [syncLeadToContact] No se encontró Contact asociado a la conversación');
+      return;
+    }
+
+    console.log('🔍 [syncLeadToContact] Contact encontrado:', {
+      id: existingContact.id,
+      currentEmail: existingContact.email,
+      newEmail: email,
+    });
+
+    // ✅ Actualizar email si viene uno nuevo (incluso si ya existe uno diferente)
+    if (!existingContact.email) {
+      await db.contact.update({
+        where: { id: existingContact.id },
+        data: { email },
+      });
+      console.log('✅ [syncLeadToContact] Email agregado al Contact:', email);
+    } else if (existingContact.email !== email) {
+      await db.contact.update({
+        where: { id: existingContact.id },
+        data: { email },
+      });
+      console.log('✅ [syncLeadToContact] Email actualizado en Contact:', existingContact.email, '→', email);
+    } else {
+      console.log('ℹ️ [syncLeadToContact] Email ya está actualizado:', email);
+    }
+  } catch (error) {
+    // No fallar el flujo principal si falla la sincronización
+    console.error('❌ [syncLeadToContact] Error sincronizando Contact:', error);
+  }
 }

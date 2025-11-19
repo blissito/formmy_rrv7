@@ -113,7 +113,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     },
   });
 
-  // Obtener conversaciones reales con mensajes (primeras 50)
+  // Obtener conversaciones reales con mensajes (primeras 200 para incluir conversaciones con updatedAt antiguo)
   const conversationsFromDB = await db.conversation.findMany({
     where: {
       chatbotId: chatbot.id,
@@ -126,7 +126,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       },
     },
     orderBy: { updatedAt: "desc" },
-    take: 50, // Limitar a las 50 conversaciones más recientes (primera carga)
+    take: 200, // Aumentado temporalmente de 50 a 200 para capturar conversaciones con updatedAt antiguo
   });
 
   // Ordenar conversaciones por el timestamp del último mensaje de USUARIO
@@ -147,8 +147,27 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     return timeB.getTime() - timeA.getTime();
   });
 
-  // Obtener contactos del chatbot (cargar ANTES de transformar para usarlos en UI)
-  const contacts = await db.contact.findMany({
+  // Obtener contactos de WhatsApp (para mostrar nombres en conversaciones)
+  const whatsappContacts = await db.contact.findMany({
+    where: {
+      chatbotId: chatbot.id,
+    },
+    orderBy: {
+      capturedAt: "desc",
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      profilePictureUrl: true,
+      conversationId: true,
+      chatbotId: true,
+      capturedAt: true,
+    },
+  });
+
+  // Obtener LEADS para la tab de Leads
+  const leads = await db.lead.findMany({
     where: {
       chatbotId: chatbot.id,
     },
@@ -160,12 +179,12 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       name: true,
       email: true,
       phone: true,
-      company: true,
+      productInterest: true,
       position: true,
       website: true,
       notes: true,
-      source: true,
       status: true,
+      source: true,
       capturedAt: true,
       lastUpdated: true,
       conversationId: true,
@@ -173,14 +192,17 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     },
   });
 
-  // Transformar a formato UI (con nombres de contactos)
+  // Transformar a formato UI (usando contactos de WhatsApp para mostrar nombres)
   const conversations = transformConversationsToUI(
     sortedConversations,
-    chatbot.avatarUrl || undefined,
-    contacts
+    chatbot.avatarUrl || "/dash/default-ghosty.svg",
+    whatsappContacts as any,
+    leads as any // ✅ También pasar leads para mostrar nombres
   );
 
-  // Filtrar contextos sin embeddings (documentos eliminados)
+  // TODO: Filtro deshabilitado temporalmente - causaba que contextos desaparecieran
+  // Si se re-habilita, debe verificarse que los embeddings se creen ANTES de que el loader ejecute
+  /*
   if (chatbot.contexts && chatbot.contexts.length > 0) {
     const allEmbeddings = await db.embedding.findMany({
       where: { chatbotId: chatbot.id },
@@ -195,6 +217,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       return hasEmbeddings;
     });
   }
+  */
 
   return {
     user,
@@ -202,7 +225,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     integrations,
     conversations,
     totalConversations,
-    contacts,
+    contacts: leads, // Leads para la tab de Leads
     accessInfo: accessValidation,
   };
 };
@@ -481,8 +504,8 @@ export default function ChatbotDetailRoute({
 
   return (
     <PageContainer>
-      <div className="bg-white sticky top-0 z-10">
-      <PageContainer.Title className="!mb-2 md:!mb-4" back="/dashboard/chat">
+      <div className=" sticky top-0 z-10 bg-white">
+      <PageContainer.Title className="!mb-2 lg:!mb-4" back="/dashboard/chat">
         {chatbot.name}
       </PageContainer.Title>
       <PageContainer.TabSelector
@@ -534,12 +557,12 @@ const Tareas = () => {
   return (
     <section className="h-full min-h-[60vh] place-items-center grid">
     <div>
-      <img className="w-40 md:w-[200px] mx-auto" src="/dash/comming.svg" alt="comming soon" />
+      <img className="w-40 lg:w-[200px] mx-auto" src="/dash/comming.svg" alt="comming soon" />
       <h3 className="text-xl lg:text-2xl font-bold text-dark text-center heading mt-6">Tareas automatizadas en camino</h3>
       <p className="text-sm lg:text-base paragraph text-center text-metal mt-3 max-w-md mx-auto">Estamos trabajando en una poderosa herramienta para que automatices tareas recurrentes y optimices la productividad de tu agente. ¡Muy pronto podrás programar acciones y flujos de trabajo personalizados!</p>
     </div>
   </section>
-  
+
   );
 };
 

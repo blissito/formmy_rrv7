@@ -27,13 +27,13 @@ import VoiceIntegrationModal from "../../integrations/VoiceIntegrationModal";
 // ✅ ACTIVAS PRIMERO (permanentes + disponibles)
 const getAvailableIntegrations = (t: (key: string) => string) => [
   // Integraciones permanentes (siempre activas)
-  {
-    id: "DENIK",
-    name: "Deník",
-    logo: "/assets/chat/denik.svg",
-    description: t('integrations.denik.description'),
-    isPermanent: true,
-  },
+  // {
+  //   id: "DENIK",
+  //   name: "Deník",
+  //   logo: "/assets/chat/denik.svg",
+  //   description: t('integrations.denik.description'),
+  //   isPermanent: true,
+  // },
   {
     id: "SAVE_CONTACT",
     name: t('integrations.saveContact.name'),
@@ -43,13 +43,6 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
   },
   // Integraciones activas disponibles
   {
-    id: "VOICE",
-    name: "Conversaciones de Voz",
-    logo: "voice-icon", // Especial: se renderizará como icono de react-icons
-    description: "Permite a los usuarios hablar con tu chatbot en tiempo real mediante voz. Voces naturales en español mexicano con modelos de IA avanzados.",
-    isPermanent: false,
-  },
-  {
     id: "WHATSAPP",
     name: "WhatsApp",
     logo: "/assets/chat/whatsapp.svg",
@@ -57,10 +50,25 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
     isPermanent: false,
   },
   {
+    id: "VOICE",
+    name: "Conversaciones de Voz",
+    logo: "voice-icon", // Especial: se renderizará como icono de react-icons
+    description: "Permite a los usuarios hablar con tu chatbot en tiempo real mediante voz. Voces naturales en español mexicano.",
+    isPermanent: false,
+  },
+  {
+    id: "SAT",
+    name: "SAT México",
+    logo: "/assets/chat/sat-logo.png",
+    description: "Validación de facturas directamente con el SAT, gestión de contactos fiscales y detección de lista negra EFOS/EDOS. ",
+    isPermanent: false,
+  },
+  // Integraciones en desarrollo (onhold)
+  {
     id: "MESSENGER",
     name: "Facebook Messenger",
     logo: "/assets/chat/messenger.svg",
-    description: "Conecta tu página de Facebook y permite que tu chatbot responda mensajes en Messenger automáticamente. Aumenta el engagement con respuestas instantáneas 24/7.",
+    description: "Conecta tu página de Facebook y permite que tu chatbot responda mensajes en Messenger automáticamente.",
     isPermanent: false,
   },
   {
@@ -70,14 +78,6 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
     description: t('integrations.gmail.description'),
     isPermanent: false,
   },
-  {
-    id: "SAT",
-    name: "SAT México",
-    logo: "/assets/chat/sat-logo.png",
-    description: "Recolección inteligente de facturas CFDI, validación con SAT, gestión de contactos fiscales y detección de lista negra EFOS/EDOS. Tus clientes suben documentos 24/7 al chatbot.",
-    isPermanent: false,
-  },
-  // Integraciones en desarrollo (onhold)
   {
     id: "STRIPE",
     name: "Stripe",
@@ -106,13 +106,13 @@ const getAvailableIntegrations = (t: (key: string) => string) => [
     description: t('integrations.shopify.description'),
     isPermanent: false,
   },
-  {
-    id: "SLACK",
-    name: "Slack",
-    logo: "/assets/chat/slack.svg",
-    description: t('integrations.slack.description'),
-    isPermanent: false,
-  },
+  // {
+  //   id: "SLACK",
+  //   name: "Slack",
+  //   logo: "/assets/chat/slack.svg",
+  //   description: t('integrations.slack.description'),
+  //   isPermanent: false,
+  // },
 ] as const;
 
 // Extender el tipo de integración con propiedades adicionales si es necesario
@@ -164,20 +164,20 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
       // Denik y Gestión de contactos son integraciones permanentes, siempre conectadas
       if (availableIntegration.isPermanent) {
         status[availableIntegration.id.toLowerCase()] = "connected";
-      } else if (availableIntegration.id === "VOICE") {
-        // VOICE: Próximamente disponible
-        status[availableIntegration.id.toLowerCase()] = "onhold";
-      } else if (availableIntegration.id === "GMAIL") {
-        // Gmail: Iniciar como disconnected, luego actualizar con estado real de BD
-        status[availableIntegration.id.toLowerCase()] = "disconnected";
       } else if (availableIntegration.id === "WHATSAPP") {
         // WhatsApp: Disponible con Embedded Signup
         status[availableIntegration.id.toLowerCase()] = "disconnected";
-      } else if (availableIntegration.id === "MESSENGER") {
-        // Messenger: Disponible con OAuth
-        status[availableIntegration.id.toLowerCase()] = "disconnected";
+      } else if (availableIntegration.id === "VOICE") {
+        // VOICE: Próximamente disponible
+        status[availableIntegration.id.toLowerCase()] = "onhold";
       } else if (availableIntegration.id === "SAT") {
         // SAT: Próximamente disponible
+        status[availableIntegration.id.toLowerCase()] = "onhold";
+      } else if (availableIntegration.id === "MESSENGER") {
+        // Messenger: Próximamente disponible
+        status[availableIntegration.id.toLowerCase()] = "onhold";
+      } else if (availableIntegration.id === "GMAIL") {
+        // Gmail: Próximamente disponible
         status[availableIntegration.id.toLowerCase()] = "onhold";
       } else if (availableIntegration.id === "STRIPE") {
         // Stripe deshabilitado temporalmente (en desarrollo)
@@ -214,6 +214,18 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
         // SAT siempre debe estar en "onhold" (próximamente)
         if (platformKey === "sat") {
+          status[platformKey] = "onhold";
+          return;
+        }
+
+        // Messenger siempre debe estar en "onhold" (próximamente)
+        if (platformKey === "messenger") {
+          status[platformKey] = "onhold";
+          return;
+        }
+
+        // Gmail siempre debe estar en "onhold" (próximamente)
+        if (platformKey === "gmail") {
           status[platformKey] = "onhold";
           return;
         }
@@ -795,11 +807,6 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
                 logo={availableIntegration.logo}
                 description={availableIntegration.description}
                 status={currentStatus}
-                lastActivity={
-                  currentStatus === "connected"
-                    ? t('integrations.alwaysActive')
-                    : undefined
-                }
                 onConnect={isOnHold ? undefined : () => handleConnect(availableIntegration.id)}
                 onDisconnect={
                   availableIntegration.isPermanent || isOnHold

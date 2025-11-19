@@ -101,16 +101,46 @@ export function processReferral(
       };
     }
 
-    // 3. Registrar el referido
+    // 3. Verificar que el usuario referido no tenga ya un referente
+    const referredUser = yield* Effect.tryPromise({
+      try: () => db.user.findUnique({ where: { id: referredUserId } }),
+      catch: () => new Error("Error al buscar el usuario referido"),
+    });
+
+    if (!referredUser) {
+      return {
+        success: false,
+        message: "Usuario referido no encontrado",
+      };
+    }
+
+    if (referredUser.referredById) {
+      return {
+        success: false,
+        message: "Este usuario ya fue referido por alguien",
+      };
+    }
+
+    // 4. Actualizar el contador Y establecer la relación en el usuario
     yield* Effect.tryPromise({
-      try: () =>
-        db.referral.update({
+      try: async () => {
+        // Actualizar contador en Referral
+        await db.referral.update({
           where: { id: referral.id },
           data: {
             referredCount: { increment: 1 },
           },
-        }),
-      catch: () => new Error("Error al actualizar el contador de referidos"),
+        });
+
+        // Establecer la relación en el User
+        await db.user.update({
+          where: { id: referredUserId },
+          data: {
+            referredById: referral.id,
+          },
+        });
+      },
+      catch: () => new Error("Error al registrar el referido"),
     });
 
     return {

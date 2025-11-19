@@ -215,10 +215,12 @@ export async function addContextWithEmbeddings(
   params: AddContextParams
 ): Promise<AddContextResult> {
   const { chatbotId, content } = params;
+  console.log(`🔧 [addContextWithEmbeddings] Iniciando para chatbot ${chatbotId}, type: ${params.metadata.type}`);
 
   try {
     // 1. Validar contenido
     if (!content || content.trim().length === 0) {
+      console.log(`❌ [addContextWithEmbeddings] Content vacío`);
       return {
         success: false,
         contextId: '',
@@ -228,11 +230,13 @@ export async function addContextWithEmbeddings(
       };
     }
 
-    // 2. Validar que el chatbot existe
+    // 2. Validar que el chatbot existe y obtener contextos existentes
+    console.log(`🔍 [addContextWithEmbeddings] Buscando chatbot ${chatbotId}...`);
     const chatbot = await db.chatbot.findUnique({
       where: { id: chatbotId },
-      select: { id: true },
+      select: { id: true, contexts: true },
     });
+    console.log(`✅ [addContextWithEmbeddings] Chatbot encontrado, contextos: ${chatbot?.contexts?.length || 0}`);
 
     if (!chatbot) {
       return {
@@ -244,36 +248,76 @@ export async function addContextWithEmbeddings(
       };
     }
 
+    // 2.5 Verificar duplicados por URL (solo para tipo LINK)
+    if (params.metadata.type === 'LINK' && params.metadata.url) {
+      console.log(`🔍 [addContextWithEmbeddings] Verificando duplicado de URL: ${params.metadata.url}`);
+      const existingLink = (chatbot.contexts as any[])?.find(
+        (ctx: any) => ctx.type === 'LINK' && ctx.url === params.metadata.url
+      );
+
+      if (existingLink) {
+        console.log(`⚠️ [addContextWithEmbeddings] URL duplicada encontrada: ${params.metadata.url}`);
+        return {
+          success: false,
+          contextId: existingLink.id,
+          embeddingsCreated: 0,
+          embeddingsSkipped: 0,
+          error: `La URL ${params.metadata.url} ya existe en este chatbot`,
+        };
+      }
+      console.log(`✅ [addContextWithEmbeddings] URL no duplicada`);
+    }
+
     // 3. Construir ContextItem completo
+    console.log(`🏗️ [addContextWithEmbeddings] Construyendo ContextItem...`);
     const contextItem = buildContextItem(params);
+    console.log(`✅ [addContextWithEmbeddings] ContextItem construido: ${contextItem.id}`);
 
     // 4. Insertar con $push atómico (MongoDB)
-    const { ObjectId } = await import('mongodb');
+    console.log(`💾 [addContextWithEmbeddings] Insertando en DB con $push...`);
 
-    await db.$runCommandRaw({
-      update: 'Chatbot',
-      updates: [
-        {
-          q: { _id: new ObjectId(chatbotId) },
-          u: {
-            $push: { contexts: contextItem },
-            $inc: { contextSizeKB: contextItem.sizeKB }
-          },
-        },
-      ],
+    // Obtener chatbot actual para hacer el push
+    const currentChatbot = await db.chatbot.findUnique({
+      where: { id: chatbotId },
+      select: { contexts: true, contextSizeKB: true }
     });
+
+    if (!currentChatbot) {
+      throw new Error(`Chatbot ${chatbotId} no encontrado`);
+    }
+
+    // Agregar nuevo contexto al array existente
+    const updatedContexts = [
+      ...(Array.isArray(currentChatbot.contexts) ? currentChatbot.contexts : []),
+      contextItem
+    ];
+
+    // Actualizar chatbot con nuevo array de contextos
+    await db.chatbot.update({
+      where: { id: chatbotId },
+      data: {
+        contexts: updatedContexts,
+        contextSizeKB: (currentChatbot.contextSizeKB || 0) + contextItem.sizeKB
+      }
+    });
+    console.log(`✅ [addContextWithEmbeddings] Insertado en DB correctamente`);
 
 
     // 4. Extraer texto procesable según tipo de contexto
+    console.log(`📝 [addContextWithEmbeddings] Extrayendo texto para vectorización...`);
     const textToVectorize = extractTextFromContext(content, params.metadata);
+    console.log(`✅ [addContextWithEmbeddings] Texto extraído: ${textToVectorize.length} chars`);
 
     // 5. Dividir en chunks
+    console.log(`✂️ [addContextWithEmbeddings] Dividiendo en chunks...`);
     const chunks = chunkContent(textToVectorize);
+    console.log(`✅ [addContextWithEmbeddings] Chunks generados: ${chunks.length}`);
 
     let created = 0;
     let skipped = 0;
 
     // 6. Generar embeddings para cada chunk
+    console.log(`🔮 [addContextWithEmbeddings] Generando embeddings para ${chunks.length} chunks...`);
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
 
@@ -345,6 +389,50 @@ export async function addContextWithEmbeddings(
       }
     }
 
+    console.log(`🎉 [addContextWithEmbeddings] Completado: ${created} embeddings creados, ${skipped} saltados`);
+
+    // ⚠️ Si TODOS los embeddings fueron skipped, significa que el contenido YA existe
+    // Debemos revertir el $push para no dejar un context huérfano sin embeddings
+    if (created === 0 && skipped > 0) {
+      console.log(`⚠️ [addContextWithEmbeddings] Todos los embeddings fueron duplicados, revirtiendo $push...`);
+
+      // Obtener chatbot actualizado (después del $push)
+      const updatedChatbot = await db.chatbot.findUnique({
+        where: { id: chatbotId },
+        select: { contexts: true },
+      });
+
+      if (updatedChatbot) {
+        const filteredContexts = (updatedChatbot.contexts as any[]).filter(
+          (ctx: any) => ctx.id !== contextItem.id
+        );
+
+        console.log(`   Contextos antes: ${(updatedChatbot.contexts as any[]).length}, después: ${filteredContexts.length}`);
+
+        await db.chatbot.update({
+          where: { id: chatbotId },
+          data: {
+            contexts: filteredContexts,
+            contextSizeKB: {
+              decrement: contextItem.sizeKB
+            }
+          }
+        });
+      }
+
+      console.log(`✅ [addContextWithEmbeddings] Context revertido`);
+
+      const errorResult = {
+        success: false,
+        contextId: contextItem.id,
+        embeddingsCreated: 0,
+        embeddingsSkipped: skipped,
+        error: 'El contenido de este sitio web ya existe en tu chatbot (contenido duplicado detectado)',
+      };
+
+      console.log(`❌ [addContextWithEmbeddings] Retornando error:`, errorResult);
+      return errorResult;
+    }
 
     return {
       success: true,

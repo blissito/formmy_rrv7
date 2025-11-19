@@ -178,6 +178,10 @@ model User {
   satInvoices     SatInvoice[] @relation("UserSatInvoices")
   satContacts     SatContact[] @relation("UserSatContacts")
 
+  // Sistema de referidos - quién refirió a este usuario
+  referredById    String?      @db.ObjectId
+  referredBy      Referral?    @relation("ReferredUsers", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   // Tool Credits Tracking (para Parser Avanzado y otras herramientas)
   toolCreditsUsed     Float     @default(0) // Créditos MENSUALES consumidos en el mes actual (soporta decimales: 0.5, 1.5)
   creditsResetAt      DateTime? @default(now()) // Última fecha de reset mensual (nullable para usuarios existentes)
@@ -275,6 +279,7 @@ model Chatbot {
   conversationCount  Int               @default(0)
   monthlyUsage       Int               @default(0)
   contextSizeKB      Int               @default(0)
+  whatsappAutoManual Boolean           @default(false) // TRUE = todas las conversaciones de WhatsApp inician en modo manual
   settings           ChatbotSettings?
   userId             String            @db.ObjectId
   user               User              @relation(fields: [userId], references: [id])
@@ -284,6 +289,7 @@ model Chatbot {
   apiKeys            ApiKey[]
   scheduledActions   ScheduledAction[]
   contacts           Contact[]
+  leads              Lead[]
   toolUsages         ToolUsage[]
   embeddings         Embedding[]
   traces             Trace[]
@@ -295,20 +301,44 @@ model Chatbot {
   updatedAt DateTime @updatedAt
 }
 
+// Contactos automáticos de WhatsApp (solo información básica)
 model Contact {
-  id       String        @id @default(auto()) @map("_id") @db.ObjectId
-  name     String? // Nombre completo
-  email    String? // Email de contacto
-  phone    String? // Teléfono
-  company  String? // Empresa/organización
-  position String? // Cargo/posición
-  website  String? // Sitio web
-  notes    String? // Notas adicionales o contexto
-  source   String        @default("chatbot") // Fuente: chatbot, whatsapp, etc.
-  status   ContactStatus @default(NEW) // Estado del lead en el embudo
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  name     String? // Nombre del perfil de WhatsApp
+  phone    String? // Teléfono de WhatsApp
+  email    String? // Email capturado durante la conversación
 
   // WhatsApp Profile Data
   profilePictureUrl String? // URL de la foto de perfil de WhatsApp
+
+  // Relaciones
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
+
+  conversationId String?       @db.ObjectId
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+
+  // Metadatos
+  capturedAt DateTime @default(now())
+
+  // Índices
+  @@unique([chatbotId, phone]) // Un teléfono único por chatbot
+  @@index([chatbotId])
+  @@index([email])
+}
+
+// Leads calificados (guardados con save_contact_info)
+model Lead {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  name            String?       // Nombre completo
+  email           String?       // Email de contacto
+  phone           String?       // Teléfono
+  productInterest String?       // Producto/servicio de interés
+  position        String?       // Cargo/posición
+  website         String?       // Sitio web
+  notes           String?       // Notas adicionales
+  status          ContactStatus @default(NEW) // Estado en el pipeline de ventas
+  source          String        @default("web") // Canal de origen: "whatsapp" o "web"
 
   // Relaciones
   chatbotId String  @db.ObjectId
@@ -323,9 +353,10 @@ model Contact {
 
   // Índices para búsqueda eficiente
   @@index([email])
-  @@unique([chatbotId, phone]) // Un teléfono único por chatbot
+  @@index([phone])
   @@index([chatbotId])
   @@index([capturedAt])
+  @@index([status])
 }
 
 model ScheduledAction {
@@ -387,6 +418,7 @@ model Conversation {
   chatbot      Chatbot?           @relation(fields: [chatbotId], references: [id])
   messages     Message[]
   contacts     Contact[]
+  leads        Lead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -405,6 +437,12 @@ model Message {
   deleted           Boolean      @default(false)
   picture           String?
   channel           String?
+
+  // WhatsApp Reaction fields
+  isReaction        Boolean?     @default(false) // Si true, este mensaje es una reacción
+  reactionEmoji     String?      // Emoji de la reacción (ej: "👍", "❤️")
+  reactionToMsgId   String?      // externalMessageId del mensaje al que se reacciona
+
   externalMessageId String?
   tokens            Int? // Tokens totales (deprecated, usar inputTokens + outputTokens)
   inputTokens       Int? // Tokens de entrada (input)
@@ -521,6 +559,7 @@ model Referral {
   referredCount         Int    @default(0)
   successfulConversions Int    @default(0)
   referrer              User   @relation("Referrer", fields: [referrerId], references: [id])
+  referredUsers         User[] @relation("ReferredUsers")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

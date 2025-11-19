@@ -33,8 +33,8 @@ export const CodeBlock = ({
       <h4 className="text-dark text-lg font-medium mb-2">{title}</h4>
       <ol className="space-y-2 text-gray-600 mb-6">
         {instructions.map((instruction, index) => (
-          <li key={index} className="flex items-center">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full text-metal text-base font-medium mr-2">
+          <li key={index} className="flex items-start justify-start text-sm md:text-base">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full text-metal text-sm md:text-base font-medium mr-2">
               {index + 1}.
             </span>
             {instruction.description}.

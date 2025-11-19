@@ -1,31 +1,5 @@
-/**
- * ❌ DEPRECATED - API v1 Chatbot Endpoint
- *
- * @deprecated Este endpoint está DEPRECADO y será removido en versiones futuras.
- *
- * STATUS: ⚠️ LEGACY ONLY - Mantener solo para compatibilidad con chatbots existentes
- *
- * PROBLEMA CRÍTICO: Streaming mode no detecta/ejecuta herramientas correctamente
- * - Cuando está en streaming, no usa tools y responde solo con texto
- * - Lógica de tool detection está desconectada del streaming
- *
- * MIGRATION PATH:
- * - USAR: `/dashboard/ghosty` con LlamaIndex 2025 AgentWorkflow
- * - USAR: LlamaIndex Engine v2 (`/server/llamaindex-engine-v2/`) para chat básico
- * - NO USAR: Este endpoint para nuevas implementaciones
- *
- * RAZONES DE DEPRECACIÓN:
- * 1. Framework formmy-agent deprecado → LlamaIndex 2025 nativo
- * 2. Tools + Streaming incompatible en esta implementación
- * 3. Memory management manual → Automático en workflows
- * 4. Mantenimiento complejo vs solución oficial LlamaIndex
- *
- * FECHA DEPRECACIÓN: Septiembre 2025
- * FECHA REMOCIÓN PLANEADA: Diciembre 2025
- */
-
 // This file will only export the loader and action functions
-
+import { handleContextOperation } from "../../server/chatbot/context-handler.server";
 
 export async function loader({ request }: any) {
   return new Response(JSON.stringify({ message: "GET not implemented" }), {
@@ -38,89 +12,43 @@ export async function loader({ request }: any) {
 export async function action({ request }: any) {
   // Imports dentro de la función para evitar problemas client-side
   const {
-    mammoth,
-    XLSX,
     IntegrationType,
-    createChatbot,
     updateChatbot,
     getChatbotById,
-    getChatbotBySlug,
     getChatbotsByUserId,
-    removeContextItem,
-    activateChatbot,
-    deactivateChatbot,
-    setToDraftMode,
-    markChatbotAsDeleted,
-    getChatbotState,
-    validateChatbotCreationAccess,
-    getChatbotBrandingConfigById,
-    getChatbotUsageStats,
-    checkMonthlyUsageLimit,
-    addFileContext,
-    addUrlContext,
-    addTextContext,
-    addQuestionContext,
-    updateQuestionContext,
-    updateTextContext,
-    getChatbotContexts,
-    createIntegration,
-    upsertIntegration,
-    getIntegrationsByChatbotId,
-    updateIntegration,
-    toggleIntegrationStatus,
-    deleteIntegration,
-    getActiveStripeIntegration,
-    createQuickPaymentLink,
-    ReminderService,
-    getAvailableTools,
-    executeToolCall,
-    generateToolPrompts,
     validateUserAIModelAccess,
-    getUserPlanFeatures,
-    DEFAULT_CHATBOT_CONFIG,
-    generateRandomChatbotName,
-    getDefaultAIModelForUser,
-    getUserOrRedirect,
-    db,
-    generateFallbackModels,
-    isAnthropicDirectModel,
-    buildEnrichedSystemPrompt,
-    estimateTokens,
-    AIProviderManager,
-    truncateConversationHistory,
-    createProviderManager,
-    addUserMessage,
-    addAssistantMessage,
-    performanceMonitor
   } = await import("../../server/chatbot-api.server");
-
-  const { calculateCost } = await import("../../server/chatbot/pricing.server");
 
   // Framework temporalmente deshabilitado durante refactor
 
-  console.log('📝 API v1 chatbot - Request received:', request.method, request.url);
+  console.log(
+    "📝 API v1 chatbot - Request received:",
+    request.method,
+    request.url
+  );
   try {
     const formData = await request.formData();
     const intent = formData.get("intent") as string;
-    console.log('🎯 Intent received:', intent);
+    console.log("🎯 Intent received:", intent);
 
     const { getUserOrNull } = await import("server/getUserUtils.server");
 
     // 🔑 Soporte para API Key (testing y futuras integraciones REST)
-    const apiKey = request.headers.get("X-API-Key") || formData.get("apiKey") as string;
+    const apiKey =
+      request.headers.get("X-API-Key") || (formData.get("apiKey") as string);
     const testApiKey = "formmy-test-2024"; // Para testing y debugging
 
     let user = await getUserOrNull(request);
 
     // Si no hay usuario autenticado, verificar API key
     if (!user && apiKey === testApiKey) {
-      console.log('🔑 Using test API key for authentication');
+      console.log("🔑 Using test API key for authentication");
       // Usuario de testing - fixtergeek@gmail.com con plan TRIAL para testing real
       user = {
-        id: '687d43b46e2021a1de9d6ed3',
-        email: 'fixtergeek@gmail.com',
-        plan: 'TRIAL',
-        name: 'Test User (fixtergeek)'
+        id: "687d43b46e2021a1de9d6ed3",
+        email: "fixtergeek@gmail.com",
+        plan: "TRIAL",
+        name: "Test User (fixtergeek)",
       } as any;
     }
 
@@ -128,7 +56,7 @@ export async function action({ request }: any) {
       return new Response(
         JSON.stringify({
           error: "Usuario no autenticado",
-          hint: "Usa header 'X-API-Key: formmy-test-2024' para testing"
+          hint: "Usa header 'X-API-Key: formmy-test-2024' para testing",
         }),
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
@@ -269,7 +197,6 @@ export async function action({ request }: any) {
       case "remove_context":
       case "rename_context":
       case "get_contexts": {
-        const { handleContextOperation } = await import("../../server/chatbot/context-handler.server");
         return await handleContextOperation(intent, formData, userId);
       }
 
@@ -281,7 +208,9 @@ export async function action({ request }: any) {
       case "deactivate_chatbot":
       case "set_to_draft":
       case "get_chatbot_state": {
-        const { handleChatbotManagement } = await import("../../server/chatbot/management-handler.server");
+        const { handleChatbotManagement } = await import(
+          "../../server/chatbot/management-handler.server"
+        );
         return await handleChatbotManagement(intent, formData, userId, user);
       }
 
@@ -291,23 +220,25 @@ export async function action({ request }: any) {
       case "update_integration":
       case "toggle_integration_status":
       case "delete_integration": {
-        const { handleIntegrationManagement } = await import("../../server/chatbot/integration-handler.server");
+        const { handleIntegrationManagement } = await import(
+          "../../server/chatbot/integration-handler.server"
+        );
         return await handleIntegrationManagement(intent, formData, userId);
       }
 
       default: {
-        return new Response(
-          JSON.stringify({ error: "Intent no soportado" }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Intent no soportado" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
       }
     }
   } catch (error) {
-    console.error('❌ API v1 chatbot error:', error);
+    console.error("❌ API v1 chatbot error:", error);
     return new Response(
       JSON.stringify({
         error: "Error interno del servidor",
-        details: error?.message || "Error desconocido"
+        details: error?.message || "Error desconocido",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );

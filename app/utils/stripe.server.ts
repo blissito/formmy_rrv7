@@ -48,6 +48,37 @@ export const searchStripeSubscriptions = async (user: User) => {
   }
 };
 
+/**
+ * Busca si el usuario tiene alguna suscripción activa en Stripe
+ * @returns La primera suscripción activa encontrada, o null si no tiene ninguna
+ */
+export const getActiveSubscription = async (user: User): Promise<Stripe.Subscription | null> => {
+  if (!user.customerId) return null;
+
+  const stripe = getClient();
+
+  try {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: user.customerId,
+      status: 'active',
+      limit: 10,
+    });
+
+    if (subscriptions.data.length === 0) return null;
+
+    // Log warning si hay múltiples suscripciones activas
+    if (subscriptions.data.length > 1) {
+      console.warn(`[Stripe] ⚠️ Usuario ${user.email} tiene ${subscriptions.data.length} suscripciones activas`);
+    }
+
+    // Retornar la primera suscripción activa
+    return subscriptions.data[0];
+  } catch (error) {
+    console.error(`[Stripe] Error buscando suscripciones activas para ${user.email}:`, error);
+    return null;
+  }
+};
+
 // @TODO: check for duplications
 export const getOrCreateCustomerId = async (user: User): Promise<string> => {
   const isDevelopment = process.env.NODE_ENV === "development";
@@ -134,7 +165,8 @@ export const createBillingSessionOrCheckoutURL = async (
     if (user.customerId && user.plan === "PRO") {
       return createBillingSessionURL(user);
     } else {
-      return createCheckoutSessionURL({ user, origin });
+      const result = await createCheckoutSessionURL({ user, origin });
+      return result.type === 'checkout' ? result.url : undefined;
     }
   } catch (e: unknown) {
     if (e instanceof Error) {
@@ -204,7 +236,11 @@ export const createCheckoutSessionURL = async ({
   metadata?: Record<string, string>;
   successUrl?: string;
   cancelUrl?: string;
-}) => {
+}): Promise<
+  | { type: 'checkout'; url: string }
+  | { type: 'upgraded'; subscription: Stripe.Subscription }
+  | { type: 'same_plan'; currentPlan: string }
+> => {
   const isDevelopment = process.env.NODE_ENV === "development";
   const DOMAIN = origin;
   const stripe = getClient();
@@ -217,6 +253,61 @@ export const createCheckoutSessionURL = async ({
     ? "price_1OinFxDtYmGT70YtW9UbUdpM"
     : "price_1OgF7RDtYmGT70YtJB3kRl9T"; // prod
 
+  // ✅ UPGRADE/DOWNGRADE AUTOMÁTICO: Verificar si usuario ya tiene suscripción activa
+  if (user && mode === "subscription") {
+    const activeSubscription = await getActiveSubscription(user);
+
+    if (activeSubscription) {
+      console.log(`[Stripe] Usuario ${user.email} tiene suscripción activa ${activeSubscription.id}`);
+
+      const currentPriceId = activeSubscription.items.data[0].price.id;
+      const newPriceId = price || ANUAL_PRICE;
+
+      // ✅ VALIDACIÓN: Verificar si ya tiene este mismo plan
+      if (currentPriceId === newPriceId) {
+        console.log(`[Stripe] Usuario ${user.email} ya tiene el precio ${newPriceId}. No se requiere actualización.`);
+        return {
+          type: 'same_plan' as const,
+          currentPlan: metadata?.plan || 'UNKNOWN',
+        };
+      }
+
+      // Usuario tiene un plan diferente → Hacer upgrade/downgrade
+      console.log(`[Stripe] Cambiando de ${currentPriceId} a ${newPriceId}...`);
+
+      try {
+        // Actualizar la suscripción existente con el nuevo precio
+        const updatedSubscription = await stripe.subscriptions.update(
+          activeSubscription.id,
+          {
+            items: [{
+              id: activeSubscription.items.data[0].id,
+              price: newPriceId,
+            }],
+            proration_behavior: 'always_invoice', // Facturar proration inmediatamente
+            metadata: metadata || activeSubscription.metadata,
+          }
+        );
+
+        console.log(`[Stripe] ✅ Suscripción ${activeSubscription.id} actualizada a precio ${newPriceId}`);
+
+        // Actualizar plan del usuario en DB basado en metadata
+        if (metadata?.plan) {
+          await db.user.update({
+            where: { id: user.id },
+            data: { plan: metadata.plan as any },
+          });
+        }
+
+        return { type: 'upgraded', subscription: updatedSubscription };
+      } catch (error) {
+        console.error(`[Stripe] Error actualizando suscripción ${activeSubscription.id}:`, error);
+        throw new Error('No se pudo actualizar tu suscripción. Por favor contacta soporte.');
+      }
+    }
+  }
+
+  // ✅ FLUJO NORMAL: Usuario NO tiene suscripción activa → Crear checkout
   const lineItem: any = priceData
     ? { price_data: priceData, quantity: 1 }
     : { price: price || ANUAL_PRICE, quantity: 1 };
@@ -259,7 +350,7 @@ export const createCheckoutSessionURL = async ({
 
   const session = await stripe.checkout.sessions.create(sessionConfig);
 
-  return session.url;
+  return { type: 'checkout', url: session.url! };
 };
 
 export const getStripeURL = async (
@@ -272,12 +363,12 @@ export const getStripeURL = async (
   }
 
   const user = await getUserOrTriggerLogin(request); // @todo revisit
-  const url = await createCheckoutSessionURL({
+  const result = await createCheckoutSessionURL({
     user,
     price,
     origin: new URL(request.url).origin,
   });
-  return url;
+  return result.type === 'checkout' ? result.url : undefined;
 };
 
 let stripeClient;

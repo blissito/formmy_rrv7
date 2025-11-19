@@ -10,12 +10,11 @@ import {
 import { getOrCreateConversation } from "../../server/integrations/whatsapp/conversation.server";
 import { getChatbotById } from "../../server/chatbot/chatbotModel.server";
 import { db } from "../utils/db.server";
-import { createAgent } from "../../server/agent-engine-v0";
 import { agentStreamEvent } from "@llamaindex/workflow";
 import { isMessageProcessed } from "../../server/integrations/whatsapp/deduplication.service";
 import { downloadWhatsAppSticker } from "../../server/integrations/whatsapp/media.service";
 import { shouldProcessMessage } from "../../server/integrations/whatsapp/message-debounce.service";
-import { updateContactAvatar } from "../../server/integrations/whatsapp/avatar.service";
+// import { updateContactAvatar } from "../../server/integrations/whatsapp/avatar.service"; // TEMPORALMENTE DESHABILITADO - endpoint incorrecto
 
 // Types for WhatsApp webhook payload
 interface WhatsAppWebhookEntry {
@@ -40,7 +39,7 @@ interface WhatsAppWebhookEntry {
         text?: {
           body: string;
         };
-        type: "text" | "image" | "document" | "audio" | "video" | "sticker";
+        type: "text" | "image" | "document" | "audio" | "video" | "sticker" | "reaction";
         image?: {
           id: string;
           mime_type: string;
@@ -70,6 +69,10 @@ interface WhatsAppWebhookEntry {
           mime_type: string;
           sha256: string;
           animated: boolean;
+        };
+        reaction?: {
+          message_id: string;
+          emoji: string;
         };
       }>;
       statuses?: Array<{
@@ -224,8 +227,48 @@ export const action = async ({ request }: Route.ActionArgs) => {
                 continue;
               }
 
+              // 📱 HANDLE REACTIONS: Special processing for WhatsApp reactions
+              if (message.type === "reaction" && message.reaction) {
+                // Find integration to get chatbotId
+                const integration = await findIntegrationByPhoneNumber(change.value.metadata.phone_number_id);
+
+                if (!integration) {
+                  console.warn(`⚠️ [Webhook] Integration not found for reaction, phoneNumberId: ${change.value.metadata.phone_number_id}`);
+                  results.push({
+                    success: false,
+                    messageId: message.id,
+                    type: "reaction",
+                    error: "Integration not found"
+                  });
+                  continue;
+                }
+
+                // Import handleReaction function
+                const { handleReaction } = await import("../../server/integrations/whatsapp/conversation.server");
+
+                // Process reaction
+                const reactionResult = await handleReaction(
+                  message.from,
+                  integration.chatbotId,
+                  message.reaction.emoji,
+                  message.reaction.message_id,
+                  message.id
+                );
+
+                results.push({
+                  success: reactionResult.success,
+                  messageId: message.id,
+                  type: "reaction",
+                  action: (reactionResult as any).action,
+                  reactionId: (reactionResult as any).reactionId,
+                });
+
+                continue; // Skip normal message processing for reactions
+              }
+
               // Extract contact name from webhook payload (if available)
               const contactName = change.value.contacts?.[0]?.profile?.name;
+              console.log(`📞 [Webhook] Contact name from payload:`, contactName, '(from:', message.from, ')');
 
               const incomingMessage: IncomingMessage = {
                 messageId: message.id,
@@ -436,12 +479,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
                           chatbotId: integration.chatbotId,
                           name: contact.full_name || contact.first_name || null,
                           phone: contact.phone_number,
-                          source: "whatsapp",
-                          status: "NEW",
+                          // Note: conversationId is null for state_sync contacts (no specific conversation yet)
                         },
                         update: {
                           name: contact.full_name || contact.first_name || null,
-                          source: "whatsapp",
                         },
                       });
                       addedCount++;
@@ -699,7 +740,16 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
       throw new Error("Chatbot not found");
     }
 
+    // Create or find conversation FIRST (needed for Contact.conversationId)
+    console.log(`🔍 [Webhook] Creating/finding conversation for ${message.from}, chatbot: ${integration.chatbotId}`);
+    const conversation = await getOrCreateConversation(
+      message.from,
+      integration.chatbotId
+    );
+    console.log(`✅ [Webhook] Conversation ready: ${conversation.id}, status: ${conversation.status}, manualMode: ${conversation.manualMode}`);
+
     // ✅ CREATE/UPDATE CONTACT: Save contact info from WhatsApp when message arrives
+    // MUST be AFTER conversation creation to have conversationId
     if (contactName) {
       try {
         const normalizedPhone = message.from.replace(/\D/g, "").slice(-10);
@@ -713,40 +763,35 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
           },
           create: {
             chatbotId: integration.chatbotId,
+            conversationId: conversation.id, // ✅ Link to conversation
             name: contactName,
             phone: normalizedPhone,
-            source: "WHATSAPP",
-            status: "NEW",
           },
           update: {
-            name: contactName,
-            lastUpdated: new Date(),
+            name: contactName, // Actualizar nombre del perfil de WhatsApp
+            conversationId: conversation.id,
           },
         });
 
-        console.log(`✅ Contact saved: ${contactName} (${normalizedPhone})`);
+        console.log(`✅ Contact saved: ${contactName} (${normalizedPhone}) - conversationId: ${conversation.id}`);
 
-        // 📸 FETCH AVATAR: Obtener foto de perfil de WhatsApp (async, no bloqueante)
-        if (integration.token) {
-          updateContactAvatar(
-            integration.chatbotId,
-            normalizedPhone,
-            integration.token
-          ).catch((err) => {
-            console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
-          });
-        }
+        // 📸 FETCH AVATAR: TEMPORALMENTE DESHABILITADO - endpoint incorrecto causa errores
+        // Meta API no soporta /${phoneNumber}/profile_picture directamente
+        // TODO: Implementar método correcto usando Media API o Graph API con formato correcto
+        // if (integration.token) {
+        //   updateContactAvatar(
+        //     integration.chatbotId,
+        //     normalizedPhone,
+        //     integration.token
+        //   ).catch((err) => {
+        //     console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
+        //   });
+        // }
       } catch (contactError) {
         console.error("⚠️ Failed to save contact, continuing:", contactError);
         // Don't fail the message processing if contact save fails
       }
     }
-
-    // Create or find conversation
-    const conversation = await getOrCreateConversation(
-      message.from,
-      integration.chatbotId
-    );
 
     // 🎨 HANDLE STICKERS: Download and save sticker media
     let stickerUrl: string | undefined;
@@ -771,16 +816,18 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     }
 
     // Save the incoming message first
+    console.log(`💾 [Webhook] Saving user message to conversation ${conversation.id}`);
     const userMessage = await addWhatsAppUserMessage(
       conversation.id,
       message.type === "sticker" ? "📎 Sticker" : message.body,
       message.messageId,
       stickerUrl // Pass sticker URL to save in picture field
     );
+    console.log(`✅ [Webhook] User message saved: ${userMessage.id}`);
 
     // Check if conversation is in manual mode
     if (conversation.manualMode) {
-
+      console.log(`⏸️ [Webhook] Conversation ${conversation.id} in manual mode - skipping bot response`);
       return {
         success: true,
         messageId: message.messageId,
@@ -792,6 +839,7 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     }
 
     // Get recent conversation history for context (only if not in manual mode)
+    console.log(`📚 [Webhook] Loading conversation history for ${conversation.id}`);
     const recentMessages = await db.message.findMany({
       where: { conversationId: conversation.id },
       orderBy: { createdAt: 'desc' },
@@ -803,16 +851,20 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
         channel: true // ✅ Incluir channel para detectar mensajes echo
       }
     });
+    console.log(`📚 [Webhook] Loaded ${recentMessages.length} messages from history`);
 
     // Generate chatbot response with history context
+    console.log(`🤖 [Webhook] Generating bot response for conversation ${conversation.id}`);
     const botResponse = await generateChatbotResponse(
       message.body,
       chatbot,
       conversation.id,
       recentMessages.reverse() // Oldest first for context
     );
+    console.log(`✅ [Webhook] Bot response generated: ${botResponse.content.substring(0, 100)}... (${botResponse.tokens} tokens, ${botResponse.responseTime}ms)`);
 
     // Save the bot response
+    console.log(`💾 [Webhook] Saving assistant message to conversation ${conversation.id}`);
     const assistantMessage = await addWhatsAppAssistantMessage(
       conversation.id,
       botResponse.content,
@@ -820,13 +872,16 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
       botResponse.tokens,
       botResponse.responseTime
     );
+    console.log(`✅ [Webhook] Assistant message saved: ${assistantMessage.id}`);
 
     // Send response back to WhatsApp using simplified HTTP call
+    console.log(`📤 [Webhook] Sending response to WhatsApp for ${message.from}`);
     const messageResponse = await sendWhatsAppMessage(
       message.from,
       botResponse.content,
       integration
     );
+    console.log(`✅ [Webhook] Response sent to WhatsApp, messageId: ${messageResponse.messageId}`);
 
     // Update the assistant message with the WhatsApp message ID
     if (messageResponse.messageId) {
@@ -835,12 +890,13 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
           where: { id: assistantMessage.id },
           data: { externalMessageId: messageResponse.messageId },
         });
+        console.log(`✅ [Webhook] Assistant message updated with WhatsApp ID: ${messageResponse.messageId}`);
       } catch (error) {
-        console.warn("Failed to update message with WhatsApp ID:", error);
+        console.warn("⚠️ [Webhook] Failed to update message with WhatsApp ID:", error);
       }
     }
 
-
+    console.log(`🎉 [Webhook] Message processing completed successfully for ${message.messageId}`);
     return {
       success: true,
       messageId: message.messageId,
@@ -914,7 +970,7 @@ async function sendWhatsAppMessage(
 // Removed unused Effect functions - now using simplified direct functions above
 
 /**
- * Generate chatbot response using AgentEngine V0
+ * Generate chatbot response using AgentWorkflow (modern engine)
  */
 async function generateChatbotResponse(
   userMessage: string,
@@ -923,7 +979,6 @@ async function generateChatbotResponse(
   conversationHistory?: any[]
 ) {
   const startTime = Date.now();
-
 
   try {
     // Get user info from chatbot owner
@@ -935,11 +990,16 @@ async function generateChatbotResponse(
       throw new Error("User not found for chatbot");
     }
 
-    // Create agent with V0 engine
-    const agent = await createAgent(chatbot, user);
+    // ✅ USAR MOTOR MODERNO: agent-workflow.server (igual que Web)
+    const { streamAgentWorkflow } = await import("../../server/agents/agent-workflow.server");
+    const { resolveChatbotConfig, createAgentExecutionContext } = await import("../../server/chatbot/configResolver.server");
+    const { getChatbotIntegrationFlags } = await import("../../server/chatbot/integrationModel.server");
+
+    // Resolver configuración usando configResolver
+    const resolvedConfig = resolveChatbotConfig(chatbot, user);
 
     // Build conversation history from recent messages
-    const chatHistory = conversationHistory?.slice(-20).map(msg => {
+    const history = conversationHistory?.slice(-20).map(msg => {
       const role = (msg.role === "USER" ? "user" : "assistant") as any;
       let content = msg.content;
 
@@ -951,32 +1011,53 @@ async function generateChatbotResponse(
       return { role, content };
     }) || [];
 
-    // Generate response using agent - use direct method to avoid streaming complexity
-    let responseContent = '';
-    try {
-      const responseStream = agent.runStream(userMessage, { chatHistory }) as any;
+    // Cargar integraciones activas del chatbot
+    const integrations = await getChatbotIntegrationFlags(chatbot.id);
 
-      for await (const event of responseStream) {
-        if (agentStreamEvent.include(event)) {
-          responseContent += event.data.delta || '';
-        }
+    // Crear contexto de ejecución del agente
+    const agentContext = createAgentExecutionContext(user, chatbot.id, userMessage, {
+      sessionId: conversationId, // Usar conversationId como sessionId
+      conversationId: conversationId,
+      conversationHistory: history,
+      integrations,
+      channel: 'whatsapp' // ✅ Indicar que estamos en WhatsApp
+    });
+
+    // Plan del dueño del chatbot (para usuarios anónimos en WhatsApp)
+    const chatbotOwnerPlan = user.plan;
+
+    // ✅ Generar respuesta usando AgentWorkflow (motor moderno)
+    const streamGenerator = streamAgentWorkflow(user, userMessage, chatbot.id, {
+      resolvedConfig,
+      agentContext,
+      chatbotOwnerPlan
+    });
+
+    // Acumular respuesta completa desde el stream
+    let responseContent = '';
+    let toolsUsed: string[] = [];
+
+    for await (const event of streamGenerator) {
+      if (event.type === "chunk" && event.content) {
+        responseContent += event.content;
+      } else if (event.type === "tool-start" && event.tool) {
+        toolsUsed.push(event.tool);
+      } else if (event.type === "error") {
+        console.error("❌ [WhatsApp] Stream error:", event.content);
       }
-    } catch (streamError) {
-      console.error("Streaming error, falling back to simple response:", streamError);
-      responseContent = `Hola! Soy ${chatbot.name}. Recibí tu mensaje: "${userMessage}". El sistema de IA completo se está configurando, mientras tanto puedo ayudarte con consultas básicas.`;
     }
 
     const responseTime = Date.now() - startTime;
 
-
     return {
-      content: responseContent.trim() || "Lo siento, no pude generar una respuesta. Intenta de nuevo.",
+      content: responseContent.trim() || resolvedConfig.welcomeMessage || "Lo siento, no pude generar una respuesta.",
       tokens: Math.ceil(responseContent.length / 4), // Estimated tokens
       responseTime,
+      toolsUsed // ✅ Ahora rastreamos tools usados correctamente
     };
 
   } catch (error) {
-    console.error("Error generating chatbot response:", error);
+    console.error("❌ [WhatsApp] Error generating chatbot response:", error);
 
     return {
       content: "Lo siento, estoy teniendo problemas para procesar tu mensaje. Por favor intenta de nuevo.",
@@ -986,5 +1067,5 @@ async function generateChatbotResponse(
   }
 }
 
-// WhatsApp webhook endpoint - simplified implementation with AgentEngine V0
+// WhatsApp webhook endpoint - using AgentWorkflow (modern engine)
 // Handles both regular messages and echo messages from coexistence mode

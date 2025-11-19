@@ -11,6 +11,7 @@ import { sendFreeTrialEmail } from 'server/notifyers/freeTrial';
 import { sendNoUsageEmail } from 'server/notifyers/noUsage';
 import { sendWeekSummaryEmail } from 'server/notifyers/weekSummary';
 import { checkTrialExpiration, applyFreeRestrictions } from 'server/chatbot/planLimits.server';
+import { getChatbotMetrics, getDateRange } from 'server/chatbot/metricsModel.server';
 import { Plans } from '@prisma/client';
 
 export interface WeeklyEmailsJobData {
@@ -222,23 +223,19 @@ async function checkWeeklySummary(): Promise<{ sent: number }> {
         const chatbot = user.chatbots[0];
         if (!chatbot) continue;
 
-        const totalConversations = chatbot.conversations.length;
-        const totalMessages = chatbot.conversations.reduce(
-          (sum, conv) => sum + conv.messages.length,
-          0
-        );
-        const averageMessagesPerConversation = totalConversations > 0
-          ? Math.round(totalMessages / totalConversations)
-          : 0;
+        // Obtener métricas completas usando la función existente
+        const dateRange = getDateRange('7d');
+        const metrics = await getChatbotMetrics(chatbot.id, dateRange.start, dateRange.end);
 
         await sendWeekSummaryEmail({
           email: user.email,
           name: user.name || undefined,
           chatbotName: chatbot.name,
           metrics: {
-            totalConversations,
-            totalMessages,
-            averageMessagesPerConversation
+            totalConversations: metrics.conversations.total,
+            totalMessages: metrics.messages.total,
+            averageMessagesPerConversation: metrics.messages.averagePerConversation,
+            averageResponseTime: metrics.performance.averageResponseTime
           }
         });
         sent++;

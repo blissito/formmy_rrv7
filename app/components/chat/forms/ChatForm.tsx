@@ -105,13 +105,8 @@ export const ChatForm = ({
               />
             ) : (
               <img
-                src="/assets/chat/user-placeholder.svg"
+                src="/dash/default-ghosty.svg"
                 alt="Avatar del chatbot"
-                style={{
-                  filter: `hue-rotate(${
-                    primaryColor === "#9A99EA" ? "0" : "180"
-                  }deg)`,
-                }}
                 className="object-cover w-full h-full"
               />
             )}
@@ -167,7 +162,7 @@ export const ChatForm = ({
       {/* Saludo inicial */}
       <Input
         type="textarea"
-        inputClassName="h-32 "
+        inputClassName="h-24 lg:h-32 "
         placeholder="¡Hola! ¿Cómo puedo ayudarte hoy? (Puedes usar markdown para formatear el texto)."
         onChange={onWelcomeMessageChange}
         value={welcomeMessage}
@@ -180,7 +175,7 @@ export const ChatForm = ({
       {/* Despedida */}
       <Input
         type="textarea"
-        inputClassName="h-32 "
+        inputClassName="h-20 md:h-32 "
         placeholder="Si necesitas ayuda con algo más, escríbeme, estoy aquí para ayudarte. (Puedes usar markdown para formatear el texto)."
         onChange={onGoodbyeMessageChange}
         value={goodbyeMessage}

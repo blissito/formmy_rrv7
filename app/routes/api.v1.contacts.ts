@@ -151,8 +151,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
       }
 
 
-      // Verificar que el contacto existe y pertenece a un chatbot del usuario
-      const contact = await db.contact.findUnique({
+      // Verificar que el lead existe y pertenece a un chatbot del usuario
+      const lead = await db.lead.findUnique({
         where: { id: contactId },
         include: {
           chatbot: {
@@ -163,33 +163,33 @@ export const action = async ({ request }: Route.ActionArgs) => {
         },
       });
 
-      if (!contact) {
+      if (!lead) {
         return json(
-          { success: false, error: "Contacto no encontrado" },
+          { success: false, error: "Lead no encontrado" },
           { status: 404 }
         );
       }
 
-      if (contact.chatbot.userId !== user.id) {
+      if (lead.chatbot.userId !== user.id) {
         return json(
-          { success: false, error: "No tienes permiso para modificar este contacto" },
+          { success: false, error: "No tienes permiso para modificar este lead" },
           { status: 403 }
         );
       }
 
-      // Actualizar el contacto
-      const updatedContact = await db.contact.update({
+      // Actualizar el lead
+      const updatedLead = await db.lead.update({
         where: { id: contactId },
         data: { status },
       });
 
 
-      return json({ success: true, contact: updatedContact });
+      return json({ success: true, contact: updatedLead });
     }
 
     if (intent === "delete_contact") {
-      // Verificar que el contacto existe y pertenece a un chatbot del usuario
-      const contact = await db.contact.findUnique({
+      // Verificar que el lead existe y pertenece a un chatbot del usuario
+      const lead = await db.lead.findUnique({
         where: { id: contactId },
         include: {
           chatbot: {
@@ -200,26 +200,26 @@ export const action = async ({ request }: Route.ActionArgs) => {
         },
       });
 
-      if (!contact) {
+      if (!lead) {
         return json(
-          { success: false, error: "Contacto no encontrado" },
+          { success: false, error: "Lead no encontrado" },
           { status: 404 }
         );
       }
 
-      if (contact.chatbot.userId !== user.id) {
+      if (lead.chatbot.userId !== user.id) {
         return json(
-          { success: false, error: "No tienes permiso para eliminar este contacto" },
+          { success: false, error: "No tienes permiso para eliminar este lead" },
           { status: 403 }
         );
       }
 
-      // Eliminar el contacto
-      await db.contact.delete({
+      // Eliminar el lead
+      await db.lead.delete({
         where: { id: contactId },
       });
 
-      return json({ success: true, message: "Contacto eliminado exitosamente" });
+      return json({ success: true, message: "Lead eliminado exitosamente" });
     }
 
     return json(

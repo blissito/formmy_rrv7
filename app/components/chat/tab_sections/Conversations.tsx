@@ -3,16 +3,107 @@ import type { UIMessage } from "~/server/chatbot/conversationTransformer.server"
 import { ChipTabs, useChipTabs } from "../common/ChipTabs";
 import { Avatar } from "../Avatar";
 import { useState, useEffect, useRef, type ReactNode, forwardRef } from "react";
-import { useNavigate, useSubmit } from "react-router";
+import { useNavigate, useSubmit, useRevalidator } from "react-router";
 import { cn } from "~/lib/utils";
 import Empty from "~/SVGs/Empty";
 import EmptyDark from "~/SVGs/EmptyDark";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
+import { FaWhatsapp } from "react-icons/fa";
+import { CiStar } from "react-icons/ci";
+import { FaStar } from "react-icons/fa";
+
+// Extender tipo Chatbot para asegurar que incluye whatsappAutoManual
+type ChatbotWithWhatsAppConfig = Chatbot & {
+  whatsappAutoManual?: boolean | null;
+};
+
+// Componente Tooltip reutilizable
+const Tooltip = ({
+  text,
+  children,
+  icon,
+  position = "bottom",
+  align = "center"
+}: {
+  text: string;
+  children: ReactNode;
+  icon?: string;
+  position?: "top" | "bottom" | "left" | "right";
+  align?: "left" | "center" | "right";
+}) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Posiciones del tooltip según position y align
+  const getPositionClasses = () => {
+    if (position === "top" || position === "bottom") {
+      const vertical = position === "bottom" ? "top-full mt-2" : "bottom-full mb-2";
+      const horizontal = {
+        left: "left-0",
+        center: "left-1/2 -translate-x-1/2",
+        right: "right-0",
+      };
+      return `${vertical} ${horizontal[align]}`;
+    }
+    // Para left/right mantener comportamiento actual
+    if (position === "left") return "right-full top-1/2 -translate-y-1/2 mr-2";
+    if (position === "right") return "left-full top-1/2 -translate-y-1/2 ml-2";
+    return "";
+  };
+
+  // Posiciones de la flecha según position y align
+  const getArrowClasses = () => {
+    if (position === "top" || position === "bottom") {
+      const vertical = position === "bottom" ? "bottom-full -mb-1" : "top-full -mt-1";
+      const horizontal = {
+        left: "left-4",
+        center: "left-1/2 -translate-x-1/2",
+        right: "right-4",
+      };
+      return `${vertical} ${horizontal[align]}`;
+    }
+    if (position === "left") return "left-full top-1/2 -translate-y-1/2 -ml-1";
+    if (position === "right") return "right-full top-1/2 -translate-y-1/2 -mr-1";
+    return "";
+  };
+
+  // Estilos de la flecha según el prop
+  const arrowStyles = {
+    bottom: "border-b-gray-900 dark:border-b-gray-800",
+    top: "border-t-gray-900 dark:border-t-gray-800",
+    left: "border-l-gray-900 dark:border-l-gray-800",
+    right: "border-r-gray-900 dark:border-r-gray-800",
+  };
+
+  return (
+    <div className="relative inline-block" style={{ overflow: 'visible' }}>
+      <div
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        {children}
+      </div>
+      {showTooltip && (
+        <div className={cn(
+          "absolute w-max max-w-xs px-3 py-2 text-xs text-white bg-gray-900 dark:bg-gray-800 rounded-lg shadow-lg pointer-events-none",
+          getPositionClasses()
+        )}
+        style={{ zIndex: 9999 }}>
+          {icon && <span className="mr-1">{icon}</span>}
+          {text}
+          {/* Flecha del tooltip */}
+          <div className={cn("absolute", getArrowClasses())}>
+            <div className={cn("border-4 border-transparent", arrowStyles[position])}></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 type ConversationsProps = {
-  chatbot: Chatbot;
+  chatbot: ChatbotWithWhatsAppConfig;
   user: User;
   conversations?: Conversation[];
   totalConversations?: number;
@@ -93,7 +184,16 @@ export const Conversations = ({
     }
   };
 
-  const actualConversations = allLoadedConversations;
+  // 🔍 Filtrar conversaciones vacías de WhatsApp
+  // Una conversación está "vacía" si es de WhatsApp Y no tiene mensajes reales (solo reacciones o sin mensajes)
+  const actualConversations = allLoadedConversations.filter(conv => {
+    // Si no es WhatsApp, incluir siempre
+    if (!conv.isWhatsApp) return true;
+
+    // Si es WhatsApp, verificar que tenga al menos un mensaje NO reacción
+    const hasRealMessages = conv.messages.some(msg => !msg.isReaction);
+    return hasRealMessages;
+  });
 
   // 🌐 TABS i18n: Usar índices (0 = All, 1 = Favorites) para compatibilidad con localStorage
   const TAB_ALL = 0;
@@ -102,12 +202,28 @@ export const Conversations = ({
 
   const { currentTab: currentTabIndex, setCurrentTab: setCurrentTabIndex} = useChipTabs(TAB_ALL.toString(), `conversations_${chatbot?.id || 'default'}`);
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
+
+  // ✅ Revalidar al montar componente - asegura datos frescos cuando vuelve de Preview
+  useEffect(() => {
+    revalidator.revalidate();
+  }, []); // Solo al montar
 
   // Estado local para toggle manual (inicializado con valores reales)
   const [localManualModes, setLocalManualModes] = useState<Record<string, boolean>>({});
 
   // Estado local para favoritos (inicializado con valores reales)
   const [localFavorites, setLocalFavorites] = useState<Record<string, boolean>>({});
+
+  // Estado para modo manual global de WhatsApp
+  const [whatsappAutoManualUI, setWhatsappAutoManualUI] = useState(chatbot?.whatsappAutoManual || false);
+  const [isTogglingWhatsAppManual, setIsTogglingWhatsAppManual] = useState(false);
+  const [showWhatsAppPanel, setShowWhatsAppPanel] = useState(false);
+
+  // Sincronizar estado UI con props cuando cambien (después de revalidación)
+  useEffect(() => {
+    setWhatsappAutoManualUI(chatbot?.whatsappAutoManual || false);
+  }, [chatbot?.whatsappAutoManual]);
 
   // Filtrar favoritos usando estado local optimista
   const favoriteConversations = actualConversations.filter(
@@ -122,17 +238,39 @@ export const Conversations = ({
 
   const [conversation, setConversation] = useState<Conversation>(initialConversation);
 
+  // Estado para controlar visibilidad del panel de detalles de contacto
+  const [showContactDetails, setShowContactDetails] = useState(false);
+
+  // Estado para controlar vista mobile (lista vs conversación)
+  const [showConversationInMobile, setShowConversationInMobile] = useState(false);
+
+  // Estado para controlar vista mobile del panel de contacto
+  const [showContactDetailsInMobile, setShowContactDetailsInMobile] = useState(false);
+
   // Inicializar estado local con valores de BD
+  // ✅ MERGE en vez de REPLACE - preserva cambios locales durante polling
   useEffect(() => {
-    const initialModes: Record<string, boolean> = {};
-    const initialFavorites: Record<string, boolean> = {};
-    actualConversations.forEach(conv => {
-      initialModes[conv.id] = conv.manualMode || false;
-      initialFavorites[conv.id] = conv.isFavorite || false;
+    setLocalManualModes(prev => {
+      const updated = { ...prev };
+      allLoadedConversations.forEach(conv => {
+        // Solo inicializar conversaciones nuevas - preservar cambios manuales
+        if (updated[conv.id] === undefined) {
+          updated[conv.id] = conv.manualMode || false;
+        }
+      });
+      return updated;
     });
-    setLocalManualModes(initialModes);
-    setLocalFavorites(initialFavorites);
-  }, [actualConversations]);
+
+    setLocalFavorites(prev => {
+      const updated = { ...prev };
+      allLoadedConversations.forEach(conv => {
+        if (updated[conv.id] === undefined) {
+          updated[conv.id] = conv.isFavorite || false;
+        }
+      });
+      return updated;
+    });
+  }, [allLoadedConversations]);
 
   // 🔄 Actualizar conversación cuando cambia selectedConversationId (desde URL)
   useEffect(() => {
@@ -226,6 +364,92 @@ export const Conversations = ({
     }
   };
 
+  // 🎯 Toggle modo manual global para WhatsApp
+  const handleToggleWhatsAppAutoManual = async () => {
+    if (isTogglingWhatsAppManual) return; // Prevenir múltiples clicks
+
+    const currentValue = whatsappAutoManualUI;
+    const newValue = !currentValue;
+
+    // Confirmar con el usuario
+    const whatsappConversations = actualConversations.filter(
+      (conv) => conv.isWhatsApp
+    );
+
+    if (whatsappConversations.length > 0) {
+      const mode = newValue ? "manual" : "automático";
+
+      // Detectar conversaciones con configuración individual diferente
+      const conversationsWithDifferentConfig = whatsappConversations.filter(
+        (conv) => conv.manualMode !== newValue
+      );
+
+      // Mensaje de confirmación con warning si hay configuraciones individuales
+      let confirmMessage = `¿Activar modo ${mode} para ${whatsappConversations.length} conversaciones de WhatsApp?\n\n`;
+
+      if (conversationsWithDifferentConfig.length > 0) {
+        confirmMessage += `⚠️ ATENCIÓN: Esto cambiará ${conversationsWithDifferentConfig.length} conversación${conversationsWithDifferentConfig.length > 1 ? 'es' : ''} que ${conversationsWithDifferentConfig.length > 1 ? 'tienen' : 'tiene'} configuración individual diferente.\n\n`;
+      }
+
+      confirmMessage += `Esto ${newValue ? 'desactivará' : 'activará'} las respuestas automáticas del bot para TODAS las conversaciones de WhatsApp.`;
+
+      const confirmed = window.confirm(confirmMessage);
+
+      if (!confirmed) return;
+    }
+
+    // ✅ Optimistic update - actualizar UI inmediatamente
+    setWhatsappAutoManualUI(newValue);
+    setIsTogglingWhatsAppManual(true);
+
+    try {
+      const response = await fetch('/api/v1/conversations?intent=toggle_all_whatsapp_manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatbotId: chatbot.id,
+          isManual: newValue
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Actualizar estados locales de conversaciones individuales
+        setLocalManualModes(prev => {
+          const updated = { ...prev };
+          whatsappConversations.forEach(conv => {
+            updated[conv.id] = newValue;
+          });
+          return updated;
+        });
+
+        // Revalidar para traer datos frescos de BD (incluyendo chatbot.whatsappAutoManual)
+        revalidator.revalidate();
+
+        // Feedback al usuario
+        alert(`✅ ${data.message || `Modo ${newValue ? 'manual' : 'automático'} activado`}`);
+      } else {
+        const error = await response.json();
+        console.error("❌ Error toggling WhatsApp manual mode:", error);
+
+        // Revertir estado UI si falló
+        setWhatsappAutoManualUI(currentValue);
+
+        alert(`Error: ${error.error || 'No se pudo actualizar el modo manual'}`);
+      }
+    } catch (error) {
+      console.error("❌ Error toggling WhatsApp manual mode:", error);
+
+      // Revertir estado UI en caso de error
+      setWhatsappAutoManualUI(currentValue);
+
+      alert("Error de conexión. Por favor intenta de nuevo.");
+    } finally {
+      setIsTogglingWhatsAppManual(false);
+    }
+  };
+
   return (
     <>
       {/* Mostrar empty state si no hay conversaciones */}
@@ -233,18 +457,104 @@ export const Conversations = ({
         <EmptyConversations t={t} />
       ) : (
 
-      <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-320px)] ">
-        <article className={cn("col-span-12 md:col-span-3", "flex flex-col h-full gap-4 md:gap-6")}>
-          <ChipTabs
-            names={tabNames}
-            onTabChange={(tabName) => {
-              const index = tabNames.indexOf(tabName);
-              setCurrentTabIndex(index.toString());
-            }}
-            activeTab={tabNames[parseInt(currentTabIndex) || 0]}
-          />
+      <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-296px)]">
+        {/* Lista de conversaciones - Se oculta en mobile/tablet cuando se ve una conversación */}
+        <article className={cn(
+          "col-span-12 lg:col-span-3",
+          "flex flex-col h-full gap-4 lg:gap-6",
+          showConversationInMobile && "hidden lg:flex" // Ocultar en mobile/tablet si se muestra conversación
+        )}>
+          {/* Tabs + Botón WhatsApp */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <ChipTabs
+                names={tabNames}
+                onTabChange={(tabName) => {
+                  const index = tabNames.indexOf(tabName);
+                  setCurrentTabIndex(index.toString());
+                }}
+                activeTab={tabNames[parseInt(currentTabIndex) || 0]}
+              />
+            </div>
+            {/* Botón WhatsApp - Solo visible si hay conversaciones de WhatsApp */}
+            {actualConversations.some(conv => conv.isWhatsApp) && (
+              <Tooltip text="Activa/desactiva el modo manual para todas las conversaciones de WhatsApp a la vez" icon="⚙️">
+                <button
+                  onClick={() => setShowWhatsAppPanel(!showWhatsAppPanel)}
+                  className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center transition-colors flex-shrink-0",
+                    showWhatsAppPanel
+                      ? "bg-green-500 text-white"
+                      : "text-metal border border-outlines hover:bg-surfaceFour dark:hover:bg-metal/20"
+                  )}
+                >
+                  <FaWhatsapp className="w-5 h-5" />
+                </button>
+              </Tooltip>
+            )}
+          </div>
+
+          {/* Panel de configuración WhatsApp - Se muestra/oculta */}
+          {showWhatsAppPanel && actualConversations.some(conv => conv.isWhatsApp) && (
+            <div
+              className="flex items-center justify-between px-3 py-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700"
+              style={{
+                animation: 'slideDown 0.2s ease-out'
+              }}
+            >
+              <style dangerouslySetInnerHTML={{
+                __html: `
+                  @keyframes slideDown {
+                    from {
+                      opacity: 0;
+                      transform: translateY(-10px);
+                    }
+                    to {
+                      opacity: 1;
+                      transform: translateY(0);
+                    }
+                  }
+                `
+              }} />
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Modo manual WhatsApp
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  ({actualConversations.filter(c => c.isWhatsApp).length} conversaciones)
+                </span>
+              </div>
+              <button
+                onClick={handleToggleWhatsAppAutoManual}
+                disabled={isTogglingWhatsAppManual}
+                className={cn(
+                  "px-3 py-1.5 text-xs rounded-full font-medium transition-colors",
+                  whatsappAutoManualUI
+                    ? "bg-dark text-white"
+                    : "bg-cloud text-dark",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+                title={whatsappAutoManualUI ? "Desactivar modo manual" : "Activar modo manual"}
+              >
+                {isTogglingWhatsAppManual ? (
+                  <span className="flex items-center gap-1">
+                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    {whatsappAutoManualUI ? "🔧 Manual" : "🤖 Agente"}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+
         <ConversationsList
-          onConversationSelect={setConversation}
+          onConversationSelect={(conv) => {
+            setConversation(conv);
+            setShowContactDetails(false); // Cerrar panel al cambiar de conversación
+            setShowConversationInMobile(true); // Mostrar conversación en mobile
+          }}
           conversations={
             parseInt(currentTabIndex) === TAB_FAVORITES
               ? favoriteConversations
@@ -261,16 +571,86 @@ export const Conversations = ({
           tabAll={TAB_ALL}
         />
       </article>
-      <section className="col-span-12 md:col-span-9 pb-4 b  min-h-[calc(100vh-310px)] ">
+      {/* Preview de conversación - En mobile/tablet se muestra solo cuando showConversationInMobile es true */}
+      <section className={cn(
+        "col-span-12 pb-4 min-h-[calc(100vh-296px)]",
+        showContactDetails ? "lg:col-span-6" : "lg:col-span-9",
+        !showConversationInMobile && "hidden lg:block", // Ocultar en mobile/tablet si no se ha seleccionado conversación
+        showContactDetailsInMobile && "hidden lg:block" // Ocultar solo en mobile/tablet cuando se muestra panel de contacto
+      )}>
         <ConversationsPreview
           conversation={conversation}
           chatbot={chatbot}
           onToggleManual={handleToggleManual}
           onSendManualResponse={handleSendManualResponse}
           onDeleteConversation={onDeleteConversation}
-          localManualMode={localManualModes[conversation?.id] || false}
+          onToggleFavorite={handleToggleFavorite}
+          localManualMode={(() => {
+            const value = localManualModes[conversation?.id] ?? conversation?.manualMode ?? false;
+            console.log(`🎯 ConversationsPreview - conv ${conversation?.id}: localManualModes[id]=${localManualModes[conversation?.id]}, conversation.manualMode=${conversation?.manualMode}, final=${value}`);
+            return value;
+          })()}
+          isFavorite={localFavorites[conversation?.id] ?? conversation?.isFavorite}
+          onAvatarClick={() => {
+            const newState = !showContactDetails;
+            setShowContactDetails(newState);
+            // Solo sincronizar estado mobile/tablet en pantallas < 1024px (breakpoint lg:)
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setShowContactDetailsInMobile(newState);
+            }
+          }}
+          onBackToList={() => setShowConversationInMobile(false)} // Función para volver a la lista en mobile
         />
       </section>
+      {/* Panel de detalles de contacto */}
+      {showContactDetails && conversation && (
+        <aside
+          className={cn(
+            "pb-4",
+            // Mobile/Tablet: full-screen si showContactDetailsInMobile, oculto si no
+            showContactDetailsInMobile ? "col-span-12" : "hidden",
+            // Desktop: siempre visible como sidebar
+            "lg:block lg:col-span-3"
+          )}
+          style={{
+            animation: 'slideInFromRight 0.3s ease-out forwards, fadeIn 0.3s ease-out forwards'
+          }}
+        >
+          <style dangerouslySetInnerHTML={{
+            __html: `
+              @keyframes slideInFromRight {
+                from {
+                  opacity: 0;
+                  transform: translateX(20px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateX(0);
+                }
+              }
+              @keyframes fadeIn {
+                from {
+                  opacity: 0;
+                }
+                to {
+                  opacity: 1;
+                }
+              }
+            `
+          }} />
+          <ContactDetailsPanel
+            conversation={conversation}
+            onClose={() => {
+              setShowContactDetails(false);
+              setShowContactDetailsInMobile(false); // Cerrar vista mobile también
+            }}
+            onBackToConversation={() => {
+              setShowContactDetailsInMobile(false);
+              setShowContactDetails(false); // Cerrar también el estado principal para sincronizar
+            }}
+          />
+        </aside>
+      )}
     </main>
       )}
     </>
@@ -280,7 +660,7 @@ export const Conversations = ({
 const EmptyConversations = ({ t }: { t: (key: string) => string }) => {
   return (
     <div className="text-center mt-12 flex flex-col items-center justify-center min-h-[400px]">
-      <Empty className="w-[220px] md:w-[280px] dark:hidden flex" />
+      <Empty className="w-[220px] lg:w-[280px] dark:hidden flex" />
       <EmptyDark className="w-[240px] hidden dark:flex" />
       <h3 className="font-bold text-xl lg:text-2xl text-space-800 dark:text-clear mt-6">
         {t('conversations.noConversations')}
@@ -296,8 +676,8 @@ const EmptyConversations = ({ t }: { t: (key: string) => string }) => {
 const EmptyFavorites = () => {
   const { t } = useDashboardTranslation();
   return (
-    <div className="text-center mt-0 md:mt-12 flex flex-col items-center ">
-      <Empty className="w-[160px] md:w-[200px] dark:hidden flex" />
+    <div className="text-center mt-0 lg:mt-12 flex flex-col items-center ">
+      <Empty className="w-[160px] lg:w-[200px] dark:hidden flex" />
       <EmptyDark className="w-[200px] hidden dark:flex" />
       <h3 className="font-bold text-sm text-space-800 dark:text-clear">
         {t('conversations.noFavorites') || '¡No tienes favoritos!'}
@@ -357,7 +737,7 @@ const ConversationsList = ({
   // }, [selectedConversationId]);
 
   return (
-    <section className="flex flex-col gap-1 max-h-[264px] md:max-h-[616px] pb-6 overflow-y-scroll  ">
+    <section className="flex flex-col gap-1 max-h-[calc(100svh-200px)] lg:max-h-[616px] pb-3 overflow-y-scroll  ">
       {conversations.length > 0 ? (
         <>
           {conversations.map((conversation) => (
@@ -490,6 +870,10 @@ const Conversation = forwardRef<
     (message) => message.role === "USER"
   );
 
+  // Detectar si es conversación de WhatsApp
+  const isWhatsAppConversation = conversation.isWhatsApp ||
+    (conversation.tel !== "N/A" && conversation.tel.startsWith("+") && conversation.tel.length >= 10);
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevenir que seleccione la conversación
     if (onToggleFavorite) {
@@ -513,7 +897,15 @@ const Conversation = forwardRef<
         }
       )}
     >
-      <Avatar className="w-10" src={pic} />
+      <div className="relative">
+        <Avatar className="w-10" src={pic} />
+        {/* Badge de WhatsApp - círculo verde con icono */}
+        {isWhatsAppConversation && (
+          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center ">
+            <FaWhatsapp className="w-2.5 h-2.5 text-white" />
+          </div>
+        )}
+      </div>
       <div className="flex-1 truncate">
         <div className="flex items-baseline gap-2">
           <p className="font-medium text-base mb-0 pb-0">{conversation.userName}</p>
@@ -527,25 +919,26 @@ const Conversation = forwardRef<
       </div>
       <div className="flex-2 pr-3 flex flex-col items-end gap-1">
         <p className="text-xs text-gray-500">{conversation.time}</p>
-        {/* Botón de favorito clickeable */}
-        <button
-          onClick={handleFavoriteClick}
-          className={cn(
-            "transition-all hover:scale-110 cursor-pointer active:scale-95",
-            isFavorite ? "text-yellow-500" : "text-gray-400 hover:text-yellow-400"
-          )}
-          title={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"}
-        >
-          {isFavorite ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-            </svg>
-          )}
-        </button>
+        {/* Indicador de mensajes nuevos */}
+        {conversation.unread > 0 && (
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-brand-500" />
+            <span className="text-[10px] text-brand-500 font-medium">
+              {conversation.unread}
+            </span>
+          </div>
+        )}
+        {/* Mostrar estrella solo cuando está marcado como favorito */}
+        {isFavorite && (
+          <Tooltip text="Quitar de favoritos" icon="⭐" position="left">
+            <button
+              onClick={handleFavoriteClick}
+              className="transition-all h-5 w-5 flex items-center justify-center hover:scale-110 cursor-pointer active:scale-95 text-yellow-500"
+            >
+              <FaStar className="w-4 h-4" />
+            </button>
+          </Tooltip>
+        )}
       </div>
     </section>
   );
@@ -560,6 +953,10 @@ const ChatHeader = ({
   onSendManualResponse,
   localManualMode = false,
   onDeleteConversation,
+  onToggleFavorite,
+  isFavorite = false,
+  onAvatarClick,
+  onBackToList,
 }: {
   conversation: Conversation;
   primaryColor?: string;
@@ -567,17 +964,55 @@ const ChatHeader = ({
   onSendManualResponse?: (conversationId: string, message: string) => void;
   localManualMode?: boolean;
   onDeleteConversation?: (conversationId: string) => void;
+  onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
+  isFavorite?: boolean;
+  onAvatarClick?: () => void;
+  onBackToList?: () => void;
 }) => {
-  const { date, tel } = conversation;
+  const { date } = conversation;
   const [manualMessage, setManualMessage] = useState("");
   const [isToggling, setIsToggling] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  // Función para abreviar meses en la fecha
+  const getAbbreviatedDate = (fullDate: string): string => {
+    const monthMap: Record<string, string> = {
+      'enero': 'Ene',
+      'febrero': 'Feb',
+      'marzo': 'Mar',
+      'abril': 'Abr',
+      'mayo': 'May',
+      'junio': 'Jun',
+      'julio': 'Jul',
+      'agosto': 'Ago',
+      'septiembre': 'Sep',
+      'octubre': 'Oct',
+      'noviembre': 'Nov',
+      'diciembre': 'Dic'
+    };
+
+    let abbreviated = fullDate;
+    Object.entries(monthMap).forEach(([full, abbr]) => {
+      abbreviated = abbreviated.replace(new RegExp(full, 'gi'), abbr);
+    });
+    // Remover "de" extra si existe
+    abbreviated = abbreviated.replace(/\sde\s/g, ' ');
+    return abbreviated;
+  };
+
+  const abbreviatedDate = getAbbreviatedDate(date);
 
 
   // Detectar si es conversación de WhatsApp
   // Si tel es un número válido (no "N/A" o "Usuario Web") → es WhatsApp
   const isWhatsAppConversation = conversation.isWhatsApp ||
     (conversation.tel !== "N/A" && conversation.tel.startsWith("+") && conversation.tel.length >= 10);
+
+  // Obtener la foto del usuario (misma lógica que en Conversation component)
+  const userMessage = conversation.messages.find(
+    (message) => message.role === "USER"
+  );
+  const userAvatarUrl = userMessage?.picture || conversation.avatar;
 
   const handleToggleManual = () => {
     if (onToggleManual) {
@@ -599,6 +1034,13 @@ const ChatHeader = ({
     }
   };
 
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(conversation.id, e);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!onSendManualResponse || !manualMessage.trim() || isSending) return;
     setIsSending(true);
@@ -617,6 +1059,46 @@ const ChatHeader = ({
     }
   };
 
+  const handleDownloadCSV = () => {
+    if (!conversation) return;
+
+    const headers = ["Fecha", "Hora", "Rol", "Mensaje"];
+    const rows = conversation.messages.map(message => {
+      // Manejar fecha que puede venir como string o Date desde el servidor
+      let fecha = "Sin fecha";
+      let hora = "";
+
+      if (message.createdAt) {
+        const dateObj = new Date(message.createdAt);
+        fecha = dateObj.toLocaleDateString('es-MX', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        hora = dateObj.toLocaleTimeString('es-MX', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      }
+
+      const role = message.role === "USER" ? "Usuario" : "Asistente";
+      const content = `"${message.content.replace(/"/g, '""')}"`;
+
+      return [fecha, hora, role, content].join(",");
+    });
+
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+
+    const date = new Date().toISOString().split('T')[0];
+    const userName = conversation.userName.replace(/[^a-zA-Z0-9]/g, '_');
+    link.download = `conversacion_${userName}_${date}.csv`;
+    link.click();
+  };
+
   return (
     <header
       style={{ borderColor: primaryColor || "brand-500" }}
@@ -624,41 +1106,88 @@ const ChatHeader = ({
         "border-t border-l border-r border-outlines",
         "flex",
         "items-center",
-        "gap-2",
+        "gap-1 lg:gap-2",
         "rounded-t-3xl",
-        "bg-brand-100/40 w-full p-3"
+        "bg-white w-full py-2 px-3 lg:p-3"
       )}
     >
-      <Avatar className="h-10 w-10" src={conversation.messages[0]?.picture || "/assets/chat/ghosty.svg"} />
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-dark ">
-              {conversation.userName || "User"}
-            </h3>
-            {tel && tel !== "N/A" && (
-              <p className="text-[10px] text-gray-400">{formatPhoneNumber(tel)}</p>
-            )}
-          </div>
-          {/* Logo WhatsApp si es conversación de WhatsApp */}
+      {/* Botón de volver - Solo visible en mobile/tablet */}
+      {onBackToList && (
+        <Tooltip text="Volver a conversaciones">
+          <button
+            onClick={onBackToList}
+            className="lg:hidden w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors flex-shrink-0"
+          >
+            <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </Tooltip>
+      )}
+      <Tooltip text="Ver detalles del contacto" icon="👤">
+        <button
+          onClick={onAvatarClick}
+          className="relative hover:opacity-80 transition-opacity cursor-pointer"
+        >
+          <Avatar className="h-10 w-10" src={userAvatarUrl || "/assets/chat/ghosty.svg"} />
+          {/* Badge de WhatsApp - círculo verde con icono */}
           {isWhatsAppConversation && (
-            <img src="/assets/chat/whatsapp.svg" alt="WhatsApp" className="w-5 h-5" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center ">
+              <FaWhatsapp className="w-2.5 h-2.5 text-white" />
+            </div>
           )}
+        </button>
+      </Tooltip>
+      <div className="flex-1">
+        <div className="flex items-center">
+          <h3 className="text-base font-semibold text-dark ">
+            {conversation.userName || "User"}
+          </h3>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">{date}</p>
+        {/* Mobile/Tablet: fecha abreviada */}
+        <p className="lg:hidden text-xs text-lightgray -mt-[2px]">{abbreviatedDate}</p>
+        {/* Desktop: fecha completa */}
+        <p className="hidden lg:block text-xs text-lightgray -mt-[2px]">{date}</p>
       </div>
-      <ToggleButton
-        isManual={localManualMode}
-        onClick={handleToggleManual}
-        disabled={false}
-      />
-      <button
-        onClick={handleDeleteConversation}
-        className="mr-3 hover:bg-red-50 rounded-full p-1 transition-colors"
-        title="Eliminar conversación"
-      >
-        <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
-      </button>
+      <Tooltip text={localManualMode ? "Cambiar a modo automático (bot responde)" : "Cambiar a modo manual (tú respondes)"} icon={localManualMode ? "🤖" : "🔧"} position="bottom">
+        <ToggleButton
+          isManual={localManualMode}
+          onClick={handleToggleManual}
+          disabled={false}
+        />
+      </Tooltip>
+      <Tooltip text="Descargar conversación en CSV" icon="📥" position="bottom">
+        <button
+          onClick={handleDownloadCSV}
+          className="hover:bg-gray-50 rounded-full p-1 transition-colors"
+        >
+          <img className="w-6 h-6" src="/assets/chat/download.svg" alt="download icon" />
+        </button>
+      </Tooltip>
+      <Tooltip text={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"} icon="⭐" position="bottom" align="right">
+        <button
+          onClick={handleToggleFavorite}
+          className={cn(
+            "rounded-full p-[2px] transition-all hover:scale-110 active:scale-95",
+            "w-8 h-8 flex items-center justify-center",
+            isFavorite ? "text-yellow-500 hover:bg-yellow-50" : "text-metal hover:bg-gray-50"
+          )}
+        >
+          {isFavorite ? (
+            <FaStar className="w-5 h-5" />
+          ) : (
+            <CiStar className="w-6 h-6" />
+          )}
+        </button>
+      </Tooltip>
+      <Tooltip text="Eliminar conversación" icon="🗑️" position="bottom" align="right">
+        <button
+          onClick={handleDeleteConversation}
+          className=" hover:bg-red-50 rounded-full p-1 transition-colors"
+        >
+          <img className="w-6 h-6" src="/assets/chat/recyclebin.svg" alt="trash icon" />
+        </button>
+      </Tooltip>
     </header>
   );
 };
@@ -676,14 +1205,21 @@ const ToggleButton = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "ml-auto mr-2 px-3 py-1 text-xs rounded-full font-medium transition-colors",
+      "ml-auto mr-2 px-3 py-2 text-xs rounded-full font-medium transition-colors",
       isManual
-        ? "bg-bird text-dark"
+        ? "bg-dark text-white"
         : "bg-cloud text-dark",
       "disabled:opacity-50"
     )}
   >
-    {isManual ? "🔧 MANUAL" : "🤖 BOT"}
+    {/* Mobile/Tablet: solo emoji */}
+    <span className="lg:hidden">
+      {isManual ? "🔧" : "🤖"}
+    </span>
+    {/* Desktop: emoji + texto */}
+    <span className="hidden lg:inline">
+      {isManual ? "🔧  Manual" : "🤖 Agente"}
+    </span>
   </button>
 );
 
@@ -702,25 +1238,33 @@ const ManualResponseInput = ({
   const submit = useSubmit();
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [showQuickResponses, setShowQuickResponses] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // 🎯 AUTO-FOCUS: Input listo inmediatamente
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(0, 0);
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
   }, []);
 
-  // 🎯 AUTO-RESIZE: Se expande con el contenido
-  const handleAutoResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
-    e.target.style.height = 'auto';
-    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-  };
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showQuickResponses) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.quick-responses-dropdown') && !target.closest('.quick-responses-button')) {
+          setShowQuickResponses(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showQuickResponses]);
 
   const handleSend = async () => {
     if (!message.trim() || isSending) return;
@@ -734,13 +1278,9 @@ const ManualResponseInput = ({
     }
   };
 
-  // 🎯 SMART SHORTCUTS: Ctrl+Enter envía, Esc cancela
+  // 🎯 SMART SHORTCUTS: Enter envía
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       handleSend();
     }
@@ -821,30 +1361,39 @@ const ManualResponseInput = ({
   ];
 
   return (
-    <div className="border-l border-t border-r border-b border-outlines bg-gray-100/10 p-4 w-full rounded-b-3xl">
-      {/* 🎯 QUICK RESPONSES */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {quickResponses.map((response, index) => (
-          <button
-            key={index}
-            onClick={() => setMessage(response)}
-            className="px-2.5 py-1.5 text-xs font-medium bg-dark dark:bg-space-700 text-white dark:text-clear border border-dark dark:border-space-600 rounded-full hover:bg-space-800 dark:hover:bg-brand-500/10 transition-all duration-200"
-          >
-            {response}
-          </button>
-        ))}
-
-        {/* WhatsApp Template Button */}
-        {isWhatsApp && (
-          <button
-            onClick={() => setShowTemplateSelector(true)}
-            className="px-2.5 py-1.5 text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-all duration-200 flex items-center gap-1.5"
-          >
-            <img src="/assets/chat/whatsapp.svg" className="w-3 h-3" alt="WhatsApp" />
-            {t('conversations.sendTemplate')}
-          </button>
-        )}
-      </div>
+    <div className="border-l border-t border-r border-b border-outlines bg-white p-4 w-full rounded-b-3xl relative">
+      {/* Dropdown de respuestas rápidas */}
+      {showQuickResponses && (
+        <div className="quick-responses-dropdown absolute bottom-full left-4 mb-2 bg-white border border-outlines rounded-xl shadow-lg p-2 min-w-[300px] max-w-md z-10">
+          <div className="flex flex-col gap-1">
+            {quickResponses.map((response, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setMessage(response);
+                  setShowQuickResponses(false);
+                }}
+                className="px-3 py-2 text-sm text-left text-dark hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                {response}
+              </button>
+            ))}
+            {/* WhatsApp Templates */}
+            {isWhatsApp && (
+              <button
+                onClick={() => {
+                  setShowQuickResponses(false);
+                  setShowTemplateSelector(true);
+                }}
+                className="px-3 py-2 text-sm text-left text-green-700 hover:bg-green-50 rounded-lg transition-colors flex items-center gap-2 border-t border-gray-100 mt-1 pt-2"
+              >
+                <img src="/assets/chat/whatsapp.svg" className="w-4 h-4" alt="WhatsApp" />
+                {t('conversations.sendTemplate')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Template Selector Modal */}
       {showTemplateSelector && (
@@ -930,145 +1479,67 @@ const ManualResponseInput = ({
         </div>
       )}
 
-      <div className="flex items-start gap-3">
-        <div className="flex-1">
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={handleAutoResize}
-            onKeyDown={handleKeyDown}
-            placeholder="💬 Escribe tu respuesta..."
-            className={cn(
-              "w-full p-3 border border-outlines dark:border-space-600 rounded-xl resize-none",
-            "bg-white text-dark dark:text-clear text-[0.95rem]",
-              "placeholder:text-lightgray dark:placeholder:text-space-400",
-              "focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500",
-              "transition-all duration-200"
-            )}
-            rows={2}
-            maxLength={4096}
-            style={{ minHeight: '64px' }}
-          />
-          <div className="flex justify-between items-center mt-0 text-[10px] text-irongray dark:text-space-400">
-            <span className="flex items-center gap-1">
-              <span className="text-brand-500">⚡</span>
-              <span>Enter envía • Shift+Enter nueva línea</span>
-            </span>
-            <span className={cn(
-              "font-medium tabular-nums",
-              message.length > 3500 ? 'text-orange-500' : ''
-            )}>
-              {message.length}/4096
-            </span>
-          </div>
-        </div>
+      {/* Input de mensaje limpio */}
+      <div className="flex items-center gap-3">
+        {/* Botón de respuestas rápidas */}
+        <button
+          onClick={() => setShowQuickResponses(!showQuickResponses)}
+          className={cn(
+            "quick-responses-button",
+            "w-10 h-10 flex items-center justify-center rounded-xl border border-outlines",
+            "hover:bg-gray-50 transition-colors flex-shrink-0",
+            showQuickResponses ? "bg-gray-50" : "bg-white"
+          )}
+          title="Respuestas rápidas"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-metal" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+          </svg>
+        </button>
+
+        {/* Input de texto */}
+        <input
+          ref={inputRef}
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Escribe un mensaje"
+          maxLength={4096}
+          className={cn(
+            "flex-1 h-10 px-4 border-none rounded-xl",
+            "bg-outlines/20 text-dark text-sm",
+            "placeholder:text-lightgray",
+            "focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-transparent",
+            "transition-all duration-200"
+          )}
+        />
+
+        {/* Botón de enviar */}
         <button
           onClick={handleSend}
           disabled={!message.trim() || isSending}
           className={cn(
-            "px-5 py-2.5 bg-brand-500 text-white rounded-full transition-all font-medium",
+            "w-10 h-10 rounded-full bg-brand-500 text-white",
+            "flex items-center justify-center flex-shrink-0",
             "hover:bg-brand-600 hover:shadow-lg",
             "active:scale-95",
             "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-500 disabled:hover:shadow-none",
-            "flex items-center justify-center gap-2 whitespace-nowrap",
-            "focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            "transition-all duration-200"
           )}
+          title="Enviar mensaje"
         >
           {isSending ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Enviando...</span>
-            </>
+            <div className="w-6 h-6 border-1 border-white border-t-transparent rounded-full animate-spin"></div>
           ) : (
-            <>
-              <span>Enviar</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </>
+            <img src="/dash/send.svg" alt="Enviar" className="w-6 h-6" />
           )}
         </button>
       </div>
     </div>
-  );
-};
-
-const ActionButtons = ({ conversation }: { conversation?: Conversation }) => {
-  const handleDownloadCSV = () => {
-    if (!conversation) return;
-
-    const headers = ["Fecha", "Hora", "Rol", "Mensaje"];
-    const rows = conversation.messages.map(message => {
-      // Manejar fecha que puede venir como string o Date desde el servidor
-      let fecha = "Sin fecha";
-      let hora = "";
-
-      if (message.createdAt) {
-        const dateObj = new Date(message.createdAt);
-        fecha = dateObj.toLocaleDateString('es-MX', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        });
-        hora = dateObj.toLocaleTimeString('es-MX', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        });
-      }
-
-      const role = message.role === "USER" ? "Usuario" : "Asistente";
-      const content = `"${message.content.replace(/"/g, '""')}"`;
-
-      return [fecha, hora, role, content].join(",");
-    });
-
-    const csvContent = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-
-    const date = new Date().toISOString().split('T')[0];
-    const userName = conversation.userName.replace(/[^a-zA-Z0-9]/g, '_');
-    link.download = `conversacion_${userName}_${date}.csv`;
-    link.click();
-  };
-
-  return (
-    <nav className="flex items-center gap-2 w-full justify-end mb-6">
-      <SimpleButton src="/assets/chat/tuning.svg" disabled />
-      <SimpleButton src="/assets/chat/refresh.svg" disabled />
-      <SimpleButton src="/assets/chat/download.svg" onClick={handleDownloadCSV} />
-    </nav>
-  );
-};
-
-const SimpleButton = ({
-  src,
-  onClick,
-  className,
-  disabled = false,
-}: {
-  src: string;
-  onClick?: () => void;
-  className?: string;
-  disabled?: boolean;
-}) => {
-  return (
-    <button
-      className={cn(
-        "enabled:cursor-pointer enabled:active:scale-95",
-        "enabled:hover:bg-gray-50 enabled:hover:shadow-sm transition-all",
-        "rounded-xl p-1 border border-gray-300",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        className
-      )}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <img className="pointer-events-none" src={src} alt="icon" />
-    </button>
   );
 };
 
@@ -1080,7 +1551,11 @@ export const ConversationsPreview = ({
   onToggleManual,
   onSendManualResponse,
   onDeleteConversation,
+  onToggleFavorite,
   localManualMode = false,
+  isFavorite = false,
+  onAvatarClick,
+  onBackToList,
 }: {
   conversation: Conversation | undefined;
   primaryColor?: string;
@@ -1088,7 +1563,11 @@ export const ConversationsPreview = ({
   onToggleManual?: (conversationId: string) => void;
   onSendManualResponse?: (conversationId: string, message: string) => void;
   onDeleteConversation?: (conversationId: string) => void;
+  onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
   localManualMode?: boolean;
+  isFavorite?: boolean;
+  onAvatarClick?: () => void;
+  onBackToList?: () => void;
 }) => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef<number>(0);
@@ -1129,16 +1608,19 @@ export const ConversationsPreview = ({
   // Log conversation state for debugging
 
   return (
-    <div className="h-full flex flex-col max-h-[calc(100vh-320px)]">
+    <div className="h-full flex flex-col max-h-[calc(100vh-296px)] ">
       <div className="flex-shrink-0">
-        <ActionButtons conversation={conversation} />
         {conversation && (
           <ChatHeader
             conversation={conversation}
             onToggleManual={onToggleManual}
             onSendManualResponse={onSendManualResponse}
             onDeleteConversation={onDeleteConversation}
+            onToggleFavorite={onToggleFavorite}
             localManualMode={localManualMode}
+            isFavorite={isFavorite}
+            onAvatarClick={onAvatarClick}
+            onBackToList={onBackToList}
           />
         )}
       </div>
@@ -1151,13 +1633,56 @@ export const ConversationsPreview = ({
           "border border-outlines w-full shadow-standard flex-1 overflow-y-auto",
           localManualMode ? "border-b-0" : "rounded-b-3xl"
         )}
+        style={{
+          backgroundImage: "url('/dash/chat-cover.svg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat"
+        }}
       >
         <div className="p-4">
-          {conversation?.messages?.map((message, index) => (
-            <div key={index} className="mb-4 last:mb-8">
-              <SingleMessage message={message} chatbotAvatarUrl={chatbot?.avatarUrl || undefined} />
-            </div>
-          )) || (
+          {conversation?.messages ? (
+            groupMessagesByDate(
+              conversation.messages.filter((message) => !message.isReaction)
+            ).map(([date, messages]) => (
+              <div key={date}>
+                <DateSeparator date={date} />
+                {messages.map((message, index) => {
+                  // Buscar reacciones para este mensaje
+                  const reactions = conversation.messages.filter(
+                    (msg) => msg.isReaction === true && msg.reactionToMsgId === message.externalMessageId
+                  );
+
+                  // Determinar si mostrar timestamp (solo si es el último del grupo con misma hora)
+                  const nextMessage = messages[index + 1];
+                  const currentTime = formatMessageTime(new Date(message.createdAt));
+                  const nextTime = nextMessage ? formatMessageTime(new Date(nextMessage.createdAt)) : null;
+                  const showTimestamp = !nextMessage || message.role !== nextMessage.role || currentTime !== nextTime;
+
+                  // Determinar si mostrar avatar (solo si es el primero del grupo con misma hora)
+                  const prevMessage = messages[index - 1];
+                  const prevTime = prevMessage ? formatMessageTime(new Date(prevMessage.createdAt)) : null;
+                  const showAvatar = !prevMessage || message.role !== prevMessage.role || currentTime !== prevTime;
+
+                  // Determinar margen: si el siguiente mensaje es del mismo grupo (mismo remitente, misma hora), usar margen pequeño
+                  const isNextMessageSameGroup = nextMessage && message.role === nextMessage.role && currentTime === nextTime;
+                  const marginClass = isNextMessageSameGroup ? "mb-1" : "mb-4 last:mb-8";
+
+                  return (
+                    <div key={index} className={marginClass}>
+                      <SingleMessage
+                        message={message}
+                        chatbotAvatarUrl={chatbot?.avatarUrl || undefined}
+                        reactions={reactions}
+                        showTimestamp={showTimestamp}
+                        showAvatar={showAvatar}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            ))
+          ) : (
             <div className="text-center text-gray-500 p-8">
               Selecciona una conversación para ver los mensajes
             </div>
@@ -1180,38 +1705,136 @@ export const ConversationsPreview = ({
   );
 };
 
-export const SingleMessage = ({ message, chatbotAvatarUrl }: { message: UIMessage; chatbotAvatarUrl?: string }) => {
+// Helper: Formatear hora (HH:MM)
+function formatMessageTime(date: Date): string {
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+// Helper: Formatear fecha para separadores (Hoy, Ayer, o fecha completa)
+function formatDateSeparator(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffInMs = today.getTime() - messageDate.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInDays === 0) {
+    return "Hoy";
+  } else if (diffInDays === 1) {
+    return "Ayer";
+  } else if (diffInDays < 7) {
+    const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    return days[date.getDay()];
+  } else {
+    const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    return `${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()}`;
+  }
+}
+
+// Helper: Agrupar mensajes por día
+function groupMessagesByDate(messages: UIMessage[]): [string, UIMessage[]][] {
+  const groups = new Map<string, UIMessage[]>();
+
+  messages.forEach(msg => {
+    const date = new Date(msg.createdAt);
+    const dateKey = formatDateSeparator(date);
+
+    if (!groups.has(dateKey)) {
+      groups.set(dateKey, []);
+    }
+    groups.get(dateKey)!.push(msg);
+  });
+
+  return Array.from(groups.entries());
+}
+
+// Componente: Separador de fecha sticky
+const DateSeparator = ({ date }: { date: string }) => (
+  <div className="sticky top-0 z-10 flex justify-center py-2 mb-3">
+    <span className="bg-gray-200/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-gray-700 shadow-sm">
+      {date}
+    </span>
+  </div>
+);
+
+export const SingleMessage = ({
+  message,
+  chatbotAvatarUrl,
+  reactions = [],
+  showTimestamp = true,
+  showAvatar = true,
+}: {
+  message: UIMessage;
+  chatbotAvatarUrl?: string;
+  reactions?: UIMessage[];
+  showTimestamp?: boolean;
+  showAvatar?: boolean;
+}) => {
   return message.role === "USER" ? (
-    <UserMessage message={message} />
+    <UserMessage message={message} reactions={reactions} showTimestamp={showTimestamp} showAvatar={showAvatar} />
   ) : (
-    <AssistantMessage message={message} avatarUrl={chatbotAvatarUrl} />
+    <AssistantMessage message={message} avatarUrl={chatbotAvatarUrl} reactions={reactions} showTimestamp={showTimestamp} showAvatar={showAvatar} />
   );
 };
 
-const UserMessage = ({ message }: { message: UIMessage }) => {
+const UserMessage = ({ message, reactions = [], showTimestamp = true, showAvatar = true }: { message: UIMessage; reactions?: UIMessage[]; showTimestamp?: boolean; showAvatar?: boolean }) => {
   // Detectar si el mensaje contiene un sticker (picture contiene imagen, content es "📎 Sticker")
   const hasMultimedia = message.picture && message.content === "📎 Sticker";
 
+  // Obtener la primera reacción (solo mostramos una según WhatsApp nativo)
+  const reaction = reactions[0];
+
   return (
     <div className="justify-end flex items-start gap-2">
-      {hasMultimedia ? (
-        // Mostrar sticker/imagen como contenido
-        <div className="max-w-[200px]">
-          <img
-            src={message.picture}
-            alt="Sticker"
-            className="rounded-xl w-full h-auto"
-            loading="lazy"
-          />
+      <div className="flex flex-col items-end gap-1 max-w-[70%]">
+        <div className="relative w-fit">
+          {hasMultimedia ? (
+            // Mostrar sticker/imagen como contenido
+            <div className="max-w-[200px]">
+              <img
+                src={message.picture}
+                alt="Sticker"
+                className="rounded-xl w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            // Mensaje de texto normal
+            <div className="text-sm lg:text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl break-words w-fit">
+              {message.content}
+            </div>
+          )}
+          {/* Mostrar reacción como overlay - mismo estilo que MicroLikeButton */}
+          {reaction && reaction.reactionEmoji && (
+            <div
+              className={cn(
+                "grid place-content-center",
+                "min-w-4 min-h-4 shadow aspect-square",
+                "bg-[#fff] rounded-full w-min",
+                "absolute -bottom-3 right-2",
+                "text-xs p-[10px]"
+              )}
+              title="Reacción de WhatsApp"
+            >
+              {reaction.reactionEmoji}
+            </div>
+          )}
         </div>
+        {/* Timestamp del mensaje - solo si showTimestamp es true */}
+        {showTimestamp && (
+          <div className="text-[10px] text-lightgray pr-1">
+            {formatMessageTime(new Date(message.createdAt))}
+          </div>
+        )}
+      </div>
+      {/* Avatar del usuario - solo si showAvatar es true */}
+      {showAvatar ? (
+        <Avatar className="w-8 h-8 flex-shrink-0" src={message.avatarUrl} />
       ) : (
-        // Mensaje de texto normal
-        <div className="text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl max-w-[80%] break-words">
-          {message.content}
-        </div>
+        <div className="w-8 h-8 flex-shrink-0" />
       )}
-      {/* ✅ Avatar del usuario siempre visible (foto de perfil de WhatsApp) */}
-      <Avatar className="w-8 h-8 flex-shrink-0" src={message.avatarUrl} />
     </div>
   );
 };
@@ -1222,8 +1845,15 @@ const PROSE_STYLES = "compact-markdown";
 const LIST_STYLES = `
   .compact-markdown {
     line-height: 1.5;
-    font-size: 0.95rem;
+    font-size: 0.875rem; /* 14px en mobile */
     color: #1f2937;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+  @media (min-width: 768px) {
+    .compact-markdown {
+      font-size: 0.95rem; /* ~15.2px en desktop */
+    }
   }
   .compact-markdown p {
     margin: 0 0 1.5rem 0;
@@ -1290,19 +1920,29 @@ const LIST_STYLES = `
     color: #4ade80;
     padding: 0.15rem 0.4rem;
     border-radius: 0.25rem;
-    font-size: 0.85rem;
+    font-size: 0.8125rem; /* 13px en mobile */
     font-family: ui-monospace, monospace;
+  }
+  @media (min-width: 768px) {
+    .compact-markdown code {
+      font-size: 0.85rem; /* ~13.6px en desktop */
+    }
   }
   .compact-markdown pre {
     background-color: #1e293b;
     color: #4ade80;
     padding: 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.85rem;
+    font-size: 0.8125rem; /* 13px en mobile */
     font-family: ui-monospace, monospace;
     overflow-x: auto;
     margin: 0.5rem 0;
     border: 1px solid #334155;
+  }
+  @media (min-width: 768px) {
+    .compact-markdown pre {
+      font-size: 0.85rem; /* ~13.6px en desktop */
+    }
   }
   .compact-markdown pre:first-child {
     margin-top: 0;
@@ -1350,9 +1990,24 @@ const LIST_STYLES = `
  * puede guardarse como "SHOT" (Ejemplo) para este agente.
  * Pueden existir ejemplos positivos y negativos 👎🏼
  */
-const AssistantMessage = ({ message, avatarUrl }: { message: UIMessage; avatarUrl?: string }) => {
+const AssistantMessage = ({
+  message,
+  avatarUrl,
+  reactions = [],
+  showTimestamp = true,
+  showAvatar = true,
+}: {
+  message: UIMessage;
+  avatarUrl?: string;
+  reactions?: UIMessage[];
+  showTimestamp?: boolean;
+  showAvatar?: boolean;
+}) => {
   // Detectar si el mensaje contiene un sticker (picture contiene imagen, content es "📎 Sticker")
   const hasMultimedia = message.picture && message.content === "📎 Sticker";
+
+  // Obtener la primera reacción (solo mostramos una según WhatsApp nativo)
+  const reaction = reactions[0];
 
   const markdownComponents = {
     a: ({ children, href }: any) => (
@@ -1397,30 +2052,218 @@ const AssistantMessage = ({ message, avatarUrl }: { message: UIMessage; avatarUr
   return (
     <div className="justify-start flex items-start gap-2">
       <style dangerouslySetInnerHTML={{ __html: LIST_STYLES }} />
-      <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
-      {hasMultimedia ? (
-        // Mostrar sticker/imagen como contenido
-        <div className="max-w-[200px]">
-          <img
-            src={message.picture}
-            alt="Sticker"
-            className="rounded-xl w-full h-auto"
-            loading="lazy"
-          />
-        </div>
+      {/* Avatar del bot - solo si showAvatar es true */}
+      {showAvatar ? (
+        <Avatar className="w-8 h-8 flex-shrink-0" src={avatarUrl} />
       ) : (
-        <div className="text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative max-w-[80%] break-words">
-          <div className={PROSE_STYLES}>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={markdownComponents}
-            >
-              {message.content}
-            </ReactMarkdown>
-          </div>
-          <MicroLikeButton />
-        </div>
+        <div className="w-8 h-8 flex-shrink-0" />
       )}
+      <div className="flex flex-col items-start gap-1 max-w-[80%]">
+        <div className="relative">
+          {hasMultimedia ? (
+            // Mostrar sticker/imagen como contenido
+            <div className="max-w-[200px]">
+              <img
+                src={message.picture}
+                alt="Sticker"
+                className="rounded-xl w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <div className="text-sm lg:text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative">
+              <div className={PROSE_STYLES}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={markdownComponents}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+              {/* MicroLikeButton comentado - no funcional sin onClick handler */}
+              {/* <MicroLikeButton /> */}
+            </div>
+          )}
+          {/* Mostrar reacción como overlay - mismo estilo que MicroLikeButton */}
+          {reaction && reaction.reactionEmoji && (
+            <div
+              className={cn(
+                "grid place-content-center ",
+                "min-w-4 min-h-4 shadow aspect-square",
+                "bg-white rounded-full w-min",
+                "absolute -bottom-2 left-2",
+                "text-sm p-[3px]"
+              )}
+              title="Reacción de WhatsApp"
+            >
+              {reaction.reactionEmoji}
+            </div>
+          )}
+        </div>
+        {/* Timestamp del mensaje - solo si showTimestamp es true */}
+        {showTimestamp && (
+          <div className="text-[10px] text-lightgray pl-1">
+            {formatMessageTime(new Date(message.createdAt))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Panel de detalles del contacto
+const ContactDetailsPanel = ({
+  conversation,
+  onClose,
+  onBackToConversation,
+}: {
+  conversation: Conversation;
+  onClose: () => void;
+  onBackToConversation?: () => void;
+}) => {
+  // Obtener la foto del usuario
+  const userMessage = conversation.messages.find((message) => message.role === "USER");
+  const userAvatarUrl = userMessage?.picture || conversation.avatar;
+
+  // Detectar si es conversación de WhatsApp
+  const isWhatsAppConversation = conversation.isWhatsApp ||
+    (conversation.tel !== "N/A" && conversation.tel.startsWith("+") && conversation.tel.length >= 10);
+
+  // Filtrar emails falsos generados automáticamente (ej: user-xxx@whatsapp.local)
+  const isValidEmail = conversation.userEmail &&
+    conversation.userEmail !== "N/A" &&
+    !conversation.userEmail.includes("@whatsapp.local");
+
+  const displayEmail = isValidEmail ? conversation.userEmail : "--";
+
+  // Obtener fecha del primer mensaje
+  const firstMessage = conversation.messages.length > 0 ? conversation.messages[0] : null;
+  const firstMessageDate = firstMessage
+    ? new Date(firstMessage.createdAt).toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : 'N/A';
+
+  // TODO: Implementar lógica de compra
+  const hasPurchased = false;
+
+  return (
+    <div className="bg-white rounded-3xl border border-outlines shadow-standard p-6 h-fit lg:h-fit min-h-[calc(100svh-200px)] lg:min-h-0 flex flex-col relative">
+      {/* Botón de volver - Solo visible en mobile/tablet */}
+      {onBackToConversation && (
+        <button
+          onClick={onBackToConversation}
+          className="lg:hidden absolute top-4 left-4 w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors z-10"
+          title="Volver a conversación"
+        >
+          <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+      {/* Botón de cerrar en esquina superior derecha - Solo visible en desktop */}
+      <button
+        onClick={onClose}
+        className="hidden lg:flex absolute top-4 right-4 w-8 h-8 items-center justify-center hover:bg-gray-50 rounded-full transition-colors z-10"
+        title="Cerrar"
+      >
+        <img src="/dash/sunroof.svg" alt="Cerrar" className="w-5 h-5" />
+      </button>
+
+      {/* Avatar grande centrado */}
+      <div className="flex flex-col items-center mb-6">
+        <div className="relative mb-4">
+          <Avatar className="w-24 h-24" src={userAvatarUrl || "/assets/chat/ghosty.svg"} />
+          {isWhatsAppConversation && (
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+              <FaWhatsapp className="w-4 h-4 text-white" />
+            </div>
+          )}
+        </div>
+        <h2 className="text-xl font-bold text-dark mb-1">{conversation.userName}</h2>
+        {conversation.tel && conversation.tel !== "N/A" && (
+          <p className="text-sm text-gray-500">{formatPhoneNumber(conversation.tel)}</p>
+        )}
+      </div>
+
+      {/* Información de contacto */}
+      <div className="space-y-4 flex-1">
+        {/* Email */}
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+          <div className="w-10 h-10 bg-brand-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 mb-0.5">
+              Correo electrónico
+            </p>
+            <p className="text-sm font-medium text-dark truncate">
+              {displayEmail}
+            </p>
+          </div>
+        </div>
+
+        {/* Fecha del primer mensaje */}
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+          <div className="w-10 h-10 bg-bird/10 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-bird" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 mb-0.5">
+              Primer mensaje
+            </p>
+            <p className="text-sm font-medium text-dark">{firstMessageDate}</p>
+          </div>
+        </div>
+
+        {/* Estado de compra */}
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+            hasPurchased ? "bg-lime/10" : "bg-lime/30"
+          )}>
+            <svg className={cn("w-5 h-5", hasPurchased ? "text-lime" : "text-[#7BA31C]")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 mb-0.5">
+              Estado de compra
+            </p>
+            <p className={cn(
+              "text-sm font-medium",
+              hasPurchased ? "text-lime" : "text-metal"
+            )}>
+              {hasPurchased ? 'Ha comprado' : 'No ha comprado'}
+            </p>
+          </div>
+        </div>
+
+        {/* Total de mensajes */}
+        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+          <div className="w-10 h-10 bg-cloud/30 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-metal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-500 mb-0.5">
+              Total de mensajes
+            </p>
+            <p className="text-sm font-medium text-dark">
+              {conversation.messages.filter(m => !m.isReaction).length}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

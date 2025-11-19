@@ -135,8 +135,14 @@ export default function ChatPreview({
     // Nota: El usuario puede cambiar el toggle manualmente
   }, [chatbot]);
 
-  // 🔄 Cargar historial de conversación al montar
+  // 🔄 Cargar historial de conversación al montar (SOLO en production - widget embebido)
   useEffect(() => {
+    // ⚠️ En preview (dashboard) NO cargar historial - solo para probar el chatbot
+    // En production (widget embebido) SÍ cargar historial para continuidad de conversación
+    if (!production) {
+      return;
+    }
+
     const loadHistory = async () => {
       try {
         const formData = new FormData();
@@ -167,7 +173,7 @@ export default function ChatPreview({
     };
 
     loadHistory();
-  }, [chatbot.id, chatbot.welcomeMessage]);
+  }, [chatbot.id, chatbot.welcomeMessage, production]);
 
   // Auto-scroll logic
   const scrollToBottom = () => {
@@ -312,7 +318,7 @@ export default function ChatPreview({
     });
 
     // Error handling (conexión perdida, reconexión automática)
-    eventSource.onerror = (error) => {
+    eventSource.onerror = () => {
       // EventSource automáticamente reintenta la conexión
     };
 
@@ -659,7 +665,7 @@ export default function ChatPreview({
         <ChatHeader
           primaryColor={chatbot.primaryColor || "#9A99EA"}
           name={chatbot.name}
-          avatarUrl={chatbot.avatarUrl || undefined}
+          avatarUrl={chatbot.avatarUrl || "/dash/default-ghosty.svg"}
           onClear={handleClearConversation}
           showCloseButton={production}
           onClose={onClose}
@@ -689,7 +695,7 @@ export default function ChatPreview({
               <MessageBubble
                 key={idx}
                 message={msg}
-                avatarUrl={chatbot.avatarUrl || undefined}
+                avatarUrl={chatbot.avatarUrl || "/dash/default-ghosty.svg"}
               />
             ))}
           <div ref={messagesEndRef} />
@@ -699,7 +705,7 @@ export default function ChatPreview({
           {chatLoading && (
             <MessageBubble
               role="assistant"
-              avatarUrl={chatbot.avatarUrl || undefined}
+              avatarUrl={chatbot.avatarUrl || "/dash/default-ghosty.svg"}
             >
               <LoadingIndicator />
             </MessageBubble>

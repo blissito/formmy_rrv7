@@ -37,33 +37,60 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   // New plan intents
   if (intent === "starter_plan") {
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user,
       price: PRICES.starter,
       origin: new URL(request.url).origin,
       metadata: { plan: "STARTER" },
     });
-    if (url) return Response.redirect(url);
+
+    if (result.type === 'checkout') {
+      return Response.redirect(result.url);
+    } else if (result.type === 'upgraded') {
+      // Upgrade directo - redirigir a dashboard con mensaje de éxito
+      return Response.redirect(`${new URL(request.url).origin}/dashboard/plan?upgraded=1&plan=STARTER`);
+    } else {
+      // same_plan - ya tiene este plan
+      return Response.redirect(`${new URL(request.url).origin}/dashboard/plan?info=same_plan&plan=${result.currentPlan}`);
+    }
   }
 
   if (intent === "pro_plan") {
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user,
       price: PRICES.pro,
       origin: new URL(request.url).origin,
       metadata: { plan: "PRO" },
     });
-    if (url) return Response.redirect(url);
+
+    if (result.type === 'checkout') {
+      return Response.redirect(result.url);
+    } else if (result.type === 'upgraded') {
+      // Upgrade directo - redirigir a dashboard con mensaje de éxito
+      return Response.redirect(`${new URL(request.url).origin}/dashboard/plan?upgraded=1&plan=PRO`);
+    } else {
+      // same_plan - ya tiene este plan
+      return Response.redirect(`${new URL(request.url).origin}/dashboard/plan?info=same_plan&plan=${result.currentPlan}`);
+    }
   }
 
   if (intent === "enterprise_plan") {
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user,
       price: PRICES.enterprise,
       origin: new URL(request.url).origin,
       metadata: { plan: "ENTERPRISE" },
     });
-    if (url) return Response.redirect(url);
+
+    if (result.type === 'checkout') {
+      return Response.redirect(result.url);
+    } else if (result.type === 'upgraded') {
+      // Upgrade directo - redirigir a dashboard con mensaje de éxito
+      return Response.redirect(`${new URL(request.url).origin}/dashboard/plan?upgraded=1&plan=ENTERPRISE`);
+    } else {
+      // same_plan - ya tiene este plan
+      return Response.redirect(`${new URL(request.url).origin}/dashboard/plan?info=same_plan&plan=${result.currentPlan}`);
+    }
   }
 
   // Conversations purchase intents (one-time payments)
@@ -93,7 +120,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     const plan = formData.get("plan") as string || "FREE";
     const unitAmount = getConversationPrice(50, plan);
 
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user: null,
       priceData: {
         currency: 'mxn',
@@ -109,14 +136,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
       successUrl: `${origin}/dashboard/plan?conversations_purchased=50`,
       cancelUrl: `${origin}/dashboard/plan`,
     });
-    if (url) return Response.redirect(url);
+    if (result.type === 'checkout') return Response.redirect(result.url);
   }
 
   if (intent === "conversations_150") {
     const plan = formData.get("plan") as string || "FREE";
     const unitAmount = getConversationPrice(150, plan);
 
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user: null,
       priceData: {
         currency: 'mxn',
@@ -132,14 +159,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
       successUrl: `${origin}/dashboard/plan?conversations_purchased=150`,
       cancelUrl: `${origin}/dashboard/plan`,
     });
-    if (url) return Response.redirect(url);
+    if (result.type === 'checkout') return Response.redirect(result.url);
   }
 
   if (intent === "conversations_500") {
     const plan = formData.get("plan") as string || "FREE";
     const unitAmount = getConversationPrice(500, plan);
 
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user: null,
       priceData: {
         currency: 'mxn',
@@ -155,25 +182,25 @@ export const action = async ({ request }: Route.ActionArgs) => {
       successUrl: `${origin}/dashboard/plan?conversations_purchased=500`,
       cancelUrl: `${origin}/dashboard/plan`,
     });
-    if (url) return Response.redirect(url);
+    if (result.type === 'checkout') return Response.redirect(result.url);
   }
 
   // Credits purchase intents (one-time payments)
   if (intent === "credits_100") {
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user: null,
       price: PRICES.credits_100,
       origin: new URL(request.url).origin,
       mode: "payment", // One-time payment, not subscription
       metadata: { type: "credits", amount: "100" },
     });
-    if (url) return Response.redirect(url);
+    if (result.type === 'checkout') return Response.redirect(result.url);
   }
 
   // Credits purchases - Usando priceData dinámico
 
   if (intent === "credits_500") {
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user: null,
       priceData: {
         currency: 'mxn',
@@ -189,11 +216,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
       successUrl: `${origin}/dashboard/api-keys?credits_purchased=500`,
       cancelUrl: `${origin}/dashboard/api-keys`,
     });
-    if (url) return Response.redirect(url);
+    if (result.type === 'checkout') return Response.redirect(result.url);
   }
 
   if (intent === "credits_2000") {
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user: null,
       priceData: {
         currency: 'mxn',
@@ -209,11 +236,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
       successUrl: `${origin}/dashboard/api-keys?credits_purchased=2000`,
       cancelUrl: `${origin}/dashboard/api-keys`,
     });
-    if (url) return Response.redirect(url);
+    if (result.type === 'checkout') return Response.redirect(result.url);
   }
 
   if (intent === "credits_5000") {
-    const url = await createCheckoutSessionURL({
+    const result = await createCheckoutSessionURL({
       user: null,
       priceData: {
         currency: 'mxn',
@@ -229,7 +256,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       successUrl: `${origin}/dashboard/api-keys?credits_purchased=5000`,
       cancelUrl: `${origin}/dashboard/api-keys`,
     });
-    if (url) return Response.redirect(url);
+    if (result.type === 'checkout') return Response.redirect(result.url);
   }
 
   return new Response(null);

@@ -99,6 +99,37 @@ export async function handleChatbotV0Action({ request }: Route.ActionArgs) {
         );
       }
 
+      case "get_conversations_count": {
+        // 📊 Obtener conteo de conversaciones de un chatbot
+        const chatbotId = formData.get("chatbotId") as string;
+
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ success: false, error: "chatbotId requerido" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Verificar acceso al chatbot
+        const { getChatbot } = await import("../../server/chatbot-v0/chatbot");
+        const chatbot = await getChatbot(chatbotId, user.id, false);
+
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ success: false, needsUpgrade: true, count: 0 }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const { getConversationsCountByChatbotId } = await import("../../server/chatbot/conversationModel.server");
+        const count = await getConversationsCountByChatbotId(chatbotId);
+
+        return new Response(
+          JSON.stringify({ success: true, count }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       default: {
         return createUnsupportedIntentError();
       }
@@ -377,7 +408,8 @@ async function handleChatV0(params: {
       sessionId: conversation.sessionId,
       conversationId: conversation.id, // Para rate limiting de herramientas
       conversationHistory: history, // Desde DB, no desde cliente
-      integrations // ✅ Pasar integraciones al contexto
+      integrations, // ✅ Pasar integraciones al contexto
+      channel: 'web' // ✅ Indicar que estamos en Web
     });
 
 
@@ -385,6 +417,7 @@ async function handleChatV0(params: {
     // Esto permite que usuarios anónimos tengan acceso a RAG si el dueño tiene plan PRO+
 
     const chatbotOwnerPlan = (chatbot as any).user?.plan;
+    console.log(`🔍 [Web API] Chatbot Owner Plan: ${chatbotOwnerPlan}, User Plan: ${user.plan}, Chatbot ID: ${chatbotId}`);
 
     // ✅ SIEMPRE STREAMING - CLAUDE.md compliance
     // Eliminado modo JSON - SOLO SSE streaming

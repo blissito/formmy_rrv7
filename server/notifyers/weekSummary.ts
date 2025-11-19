@@ -29,6 +29,7 @@ export const sendWeekSummaryEmail = async ({ email, name, chatbotName, metrics }
     totalConversations: 0,
     totalMessages: 0,
     averageMessagesPerConversation: 0,
+    averageResponseTime: 0,
   };
   
   const actualMetrics = metrics || defaultMetrics;
