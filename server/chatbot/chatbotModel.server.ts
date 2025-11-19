@@ -263,19 +263,30 @@ export async function removeContextItem(
     ? (chatbot.contextSizeKB || 0) - contextItem.sizeKB
     : chatbot.contextSizeKB || 0;
 
-  // Update the chatbot with the new contexts and size
+  // ✅ PRIMERO eliminar embeddings (síncrono con rollback)
+  const { removeContextEmbeddings } = await import('../vector/auto-vectorize.service');
+
+  let embeddingsDeleted = 0;
+  try {
+    embeddingsDeleted = await removeContextEmbeddings(chatbotId, contextItemId);
+    console.log(`✅ Deleted ${embeddingsDeleted} embeddings for context ${contextItemId}`);
+  } catch (embeddingsError) {
+    console.error('❌ Failed to delete embeddings:', embeddingsError);
+    // Si falla el borrado de embeddings, NO eliminar el contexto
+    throw new Error(
+      `No se pudieron eliminar los embeddings del contexto. El contexto no ha sido eliminado. Error: ${
+        embeddingsError instanceof Error ? embeddingsError.message : 'Error desconocido'
+      }`
+    );
+  }
+
+  // SOLO después de eliminar embeddings exitosamente, eliminar el contexto
   const updatedChatbot = await db.chatbot.update({
     where: { id: chatbotId },
     data: {
       contexts: updatedContexts,
       contextSizeKB: Math.max(0, newContextSizeKB), // Ensure we don't go below 0
     },
-  });
-
-  // Eliminar embeddings asociados al contexto eliminado (async en background)
-  const { removeContextEmbeddings } = await import('../vector/auto-vectorize.service');
-  removeContextEmbeddings(chatbotId, contextItemId).catch(err => {
-    console.error('Error eliminando embeddings de contexto:', err);
   });
 
   return updatedChatbot;

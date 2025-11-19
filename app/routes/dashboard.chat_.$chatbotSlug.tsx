@@ -200,7 +200,9 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     leads as any // ✅ También pasar leads para mostrar nombres
   );
 
-  // Filtrar contextos sin embeddings (documentos eliminados)
+  // TODO: Filtro deshabilitado temporalmente - causaba que contextos desaparecieran
+  // Si se re-habilita, debe verificarse que los embeddings se creen ANTES de que el loader ejecute
+  /*
   if (chatbot.contexts && chatbot.contexts.length > 0) {
     const allEmbeddings = await db.embedding.findMany({
       where: { chatbotId: chatbot.id },
@@ -215,6 +217,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       return hasEmbeddings;
     });
   }
+  */
 
   return {
     user,

@@ -39,7 +39,6 @@ export const Entrenamiento = ({
   chatbot: Chatbot;
   user: User;
 }) => {
-  const submit = useSubmit();
   const revalidator = useRevalidator();
   const { currentTab, setCurrentTab } = useChipTabs(
     "website",
@@ -61,7 +60,9 @@ export const Entrenamiento = ({
   );
   const [questionContexts, setQuestionContexts] = useState<any[]>([]);
   const [newQuestionContexts, setNewQuestionContexts] = useState<any[]>([]);
-  const [questionContextsToUpdate, setQuestionContextsToUpdate] = useState<any[]>([]);
+  const [questionContextsToUpdate, setQuestionContextsToUpdate] = useState<
+    any[]
+  >([]);
   const [questionContextsToRemove, setQuestionContextsToRemove] = useState<
     any[]
   >([]);
@@ -309,7 +310,9 @@ export const Entrenamiento = ({
 
         // Agregar a la lista de contextos a actualizar (si no está ya)
         setQuestionContextsToUpdate((prev) => {
-          const existing = prev.find((ctx) => ctx.id === editingQuestionContext.id);
+          const existing = prev.find(
+            (ctx) => ctx.id === editingQuestionContext.id
+          );
           if (existing) {
             return prev.map((ctx) =>
               ctx.id === editingQuestionContext.id ? updatedContext : ctx
@@ -553,11 +556,14 @@ export const Entrenamiento = ({
   };
 
   const handleUpdateChatbot = async () => {
+    console.log("🚀 [handleUpdateChatbot] Iniciando...");
     setIsUpdating(true);
 
     try {
       // Subir archivos automáticamente cuando se presiona "Actualizar Chatbot"
+      console.log("📁 [handleUpdateChatbot] Subiendo archivos...");
       await handleUploadFiles();
+      console.log("✅ [handleUpdateChatbot] Archivos subidos");
 
       // Actualizar contextos de texto modificados
       for (const textContext of textContextsToUpdate) {
@@ -676,7 +682,12 @@ export const Entrenamiento = ({
       }
 
       // Agregar sitios web nuevos como contextos
+      console.log(`🌐 [handleUpdateChatbot] Procesando ${newWebsiteEntries.length} websites...`);
+      const failedWebsiteEntries: WebsiteEntry[] = [];
+      let successfulWebsites = 0;
+
       for (const entry of newWebsiteEntries) {
+        console.log(`   🔗 [handleUpdateChatbot] Procesando URL: ${entry.url}`);
         try {
           const contextFormData = new FormData();
           contextFormData.append("intent", "add_url_context");
@@ -693,21 +704,39 @@ export const Entrenamiento = ({
           );
           contextFormData.append("routes", JSON.stringify(entry.routes));
 
+          console.log(`   ⏳ [handleUpdateChatbot] Enviando request para ${entry.url}...`);
           const contextResponse = await fetch("/api/v1/chatbot", {
             method: "POST",
             body: contextFormData,
           });
+          console.log(`   ✅ [handleUpdateChatbot] Response recibida: ${contextResponse.status}`);
 
           if (!contextResponse.ok) {
             const errorData = await contextResponse.json();
-            throw new Error(
-              `Error al agregar contexto para ${entry.url}: ${errorData.error}`
+            // Mostrar error específico (NO agregar a failedWebsiteEntries para que se quite de la lista)
+            toast.error(
+              `${entry.url}: ${errorData.error}`,
+              { duration: 6000 }
             );
+            continue; // Continuar con el siguiente
           }
+
+          // Si llegamos aquí, fue exitoso
+          successfulWebsites++;
         } catch (error) {
-          throw error;
+          // Error de red u otro error (NO agregar a failedWebsiteEntries para que se quite de la lista)
+          const errorMsg = error instanceof Error ? error.message : "Error desconocido";
+          toast.error(
+            `Error de red al agregar ${entry.url}: ${errorMsg}`,
+            { duration: 6000 }
+          );
+          continue; // Continuar con el siguiente
         }
       }
+
+      // Actualizar estado: mantener solo los que fallaron
+      setNewWebsiteEntries(failedWebsiteEntries);
+      console.log(`✅ [handleUpdateChatbot] Websites procesados: ${successfulWebsites} exitosos, ${failedWebsiteEntries.length} fallidos`);
 
       // Eliminar contextos marcados para eliminar (archivos, websites, texto, preguntas)
       const allContextsToRemove = [
@@ -741,7 +770,7 @@ export const Entrenamiento = ({
 
       // Limpiar estados después de subirlos y recargar datos
       const hasChanges =
-        newWebsiteEntries.length > 0 ||
+        successfulWebsites > 0 ||
         newTextContexts.length > 0 ||
         newQuestionContexts.length > 0 ||
         textContextsToUpdate.length > 0 ||
@@ -749,7 +778,7 @@ export const Entrenamiento = ({
         allContextsToRemove.length > 0;
       if (hasChanges) {
         toast.success("Chatbot actualizado correctamente");
-        setNewWebsiteEntries([]);
+        // NO limpiar newWebsiteEntries - ya se actualizó con los fallidos
         setNewTextContexts([]);
         setNewQuestionContexts([]);
         setTextContextsToUpdate([]);
@@ -761,9 +790,18 @@ export const Entrenamiento = ({
         revalidator.revalidate();
       }
     } catch (error) {
-      // Error ya mostrado por las sub-funciones (handleUploadFiles, etc.)
-      console.error("Error al actualizar chatbot:", error);
+      // Mostrar error al usuario
+      console.error("❌ [handleUpdateChatbot] Error capturado:", error);
+
+      // Extraer mensaje de error
+      let errorMessage = "Error al actualizar chatbot";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage, { duration: 6000 });
     } finally {
+      console.log("🏁 [handleUpdateChatbot] Finally ejecutado, limpiando estado...");
       setIsUpdating(false);
     }
   };
