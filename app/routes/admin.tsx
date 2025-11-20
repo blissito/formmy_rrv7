@@ -15,6 +15,7 @@ import {
   ActiveIntegrations,
   ContactsOverview,
   ParserMetrics,
+  GhostyContextManager,
 } from "~/components/admin";
 
 // Helper function to safely parse AI model provider
@@ -172,16 +173,24 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       where: { isActive: true },
     });
 
-    // Contact metrics (leads captured)
-    const [totalContacts, thisWeekContacts, thisMonthContacts, contactsBySource] = await Promise.all([
-      db.contact.count(),
-      db.contact.count({ where: { capturedAt: { gte: sevenDaysAgo } } }),
-      db.contact.count({ where: { capturedAt: { gte: startOfMonth } } }),
-      db.contact.groupBy({
-        by: ['source'],
-        _count: { source: true },
-      }),
+    // Lead metrics (leads captured via save_contact_info)
+    const [totalContacts, thisWeekContacts, thisMonthContacts] = await Promise.all([
+      db.lead.count(),
+      db.lead.count({ where: { capturedAt: { gte: sevenDaysAgo } } }),
+      db.lead.count({ where: { capturedAt: { gte: startOfMonth } } }),
     ]);
+
+    // GroupBy puede fallar si hay datos legacy con source null
+    let contactsBySource: Array<{ source: string; _count: number }> = [];
+    try {
+      const result = await db.lead.groupBy({
+        by: ['source'],
+        _count: true,
+      });
+      contactsBySource = result.filter(c => c.source !== null) as any;
+    } catch (error) {
+      console.error('Error grouping leads by source (possibly null values in legacy data):', error);
+    }
 
     // Cost metrics (aggregate all users for the last 30 days)
     let costMetrics = {
@@ -535,6 +544,27 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       console.error('Error loading parser metrics:', error);
     }
 
+    // Ghosty Context Management (NUEVO)
+    let ghostyContexts: any[] = [];
+    const GHOSTY_CHATBOT_ID = '691e648afcfecb9dedc6b5de';
+
+    try {
+      ghostyContexts = await db.context.findMany({
+        where: { chatbotId: GHOSTY_CHATBOT_ID },
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+          embeddingIds: true,
+        },
+      });
+    } catch (error) {
+      console.error('Error loading Ghosty contexts:', error);
+    }
+
     return {
       users: {
         total: totalUsers,
@@ -602,12 +632,15 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         total: totalContacts,
         thisWeek: thisWeekContacts,
         thisMonth: thisMonthContacts,
-        bySource: contactsBySource.map(c => ({ source: c.source, count: c._count.source })),
+        bySource: contactsBySource.map(c => ({ source: c.source, count: c._count })),
       },
       toolCredits: toolCreditsData,
       ragMetrics,
       systemHealth,
       parserMetrics,
+      ghosty: {
+        contexts: ghostyContexts,
+      },
     };
   } catch (error) {
     console.error('Error loading admin dashboard data:', error);
@@ -626,6 +659,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       ragMetrics: { ragSearches: 0, webSearches: 0, conversationsWithRAG: 0 },
       systemHealth: { avgLatency: 0, maxLatency: 0, toolErrors: [], alerts: [] },
       parserMetrics: { totalJobs: 0, totalPages: 0, totalCredits: 0, byMode: [] },
+      ghosty: { contexts: [] },
       error: 'Error cargando datos del dashboard. Intenta refrescar la página.',
     };
   }
@@ -707,6 +741,9 @@ export default function AdminDashboard() {
         totalCredits={data.parserMetrics.totalCredits}
         byMode={data.parserMetrics.byMode}
       />
+
+      {/* Ghosty Context Management */}
+      <GhostyContextManager contexts={data.ghosty.contexts} />
 
       {/* Top Chatbots & Integrations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

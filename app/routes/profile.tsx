@@ -4,13 +4,10 @@ import {
 } from "~/utils/stripe.server";
 import Nav from "~/components/NavBar";
 import { redirect } from "react-router";
-import { twMerge } from "tailwind-merge";
-import Spinner from "~/components/Spinner";
 import type { Route } from "./+types/profile";
 import SuccessModal from "~/components/SuccessModal";
 import { getUserOrRedirect } from "server/getUserUtils.server";
-import useLocalStorage from "~/lib/hooks/useLocalStorage";
-import { Form, useFetcher, useLoaderData, useNavigation } from "react-router";
+import { useLoaderData, useNavigation } from "react-router";
 import { CardFree, CardPro } from "./dashboard.plan";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
@@ -99,4 +96,3 @@ export default function Profile() {
     </>
   );
 }
-

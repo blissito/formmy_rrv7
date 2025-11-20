@@ -22,7 +22,7 @@ ARG VITE_FACEBOOK_CONFIG_ID
 
 # Generate Prisma client for MongoDB and build
 RUN npx prisma generate
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
 # Verify Prisma client was generated correctly
 RUN ls -la node_modules/.prisma/client/ || echo "Prisma client not found"
