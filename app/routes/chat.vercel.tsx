@@ -9,22 +9,53 @@ import { openai } from "@ai-sdk/openai";
 import type { Route } from "./+types/chat.vercel";
 import z from "zod";
 import { getUserOrRedirect } from "@/server/getUserUtils.server";
-import { vectorize } from "@/server/context/vercel_embeddings";
+import { upsert, vectorSearch } from "@/server/context/vercel_embeddings";
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const {
     messages,
     intent,
-    textToVectorize,
-  }: { messages: UIMessage[]; intent: string; textToVectorize: string } =
-    await request.json();
+    content,
+    chatbotId,
+    title,
+    value, // extract inside if @todo
+  }: {
+    value?: string;
+    title: string;
+    chatbotId: string;
+    messages: UIMessage[];
+    intent: string;
+    content: string;
+  } = await request.json();
   const user = await getUserOrRedirect(request);
 
   // ******** Chunking and embeddings ********
-  if (intent === "vectorize") {
-    await vectorize(textToVectorize);
+  if (intent === "upsert") {
+    const { success, error } = await upsert({
+      chatbotId,
+      title,
+      content,
+    });
+    console.log("SUCCESS?", success);
+    console.log("chatbotId?", chatbotId);
+    console.log("Hay error");
+    if (error) {
+      console.log("Devolviendo error");
+      return { error: error.message };
+    }
     return null;
     // todo
+  }
+
+  // ******** Semantic search ********
+  if (intent === "retrieval") {
+    console.log("INPUT::", value);
+    const { success } = await vectorSearch({
+      chatbotId,
+      value: value!,
+    });
+    console.log("SUCCESS?", success);
+    return null;
   }
 
   const selfUserTool = tool({

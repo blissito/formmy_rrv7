@@ -179,8 +179,8 @@ model User {
   satContacts     SatContact[] @relation("UserSatContacts")
 
   // Sistema de referidos - quién refirió a este usuario
-  referredById    String?      @db.ObjectId
-  referredBy      Referral?    @relation("ReferredUsers", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  referredById String?   @db.ObjectId
+  referredBy   Referral? @relation("ReferredUsers", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   // Tool Credits Tracking (para Parser Avanzado y otras herramientas)
   toolCreditsUsed     Float     @default(0) // Créditos MENSUALES consumidos en el mes actual (soporta decimales: 0.5, 1.5)
@@ -235,21 +235,62 @@ enum ContextType {
   QUESTION
 }
 
-type ContextItem {
-  id        String
-  type      ContextType
-  fileName  String?
-  fileType  String?
-  fileUrl   String?
-  url       String?
-  title     String?
-  sizeKB    Int?
-  content   String?
-  routes    String[]    @default([])
-  questions String?
-  answer    String?
-  createdAt DateTime
+model Context {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  content      String
+  contextType  ContextType @default(TEXT)
+  title        String
+  chatbotId    String      @db.ObjectId
+  chatbot      Chatbot     @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  embeddings   Embedding[]
+  embeddingIds String[]    @db.ObjectId
+  // optionals
+  metadata     Json?
+  // defaults
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
 
+// Vector embeddings para RAG semántico
+model Embedding {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  // Contenido y vector
+  content   String? // Chunk de texto original (no por ahora?)
+  embedding Float[] // Vector de 768 dimensiones (text-embedding-3-small)
+
+  // relations
+  contextId String  @db.ObjectId
+  context   Context @relation(fields: [contextId], references: [id], onDelete: Cascade)
+
+  // Metadata para retrieval
+  metadata Json? // { contextId, contextType, title, fileName, url, chunkIndex }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chatbotId])
+  @@map("embeddings")
+}
+
+type ContextItem {
+  id             String
+  type           ContextType
+  fileName       String?
+  fileType       String?
+  fileUrl        String?
+  url            String?
+  title          String?
+  sizeKB         Int?
+  content        String?
+  routes         String[]    @default([])
+  questions      String?
+  answer         String?
+  createdAt      DateTime
+  // Bliss manual wtf con el chatbot id? Forzamos? @todo
+  // chatbotId      String?     @db.ObjectId
   // Metadata de parsing (solo para documentos parseados via Parser API)
   parsingMode    String? // ParsingMode enum como string
   parsingPages   Int?
@@ -268,7 +309,7 @@ model Chatbot {
   temperature        Float             @default(1)
   instructions       String?
   customInstructions String?
-  contexts           ContextItem[]
+  contexts           ContextItem[] // @TODO eliminar y renombrar
   primaryColor       String?
   avatarUrl          String?
   theme              String?           @default("light")
@@ -297,16 +338,17 @@ model Chatbot {
   satContacts        SatContact[]      @relation("ChatbotSatContacts")
   voiceSessions      VoiceSession[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  contextObjects Context[]
 }
 
 // Contactos automáticos de WhatsApp (solo información básica)
 model Contact {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  name     String? // Nombre del perfil de WhatsApp
-  phone    String? // Teléfono de WhatsApp
-  email    String? // Email capturado durante la conversación
+  id    String  @id @default(auto()) @map("_id") @db.ObjectId
+  name  String? // Nombre del perfil de WhatsApp
+  phone String? // Teléfono de WhatsApp
+  email String? // Email capturado durante la conversación
 
   // WhatsApp Profile Data
   profilePictureUrl String? // URL de la foto de perfil de WhatsApp
@@ -330,13 +372,13 @@ model Contact {
 // Leads calificados (guardados con save_contact_info)
 model Lead {
   id              String        @id @default(auto()) @map("_id") @db.ObjectId
-  name            String?       // Nombre completo
-  email           String?       // Email de contacto
-  phone           String?       // Teléfono
-  productInterest String?       // Producto/servicio de interés
-  position        String?       // Cargo/posición
-  website         String?       // Sitio web
-  notes           String?       // Notas adicionales
+  name            String? // Nombre completo
+  email           String? // Email de contacto
+  phone           String? // Teléfono
+  productInterest String? // Producto/servicio de interés
+  position        String? // Cargo/posición
+  website         String? // Sitio web
+  notes           String? // Notas adicionales
   status          ContactStatus @default(NEW) // Estado en el pipeline de ventas
   source          String        @default("web") // Canal de origen: "whatsapp" o "web"
 
@@ -375,26 +417,6 @@ model ScheduledAction {
   @@map("scheduled_actions")
 }
 
-// Vector embeddings para RAG semántico
-model Embedding {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  chatbotId String  @db.ObjectId
-  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
-
-  // Contenido y vector
-  content   String // Chunk de texto original
-  embedding Float[] // Vector de 768 dimensiones (text-embedding-3-small)
-
-  // Metadata para retrieval
-  metadata Json // { contextId, contextType, title, fileName, url, chunkIndex }
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([chatbotId])
-  @@map("embeddings")
-}
-
 enum ConversationStatus {
   ACTIVE
   COMPLETED
@@ -413,7 +435,7 @@ model Conversation {
   messageCount Int                @default(0)
   isFavorite   Boolean            @default(false)
   manualMode   Boolean            @default(false) // Para controlar respuestas manuales vs automáticas
-  lastEchoAt   DateTime?          // Última vez que se recibió un eco (mensaje del negocio desde teléfono)
+  lastEchoAt   DateTime? // Última vez que se recibió un eco (mensaje del negocio desde teléfono)
   chatbotId    String?            @db.ObjectId // ✅ Nullable para permitir Ghosty (sin chatbot real)
   chatbot      Chatbot?           @relation(fields: [chatbotId], references: [id])
   messages     Message[]
@@ -431,17 +453,17 @@ enum MessageRole {
 }
 
 model Message {
-  id                String       @id @default(auto()) @map("_id") @db.ObjectId
-  content           String
-  role              MessageRole
-  deleted           Boolean      @default(false)
-  picture           String?
-  channel           String?
+  id      String      @id @default(auto()) @map("_id") @db.ObjectId
+  content String
+  role    MessageRole
+  deleted Boolean     @default(false)
+  picture String?
+  channel String?
 
   // WhatsApp Reaction fields
-  isReaction        Boolean?     @default(false) // Si true, este mensaje es una reacción
-  reactionEmoji     String?      // Emoji de la reacción (ej: "👍", "❤️")
-  reactionToMsgId   String?      // externalMessageId del mensaje al que se reacciona
+  isReaction      Boolean? @default(false) // Si true, este mensaje es una reacción
+  reactionEmoji   String? // Emoji de la reacción (ej: "👍", "❤️")
+  reactionToMsgId String? // externalMessageId del mensaje al que se reacciona
 
   externalMessageId String?
   tokens            Int? // Tokens totales (deprecated, usar inputTokens + outputTokens)
@@ -912,42 +934,42 @@ enum VoiceSessionStatus {
 }
 
 model VoiceSession {
-  id             String             @id @default(auto()) @map("_id") @db.ObjectId
-  userId         String             @db.ObjectId
-  chatbotId      String             @db.ObjectId
-  conversationId String?            @db.ObjectId
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String  @db.ObjectId
+  chatbotId      String  @db.ObjectId
+  conversationId String? @db.ObjectId
 
   // LiveKit Room
-  roomId         String             @unique // LiveKit room ID
-  roomName       String             // Human-readable room name
-  participantSid String?            // Participant ID del usuario
+  roomId         String  @unique // LiveKit room ID
+  roomName       String // Human-readable room name
+  participantSid String? // Participant ID del usuario
 
   // Configuración TTS usada
-  ttsProvider    String             // ✅ SOLO "elevenlabs" - Cartesia e Inworld DEPRECADOS
-  ttsVoiceId     String?            // Voice ID específica
-  sttLanguage    String             @default("es") // ⚠️ ISO-639-1 SOLO (es, en, pt) - NO locales (es-MX, en-US)
+  ttsProvider String // ✅ SOLO "elevenlabs" - Cartesia e Inworld DEPRECADOS
+  ttsVoiceId  String? // Voice ID específica
+  sttLanguage String  @default("es") // ⚠️ ISO-639-1 SOLO (es, en, pt) - NO locales (es-MX, en-US)
 
   // Timing
-  startTime      DateTime           @default(now())
-  endTime        DateTime?
-  durationMinutes Float?            // Duración total en minutos (con decimales)
+  startTime       DateTime  @default(now())
+  endTime         DateTime?
+  durationMinutes Float? // Duración total en minutos (con decimales)
 
   // Métricas
-  status         VoiceSessionStatus @default(ACTIVE)
-  creditsUsed    Int                @default(0) // Créditos consumidos (5 por minuto)
-  messageCount   Int                @default(0) // Número de intercambios de mensajes
+  status       VoiceSessionStatus @default(ACTIVE)
+  creditsUsed  Int                @default(0) // Créditos consumidos (5 por minuto)
+  messageCount Int                @default(0) // Número de intercambios de mensajes
 
   // Contenido
-  transcription  String?            // Transcripción completa de la conversación
+  transcription String? // Transcripción completa de la conversación
 
   // Error handling
-  errorMessage   String?
+  errorMessage String?
 
   // Relaciones
-  chatbot        Chatbot            @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  chatbot Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
 
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, status])
   @@index([chatbotId, startTime])
@@ -959,12 +981,12 @@ model VoiceSession {
 // ============================================================================
 
 model ProcessedWebhook {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  externalId     String   @unique // WhatsApp message ID o echo ID
-  type           String   // "message" | "echo" | "status"
-  phoneNumberId  String   // ID del número de WhatsApp
-  processedAt    DateTime @default(now())
-  expiresAt      DateTime // TTL index - auto-delete después de X tiempo
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  externalId    String   @unique // WhatsApp message ID o echo ID
+  type          String // "message" | "echo" | "status"
+  phoneNumberId String // ID del número de WhatsApp
+  processedAt   DateTime @default(now())
+  expiresAt     DateTime // TTL index - auto-delete después de X tiempo
 
   @@index([expiresAt])
   @@index([phoneNumberId, type])
@@ -972,12 +994,12 @@ model ProcessedWebhook {
 
 // Message Debouncing - Window-based deduplication (5s window)
 model DebouncedMessage {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  messageId      String   // WhatsApp message ID
-  phoneNumberId  String   // ID del número de WhatsApp
-  type           String   // "message" | "echo"
-  processedAt    DateTime @default(now())
-  expiresAt      DateTime // TTL index - auto-delete después de 1 minuto
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  messageId     String // WhatsApp message ID
+  phoneNumberId String // ID del número de WhatsApp
+  type          String // "message" | "echo"
+  processedAt   DateTime @default(now())
+  expiresAt     DateTime // TTL index - auto-delete después de 1 minuto
 
   // TODO: Limpiar duplicados antes de habilitar este constraint
   // @@unique([messageId, phoneNumberId, type])

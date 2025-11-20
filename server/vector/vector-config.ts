@@ -18,7 +18,8 @@
  *
  * Default: vector_index_bliss
  */
-export const VECTOR_INDEX_NAME = process.env.VECTOR_INDEX_NAME || 'vector_index_bliss';
+export const VECTOR_INDEX_NAME =
+  process.env.VECTOR_INDEX_NAME || "vector_index_bliss";
 
 /**
  * Configuración del índice para Atlas
@@ -29,24 +30,24 @@ export const VECTOR_INDEX_NAME = process.env.VECTOR_INDEX_NAME || 'vector_index_
 export const ATLAS_VECTOR_INDEX_CONFIG = {
   fields: [
     {
-      type: 'vector',
-      path: 'embedding',
+      type: "vector",
+      path: "embedding",
       numDimensions: 768,
-      similarity: 'cosine'
+      similarity: "cosine",
     },
     {
-      type: 'filter',
-      path: 'chatbotId'
+      type: "filter",
+      path: "chatbotId",
     },
     {
-      type: 'filter',
-      path: 'metadata.contextId'
+      type: "filter",
+      path: "metadata.contextId",
     },
     {
-      type: 'filter',
-      path: 'metadata.contextType'
-    }
-  ]
+      type: "filter",
+      path: "metadata.contextType",
+    },
+  ],
 } as const;
 
 /**
@@ -62,7 +63,7 @@ export const EMBEDDING_DIMENSIONS = 768;
 /**
  * Modelo de embeddings de OpenAI
  */
-export const EMBEDDING_MODEL = 'text-embedding-3-small';
+export const EMBEDDING_MODEL = "text-embedding-3-small";
 
 /**
  * Configuración de búsqueda vectorial
@@ -84,7 +85,7 @@ export const VECTOR_SEARCH_CONFIG = {
   /**
    * Límite máximo de resultados
    */
-  maxLimit: 50
+  maxLimit: 50,
 } as const;
 
 /**

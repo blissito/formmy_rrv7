@@ -216,16 +216,38 @@ export const Entrenamiento = ({
     // VERCEL EXPERIMENT
     const experiment = async () => {
       console.log("About to experiment");
-      const r = await fetch("/chat/vercel", {
+      const response = await fetch("/chat/vercel", {
         body: JSON.stringify({
-          intent: "vectorize",
-          textToVectorize: textContent.trim(),
+          intent: "upsert",
+          chatbotId: chatbot.id,
+          title: textTitle.trim(),
+          content: textContent.trim(),
+          // contextType: "TEXT", // default
         }),
         method: "post",
         headers: {
           "Content-Type": "application/json",
         },
       });
+      const { error } = await response.json();
+      if (error) {
+        // duplication
+        console.error("ERROR", error);
+        toast.error(error);
+      }
+      // Experiment retrival
+      // await fetch("/chat/vercel", {
+      //   body: JSON.stringify({
+      //     intent: "retrieval",
+      //     value: "construcción de parámetros",
+      //     chatbotId: chatbot.id,
+      //   }),
+      //   method: "post",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      // });
+      // revalidate @todo
     };
     experiment();
 

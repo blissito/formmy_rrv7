@@ -228,3 +228,20 @@ export function validateChatbotDataEffect(
     return { success: false, error };
   }
 }
+
+// ************ CONTEXT SCHEMA *****************
+// *** Validación para nuevos contexto (sin id) ***
+export const ContextSchema = z.object({
+  contextType: z.string().optional(), // required
+  title: z.string().optional(),
+  content: z.string().optional(),
+  chatbotId: z.string(), // required
+  embeddingIds: z.array(z.string()).optional(),
+  // optionals
+  metadata: z.object({}).optional(),
+  // Metadata (solo para documentos parseados via Parser API)
+  parsingMode: z.string().optional(), // ParsingMode enum como string
+  parsingPages: z.number().optional(),
+  parsingCredits: z.number().optional(),
+});
+export type ContextItemSchemaType = z.infer<typeof ContextSchema>;
