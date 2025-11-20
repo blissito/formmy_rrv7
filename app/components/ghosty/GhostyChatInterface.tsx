@@ -16,6 +16,7 @@ import { LuBotMessageSquare } from "react-icons/lu";
 import { FaRegUser } from "react-icons/fa";
 import Spinner from "../Spinner";
 import { Link } from "react-router";
+import { Streamdown } from "streamdown";
 
 interface GhostyChatInterfaceProps {
   messages: GhostyLlamaMessage[];
@@ -414,7 +415,7 @@ export const GhostyChatInterface = ({
                             {/* SIEMPRE renderizar el texto de respuesta */}
                             {message.parts.map((part, idx) => {
                               if (part.type === "text") {
-                                return <span key={idx}>{part.text}</span>;
+                                return <Streamdown key={idx}>{part.text}</Streamdown>;
                               }
                               return null;
                             })}
