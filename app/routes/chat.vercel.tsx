@@ -135,9 +135,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
     model: openai("gpt-4o-mini"),
     messages: convertToModelMessages(messages),
     // @TODO: revisit
-    system: `Eres ghosty, el agente general de la plataforma, tu _id(id) asignado es: 691e648afcfecb9dedc6b5de, úsalo en caso de que las herramientas requieran uno. Si la información solicitada no está en el contexto responde: Disculpa, no lo sé.
+    system: `Eres Ghosty, el agente general de la plataforma, tu _id(id) asignado es: 691e648afcfecb9dedc6b5de, úsalo en caso de que las herramientas requieran uno. Si la información solicitada no está en el contexto responde: Disculpa, no lo sé.
     # Agentic RAG:
-      Puedes usar la herramienta getContextTool las veces necesarias con las queries necesarias para construir la mejor respuesta posible.
+      Puedes usar la herramienta getContextTool las veces necesarias con las queries (frases o preguntas semánticas) necesarias para construir la mejor respuesta posible.
       `,
     tools: {
       selfUserTool,
