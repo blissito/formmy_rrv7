@@ -9,7 +9,14 @@ import { openai } from "@ai-sdk/openai";
 import type { Route } from "./+types/chat.vercel";
 import z from "zod";
 import { getUserOrRedirect } from "@/server/getUserUtils.server";
-import { upsert, vectorSearch } from "@/server/context/vercel_embeddings";
+import {
+  upsert,
+  updateContext,
+  deleteContext,
+  vectorSearch,
+} from "@/server/context/vercel_embeddings";
+import { getContextTool } from "@/server/tools/vercel/vectorSearch";
+import { db } from "~/utils/db.server";
 
 export const action = async ({ request }: Route.ActionArgs) => {
   const {
@@ -19,6 +26,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     chatbotId,
     title,
     value, // extract inside if @todo
+    contextId,
   }: {
     value?: string;
     title: string;
@@ -26,25 +34,71 @@ export const action = async ({ request }: Route.ActionArgs) => {
     messages: UIMessage[];
     intent: string;
     content: string;
+    contextId?: string;
   } = await request.json();
   const user = await getUserOrRedirect(request);
 
   // ******** Chunking and embeddings ********
   if (intent === "upsert") {
-    const { success, error } = await upsert({
-      chatbotId,
-      title,
-      content,
+    // Check if context with same title already exists
+    const existingContext = await db.context.findFirst({
+      where: {
+        title,
+        chatbotId,
+      },
     });
-    console.log("SUCCESS?", success);
-    console.log("chatbotId?", chatbotId);
-    console.log("Hay error");
-    if (error) {
-      console.log("Devolviendo error");
-      return { error: error.message };
+
+    if (existingContext) {
+      // Update existing context
+      const result = await updateContext({
+        contextId: existingContext.id,
+        chatbotId,
+        title,
+        content,
+      });
+
+      if (!result.success) {
+        return { success: false, error: result.error.message };
+      }
+
+      return {
+        success: true,
+        contextId: result.contextId,
+        chunksCreated: result.chunksCreated,
+        updated: true,
+      };
+    } else {
+      // Create new context
+      const result = await upsert({
+        chatbotId,
+        title,
+        content,
+      });
+
+      if (!result.success) {
+        return { success: false, error: result.error.message };
+      }
+
+      return { success: true, contextId: result.contextId, updated: false };
     }
-    return null;
-    // todo
+  }
+
+  // ******** Delete context ********
+  if (intent === "delete") {
+    if (!contextId) {
+      return { success: false, error: "contextId es requerido para eliminar" };
+    }
+
+    const result = await deleteContext({
+      contextId,
+      chatbotId,
+    });
+
+    if (!result.success) {
+      return { success: false, error: result.error.message };
+    }
+
+    return { success: true };
   }
 
   // ******** Semantic search ********
@@ -58,9 +112,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
     return null;
   }
 
+  // @TODO: find chatbot for public/common use else:
+  // Ghosty agent default flow
+  // USERID: 000000000000000000000001
+  // chatbotId: 691e648afcfecb9dedc6b5de
+
   const selfUserTool = tool({
-    description:
-      "Displays user info, cuando se use está tool no debes agregar texto adicional",
+    description: `Displays user profile information. 
+  ONLY use this tool when the user explicitly asks about
+   their profile, plan, or account. After calling this 
+  tool, display the results without additional 
+  commentary.`,
     inputSchema: z.object({}),
     execute: async () => {
       return user;
@@ -69,10 +131,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   const result = streamText({
     // model: openai("gpt-5-nano"),
+    // model: openai("gpt-4o-mini"),
     model: openai("gpt-4o-mini"),
     messages: convertToModelMessages(messages),
-    tools: { selfUserTool },
-    stopWhen: stepCountIs(5),
+    // @TODO: revisit
+    system: `Eres ghosty, el agente general de la plataforma, tu _id(id) asignado es: 691e648afcfecb9dedc6b5de, úsalo en caso de que las herramientas requieran uno. Si la información solicitada no está en el contexto responde: Disculpa, no lo sé.
+    # Agentic RAG:
+      Puedes usar la herramienta getContextTool las veces necesarias con las queries necesarias para construir la mejor respuesta posible.
+      `,
+    tools: {
+      selfUserTool,
+      getContextTool,
+    },
+    stopWhen: stepCountIs(12),
   });
 
   return result.toUIMessageStreamResponse();

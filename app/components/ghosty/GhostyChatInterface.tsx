@@ -312,78 +312,114 @@ export const GhostyChatInterface = ({
                     <span className="font-medium">
                       {(() => {
                         // Detectar si hay un tool call en este mensaje
-                        const hasToolCall = message.parts.some(
-                          (part) => part.type === "tool-selfUserTool"
+                        const hasToolCall = message.parts.some((part) =>
+                          part.type.includes("tool-")
                         );
 
-                        // Si hay un tool call, solo renderizar el tool (sin texto)
-                        if (hasToolCall) {
-                          return message.parts
-                            .filter((part) => part.type === "tool-selfUserTool")
-                            .map((part, idx) => {
-                              if (part.type === "tool-selfUserTool") {
-                                switch (part.state) {
-                                  case "output-available":
-                                    return (
-                                      <motion.div
-                                        key={idx}
-                                        className="bg-brand-300 p-4 rounded-2xl w-fit"
-                                        initial={{
-                                          y: -100,
-                                          filter: "blur(4px)",
-                                        }}
-                                        animate={{ y: 0, filter: "blur(0px)" }}
-                                        whileHover={{ scale: 0.95 }}
-                                        transition={{
-                                          type: "spring",
-                                          bounce: 0.6,
-                                        }}
-                                      >
-                                        <div className="space-y-2">
-                                          <p>
-                                            <strong>ID:</strong>{" "}
-                                            {part.output?.id}
-                                          </p>
-                                          <p>
-                                            <strong>Email:</strong>{" "}
-                                            {part.output?.email}
-                                          </p>
-                                          <p>
-                                            <strong>Plan:</strong>{" "}
-                                            {part.output?.plan}
-                                          </p>
-                                          <p>
-                                            <strong>Créditos usados:</strong>{" "}
-                                            {part.output?.toolCreditsUsed}
-                                          </p>
-                                          <div className="flex gap-4">
-                                            <img
-                                              src="http://localhost:3000/dash/logo-full.svg"
-                                              alt="user pic"
-                                              className="w-16 h-16 rounded-full hover:scale-110 transition-all"
-                                            />
-                                            <a target="_blank" href="/profile">
-                                              <Button variant="secondary">
-                                                Ir al perfil
-                                              </Button>
-                                            </a>
+                        return (
+                          <>
+                            {/* Mostrar tool indicator si hay tool calls */}
+                            {hasToolCall && (
+                              <div className="mb-2 space-y-1">
+                                {message.parts
+                                  .filter(
+                                    (part) =>
+                                      part.type === "tool-getContextTool"
+                                  )
+                                  .map((part, indx) => (
+                                    <p
+                                      key={indx}
+                                      className={cn(
+                                        "text-xs rounded-xl px-2 py-1 w-fit",
+                                        part.state === "output-available"
+                                          ? "text-gray-700 bg-green-200"
+                                          : "text-white bg-orange-200"
+                                      )}
+                                    >
+                                      {part.state === "output-available"
+                                        ? "🔧 RAG usado"
+                                        : "🔧 Buscando en conocimiento..."}
+                                    </p>
+                                  ))}
+
+                                {/* selfUserTool - Mostrar info del usuario */}
+                                {message.parts
+                                  .filter(
+                                    (part) => part.type === "tool-selfUserTool"
+                                  )
+                                  .map((part, idx) => {
+                                    if (
+                                      part.type === "tool-selfUserTool" &&
+                                      part.state === "output-available"
+                                    ) {
+                                      return (
+                                        <motion.div
+                                          key={idx}
+                                          className="bg-brand-300 p-4 rounded-2xl w-fit"
+                                          initial={{
+                                            y: -100,
+                                            filter: "blur(4px)",
+                                          }}
+                                          animate={{
+                                            y: 0,
+                                            filter: "blur(0px)",
+                                          }}
+                                          whileHover={{ scale: 0.95 }}
+                                          transition={{
+                                            type: "spring",
+                                            bounce: 0.6,
+                                          }}
+                                        >
+                                          <div className="space-y-2">
+                                            <p>
+                                              <strong>ID:</strong>{" "}
+                                              {part.output?.id}
+                                            </p>
+                                            <p>
+                                              <strong>Email:</strong>{" "}
+                                              {part.output?.email}
+                                            </p>
+                                            <p>
+                                              <strong>Plan:</strong>{" "}
+                                              {part.output?.plan}
+                                            </p>
+                                            <p>
+                                              <strong>Créditos usados:</strong>{" "}
+                                              {part.output?.toolCreditsUsed}
+                                            </p>
+                                            <div className="flex gap-4">
+                                              <img
+                                                src="http://localhost:3000/dash/logo-full.svg"
+                                                alt="user pic"
+                                                className="w-16 h-16 rounded-full hover:scale-110 transition-all"
+                                              />
+                                              <a
+                                                target="_blank"
+                                                href="/profile"
+                                              >
+                                                <Button variant="secondary">
+                                                  Ir al perfil
+                                                </Button>
+                                              </a>
+                                            </div>
                                           </div>
-                                        </div>
-                                      </motion.div>
-                                    );
-                                }
+                                        </motion.div>
+                                      );
+                                    }
+                                    return null;
+                                  })}
+                              </div>
+                            )}
+
+                            {/* SIEMPRE renderizar el texto de respuesta */}
+                            {message.parts.map((part, idx) => {
+                              if (part.type === "text") {
+                                return <span key={idx}>{part.text}</span>;
                               }
                               return null;
-                            });
-                        }
-
-                        // Si NO hay tool call, renderizar normalmente (incluyendo texto)
-                        return message.parts.map((part, idx) => {
-                          if (part.type === "text") {
-                            return <span key={idx}>{part.text}</span>;
-                          }
-                          return null;
-                        });
+                            })}
+                          </>
+                        );
                       })()}
                     </span>
                   </motion.div>

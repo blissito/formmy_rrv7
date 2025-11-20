@@ -106,7 +106,133 @@ export const upsert = async ({
         ],
       },
     });
-    return { success: true, contextId: newContextDocument.id };
+    return {
+      success: true,
+      contextId: newContextDocument.id,
+      error: undefined,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err : new Error(`${err}`),
+    };
+  }
+};
+
+export const updateContext = async ({
+  contextId,
+  content,
+  title,
+  chatbotId,
+}: {
+  contextId: string;
+  content: string;
+  title: string;
+  chatbotId: string;
+}): Promise<
+  | {
+      success: true;
+      contextId: string;
+      chunksCreated: number;
+      error: undefined;
+    }
+  | { success: false; error: Error }
+> => {
+  try {
+    // 1. Verify context exists
+    const existingContext = await db.context.findUnique({
+      where: { id: contextId },
+    });
+    if (!existingContext) {
+      throw new Error("Contexto no encontrado");
+    }
+
+    // 2. Delete old embeddings
+    await db.embedding.deleteMany({
+      where: { contextId },
+    });
+
+    // 3. Generate new chunks and embeddings
+    const values = chunkContent(content);
+    const { embeddings, values: chunks } = await embedMany({
+      model: embeddingModel,
+      values,
+      ...embeddingOptions,
+    });
+
+    // 4. Create new embeddings
+    await db.embedding.createMany({
+      data: embeddings.map((embedding, indx) => ({
+        content: chunks[indx],
+        chatbotId,
+        embedding,
+        contextId,
+      })),
+    });
+
+    // 5. Get new embedding IDs
+    const newEmbeddings = await db.embedding.findMany({
+      where: { chatbotId, contextId },
+    });
+
+    // 6. Update context document
+    await db.context.update({
+      where: { id: contextId },
+      data: {
+        content,
+        title,
+        embeddingIds: newEmbeddings.map((e) => e.id),
+      },
+    });
+
+    return {
+      success: true,
+      contextId,
+      chunksCreated: embeddings.length,
+      error: undefined,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err : new Error(`${err}`),
+    };
+  }
+};
+
+export const deleteContext = async ({
+  contextId,
+  chatbotId,
+}: {
+  contextId: string;
+  chatbotId: string;
+}): Promise<
+  | { success: true; error: undefined }
+  | { success: false; error: Error }
+> => {
+  try {
+    // 1. Verify context exists and belongs to this chatbot
+    const existingContext = await db.context.findFirst({
+      where: {
+        id: contextId,
+        chatbotId,
+      },
+    });
+
+    if (!existingContext) {
+      throw new Error("Contexto no encontrado o no pertenece a este chatbot");
+    }
+
+    // 2. Delete all embeddings associated with this context
+    await db.embedding.deleteMany({
+      where: { contextId },
+    });
+
+    // 3. Delete the context document
+    await db.context.delete({
+      where: { id: contextId },
+    });
+
+    return { success: true, error: undefined };
   } catch (err) {
     return {
       success: false,
@@ -121,7 +247,7 @@ export const vectorSearch = async ({
 }: {
   chatbotId: string;
   value: string;
-}) => {
+}): Promise<{ success: boolean; results: any[] | undefined }> => {
   // 1. convert queryString a embeding
   const queryVector = await embed({
     model: embeddingModel,
@@ -165,5 +291,5 @@ export const vectorSearch = async ({
   // 3. use content? converto to content?
   // 4. convert chunks into full text
   // 5. return text to inject in context
-  return { success: true };
+  return { success: true, results };
 };

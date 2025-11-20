@@ -10,6 +10,7 @@ export { TopChatbots } from './TopChatbots';
 export { ActiveIntegrations } from './ActiveIntegrations';
 export { ContactsOverview } from './ContactsOverview';
 export { ParserMetrics } from './ParserMetrics';
+export { GhostyContextManager } from './GhostyContextManager';
 
 // Deprecated - conservar para backward compatibility si necesario
 export { TokenUsageTable } from './TokenUsageTable';

@@ -3,13 +3,13 @@
  * Realiza búsqueda semántica usando embeddings
  */
 
-import { db } from '~/utils/db.server';
-import { generateEmbedding } from './embedding.service';
+import { db } from "~/utils/db.server";
+import { generateEmbedding } from "./embedding.service";
 import {
   VECTOR_INDEX_NAME,
   VECTOR_SEARCH_CONFIG,
-  getIndexConfigJSON
-} from './vector-config';
+  getIndexConfigJSON,
+} from "./vector-config";
 
 export interface VectorSearchResult {
   id: string;
@@ -30,7 +30,9 @@ export interface VectorSearchResult {
  * Helper para obtener un nombre legible de la fuente del resultado
  * Prioriza: fileName > title > url > "Unknown"
  */
-export function getSourceName(metadata: VectorSearchResult['metadata']): string {
+export function getSourceName(
+  metadata: VectorSearchResult["metadata"]
+): string {
   if (metadata.fileName) {
     return metadata.fileName;
   }
@@ -46,18 +48,20 @@ export function getSourceName(metadata: VectorSearchResult['metadata']): string 
       return metadata.url;
     }
   }
-  return 'Unknown';
+  return "Unknown";
 }
 
 /**
  * Helper para obtener el tipo de fuente legible
  */
-export function getSourceType(metadata: VectorSearchResult['metadata']): string {
-  if (metadata.contextType === 'FILE') return '📄 File';
-  if (metadata.contextType === 'LINK') return '🔗 Web';
-  if (metadata.contextType === 'TEXT') return '📝 Text';
-  if (metadata.contextType === 'QUESTION') return '💬 FAQ';
-  return '❓ Unknown';
+export function getSourceType(
+  metadata: VectorSearchResult["metadata"]
+): string {
+  if (metadata.contextType === "FILE") return "📄 File";
+  if (metadata.contextType === "LINK") return "🔗 Web";
+  if (metadata.contextType === "TEXT") return "📝 Text";
+  if (metadata.contextType === "QUESTION") return "💬 FAQ";
+  return "❓ Unknown";
 }
 
 /**
@@ -78,12 +82,12 @@ export async function vectorSearch(
   topK: number = VECTOR_SEARCH_CONFIG.defaultLimit
 ): Promise<VectorSearchResult[]> {
   try {
-    console.log(`\n${'🔍'.repeat(60)}`);
+    console.log(`\n${"🔍".repeat(60)}`);
     console.log(`🔍 [VECTOR SEARCH] INICIO`);
     console.log(`   Query: "${query}"`);
     console.log(`   ChatbotId: ${chatbotId}`);
     console.log(`   TopK: ${topK}`);
-    console.log(`${'🔍'.repeat(60)}\n`);
+    console.log(`${"🔍".repeat(60)}\n`);
 
     // Validar límite
     const limit = Math.min(topK, VECTOR_SEARCH_CONFIG.maxLimit);
@@ -101,14 +105,14 @@ export async function vectorSearch(
         {
           $vectorSearch: {
             index: VECTOR_INDEX_NAME,
-            path: 'embedding',
+            path: "embedding",
             queryVector: queryEmbedding,
             numCandidates: limit * VECTOR_SEARCH_CONFIG.numCandidatesMultiplier,
             limit,
             filter: {
-              chatbotId: { $oid: chatbotId }
-            }
-          }
+              chatbotId: { $oid: chatbotId },
+            },
+          },
         },
         {
           $project: {
@@ -116,10 +120,10 @@ export async function vectorSearch(
             chatbotId: 1,
             content: 1,
             metadata: 1,
-            score: { $meta: 'vectorSearchScore' }
-          }
-        }
-      ]
+            score: { $meta: "vectorSearchScore" },
+          },
+        },
+      ],
     });
 
     const resultsArray = results as unknown as any[];
@@ -130,14 +134,17 @@ export async function vectorSearch(
     if (resultsArray.length > 0) {
       console.log(`\n📄 Top ${Math.min(3, resultsArray.length)} resultados:`);
       resultsArray.slice(0, 3).forEach((r: any, idx: number) => {
-        console.log(`\n   ${idx + 1}. Score: ${r.score?.toFixed(4) || 'N/A'}`);
+        console.log(`\n   ${idx + 1}. Score: ${r.score?.toFixed(4) || "N/A"}`);
         console.log(`      Content: ${r.content?.substring(0, 100)}...`);
-        console.log(`      Metadata:`, JSON.stringify(r.metadata || {}, null, 2));
+        console.log(
+          `      Metadata:`,
+          JSON.stringify(r.metadata || {}, null, 2)
+        );
       });
     } else {
       console.log(`   ⚠️  NO se encontraron resultados para query: "${query}"`);
     }
-    console.log(`\n${'🔍'.repeat(60)}\n`);
+    console.log(`\n${"🔍".repeat(60)}\n`);
 
     // 3. Mapear resultados al formato esperado
     return resultsArray.map((result: any) => ({
@@ -145,17 +152,17 @@ export async function vectorSearch(
       chatbotId: result.chatbotId.$oid || result.chatbotId,
       content: result.content,
       score: result.score,
-      metadata: result.metadata || {}
+      metadata: result.metadata || {},
     }));
   } catch (error) {
-    console.error('[Vector Search] Error:', error);
+    console.error("[Vector Search] Error:", error);
 
     // Si el índice no existe, dar instrucciones claras
-    if (error instanceof Error && error.message.includes('index')) {
+    if (error instanceof Error && error.message.includes("index")) {
       throw new Error(
         `Vector search index "${VECTOR_INDEX_NAME}" not found in MongoDB Atlas.\n` +
-        `Create it with this configuration:\n${getIndexConfigJSON()}\n` +
-        `See server/vector/vector-config.ts for details.`
+          `Create it with this configuration:\n${getIndexConfigJSON()}\n` +
+          `See server/vector/vector-config.ts for details.`
       );
     }
 
@@ -187,29 +194,28 @@ export async function vectorSearchWithFilters(
   // Construir filtro completo
   // IMPORTANTE: chatbotId es ObjectId en MongoDB, necesita formato { $oid: id }
   const filter: any = {
-    chatbotId: { $oid: chatbotId }
+    chatbotId: { $oid: chatbotId },
   };
 
   if (filters.contextType) {
-    filter['metadata.contextType'] = filters.contextType;
+    filter["metadata.contextType"] = filters.contextType;
   }
 
   if (filters.contextId) {
-    filter['metadata.contextId'] = filters.contextId;
+    filter["metadata.contextId"] = filters.contextId;
   }
-
 
   const results = await db.embedding.aggregateRaw({
     pipeline: [
       {
         $vectorSearch: {
           index: VECTOR_INDEX_NAME,
-          path: 'embedding',
+          path: "embedding",
           queryVector: queryEmbedding,
           numCandidates: limit * VECTOR_SEARCH_CONFIG.numCandidatesMultiplier,
           limit,
-          filter
-        }
+          filter,
+        },
       },
       {
         $project: {
@@ -217,10 +223,10 @@ export async function vectorSearchWithFilters(
           chatbotId: 1,
           content: 1,
           metadata: 1,
-          score: { $meta: 'vectorSearchScore' }
-        }
-      }
-    ]
+          score: { $meta: "vectorSearchScore" },
+        },
+      },
+    ],
   });
 
   const resultsArray = results as unknown as any[];
@@ -230,7 +236,7 @@ export async function vectorSearchWithFilters(
     chatbotId: result.chatbotId.$oid || result.chatbotId,
     content: result.content,
     score: result.score,
-    metadata: result.metadata || {}
+    metadata: result.metadata || {},
   }));
 }
 
@@ -240,27 +246,35 @@ export async function vectorSearchWithFilters(
  */
 export async function getEmbeddingStats(chatbotId: string) {
   const count = await db.embedding.count({
-    where: { chatbotId }
+    where: { chatbotId },
   });
 
   const embeddings = await db.embedding.findMany({
     where: { chatbotId },
     select: {
       metadata: true,
-      createdAt: true
-    }
+      createdAt: true,
+    },
   });
 
-  const contextTypes = embeddings.reduce((acc: Record<string, number>, emb: any) => {
-    const type = emb.metadata?.contextType || 'unknown';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {});
+  const contextTypes = embeddings.reduce(
+    (acc: Record<string, number>, emb: any) => {
+      const type = emb.metadata?.contextType || "unknown";
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    },
+    {}
+  );
 
   return {
     totalEmbeddings: count,
     contextTypes,
-    oldestEmbedding: embeddings.length > 0 ? embeddings[embeddings.length - 1].createdAt : null,
-    newestEmbedding: embeddings.length > 0 ? embeddings[0].createdAt : null
+    oldestEmbedding:
+      embeddings.length > 0
+        ? embeddings[embeddings.length - 1].createdAt
+        : null,
+    newestEmbedding: embeddings.length > 0 ? embeddings[0].createdAt : null,
   };
 }
+
+// NEW VERCEL SERVICES
