@@ -37,7 +37,7 @@
     "voice:start": "tsx server/voice/livekit-agent-worker.ts start"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.44",
+    "@ai-sdk/anthropic": "^2.0.45",
     "@ai-sdk/google": "^2.0.33",
     "@ai-sdk/openai": "^2.0.67",
     "@ai-sdk/react": "^2.0.93",

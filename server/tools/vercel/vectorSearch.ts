@@ -17,8 +17,9 @@ export const getContextTool = tool({
     });
     // @todo if err
     const text = res.results?.reduce((acc, result) => acc + result.content, ``);
-    return text;
     // console.log("TESXT:\n", text);
+    return text;
+
     // return JSON.stringify({
     //   type: "CONTEXT_RETRIEVED",
     //   chunks_found: res.results?.length || 0,

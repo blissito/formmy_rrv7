@@ -6,6 +6,7 @@ import {
   type UIMessage,
 } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { anthropic } from "@ai-sdk/anthropic";
 import type { Route } from "./+types/chat.vercel";
 import z from "zod";
 import { getUserOrRedirect } from "@/server/getUserUtils.server";
@@ -118,32 +119,32 @@ export const action = async ({ request }: Route.ActionArgs) => {
   // chatbotId: 691e648afcfecb9dedc6b5de
 
   const selfUserTool = tool({
-    description: `Displays user profile information. 
-  ONLY use this tool when the user explicitly asks about
-   their profile, plan, or account. After calling this 
-  tool, display the results without additional 
-  commentary.`,
+    description: `Displays user profile information.`,
     inputSchema: z.object({}),
-    execute: async () => {
-      return user;
-    },
+    execute: async () => user,
   });
 
   const result = streamText({
-    // model: openai("gpt-5-nano"),
-    // model: openai("gpt-4o-mini"),
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-4.1-mini-2025-04-14"), // The best for tool calling
+    // model: anthropic("claude-haiku-4-5-20251001"),
     messages: convertToModelMessages(messages),
-    // @TODO: revisit
-    system: `Eres Ghosty, el agente general de la plataforma, tu _id(id) asignado es: 691e648afcfecb9dedc6b5de, úsalo en caso de que las herramientas requieran uno. Si la información solicitada no está en el contexto responde: Disculpa, no lo sé.
+    // @TODO: revisit using system here
+    system: `Eres Ghosty, el agente general de la plataforma, tu _id(id) asignado es: 691e648afcfecb9dedc6b5de, úsalo en caso de que las herramientas requieran uno. 
     # Agentic RAG:
       Puedes usar la herramienta getContextTool las veces necesarias con las queries (frases o preguntas semánticas) necesarias para construir la mejor respuesta posible.
+
+    # Cómo usar selfUserTool:
+    Después de usar selfUserTool no añadas ningún comentario ni hagas ningúna anotación ni muestres la información devuelta.
+
+    # Reglas importantes:
+    - No respondas preguntas no relacionadas con formmy.
+    - usa algunos emojis pero no demaciados.
       `,
     tools: {
       selfUserTool,
       getContextTool,
     },
-    stopWhen: stepCountIs(12),
+    stopWhen: stepCountIs(5), // unless we need more power for tools, 12 maybe?
   });
 
   return result.toUIMessageStreamResponse();

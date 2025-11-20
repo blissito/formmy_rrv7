@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "~/components/Button";
 import { cn } from "~/lib/utils";
-import { GhostyMessageComponent, LoadingIndicator } from "./GhostyMessage";
+import { LoadingIndicator } from "./GhostyMessage";
 import type {
   GhostyLlamaMessage,
   GhostyLlamaState,
@@ -12,11 +12,10 @@ import { BsStars } from "react-icons/bs";
 // Vercel's AI SDK
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { LuBotMessageSquare } from "react-icons/lu";
 import { FaRegUser } from "react-icons/fa";
-import Spinner from "../Spinner";
-import { Link } from "react-router";
 import { Streamdown } from "streamdown";
+import { BiGhost } from "react-icons/bi";
+import { HiArrowDown } from "react-icons/hi";
 
 interface GhostyChatInterfaceProps {
   messages: GhostyLlamaMessage[];
@@ -51,7 +50,9 @@ export const GhostyChatInterface = ({
 }: GhostyChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Compute isProcessing early so it can be used in effects
@@ -66,10 +67,93 @@ export const GhostyChatInterface = ({
     "streaming",
   ].includes(currentState);
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
+  // Vercel AI SDK - declare early so it can be used in effects
+  const {
+    messages: vercelMessages,
+    sendMessage,
+    status,
+  } = useChat({
+    transport: new DefaultChatTransport({
+      api: "/chat/vercel",
+    }),
+  });
+
+  // Scroll to bottom function (for manual button click)
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    setShowScrollButton(false);
+  }, []);
+
+  // Check if user is near bottom of chat
+  const checkIfNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const threshold = 150; // pixels from bottom
+    const position =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    const nearBottom = position < threshold;
+
+    setShowScrollButton(!nearBottom && vercelMessages.length > 0);
+  }, [vercelMessages.length]);
+
+  // Handle scroll events to show/hide scroll button
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    let timeoutId: NodeJS.Timeout;
+
+    const handleScroll = () => {
+      // Debounce the check
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        checkIfNearBottom();
+      }, 100);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [checkIfNearBottom]);
+
+  // Auto-scroll when messages change (new messages OR content updates from streaming)
+  useEffect(() => {
+    if (vercelMessages.length === 0) return;
+
+    // Use requestAnimationFrame to ensure DOM has fully updated
+    const rafId = requestAnimationFrame(() => {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+
+      const threshold = 200; // Increased threshold for better UX
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+
+      // Check if user is reasonably near bottom
+      const nearBottom = distanceFromBottom < threshold;
+
+      // Always scroll if: first message, processing (streaming), or near bottom
+      const shouldAutoScroll =
+        vercelMessages.length === 1 || nearBottom || status === "streaming";
+
+      if (shouldAutoScroll) {
+        // Scroll to bottom
+        messagesEndRef.current?.scrollIntoView({
+          behavior: vercelMessages.length === 1 ? "auto" : "smooth",
+        });
+        setShowScrollButton(false);
+      } else {
+        // User scrolled up - show scroll button
+        setShowScrollButton(distanceFromBottom > threshold);
+      }
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [vercelMessages, status]); // Listen to full messages array AND status
 
   // Focus input on mount
   useEffect(() => {
@@ -95,10 +179,6 @@ export const GhostyChatInterface = ({
     setIsInputFocused(false);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    onSendMessage(suggestion);
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -108,8 +188,6 @@ export const GhostyChatInterface = ({
       onCollapseChat();
     }
   };
-
-  const hasMessages = messages.length > 0;
 
   // Map advanced states to simple display messages
   const getSimpleStateMessage = (state: GhostyLlamaState, thought?: string) => {
@@ -136,17 +214,6 @@ export const GhostyChatInterface = ({
         return getStateDisplayMessage(state);
     }
   };
-
-  // Vercel AI SDK
-  const {
-    messages: vercelMessages,
-    sendMessage,
-    status,
-  } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/chat/vercel",
-    }),
-  });
 
   const hasVercelMessages = vercelMessages.length > 0;
 
@@ -247,7 +314,13 @@ export const GhostyChatInterface = ({
       )}
 
       {/* Messages Area */}
-      <div className={cn("flex-1 overflow-y-auto p-4 space-y-4", "md:p-6")}>
+      <div
+        ref={messagesContainerRef}
+        className={cn(
+          "flex-1 overflow-y-auto p-4 space-y-4 relative",
+          "md:p-6"
+        )}
+      >
         {!hasVercelMessages ? (
           // Welcome message
           <motion.div
@@ -291,6 +364,7 @@ export const GhostyChatInterface = ({
                     className={cn(
                       "bg-gray-50 p-3 rounded-xl flex items-center gap-4",
                       "w-fit",
+                      "items-start",
                       {
                         "flex-row-reverse ml-auto": message.role === "user",
                       }
@@ -302,13 +376,9 @@ export const GhostyChatInterface = ({
                     onSuggestionClick={handleSuggestionClick}
                     userImage={userImage}
                   /> */}
-                    <span>
-                      {message.role === "user" ? (
-                        <FaRegUser />
-                      ) : (
-                        <LuBotMessageSquare />
-                      )}
-                    </span>
+                    <p className="pt-1">
+                      {message.role === "user" ? <FaRegUser /> : <BiGhost />}
+                    </p>
 
                     <span className="font-medium">
                       {(() => {
@@ -331,6 +401,7 @@ export const GhostyChatInterface = ({
                                     <p
                                       key={indx}
                                       className={cn(
+                                        "inline mr-1",
                                         "text-xs rounded-xl px-2 py-1 w-fit",
                                         part.state === "output-available"
                                           ? "text-gray-700 bg-green-200"
@@ -338,8 +409,8 @@ export const GhostyChatInterface = ({
                                       )}
                                     >
                                       {part.state === "output-available"
-                                        ? "🔧 RAG usado"
-                                        : "🔧 Buscando en conocimiento..."}
+                                        ? "🔧 Documentación leída"
+                                        : "🔧 Buscando en documentación..."}
                                     </p>
                                   ))}
 
@@ -390,7 +461,11 @@ export const GhostyChatInterface = ({
                                             </p>
                                             <div className="flex gap-4">
                                               <img
-                                                src="http://localhost:3000/dash/logo-full.svg"
+                                                // src="http://localhost:3000/dash/logo-full.svg"
+                                                src={
+                                                  part.output.picture ||
+                                                  "http://localhost:3000/dash/logo-full.svg"
+                                                }
                                                 alt="user pic"
                                                 className="w-16 h-16 rounded-full hover:scale-110 transition-all"
                                               />
@@ -415,7 +490,9 @@ export const GhostyChatInterface = ({
                             {/* SIEMPRE renderizar el texto de respuesta */}
                             {message.parts.map((part, idx) => {
                               if (part.type === "text") {
-                                return <Streamdown key={idx}>{part.text}</Streamdown>;
+                                return (
+                                  <Streamdown key={idx}>{part.text}</Streamdown>
+                                );
                               }
                               return null;
                             })}
@@ -475,6 +552,31 @@ export const GhostyChatInterface = ({
 
         {/* Auto-scroll anchor */}
         <div ref={messagesEndRef} />
+
+        {/* Scroll to bottom button */}
+        <AnimatePresence>
+          {showScrollButton && (
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => scrollToBottom()}
+              className={cn(
+                "absolute bottom-4 right-4 z-10",
+                "w-10 h-10 rounded-full",
+                "bg-brand-500 text-white shadow-lg",
+                "flex items-center justify-center",
+                "hover:bg-brand-600 hover:scale-110",
+                "transition-all duration-200",
+                "cursor-pointer"
+              )}
+              aria-label="Scroll to bottom"
+            >
+              <HiArrowDown className="w-5 h-5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Input Area */}
@@ -498,7 +600,7 @@ export const GhostyChatInterface = ({
               disabled={isProcessing}
               className={cn(
                 "w-full px-4 py-3 rounded-full border border-outlines",
-                "focus:border-brand-500 focus:ring-brand-500 focus:border-brand-500 focus:outline-none",
+                "focus:ring-brand-500 focus:border-brand-500 focus:outline-none",
                 "text-dark placeholder:text-lightgray",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 "transition-all duration-200",
