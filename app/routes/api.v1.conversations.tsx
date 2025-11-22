@@ -3,18 +3,235 @@ import { db } from "../utils/db.server";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
 import { addAssistantMessage } from "server/chatbot/messageModel.server";
+import type { Route } from "./+types/api.v1.conversations";
 
 /**
  * API para gestión de conversaciones
- * - GET: Method not allowed (use POST with intents)
+ * - GET: Lista conversaciones con cursor-based infinity scroll (FASE 1)
  * - POST: Toggle manual mode, Enviar respuesta manual
  */
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  return json(
-    { error: "Method Not Allowed. Use POST with intent parameter." },
-    { status: 405, headers: { 'Content-Type': 'application/json' } }
-  );
+  try {
+    const user = await getUserOrRedirect(request);
+    const url = new URL(request.url);
+
+    // Query params para infinity scroll
+    const chatbotId = url.searchParams.get("chatbotId");
+    const limit = parseInt(url.searchParams.get("limit") || "20");
+    const cursorDate = url.searchParams.get("cursor"); // updatedAt de la última conversación cargada
+
+    if (!chatbotId) {
+      return json(
+        { error: "chatbotId es requerido" },
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validar acceso al chatbot
+    const accessValidation = await validateChatbotAccess(user.id, chatbotId);
+    if (!accessValidation.canAccess) {
+      return json(
+        { error: "Sin acceso a este chatbot" },
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ⚡ FASE 1: Cargar conversaciones sin mensajes (solo metadata)
+    const conversations = await db.conversation.findMany({
+      where: {
+        chatbotId,
+        status: { not: "DELETED" },
+        ...(cursorDate ? { updatedAt: { lt: new Date(cursorDate) } } : {}), // Cursor-based pagination por fecha
+      },
+      select: {
+        id: true,
+        sessionId: true,
+        visitorId: true,
+        createdAt: true,
+        updatedAt: true,
+        isFavorite: true,
+        manualMode: true,
+        chatbotId: true,
+        status: true,
+      },
+      orderBy: { updatedAt: "desc" },
+      take: limit + 1, // Cargar uno extra para saber si hay más
+    });
+
+    // Determinar si hay más conversaciones
+    const hasMore = conversations.length > limit;
+    const conversationsToReturn = hasMore ? conversations.slice(0, limit) : conversations;
+    const nextCursor = hasMore
+      ? conversationsToReturn[conversationsToReturn.length - 1].updatedAt.toISOString()
+      : null;
+
+    // Si no hay conversaciones, retornar vacío
+    if (conversationsToReturn.length === 0) {
+      return json({
+        conversations: [],
+        nextCursor: null,
+        hasMore: false,
+        total: 0,
+      }, {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, max-age=10' }
+      });
+    }
+
+    // ⚡ Cargar último mensaje de cada conversación (query eficiente con subquery)
+    const conversationIds = conversationsToReturn.map(c => c.id);
+
+    // Query para obtener el mensaje más reciente de cada conversación usando subquery
+    // (Compatible con Prisma + MongoDB/PostgreSQL)
+    const lastMessagesPromises = conversationIds.map(async (convId) => {
+      const lastMsg = await db.message.findFirst({
+        where: {
+          conversationId: convId,
+          deleted: { not: true },
+          role: { in: ["USER", "ASSISTANT"] },
+        },
+        orderBy: { createdAt: "desc" },
+        select: {
+          conversationId: true,
+          content: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+      return lastMsg;
+    });
+
+    const lastMessagesResults = await Promise.all(lastMessagesPromises);
+    const lastMessages = lastMessagesResults.filter((msg): msg is NonNullable<typeof msg> => msg !== null);
+
+    // Crear map de últimos mensajes
+    const lastMessageMap = new Map(
+      lastMessages.map(msg => [msg.conversationId, msg])
+    );
+
+    // Cargar contactos de WhatsApp para nombres y avatares
+    const whatsappContacts = await db.contact.findMany({
+      where: { chatbotId },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        profilePictureUrl: true,
+        conversationId: true,
+      },
+    });
+
+    // Crear map de contactos
+    const contactsByConversationId = new Map(
+      whatsappContacts
+        .filter(c => c.conversationId)
+        .map(c => [c.conversationId!, c])
+    );
+    const contactsByPhone = new Map<string, typeof whatsappContacts[0]>();
+    for (const contact of whatsappContacts) {
+      if (contact.phone) {
+        contactsByPhone.set(contact.phone, contact);
+        const normalizedPhone = contact.phone.slice(-10);
+        if (normalizedPhone.length === 10) {
+          contactsByPhone.set(normalizedPhone, contact);
+        }
+      }
+    }
+
+    // Obtener chatbot para avatar
+    const chatbot = await db.chatbot.findUnique({
+      where: { id: chatbotId },
+      select: { avatarUrl: true },
+    });
+
+    // ⚡ Transformar a formato UI ligero (sin cargar todos los mensajes)
+    const uiConversations = conversationsToReturn.map(conversation => {
+      const lastMsg = lastMessageMap.get(conversation.id);
+      const isWhatsApp = conversation.sessionId?.includes("whatsapp") ?? false;
+
+      // Buscar nombre del contacto
+      let contactName = "Visitante";
+      let contactPhone = "";
+      let avatarUrl = "";
+
+      if (isWhatsApp && conversation.visitorId) {
+        contactPhone = conversation.visitorId;
+
+        // Buscar por conversationId primero
+        let contact = contactsByConversationId.get(conversation.id);
+
+        // Si no, buscar por teléfono
+        if (!contact) {
+          contact = contactsByPhone.get(contactPhone);
+          if (!contact) {
+            const normalizedPhone = contactPhone.slice(-10);
+            contact = contactsByPhone.get(normalizedPhone);
+          }
+        }
+
+        if (contact) {
+          contactName = contact.name || contactPhone;
+          avatarUrl = contact.profilePictureUrl || "";
+        } else {
+          contactName = contactPhone;
+        }
+      } else {
+        // Conversación web - usar visitorId como nombre
+        contactName = conversation.visitorId || "Visitante web";
+      }
+
+      // Calcular tiempo relativo
+      const now = new Date();
+      const updatedAt = new Date(conversation.updatedAt);
+      const diffMs = now.getTime() - updatedAt.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      let timeText = "Ahora";
+      if (diffMins < 1) timeText = "Ahora";
+      else if (diffMins < 60) timeText = `Hace ${diffMins}m`;
+      else if (diffHours < 24) timeText = `Hace ${diffHours}h`;
+      else if (diffDays === 1) timeText = "Ayer";
+      else timeText = `Hace ${diffDays}d`;
+
+      return {
+        id: conversation.id,
+        chatbotId: conversation.chatbotId,
+        userName: contactName,
+        userEmail: "",
+        lastMessage: lastMsg?.content || "Sin mensajes",
+        time: timeText,
+        date: updatedAt.toISOString(),
+        unread: 0, // TODO: Implementar conteo de no leídos si se necesita
+        avatar: avatarUrl || (isWhatsApp ? "/dash/default-whatsapp-avatar.svg" : "/dash/default-user-avatar.svg"),
+        tel: contactPhone,
+        isFavorite: conversation.isFavorite ?? false,
+        manualMode: conversation.manualMode ?? false,
+        isWhatsApp,
+        messages: [], // ⚡ FASE 2: Mensajes se cargan on-demand
+      };
+    });
+
+    return json({
+      conversations: uiConversations,
+      nextCursor,
+      hasMore,
+      total: conversationsToReturn.length,
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'private, max-age=10', // Cache 10 segundos
+      }
+    });
+
+  } catch (error) {
+    console.error("❌ Error en GET /api/v1/conversations:", error);
+    return json(
+      { error: "Error interno del servidor", details: error.message },
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 };
 export const action = async ({ request }: Route.ActionArgs) => {
 

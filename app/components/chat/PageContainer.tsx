@@ -248,14 +248,16 @@ export const ChatCard = ({
   userRole,
   isInvited,
   index = 0,
+  conversationsCount: conversationsCountProp,
 }: {
   onDelete?: () => void;
   chatbot: Chatbot & { canAccess?: boolean; needsUpgrade?: boolean };
   userRole?: string;
   isInvited?: boolean;
   index?: number;
+  conversationsCount?: number;
 }) => {
-  const [conversationsCount, setConversationsCount] = useState(0);
+  const [conversationsCount, setConversationsCount] = useState(conversationsCountProp || 0);
 
   const effectRunner = async () => {
     const program = pipe(
@@ -299,9 +301,18 @@ export const ChatCard = ({
   };
 
   useEffect(() => {
-    // get conversations
-    effectRunner();
-  }, []);
+    // Solo hacer fetch si no se proporcionó el conteo como prop
+    if (conversationsCountProp === undefined) {
+      effectRunner();
+    }
+  }, [conversationsCountProp]);
+
+  // Actualizar el estado local cuando cambia la prop
+  useEffect(() => {
+    if (conversationsCountProp !== undefined) {
+      setConversationsCount(conversationsCountProp);
+    }
+  }, [conversationsCountProp]);
 
   return (
     <motion.div

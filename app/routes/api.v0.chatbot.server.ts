@@ -130,6 +130,56 @@ export async function handleChatbotV0Action({ request }: Route.ActionArgs) {
         );
       }
 
+      case "get_conversations_count_batch": {
+        // 📊 Obtener conteo de conversaciones para múltiples chatbots
+        const chatbotIdsStr = formData.get("chatbotIds") as string;
+
+        if (!chatbotIdsStr) {
+          return new Response(
+            JSON.stringify({ success: false, error: "chatbotIds requerido" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        let chatbotIds: string[];
+        try {
+          chatbotIds = JSON.parse(chatbotIdsStr);
+        } catch {
+          return new Response(
+            JSON.stringify({ success: false, error: "chatbotIds debe ser un array JSON válido" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Verificar acceso a cada chatbot y obtener conteos
+        const { getChatbot } = await import("../../server/chatbot-v0/chatbot");
+        const { getConversationsCountByChatbotId } = await import("../../server/chatbot/conversationModel.server");
+
+        const counts: Record<string, number> = {};
+
+        for (const chatbotId of chatbotIds) {
+          try {
+            // Verificar acceso al chatbot
+            const chatbot = await getChatbot(chatbotId, user.id, false);
+
+            if (chatbot) {
+              const count = await getConversationsCountByChatbotId(chatbotId);
+              counts[chatbotId] = count;
+            } else {
+              counts[chatbotId] = 0;
+            }
+          } catch (error) {
+            console.error(`Error obteniendo conteo para chatbot ${chatbotId}:`, error);
+            counts[chatbotId] = 0;
+          }
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, counts }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       default: {
         return createUnsupportedIntentError();
       }

@@ -402,10 +402,30 @@ export async function handleContextOperation(
         const chatbotId = formData.get("chatbotId") as string;
         const contextItemId = formData.get("contextItemId") as string;
 
-        const chatbot = await removeContextItem(chatbotId, contextItemId);
-        return new Response(JSON.stringify({ success: true, chatbot }), {
-          headers: { "Content-Type": "application/json" },
+        // 🔒 SECURITY: Validar ownership del chatbot antes de eliminar
+        const chatbot = await db.chatbot.findUnique({
+          where: { id: chatbotId },
+          select: { userId: true },
         });
+
+        if (!chatbot || chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({
+              error: "No tienes permiso para eliminar este contexto",
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        await removeContextItem(chatbotId, contextItemId);
+        const updatedChatbot = await getChatbotById(chatbotId);
+
+        return new Response(
+          JSON.stringify({ success: true, chatbot: updatedChatbot }),
+          {
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       }
 
       case "rename_context": {

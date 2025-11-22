@@ -111,7 +111,7 @@ const StatusDropdown = ({
 export const Contactos = ({
   chatbot,
   user,
-  contacts,
+  contacts: initialContacts,
 }: {
   chatbot: Chatbot;
   user: User;
@@ -123,9 +123,21 @@ export const Contactos = ({
   const statusFetcher = useFetcher();
   const deleteFetcher = useFetcher();
   const exportFetcher = useFetcher();
+  const leadsFetcher = useFetcher<{ success: boolean; leads: Lead[] }>(); // ⚡ Nuevo fetcher para cargar leads
   const revalidator = useRevalidator();
   const [searchTerm, setSearchTerm] = useState("");
   const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, ContactStatus>>({});
+
+  // ⚡ Cargar leads bajo demanda cuando se monta el componente
+  useEffect(() => {
+    if (leadsFetcher.state === "idle" && !leadsFetcher.data) {
+      leadsFetcher.load(`/api/v1/leads?chatbotId=${chatbot.id}`);
+    }
+  }, [chatbot.id, leadsFetcher]);
+
+  // ⚡ Usar leads del fetcher o array vacío mientras carga
+  const contacts = leadsFetcher.data?.leads || initialContacts;
+  const isLoadingLeads = leadsFetcher.state === "loading";
 
   // Filtrar contactos según el término de búsqueda
   const filteredContacts = contacts.filter((contact) => {
@@ -250,6 +262,18 @@ export const Contactos = ({
     const url = `/dashboard/chat/${chatbot.slug}?tab=Conversaciones&conversation=${conversationId}`;
     navigate(url);
   };
+
+  // ⚡ Mostrar loading state mientras se cargan los leads
+  if (isLoadingLeads) {
+    return (
+      <section className="h-full min-h-[60vh] place-items-center grid pb-6">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin mx-auto"></div>
+          <p className="text-metal mt-4">{t('contacts.loading') || 'Cargando contactos...'}</p>
+        </div>
+      </section>
+    );
+  }
 
   if (contacts.length === 0) {
     return (

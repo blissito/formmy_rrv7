@@ -121,7 +121,7 @@ export const queryChatbotsHandler = async (
 
     // Format for AI consumption
     const botsList = processedChatbots.map(bot =>
-      `• **${bot.name}** (${bot.status.toLowerCase()}) - ${bot.weeklyConversations} conv. esta semana, ${bot.totalConversations} total, ${bot.contextsCount} contextos (${bot.totalContextSizeKB}KB), ${bot.integrationsCount} integraciones activas`
+      `• **${bot.name}** [ID: ${bot.id}] (${bot.status.toLowerCase()}) - ${bot.weeklyConversations} conv. esta semana, ${bot.totalConversations} total, ${bot.contextsCount} contextos (${bot.totalContextSizeKB}KB), ${bot.integrationsCount} integraciones activas`
     ).join('\n');
 
     const result = `${summary}\n\n**Chatbots detallados:**\n${botsList}`;

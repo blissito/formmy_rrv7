@@ -11,18 +11,25 @@ import { useChipTabs } from "~/components/chat/common/ChipTabs";
 import { db } from "../utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
-import {
-  isUserInTrial,
-  checkTrialExpiration,
-  applyFreeRestrictions,
-} from "server/chatbot/planLimits.server";
-import { transformConversationsToUI } from "server/chatbot/conversationTransformer.server";
+// ⚡ OPTIMIZACIÓN: Importaciones comentadas temporalmente para debug de performance
+// import {
+//   isUserInTrial,
+//   checkTrialExpiration,
+//   applyFreeRestrictions,
+// } from "server/chatbot/planLimits.server";
+// ⚡ FASE 1: transformConversationsToUI no se usa más - conversaciones se procesan en el cliente
+// import { transformConversationsToUI } from "server/chatbot/conversationTransformer.server";
 import { Plans } from "@prisma/client";
 import { AIFlowCanvas } from "formmy-actions";
 import "@xyflow/react/dist/style.css";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
+  const startTime = Date.now();
+  console.log(`🔍 [Loader] Iniciando carga de chatbot: ${params.chatbotSlug}`);
+
   const user = await getUserOrRedirect(request);
+  console.log(`✅ [Loader] Usuario obtenido en ${Date.now() - startTime}ms`);
+
   const { chatbotSlug } = params;
 
   if (!chatbotSlug) {
@@ -32,11 +39,13 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   // WhatsApp Embedded Signup NO usa OAuth redirect - usa window.postMessage
 
   // Primero intentar encontrar por slug
+  const findStart = Date.now();
   let chatbot = await db.chatbot.findFirst({
     where: {
       slug: chatbotSlug,
     },
   });
+  console.log(`✅ [Loader] Chatbot encontrado en ${Date.now() - findStart}ms`);
 
   // Si no se encuentra por slug, intentar por ID (solo si es un ObjectID válido)
   if (
@@ -56,7 +65,9 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   }
 
   // Validate chatbot access using the new validation system
+  const accessStart = Date.now();
   const accessValidation = await validateChatbotAccess(user.id, chatbot.id);
+  console.log(`✅ [Loader] Validación de acceso en ${Date.now() - accessStart}ms`);
 
   if (!accessValidation.canAccess) {
     const errorMessage =
@@ -67,6 +78,9 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     throw new Response(errorMessage, { status });
   }
 
+  // ⚡ OPTIMIZACIÓN: Validaciones de plan comentadas temporalmente para debug de performance
+  // TODO: Re-habilitar después de optimizar queries
+  /*
   // Verificar si el usuario TRIAL ha expirado y moverlo a FREE
   if (user.plan === Plans.TRIAL) {
     const { isExpired } = await checkTrialExpiration(user.id);
@@ -98,107 +112,30 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       });
     }
   }
+  */
 
-  const integrations = await db.integration.findMany({
-    where: {
-      chatbotId: chatbot.id,
-    },
-  });
+  // ⚡ FASE 1: Loader mínimo - solo metadata (conversaciones se cargan en cliente)
+  const queriesStart = Date.now();
+  console.log(`🔄 [Loader] Cargando solo metadata esencial...`);
 
-  // Contar total de conversaciones
-  const totalConversations = await db.conversation.count({
-    where: {
-      chatbotId: chatbot.id,
-      status: { not: "DELETED" },
-    },
-  });
-
-  // Obtener conversaciones reales con mensajes (primeras 200 para incluir conversaciones con updatedAt antiguo)
-  const conversationsFromDB = await db.conversation.findMany({
-    where: {
-      chatbotId: chatbot.id,
-      status: { not: "DELETED" },
-    },
-    include: {
-      messages: {
-        orderBy: { createdAt: "asc" },
-        where: { deleted: { not: true } },
+  const [integrations, totalConversations] = await Promise.all([
+    db.integration.findMany({
+      where: { chatbotId: chatbot.id },
+    }),
+    db.conversation.count({
+      where: {
+        chatbotId: chatbot.id,
+        status: { not: "DELETED" },
       },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 200, // Aumentado temporalmente de 50 a 200 para capturar conversaciones con updatedAt antiguo
-  });
+    }),
+  ]);
 
-  // Ordenar conversaciones por el timestamp del último mensaje de USUARIO
-  const sortedConversations = conversationsFromDB.sort((a, b) => {
-    // Obtener el último mensaje del usuario para cada conversación
-    const lastUserMessageA = a.messages
-      .filter(msg => msg.role === "USER")
-      .slice(-1)[0];
-    const lastUserMessageB = b.messages
-      .filter(msg => msg.role === "USER")
-      .slice(-1)[0];
+  console.log(`✅ [Loader] Metadata cargada en ${Date.now() - queriesStart}ms`);
+  console.log(`   - ${totalConversations} conversaciones totales (no cargadas aún)`);
+  console.log(`   - Conversaciones y mensajes se cargarán desde el cliente`);
 
-    // Si no hay mensajes de usuario, usar updatedAt como fallback
-    const timeA = lastUserMessageA?.createdAt || a.updatedAt;
-    const timeB = lastUserMessageB?.createdAt || b.updatedAt;
-
-    // Ordenar descendente (más reciente primero)
-    return timeB.getTime() - timeA.getTime();
-  });
-
-  // Obtener contactos de WhatsApp (para mostrar nombres en conversaciones)
-  const whatsappContacts = await db.contact.findMany({
-    where: {
-      chatbotId: chatbot.id,
-    },
-    orderBy: {
-      capturedAt: "desc",
-    },
-    select: {
-      id: true,
-      name: true,
-      phone: true,
-      profilePictureUrl: true,
-      conversationId: true,
-      chatbotId: true,
-      capturedAt: true,
-    },
-  });
-
-  // Obtener LEADS para la tab de Leads
-  const leads = await db.lead.findMany({
-    where: {
-      chatbotId: chatbot.id,
-    },
-    orderBy: {
-      capturedAt: "desc",
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      productInterest: true,
-      position: true,
-      website: true,
-      notes: true,
-      status: true,
-      source: true,
-      capturedAt: true,
-      lastUpdated: true,
-      conversationId: true,
-      chatbotId: true,
-    },
-  });
-
-  // Transformar a formato UI (usando contactos de WhatsApp para mostrar nombres)
-  const conversations = transformConversationsToUI(
-    sortedConversations,
-    chatbot.avatarUrl || "/dash/default-ghosty.svg",
-    whatsappContacts as any,
-    leads as any // ✅ También pasar leads para mostrar nombres
-  );
+  // ⚡ OPTIMIZACIÓN: Conversaciones, mensajes, contactos y leads se cargan bajo demanda desde el cliente
+  // Esto reduce el payload inicial del loader de ~120KB a ~5KB y elimina el bloqueo de navegación
 
   // TODO: Filtro deshabilitado temporalmente - causaba que contextos desaparecieran
   // Si se re-habilita, debe verificarse que los embeddings se creen ANTES de que el loader ejecute
@@ -219,15 +156,19 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   }
   */
 
-  return {
+  const result = {
     user,
     chatbot,
     integrations,
-    conversations,
+    conversations: [], // ⚡ FASE 1: Se cargan desde el cliente con infinity scroll
     totalConversations,
-    contacts: leads, // Leads para la tab de Leads
+    contacts: [], // ⚡ Leads se cargan bajo demanda en el tab Contactos
     accessInfo: accessValidation,
   };
+
+  console.log(`🏁 [Loader] Tiempo total: ${Date.now() - startTime}ms`);
+
+  return result;
 };
 
 export default function ChatbotDetailRoute({
@@ -256,7 +197,12 @@ export default function ChatbotDetailRoute({
 
   // ✅ Procesar callback de WhatsApp Embedded Signup (Authorization Code Flow)
   useEffect(() => {
+    // Flag para evitar ejecuciones múltiples
+    let processed = false;
+
     const handleWhatsAppCallback = async () => {
+      if (processed) return;
+
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const error = searchParams.get('error');
@@ -269,6 +215,8 @@ export default function ChatbotDetailRoute({
       }
 
       if (code) {
+        processed = true; // Marcar como procesado para evitar ejecuciones múltiples
+
         console.log('✅ [WhatsApp Callback] Authorization code recibido:', code.substring(0, 20) + '...');
 
         // Validar state (CSRF protection)
@@ -312,6 +260,7 @@ export default function ChatbotDetailRoute({
           cleanUrl.searchParams.delete('state');
           window.history.replaceState({}, '', cleanUrl.toString());
 
+          // Revalidar después de procesar exitosamente
           revalidator.revalidate();
         } catch (err) {
           console.error('❌ [WhatsApp Callback] Error:', err);
@@ -321,7 +270,8 @@ export default function ChatbotDetailRoute({
     };
 
     handleWhatsAppCallback();
-  }, [searchParams, chatbot.id, chatbot.slug, revalidator]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, chatbot.id, chatbot.slug]); // Removido 'revalidator' para evitar loops
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab);

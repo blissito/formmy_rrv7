@@ -53,34 +53,16 @@ export interface ModelDefinition {
 export const MODEL_REGISTRY: ModelDefinition[] = [
   // ========== ENTERPRISE ==========
   {
-    id: "gpt-5-mini",
-    label: "GPT-5 Mini",
-    provider: "openai-direct",
+    id: "claude-sonnet-4-5",
+    label: "Claude Sonnet 4.5",
+    provider: "anthropic-direct",
     tier: "enterprise",
-    temperature: 1.0,
-    fixedTemperature: true,
+    temperature: 0.7,
     category: "ENTERPRISE",
+    recommended: true,
     badge: "Enterprise default",
   },
-  {
-    id: "claude-haiku-4-5",
-    label: "Claude Haiku 4.5",
-    provider: "anthropic-direct",
-    tier: "enterprise",
-    temperature: 0.8,
-    fixedTemperature: true,
-    category: "ENTERPRISE",
-    badge: "73% SWE-bench",
-  },
-  {
-    id: "claude-3-5-haiku-20241022",
-    label: "Claude 3.5 Haiku",
-    provider: "anthropic-direct",
-    tier: "enterprise",
-    temperature: 0.8,
-    fixedTemperature: true,
-    category: "ENTERPRISE",
-  },
+
   // ========== PRO ==========
   {
     id: "gpt-5-nano",
@@ -94,42 +76,36 @@ export const MODEL_REGISTRY: ModelDefinition[] = [
     badge: "Mejor elección",
   },
   {
-    id: "gemini-2.5-flash",
-    label: "Gemini 2.5 Flash",
-    provider: "google-direct",
+    id: "gpt-4.1-mini",
+    label: "GPT-4.1 Mini",
+    provider: "openai-direct",
     tier: "pro",
-    temperature: 0.7,
+    temperature: 1.0,
+    fixedTemperature: true,
     category: "PRO",
+    badge: "Best for tools",
   },
   {
-    id: "gemini-2.0-flash",
-    label: "Gemini 2.0 Flash",
-    provider: "google-direct",
-    tier: "starter",
-    temperature: 0.7,
-    category: "STARTER",
-    badge: "FREE tier",
-  },
-  {
-    id: "claude-3-haiku-20240307",
-    label: "Claude 3 Haiku",
+    id: "claude-haiku-4-5",
+    label: "Claude Haiku 4.5",
     provider: "anthropic-direct",
     tier: "pro",
     temperature: 0.8,
     fixedTemperature: true,
     category: "PRO",
+    badge: "73% SWE-bench",
   },
 
   // ========== STARTER ==========
   {
-    id: "gemini-2.0-flash-lite",
-    label: "Gemini 2.0 Flash Lite",
+    id: "gemini-3-pro",
+    label: "Gemini 3 Pro",
     provider: "google-direct",
     tier: "starter",
     temperature: 0.7,
     category: "STARTER",
     recommended: true,
-    badge: "Mejor precio",
+    badge: "Latest model",
   },
 ];
 
@@ -143,10 +119,10 @@ export const LEGACY_MODELS: Record<string, { temperature: number; fixedTemperatu
   "gpt-5": { temperature: 0.7 },
   "gpt-3.5-turbo": { temperature: 0.7 }, // Legacy - reemplazado por Gemini 2.0 Flash Lite
   "claude-3-sonnet-20240229": { temperature: 0.7 },
-  "claude-3-5-sonnet-20241022": { temperature: 0.7 },
   "claude-3-opus-20240229": { temperature: 0.7 },
   "gemini-2.5-flash-lite": { temperature: 0.7 },
   "gemini-1.5-pro": { temperature: 0.7 },
+  "gemini-3-pro-preview-11-2025": { temperature: 0.7 }, // Alias específico de versión
 };
 
 // ========== UTILIDADES ==========
@@ -227,14 +203,15 @@ export function getModelProvider(modelId: string): ModelProvider {
 export function getDefaultModelForPlan(plan: string): string {
   switch (plan.toUpperCase()) {
     case "FREE":
-      return "gemini-2.0-flash-lite"; // Gemini reemplaza a GPT-3.5 Turbo
+      return "gemini-3-pro"; // FREE después del trial
     case "TRIAL":
+      return "gpt-5-nano"; // Trial tiene acceso a PRO models
     case "STARTER":
-      return "gemini-2.0-flash-lite"; // Mejor precio para trials
+      return "gemini-3-pro"; // Gemini 3 Pro para STARTER
     case "PRO":
-      return "gpt-5-nano";
+      return "gpt-5-nano"; // GPT-5 Nano (4o-mini) para PRO
     case "ENTERPRISE":
-      return "gpt-5-mini";
+      return "claude-sonnet-4-5"; // Claude Sonnet 4.5 para ENTERPRISE
     default:
       return "gpt-5-nano";
   }

@@ -225,18 +225,35 @@ export async function addContextItem(
 
 /**
  * Removes a context item from a chatbot
+ * @param chatbotId - ID del chatbot
+ * @param contextItemId - ID del contexto a eliminar
+ * @param userId - (Opcional) ID del usuario para validar ownership
  */
 export async function removeContextItem(
   chatbotId: string,
-  contextItemId: string
+  contextItemId: string,
+  userId?: string
 ): Promise<Chatbot> {
   // Get the current chatbot
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
+    select: {
+      id: true,
+      userId: true,
+      contexts: true,
+      contextSizeKB: true,
+    },
   });
 
   if (!chatbot) {
     throw new Error(`Chatbot with ID ${chatbotId} not found`);
+  }
+
+  // 🔒 SECURITY: Validar ownership si userId proporcionado
+  if (userId && chatbot.userId !== userId) {
+    throw new Error(
+      `Access denied: You don't own chatbot ${chatbotId}`
+    );
   }
 
   // Parse the contexts JSON if it's a string, otherwise use as is

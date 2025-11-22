@@ -444,6 +444,8 @@ model Conversation {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([chatbotId, status, updatedAt]) // ⚡ CRÍTICO: Índice compuesto para queries de dashboard
 }
 
 enum MessageRole {
@@ -482,6 +484,10 @@ model Message {
 
   // TODO: Resolver mensajes duplicados con externalMessageId null antes de habilitar
   // @@unique([conversationId, externalMessageId])
+
+  @@index([conversationId, createdAt]) // ⚡ CRÍTICO: Para orderBy optimization al cargar mensajes
+  @@index([conversationId, deleted]) // ⚡ Para filter optimization (where deleted)
+  @@index([conversationId, role, createdAt]) // ⚡ Para buscar último mensaje de USER
 }
 
 enum IntegrationType {

@@ -25,6 +25,18 @@ export const getChatbotStatsHandler = async (
     includeHourlyBreakdown = false
   } = params;
 
+  // Validar chatbotId si se proporciona
+  if (chatbotId) {
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(chatbotId);
+    if (!isValidObjectId) {
+      return {
+        success: false,
+        message: `❌ Error: chatbotId debe ser un MongoDB ObjectId válido de 24 caracteres hexadecimales, no un nombre de chatbot. Recibido: "${chatbotId}"`,
+        data: null
+      };
+    }
+  }
+
   try {
     // Calcular fechas del período
     const now = new Date();

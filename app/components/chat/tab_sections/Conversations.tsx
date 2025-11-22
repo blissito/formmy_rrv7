@@ -1,8 +1,8 @@
 import type { Chatbot, User } from "@prisma/client";
-import type { UIMessage } from "~/server/chatbot/conversationTransformer.server";
+import type { UIMessage } from "server/chatbot/conversationTransformer.server";
 import { ChipTabs, useChipTabs } from "../common/ChipTabs";
 import { Avatar } from "../Avatar";
-import { useState, useEffect, useRef, type ReactNode, forwardRef } from "react";
+import { useState, useEffect, useRef, useMemo, type ReactNode, forwardRef } from "react";
 import { useNavigate, useSubmit, useRevalidator } from "react-router";
 import { cn } from "~/lib/utils";
 import Empty from "~/SVGs/Empty";
@@ -102,6 +102,37 @@ const Tooltip = ({
   );
 };
 
+// Componente Skeleton para mensajes en carga
+const MessageSkeleton = ({ side = "left" }: { side?: "left" | "right" }) => {
+  const widths = ["w-48", "w-64", "w-56", "w-72"];
+  const randomWidth = widths[Math.floor(Math.random() * widths.length)];
+
+  return (
+    <div className={cn("flex items-end gap-2 mb-4", side === "right" && "flex-row-reverse")}>
+      {/* Avatar skeleton */}
+      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+
+      {/* Message bubble skeleton */}
+      <div className={cn(
+        "rounded-2xl p-3 space-y-2 animate-pulse",
+        randomWidth,
+        side === "left"
+          ? "bg-white dark:bg-gray-800 rounded-bl-none"
+          : "bg-blue-100 dark:bg-blue-900 rounded-br-none"
+      )}>
+        {/* Shimmer effect overlay */}
+        <div className="relative overflow-hidden">
+          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-full" />
+          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-4/5 mt-2" />
+
+          {/* Shimmer animation */}
+          <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 type ConversationsProps = {
   chatbot: ChatbotWithWhatsAppConfig;
   user: User;
@@ -146,36 +177,75 @@ export const Conversations = ({
   const { t } = useDashboardTranslation();
   const submit = useSubmit();
 
-  // Estado para scroll infinito
-  const [allLoadedConversations, setAllLoadedConversations] = useState(conversations);
+  // ⚡ FASE 1: Estado para carga client-side con infinity scroll
+  const [allLoadedConversations, setAllLoadedConversations] = useState<Conversation[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true); // Loading inicial
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const hasMore = allLoadedConversations.length < totalConversations;
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const observerTarget = useRef<HTMLDivElement | null>(null); // Ref para IntersectionObserver
+
+  // ⚡ FASE 2: Estado para lazy loading de mensajes
+  const [messagesCache, setMessagesCache] = useState<Record<string, UIMessage[]>>({});
+  const [loadingMessages, setLoadingMessages] = useState<Record<string, boolean>>({});
+  const [messagesHasMore, setMessagesHasMore] = useState<Record<string, boolean>>({});
 
 
 
-  // Actualizar cuando cambien las props
+  // ⚡ FASE 1: Cargar conversaciones iniciales desde el cliente
   useEffect(() => {
-    setAllLoadedConversations(conversations);
-  }, [conversations]);
+    const loadInitialConversations = async () => {
+      if (!chatbot?.id) return;
 
-  // Función para cargar más conversaciones
+      setIsLoadingConversations(true);
+      try {
+        const response = await fetch(
+          `/api/v1/conversations?chatbotId=${chatbot.id}&limit=20`
+        );
+
+        if (!response.ok) {
+          throw new Error(`Error loading conversations: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setAllLoadedConversations(data.conversations || []);
+        setNextCursor(data.nextCursor);
+        setHasMore(data.hasMore);
+      } catch (error) {
+        console.error("❌ Error loading initial conversations:", error);
+        setAllLoadedConversations([]);
+      } finally {
+        setIsLoadingConversations(false);
+      }
+    };
+
+    loadInitialConversations();
+  }, [chatbot?.id]);
+
+  // ⚡ FASE 1: Función para cargar más conversaciones con cursor
   const loadMoreConversations = async () => {
-
-    if (isLoadingMore || !hasMore) {
+    if (isLoadingMore || !hasMore || !nextCursor) {
       return;
     }
 
     setIsLoadingMore(true);
     try {
-      const url = `/api/v1/conversations/load-more?chatbotId=${chatbot.id}&skip=${allLoadedConversations.length}`;
-
+      const url = `/api/v1/conversations?chatbotId=${chatbot.id}&limit=20&cursor=${nextCursor}`;
       const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Error loading more conversations: ${response.status}`);
+      }
 
       const data = await response.json();
 
       if (data.conversations && data.conversations.length > 0) {
         setAllLoadedConversations(prev => [...prev, ...data.conversations]);
+        setNextCursor(data.nextCursor);
+        setHasMore(data.hasMore);
       } else {
+        setHasMore(false);
       }
     } catch (error) {
       console.error("❌ Error loading more conversations:", error);
@@ -184,16 +254,119 @@ export const Conversations = ({
     }
   };
 
-  // 🔍 Filtrar conversaciones vacías de WhatsApp
-  // Una conversación está "vacía" si es de WhatsApp Y no tiene mensajes reales (solo reacciones o sin mensajes)
-  const actualConversations = allLoadedConversations.filter(conv => {
-    // Si no es WhatsApp, incluir siempre
-    if (!conv.isWhatsApp) return true;
+  // ⚡ FASE 1: IntersectionObserver para infinity scroll automático
+  useEffect(() => {
+    const currentTarget = observerTarget.current;
+    if (!currentTarget || !hasMore) return;
 
-    // Si es WhatsApp, verificar que tenga al menos un mensaje NO reacción
-    const hasRealMessages = conv.messages.some(msg => !msg.isReaction);
-    return hasRealMessages;
-  });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Cuando el elemento observado es visible, cargar más
+        if (entries[0].isIntersecting && !isLoadingMore) {
+          loadMoreConversations();
+        }
+      },
+      { threshold: 0.1 } // Trigger cuando el 10% del elemento es visible
+    );
+
+    observer.observe(currentTarget);
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasMore, isLoadingMore, nextCursor]);
+
+  // ⚡ FASE 2: Función para cargar mensajes de una conversación
+  const loadMessagesForConversation = async (conversationId: string) => {
+    // Si ya están cargando, no hacer nada
+    if (loadingMessages[conversationId]) {
+      console.log(`⏳ Ya cargando mensajes para conversación ${conversationId}`);
+      return;
+    }
+
+    // Si ya están en caché, solo actualizar la conversación actual
+    if (messagesCache[conversationId]) {
+      console.log(`✅ Mensajes en caché para conversación ${conversationId}, actualizando conversación actual`);
+      setAllLoadedConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, messages: messagesCache[conversationId] }
+            : conv
+        )
+      );
+      // Actualizar también la conversación seleccionada si es la misma
+      if (conversation?.id === conversationId) {
+        setConversation(prev => prev ? { ...prev, messages: messagesCache[conversationId] } : prev);
+      }
+      return;
+    }
+
+    console.log(`🔄 Cargando mensajes para conversación ${conversationId}...`);
+    setLoadingMessages(prev => ({ ...prev, [conversationId]: true }));
+
+    try {
+      const response = await fetch(
+        `/api/v1/conversations/${conversationId}/messages?limit=50`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Error loading messages: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ Mensajes cargados para conversación ${conversationId}:`, data.messages?.length || 0);
+
+      // Guardar mensajes en caché
+      setMessagesCache(prev => ({
+        ...prev,
+        [conversationId]: data.messages || [],
+      }));
+
+      // Guardar info de hasMore
+      setMessagesHasMore(prev => ({
+        ...prev,
+        [conversationId]: data.hasMore || false,
+      }));
+
+      // Actualizar la conversación en la lista
+      setAllLoadedConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, messages: data.messages || [] }
+            : conv
+        )
+      );
+
+      // ⚡ CRÍTICO: Actualizar también la conversación seleccionada si es la misma
+      if (conversation?.id === conversationId) {
+        setConversation(prev => prev ? { ...prev, messages: data.messages || [] } : prev);
+      }
+    } catch (error) {
+      console.error("❌ Error loading messages for conversation:", error);
+      setMessagesCache(prev => ({ ...prev, [conversationId]: [] }));
+    } finally {
+      setLoadingMessages(prev => ({ ...prev, [conversationId]: false }));
+    }
+  };
+
+  // 🔍 Filtrar conversaciones vacías de WhatsApp
+  // Una conversación está "vacía" si es de WhatsApp Y tiene mensajes PERO todos son reacciones
+  // ⚡ FASE 2: NO filtrar si messages.length === 0 (aún no cargados con lazy loading)
+  const actualConversations = useMemo(() => {
+    return allLoadedConversations.filter(conv => {
+      // Si no es WhatsApp, incluir siempre
+      if (!conv.isWhatsApp) return true;
+
+      // Si es WhatsApp pero aún no tiene mensajes cargados, incluir (lazy loading)
+      if (!conv.messages || conv.messages.length === 0) return true;
+
+      // Si tiene mensajes, verificar que tenga al menos un mensaje NO reacción
+      const hasRealMessages = conv.messages.some(msg => !msg.isReaction);
+      return hasRealMessages;
+    });
+  }, [allLoadedConversations]);
 
   // 🌐 TABS i18n: Usar índices (0 = All, 1 = Favorites) para compatibilidad con localStorage
   const TAB_ALL = 0;
@@ -236,7 +409,7 @@ export const Conversations = ({
     ? actualConversations.find(c => c.id === selectedConversationId) || actualConversations[0]
     : actualConversations[0];
 
-  const [conversation, setConversation] = useState<Conversation>(initialConversation);
+  const [conversation, setConversation] = useState<Conversation | undefined>(initialConversation);
 
   // Estado para controlar visibilidad del panel de detalles de contacto
   const [showContactDetails, setShowContactDetails] = useState(false);
@@ -252,23 +425,33 @@ export const Conversations = ({
   useEffect(() => {
     setLocalManualModes(prev => {
       const updated = { ...prev };
+      let hasNewConversations = false;
+
       allLoadedConversations.forEach(conv => {
         // Solo inicializar conversaciones nuevas - preservar cambios manuales
         if (updated[conv.id] === undefined) {
           updated[conv.id] = conv.manualMode || false;
+          hasNewConversations = true;
         }
       });
-      return updated;
+
+      // Solo actualizar si hay conversaciones nuevas
+      return hasNewConversations ? updated : prev;
     });
 
     setLocalFavorites(prev => {
       const updated = { ...prev };
+      let hasNewConversations = false;
+
       allLoadedConversations.forEach(conv => {
         if (updated[conv.id] === undefined) {
           updated[conv.id] = conv.isFavorite || false;
+          hasNewConversations = true;
         }
       });
-      return updated;
+
+      // Solo actualizar si hay conversaciones nuevas
+      return hasNewConversations ? updated : prev;
     });
   }, [allLoadedConversations]);
 
@@ -278,34 +461,64 @@ export const Conversations = ({
       const targetConv = actualConversations.find(c => c.id === selectedConversationId);
       if (targetConv && targetConv.id !== conversation?.id) {
         setConversation(targetConv);
+        // ⚡ FASE 2: Cargar mensajes si no están en caché
+        loadMessagesForConversation(targetConv.id);
       }
     }
   }, [selectedConversationId, actualConversations, conversation?.id]);
 
   // 🔄 Actualizar conversación seleccionada cuando cambian las props (para revalidación)
   useEffect(() => {
-    if (actualConversations.length > 0 && conversation) {
-      const updated = actualConversations.find(c => c.id === conversation.id);
-      if (updated) {
-        setConversation(updated);
+    if (actualConversations.length > 0) {
+      // Si no hay conversación seleccionada, seleccionar la primera
+      if (!conversation) {
+        const firstConv = actualConversations[0];
+        console.log(`🎯 Seleccionando primera conversación: ${firstConv.id}, mensajes:`, firstConv.messages?.length || 0);
+        setConversation(firstConv);
+        loadMessagesForConversation(firstConv.id);
       } else {
-        // Si la conversación seleccionada ya no existe (fue eliminada), seleccionar la primera
-        setConversation(actualConversations[0]);
+        // Si hay conversación seleccionada, actualizarla PERO mantener mensajes si ya estaban cargados
+        const updated = actualConversations.find(c => c.id === conversation.id);
+        if (updated) {
+          // ⚡ CRÍTICO: Preservar mensajes existentes si ya estaban cargados
+          const messagesToUse = updated.messages && updated.messages.length > 0
+            ? updated.messages
+            : conversation.messages || [];
+
+          // ⚡ FIX LOOP: Solo actualizar si hay cambios reales en los datos
+          const hasChanges =
+            updated.userName !== conversation.userName ||
+            updated.lastMessage !== conversation.lastMessage ||
+            updated.manualMode !== conversation.manualMode ||
+            updated.isFavorite !== conversation.isFavorite ||
+            messagesToUse.length !== (conversation.messages?.length || 0);
+
+          if (hasChanges) {
+            setConversation({ ...updated, messages: messagesToUse });
+          }
+        } else {
+          // Si la conversación seleccionada ya no existe (fue eliminada), seleccionar la primera
+          const firstConv = actualConversations[0];
+          console.log(`🎯 Conversación eliminada, seleccionando primera: ${firstConv.id}`);
+          setConversation(firstConv);
+          loadMessagesForConversation(firstConv.id);
+        }
       }
     }
   }, [actualConversations, conversation?.id]);
 
-  // Polling básico para actualizaciones en tiempo real
-  useEffect(() => {
-    if (!chatbot?.id) return;
-
-    const interval = setInterval(() => {
-      // Revalidar loader data cada 5 segundos para obtener nuevas conversaciones
-      navigate(window.location.pathname, { replace: true });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [chatbot?.id, navigate]);
+  // ⚡ FASE 3: Polling deshabilitado - Se reemplazará con SSE (Server-Sent Events)
+  // TODO: Implementar SSE para actualizaciones en tiempo real
+  // useEffect(() => {
+  //   if (!chatbot?.id) return;
+  //
+  //   const interval = setInterval(() => {
+  //     // Revalidar loader data cada 5 segundos para obtener nuevas conversaciones
+  //     navigate(window.location.pathname, { replace: true });
+  //   }, 5000);
+  //
+  //   return () => clearInterval(interval);
+  // }, [chatbot?.id, navigate]);
 
   // 🎯 Toggle que sincroniza con backend
   const handleToggleManual = async (conversationId: string) => {
@@ -452,8 +665,15 @@ export const Conversations = ({
 
   return (
     <>
-      {/* Mostrar empty state si no hay conversaciones */}
-      {conversations.length === 0 ? (
+      {/* ⚡ FASE 1: Mostrar loading inicial mientras cargan conversaciones */}
+      {isLoadingConversations ? (
+        <div className="flex items-center justify-center h-[400px]">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm text-metal">{t('common.loading')}</p>
+          </div>
+        </div>
+      ) : actualConversations.length === 0 ? (
         <EmptyConversations t={t} />
       ) : (
 
@@ -554,6 +774,8 @@ export const Conversations = ({
             setConversation(conv);
             setShowContactDetails(false); // Cerrar panel al cambiar de conversación
             setShowConversationInMobile(true); // Mostrar conversación en mobile
+            // ⚡ FASE 2: Cargar mensajes de la conversación seleccionada
+            loadMessagesForConversation(conv.id);
           }}
           conversations={
             parseInt(currentTabIndex) === TAB_FAVORITES
@@ -565,6 +787,7 @@ export const Conversations = ({
           isLoadingMore={isLoadingMore}
           hasMore={hasMore && parseInt(currentTabIndex) === TAB_ALL}
           onLoadMore={loadMoreConversations}
+          observerTargetRef={observerTarget}
           onToggleFavorite={handleToggleFavorite}
           localFavorites={localFavorites}
           currentTabIndex={parseInt(currentTabIndex) || 0}
@@ -578,19 +801,16 @@ export const Conversations = ({
         !showConversationInMobile && "hidden lg:block", // Ocultar en mobile/tablet si no se ha seleccionado conversación
         showContactDetailsInMobile && "hidden lg:block" // Ocultar solo en mobile/tablet cuando se muestra panel de contacto
       )}>
-        <ConversationsPreview
+        {conversation && <ConversationsPreview
           conversation={conversation}
           chatbot={chatbot}
           onToggleManual={handleToggleManual}
           onSendManualResponse={handleSendManualResponse}
           onDeleteConversation={onDeleteConversation}
           onToggleFavorite={handleToggleFavorite}
-          localManualMode={(() => {
-            const value = localManualModes[conversation?.id] ?? conversation?.manualMode ?? false;
-            console.log(`🎯 ConversationsPreview - conv ${conversation?.id}: localManualModes[id]=${localManualModes[conversation?.id]}, conversation.manualMode=${conversation?.manualMode}, final=${value}`);
-            return value;
-          })()}
+          localManualMode={localManualModes[conversation?.id] ?? conversation?.manualMode ?? false}
           isFavorite={localFavorites[conversation?.id] ?? conversation?.isFavorite}
+          isLoadingMessages={loadingMessages[conversation?.id] ?? false}
           onAvatarClick={() => {
             const newState = !showContactDetails;
             setShowContactDetails(newState);
@@ -600,7 +820,7 @@ export const Conversations = ({
             }
           }}
           onBackToList={() => setShowConversationInMobile(false)} // Función para volver a la lista en mobile
-        />
+        />}
       </section>
       {/* Panel de detalles de contacto */}
       {showContactDetails && conversation && (
@@ -697,6 +917,7 @@ const ConversationsList = ({
   isLoadingMore = false,
   hasMore = false,
   onLoadMore,
+  observerTargetRef,
   onToggleFavorite,
   localFavorites = {},
   currentTabIndex,
@@ -704,11 +925,12 @@ const ConversationsList = ({
 }: {
   conversations: Conversation[];
   onConversationSelect: (conversation: Conversation) => void;
-  currentConversation: Conversation;
+  currentConversation: Conversation | undefined;
   selectedConversationId?: string;
   isLoadingMore?: boolean;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  observerTargetRef?: React.RefObject<HTMLDivElement | null>;
   onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
   localFavorites?: Record<string, boolean>;
   currentTabIndex: number;
@@ -748,34 +970,21 @@ const ConversationsList = ({
               }}
               conversation={conversation}
               onClick={() => onConversationSelect(conversation)}
-              isActive={conversation.id === currentConversation.id}
+              isActive={currentConversation ? conversation.id === currentConversation.id : false}
               onToggleFavorite={onToggleFavorite}
               isFavorite={localFavorites[conversation.id] ?? conversation.isFavorite}
             />
           ))}
 
-          {/* Botón para cargar más */}
+          {/* ⚡ FASE 1: Indicador de carga para infinity scroll + observer target */}
           {hasMore && currentTabIndex === tabAll && (
-            <div className="py-3 grid place-items-center">
-              <button
-                onClick={onLoadMore}
-                disabled={isLoadingMore}
-                className={cn(
-                  "w-fit py-2 px-4 rounded-full mx-auto text-sm font-medium transition-colors",
-                  "bg-perl text-metal hover:bg-[#E1E3E7]",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  "flex items-center justify-center gap-2"
-                )}
-              >
-                {isLoadingMore ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-                    {t('common.loading')}
-                  </>
-                ) : (
-                  `${t('conversations.loadMore')} (${conversations.length})`
-                )}
-              </button>
+            <div ref={observerTargetRef} className="py-3 grid place-items-center min-h-[40px]">
+              {isLoadingMore && (
+                <div className="flex items-center justify-center gap-2 text-sm text-metal">
+                  <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                  {t('common.loading')}
+                </div>
+              )}
             </div>
           )}
 
@@ -1554,6 +1763,7 @@ export const ConversationsPreview = ({
   onToggleFavorite,
   localManualMode = false,
   isFavorite = false,
+  isLoadingMessages = false,
   onAvatarClick,
   onBackToList,
 }: {
@@ -1566,6 +1776,7 @@ export const ConversationsPreview = ({
   onToggleFavorite?: (conversationId: string, event?: React.MouseEvent) => void;
   localManualMode?: boolean;
   isFavorite?: boolean;
+  isLoadingMessages?: boolean;
   onAvatarClick?: () => void;
   onBackToList?: () => void;
 }) => {
@@ -1641,7 +1852,16 @@ export const ConversationsPreview = ({
         }}
       >
         <div className="p-4">
-          {conversation?.messages ? (
+          {isLoadingMessages ? (
+            // Skeleton loading con mensajes alternados
+            <div className="space-y-4">
+              <MessageSkeleton side="left" />
+              <MessageSkeleton side="right" />
+              <MessageSkeleton side="left" />
+              <MessageSkeleton side="right" />
+              <MessageSkeleton side="left" />
+            </div>
+          ) : conversation?.messages ? (
             groupMessagesByDate(
               conversation.messages.filter((message) => !message.isReaction)
             ).map(([date, messages]) => (

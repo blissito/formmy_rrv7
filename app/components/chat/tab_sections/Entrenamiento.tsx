@@ -214,12 +214,13 @@ export const Entrenamiento = ({
     }
 
     // VERCEL EXPERIMENT
+    // ✅ En dashboard de chatbot, se sube al chatbot del usuario
     const experiment = async () => {
       console.log("About to experiment");
       const response = await fetch("/chat/vercel", {
         body: JSON.stringify({
           intent: "upsert",
-          chatbotId: chatbot.id,
+          chatbotId: chatbot.id, // ✅ Chatbot del usuario
           title: textTitle.trim(),
           content: textContent.trim(),
           // contextType: "TEXT", // default

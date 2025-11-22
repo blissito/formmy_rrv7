@@ -320,7 +320,7 @@ export const createGetChatbotStatsTool = (context: ToolContext) => tool(
     name: "get_chatbot_stats",
     description: "Obtener estadísticas detalladas de conversaciones de chatbots (métricas, comparaciones, análisis)",
     parameters: z.object({
-      chatbotId: z.string().optional().describe("ID específico del chatbot (si no se provee, analiza todos)"),
+      chatbotId: z.string().optional().describe("MongoDB ObjectId del chatbot (24 caracteres hexadecimales). NO usar el nombre del chatbot. Si no se provee, analiza todos los chatbots del usuario."),
       period: z.enum(['week', 'month', 'quarter', 'year']).optional().default('week').describe("Período de análisis"),
       compareWithPrevious: z.boolean().optional().default(true).describe("Comparar con período anterior"),
       includeHourlyBreakdown: z.boolean().optional().default(false).describe("Incluir breakdown por horas del día")

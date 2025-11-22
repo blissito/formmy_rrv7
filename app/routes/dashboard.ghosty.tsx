@@ -7,7 +7,7 @@ interface LoaderData {
 }
 
 export default function DashboardGhosty() {
-  const data = useRouteLoaderData('routes/dashboard');
+  const data = useRouteLoaderData("routes/dashboard");
   const user = (data as LoaderData)?.user;
 
   // Si no hay usuario, no mostramos nada
@@ -15,13 +15,8 @@ export default function DashboardGhosty() {
     return null;
   }
 
-  return (
-    <div className="min-h-[calc(100vh-156px)] bg-white p-4">
-      <GhostyContainer userImage={user.picture || undefined} />
-    </div>
-  );
+  return <GhostyContainer userImage={user.picture || undefined} />;
 }
-
 
 export const meta = () => [
   { title: "Ghosty" },

@@ -83,6 +83,7 @@ export default [
   route("chat/404", "routes/chat.404.tsx"),
   route("chat-ia", "routes/chat-ia.tsx"),
   route("chat/vercel", "routes/chat.vercel.tsx"),
+  route("chat/vercel/public", "routes/chat.vercel.public.tsx"),
 
   // Public content routes
   route("formularios", "routes/formularios.tsx"),
@@ -119,10 +120,15 @@ export default [
 
   // API v1 routes
   route("api/v1/contacts", "routes/api.v1.contacts.ts"),
+  route("api/v1/leads", "routes/api.v1.leads.tsx"),
   route("api/v1/conversations", "routes/api.v1.conversations.tsx"),
   route(
     "api/v1/conversations/load-more",
     "routes/api.v1.conversations.load-more.ts"
+  ),
+  route(
+    "api/v1/conversations/:conversationId/messages",
+    "routes/api.v1.conversations.$conversationId.messages.tsx"
   ),
   route(
     "api/v1/conversations/:conversationId/stream",

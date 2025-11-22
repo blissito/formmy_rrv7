@@ -316,19 +316,31 @@ export async function processParsingJob(
         processingTime: result.processingTime,
         completedAt: new Date(),
       },
+      select: {
+        id: true,
+        chatbotId: true,
+        userId: true, // 🔒 Necesario para validación de ownership
+        fileName: true,
+        fileType: true,
+        fileSize: true,
+        mode: true,
+        creditsUsed: true,
+      },
     });
 
-    // 5. Agregar a contexts[] del chatbot usando servicio unificado
+    // 5. Agregar contexto usando WRAPPER SEGURO con Vercel AI SDK
     if (completedJob.chatbotId && result.markdown) {
-
       try {
-        const { addContextWithEmbeddings } = await import("server/context/unified-processor.server");
+        // 🔒 USAR WRAPPER SEGURO con validación de ownership
+        const { secureUpsert } = await import("server/context/vercel_embeddings.secure");
 
-        const vectorResult = await addContextWithEmbeddings({
+        const vectorResult = await secureUpsert({
           chatbotId: completedJob.chatbotId,
+          title: completedJob.fileName,
           content: result.markdown,
+          userId: completedJob.userId, // 🔒 Validación de ownership
           metadata: {
-            type: 'FILE',
+            contextType: 'FILE',
             fileName: completedJob.fileName,
             fileType: completedJob.fileType,
             fileSize: completedJob.fileSize,
@@ -340,14 +352,8 @@ export async function processParsingJob(
           },
         });
 
-        // ✅ Success puede ser:
-        // - embeddingsCreated > 0 (nuevo contenido vectorizado)
-        // - embeddingsSkipped > 0 (todo era duplicado, pero es válido)
-        if (vectorResult.success) {
-        } else {
-          // Solo fallar si vectorResult.success === false (error real)
-          throw new Error(`Vectorization failed: ${vectorResult.error || 'Unknown error'}`);
-        }
+        // ✅ Success: Contexto creado exitosamente
+        console.log(`✅ Context created: ${vectorResult.contextId}, ${vectorResult.chunksCreated} chunks vectorized`);
       } catch (vectorError) {
         console.error(`⚠️ Vectorization failed after retries:`, vectorError);
 

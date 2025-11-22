@@ -53,7 +53,7 @@ export const getModelForPlan = getDefaultModelForPlan;
  */
 export function getSmartModelForPro(hasActiveIntegrations: boolean, isComplexQuery: boolean = false): string {
   if (hasActiveIntegrations || isComplexQuery) {
-    return "claude-3-haiku-20240307"; // Calidad para integraciones críticas
+    return "claude-haiku-4-5"; // Calidad para integraciones críticas
   }
   return "gpt-5-nano"; // Velocidad y costo para chat normal
 }
@@ -62,21 +62,25 @@ export function getSmartModelForPro(hasActiveIntegrations: boolean, isComplexQue
 export const ALL_MODELS = AI_MODELS.map((m) => m.value);
 
 export const DEFAULT_MODEL_ROTATION = [
-  "gemini-2.0-flash-lite", // Gemini reemplaza a GPT-3.5 Turbo
-  "claude-3-haiku-20240307",
-  "gpt-5-nano",
+  "gemini-3-pro", // Starter default
+  "claude-haiku-4-5", // Pro fallback
+  "gpt-5-nano", // Pro default
 ];
 
 export const FALLBACK_MODELS: Record<string, string> = {
-  "claude-3-5-sonnet-20241022": "claude-3-5-haiku-20241022",
-  "claude-3-5-haiku-20241022": "claude-3-haiku-20240307",
-  "claude-3-haiku-20240307": "gemini-2.0-flash",
-  "gemini-2.0-flash": "gemini-2.0-flash-lite",
-  "gemini-2.0-flash-lite": "gpt-5-nano",
-  "gpt-5-nano": "gpt-5-mini",
-  "gpt-5-mini": "claude-3-haiku-20240307",
-  // Legacy
-  "gpt-3.5-turbo": "gemini-2.0-flash-lite",
+  "claude-sonnet-4-5": "claude-haiku-4-5",
+  "claude-haiku-4-5": "gpt-5-nano",
+  "gpt-5-nano": "gemini-3-pro",
+  "gemini-3-pro": "gpt-5-nano",
+  // Legacy models
+  "claude-3-5-sonnet-20241022": "claude-sonnet-4-5",
+  "claude-3-5-haiku-20241022": "claude-haiku-4-5",
+  "claude-3-haiku-20240307": "claude-haiku-4-5",
+  "gemini-2.0-flash": "gemini-3-pro",
+  "gemini-2.0-flash-lite": "gemini-3-pro",
+  "gemini-3-pro-preview": "gemini-3-pro",
+  "gpt-3.5-turbo": "gemini-3-pro",
+  "gpt-5-mini": "gpt-5-nano",
 };
 
 /**
