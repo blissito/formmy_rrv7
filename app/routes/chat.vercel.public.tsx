@@ -125,7 +125,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   await addUserMessage(conversation.id, textContent);
 
-  const systemPropmt = `
+  const systemPrompt = `
     # Sigue estas instrucciones:
     ${chatbot.instructions}
 
@@ -147,7 +147,7 @@ export async function action({ request }: Route.ActionArgs) {
   const result = streamText({
     model: mapModel(chatbot.aiModel),
     messages: convertToModelMessages(allMessages), // ⬅️ TODOS los mensajes
-    system: systemPropmt,
+    system: systemPrompt,
     tools: {
       getContextTool: createGetContextTool(chatbotId),
       saveLeadTool: createSaveLeadTool(chatbotId),

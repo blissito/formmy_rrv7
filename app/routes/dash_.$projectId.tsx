@@ -73,14 +73,19 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
   const projectId = params.projectId as string;
-  
+
+  // ✅ Validar que projectId sea un ObjectID válido (24 caracteres hexadecimales)
+  if (!projectId || projectId.length !== 24 || !/^[a-f\d]{24}$/i.test(projectId)) {
+    throw json(null, { status: 404 });
+  }
+
   // Use centralized function - requires read permission
   const access = await getProjectWithAccess(user.id, projectId, "read");
-  
+
   if (!access) {
     throw json(null, { status: 404 });
   }
-  
+
   return {
     project: access.project,
     user: { ...user, isOwner: access.isOwner, permissions: access.permissions, role: access.userRole },

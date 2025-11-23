@@ -176,8 +176,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
           contactName = contactPhone;
         }
       } else {
-        // Conversación web - usar visitorId como nombre
-        contactName = conversation.visitorId || "Visitante web";
+        // Conversación web - usar sessionId formateado (últimos 3 caracteres)
+        const sessionIdSuffix = conversation.sessionId?.slice(-3) || "???";
+        contactName = `Usuario web ${sessionIdSuffix}`;
       }
 
       // Calcular tiempo relativo
@@ -195,6 +196,16 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       else if (diffDays === 1) timeText = "Ayer";
       else timeText = `Hace ${diffDays}d`;
 
+      // Formato legible de fecha: "23 Nov 2025, 18:53"
+      const dateText = updatedAt.toLocaleString('es-MX', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+
       return {
         id: conversation.id,
         chatbotId: conversation.chatbotId,
@@ -202,7 +213,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         userEmail: "",
         lastMessage: lastMsg?.content || "Sin mensajes",
         time: timeText,
-        date: updatedAt.toISOString(),
+        date: dateText,
         unread: 0, // TODO: Implementar conteo de no leídos si se necesita
         avatar: avatarUrl || (isWhatsApp ? "/dash/default-whatsapp-avatar.svg" : "/dash/default-user-avatar.svg"),
         tel: contactPhone,
