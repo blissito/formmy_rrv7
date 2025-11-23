@@ -4,12 +4,6 @@
  */
 
 import {
-  addFileContext,
-  addUrlContext,
-  addTextContext,
-  addQuestionContext,
-  updateTextContext,
-  updateQuestionContext,
   removeContextItem,
   getChatbotContexts,
   getChatbotById,
@@ -183,7 +177,7 @@ export async function handleContextOperation(
         if (!result.success) {
           return new Response(
             JSON.stringify({
-              error: result.error || "Error al procesar archivo",
+              error: result.error?.message || "Error al procesar archivo",
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
@@ -253,15 +247,15 @@ export async function handleContextOperation(
 
         console.log(`📊 [context-handler] Resultado de addContextWithEmbeddings:`, {
           success: result.success,
-          embeddingsCreated: result.embeddingsCreated,
-          embeddingsSkipped: result.embeddingsSkipped,
+          embeddingsCreated: result.success ? result.embeddingsCreated : 0,
+          embeddingsSkipped: result.success ? result.embeddingsSkipped : 0,
           error: result.error,
         });
 
         if (!result.success) {
           console.log(`❌ [context-handler] Retornando error 400 al cliente`);
           return new Response(
-            JSON.stringify({ error: result.error || "Error al procesar URL" }),
+            JSON.stringify({ error: result.error?.message || "Error al procesar URL" }),
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
@@ -304,7 +298,7 @@ export async function handleContextOperation(
         if (!result.success) {
           return new Response(
             JSON.stringify({
-              error: result.error || "Error al procesar texto",
+              error: result.error?.message || "Error al procesar texto",
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
@@ -332,11 +326,71 @@ export async function handleContextOperation(
         const title = formData.get("title") as string;
         const content = formData.get("content") as string;
 
-        const chatbot = await updateTextContext(chatbotId, contextId, {
-          title,
-          content,
+        // 🔒 SECURITY: Validar ownership
+        const chatbot = await db.chatbot.findUnique({
+          where: { id: chatbotId },
+          select: { userId: true },
         });
-        return new Response(JSON.stringify({ success: true, chatbot }), {
+
+        if (!chatbot || chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // ✅ Buscar contexto en modelo Context
+        const existingContext = await db.context.findFirst({
+          where: {
+            id: contextId,
+            chatbotId,
+          },
+        });
+
+        if (!existingContext) {
+          return new Response(
+            JSON.stringify({ error: "Contexto no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // ✅ Actualizar Context y re-generar embeddings si el contenido cambió
+        const contentChanged = existingContext.content !== content;
+
+        if (contentChanged) {
+          // Si el contenido cambió, eliminar embeddings viejos y crear nuevos
+          await db.embedding.deleteMany({
+            where: { contextId },
+          });
+
+          // Actualizar contexto con nuevo contenido
+          await db.context.update({
+            where: { id: contextId },
+            data: {
+              title,
+              content,
+              embeddingIds: [], // Reset embedding IDs
+            },
+          });
+
+          // Re-generar embeddings usando secureUpsert en modo update
+          const { updateContext } = await import("../context/vercel_embeddings");
+          await updateContext({
+            contextId,
+            chatbotId,
+            content,
+            title,
+          });
+        } else {
+          // Solo actualizar título (sin re-generar embeddings)
+          await db.context.update({
+            where: { id: contextId },
+            data: { title },
+          });
+        }
+
+        const updatedChatbot = await getChatbotById(chatbotId);
+        return new Response(JSON.stringify({ success: true, chatbot: updatedChatbot }), {
           headers: { "Content-Type": "application/json" },
         });
       }
@@ -367,7 +421,7 @@ export async function handleContextOperation(
         if (!result.success) {
           return new Response(
             JSON.stringify({
-              error: result.error || "Error al procesar pregunta",
+              error: result.error?.message || "Error al procesar pregunta",
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
@@ -396,12 +450,86 @@ export async function handleContextOperation(
         const questions = formData.get("questions") as string;
         const answer = formData.get("answer") as string;
 
-        const chatbot = await updateQuestionContext(chatbotId, contextId, {
-          title,
-          questions,
-          answer,
+        // 🔒 SECURITY: Validar ownership
+        const chatbot = await db.chatbot.findUnique({
+          where: { id: chatbotId },
+          select: { userId: true },
         });
-        return new Response(JSON.stringify({ success: true, chatbot }), {
+
+        if (!chatbot || chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // ✅ Buscar contexto en modelo Context
+        const existingContext = await db.context.findFirst({
+          where: {
+            id: contextId,
+            chatbotId,
+          },
+        });
+
+        if (!existingContext) {
+          return new Response(
+            JSON.stringify({ error: "Contexto no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // Combinar preguntas y respuesta para vectorización
+        const newContent = `Preguntas: ${questions}\n\nRespuesta: ${answer}`;
+        const contentChanged = existingContext.content !== newContent;
+
+        if (contentChanged) {
+          // Eliminar embeddings viejos
+          await db.embedding.deleteMany({
+            where: { contextId },
+          });
+
+          // Actualizar contexto
+          await db.context.update({
+            where: { id: contextId },
+            data: {
+              title,
+              content: newContent,
+              embeddingIds: [],
+              metadata: {
+                contextType: "QUESTION",
+                title,
+                questions,
+                answer,
+              },
+            },
+          });
+
+          // Re-generar embeddings
+          const { updateContext } = await import("../context/vercel_embeddings");
+          await updateContext({
+            contextId,
+            chatbotId,
+            content: newContent,
+            title,
+          });
+        } else {
+          // Solo actualizar metadata y título
+          await db.context.update({
+            where: { id: contextId },
+            data: {
+              title,
+              metadata: {
+                contextType: "QUESTION",
+                title,
+                questions,
+                answer,
+              },
+            },
+          });
+        }
+
+        const updatedChatbot = await getChatbotById(chatbotId);
+        return new Response(JSON.stringify({ success: true, chatbot: updatedChatbot }), {
           headers: { "Content-Type": "application/json" },
         });
       }
@@ -448,10 +576,10 @@ export async function handleContextOperation(
           );
         }
 
-        // Obtener chatbot con contexts
+        // 🔒 SECURITY: Validar ownership del chatbot
         const chatbot = await db.chatbot.findUnique({
           where: { id: chatbotId },
-          select: { id: true, userId: true, contexts: true },
+          select: { id: true, userId: true },
         });
 
         if (!chatbot || chatbot.userId !== userId) {
@@ -463,19 +591,37 @@ export async function handleContextOperation(
           );
         }
 
-        // Actualizar el fileName en el array de contexts
-        const updatedContexts = chatbot.contexts.map((ctx: any) =>
-          ctx.id === contextItemId
-            ? { ...ctx, fileName: newFileName.trim() }
-            : ctx
-        );
-
-        const updatedChatbot = await db.chatbot.update({
-          where: { id: chatbotId },
-          data: {
-            contexts: updatedContexts,
+        // ✅ Buscar contexto en el modelo Context
+        const context = await db.context.findFirst({
+          where: {
+            id: contextItemId,
+            chatbotId,
           },
         });
+
+        if (!context) {
+          return new Response(
+            JSON.stringify({ error: "Contexto no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        // ✅ Actualizar fileName en metadata del modelo Context
+        const currentMetadata = (context.metadata as any) || {};
+        const updatedMetadata = {
+          ...currentMetadata,
+          fileName: newFileName.trim(),
+        };
+
+        await db.context.update({
+          where: { id: contextItemId },
+          data: {
+            metadata: updatedMetadata,
+          },
+        });
+
+        // ✅ Retornar chatbot actualizado
+        const updatedChatbot = await getChatbotById(chatbotId);
 
         return new Response(
           JSON.stringify({ success: true, chatbot: updatedChatbot }),

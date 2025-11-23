@@ -234,14 +234,12 @@ export async function removeContextItem(
   contextItemId: string,
   userId?: string
 ): Promise<Chatbot> {
-  // Get the current chatbot
+  // 🔒 SECURITY: Validar ownership del chatbot
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
     select: {
       id: true,
       userId: true,
-      contexts: true,
-      contextSizeKB: true,
     },
   });
 
@@ -249,62 +247,58 @@ export async function removeContextItem(
     throw new Error(`Chatbot with ID ${chatbotId} not found`);
   }
 
-  // 🔒 SECURITY: Validar ownership si userId proporcionado
   if (userId && chatbot.userId !== userId) {
     throw new Error(
       `Access denied: You don't own chatbot ${chatbotId}`
     );
   }
 
-  // Parse the contexts JSON if it's a string, otherwise use as is
-  const contexts = Array.isArray(chatbot.contexts)
-    ? chatbot.contexts
-    : chatbot.contexts
-    ? JSON.parse(JSON.stringify(chatbot.contexts))
-    : [];
-
-  // Find the context item to remove
-  const contextItem = contexts.find((item: any) => item.id === contextItemId);
+  // ✅ Buscar contexto en el modelo Context (sistema nuevo)
+  const contextItem = await db.context.findFirst({
+    where: {
+      id: contextItemId,
+      chatbotId,
+    },
+    select: {
+      id: true,
+      metadata: true,
+    },
+  });
 
   if (!contextItem) {
     throw new Error(`Context item with ID ${contextItemId} not found`);
   }
 
-  // Remove the context item from the chatbot's contexts
-  const updatedContexts = contexts.filter(
-    (item: any) => item.id !== contextItemId
-  );
-
-  // Calculate new context size
-  const newContextSizeKB = contextItem.sizeKB
-    ? (chatbot.contextSizeKB || 0) - contextItem.sizeKB
-    : chatbot.contextSizeKB || 0;
-
-  // ✅ PRIMERO eliminar embeddings (síncrono con rollback)
-  const { removeContextEmbeddings } = await import('../vector/auto-vectorize.service');
-
-  let embeddingsDeleted = 0;
+  // ✅ Eliminar embeddings y contexto usando deleteContext de vercel_embeddings
   try {
-    embeddingsDeleted = await removeContextEmbeddings(chatbotId, contextItemId);
-    console.log(`✅ Deleted ${embeddingsDeleted} embeddings for context ${contextItemId}`);
-  } catch (embeddingsError) {
-    console.error('❌ Failed to delete embeddings:', embeddingsError);
-    // Si falla el borrado de embeddings, NO eliminar el contexto
+    const { deleteContext } = await import('../context/vercel_embeddings');
+    const result = await deleteContext({
+      contextId: contextItemId,
+      chatbotId
+    });
+
+    if (!result.success) {
+      throw result.error || new Error('Error desconocido al eliminar contexto');
+    }
+
+    console.log(`✅ [removeContextItem] Deleted context and embeddings for ${contextItemId}`);
+  } catch (error) {
+    console.error('❌ [removeContextItem] Failed to delete context:', error);
     throw new Error(
-      `No se pudieron eliminar los embeddings del contexto. El contexto no ha sido eliminado. Error: ${
-        embeddingsError instanceof Error ? embeddingsError.message : 'Error desconocido'
+      `No se pudo eliminar el contexto. Error: ${
+        error instanceof Error ? error.message : 'Error desconocido'
       }`
     );
   }
 
-  // SOLO después de eliminar embeddings exitosamente, eliminar el contexto
-  const updatedChatbot = await db.chatbot.update({
+  // ✅ Retornar chatbot actualizado (sin tocar campo legacy contexts)
+  const updatedChatbot = await db.chatbot.findUnique({
     where: { id: chatbotId },
-    data: {
-      contexts: updatedContexts,
-      contextSizeKB: Math.max(0, newContextSizeKB), // Ensure we don't go below 0
-    },
   });
+
+  if (!updatedChatbot) {
+    throw new Error(`Failed to retrieve updated chatbot ${chatbotId}`);
+  }
 
   return updatedChatbot;
 }

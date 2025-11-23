@@ -1,11 +1,6 @@
 import { embedMany, embed } from "ai";
 import { openai } from "@ai-sdk/openai";
-import {
-  chunkContent,
-  retryWithBackoff,
-  isDuplicateChunk,
-  VECTOR_CONFIG,
-} from "../vector/vector-utils.server";
+import { chunkContent, isDuplicateChunk } from "../vector/vector-utils.server";
 import {
   EMBEDDING_DIMENSIONS,
   EMBEDDING_MODEL,
@@ -14,7 +9,7 @@ import {
 } from "../vector/vector-config";
 import { db } from "../../app/utils/db.server";
 import { ContextSchema } from "~/utils/zod";
-import type { Context, ContextType } from "@prisma/client";
+import type { ContextType } from "@prisma/client";
 
 const embeddingModel = openai.embedding(EMBEDDING_MODEL);
 
@@ -92,26 +87,37 @@ export const upsert = async ({
       console.log(
         `🔍 [vercel_embeddings.upsert] Verificando duplicado de URL: ${metadata.url}`
       );
-      const existingLink = await db.context.findFirst({
+
+      // Buscar contextos LINK del chatbot y filtrar por URL en metadata
+      const existingContexts = await db.context.findMany({
         where: {
           chatbotId,
           contextType: "LINK",
-          url: metadata.url,
+        },
+        select: {
+          id: true,
+          metadata: true,
         },
       });
+
+      const existingLink = existingContexts.find(
+        (ctx) => (ctx.metadata as any)?.url === metadata.url
+      );
 
       if (existingLink) {
         console.log(
           `⚠️ [vercel_embeddings.upsert] URL duplicada: ${metadata.url}`
         );
-        throw new Error(
-          `La URL ${metadata.url} ya existe en este chatbot`
-        );
+        throw new Error(`La URL ${metadata.url} ya existe en este chatbot`);
       }
     }
 
     // 3. Validar schema básico
-    const { data, success, error: schemaError } = ContextSchema.safeParse({
+    const {
+      data,
+      success,
+      error: schemaError,
+    } = ContextSchema.safeParse({
       content,
       title,
       chatbotId,
@@ -119,9 +125,7 @@ export const upsert = async ({
     });
 
     if (!success) {
-      throw new Error(
-        "El contexto no ha pasado la validación: " + schemaError
-      );
+      throw new Error("El contexto no ha pasado la validación: " + schemaError);
     }
 
     // 4. Crear Context document (antes de embeddings para tener contextId)
@@ -132,24 +136,31 @@ export const upsert = async ({
         content,
         title,
         contextType: metadata?.contextType || "TEXT",
-        fileName: metadata?.fileName || null,
-        fileType: metadata?.fileType || null,
-        url: metadata?.url || null,
-        questions: metadata?.questions || null,
-        answer: metadata?.answer || null,
-        routes: metadata?.routes || [],
-        parsingMode: metadata?.parsingMode || null,
-        parsingPages: metadata?.parsingPages || null,
-        parsingCredits: metadata?.parsingCredits || null,
-        sizeKB,
         embeddingIds: [], // Se actualizará después
+        metadata: {
+          fileName: metadata?.fileName || null,
+          fileType: metadata?.fileType || null,
+          fileSize: metadata?.fileSize || null,
+          url: metadata?.url || null,
+          questions: metadata?.questions || null,
+          answer: metadata?.answer || null,
+          routes: metadata?.routes || [],
+          parsingMode: metadata?.parsingMode || null,
+          parsingPages: metadata?.parsingPages || null,
+          parsingCredits: metadata?.parsingCredits || null,
+          sizeKB,
+        },
       },
     });
-    console.log(`✅ [vercel_embeddings.upsert] Context creado: ${newContextDocument.id}`);
+    console.log(
+      `✅ [vercel_embeddings.upsert] Context creado: ${newContextDocument.id}`
+    );
 
     // 5. Chunking
     const values = chunkContent(content);
-    console.log(`✂️ [vercel_embeddings.upsert] Chunks generados: ${values.length}`);
+    console.log(
+      `✂️ [vercel_embeddings.upsert] Chunks generados: ${values.length}`
+    );
 
     // 6. Generar embeddings con Vercel AI SDK
     const { embeddings, values: chunks } = await embedMany({
@@ -157,7 +168,9 @@ export const upsert = async ({
       values,
       ...embeddingOptions,
     });
-    console.log(`🔮 [vercel_embeddings.upsert] Embeddings generados: ${embeddings.length}`);
+    console.log(
+      `🔮 [vercel_embeddings.upsert] Embeddings generados: ${embeddings.length}`
+    );
 
     // 7. Deduplicación semántica + inserción
     let created = 0;
@@ -173,7 +186,9 @@ export const upsert = async ({
         const isDuplicate = await isDuplicateChunk(embedding, chatbotId);
 
         if (isDuplicate) {
-          console.log(`⏭️ [vercel_embeddings.upsert] Chunk ${i + 1}/${embeddings.length} duplicado, skipped`);
+          console.log(
+            `⏭️ [vercel_embeddings.upsert] Chunk ${i + 1}/${embeddings.length} duplicado, skipped`
+          );
           skipped++;
           continue;
         }
@@ -204,10 +219,7 @@ export const upsert = async ({
         embeddingIds.push(embeddingDoc.id);
         created++;
       } catch (chunkError) {
-        console.error(
-          `❌ Error procesando chunk ${i}:`,
-          chunkError
-        );
+        console.error(`❌ Error procesando chunk ${i}:`, chunkError);
         // Continuar con los demás chunks
       }
     }
@@ -339,8 +351,7 @@ export const deleteContext = async ({
   contextId: string;
   chatbotId: string;
 }): Promise<
-  | { success: true; error: undefined }
-  | { success: false; error: Error }
+  { success: true; error: undefined } | { success: false; error: Error }
 > => {
   try {
     // 1. Verify context exists and belongs to this chatbot
@@ -424,5 +435,5 @@ export const vectorSearch = async ({
   // 3. use content? converto to content?
   // 4. convert chunks into full text
   // 5. return text to inject in context
-  return { success: true, results };
+  return { success: true, results: results as unknown as any[] };
 };
