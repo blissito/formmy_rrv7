@@ -39,6 +39,14 @@ const PRICING_TABLE = {
     'gpt-4o-mini': {
       input: 0.15,   // $0.15 per 1M input tokens
       output: 0.60   // $0.60 per 1M output tokens
+    },
+    'gpt-4.1-mini': {
+      input: 0.05,   // $0.05 per 1M input tokens
+      output: 0.20   // $0.20 per 1M output tokens
+    },
+    'gpt-4.1-mini-2025-04-14': {
+      input: 0.05,   // $0.05 per 1M input tokens
+      output: 0.20   // $0.20 per 1M output tokens
     }
   },
   anthropic: {

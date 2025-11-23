@@ -7,7 +7,10 @@ import {
   type UIMessage,
 } from "ai";
 import { db } from "~/utils/db.server";
-import { mapModel } from "@/server/config/vercel.model.providers";
+import {
+  mapModel,
+  getModelInfo,
+} from "@/server/config/vercel.model.providers";
 import { nanoid } from "nanoid";
 import {
   createConversation,
@@ -20,6 +23,7 @@ import {
 } from "@/server/chatbot/messageModel.server";
 import { createGetContextTool } from "@/server/tools/vercel/vectorSearch";
 import { createSaveLeadTool } from "@/server/tools/vercel/saveLead";
+import { calculateCost } from "@/server/chatbot/pricing.server";
 
 /**
  * ✅ Loader para cargar mensajes históricos (GET request)
@@ -143,6 +147,9 @@ export async function action({ request }: Route.ActionArgs) {
     - Si no encuentras información, indica claramente que no tienes esa información específica
      `;
 
+  // ⏱️ Start time para medir responseTime
+  const startTime = Date.now();
+
   // ✅ PATRÓN 2025: streamText con TODOS los mensajes (históricos + nuevos)
   const result = streamText({
     model: mapModel(chatbot.aiModel),
@@ -153,24 +160,55 @@ export async function action({ request }: Route.ActionArgs) {
       saveLeadTool: createSaveLeadTool(chatbotId),
     },
     stopWhen: stepCountIs(5),
+    // 📊 TRACKING: onFinish de streamText (recibe totalUsage)
+    onFinish: async ({ text, totalUsage, finishReason }) => {
+      try {
+        // 📊 TRACKING: Extraer métricas de tokens
+        const inputTokens = totalUsage?.promptTokens || 0;
+        const outputTokens = totalUsage?.completionTokens || 0;
+        const totalTokens = totalUsage?.totalTokens || inputTokens + outputTokens;
+
+        // 🔍 Detectar provider y modelo
+        const { provider, model } = getModelInfo(chatbot.aiModel);
+
+        // 💰 Calcular costo
+        const costResult = calculateCost(provider, model, {
+          inputTokens,
+          outputTokens,
+          cachedTokens: 0, // TODO: Vercel AI SDK no expone cached tokens aún
+        });
+
+        // ⏱️ Calcular tiempo de respuesta
+        const responseTime = Date.now() - startTime;
+
+        // 💾 Guardar mensaje con tracking completo
+        await addAssistantMessage(
+          conversation.id,
+          text, // texto completo generado
+          totalTokens, // tokens (legacy)
+          responseTime, // responseTime en ms
+          undefined, // firstTokenLatency (no disponible en Vercel AI SDK)
+          model, // aiModel
+          "web", // channel
+          undefined, // externalMessageId
+          inputTokens, // inputTokens
+          outputTokens, // outputTokens
+          costResult.totalCost, // totalCost en USD
+          provider, // provider
+          0 // cachedTokens
+        );
+
+        console.log(
+          `[Chat Public] ✅ Message tracked: ${totalTokens} tokens, $${costResult.totalCost.toFixed(6)} (${provider}/${model})`
+        );
+      } catch (error) {
+        console.error("[Chat Public Action] ❌ Error saving message:", error);
+      }
+    },
   });
 
   // ✅ PATRÓN OFICIAL: toUIMessageStreamResponse CON originalMessages
   return result.toUIMessageStreamResponse({
     originalMessages: allMessages, // ⬅️ Envía mensajes históricos + nuevos al cliente
-    onFinish: async ({ responseMessage }) => {
-      try {
-        // 💾 Guardar SOLO la respuesta del assistant
-        if (responseMessage?.role === "assistant" && responseMessage.parts) {
-          const textContent = responseMessage.parts
-            .filter((p: any) => p.type === "text")
-            .map((p: any) => p.text)
-            .join("");
-          await addAssistantMessage(conversation.id, textContent);
-        }
-      } catch (error) {
-        console.error("[Chat Public Action] ❌ Error saving message:", error);
-      }
-    },
   });
 }

@@ -1,9 +1,7 @@
 import { data as json } from "react-router";
 import type { Route } from "./+types/api.v1.integrations.whatsapp.webhook";
 import { IntegrationType } from "@prisma/client";
-import {
-  type IncomingMessage,
-} from "../../server/integrations/whatsapp/types";
+import { type IncomingMessage } from "../../server/integrations/whatsapp/types";
 import {
   addWhatsAppUserMessage,
   addWhatsAppAssistantMessage,
@@ -14,8 +12,7 @@ import { db } from "../utils/db.server";
 import { isMessageProcessed } from "../../server/integrations/whatsapp/deduplication.service";
 import { downloadWhatsAppSticker } from "../../server/integrations/whatsapp/media.service";
 import { shouldProcessMessage } from "../../server/integrations/whatsapp/message-debounce.service";
-import { nanoid } from "nanoid";
-// import { updateContactAvatar } from "../../server/integrations/whatsapp/avatar.service"; // TEMPORALMENTE DESHABILITADO - endpoint incorrecto
+import { stepCountIs } from "ai";
 
 // Types for WhatsApp webhook payload
 interface WhatsAppWebhookEntry {
@@ -40,7 +37,14 @@ interface WhatsAppWebhookEntry {
         text?: {
           body: string;
         };
-        type: "text" | "image" | "document" | "audio" | "video" | "sticker" | "reaction";
+        type:
+          | "text"
+          | "image"
+          | "document"
+          | "audio"
+          | "video"
+          | "sticker"
+          | "reaction";
         image?: {
           id: string;
           mime_type: string;
@@ -93,11 +97,6 @@ interface WhatsAppWebhookPayload {
 }
 
 /**
- * DEPRECATED: Old in-memory deduplication (no funciona en múltiples instancias)
- * Ahora usamos MongoDB para deduplicación cross-instance
- */
-
-/**
  * Loader function - handles GET requests for webhook verification
  * WhatsApp sends a GET request to verify the webhook endpoint - simplified
  */
@@ -129,8 +128,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       const integration = await db.integration.findFirst({
         where: {
           platform: "WHATSAPP",
-          webhookVerifyToken: token
-        }
+          webhookVerifyToken: token,
+        },
       });
 
       if (integration) {
@@ -154,7 +153,6 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         "Content-Type": "text/plain",
       },
     });
-
   } catch (error) {
     console.error("Webhook verification failed:", error);
     return new Response("Verification failed", { status: 500 });
@@ -168,7 +166,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 export const action = async ({ request }: Route.ActionArgs) => {
   try {
     // Parse the webhook payload
-    const payload = await request.json() as WhatsAppWebhookPayload;
+    const payload = (await request.json()) as WhatsAppWebhookPayload;
 
     // Process each entry in the webhook
     const results = [];
@@ -191,7 +189,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
                   success: true,
                   messageId: message.id,
                   skipped: true,
-                  reason: "debounced"
+                  reason: "debounced",
                 });
                 continue;
               }
@@ -208,7 +206,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
                   success: true,
                   messageId: message.id,
                   skipped: true,
-                  reason: "duplicate"
+                  reason: "duplicate",
                 });
                 continue;
               }
@@ -218,12 +216,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
               const ageMinutes = (Date.now() - messageTimestamp) / 1000 / 60;
 
               if (ageMinutes > 12) {
-                console.warn(`⏱️ [Webhook] Skipping old message (${ageMinutes.toFixed(1)} min old):`, message.id);
+                console.warn(
+                  `⏱️ [Webhook] Skipping old message (${ageMinutes.toFixed(1)} min old):`,
+                  message.id
+                );
                 results.push({
                   success: true,
                   messageId: message.id,
                   skipped: true,
-                  reason: "too_old"
+                  reason: "too_old",
                 });
                 continue;
               }
@@ -231,21 +232,27 @@ export const action = async ({ request }: Route.ActionArgs) => {
               // 📱 HANDLE REACTIONS: Special processing for WhatsApp reactions
               if (message.type === "reaction" && message.reaction) {
                 // Find integration to get chatbotId
-                const integration = await findIntegrationByPhoneNumber(change.value.metadata.phone_number_id);
+                const integration = await findIntegrationByPhoneNumber(
+                  change.value.metadata.phone_number_id
+                );
 
                 if (!integration) {
-                  console.warn(`⚠️ [Webhook] Integration not found for reaction, phoneNumberId: ${change.value.metadata.phone_number_id}`);
+                  console.warn(
+                    `⚠️ [Webhook] Integration not found for reaction, phoneNumberId: ${change.value.metadata.phone_number_id}`
+                  );
                   results.push({
                     success: false,
                     messageId: message.id,
                     type: "reaction",
-                    error: "Integration not found"
+                    error: "Integration not found",
                   });
                   continue;
                 }
 
                 // Import handleReaction function
-                const { handleReaction } = await import("../../server/integrations/whatsapp/conversation.server");
+                const { handleReaction } = await import(
+                  "../../server/integrations/whatsapp/conversation.server"
+                );
 
                 // Process reaction
                 const reactionResult = await handleReaction(
@@ -269,35 +276,49 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
               // Extract contact name from webhook payload (if available)
               const contactName = change.value.contacts?.[0]?.profile?.name;
-              console.log(`📞 [Webhook] Contact name from payload:`, contactName, '(from:', message.from, ')');
+              console.log(
+                `📞 [Webhook] Contact name from payload:`,
+                contactName,
+                "(from:",
+                message.from,
+                ")"
+              );
 
               const incomingMessage: IncomingMessage = {
                 messageId: message.id,
                 from: message.from,
                 to: change.value.metadata.phone_number_id,
                 type: message.type as any,
-                body: message.text?.body || '',
+                body: message.text?.body || "",
                 timestamp: message.timestamp,
                 // Agregar sticker metadata si existe
-                sticker: message.sticker ? {
-                  id: message.sticker.id,
-                  mimeType: message.sticker.mime_type,
-                  animated: message.sticker.animated
-                } : undefined
+                sticker: message.sticker
+                  ? {
+                      id: message.sticker.id,
+                      mimeType: message.sticker.mime_type,
+                      animated: message.sticker.animated,
+                    }
+                  : undefined,
               };
 
-              const result = await processIncomingMessage(incomingMessage, contactName);
+              const result = await processIncomingMessage(
+                incomingMessage,
+                contactName
+              );
               results.push(result);
             } catch (error) {
               console.error("Error processing individual message:", error);
               results.push({
                 success: false,
                 messageId: message.id,
-                error: error instanceof Error ? error.message : "Unknown error"
+                error: error instanceof Error ? error.message : "Unknown error",
               });
             }
           }
-        } else if ((change.field as string) === "smb_message_echoes" && (change.value as any).message_echoes) {
+        } else if (
+          (change.field as string) === "smb_message_echoes" &&
+          (change.value as any).message_echoes
+        ) {
           // Process echo messages - save AND activate manual mode (auto-takeover)
           for (const echoMessage of (change.value as any).message_echoes) {
             try {
@@ -312,9 +333,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
                 results.push({
                   success: true,
                   messageId: echoMessage.id,
-                  type: 'echo',
+                  type: "echo",
                   skipped: true,
-                  reason: "debounced"
+                  reason: "debounced",
                 });
                 continue;
               }
@@ -330,9 +351,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
                 results.push({
                   success: true,
                   messageId: echoMessage.id,
-                  type: 'echo',
+                  type: "echo",
                   skipped: true,
-                  reason: "duplicate"
+                  reason: "duplicate",
                 });
                 continue;
               }
@@ -350,9 +371,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
                 // 🎨 HANDLE STICKERS in echo messages
                 let echoStickerUrl: string | undefined;
-                if (echoMessage.type === "sticker" && echoMessage.sticker && integration.token) {
+                if (
+                  echoMessage.type === "sticker" &&
+                  echoMessage.sticker &&
+                  integration.token
+                ) {
                   try {
-                    console.log(`📎 [Echo Sticker] Downloading sticker ${echoMessage.sticker.id}...`);
+                    console.log(
+                      `📎 [Echo Sticker] Downloading sticker ${echoMessage.sticker.id}...`
+                    );
                     const stickerResult = await downloadWhatsAppSticker(
                       echoMessage.sticker.id,
                       integration.token
@@ -360,12 +387,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
                     if (stickerResult.success && stickerResult.url) {
                       echoStickerUrl = stickerResult.url;
-                      console.log(`✅ [Echo Sticker] Downloaded successfully (${echoMessage.sticker.animated ? 'animated' : 'static'})`);
+                      console.log(
+                        `✅ [Echo Sticker] Downloaded successfully (${echoMessage.sticker.animated ? "animated" : "static"})`
+                      );
                     } else {
-                      console.error(`❌ [Echo Sticker] Download failed: ${stickerResult.error}`);
+                      console.error(
+                        `❌ [Echo Sticker] Download failed: ${stickerResult.error}`
+                      );
                     }
                   } catch (stickerError) {
-                    console.error(`❌ [Echo Sticker] Error downloading:`, stickerError);
+                    console.error(
+                      `❌ [Echo Sticker] Error downloading:`,
+                      stickerError
+                    );
                   }
                 }
 
@@ -373,14 +407,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
                 await db.message.create({
                   data: {
                     conversationId: conversation.id,
-                    content: echoMessage.type === "sticker" ? "📎 Sticker" : (echoMessage.text?.body || ''),
+                    content:
+                      echoMessage.type === "sticker"
+                        ? "📎 Sticker"
+                        : echoMessage.text?.body || "",
                     role: "ASSISTANT",
                     channel: "whatsapp_echo", // Special channel to indicate echo message
                     externalMessageId: echoMessage.id,
                     tokens: 0,
                     responseTime: 0,
                     picture: echoStickerUrl, // Save sticker URL
-                  }
+                  },
                 });
 
                 // 🔥 AUTO-TAKEOVER: Activar modo manual cuando el negocio responde desde su teléfono
@@ -392,12 +429,14 @@ export const action = async ({ request }: Route.ActionArgs) => {
                   },
                 });
 
-                console.log(`✅ [Auto-Takeover] Activated manual mode for conversation ${conversation.id} (echo from business)`);
+                console.log(
+                  `✅ [Auto-Takeover] Activated manual mode for conversation ${conversation.id} (echo from business)`
+                );
 
                 results.push({
                   success: true,
                   messageId: echoMessage.id,
-                  type: 'echo',
+                  type: "echo",
                   conversationId: conversation.id,
                   autoTakeover: true,
                 });
@@ -407,26 +446,33 @@ export const action = async ({ request }: Route.ActionArgs) => {
               results.push({
                 success: false,
                 messageId: echoMessage.id,
-                type: 'echo',
-                error: error instanceof Error ? error.message : "Unknown error"
+                type: "echo",
+                error: error instanceof Error ? error.message : "Unknown error",
               });
             }
           }
-        } else if ((change.field as string) === "smb_app_state_sync" && change.value) {
+        } else if (
+          (change.field as string) === "smb_app_state_sync" &&
+          change.value
+        ) {
           // Process state_sync webhook - contactos sincronizados desde WhatsApp Business App
           try {
             const syncData = change.value as any;
-            const phoneNumberId = syncData.metadata?.phone_number_id || syncData.phone_number_id;
+            const phoneNumberId =
+              syncData.metadata?.phone_number_id || syncData.phone_number_id;
 
             // Puede contener: app_state (ONLINE/OFFLINE) O state_sync (contactos)
             const appState = syncData.app_state;
             const stateSyncArray = syncData.state_sync;
 
             // Find integration by phone number
-            const integration = await findIntegrationByPhoneNumber(phoneNumberId);
+            const integration =
+              await findIntegrationByPhoneNumber(phoneNumberId);
 
             if (!integration) {
-              console.warn(`⚠️ [State Sync] Integration not found for phone ${phoneNumberId}`);
+              console.warn(
+                `⚠️ [State Sync] Integration not found for phone ${phoneNumberId}`
+              );
               continue;
             }
 
@@ -438,25 +484,27 @@ export const action = async ({ request }: Route.ActionArgs) => {
                 where: { id: integration.id },
                 data: {
                   metadata: {
-                    ...(integration.metadata as any || {}),
+                    ...((integration.metadata as any) || {}),
                     appMobileActive: appState === "ONLINE",
                     lastAppStateSync: new Date().toISOString(),
                   },
                   lastActivity: new Date(),
-                }
+                },
               });
 
               results.push({
                 success: true,
-                type: 'app_state',
+                type: "app_state",
                 phoneNumberId,
-                appState
+                appState,
               });
             }
 
             // Case 2: Contacts Sync
             if (stateSyncArray && Array.isArray(stateSyncArray)) {
-              console.log(`📇 [Contacts Sync] Phone ${phoneNumberId}: ${stateSyncArray.length} contacts`);
+              console.log(
+                `📇 [Contacts Sync] Phone ${phoneNumberId}: ${stateSyncArray.length} contacts`
+              );
 
               let addedCount = 0;
               let removedCount = 0;
@@ -474,7 +522,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
                           chatbotId_phone: {
                             chatbotId: integration.chatbotId,
                             phone: contact.phone_number,
-                          }
+                          },
                         },
                         create: {
                           chatbotId: integration.chatbotId,
@@ -488,7 +536,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
                       });
                       addedCount++;
                     } catch (err) {
-                      console.error(`❌ [Contacts Sync] Error upserting contact ${contact.phone_number}:`, err);
+                      console.error(
+                        `❌ [Contacts Sync] Error upserting contact ${contact.phone_number}:`,
+                        err
+                      );
                     }
                   } else if (action === "remove") {
                     // Eliminar contacto (opcional - podrías marcar como inactivo en lugar de eliminar)
@@ -501,17 +552,22 @@ export const action = async ({ request }: Route.ActionArgs) => {
                       });
                       removedCount++;
                     } catch (err) {
-                      console.error(`❌ [Contacts Sync] Error deleting contact ${contact.phone_number}:`, err);
+                      console.error(
+                        `❌ [Contacts Sync] Error deleting contact ${contact.phone_number}:`,
+                        err
+                      );
                     }
                   }
                 }
               }
 
-              console.log(`✅ [Contacts Sync] Processed ${addedCount} added, ${removedCount} removed`);
+              console.log(
+                `✅ [Contacts Sync] Processed ${addedCount} added, ${removedCount} removed`
+              );
 
               results.push({
                 success: true,
-                type: 'contacts_sync',
+                type: "contacts_sync",
                 phoneNumberId,
                 added: addedCount,
                 removed: removedCount,
@@ -521,8 +577,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
             console.error("Error processing smb_app_state_sync:", error);
             results.push({
               success: false,
-              type: 'state_sync',
-              error: error instanceof Error ? error.message : "Unknown error"
+              type: "state_sync",
+              error: error instanceof Error ? error.message : "Unknown error",
             });
           }
         } else if ((change.field as string) === "history" && change.value) {
@@ -531,27 +587,34 @@ export const action = async ({ request }: Route.ActionArgs) => {
             const historyData = change.value as any;
 
             // 🐛 DEBUG: Log the ENTIRE payload to see what Meta actually sends
-            console.log(`[History Sync RAW PAYLOAD] ${JSON.stringify(historyData, null, 2)}`);
+            console.log(
+              `[History Sync RAW PAYLOAD] ${JSON.stringify(historyData, null, 2)}`
+            );
 
             // ✅ CORRECTO: Estructura real de History Sync
             const phoneNumberId = historyData.metadata?.phone_number_id;
             const historyArray = historyData.history || [];
 
             if (!phoneNumberId) {
-              console.warn(`⚠️ [History Sync] No phone_number_id found in metadata`);
+              console.warn(
+                `⚠️ [History Sync] No phone_number_id found in metadata`
+              );
               continue;
             }
 
             // Find integration by phone number
-            const integration = await findIntegrationByPhoneNumber(phoneNumberId);
+            const integration =
+              await findIntegrationByPhoneNumber(phoneNumberId);
 
             if (!integration) {
-              console.warn(`⚠️ [History Sync] Integration not found for phone ${phoneNumberId}`);
+              console.warn(
+                `⚠️ [History Sync] Integration not found for phone ${phoneNumberId}`
+              );
               results.push({
                 success: false,
-                type: 'history',
+                type: "history",
                 phoneNumberId,
-                error: 'Integration not found'
+                error: "Integration not found",
               });
               continue;
             }
@@ -572,14 +635,18 @@ export const action = async ({ request }: Route.ActionArgs) => {
               totalProgress = Math.max(totalProgress, progress);
               totalPhase = phase;
 
-              console.log(`📜 [History Sync] Processing chunk (phase: ${phase}, progress: ${progress}%, threads: ${threads.length})`);
+              console.log(
+                `📜 [History Sync] Processing chunk (phase: ${phase}, progress: ${progress}%, threads: ${threads.length})`
+              );
 
               // ✅ Iterar sobre threads (conversaciones)
               for (const thread of threads) {
                 const threadId = thread.id; // ID del contacto
                 const messages = thread.messages || [];
 
-                console.log(`💬 [History Sync] Thread ${threadId}: ${messages.length} messages`);
+                console.log(
+                  `💬 [History Sync] Thread ${threadId}: ${messages.length} messages`
+                );
 
                 // Optimización: crear conversación una sola vez por thread (no por cada mensaje)
                 let conversationForThread = null;
@@ -588,15 +655,20 @@ export const action = async ({ request }: Route.ActionArgs) => {
                 for (const msg of messages) {
                   try {
                     // 🐛 DEBUG: Log message type to understand what Meta sends
-                    console.log(`[History Sync Debug] Message type: "${msg.type}", from: ${msg.from}, thread: ${threadId}`);
+                    console.log(
+                      `[History Sync Debug] Message type: "${msg.type}", from: ${msg.from}, thread: ${threadId}`
+                    );
 
                     // ✅ CORRECTO: Usar history_context.from_me para determinar dirección
-                    const isFromBusiness = msg.history_context?.from_me === true;
+                    const isFromBusiness =
+                      msg.history_context?.from_me === true;
                     const customerPhone = threadId; // El thread ID es el número del contacto
 
                     // Skip non-text messages for now
                     if (msg.type !== "text") {
-                      console.log(`[History Sync Debug] ⚠️ Skipping non-text message type: "${msg.type}"`);
+                      console.log(
+                        `[History Sync Debug] ⚠️ Skipping non-text message type: "${msg.type}"`
+                      );
                       skippedCount++;
                       continue;
                     }
@@ -616,27 +688,30 @@ export const action = async ({ request }: Route.ActionArgs) => {
                       where: {
                         conversationId: conversation.id,
                         externalMessageId: msg.id,
-                      }
+                      },
                     });
 
                     if (!existingMsg) {
                       await db.message.create({
                         data: {
                           conversationId: conversation.id,
-                          content: msg.text?.body || '',
+                          content: msg.text?.body || "",
                           role: isFromBusiness ? "ASSISTANT" : "USER",
                           channel: "whatsapp_history",
                           externalMessageId: msg.id,
                           tokens: 0,
                           responseTime: 0,
                           createdAt: new Date(parseInt(msg.timestamp) * 1000), // Convert Unix timestamp
-                        }
+                        },
                       });
                     }
 
                     processedCount++;
                   } catch (msgError) {
-                    console.error(`❌ [History Sync] Error processing message ${msg.id}:`, msgError);
+                    console.error(
+                      `❌ [History Sync] Error processing message ${msg.id}:`,
+                      msgError
+                    );
                     skippedCount++;
                   }
                 }
@@ -645,39 +720,49 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
             // Update integration metadata with sync progress
             const now = new Date();
-            const lastSyncAt = integration.metadata && (integration.metadata as any).lastHistorySyncAt
-              ? new Date((integration.metadata as any).lastHistorySyncAt)
-              : null;
+            const lastSyncAt =
+              integration.metadata &&
+              (integration.metadata as any).lastHistorySyncAt
+                ? new Date((integration.metadata as any).lastHistorySyncAt)
+                : null;
 
             // ✅ PRAGMATIC FIX: Si han pasado 60+ segundos desde el último webhook Y ya recibimos algunos,
             // marcar como completado (Meta no siempre envía progress:100 en cuentas con poco historial)
-            const timeSinceLastSync = lastSyncAt ? (now.getTime() - lastSyncAt.getTime()) / 1000 : 0;
-            const shouldComplete = totalProgress === 100 || (timeSinceLastSync > 60 && lastSyncAt !== null);
+            const timeSinceLastSync = lastSyncAt
+              ? (now.getTime() - lastSyncAt.getTime()) / 1000
+              : 0;
+            const shouldComplete =
+              totalProgress === 100 ||
+              (timeSinceLastSync > 60 && lastSyncAt !== null);
 
             await db.integration.update({
               where: { id: integration.id },
               data: {
                 metadata: {
-                  ...(integration.metadata as any || {}),
+                  ...((integration.metadata as any) || {}),
                   lastHistorySyncProgress: totalProgress,
                   lastHistorySyncPhase: totalPhase,
                   lastHistorySyncAt: now.toISOString(),
                 },
                 syncStatus: shouldComplete ? "completed" : "syncing",
                 syncCompletedAt: shouldComplete ? now : undefined,
-              }
+              },
             });
 
             const totalMessages = processedCount + skippedCount;
-            console.log(`✅ [History Sync] Processed ${processedCount}/${totalMessages} messages (skipped: ${skippedCount})`);
+            console.log(
+              `✅ [History Sync] Processed ${processedCount}/${totalMessages} messages (skipped: ${skippedCount})`
+            );
 
             if (shouldComplete) {
-              console.log(`🎉 [History Sync] Sync completed for integration ${integration.id} (progress: ${totalProgress}%, time since last: ${timeSinceLastSync.toFixed(0)}s)`);
+              console.log(
+                `🎉 [History Sync] Sync completed for integration ${integration.id} (progress: ${totalProgress}%, time since last: ${timeSinceLastSync.toFixed(0)}s)`
+              );
             }
 
             results.push({
               success: true,
-              type: 'history',
+              type: "history",
               phoneNumberId,
               progress: totalProgress,
               phase: totalPhase,
@@ -688,8 +773,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
             console.error("Error processing history sync:", error);
             results.push({
               success: false,
-              type: 'history',
-              error: error instanceof Error ? error.message : "Unknown error"
+              type: "history",
+              error: error instanceof Error ? error.message : "Unknown error",
             });
           }
         }
@@ -701,7 +786,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
       processed: results.length,
       results,
     });
-
   } catch (error) {
     console.error("Webhook processing failed:", error);
 
@@ -719,8 +803,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
 /**
  * Process an incoming WhatsApp message - simplified direct approach
  */
-async function processIncomingMessage(message: IncomingMessage, contactName?: string) {
-
+async function processIncomingMessage(
+  message: IncomingMessage,
+  contactName?: string
+) {
   try {
     // Find the integration for this phone number
     const integration = await findIntegrationByPhoneNumber(message.to);
@@ -728,7 +814,7 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     if (!integration || !integration.isActive) {
       console.warn("Integration not found or not active", {
         phoneNumberId: message.to,
-        integration: integration?.id
+        integration: integration?.id,
       });
       throw new Error("Integration is not active");
     }
@@ -742,12 +828,16 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     }
 
     // Create or find conversation FIRST (needed for Contact.conversationId)
-    console.log(`🔍 [Webhook] Creating/finding conversation for ${message.from}, chatbot: ${integration.chatbotId}`);
+    console.log(
+      `🔍 [Webhook] Creating/finding conversation for ${message.from}, chatbot: ${integration.chatbotId}`
+    );
     const conversation = await getOrCreateConversation(
       message.from,
       integration.chatbotId
     );
-    console.log(`✅ [Webhook] Conversation ready: ${conversation.id}, status: ${conversation.status}, manualMode: ${conversation.manualMode}`);
+    console.log(
+      `✅ [Webhook] Conversation ready: ${conversation.id}, status: ${conversation.status}, manualMode: ${conversation.manualMode}`
+    );
 
     // ✅ CREATE/UPDATE CONTACT: Save contact info from WhatsApp when message arrives
     // MUST be AFTER conversation creation to have conversationId
@@ -760,7 +850,7 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
             chatbotId_phone: {
               chatbotId: integration.chatbotId,
               phone: normalizedPhone,
-            }
+            },
           },
           create: {
             chatbotId: integration.chatbotId,
@@ -774,20 +864,29 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
           },
         });
 
-        console.log(`✅ Contact saved: ${contactName} (${normalizedPhone}) - conversationId: ${conversation.id}`);
+        console.log(
+          `✅ Contact saved: ${contactName} (${normalizedPhone}) - conversationId: ${conversation.id}`
+        );
 
-        // 📸 FETCH AVATAR: TEMPORALMENTE DESHABILITADO - endpoint incorrecto causa errores
-        // Meta API no soporta /${phoneNumber}/profile_picture directamente
-        // TODO: Implementar método correcto usando Media API o Graph API con formato correcto
-        // if (integration.token) {
-        //   updateContactAvatar(
-        //     integration.chatbotId,
-        //     normalizedPhone,
-        //     integration.token
-        //   ).catch((err) => {
-        //     console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
-        //   });
-        // }
+        // 📸 FETCH AVATAR: Intentar obtener avatar (non-blocking)
+        // Si el endpoint funciona, se guardará. Si falla, solo se loggea el error.
+        if (integration.token) {
+          // Importar función de avatar de forma asíncrona
+          import("../../server/integrations/whatsapp/avatar.service")
+            .then(({ updateContactAvatar }) => {
+              updateContactAvatar(
+                integration.chatbotId,
+                normalizedPhone,
+                integration.token!
+              ).catch((err) => {
+                console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
+                // Error silenciado - no afecta el flujo del mensaje
+              });
+            })
+            .catch((err) => {
+              console.error("⚠️ Failed to import avatar service:", err);
+            });
+        }
       } catch (contactError) {
         console.error("⚠️ Failed to save contact, continuing:", contactError);
         // Don't fail the message processing if contact save fails
@@ -798,7 +897,9 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     let stickerUrl: string | undefined;
     if (message.type === "sticker" && message.sticker && integration.token) {
       try {
-        console.log(`📎 [Sticker] Downloading sticker ${message.sticker.id}...`);
+        console.log(
+          `📎 [Sticker] Downloading sticker ${message.sticker.id}...`
+        );
         const stickerResult = await downloadWhatsAppSticker(
           message.sticker.id,
           integration.token
@@ -806,7 +907,9 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
 
         if (stickerResult.success && stickerResult.url) {
           stickerUrl = stickerResult.url;
-          console.log(`✅ [Sticker] Downloaded successfully (${message.sticker.animated ? 'animated' : 'static'})`);
+          console.log(
+            `✅ [Sticker] Downloaded successfully (${message.sticker.animated ? "animated" : "static"})`
+          );
         } else {
           console.error(`❌ [Sticker] Download failed: ${stickerResult.error}`);
         }
@@ -817,7 +920,9 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
     }
 
     // Save the incoming message first
-    console.log(`💾 [Webhook] Saving user message to conversation ${conversation.id}`);
+    console.log(
+      `💾 [Webhook] Saving user message to conversation ${conversation.id}`
+    );
     const userMessage = await addWhatsAppUserMessage(
       conversation.id,
       message.type === "sticker" ? "📎 Sticker" : message.body,
@@ -828,85 +933,107 @@ async function processIncomingMessage(message: IncomingMessage, contactName?: st
 
     // Check if conversation is in manual mode
     if (conversation.manualMode) {
-      console.log(`⏸️ [Webhook] Conversation ${conversation.id} in manual mode - skipping bot response`);
+      console.log(
+        `⏸️ [Webhook] Conversation ${conversation.id} in manual mode - skipping bot response`
+      );
       return {
         success: true,
         messageId: message.messageId,
         conversationId: conversation.id,
         userMessageId: userMessage.id,
         mode: "manual",
-        note: "Message saved but no automatic response generated (manual mode)"
+        note: "Message saved but no automatic response generated (manual mode)",
       };
     }
 
     // Get recent conversation history for context (only if not in manual mode)
-    console.log(`📚 [Webhook] Loading conversation history for ${conversation.id}`);
+    console.log(
+      `📚 [Webhook] Loading conversation history for ${conversation.id}`
+    );
     const recentMessages = await db.message.findMany({
       where: { conversationId: conversation.id },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 20, // Unificado a 20 mensajes (window estándar)
       select: {
         role: true,
         content: true,
         createdAt: true,
-        channel: true // ✅ Incluir channel para detectar mensajes echo
-      }
+        channel: true, // ✅ Incluir channel para detectar mensajes echo
+      },
     });
-    console.log(`📚 [Webhook] Loaded ${recentMessages.length} messages from history`);
+    console.log(
+      `📚 [Webhook] Loaded ${recentMessages.length} messages from history`
+    );
 
     // Generate chatbot response with history context
-    console.log(`🤖 [Webhook] Generating bot response for conversation ${conversation.id}`);
+    console.log(
+      `🤖 [Webhook] Generating bot response for conversation ${conversation.id}`
+    );
     const botResponse = await generateChatbotResponse(
       message.body,
       chatbot,
       conversation.id,
       recentMessages.reverse() // Oldest first for context
     );
-    console.log(`✅ [Webhook] Bot response generated: ${botResponse.content.substring(0, 100)}... (${botResponse.tokens} tokens, ${botResponse.responseTime}ms)`);
-
-    // Save the bot response
-    console.log(`💾 [Webhook] Saving assistant message to conversation ${conversation.id}`);
-    const assistantMessage = await addWhatsAppAssistantMessage(
-      conversation.id,
-      botResponse.content,
-      undefined, // WhatsApp message ID will be set when sent
-      botResponse.tokens,
-      botResponse.responseTime
+    console.log(
+      `✅ [Webhook] Bot response generated: ${botResponse.content.substring(0, 100)}... (${botResponse.tokens} tokens, ${botResponse.responseTime}ms)`
     );
-    console.log(`✅ [Webhook] Assistant message saved: ${assistantMessage.id}`);
+
+    // ✅ El mensaje ya fue guardado en onFinish callback dentro de generateChatbotResponse()
+    // ✅ Tool usage tracking también se hizo en onFinish
+    console.log(
+      `✅ [Webhook] Assistant message already saved in onFinish: ${botResponse.assistantMessageId}`
+    );
+
+    if (!botResponse.assistantMessageId) {
+      console.error(
+        "❌ [Webhook] CRITICAL: assistantMessageId missing from botResponse - message may not have been saved"
+      );
+      throw new Error("Failed to save assistant message");
+    }
 
     // Send response back to WhatsApp using simplified HTTP call
-    console.log(`📤 [Webhook] Sending response to WhatsApp for ${message.from}`);
+    console.log(
+      `📤 [Webhook] Sending response to WhatsApp for ${message.from}`
+    );
     const messageResponse = await sendWhatsAppMessage(
       message.from,
       botResponse.content,
       integration
     );
-    console.log(`✅ [Webhook] Response sent to WhatsApp, messageId: ${messageResponse.messageId}`);
+    console.log(
+      `✅ [Webhook] Response sent to WhatsApp, messageId: ${messageResponse.messageId}`
+    );
 
     // Update the assistant message with the WhatsApp message ID
-    if (messageResponse.messageId) {
+    if (messageResponse.messageId && botResponse.assistantMessageId) {
       try {
         await db.message.update({
-          where: { id: assistantMessage.id },
+          where: { id: botResponse.assistantMessageId },
           data: { externalMessageId: messageResponse.messageId },
         });
-        console.log(`✅ [Webhook] Assistant message updated with WhatsApp ID: ${messageResponse.messageId}`);
+        console.log(
+          `✅ [Webhook] Assistant message updated with WhatsApp ID: ${messageResponse.messageId}`
+        );
       } catch (error) {
-        console.warn("⚠️ [Webhook] Failed to update message with WhatsApp ID:", error);
+        console.warn(
+          "⚠️ [Webhook] Failed to update message with WhatsApp ID:",
+          error
+        );
       }
     }
 
-    console.log(`🎉 [Webhook] Message processing completed successfully for ${message.messageId}`);
+    console.log(
+      `🎉 [Webhook] Message processing completed successfully for ${message.messageId}`
+    );
     return {
       success: true,
       messageId: message.messageId,
       conversationId: conversation.id,
       userMessageId: userMessage.id,
-      assistantMessageId: assistantMessage.id,
+      assistantMessageId: botResponse.assistantMessageId!,
       whatsappMessageId: messageResponse.messageId,
     };
-
   } catch (error) {
     console.error("Error processing WhatsApp message:", error);
     throw error;
@@ -929,34 +1056,29 @@ async function findIntegrationByPhoneNumber(phoneNumberId: string) {
 /**
  * Send WhatsApp message using direct HTTP call
  */
-async function sendWhatsAppMessage(
-  to: string,
-  text: string,
-  integration: any
-) {
+async function sendWhatsAppMessage(to: string, text: string, integration: any) {
   const url = `https://graph.facebook.com/v18.0/${integration.phoneNumberId}/messages`;
 
   const payload = {
-    messaging_product: 'whatsapp',
+    messaging_product: "whatsapp",
     to: to,
     text: {
-      body: text.substring(0, 4096) // WhatsApp has 4096 character limit
-    }
+      body: text.substring(0, 4096), // WhatsApp has 4096 character limit
+    },
   };
 
-
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${integration.token}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${integration.token}`,
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('WhatsApp API error:', response.status, errorText);
+    console.error("WhatsApp API error:", response.status, errorText);
     throw new Error(`WhatsApp API error: ${response.status} - ${errorText}`);
   }
 
@@ -964,55 +1086,74 @@ async function sendWhatsAppMessage(
 
   return {
     messageId: result.messages?.[0]?.id,
-    success: true
+    success: true,
   };
 }
 
 // Removed unused Effect functions - now using simplified direct functions above
 
 /**
- * Generate chatbot response using Vercel AI SDK (streamText)
+ * Generate chatbot response using Vercel AI SDK (generateText)
+ * ✅ Sigue el patrón de chat.vercel.public.tsx con onFinish callback
  */
 async function generateChatbotResponse(
   userMessage: string,
   chatbot: any,
   _conversationId: string,
   conversationHistory?: any[]
-) {
+): Promise<{
+  content: string;
+  tokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  responseTime: number;
+  toolsUsed: string[];
+  assistantMessageId?: string; // ID del mensaje guardado en DB (desde onFinish)
+}> {
   const startTime = Date.now();
 
+  // ✅ Variable compartida para pasar el messageId desde onFinish
+  let savedMessageId: string | undefined;
+
   try {
-    // ✅ IMPORTAR Vercel AI SDK
-    const { streamText, convertToModelMessages } = await import("ai");
-    const { mapModel } = await import("../../server/config/vercel.model.providers");
-    const { createGetContextTool } = await import("../../server/tools/vercel/vectorSearch");
-    const { createSaveLeadTool } = await import("../../server/tools/vercel/saveLead");
+    // ✅ IMPORTAR Vercel AI SDK - generateText para WhatsApp (no streaming)
+    const { generateText, stepCountIs } = await import("ai");
+    const { mapModel } = await import(
+      "../../server/config/vercel.model.providers"
+    );
+    const { createGetContextTool } = await import(
+      "../../server/tools/vercel/vectorSearch"
+    );
+    const { createSaveLeadTool } = await import(
+      "../../server/tools/vercel/saveLead"
+    );
 
     // Build conversation history from recent messages
-    const history = conversationHistory?.slice(-20).map(msg => {
-      const role = (msg.role === "USER" ? "user" : "assistant") as "user" | "assistant";
-      let content = msg.content;
+    const history =
+      conversationHistory?.slice(-20).map((msg) => {
+        const role = (msg.role === "USER" ? "user" : "assistant") as
+          | "user"
+          | "assistant";
+        let content = msg.content;
 
-      // 📱 Marcar mensajes echo (respuestas manuales del negocio)
-      if (role === "assistant" && (msg as any).channel === "whatsapp_echo") {
-        content = `📱 [Respuesta manual del negocio]: ${content}`;
-      }
+        // 📱 Marcar mensajes echo (respuestas manuales del negocio)
+        if (role === "assistant" && (msg as any).channel === "whatsapp_echo") {
+          content = `📱 [Respuesta manual del negocio]: ${content}`;
+        }
 
-      return {
-        id: msg.id || nanoid(),
-        role,
-        parts: [{ type: "text" as const, text: content }]
-      };
-    }) || [];
+        return {
+          role,
+          content,
+        };
+      }) || [];
 
     // ✅ Agregar mensaje actual del usuario
     const allMessages = [
       ...history,
       {
-        id: nanoid(),
         role: "user" as const,
-        parts: [{ type: "text" as const, text: userMessage }]
-      }
+        content: userMessage,
+      },
     ];
 
     const systemPrompt = `
@@ -1033,43 +1174,124 @@ async function generateChatbotResponse(
     - Si no encuentras información, indica claramente que no tienes esa información específica
      `;
 
-    // ✅ USAR streamText del Vercel AI SDK
-    const { stepCountIs } = await import("ai");
-    const result = streamText({
+    // ✅ USAR generateText para WhatsApp (más eficiente que streamText)
+    const result = await generateText({
       model: mapModel(chatbot.aiModel),
-      messages: convertToModelMessages(allMessages),
+      messages: allMessages,
       system: systemPrompt,
       tools: {
         getContextTool: createGetContextTool(chatbot.id),
         saveLeadTool: createSaveLeadTool(chatbot.id),
       },
       stopWhen: stepCountIs(5),
+      // 📊 TRACKING: onFinish callback (patrón Vercel AI SDK 2025)
+      onFinish: async ({ text, usage, toolCalls, finishReason }) => {
+        try {
+          // 📊 TRACKING: Extraer métricas de tokens
+          const inputTokens = usage?.promptTokens || 0;
+          const outputTokens = usage?.completionTokens || 0;
+          const totalTokens = usage?.totalTokens || inputTokens + outputTokens;
+
+          // 🔍 Detectar provider y modelo
+          const { getModelInfo } = await import(
+            "../../server/config/vercel.model.providers"
+          );
+          const { provider, model } = getModelInfo(chatbot.aiModel);
+
+          // 💰 Calcular costo
+          const { calculateCost } = await import(
+            "../../server/chatbot/pricing.server"
+          );
+          const costResult = calculateCost(provider, model, {
+            inputTokens,
+            outputTokens,
+            cachedTokens: 0, // TODO: Vercel AI SDK no expone cached tokens aún
+          });
+
+          // ⏱️ Calcular tiempo de respuesta
+          const responseTime = Date.now() - startTime;
+
+          // 💾 Guardar mensaje con tracking completo
+          const savedMessage = await addWhatsAppAssistantMessage(
+            _conversationId,
+            text, // texto completo generado
+            undefined, // WhatsApp message ID (se actualizará después de enviar)
+            totalTokens, // tokens (legacy)
+            responseTime, // responseTime en ms
+            undefined, // firstTokenLatency (no aplica para generateText)
+            model, // aiModel
+            inputTokens, // inputTokens
+            outputTokens, // outputTokens
+            costResult.totalCost, // totalCost en USD
+            provider, // provider
+            0 // cachedTokens
+          );
+
+          // ✅ Guardar ID del mensaje en variable compartida
+          savedMessageId = savedMessage.id;
+
+          // 🔧 Track tool usage
+          if (toolCalls && toolCalls.length > 0) {
+            console.log(
+              `🔧 [WhatsApp onFinish] Tracking ${toolCalls.length} tool calls`
+            );
+
+            const { ToolUsageTracker } = await import(
+              "../../server/integrations/tool-usage-tracker"
+            );
+
+            for (const toolCall of toolCalls) {
+              await ToolUsageTracker.trackUsage({
+                chatbotId: chatbot.id,
+                conversationId: _conversationId,
+                toolName: toolCall.toolName,
+                success: true,
+                userMessage,
+                response: text,
+              }).catch((err) =>
+                console.error("⚠️ Failed to track tool usage:", err)
+              );
+            }
+
+            console.log(
+              `✅ [WhatsApp onFinish] Tool usage tracked: ${toolCalls.map((tc) => tc.toolName).join(", ")}`
+            );
+          }
+
+          console.log(
+            `[WhatsApp onFinish] ✅ Message tracked: ${totalTokens} tokens, $${costResult.totalCost.toFixed(6)} (${provider}/${model}), finishReason: ${finishReason}`
+          );
+        } catch (error) {
+          console.error("[WhatsApp onFinish] ❌ Error in tracking:", error);
+        }
+      },
     });
-
-    // Acumular respuesta completa desde el stream
-    let responseContent = '';
-    let toolsUsed: string[] = [];
-
-    for await (const chunk of result.textStream) {
-      responseContent += chunk;
-    }
 
     const responseTime = Date.now() - startTime;
 
     return {
-      content: responseContent.trim() || chatbot.welcomeMessage || "Lo siento, no pude generar una respuesta.",
-      tokens: Math.ceil(responseContent.length / 4), // Estimated tokens
+      content:
+        result.text.trim() ||
+        chatbot.welcomeMessage ||
+        "Lo siento, no pude generar una respuesta.",
+      tokens: result.usage?.totalTokens || 0,
+      inputTokens: result.usage?.promptTokens || 0,
+      outputTokens: result.usage?.completionTokens || 0,
       responseTime,
-      toolsUsed
+      toolsUsed: result.toolCalls?.map((tc) => tc.toolName) || [],
+      assistantMessageId: savedMessageId, // ✅ ID del mensaje guardado en onFinish
     };
-
   } catch (error) {
     console.error("❌ [WhatsApp] Error generating chatbot response:", error);
 
     return {
-      content: "Lo siento, estoy teniendo problemas para procesar tu mensaje. Por favor intenta de nuevo.",
+      content:
+        "Lo siento, estoy teniendo problemas para procesar tu mensaje. Por favor intenta de nuevo.",
       tokens: 20,
+      inputTokens: 0,
+      outputTokens: 0,
       responseTime: Date.now() - startTime,
+      toolsUsed: [],
     };
   }
 }

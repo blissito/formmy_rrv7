@@ -5,6 +5,63 @@
 
 ## 🔧 PROBLEMAS RESUELTOS - WhatsApp Conversaciones
 
+### Limitación: Avatares de WhatsApp - Compatibilidad con Datos Legacy (2025-11-23)
+
+**Problema**: WhatsApp Cloud API NO proporciona avatares/fotos de perfil de contactos en webhooks.
+
+**Investigación**:
+- ❌ El webhook payload solo incluye `contacts[].profile.name` (sin foto)
+- ❌ Meta Graph API NO tiene endpoint público para obtener fotos de perfil de contactos
+- ❌ Solo se puede gestionar la foto de perfil del **negocio** (no de usuarios)
+
+**Fuentes**:
+- [Stack Overflow: WhatsApp Cloud API - Get User Profile Picture](https://stackoverflow.com/questions/79492845/whatsapp-cloud-api-how-to-get-user-profile-picture-and-locale-in-a-user-initia)
+- [WhatsApp Cloud API Webhook Payload Structure](https://docs.ycloud.com/reference/whatsapp-inbound-message-webhook-examples)
+
+**Estructura del Webhook** (solo nombre disponible):
+```typescript
+contacts: [{
+  profile: {
+    name: string  // ✅ Disponible
+    // ❌ NO incluye: profile_picture_url, avatar, etc.
+  },
+  wa_id: string
+}]
+```
+
+**Estrategia de Compatibilidad**:
+- ✅ Campo `Contact.profilePictureUrl` se mantiene en schema
+- ✅ Avatares existentes se conservan y muestran
+- ✅ Servicio `avatar.service.ts` corregido (field name: `profilePictureUrl`)
+- ✅ **Fetch de avatares ACTIVO** - intenta obtener en cada mensaje
+- 🛡️ **Error handling robusto** - fallos no crashean el webhook
+- ⚠️ Endpoint `/${phoneNumber}/profile_picture` puede fallar (limitación de API)
+
+**Comportamiento Actual**:
+- ✅ Avatares existentes en DB → Se muestran en UI
+- ✅ Avatares nuevos → **Se intenta obtener** (mismo método que antes)
+- 🛡️ Si fallo → Log de error (non-blocking), mensaje continúa procesándose
+- 🔄 Actualización automática → **HABILITADA** con error handling
+
+**Alternativas** (para futuro):
+- Whapi.Cloud API (de pago) - compatible drop-in
+- Servicios de terceros con Graph API extendido
+
+**Implementación**:
+```typescript
+// app/routes/api.v1.integrations.whatsapp.webhook.tsx (línea 783)
+import("../../server/integrations/whatsapp/avatar.service").then(({ updateContactAvatar }) => {
+  updateContactAvatar(chatbotId, phone, token).catch((err) => {
+    console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
+  });
+});
+```
+
+**Fecha**: 2025-11-23
+**Estado**: ✅ **ACTIVO** - Fetch de avatares habilitado con error handling robusto
+
+---
+
 ### Problema: Conversaciones mezcladas entre chatbots (2025-11-13)
 
 **Síntoma**: Cuando un mismo número de WhatsApp enviaba mensajes a múltiples chatbots, todos los mensajes se guardaban en la conversación del primer chatbot.

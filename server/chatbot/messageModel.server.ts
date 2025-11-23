@@ -307,7 +307,12 @@ export async function addWhatsAppAssistantMessage(
   tokens?: number,
   responseTime?: number,
   firstTokenLatency?: number,
-  aiModel?: string
+  aiModel?: string,
+  inputTokens?: number,
+  outputTokens?: number,
+  totalCost?: number,
+  provider?: string,
+  cachedTokens?: number
 ): Promise<Message> {
   return createMessage({
     conversationId,
@@ -316,6 +321,11 @@ export async function addWhatsAppAssistantMessage(
     channel: "whatsapp",
     externalMessageId: whatsappMessageId,
     tokens,
+    inputTokens,
+    outputTokens,
+    cachedTokens,
+    totalCost,
+    provider,
     responseTime,
     firstTokenLatency,
     aiModel,

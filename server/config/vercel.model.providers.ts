@@ -17,6 +17,32 @@ export const mapModel = (modelName: string) => {
   }
 };
 
+/**
+ * 📊 Get Model Info - Retorna provider y model string para tracking
+ *
+ * Usa la misma fuente de verdad que mapModel() para garantizar
+ * consistencia en el tracking de tokens y costos.
+ *
+ * @param modelName - Nombre del modelo desde chatbot.aiModel
+ * @returns { provider, model } para usar en tracking/analytics
+ */
+export const getModelInfo = (
+  modelName: string
+): { provider: string; model: string } => {
+  switch (modelName) {
+    case "claude-sonnet-4-5":
+      return { provider: "anthropic", model: "claude-sonnet-4-5-20250929" };
+    case "claude-haiku-4-5":
+      return { provider: "anthropic", model: "claude-haiku-4-5-20251001" };
+    case "gemini-3-pro":
+      return { provider: "google", model: "gemini-2.5-flash-lite" };
+    case "gpt-5-nano":
+      return { provider: "openai", model: "gpt-4o-mini" };
+    default:
+      return { provider: "openai", model: "gpt-4.1-mini" };
+  }
+};
+
 export const mapTools = (modelName: string) => {
   // ⚠️ DEPRECATED: No usar para nuevas implementaciones
   // Usar createPublicTools() para chatbots públicos

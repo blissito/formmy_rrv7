@@ -95,8 +95,8 @@ export async function updateContactAvatar(
       return false;
     }
 
-    // Si ya tiene avatarUrl, no volver a fetchear (optimización)
-    if (contact.avatarUrl) {
+    // Si ya tiene profilePictureUrl, no volver a fetchear (optimización)
+    if (contact.profilePictureUrl) {
       console.log(`⏭️ [Avatar] Contacto ${phoneNumber} ya tiene avatar`);
       return true;
     }
@@ -108,7 +108,7 @@ export async function updateContactAvatar(
       // Actualizar contacto con URL
       await db.contact.update({
         where: { id: contact.id },
-        data: { avatarUrl: result.url },
+        data: { profilePictureUrl: result.url },
       });
 
       console.log(`✅ [Avatar] Avatar actualizado para contacto ${phoneNumber}`);

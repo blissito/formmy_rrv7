@@ -28,6 +28,7 @@ import { createGetUsageLimitsTool } from "@/server/tools/vercel/usageLimits";
 import { createWebSearchTool } from "@/server/tools/vercel/webSearch";
 import { createGetDateTimeTool } from "@/server/tools/vercel/datetime";
 import { db } from "~/utils/db.server";
+import { calculateCost } from "@/server/chatbot/pricing.server";
 
 // 🔒 SECURITY: Admin emails autorizados para modificar Ghosty
 const ADMINS = ["fixtergeek@gmail.com", "bremin11.20.93@gmail.com"];
@@ -174,6 +175,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
     execute: async () => user,
   });
 
+  // ⏱️ Start time para medir responseTime
+  const startTime = Date.now();
+
   // @todo mover el system prompt a su propio archivo
   const result = streamText({
     model: openai("gpt-4.1-mini-2025-04-14"), // The best for tool calling
@@ -215,6 +219,45 @@ export const action = async ({ request }: Route.ActionArgs) => {
       dummyArtifactTool,
     },
     stopWhen: stepCountIs(5), // unless we need more power for tools, 12 maybe?
+    // 📊 TRACKING: onFinish de streamText (recibe totalUsage)
+    onFinish: async ({ text, totalUsage, finishReason }) => {
+      try {
+        // 📊 TRACKING: Métricas de Ghosty (para observabilidad)
+        const inputTokens = totalUsage?.promptTokens || 0;
+        const outputTokens = totalUsage?.completionTokens || 0;
+        const totalTokens = totalUsage?.totalTokens || inputTokens + outputTokens;
+
+        // 🔍 Modelo hardcodeado (GPT-4.1-mini)
+        const provider = "openai";
+        const model = "gpt-4.1-mini-2025-04-14";
+
+        // 💰 Calcular costo
+        const costResult = calculateCost(provider, model, {
+          inputTokens,
+          outputTokens,
+          cachedTokens: 0,
+        });
+
+        // ⏱️ Calcular tiempo de respuesta
+        const responseTime = Date.now() - startTime;
+
+        console.log(
+          `[Ghosty] ✅ Response tracked: ${totalTokens} tokens, $${costResult.totalCost.toFixed(6)} (${provider}/${model}), ${responseTime}ms`
+        );
+
+        // TODO: Opcional - Crear Trace para observabilidad
+        // await createTrace({
+        //   userId: user.id,
+        //   chatbotId: GHOSTY_CHATBOT_ID,
+        //   input: messages[messages.length - 1].content,
+        //   model,
+        //   totalTokens,
+        //   totalCost: costResult.totalCost,
+        // });
+      } catch (error) {
+        console.error("[Ghosty] ❌ Error tracking metrics:", error);
+      }
+    },
   });
 
   return result.toUIMessageStreamResponse();
