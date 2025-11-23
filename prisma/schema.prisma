@@ -309,7 +309,6 @@ model Chatbot {
   temperature        Float             @default(1)
   instructions       String?
   customInstructions String?
-  contexts           ContextItem[] // @TODO eliminar y renombrar
   primaryColor       String?
   avatarUrl          String?
   theme              String?           @default("light")
