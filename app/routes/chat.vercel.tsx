@@ -92,7 +92,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
             });
 
       if (!result.success) {
-        return { success: false, error: result.error.message };
+        return { success: false, error: result.error?.message || "Error al actualizar contexto" };
       }
 
       return {
@@ -119,7 +119,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
             });
 
       if (!result.success) {
-        return { success: false, error: result.error.message };
+        return { success: false, error: result.error?.message || "Error al crear contexto" };
       }
 
       return { success: true, contextId: result.contextId, updated: false };
@@ -146,7 +146,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
           });
 
     if (!result.success) {
-      return { success: false, error: result.error.message };
+      return { success: false, error: result.error?.message || "Error al eliminar contexto" };
     }
 
     return { success: true };
@@ -220,10 +220,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
   return result.toUIMessageStreamResponse();
 };
 
+// @TODO: revisit
 const dummyArtifactTool = tool({
   inputSchema: z.object({}),
-  description:
-    "Esta herramienta detona la apertura del artefacto de edición de texto",
+  description: "Esta herramienta detona la apertura del artefacto contenedor",
   execute: async () => null,
 });
 

@@ -1,59 +1,75 @@
-/**
- * 🌍 Chat Público - Vercel AI SDK
- *
- * Endpoint para chatbots embebibles con soporte de usuarios anónimos.
- *
- * Features:
- * - Usuarios anónimos con tracking de sessionId
- * - Validación de límites del plan del OWNER (no del visitor)
- * - Persistencia de conversaciones y mensajes
- * - Configuración dinámica desde chatbot (model, instructions, personality)
- * - Tools por plan del owner (RAG, web search, save contact, datetime)
- * - Streaming con onFinish callback
- *
- * 🔒 SEGURIDAD:
- * - Validación de formato ObjectId
- * - Filtrado de chatbots por status ACTIVE
- * - Tools con closure (chatbotId capturado, no modificable por modelo)
- * - Validación de límites ANTES de generar respuesta
- */
-
-import { streamText, convertToModelMessages } from "ai";
 import type { Route } from "./+types/chat.vercel.public";
+import { validateMonthlyConversationLimit } from "@/server/chatbot/planLimits.server";
+import {
+  streamText,
+  convertToModelMessages,
+  stepCountIs,
+  type UIMessage,
+} from "ai";
 import { db } from "~/utils/db.server";
-import { mapModel, createPublicTools } from "@/server/config/vercel.model.providers";
+import { mapModel } from "@/server/config/vercel.model.providers";
+import { nanoid } from "nanoid";
+import {
+  createConversation,
+  getConversationBySessionId,
+} from "@/server/chatbot/conversationModel.server";
+import {
+  addAssistantMessage,
+  addUserMessage,
+  getMessagesByConversationId,
+} from "@/server/chatbot/messageModel.server";
+import { createGetContextTool } from "@/server/tools/vercel/vectorSearch";
+import { createSaveLeadTool } from "@/server/tools/vercel/saveLead";
+
+/**
+ * ✅ Loader para cargar mensajes históricos (GET request)
+ * El cliente usa esto para restaurar conversaciones al recargar
+ */
+export async function loader({ request }: Route.LoaderArgs) {
+  const url = new URL(request.url);
+  const sessionId = url.searchParams.get("sessionId");
+  const chatbotId = url.searchParams.get("chatbotId");
+
+  if (!sessionId || !chatbotId) {
+    return Response.json({ messages: [] });
+  }
+
+  // Buscar conversación por sessionId
+  const conversation = await getConversationBySessionId(sessionId, chatbotId);
+
+  if (!conversation) {
+    return Response.json({ messages: [] });
+  }
+
+  // Cargar mensajes históricos
+  const dbMessages = await getMessagesByConversationId(conversation.id);
+  const messages: UIMessage[] = dbMessages
+    .filter((msg) => msg.role !== "SYSTEM")
+    .map((msg) => ({
+      id: msg.id,
+      role: msg.role.toLowerCase() as "user" | "assistant",
+      parts: [{ type: "text" as const, text: msg.content }],
+    }));
+
+  return Response.json({ messages });
+}
 
 export async function action({ request }: Route.ActionArgs) {
   const url = new URL(request.url);
-  const { messages, sessionId } = await request.json();
+  // ✅ Patrón "Last Message Only" - recibir solo el nuevo mensaje
+  const { message, id: sessionId } = await request.json();
   const chatbotId = url.searchParams.get("chatbotId");
 
   // 🔒 VALIDAR FORMATO OBJECTID
-  if (!chatbotId || !/^[0-9a-fA-F]{24}$/.test(chatbotId)) {
+  if (!chatbotId) {
     return Response.json(
       { error: "chatbotId inválido o faltante" },
-      { status: 400 }
+      { status: 404 }
     );
   }
 
-  // 🔐 AUTENTICACIÓN ANONYMOUS
-  // Los usuarios públicos usan un visitorId o userId temporal
-  const { authenticateAnonymous } = await import("@/server/chatbot-v0/auth");
-  const { user, isAnonymous } = await authenticateAnonymous(request);
-  const visitorId = isAnonymous ? user.id : null;
-
-  // 📦 FETCH CHATBOT CON RELACIONES
   const chatbot = await db.chatbot.findUnique({
     where: { id: chatbotId, status: "ACTIVE" },
-    include: {
-      User: {
-        select: { id: true, plan: true },
-      },
-      integrations: true,
-      contexts: {
-        select: { id: true }, // Solo para detectar si tiene RAG
-      },
-    },
   });
 
   if (!chatbot) {
@@ -63,113 +79,98 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  // 🛑 VALIDAR LÍMITES DEL OWNER (NO del visitor)
-  const { validateMonthlyConversationLimit } = await import(
-    "@/server/chatbot/planLimits.server"
-  );
-  const limitCheck = await validateMonthlyConversationLimit(chatbotId);
+  // ✅ BUSCAR conversación existente ANTES de validar límites
+  let conversation = await getConversationBySessionId(sessionId, chatbotId);
 
-  if (!limitCheck.canCreate) {
-    return Response.json(
-      {
-        error: `Este chatbot ha alcanzado su límite mensual de conversaciones (${limitCheck.maxAllowed}). Por favor contacta al propietario.`,
-      },
-      { status: 429 }
-    );
+  // ✅ CARGAR MENSAJES HISTÓRICOS DE LA DB (patrón 2025)
+  let historicalMessages: UIMessage[] = [];
+  if (conversation) {
+    const dbMessages = await getMessagesByConversationId(conversation.id);
+    historicalMessages = dbMessages
+      .filter((msg) => msg.role !== "SYSTEM")
+      .map((msg) => ({
+        id: msg.id,
+        role: msg.role.toLowerCase() as "user" | "assistant",
+        parts: [{ type: "text" as const, text: msg.content }],
+      }));
   }
 
-  // 💬 GET/CREATE CONVERSATION
-  const {
-    getConversationBySessionId,
-    createConversation,
-    addUserMessage,
-    addAssistantMessage,
-    getMessagesByConversationId,
-    incrementConversationCount,
-  } = await import("@/server/chatbot/conversationModel.server");
-
-  let conversation = sessionId
-    ? await getConversationBySessionId(sessionId)
-    : null;
-
+  // Si la conversación no existe, validar límites y crear nueva
   if (!conversation) {
+    const limitCheck = await validateMonthlyConversationLimit(chatbotId);
+
+    if (!limitCheck.canCreate) {
+      return Response.json(
+        {
+          error: `Este chatbot ha alcanzado su límite mensual de conversaciones (${limitCheck.maxAllowed}). Por favor contacta al propietario.`,
+        },
+        { status: 429 }
+      );
+    }
+
     conversation = await createConversation({
       chatbotId,
-      visitorId: visitorId || user.id,
+      visitorId: nanoid(),
       visitorIp: request.headers.get("x-forwarded-for") || undefined,
       sessionId,
     });
   }
 
-  // 📜 CARGAR HISTORIAL
-  const history = await getMessagesByConversationId(conversation.id);
+  // ✅ COMBINAR mensajes históricos + mensaje nuevo (patrón "Last Message Only")
+  const allMessages = [...historicalMessages, message];
+  const textContent = message.parts
+    .filter((p: any) => p.type === "text")
+    .map((p: any) => p.text)
+    .join("");
 
-  // 💾 GUARDAR MENSAJE USER
-  const userMessage = messages[messages.length - 1];
-  await addUserMessage(conversation.id, userMessage.content);
+  await addUserMessage(conversation.id, textContent);
 
-  // 🤖 MODEL CORRECTION POR PLAN DEL OWNER
-  const { applyModelCorrection } = await import(
-    "@/server/chatbot/modelValidator.server"
-  );
-  const { finalModel } = applyModelCorrection(
-    chatbot.User.plan,
-    chatbot.aiModel,
-    true // allowCorrection
-  );
+  const systemPropmt = `
+    # Sigue estas instrucciones:
+    ${chatbot.instructions}
 
-  // 📝 BUILD SYSTEM PROMPT DINÁMICO
-  const hasRAG = chatbot.contexts.length > 0;
-  const ownerPlan = chatbot.User.plan;
-  const hasWebSearch = ["PRO", "ENTERPRISE"].includes(ownerPlan);
+    # Usa esta personalidad:
+    ${chatbot.personality}
 
-  const { buildSystemPrompt } = await import(
-    "@/server/agents/agent-workflow.server"
-  );
+    # Considera, además, estas instrucciones:
+    ${chatbot.customInstructions}
 
-  const systemPrompt = buildSystemPrompt(
-    {
-      aiModel: finalModel,
-      instructions: chatbot.instructions || undefined,
-      customInstructions: chatbot.customInstructions || undefined,
-      personality: chatbot.personality || undefined,
-      name: chatbot.name,
+    # ⚠️ CRÍTICO - Uso de Knowledge Base:
+    Tienes acceso a una base de conocimiento con información específica sobre este negocio.
+    - SIEMPRE usa la herramienta de búsqueda cuando el usuario haga preguntas específicas
+    - La información en la base de conocimiento es tu fuente de verdad
+    - Si encuentras información relevante, úsala para responder
+    - Si no encuentras información, indica claramente que no tienes esa información específica
+     `;
+
+  // ✅ PATRÓN 2025: streamText con TODOS los mensajes (históricos + nuevos)
+  const result = streamText({
+    model: mapModel(chatbot.aiModel),
+    messages: convertToModelMessages(allMessages), // ⬅️ TODOS los mensajes
+    system: systemPropmt,
+    tools: {
+      getContextTool: createGetContextTool(chatbotId),
+      saveLeadTool: createSaveLeadTool(chatbotId),
     },
-    hasRAG,
-    hasWebSearch,
-    false, // hasReportGeneration
-    false, // hasGmailTools
-    false, // isOfficialGhosty
-    "web" // channel
-  );
-
-  // 🛠️ BUILD TOOLS (chatbotId en closure)
-  const tools = createPublicTools({
-    chatbotId, // ⭐ CAPTURADO EN CLOSURE - No modificable por modelo
-    ownerPlan,
-    hasRAG,
+    stopWhen: stepCountIs(5),
   });
 
-  // 🌊 STREAMING CON CALLBACK
-  const result = streamText({
-    model: mapModel(finalModel),
-    messages: convertToModelMessages([...history, userMessage]),
-    system: systemPrompt,
-    tools,
-    maxSteps: 5, // Stop condition
-    onFinish: async (event) => {
+  // ✅ PATRÓN OFICIAL: toUIMessageStreamResponse CON originalMessages
+  return result.toUIMessageStreamResponse({
+    originalMessages: allMessages, // ⬅️ Envía mensajes históricos + nuevos al cliente
+    onFinish: async ({ responseMessage }) => {
       try {
-        // 💾 Guardar respuesta ASSISTANT
-        await addAssistantMessage(conversation.id, event.text);
-
-        // 📊 Incrementar contador del OWNER
-        await incrementConversationCount(chatbotId);
+        // 💾 Guardar SOLO la respuesta del assistant
+        if (responseMessage?.role === "assistant" && responseMessage.parts) {
+          const textContent = responseMessage.parts
+            .filter((p: any) => p.type === "text")
+            .map((p: any) => p.text)
+            .join("");
+          await addAssistantMessage(conversation.id, textContent);
+        }
       } catch (error) {
-        console.error("[Chat Public] Error in onFinish callback:", error);
-        // No fallar el stream por error en callback
+        console.error("[Chat Public Action] ❌ Error saving message:", error);
       }
     },
   });
-
-  return result.toUIMessageStreamResponse();
 }

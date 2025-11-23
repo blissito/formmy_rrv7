@@ -78,13 +78,16 @@ export async function getConversationById(
 
 /**
  * Gets a conversation by session ID (excludes deleted conversations)
+ * ✅ FIX: Agregado filtro por chatbotId para evitar colisiones cross-chatbot
  */
 export async function getConversationBySessionId(
-  sessionId: string
+  sessionId: string,
+  chatbotId?: string | null // ✅ Opcional para backward compatibility con Ghosty
 ): Promise<Conversation | null> {
   return db.conversation.findFirst({
     where: {
       sessionId,
+      ...(chatbotId !== undefined && { chatbotId }), // ✅ Filtrar por chatbotId si se proporciona
       status: { not: ConversationStatus.DELETED }, // ✅ EXCLUDE deleted conversations
     },
   });
@@ -92,11 +95,13 @@ export async function getConversationBySessionId(
 
 /**
  * Finds a conversation by session ID (alias for getConversationBySessionId)
+ * ✅ FIX: Agregado parámetro chatbotId
  */
 export async function findConversationBySessionId(
-  sessionId: string
+  sessionId: string,
+  chatbotId?: string | null
 ): Promise<Conversation | null> {
-  return getConversationBySessionId(sessionId);
+  return getConversationBySessionId(sessionId, chatbotId);
 }
 
 /**

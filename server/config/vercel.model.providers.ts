@@ -8,9 +8,9 @@ export const mapModel = (modelName: string) => {
       return anthropic("claude-sonnet-4-5-20250929");
     case "claude-haiku-4-5":
       return anthropic("claude-haiku-4-5-20251001");
-    case "gemini-3-pro":
-      return google("gemini-3-pro-preview");
-    case "gpt-5-nano":
+    case "gemini-3-pro": // Slow
+      return google("gemini-2.5-flash-lite");
+    case "gpt-5-nano": // slow
       return openai("gpt-4o-mini");
     default:
       return openai("gpt-4.1-mini");
@@ -45,7 +45,9 @@ export function createPublicTools(options: {
 
   // 🔍 RAG SEARCH - Solo si el chatbot tiene contexts
   if (options.hasRAG) {
-    const { createSearchContextTool } = require("@/server/tools/vercel/ragAgent");
+    const {
+      createSearchContextTool,
+    } = require("@/server/tools/vercel/ragAgent");
     // ⭐ chatbotId se captura en closure del tool
     tools.search_context = createSearchContextTool(options.chatbotId);
   }
@@ -60,10 +62,12 @@ export function createPublicTools(options: {
     tools.web_search_google = createWebSearchTool();
   }
 
-  // 💼 SAVE CONTACT - Siempre disponible (captura leads)
-  const { createSaveContactTool } = require("@/server/tools/vercel/saveContact");
+  // 💼 SAVE LEAD - Siempre disponible (captura leads)
+  const {
+    createSaveLeadTool,
+  } = require("@/server/tools/vercel/saveLead");
   // ⭐ chatbotId se captura en closure
-  tools.save_contact_info = createSaveContactTool(options.chatbotId);
+  tools.save_lead = createSaveLeadTool(options.chatbotId);
 
   return tools;
 }

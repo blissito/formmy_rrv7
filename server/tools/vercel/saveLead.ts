@@ -1,7 +1,7 @@
 /**
- * 💼 Save Contact Tool - Captura de Leads
+ * 💼 Save Lead Tool - Captura de Leads
  *
- * Permite al chatbot guardar información de contacto cuando el usuario
+ * Permite al chatbot guardar información de leads cuando el usuario
  * proporciona datos voluntariamente (email, teléfono, etc.)
  *
  * 🔒 SEGURIDAD:
@@ -14,7 +14,8 @@
  * - Llama este tool para guardar el lead
  * - Retorna confirmación al usuario
  */
-
+// Reutilizar handler existente
+import { saveContactInfoHandler } from "@/server/tools/handlers/contact";
 import { tool } from "ai";
 import { z } from "zod";
 
@@ -24,10 +25,10 @@ import { z } from "zod";
  * @param chatbotId - ID del chatbot (capturado en closure)
  * @returns Tool de Vercel AI SDK
  */
-export const createSaveContactTool = (chatbotId: string) => {
+export const createSaveLeadTool = (chatbotId: string) => {
   // 🔒 VALIDAR FORMATO AL CREAR EL TOOL
   if (!/^[0-9a-fA-F]{24}$/.test(chatbotId)) {
-    throw new Error(`[Save Contact Tool] chatbotId inválido: ${chatbotId}`);
+    throw new Error(`[Save Lead Tool] chatbotId inválido: ${chatbotId}`);
   }
 
   return tool({
@@ -39,34 +40,49 @@ export const createSaveContactTool = (chatbotId: string) => {
 - User wants to receive more information
 - User signs up for something
 
-📋 WHAT TO SAVE:
+📋 DATA COLLECTION STRATEGY:
+PRIORITY: Get BOTH email AND phone when possible (best quality lead)
+MINIMUM: At least ONE (email OR phone) is required
+
+📱 WHATSAPP CONVERSATIONS:
+- Phone is AUTO-CAPTURED (don't ask for it)
+- ONLY ask for: email, name, productInterest, position, website
+- Example: "¿Cuál es tu email para enviarte más información?"
+
+💻 WEB CONVERSATIONS:
+- Ask for BOTH email and phone if context allows
+- Minimum: one of them
+
+📋 FIELDS TO SAVE:
 - name: Full name of the contact
-- email: Email address
-- phone: Phone number (with country code if provided)
+- email: Email address (REQUIRED for WhatsApp, optional for Web)
+- phone: Phone number (AUTO-CAPTURED on WhatsApp, ask on Web)
 - productInterest: What product/service they're interested in
 - position: Job title/position (if mentioned)
 - website: Company website (if mentioned)
 - notes: Any additional relevant information
 
-✅ EXAMPLES OF WHEN TO USE:
-User: "My email is john@example.com, I want to know more about the Enterprise plan"
-→ Save: { email: "john@example.com", productInterest: "Enterprise plan" }
+✅ EXAMPLES:
 
-User: "Can someone call me at +1-555-0123? I'm the CEO of Acme Corp"
-→ Save: { phone: "+1-555-0123", position: "CEO", notes: "Acme Corp" }
+WhatsApp User: "Quiero info del plan Enterprise"
+→ Ask: "¿Cuál es tu email para enviarte los detalles?"
+→ Save: { email: "user@example.com", productInterest: "Plan Enterprise" }
+   (phone auto-captured from WhatsApp)
 
-❌ DO NOT USE:
-- When user hasn't shared contact info
-- For automated data collection without consent
-- If user explicitly declines to share information
+Web User: "My email is john@example.com, call me at +1-555-0123"
+→ Save: { email: "john@example.com", phone: "+1-555-0123" }
 
-⚠️ IMPORTANT:
-- At least email OR phone is required
-- Always confirm with the user after saving
-- Respect user's privacy and consent
+❌ DO NOT:
+- Ask for phone on WhatsApp (already captured)
+- Use without user consent
+- Save if user declines to share
+
+⚠️ CRITICAL:
+- WhatsApp = phone auto-captured, GET EMAIL
+- Web = ask for BOTH (email AND phone) if possible
+- Always confirm with user after saving
 `,
-
-    parameters: z.object({
+    inputSchema: z.object({
       name: z.string().optional().describe("Full name of the contact"),
       email: z.string().email().optional().describe("Email address"),
       phone: z.string().optional().describe("Phone number"),
@@ -81,11 +97,6 @@ User: "Can someone call me at +1-555-0123? I'm the CEO of Acme Corp"
 
     execute: async (params) => {
       try {
-        // Reutilizar handler existente
-        const { saveContactInfoHandler } = await import(
-          "@/server/tools/handlers/contact"
-        );
-
         // Construir context para el handler
         const context = {
           chatbotId, // ⭐ CLOSURE - No modificable
@@ -106,7 +117,7 @@ User: "Can someone call me at +1-555-0123? I'm the CEO of Acme Corp"
         // Mensaje de confirmación amigable
         return `✅ ¡Perfecto! He guardado tu información de contacto. ${result.message || "Alguien del equipo se pondrá en contacto contigo pronto."}`;
       } catch (error) {
-        console.error("[Save Contact Tool] Error:", error);
+        console.error("[Save Lead Tool] Error:", error);
         return `Hubo un problema al guardar la información de contacto: ${error instanceof Error ? error.message : "Error desconocido"}. Por favor intenta nuevamente.`;
       }
     },

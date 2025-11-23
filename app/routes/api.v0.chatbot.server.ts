@@ -386,8 +386,9 @@ async function handleChatV0(params: {
 
     if (sessionId) {
       // Cliente envió sessionId explícito → buscar esa conversación
+      // ✅ FIX: Filtrar por chatbotId para evitar colisiones cross-chatbot
       sessionIdProvided = true;
-      conversation = await getConversationBySessionId(sessionId);
+      conversation = await getConversationBySessionId(sessionId, chatbotId);
     }
 
     // 🔑 CRÍTICO: Solo buscar última conversación si NO se proporcionó sessionId

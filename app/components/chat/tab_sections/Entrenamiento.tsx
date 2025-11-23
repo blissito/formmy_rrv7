@@ -35,9 +35,11 @@ const PLAN_LIMITS_CLIENT: Record<Plans, { maxContextSizeKB: number }> = {
 export const Entrenamiento = ({
   chatbot,
   user,
+  contextDocuments = [],
 }: {
   chatbot: Chatbot;
   user: User;
+  contextDocuments?: any[];
 }) => {
   const revalidator = useRevalidator();
   const { currentTab, setCurrentTab } = useChipTabs(
@@ -79,66 +81,64 @@ export const Entrenamiento = ({
   const [editingTextContext, setEditingTextContext] = useState<any>(null);
 
   useEffect(() => {
-    // Extraer archivos del contexto del chatbot
-    if (chatbot.contexts && Array.isArray(chatbot.contexts)) {
-      const fileContextsFromDb = chatbot.contexts
-        .filter((context: any) => context.type === "FILE" && context.fileName)
+    // ✅ Usar contextDocuments del modelo Context (sistema nuevo)
+    if (contextDocuments && Array.isArray(contextDocuments)) {
+      // Extraer archivos
+      const fileContextsFromDb = contextDocuments
+        .filter((context: any) => context.contextType === "FILE")
         .map((context: any) => ({
           id: context.id,
-          fileName: context.fileName,
-          fileType: context.fileType,
-          sizeKB: context.sizeKB,
+          fileName: context.metadata?.fileName || context.title,
+          fileType: context.metadata?.fileType || "application/octet-stream",
+          sizeKB: context.metadata?.sizeKB || Math.ceil(context.content?.length / 1024) || 0,
           content: context.content,
         }));
       setFileContexts(fileContextsFromDb);
 
-      // Extraer sitios web del contexto del chatbot
-      const websiteContextsFromDb = chatbot.contexts
-        .filter((context: any) => context.type === "LINK" && context.url)
+      // Extraer sitios web
+      const websiteContextsFromDb = contextDocuments
+        .filter((context: any) => context.contextType === "LINK")
         .map((context: any) => ({
-          url: context.url,
+          url: context.metadata?.url || context.title,
           content: context.content || "",
-          routes:
-            context.routes && context.routes.length > 0
-              ? context.routes
-              : [context.url], // Usar rutas reales o fallback
+          routes: context.metadata?.routes && context.metadata.routes.length > 0
+              ? context.metadata.routes
+              : [context.metadata?.url || context.title],
           includeRoutes: undefined,
           excludeRoutes: undefined,
           updateFrequency: "monthly" as const,
           lastUpdated: new Date(context.createdAt),
-          contextId: context.id, // Guardamos el ID para poder eliminar
+          contextId: context.id,
         }));
-
-      // Actualizar los sitios web existentes desde la base de datos
       setExistingWebsites(websiteContextsFromDb);
 
-      // Extraer contextos de texto del chatbot
-      const textContextsFromDb = chatbot.contexts
-        .filter((context: any) => context.type === "TEXT" && context.title)
+      // Extraer contextos de texto
+      const textContextsFromDb = contextDocuments
+        .filter((context: any) => context.contextType === "TEXT")
         .map((context: any) => ({
           id: context.id,
           title: context.title,
           content: context.content,
-          sizeKB: context.sizeKB,
+          sizeKB: context.metadata?.sizeKB || Math.ceil(context.content?.length / 1024) || 0,
         }));
       setTextContexts(textContextsFromDb);
 
-      // Extraer contextos de preguntas del chatbot
-      const questionContextsFromDb = chatbot.contexts
-        .filter((context: any) => context.type === "QUESTION" && context.title)
+      // Extraer contextos de preguntas
+      const questionContextsFromDb = contextDocuments
+        .filter((context: any) => context.contextType === "QUESTION")
         .map((context: any) => ({
           id: context.id,
           title: context.title,
           questions:
-            typeof context.questions === "string"
-              ? context.questions.split("\n").filter((q: string) => q.trim())
-              : context.questions,
-          answer: context.answer,
-          sizeKB: context.sizeKB,
+            typeof context.metadata?.questions === "string"
+              ? context.metadata.questions.split("\n").filter((q: string) => q.trim())
+              : context.metadata?.questions || [],
+          answer: context.metadata?.answer || "",
+          sizeKB: context.metadata?.sizeKB || Math.ceil(context.content?.length / 1024) || 0,
         }));
       setQuestionContexts(questionContextsFromDb);
     }
-  }, [chatbot.contexts]);
+  }, [contextDocuments]);
 
   const handleFilesChange = (newFiles: File[]) => {
     // Agregar nuevos archivos a los existentes, evitando duplicados por nombre

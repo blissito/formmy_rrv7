@@ -7,6 +7,7 @@ import {
   useRef,
   createContext,
   useContext,
+  useMemo,
 } from "react";
 import { cn } from "~/lib/utils";
 import Spinner from "../Spinner";
@@ -556,6 +557,38 @@ export const EditionPair = ({
     setAvatarFile,
   };
 
+  // ✅ FIX: Estabilizar el objeto chatbot para evitar remounts innecesarios de ChatPreview
+  // Problema: Cada cambio de estado creaba un nuevo objeto → ChatPreview se desmontaba → perdía mensajes históricos
+  // Solución: useMemo mantiene la misma referencia si chatbot.id no cambia
+  const previewChatbot = useMemo(
+    () => ({
+      ...chatbot,
+      name,
+      primaryColor,
+      welcomeMessage,
+      goodbyeMessage,
+      avatarUrl,
+      aiModel: selectedModel,
+      temperature,
+      instructions,
+      personality: selectedAgent,
+      customInstructions,
+    }),
+    [
+      chatbot,
+      name,
+      primaryColor,
+      welcomeMessage,
+      goodbyeMessage,
+      avatarUrl,
+      selectedModel,
+      temperature,
+      instructions,
+      selectedAgent,
+      customInstructions,
+    ]
+  );
+
   // EditionPair solo se usa para el tab Preview
   return (
     <PreviewContext.Provider value={contextValue}>
@@ -566,18 +599,8 @@ export const EditionPair = ({
         {/* Preview - Oculto en mobile/tablet, visible en desktop */}
         <section className="hidden lg:block lg:col-span-8">
           <ChatPreview
-            chatbot={{
-              ...chatbot,
-              name,
-              primaryColor,
-              welcomeMessage,
-              goodbyeMessage,
-              avatarUrl,
-              aiModel: selectedModel,
-              temperature,
-              instructions,
-              personality: selectedAgent,
-            }}
+            chatbot={previewChatbot}
+            initialMessages={[]} // ✅ Preview siempre es nueva conversación (testing)
             integrations={integrations}
           />
         </section>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button, usePreviewContext } from "../PageContainer";
 import { ChipTabs, useChipTabs } from "../common/ChipTabs";
 import type { Chatbot, User, Integration } from "@prisma/client";
@@ -166,6 +166,36 @@ export const PreviewForm = ({
     }
   };
 
+  // ✅ FIX: Estabilizar el objeto chatbot para evitar remounts innecesarios de ChatPreview en modal
+  const previewChatbot = useMemo(
+    () => ({
+      ...chatbot,
+      name,
+      primaryColor,
+      welcomeMessage,
+      goodbyeMessage,
+      avatarUrl,
+      aiModel: selectedModel,
+      temperature,
+      instructions,
+      personality: selectedAgent,
+      customInstructions,
+    }),
+    [
+      chatbot,
+      name,
+      primaryColor,
+      welcomeMessage,
+      goodbyeMessage,
+      avatarUrl,
+      selectedModel,
+      temperature,
+      instructions,
+      selectedAgent,
+      customInstructions,
+    ]
+  );
+
   return (
     <>
       <article className="w-full h-full ">
@@ -249,18 +279,7 @@ export const PreviewForm = ({
           {/* Content del modal */}
           <div className="h-[calc(100vh-64px)] overflow-y-auto p-4">
             <ChatPreview
-              chatbot={{
-                ...chatbot,
-                name,
-                primaryColor,
-                welcomeMessage,
-                goodbyeMessage,
-                avatarUrl,
-                aiModel: selectedModel,
-                temperature,
-                instructions,
-                personality: selectedAgent,
-              }}
+              chatbot={previewChatbot}
               integrations={integrations}
             />
           </div>

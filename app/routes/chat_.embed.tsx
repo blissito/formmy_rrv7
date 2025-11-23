@@ -36,13 +36,6 @@ export async function loader({ request }: { request: Request }) {
       };
     }
 
-
-    // 🔒 SEGURIDAD: CSP frame-ancestors para bloquear embeddings no autorizados
-    // Implementado: Oct 16, 2025
-    // NOTA: React Router v7 no soporta headers custom en loaders de forma directa
-    // La validación real se hace en el backend (api.v0.chatbot.server.ts)
-    // CSP se puede implementar a nivel de servidor (Fly.io headers)
-
     return { chatbot };
   } catch (error) {
     console.error("Error al cargar el chatbot para embebido:", error);
@@ -57,7 +50,9 @@ export async function loader({ request }: { request: Request }) {
 // Estilo global para hacer transparente el fondo
 function GlobalStyles() {
   return (
-    <style dangerouslySetInnerHTML={{ __html: `
+    <style
+      dangerouslySetInnerHTML={{
+        __html: `
       html, body {
         margin: 0;
         padding: 0;
@@ -65,7 +60,9 @@ function GlobalStyles() {
         background-color: transparent !important;
         overflow: hidden !important;
       }
-    `}} />
+    `,
+      }}
+    />
   );
 }
 
@@ -86,26 +83,26 @@ export default function ChatEmbedRoute() {
       // Verificar que el mensaje venga de un origin confiable
       // (formmy.app, formmy.app, o localhost para dev)
       const trustedOrigins = [
-        'https://formmy.app',
-        'https://formmy.app',
-        'http://localhost:5173',
-        'http://localhost:3000'
+        "https://formmy.app",
+        "https://formmy.app",
+        "http://localhost:5173",
+        "http://localhost:3000",
       ];
 
-      if (!trustedOrigins.some(origin => event.origin.startsWith(origin))) {
-        console.warn('🔒 Mensaje de origen no confiable:', event.origin);
+      if (!trustedOrigins.some((origin) => event.origin.startsWith(origin))) {
+        console.warn("🔒 Mensaje de origen no confiable:", event.origin);
         return;
       }
 
       // Procesar mensaje de parent domain
-      if (event.data.type === 'formmy-parent-domain') {
+      if (event.data.type === "formmy-parent-domain") {
         const { domain } = event.data;
         setParentDomain(domain);
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   // Si hay un error, mostrar un mensaje de error amigable
@@ -131,7 +128,6 @@ export default function ChatEmbedRoute() {
         <ChatPreview
           production
           chatbot={data.chatbot as Chatbot}
-          integrations={data.chatbot?.integrations || []} // ✅ Pasar integrations para Voice
           parentDomain={parentDomain}
         />
       </div>

@@ -8,7 +8,9 @@ import {
 import { db } from "~/utils/db.server";
 import { validateTextContext } from "./contextValidator.server";
 import { stripHtmlTagsServer } from "~/utils/textUtils";
-import { vectorizeContext, revectorizeContext } from "../vector/auto-vectorize.service";
+// DEPRECATED: auto-vectorize.service.ts ya no existe. Este archivo usa sistema legacy.
+// TODO: Migrar a context-handler.server.ts que usa el modelo Context + vercel_embeddings
+// import { vectorizeContext, revectorizeContext } from "../vector/auto-vectorize.service";
 
 /**
  * Helper function to clean HTML from content
@@ -154,13 +156,10 @@ export async function addFileContext(
     }
   });
 
+  // DEPRECATED: vectorizeContext ya no existe
+  // TODO: Usar secureUpsert de vercel_embeddings en su lugar
   if (chatbotWithUser?.user.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(chatbotWithUser.user.plan)) {
-    const addedContext = updatedChatbot.contexts[updatedChatbot.contexts.length - 1];
-    if (addedContext) {
-      vectorizeContext(chatbotId, addedContext as ContextItem).catch(err => {
-        console.error('Error auto-vectorizando FILE context:', err);
-      });
-    }
+    console.warn('[contextManager] Auto-vectorization disabled - migrate to context-handler.server.ts');
   }
 
   return updatedChatbot;
@@ -253,13 +252,10 @@ export async function addUrlContext(
     }
   });
 
+  // DEPRECATED: vectorizeContext ya no existe
+  // TODO: Usar secureUpsert de vercel_embeddings en su lugar
   if (chatbotWithUser?.user.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(chatbotWithUser.user.plan)) {
-    const addedContext = updatedChatbot.contexts[updatedChatbot.contexts.length - 1];
-    if (addedContext) {
-      vectorizeContext(chatbotId, addedContext as ContextItem).catch(err => {
-        console.error('Error auto-vectorizando URL context:', err);
-      });
-    }
+    console.warn('[contextManager] Auto-vectorization disabled - migrate to context-handler.server.ts');
   }
 
   return updatedChatbot;
@@ -333,13 +329,10 @@ export async function addTextContext(
     }
   });
 
+  // DEPRECATED: vectorizeContext ya no existe
+  // TODO: Usar secureUpsert de vercel_embeddings en su lugar
   if (chatbotWithUser?.user.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(chatbotWithUser.user.plan)) {
-    const addedContext = updatedChatbot.contexts[updatedChatbot.contexts.length - 1];
-    if (addedContext) {
-      vectorizeContext(chatbotId, addedContext as ContextItem).catch(err => {
-        console.error('Error auto-vectorizando TEXT context:', err);
-      });
-    }
+    console.warn('[contextManager] Auto-vectorization disabled - migrate to context-handler.server.ts');
   }
 
   return updatedChatbot;
@@ -416,13 +409,10 @@ export async function addQuestionContext(
     }
   });
 
+  // DEPRECATED: vectorizeContext ya no existe
+  // TODO: Usar secureUpsert de vercel_embeddings en su lugar
   if (chatbotWithUser?.user.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(chatbotWithUser.user.plan)) {
-    const addedContext = updatedChatbot.contexts[updatedChatbot.contexts.length - 1];
-    if (addedContext) {
-      vectorizeContext(chatbotId, addedContext as ContextItem).catch(err => {
-        console.error('Error auto-vectorizando QUESTION context:', err);
-      });
-    }
+    console.warn('[contextManager] Auto-vectorization disabled - migrate to context-handler.server.ts');
   }
 
   return updatedChatbot;
@@ -517,16 +507,9 @@ export async function updateQuestionContext(
     },
   });
 
-  // Re-vectorizar el contexto actualizado (async en background) - solo PRO+
-  const user = await db.user.findUnique({ where: { id: chatbot.userId } });
-  if (user?.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(user.plan)) {
-    const updatedContext = updatedChatbot.contexts.find((ctx: any) => ctx.id === contextId);
-    if (updatedContext) {
-      revectorizeContext(chatbotId, updatedContext as ContextItem).catch(err => {
-        console.error('Error re-vectorizando QUESTION context:', err);
-      });
-    }
-  }
+  // DEPRECATED: revectorizeContext ya no existe
+  // TODO: Usar updateContext de vercel_embeddings en su lugar
+  console.warn('[contextManager] Re-vectorization disabled - migrate to context-handler.server.ts');
 
   return updatedChatbot;
 }
@@ -616,16 +599,9 @@ export async function updateTextContext(
     },
   });
 
-  // Re-vectorizar el contexto actualizado (async en background) - solo PRO+
-  const user = await db.user.findUnique({ where: { id: chatbot.userId } });
-  if (user?.plan && ['PRO', 'ENTERPRISE', 'TRIAL'].includes(user.plan)) {
-    const updatedContext = updatedChatbot.contexts.find((ctx: any) => ctx.id === contextId);
-    if (updatedContext) {
-      revectorizeContext(chatbotId, updatedContext as ContextItem).catch(err => {
-        console.error('Error re-vectorizando TEXT context:', err);
-      });
-    }
-  }
+  // DEPRECATED: revectorizeContext ya no existe
+  // TODO: Usar updateContext de vercel_embeddings en su lugar
+  console.warn('[contextManager] Re-vectorization disabled - migrate to context-handler.server.ts');
 
   return updatedChatbot;
 }

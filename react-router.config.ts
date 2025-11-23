@@ -11,12 +11,14 @@ export default {
 
     // Chatbot management routes
     { path: "/chat", component: "./app/routes/chat.tsx" },
+    { path: "/chat/embed", component: "./app/routes/chat_.embed.tsx" }, // ✅ Específica ANTES del wildcard
+    { path: "/chat/vercel/public", component: "./app/routes/chat.vercel.public.tsx" }, // ✅ API route para chat público
     { path: "/chat/config", component: "./app/routes/chat.config.tsx" },
     {
       path: "/chat/config/:chatbotId",
       component: "./app/routes/chat.config.$chatbotId.tsx",
     },
-    { path: "/chat/*", component: "./app/routes/chat.404.tsx" },
+    { path: "/chat/*", component: "./app/routes/chat.404.tsx" }, // ⚠️ Catch-all al FINAL
 
     
     // Catch-all route (must be last)

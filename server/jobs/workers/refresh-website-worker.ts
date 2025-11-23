@@ -140,8 +140,11 @@ async function updateContextContent(
   });
 
   // 4. Re-vectorizar: eliminar embeddings viejos + crear nuevos
-  const { revectorizeContext } = await import('../../vector/auto-vectorize.service');
-  await revectorizeContext(chatbotId, contextId, newContent);
+  // DEPRECATED: auto-vectorize.service ya no existe
+  // TODO: Usar updateContext de vercel_embeddings
+  console.warn('[refresh-website-worker] Re-vectorization disabled - migrate to vercel_embeddings');
+  // const { updateContext } = await import('../../context/vercel_embeddings');
+  // await updateContext({ contextId, chatbotId, content: newContent, title: context.title });
 
   console.log(`✅ Updated and re-vectorized context ${contextId} for chatbot ${chatbotId}`);
 }

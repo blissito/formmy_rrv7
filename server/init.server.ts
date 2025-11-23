@@ -11,7 +11,7 @@ import { registerParserWorker } from './jobs/workers/parser-worker';
 import { registerAutoReleaseWorker } from './jobs/workers/auto-release-worker';
 import { registerCleanupWorker } from './jobs/workers/cleanup-jobs';
 import { registerRefreshWebsiteWorker } from './jobs/workers/refresh-website-worker';
-import { registerCleanupOrphanedEmbeddingsWorker } from './jobs/workers/cleanup-orphaned-embeddings-worker';
+// import { registerCleanupOrphanedEmbeddingsWorker } from './jobs/workers/cleanup-orphaned-embeddings-worker'; // TODO: File doesn't exist
 
 /**
  * Initialize all server background tasks
@@ -46,7 +46,7 @@ export async function initializeServer() {
   await registerAutoReleaseWorker();
   await registerCleanupWorker();
   await registerRefreshWebsiteWorker();
-  await registerCleanupOrphanedEmbeddingsWorker();
+  // await registerCleanupOrphanedEmbeddingsWorker(); // TODO: File doesn't exist
 
-  console.log('✅ Agenda.js: All jobs registered (weekly-emails, parser, auto-release, cleanup, refresh-website, cleanup-orphaned-embeddings)');
+  console.log('✅ Agenda.js: All jobs registered (weekly-emails, parser, auto-release, cleanup, refresh-website)');
 }

@@ -118,7 +118,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   const queriesStart = Date.now();
   console.log(`🔄 [Loader] Cargando solo metadata esencial...`);
 
-  const [integrations, totalConversations] = await Promise.all([
+  const [integrations, totalConversations, contextDocuments] = await Promise.all([
     db.integration.findMany({
       where: { chatbotId: chatbot.id },
     }),
@@ -127,6 +127,20 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
         chatbotId: chatbot.id,
         status: { not: "DELETED" },
       },
+    }),
+    // ✅ Cargar contextos desde el modelo Context (sistema nuevo)
+    db.context.findMany({
+      where: { chatbotId: chatbot.id },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        contextType: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
     }),
   ]);
 
@@ -163,6 +177,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     conversations: [], // ⚡ FASE 1: Se cargan desde el cliente con infinity scroll
     totalConversations,
     contacts: [], // ⚡ Leads se cargan bajo demanda en el tab Contactos
+    contextDocuments, // ✅ Contextos desde el modelo Context (sistema nuevo)
     accessInfo: accessValidation,
   };
 
@@ -174,7 +189,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
-  const { user, chatbot, integrations, conversations, totalConversations, contacts, accessInfo } = loaderData;
+  const { user, chatbot, integrations, conversations, totalConversations, contacts, contextDocuments, accessInfo } = loaderData;
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
@@ -489,7 +504,7 @@ export default function ChatbotDetailRoute({
           <Contactos chatbot={chatbot} user={user} contacts={contacts} />
         )}
         {currentTab === "Entrenamiento" && (
-          <Entrenamiento chatbot={chatbot} user={user} />
+          <Entrenamiento chatbot={chatbot} user={user} contextDocuments={contextDocuments} />
         )}
         {currentTab === "Tareas" && <Tareas />}
         {currentTab === "Código" && (
