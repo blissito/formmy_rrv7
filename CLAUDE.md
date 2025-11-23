@@ -235,21 +235,32 @@ await db.lead.create({
 
 ## ⚠️ REGLAS CRÍTICAS
 
-### 1. LlamaIndex Agent Workflows
+### 1. Vercel AI SDK - Streaming
 ```typescript
-import { agent, runStream } from "@llamaindex/workflow";
-const agentInstance = agent({ llm, tools, systemPrompt, memory });
+import { streamText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
+const result = streamText({
+  model: openai("gpt-4o-mini"),
+  messages: convertToModelMessages(allMessages),
+  tools: { search_context, save_lead, web_search },
+  maxSteps: 5
+});
 ```
-❌ NO custom routing | ✅ Modelo decide tools
+✅ Modelo decide tools automáticamente | ✅ 100% streaming
 
 ### 2. Memory - Historial
 ```typescript
-import { createMemory, staticBlock } from "llamaindex";
-const memory = createMemory({
-  memoryBlocks: [staticBlock({ content: `Historial:\n\n${historyText}` })]
+// Cargar mensajes desde DB
+const allMessages = await getMessagesByConversationId(conversationId);
+
+// Pasar directamente al modelo
+streamText({
+  messages: convertToModelMessages(allMessages), // Historial completo
+  // ...
 });
 ```
-⚠️ **NUNCA `memory.add()`**
+⚠️ **Backend es source of truth** - NUNCA confiar en historial del cliente
 
 ### 3. Streaming
 ✅ 100% streaming | ✅ Archivos: Buffer → Redis → `/api/ghosty/download/{id}`
@@ -257,9 +268,16 @@ const memory = createMemory({
 
 ## Arquitectura
 
-**Motor**: `/server/agent-engine-v0/simple-engine.ts`
-**Agentes**: `/server/agents/` (ghosty, sales, content, data)
-**Tools**: `/server/tools/` - Registry en `index.ts`
+**Endpoints Activos**:
+- `/chat/vercel/public` - Chat público (widgets embebidos)
+- `/chat/vercel` - Ghosty dashboard
+
+**Tools**: `/server/tools/vercel/` - Factory functions con closures
+
+### ⚠️ ENDPOINTS DEPRECADOS (Requieren migración):
+- `/api/v0/chatbot` - TODO: Migrar a Vercel AI SDK
+- `/api/agent/v0` - TODO: Migrar a Vercel AI SDK
+- `/api/ghosty/v0` - TODO: Migrar a Vercel AI SDK (Ghosty usa `/chat/vercel` ahora)
 
 ### Tool Credits
 **Ubicación**: `/server/llamaparse/credits.service.ts`
@@ -267,18 +285,20 @@ const memory = createMemory({
 - Parser: COST_EFFECTIVE(1), AGENTIC(3), AGENTIC_PLUS(6) créditos/página
 
 ### RAG (Retrieval-Augmented Generation)
-**Servicio**: `/server/context/unified-processor.server.ts`
+**Servicio**: `/server/context/vercel_embeddings.ts` (Vercel AI SDK)
 **Index**: `vector_index_2` MongoDB | **Embeddings**: text-embedding-3-small
 **Chunk**: 2000 chars, 100 overlap (5%)
 
-**Tool**: `search_context` - Búsqueda semántica en knowledge base
-**Handler**: `/server/tools/handlers/context-search.ts`
+**Tools Vercel AI SDK**:
+- `createSearchContextTool(chatbotId)` - RAG search con agent AI
+- `createGetContextTool(chatbotId)` - Vector search directo
+**Handlers**: `/server/tools/handlers/context-search.ts`
 **Query Expansion**: `/server/vector/query-expansion.service.ts`
 
 ⚠️ **CRÍTICO - Tool Result Usage**:
-LlamaIndex inyecta automáticamente los resultados de tools al contexto, PERO los modelos (especialmente gpt-4o-mini) pueden ignorarlos sin instrucciones explícitas en el system prompt.
+Vercel AI SDK inyecta automáticamente los resultados de tools al contexto, PERO los modelos (especialmente gpt-4o-mini) pueden ignorarlos sin instrucciones explícitas en el system prompt.
 
-**System Prompt Requirements** (`/server/agents/agent-workflow.server.ts:136-173`):
+**System Prompt Requirements**:
 ```typescript
 // ✅ CORRECTO: Prompt imperativo que fuerza uso de resultados
 CRITICAL - TOOL RESULTS ARE YOUR ANSWER:
@@ -289,9 +309,9 @@ When search_context() returns results, those results ARE the answer.
 ```
 
 **Flujo**:
-1. Usuario pregunta → Agent llama `search_context()`
+1. Usuario pregunta → Agent llama `search_context` tool
 2. Tool ejecuta → Retorna "Encontré X resultados: [CONTENIDO]"
-3. LlamaIndex inyecta resultados al contexto automáticamente
+3. Vercel AI SDK inyecta resultados al contexto automáticamente
 4. Modelo genera respuesta usando los resultados
 
 ❌ **ERROR COMÚN**: Prompt débil → Modelo ignora resultados del tool
@@ -316,16 +336,15 @@ When search_context() returns results, those results ARE the answer.
 **Flow**: Meta Embedded Signup → tokens → Integration model
 ⚠️ Composio WhatsApp DEPRECADO
 
-### Gmail (Composio)
-**Config**: `/server/integrations/composio-config.ts`
-**Entity**: `chatbot_${chatbotId}`
-**Tools**: `send_gmail`, `read_gmail`
+### Gmail/Calendar
+⚠️ **DEPRECADO** - Integraciones Composio eliminadas
+**TODO**: Reimplementar con Vercel AI SDK pattern
 
 ## Observabilidad ✅
 
 **UI**: `/dashboard/api-keys?tab=observability`
 **API**: `/api/v1/traces`
-**Instrumentación**: `/server/agents/agent-workflow.server.ts`
+**Instrumentación**: TODO - Migrar a Vercel AI SDK
 **Service**: `/server/tracing/trace.service.ts`
 
 Modelos `Trace`, `TraceSpan` - Tracking automático de LLM calls, tools, costos

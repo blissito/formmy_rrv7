@@ -42,7 +42,7 @@ import {
 } from "./chatbot/integrationModel.server";
 import { createQuickPaymentLink } from "./integrations/stripe-payments";
 import { ReminderService } from "./integrations/reminder-service";
-import { getToolsForPlan } from "./tools";
+// import { getToolsForPlan } from "./tools"; // ❌ Legacy - removed (migrated to Vercel AI SDK)
 // import { SimpleAgentLoop } from "./chatbot/agent-loop"; // ❌ Legacy - removed
 import {
   validateUserAIModelAccess,
@@ -144,7 +144,7 @@ export {
   getActiveStripeIntegration,
   createQuickPaymentLink,
   ReminderService,
-  getToolsForPlan as getAvailableTools,
+  // getToolsForPlan as getAvailableTools, // ❌ Legacy - removed (migrated to Vercel AI SDK)
   // executeToolCall, // TODO: Migrar a LlamaIndex tools
   // generateToolPrompts, // TODO: Migrar a LlamaIndex tools
   // SimpleAgentLoop, // ❌ Legacy - removed

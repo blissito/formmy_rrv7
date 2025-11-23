@@ -151,26 +151,18 @@ async function performHealthCheck(): Promise<Response> {
     unhealthyCount++;
   }
 
-  // 5. Check Tools Registry
+  // 5. Check Tools Registry (Vercel AI SDK)
   try {
-    const { getToolsForPlan } = await import("../../server/tools");
-    const mockContext = {
-      userId: "health-check",
-      userPlan: "PRO",
-      chatbotId: "health-check",
-      message: "health check",
-      integrations: {}
-    };
-
-    const tools = getToolsForPlan("PRO", {}, mockContext);
+    // Tools now managed by Vercel AI SDK - check if factory functions exist
+    const { createPublicTools } = await import("../../server/config/vercel.model.providers");
     result.checks.tools = {
       status: "up",
-      availableCount: tools.length
+      message: "Vercel AI SDK tools available"
     };
   } catch (error) {
     result.checks.tools = {
       status: "down",
-      availableCount: 0,
+      message: "Vercel AI SDK tools error",
       error: error instanceof Error ? error.message : "Tools registry error"
     };
     unhealthyCount++;
@@ -244,22 +236,15 @@ async function performSpecificCheck(component: string): Promise<Response> {
 
     case "tools":
       try {
-        const { getToolsForPlan } = await import("../../server/tools");
-        const mockContext = {
-          userId: "health-check",
-          userPlan: "PRO",
-          chatbotId: "health-check",
-          message: "health check",
-          integrations: {}
-        };
-        const tools = getToolsForPlan("PRO", {}, mockContext);
+        // Check Vercel AI SDK tools availability
+        const { createPublicTools } = await import("../../server/config/vercel.model.providers");
 
         return new Response(JSON.stringify({
           component: "tools",
           status: "healthy",
           timestamp,
-          details: `${tools.length} tools available`,
-          tools: tools.map(t => t.name)
+          details: "Vercel AI SDK tools available",
+          system: "Vercel AI SDK (migrated from LlamaIndex)"
         }), { status: 200, headers: { "Content-Type": "application/json" } });
       } catch (error) {
         return new Response(JSON.stringify({

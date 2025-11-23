@@ -4,7 +4,13 @@
  */
 
 import { db } from "~/utils/db.server";
-import type { ToolContext } from '../index';
+
+// TODO: Este tipo se movió - definir localmente o importar de otro lugar
+interface ToolContext {
+  userId: string;
+  chatbotId?: string;
+  conversationId?: string;
+}
 
 interface QueryChatbotsParams {
   status?: 'all' | 'active' | 'inactive' | 'draft';

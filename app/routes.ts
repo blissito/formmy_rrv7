@@ -141,24 +141,17 @@ export default [
   route("api/rag/v1", "routes/api.rag.v1.ts"),
   route("api/voice/v1", "routes/api.voice.v1.ts"),
 
-  // Composio Google Calendar Integration
-  route(
-    "api/v1/composio/google-calendar",
-    "routes/api.v1.composio.google-calendar.ts"
-  ),
+  // Composio Integration - DEPRECADO (eliminado)
+  // TODO: Reimplementar Gmail/Calendar con Vercel AI SDK pattern
   route(
     "api/v1/composio/google-calendar/callback",
     "routes/api.v1.composio.google-calendar.callback.ts"
   ),
-
-  // Composio Gmail Integration
-  route("api/v1/composio/gmail", "routes/api.v1.composio.gmail.ts"),
   route(
     "api/v1/composio/gmail/callback",
     "routes/api.v1.composio.gmail.callback.ts"
   ),
 
-  // Composio WhatsApp Integration - DEPRECADO (eliminado)
   // WhatsApp ahora usa WhatsAppSDKService directo
 
   // API v0 routes - Motor AgentEngine_v0

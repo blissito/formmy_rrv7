@@ -3,16 +3,11 @@
  * Maneja conversaciones de voz en tiempo real integrando LiveKit con agentes de Formmy
  */
 
-import { Room, RoomEvent, Track, type RemoteParticipant, type RemoteTrack } from "livekit-server-sdk";
-import { db } from "server/db/db.server";
-import {
-  incrementMessageCount,
-  updateTranscription,
-  failVoiceSession,
-} from "./livekit-voice.service";
-import { streamAgentWorkflow } from "server/agents/agent-workflow.server";
-import { getChatbotById } from "server/chatbot/chatbot.service.server";
-import { getUserById } from "server/user/user.service.server";
+// TODO: MIGRAR A VERCEL AI SDK
+// Este archivo usa LlamaIndex Agent Workflows que fue eliminado.
+// Voice AI requiere reimplementación completa con Vercel AI SDK.
+
+throw new Error("Voice Agent Handler requiere migración a Vercel AI SDK");
 
 /**
  * Evento de transcripción del STT (Speech-to-Text)
