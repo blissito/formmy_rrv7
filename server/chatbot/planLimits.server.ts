@@ -25,8 +25,9 @@ export const PLAN_LIMITS = {
     maxContextQueriesPerDay: 100, // Como PRO
     availableModels: [
       "gpt-5-nano",
-      "gpt-3.5-turbo",
-      "claude-3-haiku-20240307"
+      "gpt-4.1-mini",
+      "claude-haiku-4-5",
+      "gemini-3-pro"
     ], // Todos los modelos STARTER + PRO disponibles
     showBranding: false, // Sin branding como PRO
     trialDays: 365, // 365 días de trial para revisión de Meta App (Sept-Oct 2025)
@@ -41,7 +42,7 @@ export const PLAN_LIMITS = {
     maxContextQueriesPerDay: 50, // 50 queries RAG por día
     availableModels: [
       "gpt-5-nano",
-      "gemini-2.0-flash-lite"
+      "gemini-3-pro"
     ], // Modelos básicos de última generación
     showBranding: true,
     trialDays: 0,
@@ -56,9 +57,10 @@ export const PLAN_LIMITS = {
     maxContextQueriesPerDay: 100, // Límite generoso
     availableModels: [
       "gpt-5-nano",
-      "gpt-3.5-turbo",
-      "claude-3-haiku-20240307"
-    ], // GPT-5 Nano + GPT-3.5 Turbo + Claude 3 Haiku
+      "gpt-4.1-mini",
+      "claude-haiku-4-5",
+      "gemini-3-pro"
+    ], // GPT-5 Nano + GPT-4.1 Mini + Claude Haiku 4.5 + Gemini 3 Pro
     showBranding: false,
     trialDays: 0,
     toolCreditsPerMonth: 1000, // 1000 créditos mensuales según CLAUDE.md
@@ -70,7 +72,13 @@ export const PLAN_LIMITS = {
     maxConversationsPerMonth: 2500,
     maxTokensPerQuery: 16000, // Límite alto pero protegido
     maxContextQueriesPerDay: 500, // Límite empresarial
-    availableModels: ALL_MODELS, // Acceso a todos los modelos incluyendo Sonnet
+    availableModels: [
+      "claude-sonnet-4-5",
+      "gpt-5-nano",
+      "gpt-4.1-mini",
+      "claude-haiku-4-5",
+      "gemini-3-pro"
+    ], // Acceso a todos los modelos incluyendo Sonnet
     showBranding: false,
     trialDays: 0,
     toolCreditsPerMonth: 5000, // 5000 créditos mensuales según CLAUDE.md
