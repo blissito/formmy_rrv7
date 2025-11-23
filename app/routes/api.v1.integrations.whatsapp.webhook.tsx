@@ -1,4 +1,5 @@
 import { data as json } from "react-router";
+import type { Route } from "./+types/api.v1.integrations.whatsapp.webhook";
 import { IntegrationType } from "@prisma/client";
 import {
   type IncomingMessage,
@@ -13,6 +14,7 @@ import { db } from "../utils/db.server";
 import { isMessageProcessed } from "../../server/integrations/whatsapp/deduplication.service";
 import { downloadWhatsAppSticker } from "../../server/integrations/whatsapp/media.service";
 import { shouldProcessMessage } from "../../server/integrations/whatsapp/message-debounce.service";
+import { nanoid } from "nanoid";
 // import { updateContactAvatar } from "../../server/integrations/whatsapp/avatar.service"; // TEMPORALMENTE DESHABILITADO - endpoint incorrecto
 
 // Types for WhatsApp webhook payload
@@ -212,7 +214,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
               }
 
               // ✅ FILTER OLD MESSAGES: Meta best practice (skip messages >12 minutes old)
-              const messageTimestamp = message.timestamp * 1000; // Convert to ms
+              const messageTimestamp = Number(message.timestamp) * 1000; // Convert to ms
               const ageMinutes = (Date.now() - messageTimestamp) / 1000 / 60;
 
               if (ageMinutes > 12) {
@@ -284,7 +286,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
                 } : undefined
               };
 
-              const result = await processIncomingMessage(incomingMessage, contactName, change.value.metadata.phone_number_id);
+              const result = await processIncomingMessage(incomingMessage, contactName);
               results.push(result);
             } catch (error) {
               console.error("Error processing individual message:", error);
@@ -609,28 +611,28 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
                     const conversation = conversationForThread;
 
-                    // Save message (upsert to prevent duplicates)
-                    await db.message.upsert({
+                    // Save message (use findFirst + create since unique constraint is disabled)
+                    const existingMsg = await db.message.findFirst({
                       where: {
-                        conversationId_externalMessageId: {
-                          conversationId: conversation.id,
-                          externalMessageId: msg.id,
-                        }
-                      },
-                      create: {
                         conversationId: conversation.id,
-                        content: msg.text?.body || '',
-                        role: isFromBusiness ? "ASSISTANT" : "USER",
-                        channel: "whatsapp_history",
                         externalMessageId: msg.id,
-                        tokens: 0,
-                        responseTime: 0,
-                        createdAt: new Date(parseInt(msg.timestamp) * 1000), // Convert Unix timestamp
-                      },
-                      update: {
-                        // No actualizar si ya existe (mensajes históricos son inmutables)
                       }
                     });
+
+                    if (!existingMsg) {
+                      await db.message.create({
+                        data: {
+                          conversationId: conversation.id,
+                          content: msg.text?.body || '',
+                          role: isFromBusiness ? "ASSISTANT" : "USER",
+                          channel: "whatsapp_history",
+                          externalMessageId: msg.id,
+                          tokens: 0,
+                          responseTime: 0,
+                          createdAt: new Date(parseInt(msg.timestamp) * 1000), // Convert Unix timestamp
+                        }
+                      });
+                    }
 
                     processedCount++;
                   } catch (msgError) {
@@ -717,7 +719,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 /**
  * Process an incoming WhatsApp message - simplified direct approach
  */
-async function processIncomingMessage(message: IncomingMessage, contactName?: string, phoneNumberId?: string) {
+async function processIncomingMessage(message: IncomingMessage, contactName?: string) {
 
   try {
     // Find the integration for this phone number
@@ -969,37 +971,26 @@ async function sendWhatsAppMessage(
 // Removed unused Effect functions - now using simplified direct functions above
 
 /**
- * Generate chatbot response using AgentWorkflow (modern engine)
+ * Generate chatbot response using Vercel AI SDK (streamText)
  */
 async function generateChatbotResponse(
   userMessage: string,
   chatbot: any,
-  conversationId: string,
+  _conversationId: string,
   conversationHistory?: any[]
 ) {
   const startTime = Date.now();
 
   try {
-    // Get user info from chatbot owner
-    const user = await db.user.findUnique({
-      where: { id: chatbot.userId }
-    });
-
-    if (!user) {
-      throw new Error("User not found for chatbot");
-    }
-
-    // ✅ USAR MOTOR MODERNO: agent-workflow.server (igual que Web)
-    const { streamAgentWorkflow } = await import("../../server/agents/agent-workflow.server");
-    const { resolveChatbotConfig, createAgentExecutionContext } = await import("../../server/chatbot/configResolver.server");
-    const { getChatbotIntegrationFlags } = await import("../../server/chatbot/integrationModel.server");
-
-    // Resolver configuración usando configResolver
-    const resolvedConfig = resolveChatbotConfig(chatbot, user);
+    // ✅ IMPORTAR Vercel AI SDK
+    const { streamText, convertToModelMessages } = await import("ai");
+    const { mapModel } = await import("../../server/config/vercel.model.providers");
+    const { createGetContextTool } = await import("../../server/tools/vercel/vectorSearch");
+    const { createSaveLeadTool } = await import("../../server/tools/vercel/saveLead");
 
     // Build conversation history from recent messages
     const history = conversationHistory?.slice(-20).map(msg => {
-      const role = (msg.role === "USER" ? "user" : "assistant") as any;
+      const role = (msg.role === "USER" ? "user" : "assistant") as "user" | "assistant";
       let content = msg.content;
 
       // 📱 Marcar mensajes echo (respuestas manuales del negocio)
@@ -1007,52 +998,69 @@ async function generateChatbotResponse(
         content = `📱 [Respuesta manual del negocio]: ${content}`;
       }
 
-      return { role, content };
+      return {
+        id: msg.id || nanoid(),
+        role,
+        parts: [{ type: "text" as const, text: content }]
+      };
     }) || [];
 
-    // Cargar integraciones activas del chatbot
-    const integrations = await getChatbotIntegrationFlags(chatbot.id);
+    // ✅ Agregar mensaje actual del usuario
+    const allMessages = [
+      ...history,
+      {
+        id: nanoid(),
+        role: "user" as const,
+        parts: [{ type: "text" as const, text: userMessage }]
+      }
+    ];
 
-    // Crear contexto de ejecución del agente
-    const agentContext = createAgentExecutionContext(user, chatbot.id, userMessage, {
-      sessionId: conversationId, // Usar conversationId como sessionId
-      conversationId: conversationId,
-      conversationHistory: history,
-      integrations,
-      channel: 'whatsapp' // ✅ Indicar que estamos en WhatsApp
-    });
+    const systemPrompt = `
+    # Sigue estas instrucciones:
+    ${chatbot.instructions}
 
-    // Plan del dueño del chatbot (para usuarios anónimos en WhatsApp)
-    const chatbotOwnerPlan = user.plan;
+    # Usa esta personalidad:
+    ${chatbot.personality}
 
-    // ✅ Generar respuesta usando AgentWorkflow (motor moderno)
-    const streamGenerator = streamAgentWorkflow(user, userMessage, chatbot.id, {
-      resolvedConfig,
-      agentContext,
-      chatbotOwnerPlan
+    # Considera, además, estas instrucciones:
+    ${chatbot.customInstructions}
+
+    # ⚠️ CRÍTICO - Uso de Knowledge Base:
+    Tienes acceso a una base de conocimiento con información específica sobre este negocio.
+    - SIEMPRE usa la herramienta de búsqueda cuando el usuario haga preguntas específicas
+    - La información en la base de conocimiento es tu fuente de verdad
+    - Si encuentras información relevante, úsala para responder
+    - Si no encuentras información, indica claramente que no tienes esa información específica
+     `;
+
+    // ✅ USAR streamText del Vercel AI SDK
+    const { stepCountIs } = await import("ai");
+    const result = streamText({
+      model: mapModel(chatbot.aiModel),
+      messages: convertToModelMessages(allMessages),
+      system: systemPrompt,
+      tools: {
+        getContextTool: createGetContextTool(chatbot.id),
+        saveLeadTool: createSaveLeadTool(chatbot.id),
+      },
+      stopWhen: stepCountIs(5),
     });
 
     // Acumular respuesta completa desde el stream
     let responseContent = '';
     let toolsUsed: string[] = [];
 
-    for await (const event of streamGenerator) {
-      if (event.type === "chunk" && event.content) {
-        responseContent += event.content;
-      } else if (event.type === "tool-start" && event.tool) {
-        toolsUsed.push(event.tool);
-      } else if (event.type === "error") {
-        console.error("❌ [WhatsApp] Stream error:", event.content);
-      }
+    for await (const chunk of result.textStream) {
+      responseContent += chunk;
     }
 
     const responseTime = Date.now() - startTime;
 
     return {
-      content: responseContent.trim() || resolvedConfig.welcomeMessage || "Lo siento, no pude generar una respuesta.",
+      content: responseContent.trim() || chatbot.welcomeMessage || "Lo siento, no pude generar una respuesta.",
       tokens: Math.ceil(responseContent.length / 4), // Estimated tokens
       responseTime,
-      toolsUsed // ✅ Ahora rastreamos tools usados correctamente
+      toolsUsed
     };
 
   } catch (error) {
