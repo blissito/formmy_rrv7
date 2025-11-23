@@ -398,8 +398,6 @@ export const vectorSearch = async ({
     value,
     ...embeddingOptions,
   });
-  console.log("TextQuery: ", value);
-  console.log("Transformed embed:", queryVector.embedding.length);
   // 2. search for similarity
   const limit = Math.min(
     VECTOR_SEARCH_CONFIG.defaultLimit, // topK
@@ -430,10 +428,5 @@ export const vectorSearch = async ({
       },
     ],
   });
-  console.log("Result::", results);
-  // 2.1 log results
-  // 3. use content? converto to content?
-  // 4. convert chunks into full text
-  // 5. return text to inject in context
   return { success: true, results: results as unknown as any[] };
 };
