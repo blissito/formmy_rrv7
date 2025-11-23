@@ -19,6 +19,7 @@ import {
   updateContext,
   deleteContext,
   vectorSearch,
+  type ContextMetadata,
 } from "./vercel_embeddings";
 
 /**
@@ -61,7 +62,7 @@ export async function secureUpsert(params: {
   title: string;
   content: string;
   userId: string; // 🔒 REQUERIDO para validación
-  metadata?: any;
+  metadata?: ContextMetadata;
 }) {
   // 🔒 VALIDAR FORMATO DE IDS
   validateObjectId(params.chatbotId, "chatbotId");

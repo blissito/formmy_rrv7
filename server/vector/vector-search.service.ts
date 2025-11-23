@@ -1,14 +1,17 @@
 /**
  * Vector Search Service - MongoDB Atlas Vector Search
- * Realiza búsqueda semántica usando embeddings
+ * Realiza búsqueda semántica usando embeddings con Vercel AI SDK
  */
 
 import { db } from "~/utils/db.server";
-import { generateEmbedding } from "./embedding.service";
+import { embed } from "ai";
+import { openai } from "@ai-sdk/openai";
 import {
   VECTOR_INDEX_NAME,
   VECTOR_SEARCH_CONFIG,
   getIndexConfigJSON,
+  EMBEDDING_MODEL,
+  EMBEDDING_DIMENSIONS,
 } from "./vector-config";
 
 export interface VectorSearchResult {
@@ -92,9 +95,19 @@ export async function vectorSearch(
     // Validar límite
     const limit = Math.min(topK, VECTOR_SEARCH_CONFIG.maxLimit);
 
-    // 1. Generar embedding del query
+    // 1. Generar embedding del query con Vercel AI SDK
     console.log(`📊 Generando embedding para query...`);
-    const queryEmbedding = await generateEmbedding(query);
+    const embeddingModel = openai.embedding(EMBEDDING_MODEL);
+    const result = await embed({
+      model: embeddingModel,
+      value: query,
+      providerOptions: {
+        openai: {
+          dimensions: EMBEDDING_DIMENSIONS,
+        },
+      },
+    });
+    const queryEmbedding = result.embedding;
     console.log(`✅ Embedding generado: ${queryEmbedding.length} dimensiones`);
 
     // 2. Realizar vector search usando $vectorSearch aggregation
@@ -189,7 +202,18 @@ export async function vectorSearchWithFilters(
   // Validar límite
   const limit = Math.min(topK, VECTOR_SEARCH_CONFIG.maxLimit);
 
-  const queryEmbedding = await generateEmbedding(query);
+  // Generar embedding con Vercel AI SDK
+  const embeddingModel = openai.embedding(EMBEDDING_MODEL);
+  const result = await embed({
+    model: embeddingModel,
+    value: query,
+    providerOptions: {
+      openai: {
+        dimensions: EMBEDDING_DIMENSIONS,
+      },
+    },
+  });
+  const queryEmbedding = result.embedding;
 
   // Construir filtro completo
   // IMPORTANTE: chatbotId es ObjectId en MongoDB, necesita formato { $oid: id }

@@ -6,7 +6,7 @@ import {
   getParsingJobById,
 } from "../../server/llamaparse/job.service";
 import { uploadParserFile } from "../../server/llamaparse/upload.service";
-import { addContextWithEmbeddings } from "../../server/context/unified-processor.server";
+import { secureUpsert } from "../../server/context/vercel_embeddings.secure";
 import { enqueueParsingJob } from "../../server/jobs/workers/parser-worker";
 import type { ParsingMode } from "@prisma/client";
 
@@ -241,8 +241,6 @@ export async function action({ request }: Route.ActionArgs) {
           );
         }
 
-        // TODO: Verificar que el chatbot pertenece al usuario
-
         // Determinar fileType
         const fileType = fileName.toLowerCase().endsWith('.pdf')
           ? 'application/pdf'
@@ -250,11 +248,14 @@ export async function action({ request }: Route.ActionArgs) {
           ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
           : 'text/markdown';
 
-        const result = await addContextWithEmbeddings({
+        // ✅ Usar Vercel AI SDK para vectorización automática (con validación de ownership)
+        const result = await secureUpsert({
           chatbotId,
+          userId: user.id,
+          title: fileName,
           content: markdown,
           metadata: {
-            type: 'FILE',
+            contextType: 'FILE',
             fileName,
             fileType,
             fileSize: Buffer.byteLength(markdown, 'utf8'),

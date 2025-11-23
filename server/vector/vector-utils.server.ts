@@ -2,11 +2,11 @@
  * Vector Utilities - Funciones compartidas para vectorización
  *
  * Consolida código duplicado entre:
- * - unified-processor.server.ts
- * - auto-vectorize.service.ts
+ * - unified-processor.server.ts (DEPRECADO)
+ * - auto-vectorize.service.ts (DEPRECADO)
+ * - vercel_embeddings.ts (ACTIVO)
  */
 
-import { generateEmbedding, cosineSimilarity } from "./embedding.service";
 import { db } from "~/utils/db.server";
 
 /**
@@ -14,7 +14,7 @@ import { db } from "~/utils/db.server";
  */
 export const VECTOR_CONFIG = {
   MAX_CHUNK_SIZE: 2000,
-  CHUNK_OVERLAP: 300, // 15% overlap para mejor continuidad y coverage
+  CHUNK_OVERLAP: 100, // 5% overlap - Balance entre granularidad y coverage
   SIMILARITY_THRESHOLD: 0.85,
   MAX_RETRIES: 3,
   INITIAL_RETRY_DELAY: 1000,
@@ -137,4 +137,33 @@ export async function isDuplicateChunk(
     console.error("Error verificando duplicados:", error);
     return false; // Fail-open: en caso de error, permitir inserción
   }
+}
+
+/**
+ * Calcula similaridad coseno entre dos vectors
+ * Función matemática pura (no depende de ningún servicio externo)
+ * @param a - Vector A
+ * @param b - Vector B
+ * @returns Similaridad coseno (0-1)
+ */
+export function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length) {
+    throw new Error("Vectors must have same dimensions");
+  }
+
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+
+  if (normA === 0 || normB === 0) {
+    return 0;
+  }
+
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }

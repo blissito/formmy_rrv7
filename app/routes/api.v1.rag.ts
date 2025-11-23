@@ -9,7 +9,7 @@
 
 import type { Route } from "./+types/api.v1.rag";
 import { extractApiKeyFromRequest, authenticateApiKey, checkRateLimit } from "../../server/chatbot/apiKeyAuth.server";
-import { addContextWithEmbeddings } from "../../server/context/unified-processor.server";
+import { secureUpsert } from "../../server/context/vercel_embeddings.secure";
 import { vectorSearch } from "../../server/vector/vector-search.service";
 import { db } from "~/utils/db.server";
 import type { ContextType } from "@prisma/client";
@@ -268,12 +268,14 @@ export async function action({ request }: Route.ActionArgs) {
         credits: CREDIT_COSTS.upload,
       });
 
-      // Agregar contexto con embeddings
-      const result = await addContextWithEmbeddings({
+      // ✅ Usar Vercel AI SDK para vectorización automática (con validación de ownership)
+      const result = await secureUpsert({
         chatbotId,
+        userId,
+        title: metadata.title || metadata.fileName || 'Untitled',
         content,
         metadata: {
-          type: type as ContextType,
+          contextType: type as ContextType,
           ...sanitizedMetadata,
         },
       });

@@ -14,7 +14,7 @@ import {
   getChatbotContexts,
   getChatbotById,
 } from "../chatbot-api.server";
-import { addContextWithEmbeddings } from "../context/unified-processor.server";
+import { secureUpsert } from "../context/vercel_embeddings.secure";
 import { db } from "../../app/utils/db.server";
 import * as officeParser from "officeparser";
 import { extractText } from "unpdf";
@@ -166,12 +166,14 @@ export async function handleContextOperation(
           content = formData.get("content") as string | undefined;
         }
 
-        // ✅ Usar unified-processor para vectorización automática
-        const result = await addContextWithEmbeddings({
+        // ✅ Usar Vercel AI SDK para vectorización automática
+        const result = await secureUpsert({
           chatbotId,
+          userId,
+          title: fileName || "Unnamed file",
           content: content || "",
           metadata: {
-            type: "FILE",
+            contextType: "FILE",
             fileName,
             fileType,
             fileSize: sizeKB * 1024, // Convertir KB a bytes
@@ -234,12 +236,14 @@ export async function handleContextOperation(
           );
         }
 
-        // ✅ Usar unified-processor para vectorización automática
-        const result = await addContextWithEmbeddings({
+        // ✅ Usar Vercel AI SDK para vectorización automática
+        const result = await secureUpsert({
           chatbotId,
+          userId,
+          title: title || url,
           content,
           metadata: {
-            type: "LINK",
+            contextType: "LINK",
             url,
             title,
             fileSize: sizeKB ? sizeKB * 1024 : undefined, // Convertir KB a bytes
@@ -285,12 +289,14 @@ export async function handleContextOperation(
         const title = formData.get("title") as string;
         const content = formData.get("content") as string;
 
-        // ✅ Usar unified-processor para vectorización automática
-        const result = await addContextWithEmbeddings({
+        // ✅ Usar Vercel AI SDK para vectorización automática
+        const result = await secureUpsert({
           chatbotId,
+          userId,
+          title: title || "Untitled text",
           content: content || "",
           metadata: {
-            type: "TEXT",
+            contextType: "TEXT",
             title,
           },
         });
@@ -341,15 +347,17 @@ export async function handleContextOperation(
         const questions = formData.get("questions") as string;
         const answer = formData.get("answer") as string;
 
-        // ✅ Usar unified-processor para vectorización automática
+        // ✅ Usar Vercel AI SDK para vectorización automática
         // Combinar preguntas y respuesta para vectorización
         const content = `Preguntas: ${questions}\n\nRespuesta: ${answer}`;
 
-        const result = await addContextWithEmbeddings({
+        const result = await secureUpsert({
           chatbotId,
+          userId,
+          title: title || questions.substring(0, 50) + "...",
           content,
           metadata: {
-            type: "QUESTION",
+            contextType: "QUESTION",
             title,
             questions,
             answer,
