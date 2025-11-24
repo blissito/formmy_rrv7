@@ -50,87 +50,60 @@ export const queryChatbotsHandler = async (
     if (orderBy === 'conversations') orderByClause = { conversationCount: 'desc' };
     if (orderBy === 'created') orderByClause = { createdAt: 'desc' };
 
-    // Query chatbots with conversations for stats
+    // Query chatbots - SIMPLIFIED
     const chatbots = await db.chatbot.findMany({
       where: whereClause,
       orderBy: orderByClause,
       take: limit,
-      include: {
-        conversations: includeStats ? {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        status: true,
+        isActive: true,
+        aiModel: true,
+        conversationCount: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
           select: {
-            id: true,
-            messageCount: true,
-            startedAt: true,
-            endedAt: true,
-            status: true
-          }
-        } : false,
-        contexts: {
-          select: {
-            id: true,
-            type: true,
-            sizeKB: true
-          }
-        },
-        integrations: {
-          select: {
-            platform: true,
-            isActive: true
+            contextObjects: true,
+            integrations: true
           }
         }
       }
     });
 
-    // Process stats if requested
-    const processedChatbots = chatbots.map(chatbot => {
-      const weeklyConversations = includeStats && chatbot.conversations
-        ? chatbot.conversations.filter(conv => {
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            return new Date(conv.startedAt) >= weekAgo;
-          }).length
-        : 0;
+    // SIMPLIFIED: No complex calculations, just return essentials
+    const processedChatbots = chatbots.map(chatbot => ({
+      id: chatbot.id,
+      name: chatbot.name,
+      slug: chatbot.slug,
+      description: chatbot.description,
+      status: chatbot.status,
+      isActive: chatbot.isActive,
+      aiModel: chatbot.aiModel,
+      totalConversations: chatbot.conversationCount,
+      contextsCount: chatbot._count.contextObjects,
+      integrationsCount: chatbot._count.integrations,
+      createdAt: chatbot.createdAt,
+      updatedAt: chatbot.updatedAt
+    }));
 
-      const avgMessagesPerConv = includeStats && chatbot.conversations && chatbot.conversations.length > 0
-        ? chatbot.conversations.reduce((sum, conv) => sum + conv.messageCount, 0) / chatbot.conversations.length
-        : 0;
-
-      const activeIntegrations = chatbot.integrations?.filter(int => int.isActive).length || 0;
-      const totalContextSize = chatbot.contexts?.reduce((sum, ctx) => sum + (ctx.sizeKB || 0), 0) || 0;
-
-      return {
-        id: chatbot.id,
-        name: chatbot.name,
-        slug: chatbot.slug,
-        description: chatbot.description,
-        status: chatbot.status,
-        isActive: chatbot.isActive,
-        aiModel: chatbot.aiModel,
-        totalConversations: chatbot.conversationCount,
-        weeklyConversations,
-        avgMessagesPerConv: Math.round(avgMessagesPerConv * 10) / 10,
-        contextsCount: chatbot.contexts?.length || 0,
-        totalContextSizeKB: totalContextSize,
-        integrationsCount: activeIntegrations,
-        createdAt: chatbot.createdAt,
-        updatedAt: chatbot.updatedAt
-      };
-    });
-
-    // Generate summary
+    // SIMPLIFIED: Basic summary only
     const totalChatbots = processedChatbots.length;
     const activeChatbots = processedChatbots.filter(c => c.isActive).length;
-    const totalWeeklyConversations = processedChatbots.reduce((sum, c) => sum + c.weeklyConversations, 0);
-    const avgConversationsPerBot = totalChatbots > 0 ? Math.round((totalWeeklyConversations / totalChatbots) * 10) / 10 : 0;
+    const totalConversations = processedChatbots.reduce((sum, c) => sum + c.totalConversations, 0);
 
-    const summary = `Encontré ${totalChatbots} chatbots (${activeChatbots} activos). Esta semana: ${totalWeeklyConversations} conversaciones total (promedio ${avgConversationsPerBot} por bot).`;
+    const summary = `Encontré ${totalChatbots} chatbots (${activeChatbots} activos). Total de conversaciones: ${totalConversations}.`;
 
     // Format for AI consumption
     const botsList = processedChatbots.map(bot =>
-      `• **${bot.name}** [ID: ${bot.id}] (${bot.status.toLowerCase()}) - ${bot.weeklyConversations} conv. esta semana, ${bot.totalConversations} total, ${bot.contextsCount} contextos (${bot.totalContextSizeKB}KB), ${bot.integrationsCount} integraciones activas`
+      `• **${bot.name}** (${bot.status.toLowerCase()}) - ${bot.totalConversations} conversaciones, ${bot.contextsCount} contextos, ${bot.integrationsCount} integraciones`
     ).join('\n');
 
-    const result = `${summary}\n\n**Chatbots detallados:**\n${botsList}`;
+    const result = `${summary}\n\n${botsList}`;
 
     return {
       success: true,
@@ -139,8 +112,7 @@ export const queryChatbotsHandler = async (
         summary: {
           totalChatbots,
           activeChatbots,
-          weeklyConversations: totalWeeklyConversations,
-          avgConversationsPerBot
+          totalConversations
         },
         chatbots: processedChatbots
       }

@@ -8,12 +8,14 @@ import type { User } from "@prisma/client";
  * Factory function que recibe el user del route handler
  */
 export const createQueryChatbotsTool = (user: User) => tool({
-  description: "List and filter user's chatbots with optional stats (conversations count, status, etc.)",
+  description: `Get ALL chatbots owned by the user. ALWAYS use this tool to answer questions about:
+- "cuáles son mis chatbots" / "mis bots" / "enlista mis chatbots"
+- "cuántos chatbots tengo" / "mis chatbots creados"
+- "qué chatbots tengo activos/inactivos"
+- ANY question that mentions user's chatbots, bots, or agents
+Returns complete list with stats (conversations, contexts, integrations). Call this FIRST before saying "no tienes chatbots".`,
   inputSchema: z.object({
-    status: z.enum(["all", "active", "inactive", "draft"]).optional().describe("Filter by chatbot status"),
-    orderBy: z.enum(["name", "conversations", "created", "updated"]).optional().describe("Sort order"),
-    limit: z.number().optional().describe("Max number of chatbots to return"),
-    includeStats: z.boolean().optional().describe("Include conversation stats"),
+    includeStats: z.boolean().optional().default(true).describe("Include detailed stats (conversations, contexts, integrations)"),
   }),
   execute: async (params) => {
     console.log('🔍 [queryChatbotsTool] EJECUTANDO - params:', params, 'userId:', user.id);
@@ -25,9 +27,16 @@ export const createQueryChatbotsTool = (user: User) => tool({
       integrations: {},
       isGhosty: true
     };
-    const result = await queryChatbotsHandler(params, context);
+    // Default params: all status, ordered by updated, limit 50, includeStats from input
+    const handlerParams = {
+      status: 'all' as const,
+      orderBy: 'updated' as const,
+      limit: 50,
+      includeStats: params.includeStats ?? true,
+    };
+    const result = await queryChatbotsHandler(handlerParams, context);
     console.log('✅ [queryChatbotsTool] RESULTADO:', result);
-    // Retornar datos estructurados con IDs para que el LLM pueda usarlos
-    return JSON.stringify(result.data);
+    // Retornar string formateado para que el LLM lo lea directamente
+    return result.message;
   },
 });
