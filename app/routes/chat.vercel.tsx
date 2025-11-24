@@ -93,7 +93,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
             });
 
       if (!result.success) {
-        return { success: false, error: result.error?.message || "Error al actualizar contexto" };
+        return {
+          success: false,
+          error: result.error?.message || "Error al actualizar contexto",
+        };
       }
 
       return {
@@ -120,7 +123,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
             });
 
       if (!result.success) {
-        return { success: false, error: result.error?.message || "Error al crear contexto" };
+        return {
+          success: false,
+          error: result.error?.message || "Error al crear contexto",
+        };
       }
 
       return { success: true, contextId: result.contextId, updated: false };
@@ -147,7 +153,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
           });
 
     if (!result.success) {
-      return { success: false, error: result.error?.message || "Error al eliminar contexto" };
+      return {
+        success: false,
+        error: result.error?.message || "Error al eliminar contexto",
+      };
     }
 
     return { success: true };
@@ -243,14 +252,15 @@ Ghosty: "No tienes chatbots" ❌ NUNCA - Debes llamar queryChatbotsTool primero
       getDateTimeTool: createGetDateTimeTool(),
       dummyArtifactTool,
     },
-    stopWhen: stepCountIs(5), // unless we need more power for tools, 12 maybe?
+    stopWhen: stepCountIs(5), // Límite de pasos (tool calls + respuestas)
     // 📊 TRACKING: onFinish de streamText (recibe totalUsage)
     onFinish: async ({ text, totalUsage, finishReason }) => {
       try {
         // 📊 TRACKING: Métricas de Ghosty (para observabilidad)
         const inputTokens = totalUsage?.promptTokens || 0;
         const outputTokens = totalUsage?.completionTokens || 0;
-        const totalTokens = totalUsage?.totalTokens || inputTokens + outputTokens;
+        const totalTokens =
+          totalUsage?.totalTokens || inputTokens + outputTokens;
 
         // 🔍 Modelo hardcodeado (GPT-4.1-mini)
         const provider = "openai";

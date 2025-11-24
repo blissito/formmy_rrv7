@@ -16,6 +16,7 @@ export const createQueryChatbotsTool = (user: User) => tool({
     includeStats: z.boolean().optional().describe("Include conversation stats"),
   }),
   execute: async (params) => {
+    console.log('🔍 [queryChatbotsTool] EJECUTANDO - params:', params, 'userId:', user.id);
     const context = {
       userId: user.id,
       userPlan: user.plan,
@@ -25,6 +26,7 @@ export const createQueryChatbotsTool = (user: User) => tool({
       isGhosty: true
     };
     const result = await queryChatbotsHandler(params, context);
+    console.log('✅ [queryChatbotsTool] RESULTADO:', result);
     // Retornar datos estructurados con IDs para que el LLM pueda usarlos
     return JSON.stringify(result.data);
   },
