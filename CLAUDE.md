@@ -290,6 +290,72 @@ await db.lead.create({
 
 ---
 
+## 🔄 MIGRACIÓN EN PROGRESO - Context Model
+
+### Arquitectura Actual: Dos sistemas coexistiendo
+
+**Sistema NUEVO (modelo separado)** ✅:
+```prisma
+model Context {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  content      String
+  contextType  ContextType @default(TEXT)
+  title        String
+  chatbotId    String      @db.ObjectId
+  chatbot      Chatbot     @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  embeddings   Embedding[]
+  metadata     Json?       // fileName, url, parsingMode, etc.
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+```
+
+**Relación en Chatbot**:
+```prisma
+model Chatbot {
+  contextObjects Context[]  // ✅ Nombre de la relación (NO "contexts")
+}
+```
+
+**Sistema LEGACY (embebido en JSON)** ⚠️ DEPRECADO:
+```prisma
+type ContextItem {
+  id             String
+  type           ContextType
+  fileName       String?
+  // ... campos embebidos como JSON en Chatbot
+}
+```
+
+### Archivos por sistema
+
+**✅ Usando Context (modelo separado)**:
+- `server/context/vercel_embeddings.ts` - Servicio de RAG con Vercel AI SDK
+- `server/context/vercel_embeddings.secure.ts` - Validaciones de ownership
+- `app/routes/chat.vercel.tsx` - Ghosty y chat público
+- `app/routes/api.v1.rag.ts` - RAG API v1
+- `app/routes/api.rag.v1.ts` - RAG API v1 (query/list)
+- `server/vector/vector-search.service.ts` - Búsqueda vectorial
+
+**⚠️ Usando ContextItem (legacy embebido)**:
+- `server/chatbot/contextManager.server.ts` - DEPRECADO
+- `server/chatbot/configResolver.server.ts` - DEPRECADO (líneas 106, 173-174)
+- `server/chatbot/chatbotModel.server.ts` - `addContextItem()`, `removeContextItem()` DEPRECADOS
+
+### TODO: Migración completa
+
+**Pendiente**:
+1. Eliminar funciones `addContextItem()` y `removeContextItem()` de `chatbotModel.server.ts`
+2. Migrar `contextManager.server.ts` a usar `secureUpsert()` de `vercel_embeddings.secure.ts`
+3. Actualizar `configResolver.server.ts` para cargar de `contextObjects` en lugar de JSON embebido
+4. Eliminar tipo `ContextItem` del schema de Prisma
+5. Script de migración de datos legacy (si quedan chatbots con `contexts` JSON)
+
+**Fecha**: 2025-11-24
+**Estado**: 🟡 Parcial - APIs críticas migradas, funciones legacy pendientes
+
+---
+
 ## ⚠️ REGLAS CRÍTICAS
 
 ### 1. Vercel AI SDK - Streaming
