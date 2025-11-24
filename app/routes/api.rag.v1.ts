@@ -65,10 +65,10 @@ export async function loader({ request }: { request: Request }) {
         select: { id: true, metadata: true }
       });
 
-      // Obtener todos los contextIds válidos (ContextItems + ParsingJobs)
+      // Obtener todos los contextIds válidos (Context model + ParsingJobs)
       const chatbotWithContexts = await db.chatbot.findUnique({
         where: { id: chatbotId },
-        select: { contexts: true }
+        select: { contextObjects: true }
       });
 
       const parsingJobs = await db.parsingJob.findMany({
@@ -77,7 +77,7 @@ export async function loader({ request }: { request: Request }) {
       });
 
       const validContextIds = new Set([
-        ...(chatbotWithContexts?.contexts || []).map((ctx: any) => ctx.id),
+        ...(chatbotWithContexts?.contextObjects || []).map((ctx: any) => ctx.id),
         ...parsingJobs.map(job => job.id)
       ]);
 
@@ -121,7 +121,7 @@ export async function loader({ request }: { request: Request }) {
       // Verificar ownership del chatbot
       const chatbot = await db.chatbot.findFirst({
         where: { id: chatbotId, userId },
-        select: { contexts: true }
+        select: { contextObjects: true }
       });
 
       if (!chatbot) {
@@ -137,9 +137,9 @@ export async function loader({ request }: { request: Request }) {
         select: { metadata: true }
       });
 
-      // Procesar ContextItems (TODOS los tipos: FILE, LINK, TEXT, QUESTION)
+      // Procesar Context model (TODOS los tipos: FILE, LINK, TEXT, QUESTION)
       // Esto incluye tanto docs subidos manualmente como parseados via Parser API
-      const docs = (chatbot.contexts as any[] || [])
+      const docs = (chatbot.contextObjects as any[] || [])
         .map((ctx: any) => {
           const embeddingCount = allEmbeddings.filter((emb: any) =>
             emb.metadata?.contextId === ctx.id
@@ -152,14 +152,18 @@ export async function loader({ request }: { request: Request }) {
           let displayName = "Unnamed";
           let source = "manual_upload";
 
-          switch (ctx.type) {
+          // Metadata está en campo JSON, extraer valores
+          const metadata = ctx.metadata || {};
+          const contextType = ctx.contextType;
+
+          switch (contextType) {
             case "FILE":
-              displayName = ctx.fileName || "Unnamed file";
+              displayName = metadata.fileName || "Unnamed file";
               // Detectar si viene de Parser API por presencia de parsingMode
-              source = ctx.parsingMode ? "parser_api" : "manual_upload";
+              source = metadata.parsingMode ? "parser_api" : "manual_upload";
               break;
             case "LINK":
-              displayName = ctx.url || ctx.title || "Unnamed link";
+              displayName = metadata.url || ctx.title || "Unnamed link";
               source = "web_source";
               break;
             case "TEXT":
@@ -167,27 +171,27 @@ export async function loader({ request }: { request: Request }) {
               source = "text_context";
               break;
             case "QUESTION":
-              displayName = ctx.title || ctx.questions || "Unnamed Q&A";
+              displayName = ctx.title || metadata.questions || "Unnamed Q&A";
               source = "qa_context";
               break;
             default:
-              displayName = ctx.title || ctx.fileName || "Unknown";
+              displayName = ctx.title || metadata.fileName || "Unknown";
               source = "unknown";
           }
 
           return {
             id: ctx.id,
             fileName: displayName,
-            type: ctx.type,
-            mode: ctx.parsingMode || "COST_EFFECTIVE", // Usar parsingMode si existe, sino default
-            pages: ctx.parsingPages || (ctx.type === "LINK" ? (ctx.routes?.length || 0) : 0),
+            type: contextType,
+            mode: metadata.parsingMode || "COST_EFFECTIVE", // Usar parsingMode si existe, sino default
+            pages: metadata.parsingPages || (contextType === "LINK" ? (metadata.routes?.length || 0) : 0),
             chunks: embeddingCount,
             quality: null,
             queryCount: 0,
             source,
             createdAt: new Date(ctx.createdAt),
             // Metadata adicional de parsing (solo si existe)
-            ...(ctx.parsingCredits && { creditsUsed: ctx.parsingCredits })
+            ...(metadata.parsingCredits && { creditsUsed: metadata.parsingCredits })
           };
         })
         .filter(Boolean) // Remover nulos (docs sin embeddings)

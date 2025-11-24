@@ -72,7 +72,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         select: {
           id: true,
           name: true,
-          contexts: true,
+          contextObjects: true,
           contextSizeKB: true,
           userId: true, // Para validar ownership
           status: true, // Para verificar que está activo
@@ -112,22 +112,22 @@ export async function loader({ request }: Route.LoaderArgs) {
       return Response.json({
         chatbotId: chatbot.id,
         chatbotName: chatbot.name,
-        totalContexts: chatbot.contexts?.length || 0,
+        totalContexts: chatbot.contextObjects?.length || 0,
         totalSizeKB: chatbot.contextSizeKB || 0,
         totalEmbeddings: embeddingCount,
-        contexts: (chatbot.contexts || []).map((ctx: any) => ({
+        contexts: (chatbot.contextObjects || []).map((ctx: any) => ({
           id: ctx.id,
-          type: ctx.type,
-          fileName: ctx.fileName,
+          type: ctx.contextType,
+          fileName: ctx.metadata?.fileName,
           title: ctx.title,
-          url: ctx.url,
-          sizeKB: ctx.sizeKB,
+          url: ctx.metadata?.url,
+          sizeKB: ctx.metadata?.sizeKB,
           createdAt: ctx.createdAt,
           // Parser metadata si existe
-          ...(ctx.parsingMode && {
-            parsingMode: ctx.parsingMode,
-            parsingPages: ctx.parsingPages,
-            parsingCredits: ctx.parsingCredits,
+          ...(ctx.metadata?.parsingMode && {
+            parsingMode: ctx.metadata.parsingMode,
+            parsingPages: ctx.metadata.parsingPages,
+            parsingCredits: ctx.metadata.parsingCredits,
           }),
         })),
       });
