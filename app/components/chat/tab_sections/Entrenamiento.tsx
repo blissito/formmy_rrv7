@@ -19,8 +19,8 @@ import { Website } from "../Website";
 import { ExtraccionAvanzada } from "./ExtraccionAvanzada";
 import type { Chatbot, User, Plans } from "@prisma/client";
 import type { WebsiteEntry } from "~/types/website";
-import { useEffect, useState } from "react";
-import { useSubmit, useRevalidator } from "react-router";
+import { useEffect, useState, useRef } from "react";
+import { useRevalidator } from "react-router";
 import toast from "react-hot-toast";
 
 // Client-safe plan limits mapping
@@ -80,28 +80,77 @@ export const Entrenamiento = ({
     useState<any>(null);
   const [editingTextContext, setEditingTextContext] = useState<any>(null);
 
+  // Refs para evitar que el useEffect se ejecute cuando se limpian los arrays *ToRemove
+  // Esto previene el flash visual al actualizar el chatbot
+  const fileContextsToRemoveRef = useRef<any[]>([]);
+  const websiteContextsToRemoveRef = useRef<any[]>([]);
+  const textContextsToRemoveRef = useRef<any[]>([]);
+  const questionContextsToRemoveRef = useRef<any[]>([]);
+
+  // Track revalidator state para detectar cuando termina la recarga
+  const prevRevalidatorState = useRef(revalidator.state);
+
+  // Mantener refs sincronizadas con los estados
+  useEffect(() => {
+    fileContextsToRemoveRef.current = fileContextsToRemove;
+  }, [fileContextsToRemove]);
+  useEffect(() => {
+    websiteContextsToRemoveRef.current = websiteContextsToRemove;
+  }, [websiteContextsToRemove]);
+  useEffect(() => {
+    textContextsToRemoveRef.current = textContextsToRemove;
+  }, [textContextsToRemove]);
+  useEffect(() => {
+    questionContextsToRemoveRef.current = questionContextsToRemove;
+  }, [questionContextsToRemove]);
+
+  // Detectar cuando el revalidator termina (loading -> idle)
+  // Este es el momento seguro para limpiar estados porque los datos ya llegaron
+  useEffect(() => {
+    if (prevRevalidatorState.current === "loading" && revalidator.state === "idle") {
+      // La revalidación terminó - los datos del servidor ya llegaron
+      // El useEffect de contextDocuments ya habrá procesado los datos
+      // Ahora es seguro limpiar todos los arrays pendientes
+      setNewTextContexts([]);
+      setNewQuestionContexts([]);
+      setTextContextsToUpdate([]);
+      setQuestionContextsToUpdate([]);
+      setTextContextsToRemove([]);
+      setFileContextsToRemove([]);
+      setWebsiteContextsToRemove([]);
+      setQuestionContextsToRemove([]);
+    }
+    prevRevalidatorState.current = revalidator.state;
+  }, [revalidator.state]);
+
   useEffect(() => {
     // ✅ Usar contextDocuments del modelo Context (sistema nuevo)
     if (contextDocuments && Array.isArray(contextDocuments)) {
-      // Extraer archivos
+      // Extraer archivos - FILTRAR los marcados para eliminar (usando refs para evitar flash)
       const fileContextsFromDb = contextDocuments
         .filter((context: any) => context.contextType === "FILE")
+        .filter((ctx: any) => !fileContextsToRemoveRef.current.some((r) => r.id === ctx.id))
         .map((context: any) => ({
           id: context.id,
           fileName: context.metadata?.fileName || context.title,
           fileType: context.metadata?.fileType || "application/octet-stream",
-          sizeKB: context.metadata?.sizeKB || Math.ceil(context.content?.length / 1024) || 0,
+          sizeKB:
+            context.metadata?.sizeKB ||
+            Math.ceil(context.content?.length / 1024) ||
+            0,
           content: context.content,
         }));
       setFileContexts(fileContextsFromDb);
 
-      // Extraer sitios web
+      // Extraer sitios web - FILTRAR los marcados para eliminar
       const websiteContextsFromDb = contextDocuments
         .filter((context: any) => context.contextType === "LINK")
+        .filter((ctx: any) => !websiteContextsToRemoveRef.current.some((r) => r.contextId === ctx.id))
         .map((context: any) => ({
           url: context.metadata?.url || context.title,
           content: context.content || "",
-          routes: context.metadata?.routes && context.metadata.routes.length > 0
+          routes:
+            context.metadata?.routes && context.metadata.routes.length > 0
               ? context.metadata.routes
               : [context.metadata?.url || context.title],
           includeRoutes: undefined,
@@ -112,33 +161,47 @@ export const Entrenamiento = ({
         }));
       setExistingWebsites(websiteContextsFromDb);
 
-      // Extraer contextos de texto
+      // Extraer contextos de texto - FILTRAR los marcados para eliminar
       const textContextsFromDb = contextDocuments
         .filter((context: any) => context.contextType === "TEXT")
+        .filter((ctx: any) => !textContextsToRemoveRef.current.some((r) => r.id === ctx.id))
         .map((context: any) => ({
           id: context.id,
           title: context.title,
           content: context.content,
-          sizeKB: context.metadata?.sizeKB || Math.ceil(context.content?.length / 1024) || 0,
+          sizeKB:
+            context.metadata?.sizeKB ||
+            Math.ceil(context.content?.length / 1024) ||
+            0,
         }));
       setTextContexts(textContextsFromDb);
 
-      // Extraer contextos de preguntas
+      // Extraer contextos de preguntas - FILTRAR los marcados para eliminar
       const questionContextsFromDb = contextDocuments
         .filter((context: any) => context.contextType === "QUESTION")
+        .filter((ctx: any) => !questionContextsToRemoveRef.current.some((r) => r.id === ctx.id))
         .map((context: any) => ({
           id: context.id,
           title: context.title,
           questions:
             typeof context.metadata?.questions === "string"
-              ? context.metadata.questions.split("\n").filter((q: string) => q.trim())
+              ? context.metadata.questions
+                  .split("\n")
+                  .filter((q: string) => q.trim())
               : context.metadata?.questions || [],
           answer: context.metadata?.answer || "",
-          sizeKB: context.metadata?.sizeKB || Math.ceil(context.content?.length / 1024) || 0,
+          sizeKB:
+            context.metadata?.sizeKB ||
+            Math.ceil(context.content?.length / 1024) ||
+            0,
         }));
       setQuestionContexts(questionContextsFromDb);
+
+      // NO limpiamos newTextContexts ni newQuestionContexts aquí
+      // La limpieza se hace en el useEffect de revalidator.state cuando termina la recarga
+      // Esto evita el flash donde items desaparecen antes de que lleguen los datos del servidor
     }
-  }, [contextDocuments]);
+  }, [contextDocuments]); // Solo depende de contextDocuments - las refs no triggean re-ejecución
 
   const handleFilesChange = (newFiles: File[]) => {
     // Agregar nuevos archivos a los existentes, evitando duplicados por nombre
@@ -213,48 +276,9 @@ export const Entrenamiento = ({
       ]);
     }
 
-    // VERCEL EXPERIMENT
-    // ✅ En dashboard de chatbot, se sube al chatbot del usuario
-    const experiment = async () => {
-      console.log("About to experiment");
-      const response = await fetch("/chat/vercel", {
-        body: JSON.stringify({
-          intent: "upsert",
-          chatbotId: chatbot.id, // ✅ Chatbot del usuario
-          title: textTitle.trim(),
-          content: textContent.trim(),
-          // contextType: "TEXT", // default
-        }),
-        method: "post",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const { error } = await response.json();
-      if (error) {
-        // duplication
-        console.error("ERROR", error);
-        toast.error(error);
-      }
-      // Experiment retrival
-      // await fetch("/chat/vercel", {
-      //   body: JSON.stringify({
-      //     intent: "retrieval",
-      //     value: "construcción de parámetros",
-      //     chatbotId: chatbot.id,
-      //   }),
-      //   method: "post",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      // });
-      // revalidate @todo
-    };
-    experiment();
-
     // Limpiar formulario
     setTextTitle("");
-    // setTextContent("");
+    setTextContent("");
     setEditingTextContext(null);
   };
 
@@ -525,14 +549,15 @@ export const Entrenamiento = ({
       }
     }
 
-    // Limpiar archivos subidos y recargar datos SOLO si todo fue exitoso
+    // Limpiar archivos subidos (revalidate se hace al final de handleUpdateChatbot)
     if (uploadedFiles.length > 0) {
       toast.success(
         `${uploadedFiles.length} archivo(s) subido(s) correctamente`
       );
     }
     setUploadedFiles([]);
-    revalidator.revalidate();
+    // NOTA: No hacer revalidate aquí - se hace al final de handleUpdateChatbot
+    // para evitar flash visual de items marcados para eliminar
   };
 
   const handleRemoveContext = (index: number, context: any) => {
@@ -822,15 +847,13 @@ export const Entrenamiento = ({
         allContextsToRemove.length > 0;
       if (hasChanges) {
         toast.success("Chatbot actualizado correctamente");
-        // NO limpiar newWebsiteEntries - ya se actualizó con los fallidos
-        setNewTextContexts([]);
-        setNewQuestionContexts([]);
-        setTextContextsToUpdate([]);
-        setQuestionContextsToUpdate([]);
-        setTextContextsToRemove([]);
-        setFileContextsToRemove([]);
-        setWebsiteContextsToRemove([]);
-        setQuestionContextsToRemove([]);
+
+        // Revalidar para obtener los datos del servidor
+        // El useEffect se encarga de:
+        // 1. Filtrar items eliminados usando refs (sin flash)
+        // 2. Limpiar newTextContexts/newQuestionContexts cuando los items ya existen en servidor
+        // 3. Limpiar todos los arrays *ToUpdate y *ToRemove
+        // NO limpiamos aquí manualmente para evitar flash
         revalidator.revalidate();
       }
     } catch (error) {
