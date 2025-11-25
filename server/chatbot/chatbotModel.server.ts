@@ -108,7 +108,7 @@ export async function createChatbot({
       conversationCount: 0,
       monthlyUsage: 0,
       contextSizeKB: 0,
-      contexts: [], // Initialize with empty contexts
+      // contextObjects se crea vacío automáticamente (relación, no campo JSON)
     },
   });
 
