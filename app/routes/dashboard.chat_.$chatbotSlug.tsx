@@ -24,12 +24,7 @@ import { AIFlowCanvas } from "formmy-actions";
 import "@xyflow/react/dist/style.css";
 
 export const loader = async ({ request, params }: Route.LoaderArgs) => {
-  const startTime = Date.now();
-  console.log(`🔍 [Loader] Iniciando carga de chatbot: ${params.chatbotSlug}`);
-
   const user = await getUserOrRedirect(request);
-  console.log(`✅ [Loader] Usuario obtenido en ${Date.now() - startTime}ms`);
-
   const { chatbotSlug } = params;
 
   if (!chatbotSlug) {
@@ -39,13 +34,11 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   // WhatsApp Embedded Signup NO usa OAuth redirect - usa window.postMessage
 
   // Primero intentar encontrar por slug
-  const findStart = Date.now();
   let chatbot = await db.chatbot.findFirst({
     where: {
       slug: chatbotSlug,
     },
   });
-  console.log(`✅ [Loader] Chatbot encontrado en ${Date.now() - findStart}ms`);
 
   // Si no se encuentra por slug, intentar por ID (solo si es un ObjectID válido)
   if (
@@ -65,9 +58,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   }
 
   // Validate chatbot access using the new validation system
-  const accessStart = Date.now();
   const accessValidation = await validateChatbotAccess(user.id, chatbot.id);
-  console.log(`✅ [Loader] Validación de acceso en ${Date.now() - accessStart}ms`);
 
   if (!accessValidation.canAccess) {
     const errorMessage =
@@ -115,9 +106,6 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   */
 
   // ⚡ FASE 1: Loader mínimo - solo metadata (conversaciones se cargan en cliente)
-  const queriesStart = Date.now();
-  console.log(`🔄 [Loader] Cargando solo metadata esencial...`);
-
   const [integrations, totalConversations, contextDocuments] = await Promise.all([
     db.integration.findMany({
       where: { chatbotId: chatbot.id },
@@ -144,10 +132,6 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     }),
   ]);
 
-  console.log(`✅ [Loader] Metadata cargada en ${Date.now() - queriesStart}ms`);
-  console.log(`   - ${totalConversations} conversaciones totales (no cargadas aún)`);
-  console.log(`   - Conversaciones y mensajes se cargarán desde el cliente`);
-
   // ⚡ OPTIMIZACIÓN: Conversaciones, mensajes, contactos y leads se cargan bajo demanda desde el cliente
   // Esto reduce el payload inicial del loader de ~120KB a ~5KB y elimina el bloqueo de navegación
 
@@ -170,7 +154,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   }
   */
 
-  const result = {
+  return {
     user,
     chatbot,
     integrations,
@@ -180,10 +164,6 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     contextDocuments, // ✅ Contextos desde el modelo Context (sistema nuevo)
     accessInfo: accessValidation,
   };
-
-  console.log(`🏁 [Loader] Tiempo total: ${Date.now() - startTime}ms`);
-
-  return result;
 };
 
 export default function ChatbotDetailRoute({
@@ -232,8 +212,6 @@ export default function ChatbotDetailRoute({
       if (code) {
         processed = true; // Marcar como procesado para evitar ejecuciones múltiples
 
-        console.log('✅ [WhatsApp Callback] Authorization code recibido:', code.substring(0, 20) + '...');
-
         // Validar state (CSRF protection)
         const storedState = sessionStorage.getItem('whatsapp_oauth_state');
         if (storedState && state !== storedState) {
@@ -266,8 +244,6 @@ export default function ChatbotDetailRoute({
           if (!response.ok && response.status !== 207) {
             throw new Error(data.error || 'Error al conectar WhatsApp');
           }
-
-          console.log('✅ [WhatsApp Callback] Integración exitosa!');
 
           // Limpiar URL (remover query params) y recargar datos
           const cleanUrl = new URL(window.location.href);
