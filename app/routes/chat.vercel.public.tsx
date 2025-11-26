@@ -157,7 +157,7 @@ export async function action({ request }: Route.ActionArgs) {
     system: systemPrompt,
     tools: {
       getContextTool: createGetContextTool(chatbotId),
-      saveLeadTool: createSaveLeadTool(chatbotId),
+      saveLeadTool: createSaveLeadTool(chatbotId, conversation.id),
     },
     stopWhen: stepCountIs(5),
     // 📊 TRACKING: onFinish de streamText (recibe totalUsage)

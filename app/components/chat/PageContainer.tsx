@@ -123,14 +123,14 @@ export const Title = ({
     >
       <div className="flex items-end gap-4 relative">
         {back && (
-          <Link to={back} className="text-4xl absolute -left-2 lg:-left-10">
+          <Link to={back} className="text-2xl md:text-4xl absolute -left-1 md:-left-2 lg:-left-10">
             <IoIosArrowRoundBack />
           </Link>
         )}
         <h2
           className={cn(
-            "text-2xl lg:text-3xl font-bold ml-0 text-dark",
-            back && "ml-8 lg:ml-0"
+            "text-xl md:text-2xl lg:text-3xl font-bold ml-0 text-dark",
+            back && "ml-6 lg:ml-0"
           )}
         >
           {children}
@@ -680,7 +680,7 @@ export const TabSelector = ({
   };
 
   return (
-    <div className="flex items-center justify-between mb-6 gap-4">
+    <div className="flex items-center justify-between mb-4 md:mb-6 gap-4">
       <nav
         className={cn(
           "relative flex-1",
@@ -769,8 +769,8 @@ export const TabButton = ({
       onClick={onClick}
       className={cn(
         "relative",
-        "text-base",
-        "p-3 px-3 lg:px-6",
+        "text-sm md:text-base",
+        "py-2 px-3 lg:px-6",
         "hover:text-black transition-all duration-200",
         "focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-none",
         "border-none outline-none",

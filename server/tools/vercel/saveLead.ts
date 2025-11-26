@@ -20,12 +20,13 @@ import { tool } from "ai";
 import { z } from "zod";
 
 /**
- * Factory function que crea el tool con chatbotId en closure
+ * Factory function que crea el tool con chatbotId y conversationId en closure
  *
  * @param chatbotId - ID del chatbot (capturado en closure)
+ * @param conversationId - ID de la conversación (opcional, capturado en closure)
  * @returns Tool de Vercel AI SDK
  */
-export const createSaveLeadTool = (chatbotId: string) => {
+export const createSaveLeadTool = (chatbotId: string, conversationId?: string) => {
   // 🔒 VALIDAR FORMATO AL CREAR EL TOOL
   if (!/^[0-9a-fA-F]{24}$/.test(chatbotId)) {
     throw new Error(`[Save Lead Tool] chatbotId inválido: ${chatbotId}`);
@@ -102,6 +103,7 @@ Web User: "My name is John Doe, email is john@example.com, call me at +1-555-012
         // Construir context para el handler
         const context = {
           chatbotId, // ⭐ CLOSURE - No modificable
+          conversationId, // ⭐ CLOSURE - Vincula lead a conversación
           userId: null, // Anonymous user
           userPlan: "ANONYMOUS",
           message: "",

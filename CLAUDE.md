@@ -290,6 +290,83 @@ await db.lead.create({
 
 ---
 
+### Fix: Leads sin conversationId - Botón de conversación deshabilitado (2025-11-26)
+
+**Problema**: El icono de conversación en la tabla de Leads estaba deshabilitado porque los leads se guardaban sin `conversationId`, imposibilitando navegar a la conversación asociada.
+
+**Causa Raíz**: El factory `createSaveLeadTool()` en `server/tools/vercel/saveLead.ts` no recibía ni pasaba el `conversationId` al handler `saveContactInfoHandler()`, aunque este último sí lo soportaba.
+
+**Flujo incorrecto**:
+```typescript
+// ❌ ANTES: Context sin conversationId
+const context = {
+  chatbotId,
+  userId: null,
+  // ❌ FALTABA: conversationId
+};
+```
+
+**Solución Implementada**:
+
+#### 1. Actualizado Factory Function
+**Archivo**: `server/tools/vercel/saveLead.ts` (líneas 29, 106)
+```typescript
+// ✅ AHORA: Factory recibe conversationId
+export const createSaveLeadTool = (
+  chatbotId: string,
+  conversationId?: string  // ⬅️ Nuevo parámetro
+) => {
+  return tool({
+    execute: async (params) => {
+      const context = {
+        chatbotId,
+        conversationId,  // ⬅️ Incluido en closure
+        // ...
+      };
+    }
+  });
+};
+```
+
+#### 2. Actualizado Endpoint Web
+**Archivo**: `app/routes/chat.vercel.public.tsx` (línea 160)
+```typescript
+tools: {
+  getContextTool: createGetContextTool(chatbotId),
+  saveLeadTool: createSaveLeadTool(chatbotId, conversation.id),  // ⬅️ Pasa conversation.id
+}
+```
+
+#### 3. Actualizado Webhook WhatsApp
+**Archivo**: `app/routes/api.v1.integrations.whatsapp.webhook.tsx` (línea 1184)
+```typescript
+tools: {
+  getContextTool: createGetContextTool(chatbot.id),
+  saveLeadTool: createSaveLeadTool(chatbot.id, conversation.id),  // ⬅️ Pasa conversation.id
+}
+```
+
+**Comportamiento**:
+- ✅ Nuevos leads se guardan CON `conversationId`
+- ✅ Botón de conversación funcional en tabla de Leads
+- ✅ Click en icono navega a: `/dashboard/chat/{slug}?tab=Conversaciones&conversation={id}`
+- ⚠️ Leads antiguos (sin `conversationId`) siguen con botón deshabilitado
+
+**Handler ya soportaba conversationId** (`server/tools/handlers/contact.ts`):
+- Línea 36: `let conversationId: string | undefined = context.conversationId;`
+- Línea 153: `...(conversationId && { conversationId })`  (update)
+- Línea 214: `...(conversationId && { conversationId })`  (create)
+
+**Archivos modificados**:
+- `server/tools/vercel/saveLead.ts` - Factory function y context
+- `app/routes/chat.vercel.public.tsx` - Endpoint público
+- `app/routes/api.v1.integrations.whatsapp.webhook.tsx` - Webhook WhatsApp
+
+**Fecha**: 2025-11-26
+**Estado**: ✅ Implementado - Nuevos leads se vinculan correctamente a conversaciones
+
+---
+
 ## 🔄 MIGRACIÓN EN PROGRESO - Context Model
 
 ### Arquitectura Actual: Dos sistemas coexistiendo

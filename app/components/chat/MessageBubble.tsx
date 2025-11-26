@@ -27,6 +27,7 @@ const LIST_STYLES = `
     counter-reset: list-counter;
   }
   .message-bubble-prose li {
+    display: flex;
     margin: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;

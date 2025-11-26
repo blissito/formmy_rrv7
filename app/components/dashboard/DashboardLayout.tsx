@@ -108,7 +108,7 @@ export function DashboardLayout({
       </div>
       <div className="flex flex-col grow w-full lg:pb-8 pb-0 ml-0 lg:ml-[120px]">
         {user && <TopMenu user={user} />}
-        <div className="bg-white relative w-full h-full rounded-3xl lg:rounded-[40px] min-h-[calc(100svh-144px)] max-h-[calc(100svh-144px)] overflow-y-scroll lg:overflow-y-auto lg:max-h-none noscroll">
+        <div className="bg-white relative w-full h-full rounded-3xl lg:rounded-[40px] min-h-[calc(100svh-124px)] max-h-[calc(100svh-124px)] overflow-y-scroll lg:overflow-y-auto lg:max-h-none noscroll">
           {children}
         </div>
       </div>
@@ -127,10 +127,10 @@ export const TopMenu = ({ user }: { user: User }) => {
   };
 
   return (
-    <div className="lg:h-20 h-16 flex items-center justify-between  gap-2 w-full">
+    <div className="lg:h-20 h-12 flex items-center justify-between  gap-2 w-full">
       <Link prefetch="render" to="/dashboard" className=" flex lg:hidden ">
         <img
-          className="w-10 h-10  "
+          className="w-8 md:w-10 h-8 md:h-10  "
           src="/dash/logo-full.svg"
           alt="Formmy Logo"
         />
@@ -139,7 +139,7 @@ export const TopMenu = ({ user }: { user: User }) => {
         <Link to="/dashboard/uso">
           <Button
             variant="secondary"
-            className="h-10 flex gap-1 items-center px-2"
+            className="h-8 md:h-10 flex gap-1 items-center px-2"
           >
             <Usage className="w-8 h-8 ml-1 mt-1" /> Uso
           </Button>
@@ -151,7 +151,7 @@ export const TopMenu = ({ user }: { user: User }) => {
           <Menu as="div" className="relative z-20 inline-block text-left">
             <Menu.Button className="inline-flex w-full justify-center py-2 rounded-md text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
               <img
-                className="w-10 h-10 rounded-full"
+                className="w-8 h-8 md:w-10 md:h-10 rounded-full"
                 src={user.picture || "/home/ghosty-avatar.svg"}
                 alt="avatar"
               />
