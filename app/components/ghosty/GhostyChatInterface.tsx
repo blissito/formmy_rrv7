@@ -7,7 +7,7 @@ import type {
   GhostyLlamaMessage,
   GhostyLlamaState,
   ToolProgress,
-} from "./hooks/useGhostyLlamaChat";
+} from "./types";
 import { BsStars } from "react-icons/bs";
 // Vercel's AI SDK
 import { useChat } from "@ai-sdk/react";

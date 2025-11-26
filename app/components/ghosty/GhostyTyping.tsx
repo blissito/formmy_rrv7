@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { cn } from "~/lib/utils";
-import type { GhostyState } from './hooks/useGhostyChat';
+import type { GhostyState } from './types';
 
 interface GhostyTypingProps {
   state: GhostyState;

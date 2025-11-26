@@ -1,73 +1,25 @@
 /**
  * Enhanced Ghosty Chat Hook with LlamaIndex callbacks and rich UI states
+ *
+ * ⚠️ LEGACY: Este hook llama a /api/ghosty/v0 que retorna 503
+ * TODO: Migrar a useChat de @ai-sdk/react con /chat/vercel
  */
 
 import { useState, useCallback } from 'react';
 
-// Enhanced states that map to LlamaIndex agent lifecycle
-export type GhostyLlamaState = 
-  | 'idle' 
-  | 'thinking'           // Agent is planning
-  | 'tool-analyzing'     // Deciding which tools to use  
-  | 'tool-chatbots'      // Querying chatbots
-  | 'tool-stats'         // Getting statistics
-  | 'tool-web-search'    // Web searching
-  | 'tool-web-fetch'     // Fetching webpage
-  | 'synthesizing'       // Combining tool results
-  | 'streaming'          // Final response streaming
-  | 'error';
+// Re-export tipos desde el archivo centralizado
+export type {
+  GhostyLlamaState,
+  GhostyLlamaMessage,
+  ToolProgress,
+  LlamaSource,
+} from '../types';
 
-// Enhanced progress tracking
-export interface ToolProgress {
-  toolName: string;
-  status: 'queued' | 'running' | 'completed' | 'error';
-  progress?: number; // 0-100
-  message?: string;
-  startTime?: Date;
-  endTime?: Date;
-}
-
-// Rich source metadata from LlamaIndex
-export interface LlamaSource {
-  type: 'chatbot' | 'stats' | 'web' | 'context';
-  title: string;
-  url?: string;
-  snippet?: string;
-  favicon?: string;
-  image?: string;
-  data?: any;
-  confidence?: number; // 0-1 from LlamaIndex
-  toolUsed?: string;
-  metadata?: {
-    tokensUsed?: number;
-    processingTime?: number;
-    queryType?: string;
-  };
-}
-
-// Enhanced message with LlamaIndex metadata
-export interface GhostyLlamaMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  isStreaming?: boolean;
-  sources?: LlamaSource[];
-  toolsUsed?: string[];
-  toolProgress?: ToolProgress[];
-  confidence?: number;
-  suggestedFollowUp?: string[];
-  widgets?: Array<{
-    type: 'payment' | 'booking' | 'form';
-    id: string;
-  }>;
-  metadata?: {
-    tokensUsed?: number;
-    processingTime?: number;
-    model?: string;
-    iterations?: number;
-  };
-}
+import type {
+  GhostyLlamaState,
+  GhostyLlamaMessage,
+  ToolProgress,
+} from '../types';
 
 export const useGhostyLlamaChat = (initialMessages: GhostyLlamaMessage[] = []) => {
   const [messages, setMessages] = useState<GhostyLlamaMessage[]>(initialMessages);

@@ -133,13 +133,16 @@ const MessageSkeleton = ({ side = "left" }: { side?: "left" | "right" }) => {
   );
 };
 
+// Tipo para el resultado de envío de respuesta manual
+type ManualResponseResult = { messageId: string; content: string } | null;
+
 type ConversationsProps = {
   chatbot: ChatbotWithWhatsAppConfig;
   user: User;
   conversations?: Conversation[];
   totalConversations?: number;
   onToggleManual?: (conversationId: string) => void;
-  onSendManualResponse?: (conversationId: string, message: string) => void;
+  onSendManualResponse?: (conversationId: string, message: string) => Promise<ManualResponseResult>;
   onDeleteConversation?: (conversationId: string) => void;
   onToggleFavorite?: (conversationId: string) => void;
   selectedConversationId?: string;
@@ -544,9 +547,48 @@ export const Conversations = ({
     }
   };
 
-  const handleSendManualResponse = onSendManualResponse || (async (conversationId: string, message: string) => {
-    alert("⚠️ Función de envío no disponible");
-  });
+  // ✅ Handler con optimistic update para que el mensaje aparezca inmediatamente
+  const handleSendManualResponse = async (conversationId: string, message: string) => {
+    if (!onSendManualResponse) {
+      alert("⚠️ Función de envío no disponible");
+      return;
+    }
+
+    // Llamar al handler externo (hace POST al backend)
+    const result = await onSendManualResponse(conversationId, message);
+
+    // ✅ Optimistic update: agregar mensaje al cache local si el backend confirmó
+    if (result) {
+      const newMessage: UIMessage = {
+        role: "ASSISTANT",
+        content: result.content,
+        createdAt: new Date(),
+      };
+
+      // Actualizar cache de mensajes
+      setMessagesCache(prev => ({
+        ...prev,
+        [conversationId]: [...(prev[conversationId] || []), newMessage]
+      }));
+
+      // Actualizar mensajes de la conversación actual si es la misma
+      if (conversation?.id === conversationId) {
+        setConversation(prev => prev ? {
+          ...prev,
+          messages: [...(prev.messages || []), newMessage]
+        } : prev);
+      }
+
+      // Actualizar mensajes en allLoadedConversations
+      setAllLoadedConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, messages: [...(conv.messages || []), newMessage], lastMessage: result.content }
+            : conv
+        )
+      );
+    }
+  };
 
   // 🎯 Toggle favorito con sincronización backend
   const handleToggleFavorite = async (conversationId: string, event?: React.MouseEvent) => {
