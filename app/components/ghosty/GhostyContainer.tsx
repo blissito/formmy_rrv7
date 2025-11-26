@@ -207,7 +207,7 @@ export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
           exit={{ opacity: 0, scale: 1.05 }}
           transition={{ duration: 0.3 }}
           className={cn(
-            "min-w-full min-h-[85vh]  md:min-h-[90vh]",
+            "min-w-full min-h-[80svh]  md:min-h-[90svh]",
             "flex flex-col justify-center items-center",
             "max-w-3xl",
             "px-4 md:px-20"
