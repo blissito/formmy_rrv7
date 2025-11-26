@@ -84,7 +84,17 @@ export async function saveContactInfoHandler(
       }
     }
 
-    // ✅ PASO 2: Validar que al menos se proporcione email o teléfono (DESPUÉS de auto-completar)
+    // ✅ PASO 2: Validar campos requeridos (DESPUÉS de auto-completar)
+    // Validar que tenga nombre (obligatorio)
+    if (!input.name || input.name.trim().length === 0) {
+      console.log('❌ [save_contact_info] Falta nombre (después de auto-completar)');
+      return {
+        success: false,
+        message: "Se requiere tu nombre completo para guardar tu información de contacto. Por favor, compártenos tu nombre.",
+      };
+    }
+
+    // Validar que tenga al menos email O teléfono
     if (!input.email && !input.phone) {
       console.log('❌ [save_contact_info] Falta email o teléfono (después de auto-completar)');
       return {
