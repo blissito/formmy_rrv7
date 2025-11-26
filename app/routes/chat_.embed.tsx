@@ -109,8 +109,8 @@ export default function ChatEmbedRoute() {
   if (data.error) {
     return (
       <div className="flex flex-col items-center justify-center h-svh w-full bg-white p-4">
-        <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
-          <img className="w-20 ml-auto" src="/dash/sleepy-ghosty.svg" alt="ghosty" /> 
+        <div className="bg-white rounded-lg  p-8 max-w-md w-full text-center">
+          <img className="w-20 mx-auto" src="/dash/sleepy-ghosty.svg" alt="ghosty" /> 
           <h2 className="text-2xl font-semibold text-brand-500 mb-2 mt-6">
             {data.status === 404 ? "Chatbot no encontrado" : "Error"}
           </h2>
