@@ -31,7 +31,7 @@ export async function loader({ request }: { request: Request }) {
 
     if (!chatbot) {
       return {
-        error: "Chatbot no encontrado o no disponible",
+        error: "Vaya, este chatbot no existe o no está disponible",
         status: 404,
       };
     }
@@ -108,13 +108,15 @@ export default function ChatEmbedRoute() {
   // Si hay un error, mostrar un mensaje de error amigable
   if (data.error) {
     return (
-      <div className="flex flex-col items-center justify-center h-svh w-full bg-gray-100 p-4">
+      <div className="flex flex-col items-center justify-center h-svh w-full bg-white p-4">
         <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+          <img className="w-20" src="/dash/sleepy-ghosty.svg" alt="ghosty" /> 
           <h2 className="text-2xl font-semibold text-red-500 mb-4">
             {data.status === 404 ? "Chatbot no encontrado" : "Error"}
           </h2>
           <p className="text-gray-600 mb-6">{data.error}</p>
-          <p className="text-sm text-gray-500">Powered by Formmy.app</p>
+          <a href="https://www.formmy.app/" target="_blank" rel="noopener noreferrer">
+          <p className="text-xs text-metal underline">Powered by Formmy.app</p></a>
         </div>
       </div>
     );

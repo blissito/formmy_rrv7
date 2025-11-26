@@ -1863,7 +1863,7 @@ export const ConversationsPreview = ({
             </div>
           ) : conversation?.messages ? (
             groupMessagesByDate(
-              conversation.messages.filter((message) => !message.isReaction)
+              conversation.messages.filter((message) => !message.isReaction && message.role !== "SYSTEM")
             ).map(([date, messages]) => (
               <div key={date}>
                 <DateSeparator date={date} />
