@@ -118,12 +118,22 @@ const MessageSkeleton = ({ side = "left" }: { side?: "left" | "right" }) => {
         randomWidth,
         side === "left"
           ? "bg-white dark:bg-gray-800 rounded-bl-none"
-          : "bg-blue-100 dark:bg-blue-900 rounded-br-none"
+          : "bg-gray-100 dark:bg-gray-700 rounded-br-none"
       )}>
         {/* Shimmer effect overlay */}
         <div className="relative overflow-hidden">
-          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-full" />
-          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-4/5 mt-2" />
+          <div className={cn(
+            "h-3 rounded w-full",
+            side === "left"
+              ? "bg-gray-300 dark:bg-gray-600"
+              : "bg-gray-400 dark:bg-gray-500"
+          )} />
+          <div className={cn(
+            "h-3 rounded w-4/5 mt-2",
+            side === "left"
+              ? "bg-gray-300 dark:bg-gray-600"
+              : "bg-gray-400 dark:bg-gray-500"
+          )} />
 
           {/* Shimmer animation */}
           <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -1365,6 +1375,7 @@ const ChatHeader = ({
           disabled={false}
         />
       </Tooltip>
+      <div className="hidden md:block">
       <Tooltip text="Descargar conversación en CSV" icon="📥" position="bottom">
         <button
           onClick={handleDownloadCSV}
@@ -1373,6 +1384,7 @@ const ChatHeader = ({
           <img className="w-6 h-6" src="/assets/chat/download.svg" alt="download icon" />
         </button>
       </Tooltip>
+      </div>
       <Tooltip text={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"} icon="⭐" position="bottom" align="right">
         <button
           onClick={handleToggleFavorite}
@@ -1414,7 +1426,7 @@ const ToggleButton = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "ml-auto mr-2 px-3 py-2 text-xs rounded-full font-medium transition-colors",
+      "ml-auto mr-0 md:mr-2 px-3 py-2 text-xs rounded-full font-medium transition-colors",
       isManual
         ? "bg-dark text-white"
         : "bg-cloud text-dark",
