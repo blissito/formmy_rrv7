@@ -80,7 +80,7 @@ const SuggestionCard = ({
         <span className="text-sm md:text-base text-dark font-semibold">
           {title}
         </span>
-        <p className="text-irongray text-xs md:text-sm">{description}</p>
+        <p className="text-irongray text-[10px] md:text-sm">{description}</p>
       </div>
     </motion.div>
   );
@@ -207,10 +207,10 @@ export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
           exit={{ opacity: 0, scale: 1.05 }}
           transition={{ duration: 0.3 }}
           className={cn(
-            "min-w-full h-full ",
+            "min-w-full min-h-[85vh]  md:min-h-[90vh]",
             "flex flex-col justify-center items-center",
             "max-w-3xl",
-            "px-20"
+            "px-4 md:px-20"
           )}
         >
           {/* Title */}
@@ -218,7 +218,7 @@ export const GhostyContainer = ({ userImage }: GhostyContainerProps) => {
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className={cn("text-2xl heading text-center mb-6", "md:text-4xl")}
+            className={cn("text-2xl heading text-center mb-6 ", "md:text-4xl")}
           >
             ¡Hola! Conoce a <span className="text-brand-500">Ghosty IA 👻</span>
           </motion.h2>
