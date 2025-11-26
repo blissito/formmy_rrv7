@@ -27,7 +27,7 @@ export default function NotFound() {
               border: "none",
             }}
           >
-            Volver al iniciow
+            Volver al inicio
           </button>
         </Link>
       </main>
