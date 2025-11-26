@@ -46,7 +46,7 @@ MINIMUM: At least ONE (email OR phone) is required
 
 📱 WHATSAPP CONVERSATIONS:
 - Phone is AUTO-CAPTURED (don't ask for it)
-- ONLY ask for: email, name, productInterest, position, website
+- ONLY ask for: email, name, productInterest
 - Example: "¿Cuál es tu email para enviarte más información?"
 
 💻 WEB CONVERSATIONS:
@@ -58,9 +58,6 @@ MINIMUM: At least ONE (email OR phone) is required
 - email: Email address (REQUIRED for WhatsApp, optional for Web)
 - phone: Phone number (AUTO-CAPTURED on WhatsApp, ask on Web)
 - productInterest: What product/service they're interested in
-- position: Job title/position (if mentioned)
-- website: Company website (if mentioned)
-- notes: Any additional relevant information
 
 ✅ EXAMPLES:
 
@@ -90,9 +87,6 @@ Web User: "My email is john@example.com, call me at +1-555-0123"
         .string()
         .optional()
         .describe("Product/service they're interested in"),
-      position: z.string().optional().describe("Job title or position"),
-      website: z.string().url().optional().describe("Company website"),
-      notes: z.string().optional().describe("Additional relevant information"),
     }),
 
     execute: async (params) => {
