@@ -666,6 +666,11 @@ export const TabSelector = ({
           left: activeTab.offsetLeft,
           width: tabRect.width,
         });
+
+        // Auto-scroll to active tab in mobile
+        if (window.innerWidth < 1024) {
+          activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
       }
     };
 
@@ -684,7 +689,7 @@ export const TabSelector = ({
       <nav
         className={cn(
           "relative flex-1",
-          "flex overflow-x-scroll lg:overflow-auto items-start lg:items-end justify-start lg:justify-center"
+          "flex overflow-x-auto overflow-y-visible lg:overflow-auto items-start lg:items-end justify-start lg:justify-center"
         )}
         style={{
           scrollbarWidth: "none",
@@ -700,7 +705,7 @@ export const TabSelector = ({
         }} />
         <div
           ref={containerRef}
-          className="relative flex border-b border-outlines/50 "
+          className="relative flex border-b border-outlines/50 min-h-[48px]"
         >
           {tabKeys.map((tabKey, index) => (
             <TabButton
@@ -718,7 +723,7 @@ export const TabSelector = ({
 
           {/* Barra animada sin bordes laterales */}
           <div
-            className="absolute bottom-0 h-0.5 bg-brand-500 rounded-full top-[47px] transition-all duration-300 ease-out"
+            className="absolute bottom-0 h-0.5 bg-brand-500 rounded-full transition-all duration-300 ease-out"
             style={{
               left: `${indicatorStyle.left}px`,
               width: `${indicatorStyle.width}px`,

@@ -187,132 +187,141 @@ export default function DashboardUso() {
         <h1 className="text-2xl md:text-3xl heading text-gray-900 mb-4 md:mb-8">Uso de tu cuenta</h1>
 
         {/* Tarjetas de uso */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 xl:gap-6 mb-8">
           {/* Formmys */}
-          <div className="bg-white rounded-3xl  border border-outlines/60  p-4">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="bg-white rounded-3xl border border-outlines/60 p-3 xl:p-4">
+            <div className="flex items-center gap-2 mb-2">
               <HiOutlineDocumentText className="w-4 h-4 text-gray-600" />
               <span className="text-xs lg:text-sm text-gray-600">Formmys</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="relative w-12 h-12 flex-shrink-0 hidden md:block">
-                <svg className="w-12 h-12 transform -rotate-90">
+            <div className="flex items-center gap-3">
+              <div className="relative w-8 h-8 md:w-8 md:h-8 lg:w-10 lg:h-10 flex-shrink-0 hidden md:block">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 32 32">
                   <circle
-                    cx="24"
-                    cy="24"
-                    r="20"
+                    cx="16"
+                    cy="16"
+                    r="14"
                     stroke="#E5E7EB"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
                   />
                   <circle
-                    cx="24"
-                    cy="24"
-                    r="20"
+                    cx="16"
+                    cy="16"
+                    r="14"
                     stroke="#A78BFA"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
-                    strokeDasharray={`${(calculateUsagePercentage(usage.formmys, usage.formmysLimit) / 100) * 125.6} 125.6`}
+                    strokeDasharray={`${(calculateUsagePercentage(usage.formmys, usage.formmysLimit) / 100) * 87.96} 87.96`}
                   />
                 </svg>
               </div>
-              <div className="flex items-center md:items-end gap-2">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="flex items-baseline gap-2">
+                <p>
+                <span className="text-lg xl:text-2xl font-bold text-gray-900 mr-1">
                   {usage.formmys}
-                </div>
-                <div className="text-sm md:text-base text-gray-600">
+                </span>
+                <span className="text-sm xl:text-base text-gray-600">
                   de {usage.formmysLimit}
-                </div>
+                </span>
+                </p>
               </div>
             </div>
           </div>
 
           {/* Mensajes vía Formmy */}
-          <div className="bg-white rounded-3xl  border border-outlines/60  p-4">
-            <div className="flex items-center gap-2 mb-3 ">
+          <div className="bg-white rounded-3xl border border-outlines/60 p-3 xl:p-4">
+            <div className="flex items-center gap-2 mb-2 md:mb-4">
               <BiMessageRounded className="w-4 h-4 text-gray-600" />
-              <span className="text-xs lg:text-sm text-gray-600">Mensajes Formmy</span>
+              <span className="text-xs lg:text-sm text-gray-600"><span className="hidden xl:inline">Mensajes</span> Formmy</span>
             </div>
-
-            <div className="flex items-center md:items-end gap-2 -mt-2 md:min-h-[48px]">
-              <div className="text-2xl font-bold text-gray-900">{usage.messages}</div>
-              <p className="text-sm md:text-base text-gray-600">msjs</p>
+            <div className="flex items-center gap-4">
+              <p>
+                <span className="text-lg xl:text-2xl font-bold text-gray-900 mr-1">
+                  {usage.messages}
+                </span>
+                <span className="text-sm xl:text-base text-gray-600">msjs</span>
+              </p>
             </div>
           </div>
 
           {/* Chats/agentes */}
-          <div className="bg-white rounded-3xl  border border-outlines/60  p-4">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="bg-white rounded-3xl border border-outlines/60 p-3 xl:p-4">
+            <div className="flex items-center gap-2 mb-2">
               <BiGhost className="w-4 h-4 text-gray-600" />
               <span className="text-xs lg:text-sm text-gray-600">Chats/agentes</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="relative w-12 h-12 flex-shrink-0 hidden md:block">
-                <svg className="w-12 h-12 transform -rotate-90">
+            <div className="flex items-center gap-3">
+              <div className="relative w-8 h-8 md:w-8 md:h-8 lg:w-10 lg:h-10 flex-shrink-0 hidden md:block">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 32 32">
                   <circle
-                    cx="24"
-                    cy="24"
-                    r="20"
+                    cx="16"
+                    cy="16"
+                    r="14"
                     stroke="#E5E7EB"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
                   />
                   <circle
-                    cx="24"
-                    cy="24"
-                    r="20"
+                    cx="16"
+                    cy="16"
+                    r="14"
                     stroke="#A78BFA"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
-                    strokeDasharray={`${(calculateUsagePercentage(usage.chatbots, usage.chatbotsLimit) / 100) * 125.6} 125.6`}
+                    strokeDasharray={`${(calculateUsagePercentage(usage.chatbots, usage.chatbotsLimit) / 100) * 87.96} 87.96`}
                   />
                 </svg>
               </div>
-              <div className="flex items-center md:items-end gap-2">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="flex items-baseline gap-2">
+                  <p>
+                <span className="text-lg xl:text-2xl font-bold text-gray-900 mr-1">
                   {usage.chatbots}
-                </div>
-                <div className="text-sm md:text-base text-gray-600">
+                </span>
+                <span className="text-sm xl:text-base text-gray-600">
                   de {usage.chatbotsLimit}
-                </div>
+                </span>
+                </p>
               </div>
             </div>
           </div>
           {/* Conversaciones */}
-          <div className="bg-white rounded-3xl border border-outlines/60 p-4">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="bg-white rounded-3xl border border-outlines/60 p-3 xl:p-4">
+            <div className="flex items-center gap-2 mb-2">
               <BiMessageRounded className="w-4 h-4 text-gray-600" />
               <span className="text-xs lg:text-sm text-gray-600">Conversaciones</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="relative w-12 h-12 flex-shrink-0 hidden md:block">
-                <svg className="w-12 h-12 transform -rotate-90">
+            <div className="flex items-center gap-3">
+              <div className="relative w-8 h-8 md:w-8 md:h-8 lg:w-10 lg:h-10 flex-shrink-0 hidden md:block">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 32 32">
                   <circle
-                    cx="24"
-                    cy="24"
-                    r="20"
+                    cx="16"
+                    cy="16"
+                    r="14"
                     stroke="#E5E7EB"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
                   />
                   <circle
-                    cx="24"
-                    cy="24"
-                    r="20"
+                    cx="16"
+                    cy="16"
+                    r="14"
                     stroke="#F59E0B"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
-                    strokeDasharray={`${(calculateUsagePercentage(usage.conversationsUsed, usage.conversationsLimit) / 100) * 125.6} 125.6`}
+                    strokeDasharray={`${(calculateUsagePercentage(usage.conversationsUsed, usage.conversationsLimit) / 100) * 87.96} 87.96`}
                   />
                 </svg>
               </div>
-              <div className="flex items-center md:items-end gap-2">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="flex items-baseline gap-2">
+                <p>
+                <span className="text-lg xl:text-2xl font-bold text-gray-900 mr-1">
                   {usage.conversationsUsed.toLocaleString()}
-                </div>
-                <div className="text-sm md:text-base text-gray-600">
+                </span>
+                <span className="text-sm xl:text-base text-gray-600">
                   de {usage.conversationsLimit === 'Ilimitado' ? '∞' : usage.conversationsLimit.toLocaleString()}
-                </div>
+                </span>
+                </p>
               </div>
             </div>
             {usage.conversationsPurchased > 0 && (
@@ -326,40 +335,38 @@ export default function DashboardUso() {
           </div>
 
           {/* Créditos para herramientas */}
-          <div className="bg-white rounded-3xl border border-outlines/60 p-4">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="bg-white rounded-3xl border border-outlines/60 p-3 xl:p-4">
+            <div className="flex items-center gap-2 mb-2">
               <BiCoin className="w-4 h-4 text-gray-600" />
               <span className="text-xs lg:text-sm text-gray-600">Créditos</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="relative w-12 h-12 flex-shrink-0 hidden md:block">
-                <svg className="w-12 h-12 transform -rotate-90">
+            <div className="flex items-center gap-3">
+              <div className="relative w-8 h-8 md:w-8 md:h-8 lg:w-10 lg:h-10 flex-shrink-0 hidden md:block">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 32 32">
                   <circle
-                    cx="24"
-                    cy="24"
-                    r="20"
+                    cx="16"
+                    cy="16"
+                    r="14"
                     stroke="#E5E7EB"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
                   />
                   <circle
-                    cx="24"
-                    cy="24"
-                    r="20"
+                    cx="16"
+                    cy="16"
+                    r="14"
                     stroke="#14B8A6"
-                    strokeWidth="4"
+                    strokeWidth="3"
                     fill="none"
-                    strokeDasharray={`${(calculateUsagePercentage(credits.monthlyUsed, credits.planLimit) / 100) * 125.6} 125.6`}
+                    strokeDasharray={`${(calculateUsagePercentage(credits.monthlyUsed, credits.planLimit) / 100) * 87.96} 87.96`}
                   />
                 </svg>
               </div>
-              <div className="flex items-center md:items-end gap-2">
-                <div className="text-2xl font-bold text-gray-900">
-                  {credits.monthlyUsed.toLocaleString()}
-                </div>
-                <div className="text-sm md:text-base text-gray-600">
-                  de {credits.planLimit.toLocaleString()}
-                </div>
+              <div className="flex items-baseline gap-2">
+                <p>
+                  <span className="text-lg xl:text-2xl font-bold text-gray-900 mr-1">{credits.monthlyUsed.toLocaleString()}</span>
+                  <span className="text-sm xl:text-base text-gray-600">de {credits.planLimit.toLocaleString()}</span>
+                </p>
               </div>
             </div>
             {credits.purchasedCredits > 0 && (

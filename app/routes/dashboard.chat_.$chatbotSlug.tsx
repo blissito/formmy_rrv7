@@ -445,7 +445,7 @@ export default function ChatbotDetailRoute({
 
   return (
     <PageContainer>
-      <div className=" sticky top-0 z-10 bg-white">
+      <div className="sticky top-0 z-10 bg-white pb-1">
       <PageContainer.Title className="!mb-2 lg:!mb-4" back="/dashboard/chat">
         {chatbot.name}
       </PageContainer.Title>
