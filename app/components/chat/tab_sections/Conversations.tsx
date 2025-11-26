@@ -118,12 +118,22 @@ const MessageSkeleton = ({ side = "left" }: { side?: "left" | "right" }) => {
         randomWidth,
         side === "left"
           ? "bg-white dark:bg-gray-800 rounded-bl-none"
-          : "bg-blue-100 dark:bg-blue-900 rounded-br-none"
+          : "bg-gray-100 dark:bg-gray-700 rounded-br-none"
       )}>
         {/* Shimmer effect overlay */}
         <div className="relative overflow-hidden">
-          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-full" />
-          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-4/5 mt-2" />
+          <div className={cn(
+            "h-3 rounded w-full",
+            side === "left"
+              ? "bg-gray-300 dark:bg-gray-600"
+              : "bg-gray-400 dark:bg-gray-500"
+          )} />
+          <div className={cn(
+            "h-3 rounded w-4/5 mt-2",
+            side === "left"
+              ? "bg-gray-300 dark:bg-gray-600"
+              : "bg-gray-400 dark:bg-gray-500"
+          )} />
 
           {/* Shimmer animation */}
           <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -719,7 +729,7 @@ export const Conversations = ({
         <EmptyConversations t={t} />
       ) : (
 
-      <main className="grid grid-cols-12 gap-6 max-h-[calc(100svh-296px)]">
+      <main className="grid grid-cols-12 gap-6 min-h-[calc(100svh-248px)] max-h-[calc(100svh-248px)] md:min-h-[calc(100svh-296px)] md:max-h-[calc(100svh-296px)]">
         {/* Lista de conversaciones - Se oculta en mobile/tablet cuando se ve una conversación */}
         <article className={cn(
           "col-span-12 lg:col-span-3",
@@ -1356,10 +1366,10 @@ const ChatHeader = ({
       className={cn(
         "border-t border-l border-r border-outlines",
         "flex",
-        "items-center",
+        "items-center bg-white",
         "gap-1 lg:gap-2",
         "rounded-t-3xl",
-        "bg-white w-full py-2 px-3 lg:p-3"
+        " w-full py-1 px-3 lg:p-3"
       )}
     >
       {/* Botón de volver - Solo visible en mobile/tablet */}
@@ -1367,9 +1377,9 @@ const ChatHeader = ({
         <Tooltip text="Volver a conversaciones">
           <button
             onClick={onBackToList}
-            className="lg:hidden w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors flex-shrink-0"
+            className="lg:hidden md:w-8 md:h-8 w-5 h-5 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors flex-shrink-0"
           >
-            <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 20 20" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -1378,9 +1388,9 @@ const ChatHeader = ({
       <Tooltip text="Ver detalles del contacto" icon="👤">
         <button
           onClick={onAvatarClick}
-          className="relative hover:opacity-80 transition-opacity cursor-pointer"
+          className="relative hover:opacity-80 transition-opacity cursor-pointer flex items-center justify-center flex-shrink-0"
         >
-          <Avatar className="h-10 w-10" src={userAvatarUrl || "/assets/chat/ghosty.svg"} />
+          <Avatar className="w-8 h-8 md:h-10 md:w-10" src={userAvatarUrl || "/assets/chat/ghosty.svg"} />
           {/* Badge de WhatsApp - círculo verde con icono */}
           {isWhatsAppConversation && (
             <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center ">
@@ -1391,7 +1401,7 @@ const ChatHeader = ({
       </Tooltip>
       <div className="flex-1">
         <div className="flex items-center">
-          <h3 className="text-base font-semibold text-dark ">
+          <h3 className="text-sm md:text-base font-semibold text-dark ">
             {conversation.userName || "User"}
           </h3>
         </div>
@@ -1407,6 +1417,7 @@ const ChatHeader = ({
           disabled={false}
         />
       </Tooltip>
+      <div className="hidden md:block">
       <Tooltip text="Descargar conversación en CSV" icon="📥" position="bottom">
         <button
           onClick={handleDownloadCSV}
@@ -1415,6 +1426,7 @@ const ChatHeader = ({
           <img className="w-6 h-6" src="/assets/chat/download.svg" alt="download icon" />
         </button>
       </Tooltip>
+      </div>
       <Tooltip text={isFavorite ? "Quitar de favoritos" : "Marcar como favorito"} icon="⭐" position="bottom" align="right">
         <button
           onClick={handleToggleFavorite}
@@ -1456,7 +1468,7 @@ const ToggleButton = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "ml-auto mr-2 px-3 py-2 text-xs rounded-full font-medium transition-colors",
+      "ml-auto mr-0 md:mr-2 px-3 py-2 text-xs rounded-full font-medium transition-colors",
       isManual
         ? "bg-dark text-white"
         : "bg-cloud text-dark",
@@ -1861,7 +1873,7 @@ export const ConversationsPreview = ({
   // Log conversation state for debugging
 
   return (
-    <div className="h-full flex flex-col max-h-[calc(100vh-296px)] ">
+    <div className="h-full flex flex-col min-h-[calc(100svh-248px)] max-h-[calc(100svh-248px)] md:min-h-[calc(100svh-296px)] md:max-h-[calc(100svh-296px)] ">
       <div className="flex-shrink-0">
         {conversation && (
           <ChatHeader
@@ -1890,7 +1902,9 @@ export const ConversationsPreview = ({
           backgroundImage: "url('/dash/chat-cover.svg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          backgroundRepeat: "no-repeat"
+          backgroundRepeat: "no-repeat",
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-y"
         }}
       >
         <div className="p-4">
@@ -1905,7 +1919,7 @@ export const ConversationsPreview = ({
             </div>
           ) : conversation?.messages ? (
             groupMessagesByDate(
-              conversation.messages.filter((message) => !message.isReaction)
+              conversation.messages.filter((message) => !message.isReaction && message.role !== "SYSTEM")
             ).map(([date, messages]) => (
               <div key={date}>
                 <DateSeparator date={date} />

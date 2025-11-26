@@ -123,14 +123,14 @@ export const Title = ({
     >
       <div className="flex items-end gap-4 relative">
         {back && (
-          <Link to={back} className="text-4xl absolute -left-2 lg:-left-10">
+          <Link to={back} className="text-2xl md:text-4xl absolute -left-1 md:-left-2 lg:-left-10">
             <IoIosArrowRoundBack />
           </Link>
         )}
         <h2
           className={cn(
-            "text-2xl lg:text-3xl font-bold ml-0 text-dark",
-            back && "ml-8 lg:ml-0"
+            "text-xl md:text-2xl lg:text-3xl font-bold ml-0 text-dark",
+            back && "ml-6 lg:ml-0"
           )}
         >
           {children}
@@ -666,6 +666,11 @@ export const TabSelector = ({
           left: activeTab.offsetLeft,
           width: tabRect.width,
         });
+
+        // Auto-scroll to active tab in mobile
+        if (window.innerWidth < 1024) {
+          activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
       }
     };
 
@@ -680,11 +685,11 @@ export const TabSelector = ({
   };
 
   return (
-    <div className="flex items-center justify-between mb-6 gap-4">
+    <div className="flex items-center justify-between mb-4 md:mb-6 gap-4">
       <nav
         className={cn(
           "relative flex-1",
-          "flex overflow-x-scroll lg:overflow-auto items-start lg:items-end justify-start lg:justify-center"
+          "flex overflow-x-auto overflow-y-visible lg:overflow-auto items-start lg:items-end justify-start lg:justify-center"
         )}
         style={{
           scrollbarWidth: "none",
@@ -700,7 +705,7 @@ export const TabSelector = ({
         }} />
         <div
           ref={containerRef}
-          className="relative flex border-b border-outlines/50 "
+          className="relative flex border-b border-outlines/50 min-h-[48px]"
         >
           {tabKeys.map((tabKey, index) => (
             <TabButton
@@ -718,7 +723,7 @@ export const TabSelector = ({
 
           {/* Barra animada sin bordes laterales */}
           <div
-            className="absolute bottom-0 h-0.5 bg-brand-500 rounded-full top-[47px] transition-all duration-300 ease-out"
+            className="absolute bottom-0 h-0.5 bg-brand-500 rounded-full transition-all duration-300 ease-out"
             style={{
               left: `${indicatorStyle.left}px`,
               width: `${indicatorStyle.width}px`,
@@ -769,8 +774,8 @@ export const TabButton = ({
       onClick={onClick}
       className={cn(
         "relative",
-        "text-base",
-        "p-3 px-3 lg:px-6",
+        "text-sm md:text-base",
+        "py-2 px-3 lg:px-6",
         "hover:text-black transition-all duration-200",
         "focus:outline-none focus:ring-0 focus:ring-offset-0 focus:shadow-none",
         "border-none outline-none",

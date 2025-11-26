@@ -333,8 +333,8 @@ export const Contactos = ({
       </div>
 
       <div className="bg-white rounded-3xl border border-outlines overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full table-fixed md:table-fixed min-w-[800px]">
+        <div className="overflow-x-auto md:overflow-x-visible">
+          <table className="w-full table-fixed min-w-[800px] md:min-w-0">
             <thead className="bg-surfaceTwo border-b border-outlines">
               <tr>
                 <th className="pl-4 md:pl-6 pr-2 py-3 text-left text-xs md:text-sm font-medium text-dark w-[20%] md:w-[16%]">

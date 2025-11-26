@@ -20,12 +20,13 @@ import { tool } from "ai";
 import { z } from "zod";
 
 /**
- * Factory function que crea el tool con chatbotId en closure
+ * Factory function que crea el tool con chatbotId y conversationId en closure
  *
  * @param chatbotId - ID del chatbot (capturado en closure)
+ * @param conversationId - ID de la conversación (opcional, capturado en closure)
  * @returns Tool de Vercel AI SDK
  */
-export const createSaveLeadTool = (chatbotId: string) => {
+export const createSaveLeadTool = (chatbotId: string, conversationId?: string) => {
   // 🔒 VALIDAR FORMATO AL CREAR EL TOOL
   if (!/^[0-9a-fA-F]{24}$/.test(chatbotId)) {
     throw new Error(`[Save Lead Tool] chatbotId inválido: ${chatbotId}`);
@@ -41,36 +42,39 @@ export const createSaveLeadTool = (chatbotId: string) => {
 - User signs up for something
 
 📋 DATA COLLECTION STRATEGY:
+REQUIRED: Name is ALWAYS required
 PRIORITY: Get BOTH email AND phone when possible (best quality lead)
-MINIMUM: At least ONE (email OR phone) is required
+MINIMUM: Name + at least ONE (email OR phone)
 
 📱 WHATSAPP CONVERSATIONS:
 - Phone is AUTO-CAPTURED (don't ask for it)
-- ONLY ask for: email, name, productInterest, position, website
-- Example: "¿Cuál es tu email para enviarte más información?"
+- ASK FOR: name, email, productInterest (in that order)
+- Example flow:
+  1. "¿Cuál es tu nombre completo?"
+  2. "¿Cuál es tu email para enviarte más información?"
 
 💻 WEB CONVERSATIONS:
-- Ask for BOTH email and phone if context allows
-- Minimum: one of them
+- Ask for: name, email, phone (all three if context allows)
+- Minimum: name + one contact method
 
 📋 FIELDS TO SAVE:
-- name: Full name of the contact
-- email: Email address (REQUIRED for WhatsApp, optional for Web)
+- name: Full name of the contact (REQUIRED - always ask first)
+- email: Email address (REQUIRED for WhatsApp, highly recommended for Web)
 - phone: Phone number (AUTO-CAPTURED on WhatsApp, ask on Web)
 - productInterest: What product/service they're interested in
-- position: Job title/position (if mentioned)
-- website: Company website (if mentioned)
-- notes: Any additional relevant information
 
 ✅ EXAMPLES:
 
 WhatsApp User: "Quiero info del plan Enterprise"
+→ Ask: "¿Cuál es tu nombre completo?"
+→ User: "Juan Pérez"
 → Ask: "¿Cuál es tu email para enviarte los detalles?"
-→ Save: { email: "user@example.com", productInterest: "Plan Enterprise" }
+→ User: "juan@example.com"
+→ Save: { name: "Juan Pérez", email: "juan@example.com", productInterest: "Plan Enterprise" }
    (phone auto-captured from WhatsApp)
 
-Web User: "My email is john@example.com, call me at +1-555-0123"
-→ Save: { email: "john@example.com", phone: "+1-555-0123" }
+Web User: "My name is John Doe, email is john@example.com, call me at +1-555-0123"
+→ Save: { name: "John Doe", email: "john@example.com", phone: "+1-555-0123" }
 
 ❌ DO NOT:
 - Ask for phone on WhatsApp (already captured)
@@ -78,21 +82,20 @@ Web User: "My email is john@example.com, call me at +1-555-0123"
 - Save if user declines to share
 
 ⚠️ CRITICAL:
-- WhatsApp = phone auto-captured, GET EMAIL
-- Web = ask for BOTH (email AND phone) if possible
+- ALWAYS ask for name first (REQUIRED field)
+- WhatsApp = phone auto-captured, GET name + email
+- Web = ask for name + email + phone (all three if possible)
+- Never save a lead without a name
 - Always confirm with user after saving
 `,
     inputSchema: z.object({
-      name: z.string().optional().describe("Full name of the contact"),
+      name: z.string().min(1).describe("Full name of the contact (REQUIRED)"),
       email: z.string().email().optional().describe("Email address"),
       phone: z.string().optional().describe("Phone number"),
       productInterest: z
         .string()
         .optional()
         .describe("Product/service they're interested in"),
-      position: z.string().optional().describe("Job title or position"),
-      website: z.string().url().optional().describe("Company website"),
-      notes: z.string().optional().describe("Additional relevant information"),
     }),
 
     execute: async (params) => {
@@ -100,6 +103,7 @@ Web User: "My email is john@example.com, call me at +1-555-0123"
         // Construir context para el handler
         const context = {
           chatbotId, // ⭐ CLOSURE - No modificable
+          conversationId, // ⭐ CLOSURE - Vincula lead a conversación
           userId: null, // Anonymous user
           userPlan: "ANONYMOUS",
           message: "",

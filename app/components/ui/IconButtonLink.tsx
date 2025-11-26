@@ -53,7 +53,7 @@ export const IconButtonLink: React.FC<IconButtonLinkProps> = ({
         <div className={`w-full grid place-content-center rounded-xl !w-[60px] h-10 lg:h-12 transition-all duration-200 ${isActive ? 'bg-brand-500/20' : 'bg-transparent hover:bg-brand-500/10'}`}>
           {iconElement}
         </div>
-        <span className={`text-sm lg:text-base text-dark`}>
+        <span className={`text-xs md:text-sm lg:text-base text-dark`}>
           {title}
         </span>
       </div>
