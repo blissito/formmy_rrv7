@@ -394,11 +394,11 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                   placeholder="Selecciona un estado"
                   value={security.status}
                   onChange={(value) => {
-                    // Auto-sugerir localhost al cambiar a restringido
+                    // Auto-sugerir localhost y formmy.app al cambiar a restringido
                     if (value === "restricted" && !security.allowedDomains.includes("localhost")) {
                       const newDomains = security.allowedDomains
-                        ? `localhost, ${security.allowedDomains}`
-                        : "localhost, ";
+                        ? `localhost, formmy.app, ${security.allowedDomains}`
+                        : "localhost, formmy.app, ";
                       setSecurity({...security, status: value, allowedDomains: newDomains});
                     } else {
                       setSecurity({...security, status: value});

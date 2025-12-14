@@ -61,13 +61,13 @@ Production-ready TypeScript SDK for parsing documents and querying RAG knowledge
 ### Installation
 
 ```typescript
-import { FormmyParser } from './sdk/formmy-parser';
+import { FormmyParser } from "./sdk/formmy-parser";
 
 const parser = new FormmyParser({
-  apiKey: 'sk_live_xxxxx',
-  baseUrl: 'https://formmy.app',
+  apiKey: "sk_live_xxxxx",
+  baseUrl: "https://formmy.app",
   debug: true,
-  retries: 3
+  retries: 3,
 });
 ```
 
@@ -75,7 +75,7 @@ const parser = new FormmyParser({
 
 ```typescript
 // 1. Upload and enqueue parsing job
-const job = await parser.parse('./document.pdf', 'AGENTIC');
+const job = await parser.parse("./document.pdf", "AGENTIC");
 
 console.log(`Job ${job.id} created - ${job.creditsUsed} credits`);
 
@@ -85,7 +85,7 @@ const result = await parser.waitFor(job.id, {
   timeout: 60000,
   onProgress: (currentJob) => {
     console.log(`Status: ${currentJob.status}`);
-  }
+  },
 });
 
 console.log(result.markdown); // Extracted text
@@ -95,21 +95,22 @@ console.log(result.markdown); // Extracted text
 
 ```typescript
 const result = await parser.query(
-  '¿Cuál es el horario de atención?',
-  'chatbot_abc123',
+  "¿Cuál es el horario de atención?",
+  "chatbot_abc123",
   {
-    mode: 'accurate',  // 'fast' (0.5 cr) or 'accurate' (1.5 cr)
-    topK: 3            // Number of chunks to retrieve (1-10, default: 3)
+    mode: "accurate", // 'fast' (0.5 cr) or 'accurate' (1.5 cr)
+    topK: 3, // Number of chunks to retrieve (1-10, default: 3)
   }
 );
 
-console.log(result.answer);         // AI-generated answer
-console.log(result.sources);        // Retrieved chunks with scores
-console.log(result.tokensUsed);     // Token breakdown (accurate mode only)
-console.log(result.topK);           // Chunks used
+console.log(result.answer); // AI-generated answer
+console.log(result.sources); // Retrieved chunks with scores
+console.log(result.tokensUsed); // Token breakdown (accurate mode only)
+console.log(result.topK); // Chunks used
 ```
 
 **topK Best Practices** (Industry Standard 2025):
+
 - `topK: 2-3` → Simple queries (90% of cases) ⭐ **Recommended**
 - `topK: 4-5` → Complex queries requiring more context
 - `topK: 7-10` → Exhaustive analysis
@@ -118,12 +119,12 @@ console.log(result.topK);           // Chunks used
 
 ### Parsing Modes & Pricing
 
-| Mode | Credits/Page | Features |
-|------|--------------|----------|
-| `DEFAULT` | **0 (FREE)** | Basic text extraction |
-| `COST_EFFECTIVE` | 1 | Fast AI extraction |
-| `AGENTIC` | 3 | Structured tables, better quality |
-| `AGENTIC_PLUS` | 6 | OCR, images, max precision |
+| Mode             | Credits/Page | Features                          |
+| ---------------- | ------------ | --------------------------------- |
+| `DEFAULT`        | **0 (FREE)** | Basic text extraction             |
+| `COST_EFFECTIVE` | 1            | Fast AI extraction                |
+| `AGENTIC`        | 3            | Structured tables, better quality |
+| `AGENTIC_PLUS`   | 6            | OCR, images, max precision        |
 
 **Example**: PDF with 9 pages using `AGENTIC` = 9 × 3 = **27 credits**
 
@@ -133,15 +134,15 @@ console.log(result.topK);           // Chunks used
 import {
   AuthenticationError,
   InsufficientCreditsError,
-  TimeoutError
-} from './sdk/formmy-parser';
+  TimeoutError,
+} from "./sdk/formmy-parser";
 
 try {
-  const job = await parser.parse('./doc.pdf', 'AGENTIC');
+  const job = await parser.parse("./doc.pdf", "AGENTIC");
   const result = await parser.waitFor(job.id);
 } catch (error) {
   if (error instanceof AuthenticationError) {
-    console.error('Invalid API key');
+    console.error("Invalid API key");
   } else if (error instanceof InsufficientCreditsError) {
     console.error(`Need ${error.creditsRequired} credits`);
   } else if (error instanceof TimeoutError) {
@@ -164,7 +165,7 @@ import { OpenAI } from "llamaindex";
 
 const llm = new OpenAI({
   model: "gpt-4o-mini",
-  temperature: 1.0
+  temperature: 1.0,
 });
 
 const tools = [
@@ -173,13 +174,13 @@ const tools = [
     description: "Save customer contact information",
     parameters: z.object({
       email: z.string().email(),
-      name: z.string()
+      name: z.string(),
     }),
     handler: async ({ email, name }) => {
       await db.contact.create({ data: { email, name } });
       return { success: true };
-    }
-  }
+    },
+  },
 ];
 
 const agentInstance = agent({ llm, tools, systemPrompt });
@@ -189,7 +190,7 @@ const agentInstance = agent({ llm, tools, systemPrompt });
 
 ```typescript
 const events = agentInstance.runStream({
-  message: "Save contact: john@example.com, John Doe"
+  message: "Save contact: john@example.com, John Doe",
 });
 
 for await (const event of events) {
@@ -210,9 +211,9 @@ const memory = createMemory({
   tokenLimit: 8000,
   memoryBlocks: [
     staticBlock({
-      content: `Historial:\n\nUser: Hola\nAssistant: ¡Hola! ¿En qué puedo ayudarte?`
-    })
-  ]
+      content: `Historial:\n\nUser: Hola\nAssistant: ¡Hola! ¿En qué puedo ayudarte?`,
+    }),
+  ],
 });
 
 const agent = agent({ llm, tools, memory, systemPrompt });
@@ -241,7 +242,7 @@ export const TOOLS: ToolDefinition[] = [
     parameters: z.object({
       email: z.string().email(),
       name: z.string().optional(),
-      phone: z.string().optional()
+      phone: z.string().optional(),
     }),
     cost: 1, // Credits per call
     handler: async (args, context) => {
@@ -249,12 +250,12 @@ export const TOOLS: ToolDefinition[] = [
         data: {
           ...args,
           chatbotId: context.chatbotId,
-          conversationId: context.conversationId
-        }
+          conversationId: context.conversationId,
+        },
       });
       return { success: true, contactId: contact.id };
-    }
-  }
+    },
+  },
 ];
 ```
 
@@ -266,7 +267,7 @@ const TOOL_ACCESS = {
   STARTER: ["save_contact", "get_datetime", "web_search"],
   PRO: ["save_contact", "get_datetime", "web_search", "create_payment_link"],
   ENTERPRISE: ["*"], // All tools
-  TRIAL: ["*"]
+  TRIAL: ["*"],
 };
 ```
 
@@ -275,8 +276,8 @@ const TOOL_ACCESS = {
 ```typescript
 // Dual credit system
 interface User {
-  toolCreditsUsed: number;      // Monthly credits (reset every month)
-  purchasedCredits: number;     // Purchased credits (permanent)
+  toolCreditsUsed: number; // Monthly credits (reset every month)
+  purchasedCredits: number; // Purchased credits (permanent)
   creditsResetAt: Date;
   lifetimeCreditsUsed: number;
 }
@@ -292,7 +293,7 @@ async function consumeCredits(userId: string, amount: number) {
     // Use monthly credits
     await db.user.update({
       where: { id: userId },
-      data: { toolCreditsUsed: { increment: amount } }
+      data: { toolCreditsUsed: { increment: amount } },
     });
   } else {
     // Use purchased credits
@@ -301,8 +302,8 @@ async function consumeCredits(userId: string, amount: number) {
       where: { id: userId },
       data: {
         toolCreditsUsed: { increment: monthlyAvailable },
-        purchasedCredits: { decrement: remaining }
-      }
+        purchasedCredits: { decrement: remaining },
+      },
     });
   }
 }
@@ -341,13 +342,13 @@ import { OpenAIEmbedding } from "llamaindex";
 
 const embedModel = new OpenAIEmbedding({
   model: "text-embedding-3-small",
-  dimensions: 768
+  dimensions: 768,
 });
 
 // Create embeddings
 const chunks = await chunkDocument(markdown, {
   chunkSize: 2000,
-  chunkOverlap: 200
+  chunkOverlap: 200,
 });
 
 for (const chunk of chunks) {
@@ -358,8 +359,8 @@ for (const chunk of chunks) {
       chatbotId,
       content: chunk.content,
       embedding,
-      metadata: { fileName, page: chunk.page }
-    }
+      metadata: { fileName, page: chunk.page },
+    },
   });
 }
 ```
@@ -378,17 +379,17 @@ const results = await db.embedding.aggregateRaw({
         queryVector: queryEmbedding,
         numCandidates: 50,
         limit: 5,
-        filter: { chatbotId: { $eq: chatbotId } }
-      }
+        filter: { chatbotId: { $eq: chatbotId } },
+      },
     },
     {
       $project: {
         content: 1,
         score: { $meta: "vectorSearchScore" },
-        metadata: 1
-      }
-    }
-  ]
+        metadata: 1,
+      },
+    },
+  ],
 });
 ```
 
@@ -413,10 +414,8 @@ const searchTool = {
     }
 
     // 3. Return results or "not found" message
-    return results.length > 0
-      ? results
-      : "Busqué pero no encontré información";
-  }
+    return results.length > 0 ? results : "Busqué pero no encontré información";
+  },
 };
 ```
 
@@ -435,13 +434,13 @@ export const COMPOSIO_INTEGRATIONS = {
     appName: "whatsapp",
     authScheme: "API_KEY" as const,
     expectedFields: ["phoneNumberId", "accessToken"],
-    tools: ["send_whatsapp_message", "list_whatsapp_conversations"]
+    tools: ["send_whatsapp_message", "list_whatsapp_conversations"],
   },
   GMAIL: {
     appName: "gmail",
     authScheme: "OAUTH2" as const,
-    tools: ["send_gmail", "read_gmail"]
-  }
+    tools: ["send_gmail", "read_gmail"],
+  },
 };
 ```
 
@@ -457,11 +456,11 @@ const entityId = `chatbot_${chatbotId}`;
 
 // Check connection
 const connections = await composio.connectedAccounts.list({
-  userId: entityId
+  userId: entityId,
 });
 
 const isConnected = connections.some(
-  conn => conn.toolkit?.slug === "gmail" && conn.status === "ACTIVE"
+  (conn) => conn.toolkit?.slug === "gmail" && conn.status === "ACTIVE"
 );
 ```
 
@@ -473,8 +472,8 @@ const result = await composio.tools.execute("GMAIL_SEND_EMAIL", {
   arguments: {
     to: ["recipient@example.com"],
     subject: "Hello from Formmy",
-    body: "Email sent via Composio integration"
-  }
+    body: "Email sent via Composio integration",
+  },
 });
 
 const data = (result as any).data;
@@ -499,7 +498,7 @@ export const MODEL_TEMPERATURES = {
   "claude-3-5-sonnet-20241022": 0.7,
 
   // Gemini
-  "gemini-2.0-flash-exp": 0.7
+  "gemini-2.0-flash-exp": 0.7,
 };
 
 // Validation: temp > 1.5 → force to 1.0
@@ -522,10 +521,10 @@ import Agenda from "agenda";
 const agenda = new Agenda({
   db: {
     address: process.env.MONGO_ATLAS!,
-    collection: "agendaJobs"
+    collection: "agendaJobs",
   },
   processEvery: "10 seconds",
-  maxConcurrency: 5
+  maxConcurrency: 5,
 });
 
 agenda.start();
@@ -538,7 +537,8 @@ agenda.start();
 export function registerParserWorker() {
   const agenda = getAgenda();
 
-  agenda.define("process-parsing-job",
+  agenda.define(
+    "process-parsing-job",
     { priority: "high", concurrency: 3 },
     async (job) => {
       const { jobId, fileUrl, fileKey } = job.attrs.data;
@@ -571,14 +571,20 @@ export async function enqueueParsingJob(data: {
 
 ```typescript
 export const PLANS = {
-  FREE: { price: 0, conversations: 0, chatbots: 0, credits: 0, voiceMinutes: 0 },
+  FREE: {
+    price: 0,
+    conversations: 0,
+    chatbots: 0,
+    credits: 0,
+    voiceMinutes: 0,
+  },
   STARTER: {
     price: 149,
     conversations: 0,
     chatbots: 0,
     credits: 0,
     voiceMinutes: 0,
-    priceId: "price_1S5AqX..."
+    priceId: "price_1S5AqX...",
   },
   PRO: {
     price: 499,
@@ -586,15 +592,15 @@ export const PLANS = {
     chatbots: 10,
     credits: 1000,
     voiceMinutes: 30,
-    priceId: "price_1S5CqA..."
+    priceId: "price_1S5CqA...",
   },
   ENTERPRISE: {
     price: 2490,
     conversations: 1000,
     chatbots: Infinity,
     credits: 5000,
-    voiceMinutes: 60
-  }
+    voiceMinutes: 60,
+  },
 };
 ```
 
@@ -603,14 +609,16 @@ export const PLANS = {
 ```typescript
 const session = await stripe.checkout.sessions.create({
   mode: "subscription",
-  line_items: [{
-    price: PLANS.PRO.priceId,
-    quantity: 1
-  }],
+  line_items: [
+    {
+      price: PLANS.PRO.priceId,
+      quantity: 1,
+    },
+  ],
   customer_email: user.email,
   success_url: `${baseUrl}/dashboard?success=true`,
   cancel_url: `${baseUrl}/dashboard?canceled=true`,
-  metadata: { userId: user.id }
+  metadata: { userId: user.id },
 });
 ```
 
@@ -629,7 +637,7 @@ export async function handleStripeWebhook(request: Request) {
     const session = event.data.object;
     await db.user.update({
       where: { id: session.metadata.userId },
-      data: { plan: "PRO" }
+      data: { plan: "PRO" },
     });
   }
 }
@@ -646,13 +654,13 @@ export async function handleStripeWebhook(request: Request) {
 export const EMAIL_TEMPLATES = {
   WELCOME: (userName: string) => ({
     subject: "Bienvenido a Formmy",
-    html: `<h1>¡Hola ${userName}!</h1><p>Gracias por unirte...</p>`
+    html: `<h1>¡Hola ${userName}!</h1><p>Gracias por unirte...</p>`,
   }),
 
   TRIAL_ENDING: (daysLeft: number) => ({
     subject: `Tu trial expira en ${daysLeft} días`,
-    html: `<p>Upgrade ahora y continúa usando Formmy...</p>`
-  })
+    html: `<p>Upgrade ahora y continúa usando Formmy...</p>`,
+  }),
 };
 ```
 
@@ -665,18 +673,20 @@ const ses = new SESClient({
   region: process.env.AWS_SES_REGION,
   credentials: {
     accessKeyId: process.env.AWS_SES_ACCESS_KEY!,
-    secretAccessKey: process.env.AWS_SES_SECRET_KEY!
-  }
+    secretAccessKey: process.env.AWS_SES_SECRET_KEY!,
+  },
 });
 
-await ses.send(new SendEmailCommand({
-  Source: "Formmy <notificaciones@formmy.app>",
-  Destination: { ToAddresses: [user.email] },
-  Message: {
-    Subject: { Data: template.subject },
-    Body: { Html: { Data: template.html } }
-  }
-}));
+await ses.send(
+  new SendEmailCommand({
+    Source: "Formmy <notificaciones@formmy.app>",
+    Destination: { ToAddresses: [user.email] },
+    Message: {
+      Subject: { Data: template.subject },
+      Body: { Html: { Data: template.html } },
+    },
+  })
+);
 ```
 
 ---
@@ -768,6 +778,8 @@ Built with ❤️ by [@BrendaOrtega](https://github.com/BrendaOrtega) & [@blissi
 ## 📄 License
 
 Proprietary - All rights reserved
+
+> "El único chat AI open-source que puedes agregar con 1 línea de código y administrar sin tocar código"
 
 ---
 
