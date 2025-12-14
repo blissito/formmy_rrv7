@@ -18,14 +18,24 @@ const FormMyWidget = {
     if (window.__formmy_widget_loaded) return;
     window.__formmy_widget_loaded = true;
 
-    // Obtener configuración del chatbot desde la API
-    let primaryColor = config.primaryColor || '#9A99EA'; // Fallback default
+    // Obtener configuración del chatbot desde la API (valida dominio)
+    let primaryColor = config.primaryColor || '#9A99EA';
+    let isBlocked = false;
+    let blockMessage = '';
+
     try {
       const response = await fetch(\`\${apiHost}/api/chatbot/public/\${chatbotSlug}\`);
       if (response.ok) {
         const data = await response.json();
-        // Usar primaryColor del chatbot, permitir override con config
         primaryColor = config.primaryColor || data.chatbot?.primaryColor || '#9A99EA';
+      } else if (response.status === 403) {
+        isBlocked = true;
+        blockMessage = 'Este chatbot no está disponible desde este sitio web.';
+        console.error('FormMyWidget: Dominio no autorizado');
+      } else if (response.status === 404) {
+        isBlocked = true;
+        blockMessage = 'Chatbot no encontrado.';
+        console.error('FormMyWidget: Chatbot no encontrado');
       }
     } catch (error) {
       console.warn('FormMyWidget: Could not fetch chatbot config, using default color');
@@ -98,13 +108,26 @@ const FormMyWidget = {
     // Crear contenedor del chat
     const chatContainer = document.createElement('div');
     chatContainer.className = 'formmy-chat-container closed';
-    chatContainer.innerHTML = \`
-      <iframe
-        src="\${apiHost}/chat/embed?slug=\${chatbotSlug}"
-        style="width: 100%; height: 100%; border: none; border-radius: 16px; background: transparent;"
-        allow="clipboard-write"
-      ></iframe>
-    \`;
+
+    if (isBlocked) {
+      // Mostrar mensaje de bloqueo con fantasmita dormido
+      chatContainer.innerHTML = \`
+        <div style="width: 100%; height: 100%; border-radius: 16px; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;">
+          <img src="\${apiHost}/dash/sleepy-ghosty.svg" alt="ghosty" style="width: 80px; margin-bottom: 16px;" />
+          <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600; color: #9A99EA; font-family: system-ui, sans-serif;">Acceso restringido</h3>
+          <p style="margin: 0; font-size: 14px; color: #666; text-align: center; font-family: system-ui, sans-serif;">\${blockMessage}</p>
+          <a href="https://formmy.app" target="_blank" style="margin-top: 24px; font-size: 12px; color: #999; text-decoration: underline; font-family: system-ui, sans-serif;">Powered by Formmy</a>
+        </div>
+      \`;
+    } else {
+      chatContainer.innerHTML = \`
+        <iframe
+          src="\${apiHost}/chat/embed?slug=\${chatbotSlug}"
+          style="width: 100%; height: 100%; border: none; border-radius: 16px; background: transparent;"
+          allow="clipboard-write"
+        ></iframe>
+      \`;
+    }
 
     document.body.appendChild(bubble);
     document.body.appendChild(chatContainer);
@@ -123,8 +146,10 @@ const FormMyWidget = {
       }
     };
 
-    // Enviar parent domain cuando el iframe esté listo
-    iframe.addEventListener('load', sendParentDomain);
+    // Enviar parent domain cuando el iframe esté listo (solo si no está bloqueado)
+    if (iframe && !isBlocked) {
+      iframe.addEventListener('load', sendParentDomain);
+    }
 
     // Toggle functionality
     let isOpen = false;
@@ -133,16 +158,19 @@ const FormMyWidget = {
       if (isOpen) {
         bubble.classList.add('hidden');
         chatContainer.classList.remove('closed');
-        // Enviar parent domain cada vez que se abre (por si acaso)
-        setTimeout(sendParentDomain, 100);
-        // Enviar mensaje al iframe para hacer focus en el input
-        setTimeout(() => {
-          if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.postMessage({
-              type: 'formmy-focus-input'
-            }, apiHost);
-          }
-        }, 300); // Esperar a que la animación de apertura termine
+        // Solo enviar mensajes al iframe si no está bloqueado
+        if (!isBlocked && iframe) {
+          // Enviar parent domain cada vez que se abre (por si acaso)
+          setTimeout(sendParentDomain, 100);
+          // Enviar mensaje al iframe para hacer focus en el input
+          setTimeout(() => {
+            if (iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'formmy-focus-input'
+              }, apiHost);
+            }
+          }, 300); // Esperar a que la animación de apertura termine
+        }
       } else {
         bubble.classList.remove('hidden');
         chatContainer.classList.add('closed');

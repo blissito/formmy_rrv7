@@ -24,6 +24,8 @@ import {
 import { createGetContextTool } from "@/server/tools/vercel/vectorSearch";
 import { createSaveLeadTool } from "@/server/tools/vercel/saveLead";
 import { calculateCost } from "@/server/chatbot/pricing.server";
+import { validateDomainAccess } from "@/server/utils/domain-validator.server";
+import { getRequestOrigin } from "@/server/utils/request-origin.server";
 
 /**
  * ✅ Loader para cargar mensajes históricos (GET request)
@@ -36,6 +38,28 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   if (!sessionId || !chatbotId) {
     return Response.json({ messages: [] });
+  }
+
+  // 🔒 VALIDACIÓN DE DOMINIO - Cargar chatbot para obtener allowedDomains
+  const chatbot = await db.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: { settings: true },
+  });
+
+  if (chatbot) {
+    const allowedDomains = chatbot.settings?.security?.allowedDomains || [];
+    const origin = getRequestOrigin(request);
+    const validation = validateDomainAccess(origin, allowedDomains);
+
+    if (!validation.allowed) {
+      console.warn(
+        `[Chat Loader] ❌ Domain blocked: ${origin || "no-origin"} -> ${chatbotId}`
+      );
+      return Response.json(
+        { error: "Dominio no autorizado" },
+        { status: 403 }
+      );
+    }
   }
 
   // Buscar conversación por sessionId
@@ -80,6 +104,22 @@ export async function action({ request }: Route.ActionArgs) {
     return Response.json(
       { error: "Chatbot no encontrado o inactivo" },
       { status: 404 }
+    );
+  }
+
+  // 🔒 VALIDACIÓN DE DOMINIO
+  const allowedDomains = chatbot.settings?.security?.allowedDomains || [];
+  const origin = getRequestOrigin(request);
+  const validation = validateDomainAccess(origin, allowedDomains);
+
+  if (!validation.allowed) {
+    console.warn(
+      `[Chat Action] ❌ Domain blocked: ${origin || "no-origin"} -> ${chatbot.slug}`,
+      validation.reason
+    );
+    return Response.json(
+      { error: "Dominio no autorizado para este chatbot" },
+      { status: 403 }
     );
   }
 

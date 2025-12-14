@@ -226,6 +226,188 @@ export async function action({ request }: any) {
         return await handleIntegrationManagement(intent, formData, userId);
       }
 
+      // Security settings - Dominios permitidos
+      case "update_security": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso para modificar este chatbot" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const allowedDomainsRaw = formData.get("allowedDomains") as string;
+        const status = formData.get("status") as string;
+        const rateLimit = formData.get("rateLimit") as string;
+
+        // Parsear dominios: "ejemplo.com, otro.com" → ["ejemplo.com", "otro.com"]
+        const allowedDomains = allowedDomainsRaw
+          ? allowedDomainsRaw.split(",").map((d) => d.trim()).filter((d) => d.length > 0)
+          : [];
+
+        // Defaults para settings si no existen
+        const currentSettings = chatbot.settings || {
+          notifications: { weeklyDigest: true, usageLimit: true, configChanges: false },
+          security: { allowedDomains: [], status: "public", rateLimit: 100 },
+        };
+
+        const { db } = await import("~/utils/db.server");
+        const updatedChatbot = await db.chatbot.update({
+          where: { id: chatbotId },
+          data: {
+            settings: {
+              set: {
+                notifications: currentSettings.notifications,
+                security: {
+                  allowedDomains,
+                  status: status || "public",
+                  rateLimit: rateLimit ? parseInt(rateLimit) : 100,
+                },
+              },
+            },
+          },
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, chatbot: updatedChatbot }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Notifications settings
+      case "update_notifications": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso para modificar este chatbot" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const weeklyDigest = formData.get("weeklyDigest") === "true";
+        const usageLimit = formData.get("usageLimit") === "true";
+        const configChanges = formData.get("configChanges") === "true";
+
+        // Defaults para settings si no existen
+        const currentSettings = chatbot.settings || {
+          notifications: { weeklyDigest: true, usageLimit: true, configChanges: false },
+          security: { allowedDomains: [], status: "public", rateLimit: 100 },
+        };
+
+        const { db } = await import("~/utils/db.server");
+        const updatedChatbot = await db.chatbot.update({
+          where: { id: chatbotId },
+          data: {
+            settings: {
+              set: {
+                security: currentSettings.security,
+                notifications: {
+                  weeklyDigest,
+                  usageLimit,
+                  configChanges,
+                },
+              },
+            },
+          },
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, chatbot: updatedChatbot }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Chatbot users management
+      case "get_chatbot_users": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "ID de chatbot no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const { db } = await import("~/utils/db.server");
+        const permissions = await db.permission.findMany({
+          where: { chatbotId },
+          include: { user: true },
+        });
+
+        return new Response(JSON.stringify(permissions), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      case "add_chatbot_user": {
+        const chatbotId = formData.get("chatbotId") as string;
+        const email = formData.get("email") as string;
+        const role = formData.get("role") as string;
+
+        if (!chatbotId || !email) {
+          return new Response(
+            JSON.stringify({ error: "chatbotId y email son requeridos" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot || chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const { db } = await import("~/utils/db.server");
+        const targetUser = await db.user.findUnique({ where: { email } });
+        if (!targetUser) {
+          return new Response(
+            JSON.stringify({ error: "Usuario no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const permission = await db.permission.create({
+          data: {
+            userId: targetUser.id,
+            chatbotId,
+            role: role || "VIEWER",
+          },
+        });
+
+        return new Response(JSON.stringify({ success: true, permission }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       default: {
         return new Response(JSON.stringify({ error: "Intent no soportado" }), {
           status: 400,

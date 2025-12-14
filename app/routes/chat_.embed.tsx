@@ -36,6 +36,10 @@ export async function loader({ request }: { request: Request }) {
       };
     }
 
+    // 🔒 NOTA: La validación de dominio se hace en /api/chatbot/public/$slug
+    // El iframe no envía Origin header, así que no podemos validar aquí.
+    // El widget.js ya validó el dominio antes de crear el iframe.
+
     return { chatbot };
   } catch (error) {
     console.error("Error al cargar el chatbot para embebido:", error);
@@ -107,16 +111,25 @@ export default function ChatEmbedRoute() {
 
   // Si hay un error, mostrar un mensaje de error amigable
   if (data.error) {
+    const getErrorTitle = () => {
+      switch (data.status) {
+        case 403: return "Acceso restringido";
+        case 404: return "Chatbot no encontrado";
+        default: return "Error";
+      }
+    };
+
     return (
       <div className="flex flex-col items-center justify-center h-svh w-full bg-white p-4">
-        <div className="bg-white rounded-lg  p-8 max-w-md w-full text-center">
-          <img className="w-20 mx-auto" src="/dash/sleepy-ghosty.svg" alt="ghosty" /> 
+        <div className="bg-white rounded-lg p-8 max-w-md w-full text-center">
+          <img className="w-20 mx-auto" src="/dash/sleepy-ghosty.svg" alt="ghosty" />
           <h2 className="text-2xl font-semibold text-brand-500 mb-2 mt-6">
-            {data.status === 404 ? "Chatbot no encontrado" : "Error"}
+            {getErrorTitle()}
           </h2>
           <p className="text-gray-600 mb-6">{data.error}</p>
           <a href="https://www.formmy.app/" target="_blank" rel="noopener noreferrer">
-          <p className="text-xs text-metal underline">Powered by Formmy.app</p></a>
+            <p className="text-xs text-metal underline">Powered by Formmy.app</p>
+          </a>
         </div>
       </div>
     );
