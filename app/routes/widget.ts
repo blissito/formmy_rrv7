@@ -1,9 +1,85 @@
+// Sidepush utilities - FUERA del template string para control real
+const createSidepushHandler = () => {
+  return `
+    // 🚀 SIDEPUSH HANDLER - Control directo
+    function createSidepushController(template, chatWidth) {
+      let contentWrapper = null;
+      let originalBodyStyles = null;
+      const shouldPush = template === 'sidebar';
+      
+      function initialize() {
+        if (!shouldPush) return false;
+        
+        console.log('🔧 Initializing sidepush controller...');
+        
+        // Crear wrapper
+        contentWrapper = document.createElement('div');
+        contentWrapper.id = 'formmy-content-wrapper';
+        contentWrapper.style.cssText = 'transition: margin-right 0.3s ease; margin-right: 0px; min-height: 100vh;';
+        
+        // Guardar estilos originales
+        originalBodyStyles = {
+          margin: document.body.style.margin,
+          padding: document.body.style.padding
+        };
+        
+        // Mover contenido al wrapper (excepto elementos formmy)
+        const children = Array.from(document.body.children);
+        children.forEach(child => {
+          if (!child.className || !child.className.includes('formmy-')) {
+            contentWrapper.appendChild(child);
+          }
+        });
+        
+        // Insertar wrapper
+        document.body.insertBefore(contentWrapper, document.body.firstChild);
+        
+        console.log('✅ Sidepush initialized, wrapper has', contentWrapper.children.length, 'children');
+        return true;
+      }
+      
+      function push() {
+        if (!shouldPush || !contentWrapper) return;
+        console.log('🚀 Pushing content:', chatWidth);
+        contentWrapper.style.marginRight = chatWidth;
+      }
+      
+      function restore() {
+        if (!shouldPush || !contentWrapper) return;
+        console.log('🔙 Restoring content');
+        contentWrapper.style.marginRight = '0px';
+      }
+      
+      function cleanup() {
+        if (!shouldPush || !contentWrapper) return;
+        const children = Array.from(contentWrapper.children);
+        children.forEach(child => document.body.appendChild(child));
+        contentWrapper.remove();
+        
+        if (originalBodyStyles) {
+          document.body.style.margin = originalBodyStyles.margin || '';
+          document.body.style.padding = originalBodyStyles.padding || '';
+        }
+      }
+      
+      return {
+        initialize,
+        push,
+        restore,
+        cleanup,
+        isActive: () => shouldPush && !!contentWrapper
+      };
+    }
+  `;
+};
+
 // Módulo ES6 del widget Formmy (estilo Flowise)
 export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
   const baseUrl = url.origin;
 
   const moduleContent = `
+    ${createSidepushHandler()}
 const FormMyWidget = {
   init: async function(config) {
     if (!config || !config.chatbotSlug) {
@@ -271,13 +347,25 @@ const FormMyWidget = {
       iframe.addEventListener('load', sendParentDomain);
     }
 
-    // Toggle functionality
+    // 🚀 SIDEPUSH CONTROLLER - Refactorizado para control real
     let isOpen = false;
+    const chatWidth = template === 'sidebar' ? '380px' : '0px';
+    const sidepush = createSidepushController(template, chatWidth);
+    
+    // Inicializar sidepush si es sidebar
+    sidepush.initialize();
+    
     const toggle = () => {
       isOpen = !isOpen;
+      console.log(\`🔄 WIDGET TOGGLE: isOpen=\${isOpen}, template=\${template}\`);
+      
       if (isOpen) {
         trigger.classList.add('hidden');
         chatContainer.classList.remove('closed');
+        
+        // 🚀 SIDEPUSH: Usar controlador refactorizado
+        sidepush.push();
+        
         // Solo enviar mensajes al iframe si no está bloqueado
         if (!isBlocked && iframe) {
           // Enviar parent domain cada vez que se abre (por si acaso)
@@ -298,6 +386,9 @@ const FormMyWidget = {
       } else {
         trigger.classList.remove('hidden');
         chatContainer.classList.add('closed');
+        
+        // 🔙 SIDEPUSH: Restaurar usando controlador refactorizado
+        sidepush.restore();
       }
     };
 
@@ -308,6 +399,11 @@ const FormMyWidget = {
       if (event.data.type === 'formmy-close-chat' && isOpen) {
         toggle();
       }
+    });
+    
+    // Cleanup: Usar controlador refactorizado
+    window.addEventListener('beforeunload', () => {
+      sidepush.cleanup();
     });
   }
 };
