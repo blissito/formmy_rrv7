@@ -15,12 +15,14 @@ export interface ChatPreviewProps {
   production?: boolean;
   onClose?: () => void;
   parentDomain?: string | null; // 🔒 SEGURIDAD: Parent domain para validación (Oct 16, 2025)
+  template?: string; // Template del widget para aplicar estilos específicos
 }
 
 export default function ChatPreview({
   chatbot,
   production,
   onClose,
+  template = "bubble",
 }: ChatPreviewProps) {
   // 🔑 SESSION PERSISTENCE: Generate or retrieve sessionId from localStorage
   // ✅ FIX: Lazy initialization para evitar race condition
@@ -97,6 +99,46 @@ export default function ChatPreview({
     console.log("  - hasError:", !!error);
     if (error) console.log("  - error:", error);
   }, [status, messages.length, sessionId, error]);
+
+  // ✨ TEMPLATE STYLES: Estilos dinámicos según template
+  const getTemplateStyles = (template: string) => {
+    const styles = {
+      bubble: {
+        container: "rounded-2xl shadow-2xl",
+        header: "rounded-t-2xl",
+        background: "bg-white",
+        border: "border border-gray-200",
+      },
+      sidebar: {
+        container: "rounded-none shadow-none",
+        header: "rounded-none",
+        background: "bg-white",
+        border: "border-l border-gray-200",
+      },
+      minimal: {
+        container: "rounded-lg shadow-lg",
+        header: "rounded-t-lg",
+        background: "bg-gray-50",
+        border: "border border-gray-300",
+      },
+      enterprise: {
+        container: "rounded-t-xl shadow-xl",
+        header: "rounded-t-xl bg-gradient-to-r from-blue-600 to-blue-700",
+        background: "bg-white",
+        border: "border-t border-x border-gray-200",
+      },
+      industrial: {
+        container: "rounded-sm shadow-lg border-2 border-gray-400",
+        header: "rounded-none bg-gray-800",
+        background: "bg-gray-100",
+        border: "border-2 border-gray-400",
+      },
+    };
+    return styles[template as keyof typeof styles] || styles.bubble;
+  };
+
+  const templateStyles = getTemplateStyles(template);
+
   const [text, setText] = useState("");
   const isStreaming = status !== "ready";
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -150,13 +192,13 @@ export default function ChatPreview({
 
       <article
         className={cn(
-          "border border-gray-200",
-          "bg-white",
+          templateStyles.border,
+          templateStyles.background,
           "flex flex-col",
           "overflow-hidden",
           {
             "h-full w-full": production,
-            "h-svh max-h-[600px] mb-6 max-w-lg mx-auto rounded-2xl shadow-2xl":
+            [`h-svh max-h-[600px] mb-6 max-w-lg mx-auto ${templateStyles.container}`]:
               !production,
           }
         )}
@@ -168,6 +210,7 @@ export default function ChatPreview({
           onClear={handleClearConversation}
           showCloseButton={production}
           onClose={onClose}
+          className={templateStyles.header}
         />
 
         <section

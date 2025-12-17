@@ -1,5 +1,6 @@
 import { Avatar } from "./Avatar";
 import { XMarkIcon, ArrowPathIcon, MicrophoneIcon } from "@heroicons/react/24/outline";
+import { cn } from "~/lib/utils";
 
 interface ChatHeaderProps {
   primaryColor?: string;
@@ -10,6 +11,7 @@ interface ChatHeaderProps {
   onClear?: () => void;
   voiceEnabled?: boolean;
   onVoiceClick?: () => void;
+  className?: string; // Custom classes for template styling
 }
 
 export const ChatHeader = ({
@@ -21,6 +23,7 @@ export const ChatHeader = ({
   onClear,
   voiceEnabled = false,
   onVoiceClick,
+  className = "",
 }: ChatHeaderProps) => {
   const handleClose = () => {
     // Si está en iframe, enviar mensaje al padre
@@ -32,7 +35,7 @@ export const ChatHeader = ({
   };
 
   return (
-    <section className="bg-brand-300/10 flex items-center justify-between py-3 px-3 h-min gap-3">
+    <section className={cn("bg-brand-300/10 flex items-center justify-between py-3 px-3 h-min gap-3", className)}>
       <div className="flex items-center gap-3">
         <Avatar src={avatarUrl} primaryColor={primaryColor} />
         <p className="heading text-lg ">{name}</p>

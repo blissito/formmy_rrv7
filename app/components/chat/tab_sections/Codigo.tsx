@@ -20,6 +20,7 @@ import GmailIntegrationModal from "../../integrations/GmailIntegrationModal";
 import MessengerIntegrationModal from "../../integrations/MessengerIntegrationModal";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 import VoiceIntegrationModal from "../../integrations/VoiceIntegrationModal";
+import { WidgetTemplateSelector } from "../WidgetTemplateSelector";
 // import GoogleCalendarComposioModal from "../../integrations/GoogleCalendarComposioModal"; // Deshabilitado - Próximamente
 // import StripeIntegrationModal from "../../integrations/StripeIntegrationModal"; // Deshabilitado temporalmente
 
@@ -152,6 +153,34 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
     null
   );
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(
+    chatbot.widgetTemplate || "bubble"
+  );
+
+  // Handler para cambio de template
+  const handleTemplateChange = async (template: string) => {
+    try {
+      setSelectedTemplate(template);
+      
+      // Guardar en base de datos
+      const response = await fetch(`/api/chatbot/${chatbot.id}/template`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ widgetTemplate: template }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al guardar template");
+      }
+    } catch (error) {
+      console.error("Error updating template:", error);
+      // Revertir en caso de error
+      setSelectedTemplate(chatbot.widgetTemplate || "bubble");
+    }
+  };
+
   // Estado para el estado de conexión de las integraciones
   // Función para inicializar el estado de integraciones
   const initializeIntegrationStatus = (integrations: Integration[]) => {
@@ -777,11 +806,21 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
               </div>
             }
           >
-            <section>
-              <MiniCardGroup selectedMinicard={miniCard} onSelect={setMiniCard}>
-                {miniCard === "iframe" && <Iframe chatbot={chatbot} />}
-                {miniCard === "link" && <LinkBlock chatbot={chatbot} />}
-              </MiniCardGroup>
+            <section className="space-y-8">
+              {/* Widget Template Selector */}
+              <WidgetTemplateSelector
+                selectedTemplate={selectedTemplate}
+                onTemplateChange={handleTemplateChange}
+                primaryColor={chatbot.primaryColor || "#9A99EA"}
+              />
+
+              {/* Widget Code */}
+              <div className="border-t pt-8">
+                <MiniCardGroup selectedMinicard={miniCard} onSelect={setMiniCard}>
+                  {miniCard === "iframe" && <Iframe chatbot={chatbot} selectedTemplate={selectedTemplate} />}
+                  {miniCard === "link" && <LinkBlock chatbot={chatbot} />}
+                </MiniCardGroup>
+              </div>
             </section>
           </Card>
         </section>
@@ -1063,7 +1102,13 @@ const LinkBlock = ({ chatbot }: LinkBlockProps) => {
   );
 };
 
-const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
+const Iframe = ({ 
+  chatbot, 
+  selectedTemplate 
+}: { 
+  chatbot: { slug: string };
+  selectedTemplate: string;
+}) => {
   const { t } = useDashboardTranslation();
   const baseUrl =
     typeof window !== "undefined"
@@ -1075,7 +1120,7 @@ const Iframe = ({ chatbot }: { chatbot: { slug: string } }) => {
   import Chatbot from "${baseUrl}/widget.js"
   Chatbot.init({
     chatbotSlug: "${chatbot.slug}",
-    apiHost: "${baseUrl}"
+    apiHost: "${baseUrl}"${selectedTemplate !== "bubble" ? `,\n    template: "${selectedTemplate}"` : ""}
   })
 </script>
 `;

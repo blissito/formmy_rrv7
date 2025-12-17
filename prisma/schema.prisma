@@ -312,6 +312,8 @@ model Chatbot {
   primaryColor       String?
   avatarUrl          String?
   theme              String?           @default("light")
+  widgetTemplate     String?           @default("bubble") // bubble | sidebar | minimal | enterprise
+  widgetConfig       Json?             // Configuración específica del template (trigger, chat, comportamiento)
   enableStreaming    Boolean           @default(false) // 🚨 STREAMING DESHABILITADO por defecto - problema crítico resuelto
   streamingSpeed     Int               @default(50)
   status             ChatbotStatus     @default(ACTIVE)

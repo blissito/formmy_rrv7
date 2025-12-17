@@ -10,6 +10,7 @@ export async function loader({ request }: { request: Request }) {
     // Extraer el slug del chatbot de la URL si existe
     const url = new URL(request.url);
     const slug = url.searchParams.get("slug");
+    const template = url.searchParams.get("template") || "bubble";
 
     if (!slug) {
       return {
@@ -40,7 +41,7 @@ export async function loader({ request }: { request: Request }) {
     // El iframe no envía Origin header, así que no podemos validar aquí.
     // El widget.js ya validó el dominio antes de crear el iframe.
 
-    return { chatbot };
+    return { chatbot, template };
   } catch (error) {
     console.error("Error al cargar el chatbot para embebido:", error);
     return {
@@ -73,6 +74,7 @@ function GlobalStyles() {
 export default function ChatEmbedRoute() {
   const data = useLoaderData<{
     chatbot?: Chatbot;
+    template?: string;
     error?: string;
     status?: number;
   }>();
@@ -144,6 +146,7 @@ export default function ChatEmbedRoute() {
           production
           chatbot={data.chatbot as Chatbot}
           parentDomain={parentDomain}
+          template={data.template || "bubble"}
         />
       </div>
     </>
