@@ -238,6 +238,7 @@ export default function ChatPreview({
           showCloseButton={production}
           onClose={onClose}
           className={templateStyles.header}
+          style={{ backgroundColor: chatbot.primaryColor || "#9A99EA" }}
         />
 
         <section
@@ -515,11 +516,10 @@ const ChatElement = ({
         showCloseButton={false}
         onClose={onClose}
         className={cn({
-          "bg-gradient-to-r from-blue-600 to-blue-700": templateConfig.id === "enterprise",
-          "bg-gray-800": templateConfig.id === "industrial",
           "rounded-t-lg": !["sidebar", "industrial"].includes(templateConfig.id),
           "rounded-none": templateConfig.id === "sidebar",
         })}
+        style={{ backgroundColor: chatbot.primaryColor || "#9A99EA" }}
       />
 
       <section
