@@ -221,6 +221,7 @@ export default [
   // Widget embed routes (inyección directa - sin iframe)
   route("widget.js", "routes/widget.ts"),
   route("api/chatbot/public/:slug", "routes/api.chatbot.public.$slug.ts"),
+  route("api/chatbot/:chatbotId/template", "routes/api.chatbot.$chatbotId.template.ts"),
 
   // Widget iframe routes
   route("widgets/:widgetId", "routes/widgets.$widgetId.tsx"),

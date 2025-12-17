@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSubmit } from "react-router";
 import { ConfigMenu, EmbebidoButton, IntegracionesButton } from "../ConfigMenu";
 import { StickyGrid } from "../PageContainer";
 import {
@@ -140,6 +141,7 @@ interface CodigoProps {
 
 export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
   const { t } = useDashboardTranslation();
+  const submit = useSubmit();
   const availableIntegrations = getAvailableIntegrations(t);
 
   const { currentTab, setCurrentTab } = useChipTabs(
@@ -159,8 +161,9 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
 
   // Handler para cambio de template
   const handleTemplateChange = async (template: string) => {
+    const previousTemplate = selectedTemplate; // Guardar el estado anterior
     try {
-      setSelectedTemplate(template);
+      setSelectedTemplate(template); // Actualizar inmediatamente la UI
       
       // Guardar en base de datos
       const response = await fetch(`/api/chatbot/${chatbot.id}/template`, {
@@ -168,16 +171,27 @@ export const Codigo = ({ chatbot, integrations, user }: CodigoProps) => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "same-origin", // Incluir cookies de sesión
         body: JSON.stringify({ widgetTemplate: template }),
       });
 
       if (!response.ok) {
-        throw new Error("Error al guardar template");
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(errorData.error || "Error al guardar template");
       }
+
+      const result = await response.json();
+      console.log("✅ Template saved successfully:", result);
+      
+      // Trigger revalidation para actualizar el preview
+      submit({});
     } catch (error) {
-      console.error("Error updating template:", error);
-      // Revertir en caso de error
+      console.error("❌ Error updating template:", error);
+      // Revertir en caso de error al estado anterior
       setSelectedTemplate(chatbot.widgetTemplate || "bubble");
+      // Opcional: Mostrar toast de error
+      alert(`Error al guardar template: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 

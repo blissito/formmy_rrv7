@@ -1,15 +1,22 @@
-import type { Route } from "./+types/api.chatbot.$chatbotId.template";
-import { json } from "react-router";
-import { db } from "~/utils/db.server";
-import { getSession } from "~/sessions";
+export async function loader({ request }: any) {
+  return new Response(JSON.stringify({ message: "GET not implemented" }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
 
-export async function action({ request, params }: Route.ActionArgs) {
+export async function action({ request, params }: any) {
   // Solo permitir PATCH
   if (request.method !== "PATCH") {
-    return json({ error: "Method not allowed" }, { status: 405 });
+    return new Response(JSON.stringify({ error: "Method not allowed" }), { 
+      status: 405,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
   const { chatbotId } = params;
+
+  const { db } = await import("~/utils/db.server");
+  const { getSession } = await import("~/sessions");
 
   try {
     // Verificar autenticación
@@ -17,7 +24,10 @@ export async function action({ request, params }: Route.ActionArgs) {
     const userIdOrEmail = session.get("userId");
 
     if (!userIdOrEmail) {
-      return json({ error: "No autorizado" }, { status: 401 });
+      return new Response(JSON.stringify({ error: "No autorizado" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Buscar user real por email o ID
@@ -29,7 +39,10 @@ export async function action({ request, params }: Route.ActionArgs) {
     });
 
     if (!user) {
-      return json({ error: "Usuario no encontrado" }, { status: 404 });
+      return new Response(JSON.stringify({ error: "Usuario no encontrado" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Verificar que el chatbot pertenece al usuario
@@ -41,7 +54,10 @@ export async function action({ request, params }: Route.ActionArgs) {
     });
 
     if (!chatbot) {
-      return json({ error: "Chatbot no encontrado" }, { status: 404 });
+      return new Response(JSON.stringify({ error: "Chatbot no encontrado" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Obtener datos del request
@@ -50,7 +66,10 @@ export async function action({ request, params }: Route.ActionArgs) {
     // Validar template
     const validTemplates = ["bubble", "sidebar", "minimal", "enterprise", "industrial"];
     if (widgetTemplate && !validTemplates.includes(widgetTemplate)) {
-      return json({ error: "Template no válido" }, { status: 400 });
+      return new Response(JSON.stringify({ error: "Template no válido" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Actualizar chatbot
@@ -62,17 +81,22 @@ export async function action({ request, params }: Route.ActionArgs) {
       },
     });
 
-    return json({ 
+    return new Response(JSON.stringify({ 
       success: true, 
       chatbot: {
         id: updatedChatbot.id,
         widgetTemplate: updatedChatbot.widgetTemplate,
         widgetConfig: updatedChatbot.widgetConfig,
       }
+    }), {
+      headers: { "Content-Type": "application/json" }
     });
 
   } catch (error) {
     console.error("Error updating chatbot template:", error);
-    return json({ error: "Error interno del servidor" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Error interno del servidor" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }

@@ -55,6 +55,8 @@ interface PreviewContextType {
   setAvatarUrl: (url: string) => void;
   avatarFile: File | null;
   setAvatarFile: (file: File | null) => void;
+  selectedTemplate: string;
+  setSelectedTemplate: (template: string) => void;
 }
 
 const PreviewContext = createContext<PreviewContextType | undefined>(undefined);
@@ -509,6 +511,9 @@ export const EditionPair = ({
   const [customInstructions, setCustomInstructions] = useState(
     chatbot.customInstructions || ""
   );
+  const [selectedTemplate, setSelectedTemplate] = useState(
+    chatbot.widgetTemplate || "bubble"
+  );
 
   // Sincronizar el estado del contexto cuando cambien los datos del loader
   useEffect(() => {
@@ -530,6 +535,7 @@ export const EditionPair = ({
     );
     setAvatarUrl(chatbot.avatarUrl || "");
     setCustomInstructions(chatbot.customInstructions || "");
+    setSelectedTemplate(chatbot.widgetTemplate || "bubble");
   }, [chatbot, user.plan]);
 
   const contextValue: PreviewContextType = {
@@ -555,6 +561,8 @@ export const EditionPair = ({
     setAvatarUrl,
     avatarFile,
     setAvatarFile,
+    selectedTemplate,
+    setSelectedTemplate,
   };
 
   // ✅ FIX: Estabilizar el objeto chatbot para evitar remounts innecesarios de ChatPreview
@@ -573,6 +581,7 @@ export const EditionPair = ({
       instructions,
       personality: selectedAgent,
       customInstructions,
+      widgetTemplate: selectedTemplate,
     }),
     [
       chatbot,
@@ -586,6 +595,7 @@ export const EditionPair = ({
       instructions,
       selectedAgent,
       customInstructions,
+      selectedTemplate,
     ]
   );
 
@@ -600,8 +610,8 @@ export const EditionPair = ({
         <section className="hidden lg:block lg:col-span-8">
           <ChatPreview
             chatbot={previewChatbot}
-            initialMessages={[]} // ✅ Preview siempre es nueva conversación (testing)
             integrations={integrations}
+            showTrigger={true}
           />
         </section>
       </article>

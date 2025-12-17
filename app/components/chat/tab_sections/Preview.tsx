@@ -281,6 +281,7 @@ export const PreviewForm = ({
             <ChatPreview
               chatbot={previewChatbot}
               integrations={integrations}
+              showTrigger={true}
             />
           </div>
         </div>
