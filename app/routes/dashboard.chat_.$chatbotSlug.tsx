@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
 import { Contactos } from "~/components/chat/tab_sections/Contactos";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
+import { Herramientas } from "~/components/chat/tab_sections/Herramientas";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
 import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
 import { useChipTabs } from "~/components/chat/common/ChipTabs";
@@ -106,7 +107,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   */
 
   // ⚡ FASE 1: Loader mínimo - solo metadata (conversaciones se cargan en cliente)
-  const [integrations, totalConversations, contextDocuments] = await Promise.all([
+  const [integrations, totalConversations, contextDocuments, customTools] = await Promise.all([
     db.integration.findMany({
       where: { chatbotId: chatbot.id },
     }),
@@ -128,6 +129,11 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
         createdAt: true,
         updatedAt: true,
       },
+      orderBy: { createdAt: 'desc' },
+    }),
+    // 🔧 Cargar herramientas personalizadas del chatbot
+    db.customTool.findMany({
+      where: { chatbotId: chatbot.id },
       orderBy: { createdAt: 'desc' },
     }),
   ]);
@@ -162,6 +168,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     totalConversations,
     contacts: [], // ⚡ Leads se cargan bajo demanda en el tab Contactos
     contextDocuments, // ✅ Contextos desde el modelo Context (sistema nuevo)
+    customTools, // 🔧 Herramientas HTTP personalizadas
     accessInfo: accessValidation,
   };
 };
@@ -169,7 +176,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
 export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
-  const { user, chatbot, integrations, conversations, totalConversations, contacts, contextDocuments, accessInfo } = loaderData;
+  const { user, chatbot, integrations, conversations, totalConversations, contacts, contextDocuments, customTools, accessInfo } = loaderData;
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
@@ -485,6 +492,9 @@ export default function ChatbotDetailRoute({
           <Entrenamiento chatbot={chatbot} user={user} contextDocuments={contextDocuments} />
         )}
         {currentTab === "Tareas" && <Tareas />}
+        {currentTab === "Herramientas" && (
+          <Herramientas chatbot={chatbot} user={user} customTools={customTools} />
+        )}
         {currentTab === "Código" && (
           <Codigo chatbot={chatbot} user={user} integrations={integrations} />
         )}

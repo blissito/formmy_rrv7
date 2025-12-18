@@ -1127,6 +1127,12 @@ async function generateChatbotResponse(
     const { createSaveLeadTool } = await import(
       "../../server/tools/vercel/saveLead"
     );
+    const { loadCustomToolsForChatbot } = await import(
+      "../../server/tools/vercel/customHttpTool"
+    );
+
+    // 🔧 Cargar custom tools del chatbot (herramientas HTTP personalizadas)
+    const customTools = await loadCustomToolsForChatbot(chatbot.id);
 
     // Build conversation history from recent messages
     const history =
@@ -1182,6 +1188,7 @@ async function generateChatbotResponse(
       tools: {
         getContextTool: createGetContextTool(chatbot.id),
         saveLeadTool: createSaveLeadTool(chatbot.id, conversation.id),
+        ...customTools, // 🔧 Herramientas HTTP personalizadas
       },
       stopWhen: stepCountIs(5),
       // 📊 TRACKING: onFinish callback (patrón Vercel AI SDK 2025)

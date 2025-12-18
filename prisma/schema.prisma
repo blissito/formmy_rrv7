@@ -338,6 +338,7 @@ model Chatbot {
   satInvoices        SatInvoice[]      @relation("ChatbotSatInvoices")
   satContacts        SatContact[]      @relation("ChatbotSatContacts")
   voiceSessions      VoiceSession[]
+  customTools        CustomTool[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -981,6 +982,60 @@ model VoiceSession {
   @@index([userId, status])
   @@index([chatbotId, startTime])
   @@index([status])
+}
+
+// ============================================================================
+// CUSTOM TOOLS - Herramientas HTTP personalizadas para agentes
+// ============================================================================
+
+enum HttpMethod {
+  GET
+  POST
+}
+
+model CustomTool {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId String  @db.ObjectId
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  // Identificación
+  name        String // Nombre técnico del tool (snake_case, ej: "check_inventory")
+  displayName String // Nombre visible en UI (ej: "Consultar Inventario")
+  description String // Descripción para el agente - CRUCIAL para que sepa cuándo usarlo
+
+  // Configuración HTTP
+  method  HttpMethod @default(POST)
+  url     String // URL del endpoint (ej: https://api.example.com/inventory)
+  headers Json? // Headers adicionales (ej: { "X-Custom-Header": "value" })
+
+  // Autenticación
+  authType    String? // "none" | "bearer" | "api_key" | "basic"
+  authKey     String? // Nombre del header (ej: "Authorization", "X-API-Key")
+  authValue   String? // Valor del token/key (encriptado en producción)
+
+  // Schema de parámetros (JSON Schema para validación)
+  // Ej: { "type": "object", "properties": { "product_id": { "type": "string" } }, "required": ["product_id"] }
+  parametersSchema Json?
+
+  // Configuración de respuesta
+  responseFormat String? @default("json") // "json" | "text"
+  successMessage String? // Mensaje personalizado al éxito (opcional)
+
+  // Estado
+  isActive Boolean @default(true)
+
+  // Métricas de uso
+  usageCount   Int       @default(0)
+  lastUsedAt   DateTime?
+  errorCount   Int       @default(0)
+  lastErrorAt  DateTime?
+  lastError    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chatbotId, name]) // Un tool único por nombre por chatbot
+  @@index([chatbotId, isActive])
 }
 
 // ============================================================================

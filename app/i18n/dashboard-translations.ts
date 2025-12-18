@@ -21,6 +21,7 @@ export const dashboardTranslations = {
       contacts: "Leads",
       training: "Training",
       tasks: "Tasks",
+      tools: "Tools",
       code: "Code",
       settings: "Settings"
     },
@@ -531,6 +532,7 @@ export const dashboardTranslations = {
       contacts: "Leads",
       training: "Entrenamiento",
       tasks: "Tareas",
+      tools: "Herramientas",
       code: "Código",
       settings: "Configuración"
     },

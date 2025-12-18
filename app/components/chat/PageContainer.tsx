@@ -639,6 +639,7 @@ export const TabSelector = ({
     "Contactos",
     "Entrenamiento",
     "Tareas",
+    "Herramientas",
     "Código",
     "Configuración",
   ];
@@ -651,6 +652,7 @@ export const TabSelector = ({
       "Contactos": t('tabs.contacts'),
       "Entrenamiento": t('tabs.training'),
       "Tareas": t('tabs.tasks'),
+      "Herramientas": t('tabs.tools'),
       "Código": t('tabs.code'),
       "Configuración": t('tabs.settings'),
     };

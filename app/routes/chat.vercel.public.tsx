@@ -23,6 +23,7 @@ import {
 } from "@/server/chatbot/messageModel.server";
 import { createGetContextTool } from "@/server/tools/vercel/vectorSearch";
 import { createSaveLeadTool } from "@/server/tools/vercel/saveLead";
+import { loadCustomToolsForChatbot } from "@/server/tools/vercel/customHttpTool";
 import { calculateCost } from "@/server/chatbot/pricing.server";
 import { validateDomainAccess } from "@/server/utils/domain-validator.server";
 import { getRequestOrigin } from "@/server/utils/request-origin.server";
@@ -190,6 +191,9 @@ export async function action({ request }: Route.ActionArgs) {
   // ⏱️ Start time para medir responseTime
   const startTime = Date.now();
 
+  // 🔧 Cargar custom tools del chatbot (herramientas HTTP personalizadas)
+  const customTools = await loadCustomToolsForChatbot(chatbotId);
+
   // ✅ PATRÓN 2025: streamText con TODOS los mensajes (históricos + nuevos)
   const result = streamText({
     model: mapModel(chatbot.aiModel),
@@ -198,6 +202,7 @@ export async function action({ request }: Route.ActionArgs) {
     tools: {
       getContextTool: createGetContextTool(chatbotId),
       saveLeadTool: createSaveLeadTool(chatbotId, conversation.id),
+      ...customTools, // 🔧 Herramientas HTTP personalizadas
     },
     stopWhen: stepCountIs(5),
     // 📊 TRACKING: onFinish de streamText (recibe totalUsage)
