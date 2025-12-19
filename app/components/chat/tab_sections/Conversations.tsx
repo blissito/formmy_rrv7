@@ -2150,7 +2150,7 @@ const LIST_STYLES = `
   .compact-markdown ul, .compact-markdown ol {
     list-style: none;
     padding: 0;
-    margin: 1.5rem 0;
+    margin: 12px 0;
   }
   .compact-markdown ul:first-child, .compact-markdown ol:first-child {
     margin-top: 0;
@@ -2158,14 +2158,16 @@ const LIST_STYLES = `
   .compact-markdown ul:last-child, .compact-markdown ol:last-child {
     margin-bottom: 0;
   }
-  .compact-markdown ol {
-    counter-reset: list-counter;
+  .compact-markdown ol:not(ol ol) {
+    counter-reset: list-counter 0;
   }
   .compact-markdown li {
     margin: 0 0 1rem 0;
     padding-left: 1.3rem;
     position: relative;
     line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   .compact-markdown li:last-child {
     margin-bottom: 0;
@@ -2174,17 +2176,17 @@ const LIST_STYLES = `
     margin: 0;
     display: inline;
   }
-  .compact-markdown ul li::before {
+  .compact-markdown ul > li::before {
     content: "• ";
     color: #374151;
     position: absolute;
     left: 0;
     font-weight: 500;
   }
-  .compact-markdown ol li {
-    counter-increment: list-counter;
+  .compact-markdown ol > li {
+    counter-increment: list-counter 1;
   }
-  .compact-markdown ol li::before {
+  .compact-markdown ol > li::before {
     content: counter(list-counter) ". ";
     color: #374151;
     font-weight: 500;
