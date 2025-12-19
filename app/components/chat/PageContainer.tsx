@@ -638,7 +638,7 @@ export const TabSelector = ({
     "Conversaciones",
     "Contactos",
     "Entrenamiento",
-    "Tareas",
+    // "Tareas", // TODO: Habilitar cuando esté lista
     "Herramientas",
     "Código",
     "Configuración",
