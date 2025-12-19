@@ -408,6 +408,123 @@ export async function action({ request }: any) {
         });
       }
 
+      // Single conversation count for PageContainer
+      case "get_conversations_count": {
+        const chatbotId = formData.get("chatbotId") as string;
+        if (!chatbotId) {
+          return new Response(
+            JSON.stringify({ error: "chatbotId no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const chatbot = await getChatbotById(chatbotId);
+        if (!chatbot) {
+          return new Response(
+            JSON.stringify({ error: "Chatbot no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        if (chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const { db } = await import("~/utils/db.server");
+        const count = await db.conversation.count({
+          where: { chatbotId },
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, count }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Toggle user notifications permission
+      case "toggle_chatbot_user_notifications": {
+        const permissionId = formData.get("permissionId") as string;
+        const value = formData.get("value") === "true";
+
+        if (!permissionId) {
+          return new Response(
+            JSON.stringify({ error: "permissionId requerido" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const { db } = await import("~/utils/db.server");
+        const permission = await db.permission.findUnique({
+          where: { id: permissionId },
+          include: { chatbot: true },
+        });
+
+        if (!permission) {
+          return new Response(
+            JSON.stringify({ error: "Permiso no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        if (permission.chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const updated = await db.permission.update({
+          where: { id: permissionId },
+          data: { receiveNotifications: value },
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, permission: updated }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Remove user from chatbot
+      case "remove_chatbot_user": {
+        const permissionId = formData.get("permissionId") as string;
+
+        if (!permissionId) {
+          return new Response(
+            JSON.stringify({ error: "permissionId requerido" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        const { db } = await import("~/utils/db.server");
+        const permission = await db.permission.findUnique({
+          where: { id: permissionId },
+          include: { chatbot: true },
+        });
+
+        if (!permission) {
+          return new Response(
+            JSON.stringify({ error: "Permiso no encontrado" }),
+            { status: 404, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        if (permission.chatbot.userId !== userId) {
+          return new Response(
+            JSON.stringify({ error: "No tienes permiso" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        await db.permission.delete({
+          where: { id: permissionId },
+        });
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+
       // Batch conversation count for dashboard
       case "get_conversations_count_batch": {
         const chatbotIdsRaw = formData.get("chatbotIds") as string;

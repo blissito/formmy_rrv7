@@ -1191,102 +1191,81 @@ async function generateChatbotResponse(
         ...customTools, // 🔧 Herramientas HTTP personalizadas
       },
       stopWhen: stepCountIs(5),
-      // 📊 TRACKING: onFinish callback (patrón Vercel AI SDK 2025)
-      onFinish: async ({ text, usage, toolCalls, finishReason }) => {
-        try {
-          // 📊 TRACKING: Extraer métricas de tokens
-          const inputTokens = usage?.promptTokens || 0;
-          const outputTokens = usage?.completionTokens || 0;
-          const totalTokens = usage?.totalTokens || inputTokens + outputTokens;
-
-          // 🔍 Detectar provider y modelo
-          const { getModelInfo } = await import(
-            "../../server/config/vercel.model.providers"
-          );
-          const { provider, model } = getModelInfo(chatbot.aiModel);
-
-          // 💰 Calcular costo
-          const { calculateCost } = await import(
-            "../../server/chatbot/pricing.server"
-          );
-          const costResult = calculateCost(provider, model, {
-            inputTokens,
-            outputTokens,
-            cachedTokens: 0, // TODO: Vercel AI SDK no expone cached tokens aún
-          });
-
-          // ⏱️ Calcular tiempo de respuesta
-          const responseTime = Date.now() - startTime;
-
-          // 💾 Guardar mensaje con tracking completo
-          const savedMessage = await addWhatsAppAssistantMessage(
-            _conversationId,
-            text, // texto completo generado
-            undefined, // WhatsApp message ID (se actualizará después de enviar)
-            totalTokens, // tokens (legacy)
-            responseTime, // responseTime en ms
-            undefined, // firstTokenLatency (no aplica para generateText)
-            model, // aiModel
-            inputTokens, // inputTokens
-            outputTokens, // outputTokens
-            costResult.totalCost, // totalCost en USD
-            provider, // provider
-            0 // cachedTokens
-          );
-
-          // ✅ Guardar ID del mensaje en variable compartida
-          savedMessageId = savedMessage.id;
-
-          // 🔧 Track tool usage
-          if (toolCalls && toolCalls.length > 0) {
-            console.log(
-              `🔧 [WhatsApp onFinish] Tracking ${toolCalls.length} tool calls`
-            );
-
-            const { ToolUsageTracker } = await import(
-              "../../server/integrations/tool-usage-tracker"
-            );
-
-            for (const toolCall of toolCalls) {
-              await ToolUsageTracker.trackUsage({
-                chatbotId: chatbot.id,
-                conversationId: _conversationId,
-                toolName: toolCall.toolName,
-                success: true,
-                userMessage,
-                response: text,
-              }).catch((err) =>
-                console.error("⚠️ Failed to track tool usage:", err)
-              );
-            }
-
-            console.log(
-              `✅ [WhatsApp onFinish] Tool usage tracked: ${toolCalls.map((tc) => tc.toolName).join(", ")}`
-            );
-          }
-
-          console.log(
-            `[WhatsApp onFinish] ✅ Message tracked: ${totalTokens} tokens, $${costResult.totalCost.toFixed(6)} (${provider}/${model}), finishReason: ${finishReason}`
-          );
-        } catch (error) {
-          console.error("[WhatsApp onFinish] ❌ Error in tracking:", error);
-        }
-      },
     });
 
     const responseTime = Date.now() - startTime;
 
+    // 📊 TRACKING: Extraer métricas de tokens (SÍNCRONO - no en callback)
+    const inputTokens = result.usage?.inputTokens || 0;
+    const outputTokens = result.usage?.outputTokens || 0;
+    const totalTokens = inputTokens + outputTokens;
+
+    // 🔍 Detectar provider y modelo
+    const { getModelInfo } = await import(
+      "../../server/config/vercel.model.providers"
+    );
+    const { provider, model } = getModelInfo(chatbot.aiModel);
+
+    // 💰 Calcular costo
+    const { calculateCost } = await import(
+      "../../server/chatbot/pricing.server"
+    );
+    const costResult = calculateCost(provider, model, {
+      inputTokens,
+      outputTokens,
+      cachedTokens: 0,
+    });
+
+    // 💾 Guardar mensaje con tracking completo (SÍNCRONO - garantiza que se guarde antes del return)
+    const savedMessage = await addWhatsAppAssistantMessage(
+      _conversationId,
+      result.text.trim() || chatbot.welcomeMessage || "Lo siento, no pude generar una respuesta.",
+      undefined, // WhatsApp message ID (se actualizará después de enviar)
+      totalTokens,
+      responseTime,
+      undefined, // firstTokenLatency (no aplica para generateText)
+      model,
+      inputTokens,
+      outputTokens,
+      costResult.totalCost,
+      provider,
+      0 // cachedTokens
+    );
+
+    savedMessageId = savedMessage.id;
+
+    console.log(
+      `✅ [WhatsApp] Message saved: ${totalTokens} tokens, $${costResult.totalCost.toFixed(6)} (${provider}/${model}), messageId: ${savedMessageId}`
+    );
+
+    // 🔧 Track tool usage (fire-and-forget, no crítico)
+    if (result.toolCalls && result.toolCalls.length > 0) {
+      const { ToolUsageTracker } = await import(
+        "../../server/integrations/tool-usage-tracker"
+      );
+
+      for (const toolCall of result.toolCalls) {
+        ToolUsageTracker.trackUsage({
+          chatbotId: chatbot.id,
+          conversationId: _conversationId,
+          toolName: toolCall.toolName,
+          success: true,
+          userMessage,
+          response: result.text,
+        }).catch((err) =>
+          console.error("⚠️ Failed to track tool usage:", err)
+        );
+      }
+    }
+
     return {
-      content:
-        result.text.trim() ||
-        chatbot.welcomeMessage ||
-        "Lo siento, no pude generar una respuesta.",
-      tokens: result.usage?.totalTokens || 0,
-      inputTokens: result.usage?.promptTokens || 0,
-      outputTokens: result.usage?.completionTokens || 0,
+      content: result.text.trim() || chatbot.welcomeMessage || "Lo siento, no pude generar una respuesta.",
+      tokens: totalTokens,
+      inputTokens,
+      outputTokens,
       responseTime,
       toolsUsed: result.toolCalls?.map((tc) => tc.toolName) || [],
-      assistantMessageId: savedMessageId, // ✅ ID del mensaje guardado en onFinish
+      assistantMessageId: savedMessageId, // ✅ ID del mensaje guardado SÍNCRONAMENTE
     };
   } catch (error) {
     console.error("❌ [WhatsApp] Error generating chatbot response:", error);
