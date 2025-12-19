@@ -1187,7 +1187,7 @@ async function generateChatbotResponse(
       system: systemPrompt,
       tools: {
         getContextTool: createGetContextTool(chatbot.id),
-        saveLeadTool: createSaveLeadTool(chatbot.id, conversation.id),
+        saveLeadTool: createSaveLeadTool(chatbot.id, _conversationId),
         ...customTools, // 🔧 Herramientas HTTP personalizadas
       },
       stopWhen: stepCountIs(5),
