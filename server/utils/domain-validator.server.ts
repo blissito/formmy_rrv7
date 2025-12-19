@@ -41,16 +41,18 @@ export function normalizeDomain(domain: string): string {
 }
 
 /**
- * Compara dos dominios de forma flexible (ignora www)
+ * Compara dos dominios de forma flexible (ignora www, localhost === 127.0.0.1)
  *
  * Ejemplos:
  * - domainsMatch("www.ejemplo.com", "ejemplo.com") → true
  * - domainsMatch("ejemplo.com", "www.ejemplo.com") → true
  * - domainsMatch("sub.ejemplo.com", "ejemplo.com") → false
+ * - domainsMatch("localhost", "127.0.0.1") → true  // ✨ NEW
+ * - domainsMatch("127.0.0.1", "localhost") → true  // ✨ NEW
  *
  * @param origin - Dominio de origen (del request)
  * @param allowed - Dominio permitido (de la configuración)
- * @returns true si los dominios coinciden (ignorando www)
+ * @returns true si los dominios coinciden (ignorando www, localhost/127.0.0.1 equivalentes)
  */
 export function domainsMatch(origin: string, allowed: string): boolean {
   // Normalizar ambos dominios primero
@@ -60,6 +62,15 @@ export function domainsMatch(origin: string, allowed: string): boolean {
   // Remover www para comparación flexible
   const originWithoutWww = originNorm.replace(/^www\./, '');
   const allowedWithoutWww = allowedNorm.replace(/^www\./, '');
+
+  // ✨ Tratar localhost y 127.0.0.1 como equivalentes (desarrollo local)
+  const localhostAliases = ['localhost', '127.0.0.1'];
+  const isOriginLocalhost = localhostAliases.includes(originWithoutWww);
+  const isAllowedLocalhost = localhostAliases.includes(allowedWithoutWww);
+
+  if (isOriginLocalhost && isAllowedLocalhost) {
+    return true;
+  }
 
   // Comparar ambas versiones (con y sin www)
   return originNorm === allowedNorm ||

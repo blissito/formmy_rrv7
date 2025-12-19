@@ -4,6 +4,7 @@ excerpt: "La historia directa de por qué decidimos evitar frameworks pesados y 
 date: "2024-08-24"
 tags: ["Framework", "TypeScript", "IA", "Desarrollo"]
 image: "/blogposts/cursos.webp"
+category: "article"
 ---
 
 # Por Qué Construimos Nuestro Propio Framework De Agentes IA

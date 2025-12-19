@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { GhostyMessage } from './useGhostyChat';
+import type { GhostyMessage } from '../types';
 
 const CHAT_STORAGE_KEY = 'ghosty-chat-history';
 const MAX_MESSAGES = 50; // máximo 50 mensajes

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { ConfigMenu } from "../ConfigMenu";
 import { StickyGrid } from "../PageContainer";
@@ -67,7 +68,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     formData.append("configChanges", String(newNotifications.configChanges));
     
     try {
-      await fetch("/api/v0/chatbot", {
+      await fetch("/api/v1/chatbot", {
         method: "POST",
         body: formData,
       });
@@ -90,7 +91,7 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     formData.append("chatbotId", chatbot.id);
     
     try {
-      const response = await fetch("/api/v0/chatbot", {
+      const response = await fetch("/api/v1/chatbot", {
         method: "POST",
         body: formData,
       });
@@ -114,11 +115,11 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     formData.append("role", role);
     
     try {
-      const response = await fetch("/api/v0/chatbot", {
+      const response = await fetch("/api/v1/chatbot", {
         method: "POST",
         body: formData,
       });
-      
+
       if (response.ok) {
         setShowAddUserModal(false);
         loadUsers(); // Recargar la lista
@@ -142,12 +143,18 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
     formData.append("allowedDomains", security.allowedDomains);
     formData.append("status", security.status);
     formData.append("rateLimit", String(security.rateLimit));
-    
+
     try {
-      await fetch("/api/v0/chatbot", {
+      const response = await fetch("/api/v1/chatbot", {
         method: "POST",
         body: formData,
       });
+      if (response.ok) {
+        toast.success("Configuración de seguridad actualizada");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Error al actualizar seguridad");
+      }
     } catch (error) {
       console.error("Error updating security:", error);
     } finally {
@@ -381,24 +388,53 @@ export const Configuracion = ({ chatbot, user }: ConfiguracionProps) => {
                 <Select
                   options={[
                     { value: "public", label: "Público" },
-                    { value: "private", label: "Privado" },
+                    { value: "restricted", label: "Restringido por dominio" },
                   ]}
                   label="Estado"
                   placeholder="Selecciona un estado"
                   value={security.status}
-                  onChange={(value) => setSecurity({...security, status: value})}
+                  onChange={(value) => {
+                    // Auto-sugerir localhost y formmy.app al cambiar a restringido
+                    if (value === "restricted" && !security.allowedDomains.includes("localhost")) {
+                      const newDomains = security.allowedDomains
+                        ? `localhost, formmy.app, ${security.allowedDomains}`
+                        : "localhost, formmy.app, ";
+                      setSecurity({...security, status: value, allowedDomains: newDomains});
+                    } else {
+                      setSecurity({...security, status: value});
+                    }
+                  }}
                 />
                 <div className="flex gap-1 items-start text-[12px] text-irongray mt-px">
                   <span className="mt-[2px]">
                     <IoInformationCircleOutline />
                   </span>
                   <p>
-                    Privado: Nadie puede acceder a tu agente excepto tú (desde
-                    tu cuenta). Público: Otras personas pueden chatear con tu
-                    agente, desde el enlace directo o desde tu sitio web.
+                    Público: Cualquier sitio web puede usar tu chatbot.
+                    Restringido: Solo los dominios que especifiques pueden usarlo.
                   </p>
                 </div>
               </section>
+
+              {security.status === "restricted" && (
+                <section>
+                  <Input
+                    label="Dominios permitidos"
+                    placeholder="ejemplo.com, mitienda.com, www.otrositio.com"
+                    value={security.allowedDomains}
+                    onChange={(value) => setSecurity({...security, allowedDomains: value})}
+                  />
+                  <div className="flex gap-1 items-start text-[12px] text-irongray mt-px">
+                    <span className="mt-[2px]">
+                      <IoInformationCircleOutline />
+                    </span>
+                    <p>
+                      Separa los dominios con comas. Solo estos sitios podrán usar tu chatbot.
+                      <span className="font-medium text-gray-700"> Si dejas este campo vacío, se permitirá cualquier dominio.</span>
+                    </p>
+                  </div>
+                </section>
+              )}
               <section>
                 <Select
                   value={String(security.rateLimit)}

@@ -315,10 +315,11 @@ export default function ChatbotDetailRoute({
   };
 
   // Send manual response
+  // Retorna { messageId, content } en éxito para que Conversations.tsx pueda hacer optimistic update
   const handleSendManualResponse = async (
     conversationId: string,
     message: string
-  ) => {
+  ): Promise<{ messageId: string; content: string } | null> => {
 
     try {
       const response = await fetch(`/api/v1/conversations`, {
@@ -348,19 +349,20 @@ export default function ChatbotDetailRoute({
         );
       }
 
-      // Log result (no alert - no interrumpir flujo de conversación)
-
-      // Solo mostrar error si realmente falló
+      // Solo mostrar error si WhatsApp realmente falló
       if (result.channel === "whatsapp" && result.whatsappError) {
         console.error("❌ WhatsApp send failed:", result.whatsappError);
-        // Opcional: Agregar toast notification aquí en el futuro
       }
 
-      // Refresh conversations after sending - trigger revalidation
-      navigate(window.location.pathname, { replace: true });
+      // ✅ Retornar resultado para optimistic update en Conversations.tsx
+      return {
+        messageId: result.messageId,
+        content: message,
+      };
     } catch (error) {
       console.error("❌ Error sending manual response:", error);
       alert(`Error al enviar respuesta manual: ${error.message}`);
+      return null;
     }
   };
 

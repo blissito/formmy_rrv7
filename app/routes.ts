@@ -154,8 +154,7 @@ export default [
 
   // WhatsApp ahora usa WhatsAppSDKService directo
 
-  // API v0 routes - Motor AgentEngine_v0
-  route("api/v0/chatbot", "routes/api.v0.chatbot.ts"),
+  // API v1 routes
   route("api/v1/chatbot", "routes/api.v1.chatbot.ts"),
   route("api/v1/messages", "routes/api.v1.messages.ts"),
   route("api/v1/apikey", "routes/api.v1.apikey.ts"),
@@ -199,17 +198,12 @@ export default [
   ),
   route("api/v1/referral", "routes/api.v1.referral.ts"),
 
-  // API Ghosty routes
-  route("api/ghosty/chat", "routes/api.ghosty.chat.ts"),
-  route("api/ghosty/v0", "routes/api.ghosty.v0.ts"),
+  // API Ghosty routes (Ghosty ahora usa /chat/vercel)
   route("api/ghosty/tools", "routes/api.ghosty.tools.ts"),
   route(
     "api/ghosty/download/:reportId",
     "routes/api.ghosty.download.$reportId.ts"
   ),
-
-  // API Agent routes - LlamaIndex Workflows
-  route("api/agent/v0", "routes/api.agent.v0.ts"),
 
   // API S3 routes
   route("api/s3/presigned-url", "routes/api.s3.presigned-url.ts"),

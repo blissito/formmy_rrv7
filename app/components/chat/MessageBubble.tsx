@@ -1,5 +1,4 @@
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { Streamdown } from "streamdown";
 import { Avatar } from "./Avatar";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -289,12 +288,11 @@ export const MessageBubble = ({
 
               return (
                 <>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
+                  <Streamdown
                     components={markdownComponents}
                   >
                     {mainContent}
-                  </ReactMarkdown>
+                  </Streamdown>
                   {allReasoning && <ReasoningSection content={allReasoning} />}
                 </>
               );

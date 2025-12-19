@@ -4,6 +4,7 @@ excerpt: "Cómo construimos un motor de agentes funcional en 231 líneas, derrot
 date: "2024-09-16"
 tags: ["AI", "LlamaIndex", "Agents", "TypeScript"]
 image: "/blogposts/blog.webp"
+category: "article"
 ---
 
 # AgentEngine V0: Cuando la Simplicidad Gana

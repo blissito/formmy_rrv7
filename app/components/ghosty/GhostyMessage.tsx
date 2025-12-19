@@ -1,7 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "~/lib/utils";
-import type { GhostyLlamaMessage } from "./hooks/useGhostyLlamaChat";
+import type { GhostyLlamaMessage } from "./types";
 import { useState } from "react";
 import { formatReasoningContent } from "~/utils/formatReasoningContent";
 

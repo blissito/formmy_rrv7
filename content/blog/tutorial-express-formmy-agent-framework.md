@@ -4,6 +4,7 @@ excerpt: "Guía práctica para integrar nuestro micro-framework de agentes IA en
 date: "2024-08-24"
 tags: ["Tutorial", "Express", "Framework", "IA", "Node.js"]
 image: "https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=1200&h=400&fit=crop"
+category: "tutorial"
 ---
 
 # Tutorial: Implementa El Formmy Agent Framework En Express.js

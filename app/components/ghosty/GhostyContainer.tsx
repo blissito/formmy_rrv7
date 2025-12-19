@@ -1,10 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "~/lib/utils";
-import {
-  useGhostyLlamaChat,
-  type GhostyLlamaMessage,
-} from "./hooks/useGhostyLlamaChat";
+import { useGhostyLlamaChat } from "./hooks/useGhostyLlamaChat";
+import type { GhostyLlamaMessage } from "./types";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { GhostyCompactInput } from "./GhostyCompactInput";
 import { GhostyChatInterface } from "./GhostyChatInterface";
