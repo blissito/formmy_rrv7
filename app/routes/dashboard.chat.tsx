@@ -170,7 +170,7 @@ export default function DashboardChat({ loaderData }: Route.ComponentProps) {
       if (allChatbotIds.length === 0) return;
 
       try {
-        const response = await fetch("/api/v0/chatbot", {
+        const response = await fetch("/api/v1/chatbot", {
           method: "post",
           body: new URLSearchParams({
             intent: "get_conversations_count_batch",

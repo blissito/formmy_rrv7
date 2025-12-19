@@ -408,6 +408,55 @@ export async function action({ request }: any) {
         });
       }
 
+      // Batch conversation count for dashboard
+      case "get_conversations_count_batch": {
+        const chatbotIdsRaw = formData.get("chatbotIds") as string;
+        if (!chatbotIdsRaw) {
+          return new Response(
+            JSON.stringify({ error: "chatbotIds no proporcionado" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+
+        try {
+          const chatbotIds = JSON.parse(chatbotIdsRaw) as string[];
+          const { db } = await import("~/utils/db.server");
+
+          // Contar conversaciones por chatbot en una sola query
+          const counts = await db.conversation.groupBy({
+            by: ["chatbotId"],
+            where: {
+              chatbotId: { in: chatbotIds },
+            },
+            _count: {
+              id: true,
+            },
+          });
+
+          // Convertir a objeto { chatbotId: count }
+          const countsMap: Record<string, number> = {};
+          for (const chatbotId of chatbotIds) {
+            countsMap[chatbotId] = 0;
+          }
+          for (const count of counts) {
+            if (count.chatbotId) {
+              countsMap[count.chatbotId] = count._count.id;
+            }
+          }
+
+          return new Response(
+            JSON.stringify({ success: true, counts: countsMap }),
+            { headers: { "Content-Type": "application/json" } }
+          );
+        } catch (error) {
+          console.error("Error parsing chatbotIds:", error);
+          return new Response(
+            JSON.stringify({ error: "chatbotIds inválido" }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+      }
+
       default: {
         return new Response(JSON.stringify({ error: "Intent no soportado" }), {
           status: 400,

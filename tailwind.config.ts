@@ -7,7 +7,10 @@ const {
 
 export default {
   darkMode: "class",
-  content: ["./app/**/{**,.client,.server}/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./app/**/{**,.client,.server}/**/*.{js,jsx,ts,tsx}",
+    "./node_modules/streamdown/dist/*.js",
+  ],
   theme: {
     extend: {
       fontFamily: {
