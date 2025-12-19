@@ -1181,7 +1181,7 @@ async function generateChatbotResponse(
       system: systemPrompt,
       tools: {
         getContextTool: createGetContextTool(chatbot.id),
-        saveLeadTool: createSaveLeadTool(chatbot.id, conversation.id),
+        saveLeadTool: createSaveLeadTool(chatbot.id, _conversationId),
       },
       stopWhen: stepCountIs(5),
       // 📊 TRACKING: onFinish callback (patrón Vercel AI SDK 2025)
