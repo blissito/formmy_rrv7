@@ -120,7 +120,7 @@ export const GhostyMessageComponent = ({
                 "prose-pre:bg-gray-50 prose-pre:border prose-pre:border-outlines prose-pre:rounded-lg prose-pre:overflow-hidden",
                 "prose-pre>code:before:content-none prose-pre>code:after:content-none", // Remove backticks from code blocks
                 "prose-blockquote:border-l-2 prose-blockquote:border-l-brand-500 prose-blockquote:pl-4 prose-blockquote:py-1 prose-blockquote:text-irongray",
-                "prose-ul:pl-4 prose-ol:pl-4 prose-li:my-0.5",
+                "prose-ul:pl-4 prose-ol:pl-4 prose-li:my-0.5 prose-li:flex-wrap",
                 "prose-table:border-collapse prose-table:border prose-table:border-outlines prose-table:w-full prose-table:my-4 prose-table:text-sm",
                 "prose-th:border prose-th:border-outlines prose-th:bg-brand-100/20 prose-th:p-3 prose-th:text-dark prose-th:font-semibold prose-th:text-left",
                 "prose-td:border prose-td:border-outlines prose-td:p-3 prose-td:text-dark prose-td:align-top",

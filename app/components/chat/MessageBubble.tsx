@@ -14,19 +14,21 @@ const LIST_STYLES = `
     list-style: none !important;
     padding-left: 0 !important;
     margin: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
+    margin-top: 12px !important;
+    margin-bottom: 12px !important;
   }
   .message-bubble-prose ol {
     list-style: none !important;
     padding-left: 0 !important;
     margin: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    counter-reset: list-counter;
+    margin-top: 12px !important;
+    margin-bottom: 12px !important;
+  }
+  .message-bubble-prose ol:not(ol ol) {
+    counter-reset: list-counter 0;
   }
   .message-bubble-prose li {
-    display: flex;
+    display: block;
     margin: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
@@ -34,28 +36,30 @@ const LIST_STYLES = `
     line-height: 1.3;
     padding-left: 1.25rem;
     position: relative;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   .message-bubble-prose li p {
     margin: 0 !important;
   }
   .message-bubble-prose p + ul,
   .message-bubble-prose p + ol {
-    margin-top: 0 !important;
+    margin-top: 12px !important;
   }
   .message-bubble-prose ul + p,
   .message-bubble-prose ol + p {
-    margin-top: 0 !important;
+    margin-top: 12px !important;
   }
-  .message-bubble-prose ul li::before {
+  .message-bubble-prose ul > li::before {
     content: "• ";
     color: #374151;
     position: absolute;
     left: 0;
   }
-  .message-bubble-prose ol li {
-    counter-increment: list-counter;
+  .message-bubble-prose ol > li {
+    counter-increment: list-counter 1;
   }
-  .message-bubble-prose ol li::before {
+  .message-bubble-prose ol > li::before {
     content: counter(list-counter) ". ";
     color: #374151;
     font-weight: 500;
