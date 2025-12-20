@@ -789,3 +789,17 @@ Proprietary - All rights reserved
 - 📧 **Support**: support@formmy.app
 - 🐛 **Issues**: [GitHub Issues](https://github.com/blissito/formmy_rrv7/issues)
 - 📚 **SDK Docs**: [/sdk/formmy-parser/README.md](./sdk/formmy-parser/README.md)
+
+## Características diferenciadoras:
+
+- 20 lenguajes
+- Puede mirar tu pantalla
+- Puede generar imágenes
+- Puede crear archivos y leerlos
+
+### Con Shopify MCP
+
+- Buscar los productos de la tienda
+- Entiende colecciones
+- Crea carritos y checkouts
+- Catalog component

@@ -165,6 +165,12 @@ model User {
   picture         String?
   provider        String?
   refresh_token   String?
+
+  // Password Auth
+  passwordHash         String?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+
   plan            Plans        @default(FREE)
   trialStartedAt  DateTime? // Fecha específica de inicio del trial (para marketing/promociones)
   customerId      String? // Removido @unique para permitir migración con múltiples nulls

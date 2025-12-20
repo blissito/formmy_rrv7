@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Form, Link, useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
 import { BigCTA } from "~/components/BigCTA";
 import { motion, AnimatePresence } from "framer-motion";
 import { RiRobot3Line } from "react-icons/ri";
@@ -73,25 +73,16 @@ export default function HomeHeader() {
                 >
                   <span>Planes</span>
                 </a>
-                <Form method="post" action="/api/login" id="start_navbar">
-                  <button
-                    className="text-dark text-base font-regular mb-2 font-medium px-2 py-3"
-                    type="submit"
-                    name="intent"
-                    value="google-login"
-                 
-                  >
-                    Iniciar sesión
-                  </button>
-                </Form>
-                <Form method="post" action="/api/login">
-               <BigCTA
-                  type="submit"
-                  name="intent"
-                  value="google-login"
-                  className="hidden md:block"
-                />
-              </Form>
+                <Link
+                  to="/login"
+                  className="text-dark text-base font-regular mb-2 font-medium px-2 py-3"
+                  onClick={() => setMobileMenu(false)}
+                >
+                  Iniciar sesión
+                </Link>
+                <Link to="/register" onClick={() => setMobileMenu(false)}>
+                  <BigCTA className="hidden md:block" />
+                </Link>
               </div>
             </motion.div>
           )}
@@ -202,25 +193,15 @@ export default function HomeHeader() {
               </svg>
             )}
           </Link>
-          <Form method="post" action="/api/login">
-            <button
-              className="text-dark text-base font-regular "
-              type="submit"
-              name="intent"
-              value="google-login"
-            >
-              Iniciar sesión
-            </button>
-          </Form>
-          <Form method="post" action="/api/login" id="start_navbar">
+          <Link to="/login" className="text-dark text-base font-regular">
+            Iniciar sesión
+          </Link>
+          <Link to="/register" id="start_navbar">
             <BigCTA
-              type="submit"
-              name="intent"
-              value="google-login"
               className="hidden md:block bg-dark hover:translate-y-0 hover:bg-dark/90 transition"
               textClassName="!text-sm !text-white"
             />
-          </Form>
+          </Link>
         </nav>
       </motion.header>
     </>
