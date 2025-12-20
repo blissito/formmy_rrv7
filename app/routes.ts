@@ -85,6 +85,12 @@ export default [
   route("chat/vercel", "routes/chat.vercel.tsx"),
   route("chat/vercel/public", "routes/chat.vercel.public.tsx"),
 
+  // Auth routes
+  route("login", "routes/login.tsx"),
+  route("register", "routes/register.tsx"),
+  route("forgot-password", "routes/forgot-password.tsx"),
+  route("reset-password", "routes/reset-password.tsx"),
+
   // Public content routes
   route("formularios", "routes/formularios.tsx"),
   route("planes", "routes/planes.tsx"),
