@@ -2,6 +2,9 @@
 import HomeHeader from "./home/HomeHeader";
 import HomeFooter from "./home/HomeFooter";
 import getBasicMetaTags from "~/utils/getBasicMetaTags";
+import ProductChatCard from "~/components/chatComponents/ProductChatCard";
+import PaymentChatCard from "~/components/chatComponents/PaymentChatCard";
+import GalleryChatCard from "~/components/chatComponents/GallleryChatCard";
 
 export const meta = () =>
   getBasicMetaTags({
@@ -15,6 +18,9 @@ export default function Aviso() {
     <section >
       <HomeHeader/>
       <section className="py-40 lg:max-w-6xl max-w-3xl mx-auto text-gray-600 px-4 md:px-0 ">
+        {/* <GalleryChatCard images={["https://images.pexels.com/photos/29376556/pexels-photo-29376556.jpeg", "https://images.pexels.com/photos/29376556/pexels-photo-29376556.jpeg", "https://images.pexels.com/photos/29376556/pexels-photo-29376556.jpeg", "https://images.pexels.com/photos/7847181/pexels-photo-7847181.jpeg"]}/>
+        <PaymentChatCard/>
+        <ProductChatCard/> */}
         <h2 className="text-dark dark:text-white text-4xl heading">
           Aviso de privacidad
         </h2>
