@@ -1,14 +1,14 @@
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { PageContainer } from "~/components/chat/PageContainer";
 import { useNavigate, useFetcher, useRevalidator, useSearchParams } from "react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Conversations } from "~/components/chat/tab_sections/Conversations";
 import { Contactos } from "~/components/chat/tab_sections/Contactos";
 import { Entrenamiento } from "~/components/chat/tab_sections/Entrenamiento";
+import { Artefactos } from "~/components/chat/tab_sections/Artefactos";
 import { Herramientas } from "~/components/chat/tab_sections/Herramientas";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
 import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
-import { useChipTabs } from "~/components/chat/common/ChipTabs";
 import { db } from "../utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
@@ -107,7 +107,7 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   */
 
   // ⚡ FASE 1: Loader mínimo - solo metadata (conversaciones se cargan en cliente)
-  const [integrations, totalConversations, contextDocuments, customTools] = await Promise.all([
+  const [integrations, totalConversations, contextDocuments, customTools, installedArtifacts] = await Promise.all([
     db.integration.findMany({
       where: { chatbotId: chatbot.id },
     }),
@@ -136,6 +136,12 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
       where: { chatbotId: chatbot.id },
       orderBy: { createdAt: 'desc' },
     }),
+    // 🧩 Cargar artefactos instalados en el chatbot
+    db.artifactInstallation.findMany({
+      where: { chatbotId: chatbot.id },
+      include: { artifact: true },
+      orderBy: { installedAt: 'desc' },
+    }),
   ]);
 
   // ⚡ OPTIMIZACIÓN: Conversaciones, mensajes, contactos y leads se cargan bajo demanda desde el cliente
@@ -160,6 +166,13 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
   }
   */
 
+  // Leer tab desde URL para pre-renderizar sin flash
+  const url = new URL(request.url);
+  const tabParam = url.searchParams.get('tab');
+  const validTabs = ['Preview', 'Conversaciones', 'Contactos', 'Entrenamiento',
+                     'Artefactos', 'Herramientas', 'Código', 'Configuración'];
+  const initialTab = validTabs.includes(tabParam || '') ? tabParam! : 'Preview';
+
   return {
     user,
     chatbot,
@@ -169,33 +182,25 @@ export const loader = async ({ request, params }: Route.LoaderArgs) => {
     contacts: [], // ⚡ Leads se cargan bajo demanda en el tab Contactos
     contextDocuments, // ✅ Contextos desde el modelo Context (sistema nuevo)
     customTools, // 🔧 Herramientas HTTP personalizadas
+    installedArtifacts, // 🧩 Artefactos instalados en el chatbot
     accessInfo: accessValidation,
+    initialTab, // Tab desde URL para evitar flash
   };
 };
 
 export default function ChatbotDetailRoute({
   loaderData,
 }: Route.ComponentProps) {
-  const { user, chatbot, integrations, conversations, totalConversations, contacts, contextDocuments, customTools, accessInfo } = loaderData;
+  const { user, chatbot, integrations, conversations, totalConversations, contacts, contextDocuments, customTools, installedArtifacts, accessInfo, initialTab } = loaderData;
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
 
-  // Leer query params de forma reactiva
+  // Tab: estado local para UI inmediata, inicializado desde loader (sin flash)
+  const [currentTab, setCurrentTab] = useState(initialTab);
+
+  // searchParams para WhatsApp callback
   const [searchParams] = useSearchParams();
-  const tabFromQuery = searchParams.get('tab');
-
-  const { currentTab, setCurrentTab } = useChipTabs(
-    tabFromQuery || "Preview",
-    `main_${chatbot.id}`
-  );
-
-  // Actualizar tab cuando cambien los query params
-  useEffect(() => {
-    if (tabFromQuery && tabFromQuery !== currentTab) {
-      setCurrentTab(tabFromQuery);
-    }
-  }, [tabFromQuery, currentTab, setCurrentTab]);
 
   // ✅ Procesar callback de WhatsApp Embedded Signup (Authorization Code Flow)
   useEffect(() => {
@@ -272,7 +277,16 @@ export default function ChatbotDetailRoute({
   }, [searchParams, chatbot.id, chatbot.slug]); // Removido 'revalidator' para evitar loops
 
   const handleTabChange = (tab: string) => {
+    // 1. Cambio inmediato de UI (sin esperar navegación)
     setCurrentTab(tab);
+
+    // 2. Sincronizar URL sin re-ejecutar loader (replaceState no triggerea React Router)
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', tab);
+    if (tab !== 'Conversaciones') {
+      params.delete('conversation');
+    }
+    window.history.replaceState({}, '', `?${params.toString()}`);
   };
 
   // Toggle manual mode for conversation
@@ -490,6 +504,9 @@ export default function ChatbotDetailRoute({
         )}
         {currentTab === "Entrenamiento" && (
           <Entrenamiento chatbot={chatbot} user={user} contextDocuments={contextDocuments} />
+        )}
+        {currentTab === "Artefactos" && (
+          <Artefactos chatbot={chatbot} user={user} installedArtifacts={installedArtifacts} />
         )}
         {currentTab === "Tareas" && <Tareas />}
         {currentTab === "Herramientas" && (

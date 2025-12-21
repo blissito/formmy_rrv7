@@ -627,7 +627,8 @@ export const TabSelector = ({
   onTabChange?: (tab: string) => void;
 }) => {
   const { t, lang, toggleLanguage } = useDashboardTranslation();
-  const [selectedTab, setSelectedTab] = useState(activeTab || "Preview");
+  // Usar prop directamente - sin estado local = sin flash
+  const selectedTab = activeTab || "Preview";
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -639,6 +640,7 @@ export const TabSelector = ({
     "Contactos",
     "Entrenamiento",
     // "Tareas", // TODO: Habilitar cuando esté lista
+    "Artefactos",
     "Herramientas",
     "Código",
     "Configuración",
@@ -652,19 +654,13 @@ export const TabSelector = ({
       "Contactos": t('tabs.contacts'),
       "Entrenamiento": t('tabs.training'),
       "Tareas": t('tabs.tasks'),
+      "Artefactos": t('tabs.artifacts'),
       "Herramientas": t('tabs.tools'),
       "Código": t('tabs.code'),
       "Configuración": t('tabs.settings'),
     };
     return map[tabKey] || tabKey;
   };
-
-  // Sincronizar estado local con prop activeTab
-  useEffect(() => {
-    if (activeTab && activeTab !== selectedTab) {
-      setSelectedTab(activeTab);
-    }
-  }, [activeTab]);
 
   const activeIndex = tabKeys.indexOf(selectedTab);
 
@@ -692,7 +688,6 @@ export const TabSelector = ({
   }, [activeIndex]);
 
   const handleTabClick = (tab: string) => {
-    setSelectedTab(tab);
     onTabChange?.(tab);
   };
 
