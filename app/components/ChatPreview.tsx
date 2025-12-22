@@ -206,24 +206,50 @@ export default function ChatPreview({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Ref para trackear si el usuario está cerca del final
+  const isNearBottomRef = useRef(true);
 
-  // Auto-scroll SOLO si el usuario ya está al final (no interrumpir scroll manual)
+  // Actualizar isNearBottomRef cuando el usuario hace scroll
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    const isNearBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight <
-      100;
+    const handleScroll = () => {
+      const isNearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      isNearBottomRef.current = isNearBottom;
+    };
 
-    // Solo hacer scroll si el usuario ya estaba cerca del final
-    if (isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-scroll con ResizeObserver para detectar cuando artefactos terminan de cargar
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const scrollToBottom = () => {
+      if (isNearBottomRef.current) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    };
+
+    // Scroll inicial cuando cambian mensajes
+    scrollToBottom();
+
+    // ResizeObserver para detectar cambios de altura (ej: artefactos cargando)
+    const resizeObserver = new ResizeObserver(() => {
+      scrollToBottom();
+    });
+
+    resizeObserver.observe(container);
 
     if (!isStreaming) {
       inputRef.current?.focus();
     }
+
+    return () => resizeObserver.disconnect();
   }, [messages, isStreaming]);
 
   const handleSubmit = () => {
