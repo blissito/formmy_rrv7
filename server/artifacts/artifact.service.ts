@@ -3,6 +3,16 @@ import type { ArtifactStatus, Prisma } from "@prisma/client";
 import { transpileJSX } from "./transpiler.service";
 
 // ============================================================================
+// ADMIN UTILS
+// ============================================================================
+
+const ADMIN_EMAILS = ["brenda@formmy.app", "blissito@gmail.com", "fixtergeek@gmail.com"];
+
+export function isAdmin(email: string | null | undefined): boolean {
+  return email ? ADMIN_EMAILS.includes(email) : false;
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 

@@ -19,7 +19,7 @@
  */
 
 import type { Route } from "./+types/api.v1.artifacts";
-import { getUserOrRedirect, getUserOrNull } from "server/getUserUtils.server";
+import { getUserOrNull } from "server/getUserUtils.server";
 import {
   createArtifact,
   updateArtifact,
@@ -37,14 +37,8 @@ import {
   getCategories,
   toggleInstallationActive,
   updateInstallationConfig,
+  isAdmin,
 } from "../../server/artifacts/artifact.service";
-
-// Admin emails (hardcoded para POC)
-const ADMIN_EMAILS = ["brenda@formmy.app", "blissito@gmail.com", "fixtergeek@gmail.com"];
-
-function isAdmin(email: string | null | undefined): boolean {
-  return email ? ADMIN_EMAILS.includes(email) : false;
-}
 
 /**
  * GET - Marketplace público (no requiere auth)
