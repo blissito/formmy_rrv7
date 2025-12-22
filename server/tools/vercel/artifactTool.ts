@@ -18,6 +18,18 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { db } from "~/utils/db.server";
+import { getNativeArtifact } from "../../artifacts/native/index.js";
+import { vectorSearch } from "@/server/context/vercel_embeddings";
+
+/**
+ * Extrae URLs de imágenes de un texto
+ */
+function extractImageUrls(text: string): string[] {
+  const urlPattern = /https?:\/\/[^\s<>"{}|\\^`\[\]]+\.(?:jpg|jpeg|png|gif|webp|svg)/gi;
+  const matches = text.match(urlPattern) || [];
+  // Dedupe y limitar a 4
+  return [...new Set(matches)].slice(0, 4);
+}
 
 /**
  * Factory function que crea el tool con chatbotId en closure
@@ -69,14 +81,20 @@ EJEMPLOS:
     }),
 
     execute: async ({ artifactName, initialDataJson }: { artifactName: string; initialDataJson?: string }) => {
+      console.log(`[Artifact Tool] Opening: ${artifactName}`);
+      console.log(`[Artifact Tool] initialDataJson:`, initialDataJson);
+
       // Parse initialData from JSON string
       let initialData: Record<string, unknown> = {};
       if (initialDataJson) {
         try {
           initialData = JSON.parse(initialDataJson);
+          console.log(`[Artifact Tool] Parsed data:`, initialData);
         } catch {
           console.warn("[Artifact Tool] Invalid JSON in initialDataJson:", initialDataJson);
         }
+      } else {
+        console.warn(`[Artifact Tool] ⚠️ No initialDataJson provided for ${artifactName}`);
       }
       try {
         // Verificar que está instalado y activo
@@ -96,31 +114,70 @@ EJEMPLOS:
           };
         }
 
-        // Actualizar stats de uso
-        await db.artifactInstallation.update({
+        // Actualizar stats de uso (async, no bloquea)
+        db.artifactInstallation.update({
           where: { id: installation.id },
           data: {
             usageCount: { increment: 1 },
             lastUsedAt: new Date(),
           },
-        });
+        }).catch((err) => console.error("[Artifact Tool] Stats update error:", err));
 
-        // Retornar datos del artefacto para el frontend
+        const { artifact } = installation;
         const configData = (installation.config as Record<string, unknown>) ?? {};
-        const initData = initialData ?? {};
+        let initData = initialData ?? {};
 
+        // 🖼️ FALLBACK para gallery-card: Si no tiene imágenes, buscar automáticamente en RAG
+        if (artifact.name === "gallery-card") {
+          const images = initData.images as string[] | undefined;
+          if (!images || images.length === 0) {
+            console.log("[Artifact Tool] gallery-card sin imágenes, buscando en RAG...");
+            try {
+              const ragResult = await vectorSearch({
+                chatbotId,
+                value: "imágenes galería fotos",
+              });
+              if (ragResult.success && ragResult.results && ragResult.results.length > 0) {
+                const text = ragResult.results.map((r: any) => r.content).join("\n");
+                const foundUrls = extractImageUrls(text);
+                console.log("[Artifact Tool] URLs encontradas en RAG:", foundUrls);
+                if (foundUrls.length > 0) {
+                  initData = { ...initData, images: foundUrls };
+                }
+              }
+            } catch (err) {
+              console.error("[Artifact Tool] Error buscando imágenes en RAG:", err);
+            }
+          }
+        }
+
+        // Si es nativo → código SIEMPRE del registry (no de DB)
+        if (artifact.isNative) {
+          const native = getNativeArtifact(artifact.name);
+          if (native) {
+            return {
+              type: "artifact" as const,
+              name: artifact.name,
+              displayName: native.metadata.displayName,
+              code: native.code,
+              compiledCode: native.compiledCode,
+              data: { ...configData, ...initData },
+              events: native.metadata.events,
+              propsSchema: native.metadata.propsSchema,
+            };
+          }
+        }
+
+        // Si no es nativo → código de DB (marketplace)
         return {
           type: "artifact" as const,
           name: artifactName,
-          displayName: installation.artifact.displayName,
-          code: installation.artifact.code,
-          compiledCode: installation.artifact.compiledCode, // Código pre-transpilado
-          data: {
-            ...configData,
-            ...initData,
-          },
-          events: installation.artifact.events,
-          propsSchema: installation.artifact.propsSchema,
+          displayName: artifact.displayName,
+          code: artifact.code,
+          compiledCode: artifact.compiledCode,
+          data: { ...configData, ...initData },
+          events: artifact.events,
+          propsSchema: artifact.propsSchema,
         };
       } catch (error) {
         console.error("[Artifact Tool] Error:", error);

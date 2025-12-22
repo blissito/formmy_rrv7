@@ -15,6 +15,7 @@ import React, { useMemo, Suspense, useState, useCallback, useEffect } from "reac
 import { cn } from "~/lib/utils";
 import type { ArtifactPhase, ResolvedOutcome } from "~/lib/artifact-events";
 import { RESOLVING_EVENTS, CANCELLING_EVENTS, getOutcomeFromEvent } from "~/lib/artifact-events";
+import { getNativeComponent, isNativeArtifact } from "~/components/native-artifacts/registry";
 
 // Lazy load Babel solo si es necesario (ahorra ~700KB en bundle)
 let Babel: typeof import("@babel/standalone") | null = null;
@@ -41,6 +42,7 @@ const DANGEROUS_PATTERNS = [
 ];
 
 interface ArtifactRendererProps {
+  name?: string; // Nombre del artefacto (para detectar nativos)
   code: string;
   compiledCode?: string | null; // Código pre-transpilado del servidor
   data: Record<string, unknown>;
@@ -288,6 +290,7 @@ function createComponentFromCode(
  * - Si NO se pasa `phase`, el renderer maneja su propio lifecycle internamente
  */
 export const ArtifactRenderer = ({
+  name,
   code,
   compiledCode,
   data,
@@ -302,6 +305,10 @@ export const ArtifactRenderer = ({
   const [renderError, setRenderError] = useState<string | null>(null);
   const [Component, setComponent] = useState<React.ComponentType<any> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Detectar si es un artefacto nativo (componente React real)
+  const NativeComponent = name ? getNativeComponent(name) : null;
+  console.log("[ArtifactRenderer] Init:", { name, hasNativeComponent: !!NativeComponent, hasCode: !!code, hasData: !!data, dataKeys: Object.keys(data || {}) });
 
   // Estado interno del lifecycle (usado cuando no hay phase externo)
   const [internalPhase, setInternalPhase] = useState<ArtifactPhase>("interactive");
@@ -394,6 +401,53 @@ export const ArtifactRenderer = ({
     setRenderError(null);
     setRenderKey((k) => k + 1);
   }, [code, compiledCode]);
+
+  // ============================================================
+  // NATIVE COMPONENT RENDERING (Fast path)
+  // ============================================================
+  // Si es un artefacto nativo, usar el componente React real directamente
+  // NO pasa por new Function() - es más seguro y rápido
+  if (NativeComponent) {
+    // PROCESSING
+    if (phase === "processing") {
+      return (
+        <div className={cn("artifact-container border rounded-lg bg-white shadow-sm overflow-hidden", className)}>
+          <DefaultProcessingView />
+        </div>
+      );
+    }
+
+    // RESOLVED
+    if (phase === "resolved") {
+      return (
+        <div className={cn("artifact-container border rounded-lg bg-white shadow-sm overflow-hidden", className)}>
+          <DefaultResolvedView outcome={outcome} resolvedData={resolvedData ?? data} />
+        </div>
+      );
+    }
+
+    // INTERACTIVE: Renderizar componente nativo real
+    console.log(`[ArtifactRenderer] Rendering native: ${name}`, { data, phase, outcome });
+    return (
+      <div className={cn("artifact-container border rounded-lg bg-white shadow-sm overflow-hidden", className)}>
+        <ErrorBoundary
+          onError={(e) => setRenderError(e.message)}
+          fallback={<ErrorFallback error={renderError || "Error al renderizar"} />}
+        >
+          <NativeComponent
+            data={data}
+            onEvent={handleEvent}
+            phase={phase}
+            outcome={outcome}
+          />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // DYNAMIC COMPONENT RENDERING (new Function path)
+  // ============================================================
 
   if (isLoading) {
     return <LoadingFallback />;
@@ -532,6 +586,7 @@ export const ArtifactFromToolOutput = ({
 
       {/* Renderizar artefacto */}
       <ArtifactRenderer
+        name={output.name}
         code={output.code}
         compiledCode={output.compiledCode}
         data={output.data}

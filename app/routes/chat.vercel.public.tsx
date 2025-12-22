@@ -7,10 +7,7 @@ import {
   type UIMessage,
 } from "ai";
 import { db } from "~/utils/db.server";
-import {
-  mapModel,
-  getModelInfo,
-} from "@/server/config/vercel.model.providers";
+import { mapModel, getModelInfo } from "@/server/config/vercel.model.providers";
 import { nanoid } from "nanoid";
 import {
   createConversation,
@@ -26,6 +23,7 @@ import { createSaveLeadTool } from "@/server/tools/vercel/saveLead";
 import {
   createOpenArtifactTool,
   createConfirmArtifactTool,
+  getInstalledArtifactsForPrompt,
 } from "@/server/tools/vercel/artifactTool";
 import { loadCustomToolsForChatbot } from "@/server/tools/vercel/customHttpTool";
 import { calculateCost } from "@/server/chatbot/pricing.server";
@@ -60,10 +58,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       console.warn(
         `[Chat Loader] ❌ Domain blocked: ${origin || "no-origin"} -> ${chatbotId}`
       );
-      return Response.json(
-        { error: "Dominio no autorizado" },
-        { status: 403 }
-      );
+      return Response.json({ error: "Dominio no autorizado" }, { status: 403 });
     }
   }
 
@@ -140,7 +135,7 @@ export async function action({ request }: Route.ActionArgs) {
       .map((msg) => ({
         id: msg.id,
         role: msg.role.toLowerCase() as "user" | "assistant",
-        parts: [{ type: "text" as const, text: msg.content }],
+        parts: [{ type: "text" as const, text: msg.content }], // UIMessage
       }));
   }
 
@@ -174,6 +169,9 @@ export async function action({ request }: Route.ActionArgs) {
 
   await addUserMessage(conversation.id, textContent);
 
+  // 🎨 Cargar lista de artefactos instalados para el prompt
+  const installedArtifacts = await getInstalledArtifactsForPrompt(chatbotId);
+
   // System prompt con instrucciones para artefactos (patrón HITL)
   const systemPrompt = `
     # Sigue estas instrucciones:
@@ -193,12 +191,39 @@ export async function action({ request }: Route.ActionArgs) {
     - Si no encuentras información, indica claramente que no tienes esa información específica
 
     # 🎨 ARTEFACTOS INTERACTIVOS (IMPORTANTE):
-    Cuando uses openArtifactTool para mostrar un artefacto interactivo:
-    1. INMEDIATAMENTE después de openArtifactTool, DEBES llamar confirmArtifactTool
-    2. confirmArtifactTool espera la respuesta del usuario (confirmación o cancelación)
-    3. Una vez recibida la confirmación, responde apropiadamente
-    4. NUNCA vuelvas a llamar openArtifactTool después de recibir una confirmación
-     `;
+    Tienes acceso a componentes interactivos llamados "artefactos" que puedes mostrar al usuario.
+
+    ## Artefactos disponibles:
+    ${installedArtifacts}
+
+    ## Cómo usar artefactos:
+    1. Llama openArtifactTool con el nombre y los DATOS necesarios
+    2. INMEDIATAMENTE después, llama confirmArtifactTool para esperar la respuesta
+    3. Cuando el usuario confirme/cancele, responde apropiadamente
+
+    ## CRÍTICO - Pasar datos a los artefactos:
+    Debes pasar los datos en initialDataJson como JSON string. Ejemplos:
+
+    - gallery-card: {"images": ["url1", "url2", "url3"], "title": "Título"}
+    - product-card: {"imageUrl": "url", "name": "Producto", "price": 100, "currency": "MXN"}
+    - payment-card: {"items": [{"name": "Item", "quantity": 1}], "total": 100}
+    - date-picker: {"minDate": "2025-01-01", "availableSlots": ["9:00", "10:00"]}
+
+    ## ⚠️ GALERÍA DE IMÁGENES - CRÍTICO:
+    La gallery-card SOLO muestra contenido. NO requiere confirmArtifactTool.
+
+    PROCESO OBLIGATORIO para gallery-card:
+    1. PRIMERO llama getContextTool para buscar "imágenes" o "galería"
+    2. Del resultado, EXTRAE todas las URLs (busca patrones https://...jpg, https://...jpeg, https://...png)
+    3. LUEGO llama openArtifactTool con initialDataJson que contenga esas URLs
+
+    EJEMPLO CONCRETO:
+    Si getContextTool retorna: "Imagen 1: https://example.com/foto1.jpg, Imagen 2: https://example.com/foto2.jpg"
+    Entonces llamas: openArtifactTool({ artifactName: "gallery-card", initialDataJson: '{"images":["https://example.com/foto1.jpg","https://example.com/foto2.jpg"],"title":"Galería"}' })
+
+    ⛔ PROHIBIDO: Abrir gallery-card con initialDataJson vacío o sin images
+    ⛔ PROHIBIDO: Inventar URLs - solo usa las que encuentres en la base de conocimiento
+    `;
 
   // ⏱️ Start time para medir responseTime
   const startTime = Date.now();
@@ -220,12 +245,12 @@ export async function action({ request }: Route.ActionArgs) {
     },
     stopWhen: stepCountIs(5),
     // 📊 TRACKING: onFinish de streamText (recibe totalUsage)
-    onFinish: async ({ text, totalUsage, finishReason }) => {
+    onFinish: async ({ text, totalUsage }) => {
       try {
-        // 📊 TRACKING: Extraer métricas de tokens
-        const inputTokens = totalUsage?.promptTokens || 0;
-        const outputTokens = totalUsage?.completionTokens || 0;
-        const totalTokens = totalUsage?.totalTokens || inputTokens + outputTokens;
+        // 📊 TRACKING: Extraer métricas de tokens (AI SDK 5.x uses inputTokens/outputTokens)
+        const inputTokens = totalUsage?.inputTokens || 0;
+        const outputTokens = totalUsage?.outputTokens || 0;
+        const totalTokens = inputTokens + outputTokens;
 
         // 🔍 Detectar provider y modelo
         const { provider, model } = getModelInfo(chatbot.aiModel);

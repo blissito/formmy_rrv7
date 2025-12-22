@@ -378,8 +378,10 @@ export default function ChatPreview({
                         );
                       case "tool-openArtifactTool":
                         // Renderizar artefacto inline si tiene output disponible
+                        console.log("[ChatPreview] tool-openArtifactTool part:", part);
                         if ("state" in part && part.state === "output-available" && "output" in part) {
                           const output = part.output as { type?: string; code?: string; compiledCode?: string | null; data?: Record<string, unknown>; displayName?: string; name?: string };
+                          console.log("[ChatPreview] Artifact output:", { type: output?.type, name: output?.name, hasCode: !!output?.code, data: output?.data });
                           if (output?.type === "artifact" && output.code) {
                             const artifactName = output.name;
                             // Verificar si este artefacto ya fue resuelto
@@ -401,6 +403,7 @@ export default function ChatPreview({
                                   )}
                                 </div>
                                 <ArtifactRenderer
+                                  name={output.name}
                                   code={output.code}
                                   compiledCode={output.compiledCode}
                                   data={output.data || {}}
@@ -772,6 +775,7 @@ const ChatElement = ({
                             )}
                           </div>
                           <ArtifactRenderer
+                            name={part.output.name}
                             code={part.output.code}
                             compiledCode={part.output.compiledCode}
                             data={part.output.data || {}}
