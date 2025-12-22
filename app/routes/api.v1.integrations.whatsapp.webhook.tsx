@@ -1127,6 +1127,9 @@ async function generateChatbotResponse(
     const { createSaveLeadTool } = await import(
       "../../server/tools/vercel/saveLead"
     );
+    const { createOpenArtifactTool } = await import(
+      "../../server/tools/vercel/artifactTool"
+    );
     const { loadCustomToolsForChatbot } = await import(
       "../../server/tools/vercel/customHttpTool"
     );
@@ -1188,6 +1191,7 @@ async function generateChatbotResponse(
       tools: {
         getContextTool: createGetContextTool(chatbot.id),
         saveLeadTool: createSaveLeadTool(chatbot.id, _conversationId),
+        openArtifactTool: createOpenArtifactTool(chatbot.id),
         ...customTools, // 🔧 Herramientas HTTP personalizadas
       },
       stopWhen: stepCountIs(5),

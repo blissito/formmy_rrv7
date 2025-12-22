@@ -52,6 +52,8 @@ export default [
       "routes/dashboard.formmys_.$projectId_.settings.tsx"
     ),
     route("ayuda", "routes/dashboard.ayuda.tsx"),
+    route("artifacts", "routes/dashboard.artifacts.tsx"),
+    route("artifacts/review", "routes/dashboard.artifacts.review.tsx"),
   ]),
 
   // Legacy dash routes
@@ -146,6 +148,7 @@ export default [
   route("api/parser/v1", "routes/api.parser.v1.ts"),
   route("api/rag/v1", "routes/api.rag.v1.ts"),
   route("api/voice/v1", "routes/api.voice.v1.ts"),
+  route("api/v1/artifacts", "routes/api.v1.artifacts.ts"),
 
   // Composio Integration - DEPRECADO (eliminado)
   // TODO: Reimplementar Gmail/Calendar con Vercel AI SDK pattern

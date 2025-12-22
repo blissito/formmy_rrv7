@@ -18,6 +18,38 @@ import { BiGhost } from "react-icons/bi";
 import { HiArrowDown } from "react-icons/hi";
 import { ArtifactProvider, useArtifact } from "~/hooks/useArtifact";
 import { Artifact, ArtifactInline } from "./artifact/ArtifactV0";
+import {
+  formatArtifactEventMessage,
+  createArtifactEventMetadata,
+} from "~/lib/artifact-events";
+import {
+  ArtifactActionBubble,
+  isArtifactActionMessage,
+} from "~/components/chat/ArtifactActionBubble";
+import type { UIMessage } from "ai";
+
+/**
+ * Busca el confirmArtifactTool en estado input-available
+ * Patrón HITL de Vercel AI SDK
+ */
+const findPendingConfirmArtifactTool = (messages: UIMessage[]): { toolCallId: string } | null => {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (!message.parts) continue;
+
+    for (const part of message.parts) {
+      if (
+        part.type === "tool-confirmArtifactTool" &&
+        "state" in part &&
+        part.state === "input-available" &&
+        "toolCallId" in part
+      ) {
+        return { toolCallId: part.toolCallId as string };
+      }
+    }
+  }
+  return null;
+};
 
 interface GhostyChatInterfaceProps {
   messages: GhostyLlamaMessage[];
@@ -73,6 +105,7 @@ export const GhostyChatInterface = ({
   const {
     messages: vercelMessages,
     sendMessage,
+    addToolOutput,
     status,
   } = useChat({
     transport: new DefaultChatTransport({
@@ -413,6 +446,14 @@ export const GhostyChatInterface = ({
                                 {/* SIEMPRE renderizar el texto de respuesta */}
                                 {message.parts.map((part, idx) => {
                                   if (part.type === "text") {
+                                    // Detectar si es un mensaje de evento de artefacto legacy
+                                    if (message.role === "user" && isArtifactActionMessage(part.text)) {
+                                      return (
+                                        <div key={idx} className="my-1">
+                                          <ArtifactActionBubble text={part.text} />
+                                        </div>
+                                      );
+                                    }
                                     return (
                                       <>
                                         <Streamdown key={idx}>
@@ -427,12 +468,13 @@ export const GhostyChatInterface = ({
                                 {/* Mostrar tool indicator si hay tool calls */}
                                 {hasToolCall && (
                                   <div className="mb-2 space-y-1">
-                                    {/* Esta es la apertura del artefacto */}
+                                    {/* Botón para abrir artefacto si el tool fue invocado */}
                                     {message.parts.find(
                                       (part) =>
-                                        part.type === "tool-dummyArtifactTool"
+                                        part.type === "tool-openArtifactTool" &&
+                                        "state" in part &&
+                                        part.state === "output-available"
                                     ) && <ArtifactInline />}
-                                    {/* Esta es la apertura del artefacto */}
                                     {message.parts
                                       .filter(
                                         (part) =>
@@ -679,7 +721,45 @@ export const GhostyChatInterface = ({
           </motion.div>
         </motion.div>
 
-        <Artifact messages={vercelMessages} />
+        <Artifact
+          messages={vercelMessages}
+          onArtifactEvent={(eventName, payload, artifactName) => {
+            console.log(`[Ghosty Artifact Event] ${eventName}:`, payload);
+
+            // 🎯 PATRÓN HITL: Buscar confirmArtifactTool pendiente
+            const pendingConfirm = findPendingConfirmArtifactTool(vercelMessages);
+
+            if (pendingConfirm) {
+              // ✅ Usar addToolOutput (patrón Vercel AI SDK)
+              console.log(`[Ghosty] Using addToolOutput for ${eventName}`);
+              addToolOutput({
+                tool: "confirmArtifactTool",
+                toolCallId: pendingConfirm.toolCallId,
+                output: JSON.stringify({
+                  confirmed: eventName === "onConfirm",
+                  event: eventName,
+                  data: payload,
+                  artifactName,
+                }),
+              });
+              // Continuar la conversación después de agregar el output
+              sendMessage({ text: "" });
+            } else {
+              // Fallback: enviar mensaje (compatibilidad)
+              console.log(`[Ghosty] No pending confirmArtifactTool, using sendMessage`);
+              const friendlyMessage = formatArtifactEventMessage(
+                eventName,
+                payload as Record<string, unknown>
+              );
+              const metadata = createArtifactEventMetadata(
+                eventName,
+                payload as Record<string, unknown>,
+                artifactName
+              );
+              sendMessage({ text: friendlyMessage }, { metadata });
+            }
+          }}
+        />
       </article>
     </ArtifactProvider>
   );

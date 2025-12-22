@@ -25,6 +25,9 @@ primary_region = 'dfw'
   VITE_FACEBOOK_APP_ID = "1128273322061107"
   VITE_FACEBOOK_CONFIG_ID = "1306050453776674"
 
+[deploy]
+  release_command = "npx tsx scripts/sync-native-artifacts.ts"
+
 [env]
   NODE_ENV = "production"
   PORT = "3000"

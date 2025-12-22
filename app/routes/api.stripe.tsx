@@ -6,8 +6,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
-  const isDevelopment = process.env.NODE_ENV === "development";
-
   // Obtener el usuario logueado para los planes de suscripción
   const user = await getUserOrTriggerLogin(request);
 
@@ -18,16 +16,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   // Price IDs según entorno
+  // En desarrollo, usa variables de entorno si existen, sino usa los de producción
   const PRICES = {
-    starter: isDevelopment
-      ? process.env.STRIPE_STARTER_PRICE_TEST || "price_test_starter"
-      : "price_1S5AqXDtYmGT70YtepLAzwk4",
-    pro: isDevelopment
-      ? process.env.STRIPE_PRO_PRICE_TEST || "price_test_pro"
-      : "price_1S5CqADtYmGT70YtTZUtJOiS",
-    enterprise: isDevelopment
-      ? process.env.STRIPE_ENTERPRISE_PRICE_TEST || "price_test_enterprise"
-      : "price_1SSPzKDtYmGT70YtIgLWY8d5",
+    starter:
+      process.env.STRIPE_STARTER_PRICE_TEST || "price_1S5AqXDtYmGT70YtepLAzwk4",
+    pro:
+      process.env.STRIPE_PRO_PRICE_TEST || "price_1S5CqADtYmGT70YtTZUtJOiS",
+    enterprise:
+      process.env.STRIPE_ENTERPRISE_PRICE_TEST ||
+      "price_1SSPzKDtYmGT70YtIgLWY8d5",
     // Credits one-time purchases - Price IDs reales de producción
     credits_100: "price_1SLwONRuGQeGCFrvx7YKBzMT", // TODO: Necesita price ID correcto
     credits_500: "price_1SLwONRuGQeGCFrvx7YKBzMT", // $99 MXN

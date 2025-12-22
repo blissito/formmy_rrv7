@@ -344,7 +344,8 @@ model Chatbot {
   satInvoices        SatInvoice[]      @relation("ChatbotSatInvoices")
   satContacts        SatContact[]      @relation("ChatbotSatContacts")
   voiceSessions      VoiceSession[]
-  customTools        CustomTool[]
+  customTools           CustomTool[]
+  artifactInstallations ArtifactInstallation[]
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -1042,6 +1043,76 @@ model CustomTool {
 
   @@unique([chatbotId, name]) // Un tool único por nombre por chatbot
   @@index([chatbotId, isActive])
+}
+
+// ============================================================================
+// ARTIFACTS SYSTEM - Componentes interactivos para chat
+// ============================================================================
+
+enum ArtifactStatus {
+  DRAFT // Dev trabajando
+  PENDING_REVIEW // Enviado para revisión
+  PUBLISHED // Aprobado, visible en marketplace
+  REJECTED // Rechazado por admin
+}
+
+model Artifact {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  name         String         @unique // "payment-form" (slug)
+  displayName  String // "Formulario de Pago"
+  description  String
+  code         String // TSX code (dev sustituye directamente)
+  compiledCode String? // JavaScript transpilado (auto-generado)
+
+  // Author
+  authorId    String @db.ObjectId
+  authorEmail String
+
+  // Review
+  status      ArtifactStatus @default(DRAFT)
+  reviewedBy  String?        @db.ObjectId
+  reviewedAt  DateTime?
+  reviewNotes String?
+
+  // Metadata
+  category    String? // "forms", "calendars", "payments"
+  iconUrl     String?
+  propsSchema Json? // JSON Schema para validar props
+  events      String[]       @default([]) // ["onSubmit", "onCancel"]
+
+  // Stats
+  installCount Int @default(0)
+
+  // Native artifacts (official Formmy artifacts)
+  isNative Boolean @default(false)
+
+  // Relations
+  installations ArtifactInstallation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([authorId])
+  @@index([category])
+}
+
+model ArtifactInstallation {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatbotId  String   @db.ObjectId
+  chatbot    Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  artifactId String   @db.ObjectId
+  artifact   Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  config      Json? // Config específica por chatbot
+  isActive    Boolean  @default(true)
+  usageCount  Int      @default(0)
+  lastUsedAt  DateTime?
+  installedAt DateTime @default(now())
+
+  @@unique([chatbotId, artifactId])
+  @@index([chatbotId])
+  @@index([artifactId])
 }
 
 // ============================================================================

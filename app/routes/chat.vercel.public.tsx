@@ -23,6 +23,10 @@ import {
 } from "@/server/chatbot/messageModel.server";
 import { createGetContextTool } from "@/server/tools/vercel/vectorSearch";
 import { createSaveLeadTool } from "@/server/tools/vercel/saveLead";
+import {
+  createOpenArtifactTool,
+  createConfirmArtifactTool,
+} from "@/server/tools/vercel/artifactTool";
 import { loadCustomToolsForChatbot } from "@/server/tools/vercel/customHttpTool";
 import { calculateCost } from "@/server/chatbot/pricing.server";
 import { validateDomainAccess } from "@/server/utils/domain-validator.server";
@@ -170,6 +174,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   await addUserMessage(conversation.id, textContent);
 
+  // System prompt con instrucciones para artefactos (patrón HITL)
   const systemPrompt = `
     # Sigue estas instrucciones:
     ${chatbot.instructions}
@@ -186,6 +191,13 @@ export async function action({ request }: Route.ActionArgs) {
     - La información en la base de conocimiento es tu fuente de verdad
     - Si encuentras información relevante, úsala para responder
     - Si no encuentras información, indica claramente que no tienes esa información específica
+
+    # 🎨 ARTEFACTOS INTERACTIVOS (IMPORTANTE):
+    Cuando uses openArtifactTool para mostrar un artefacto interactivo:
+    1. INMEDIATAMENTE después de openArtifactTool, DEBES llamar confirmArtifactTool
+    2. confirmArtifactTool espera la respuesta del usuario (confirmación o cancelación)
+    3. Una vez recibida la confirmación, responde apropiadamente
+    4. NUNCA vuelvas a llamar openArtifactTool después de recibir una confirmación
      `;
 
   // ⏱️ Start time para medir responseTime
@@ -202,6 +214,8 @@ export async function action({ request }: Route.ActionArgs) {
     tools: {
       getContextTool: createGetContextTool(chatbotId),
       saveLeadTool: createSaveLeadTool(chatbotId, conversation.id),
+      openArtifactTool: createOpenArtifactTool(chatbotId),
+      confirmArtifactTool: createConfirmArtifactTool(), // HITL pattern
       ...customTools, // 🔧 Herramientas HTTP personalizadas
     },
     stopWhen: stepCountIs(5),

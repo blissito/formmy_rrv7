@@ -2,9 +2,9 @@
 import HomeHeader from "./home/HomeHeader";
 import HomeFooter from "./home/HomeFooter";
 import getBasicMetaTags from "~/utils/getBasicMetaTags";
-import ProductChatCard from "~/components/chatComponents/ProductChatCard";
-import PaymentChatCard from "~/components/chatComponents/PaymentChatCard";
-import GalleryChatCard from "~/components/chatComponents/GallleryChatCard";
+import ProductChatCard from "~/components/native-artifacts/ProductChatCard";
+import PaymentChatCard from "~/components/native-artifacts/PaymentChatCard";
+import GalleryChatCard from "~/components/native-artifacts/GallleryChatCard";
 
 export const meta = () =>
   getBasicMetaTags({

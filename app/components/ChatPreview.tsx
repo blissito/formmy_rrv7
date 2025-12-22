@@ -1,14 +1,56 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "~/lib/utils";
 import type { Chatbot, Integration } from "@prisma/client";
 import { ChatInput } from "./chat/ChatInput";
 import { MessageBubble } from "./chat/MessageBubble";
 import { ChatHeader } from "./chat/ChatHeader";
 import { LoadingIndicator } from "./chat/LoadingIndicator";
-import { useChat, type UIMessage } from "@ai-sdk/react";
+import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
 import { nanoid } from "nanoid";
 import { WIDGET_TEMPLATES, type WidgetTemplate } from "@/server/widgets/widget-templates";
+import { ArtifactRenderer } from "./artifacts/ArtifactRenderer";
+import {
+  formatArtifactEventMessage,
+  createArtifactEventMetadata,
+  isLegacyArtifactEventMessage,
+  isResolvingEvent,
+  type ResolvedOutcome,
+} from "~/lib/artifact-events";
+import {
+  ArtifactActionBubble,
+  isArtifactActionMessage,
+} from "./chat/ArtifactActionBubble";
+
+// Tipo para rastrear artefactos resueltos
+interface ResolvedArtifact {
+  outcome: ResolvedOutcome;
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Busca el confirmArtifactTool en estado input-available
+ * Patrón HITL de Vercel AI SDK
+ */
+const findPendingConfirmArtifactTool = (messages: UIMessage[]): { toolCallId: string } | null => {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (!message.parts) continue;
+
+    for (const part of message.parts) {
+      if (
+        part.type === "tool-confirmArtifactTool" &&
+        "state" in part &&
+        part.state === "input-available" &&
+        "toolCallId" in part
+      ) {
+        return { toolCallId: part.toolCallId as string };
+      }
+    }
+  }
+  return null;
+};
 
 export interface ChatPreviewProps {
   chatbot: Chatbot;
@@ -55,7 +97,7 @@ export default function ChatPreview({
   });
 
   // ✅ PATRÓN CORRECTO: "Last Message Only" con carga de historial
-  const { messages, status, sendMessage, error, setMessages } = useChat({
+  const { messages, status, sendMessage, error, setMessages, addToolOutput } = useChat({
     id: sessionId || undefined, // ✅ AI SDK native session field
     transport: new DefaultChatTransport({
       api: `/chat/vercel/public?chatbotId=${chatbot.id}`,
@@ -73,6 +115,20 @@ export default function ChatPreview({
       console.error("[ChatPreview] ❌ Error en useChat:", error);
     },
   });
+
+  // 🎯 Trackear artefactos resueltos para no re-renderizar interactivos
+  // Map: artifactName -> { outcome, data }
+  const [resolvedArtifacts, setResolvedArtifacts] = useState<Map<string, ResolvedArtifact>>(new Map());
+
+  // Callback para marcar un artefacto como resuelto
+  const markArtifactResolved = useCallback((artifactName: string, outcome: ResolvedOutcome, data?: Record<string, unknown>) => {
+    console.log(`[ChatPreview] Marcando artefacto resuelto: ${artifactName} -> ${outcome}`);
+    setResolvedArtifacts(prev => {
+      const next = new Map(prev);
+      next.set(artifactName, { outcome, data });
+      return next;
+    });
+  }, []);
 
   // ✅ Cargar mensajes históricos al montar el componente
   useEffect(() => {
@@ -214,6 +270,49 @@ export default function ChatPreview({
             scrollContainerRef={scrollContainerRef}
             messagesEndRef={messagesEndRef}
             inputRef={inputRef}
+            resolvedArtifacts={resolvedArtifacts}
+            onArtifactEvent={(eventName, payload, artifactName) => {
+              console.log(`[Preview Artifact Event] ${eventName}:`, payload);
+
+              // 🎯 Marcar artefacto como resuelto ANTES de enviar mensaje
+              if (artifactName && isResolvingEvent(eventName)) {
+                const outcome = eventName === "onCancel" || eventName === "onClose" ? "cancelled" : "confirmed";
+                markArtifactResolved(artifactName, outcome, payload as Record<string, unknown>);
+              }
+
+              // 🎯 PATRÓN HITL: Buscar confirmArtifactTool pendiente
+              const pendingConfirm = findPendingConfirmArtifactTool(messages);
+
+              if (pendingConfirm) {
+                // ✅ Usar addToolOutput (patrón Vercel AI SDK)
+                console.log(`[Preview] Using addToolOutput for ${eventName}`);
+                addToolOutput({
+                  tool: "confirmArtifactTool",
+                  toolCallId: pendingConfirm.toolCallId,
+                  output: JSON.stringify({
+                    confirmed: eventName === "onConfirm",
+                    event: eventName,
+                    data: payload,
+                    artifactName,
+                  }),
+                });
+                // Continuar la conversación después de agregar el output
+                sendMessage({ text: "" });
+              } else {
+                // Fallback: enviar mensaje (compatibilidad)
+                console.log(`[Preview] No pending confirmArtifactTool, using sendMessage`);
+                const friendlyMessage = formatArtifactEventMessage(
+                  eventName,
+                  payload as Record<string, unknown>
+                );
+                const metadata = createArtifactEventMetadata(
+                  eventName,
+                  payload as Record<string, unknown>,
+                  artifactName
+                );
+                sendMessage({ text: friendlyMessage }, { metadata });
+              }
+            }}
           />
         </div>
       ) : (
@@ -260,6 +359,14 @@ export default function ChatPreview({
                     console.log("[ChatPreview] Renderizando part:", part);
                     switch (part.type) {
                       case "text":
+                        // Detectar si es un mensaje de evento de artefacto legacy
+                        if (message.role === "user" && isArtifactActionMessage(part.text)) {
+                          return (
+                            <div key={idx} className="flex justify-end px-4 my-1">
+                              <ArtifactActionBubble text={part.text} />
+                            </div>
+                          );
+                        }
                         return (
                           <MessageBubble
                             key={idx}
@@ -269,6 +376,86 @@ export default function ChatPreview({
                             }
                           />
                         );
+                      case "tool-openArtifactTool":
+                        // Renderizar artefacto inline si tiene output disponible
+                        if ("state" in part && part.state === "output-available" && "output" in part) {
+                          const output = part.output as { type?: string; code?: string; compiledCode?: string | null; data?: Record<string, unknown>; displayName?: string; name?: string };
+                          if (output?.type === "artifact" && output.code) {
+                            const artifactName = output.name;
+                            // Verificar si este artefacto ya fue resuelto
+                            const resolved = artifactName ? resolvedArtifacts.get(artifactName) : undefined;
+
+                            return (
+                              <div key={idx} className="ml-4 my-2">
+                                <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                                  <span className="w-3 h-3">🧩</span>
+                                  <span>{output.displayName || "Artefacto"}</span>
+                                  {resolved && (
+                                    <span className={cn(
+                                      "ml-2 px-2 py-0.5 rounded-full text-xs",
+                                      resolved.outcome === "confirmed" && "bg-green-100 text-green-700",
+                                      resolved.outcome === "cancelled" && "bg-gray-100 text-gray-600"
+                                    )}>
+                                      {resolved.outcome === "confirmed" ? "✓ Confirmado" : "✗ Cancelado"}
+                                    </span>
+                                  )}
+                                </div>
+                                <ArtifactRenderer
+                                  code={output.code}
+                                  compiledCode={output.compiledCode}
+                                  data={output.data || {}}
+                                  // Pasar fase si ya está resuelto
+                                  phase={resolved ? "resolved" : undefined}
+                                  outcome={resolved?.outcome}
+                                  resolvedData={resolved?.data}
+                                  onEvent={(eventName, payload) => {
+                                    console.log(`[Widget Artifact Event] ${eventName}:`, payload);
+
+                                    // 🎯 Marcar artefacto como resuelto ANTES de enviar mensaje
+                                    if (artifactName && isResolvingEvent(eventName)) {
+                                      const outcome = eventName === "onCancel" || eventName === "onClose" ? "cancelled" : "confirmed";
+                                      markArtifactResolved(artifactName, outcome, payload as Record<string, unknown>);
+                                    }
+
+                                    // 🎯 PATRÓN HITL: Buscar confirmArtifactTool pendiente
+                                    const pendingConfirm = findPendingConfirmArtifactTool(messages);
+
+                                    if (pendingConfirm) {
+                                      // ✅ Usar addToolOutput (patrón Vercel AI SDK)
+                                      console.log(`[Widget] Using addToolOutput for ${eventName}`);
+                                      addToolOutput({
+                                        tool: "confirmArtifactTool",
+                                        toolCallId: pendingConfirm.toolCallId,
+                                        output: JSON.stringify({
+                                          confirmed: eventName === "onConfirm",
+                                          event: eventName,
+                                          data: payload,
+                                          artifactName,
+                                        }),
+                                      });
+                                      // Continuar la conversación después de agregar el output
+                                      sendMessage({ text: "" });
+                                    } else {
+                                      // Fallback: enviar mensaje (compatibilidad)
+                                      console.log(`[Widget] No pending confirmArtifactTool, using sendMessage`);
+                                      const friendlyMessage = formatArtifactEventMessage(
+                                        eventName,
+                                        payload as Record<string, unknown>
+                                      );
+                                      const metadata = createArtifactEventMetadata(
+                                        eventName,
+                                        payload as Record<string, unknown>,
+                                        artifactName
+                                      );
+                                      sendMessage({ text: friendlyMessage }, { metadata });
+                                    }
+                                  }}
+                                />
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
                       default:
                         console.warn("[ChatPreview] Tipo de part no soportado:", part.type);
                         return null;
@@ -324,6 +511,8 @@ interface WidgetPreviewContainerProps {
   scrollContainerRef: React.RefObject<HTMLDivElement>;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   inputRef: React.RefObject<HTMLInputElement>;
+  onArtifactEvent?: (eventName: string, payload: unknown, artifactName?: string) => void;
+  resolvedArtifacts?: Map<string, ResolvedArtifact>;
 }
 
 const WidgetPreviewContainer = ({
@@ -341,6 +530,8 @@ const WidgetPreviewContainer = ({
   scrollContainerRef,
   messagesEndRef,
   inputRef,
+  onArtifactEvent,
+  resolvedArtifacts = new Map(),
 }: WidgetPreviewContainerProps) => {
   const primaryColor = chatbot.primaryColor || "#9A99EA";
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -385,6 +576,8 @@ const WidgetPreviewContainer = ({
             scrollContainerRef={scrollContainerRef}
             messagesEndRef={messagesEndRef}
             inputRef={inputRef}
+            onArtifactEvent={onArtifactEvent}
+            resolvedArtifacts={resolvedArtifacts}
           />
         )}
       </div>
@@ -478,6 +671,8 @@ interface ChatElementProps {
   scrollContainerRef: React.RefObject<HTMLDivElement>;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   inputRef: React.RefObject<HTMLInputElement>;
+  onArtifactEvent?: (eventName: string, payload: unknown, artifactName?: string) => void;
+  resolvedArtifacts?: Map<string, ResolvedArtifact>;
 }
 
 const ChatElement = ({
@@ -494,6 +689,8 @@ const ChatElement = ({
   scrollContainerRef,
   messagesEndRef,
   inputRef,
+  onArtifactEvent,
+  resolvedArtifacts = new Map(),
 }: ChatElementProps) => {
   const { chat } = templateConfig;
   
@@ -537,6 +734,14 @@ const ChatElement = ({
               {message.parts?.map((part: any, idx: number) => {
                 switch (part.type) {
                   case "text":
+                    // Detectar si es un mensaje de evento de artefacto legacy
+                    if (message.role === "user" && isArtifactActionMessage(part.text)) {
+                      return (
+                        <div key={idx} className="flex justify-end px-4 my-1">
+                          <ArtifactActionBubble text={part.text} />
+                        </div>
+                      );
+                    }
                     return (
                       <MessageBubble
                         key={idx}
@@ -546,6 +751,45 @@ const ChatElement = ({
                         }
                       />
                     );
+                  case "tool-openArtifactTool":
+                    // Renderizar artefacto inline si tiene output disponible
+                    if (part.state === "output-available" && part.output?.type === "artifact" && part.output.code) {
+                      const artifactName = part.output.name;
+                      const resolved = artifactName ? resolvedArtifacts.get(artifactName) : undefined;
+                      return (
+                        <div key={idx} className="ml-4 my-2">
+                          <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                            <span>🧩</span>
+                            <span>{part.output.displayName || "Artefacto"}</span>
+                            {resolved && (
+                              <span className={cn(
+                                "ml-2 px-2 py-0.5 rounded-full text-xs",
+                                resolved.outcome === "confirmed" && "bg-green-100 text-green-700",
+                                resolved.outcome === "cancelled" && "bg-gray-100 text-gray-600"
+                              )}>
+                                {resolved.outcome === "confirmed" ? "✓ Confirmado" : "✗ Cancelado"}
+                              </span>
+                            )}
+                          </div>
+                          <ArtifactRenderer
+                            code={part.output.code}
+                            compiledCode={part.output.compiledCode}
+                            data={part.output.data || {}}
+                            phase={resolved ? "resolved" : undefined}
+                            outcome={resolved?.outcome}
+                            resolvedData={resolved?.data}
+                            onEvent={(eventName, payload) => {
+                              console.log(`[Widget Preview Artifact Event] ${eventName}:`, payload);
+                              // Propagar al handler padre con nombre del artefacto
+                              if (onArtifactEvent) {
+                                onArtifactEvent(eventName, payload, artifactName);
+                              }
+                            }}
+                          />
+                        </div>
+                      );
+                    }
+                    return null;
                   default:
                     return null;
                 }
