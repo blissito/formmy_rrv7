@@ -812,11 +812,16 @@ async function processIncomingMessage(
     const integration = await findIntegrationByPhoneNumber(message.to);
 
     if (!integration || !integration.isActive) {
-      console.warn("Integration not found or not active", {
-        phoneNumberId: message.to,
-        integration: integration?.id,
-      });
-      throw new Error("Integration is not active");
+      // Número huérfano: webhook registrado en Meta pero sin integración activa en Formmy
+      // El cliente debe desconectar desde Meta Developers > WhatsApp > Configuration > Webhook
+      console.warn(`🔕 [Webhook] Orphan number - phoneNumberId: ${message.to}, from: ${message.from}, msg: "${message.body?.slice(0, 50) || '[media]'}..."`);
+      // Return sin throw para no saturar logs de error
+      return {
+        success: false,
+        messageId: message.messageId,
+        skipped: true,
+        reason: "orphan_phone_number",
+      };
     }
 
     // Get the chatbot
