@@ -83,7 +83,7 @@ export const MODEL_REGISTRY: ModelDefinition[] = [
     temperature: 1.0,
     fixedTemperature: true,
     category: "PRO",
-    badge: "Best for tools",
+    badge: "Mejor para herramientas",
   },
   {
     id: "claude-haiku-4-5",
@@ -98,14 +98,14 @@ export const MODEL_REGISTRY: ModelDefinition[] = [
 
   // ========== STARTER ==========
   {
-    id: "gemini-3-pro",
+    id: "gemini-3-flash",
     label: "Gemini 3 Pro",
     provider: "google-direct",
     tier: "starter",
     temperature: 0.7,
     category: "STARTER",
     recommended: true,
-    badge: "Latest model",
+    badge: "Último modelo",
   },
 ];
 
@@ -122,7 +122,7 @@ export const LEGACY_MODELS: Record<string, { temperature: number; fixedTemperatu
   "claude-3-opus-20240229": { temperature: 0.7 },
   "gemini-2.5-flash-lite": { temperature: 0.7 },
   "gemini-1.5-pro": { temperature: 0.7 },
-  "gemini-3-pro-preview-11-2025": { temperature: 0.7 }, // Alias específico de versión
+  "gemini-3-flash-preview-11-2025": { temperature: 0.7 }, // Alias específico de versión
 };
 
 // ========== UTILIDADES ==========
@@ -203,11 +203,11 @@ export function getModelProvider(modelId: string): ModelProvider {
 export function getDefaultModelForPlan(plan: string): string {
   switch (plan.toUpperCase()) {
     case "FREE":
-      return "gemini-3-pro"; // FREE después del trial
+      return "gemini-3-flash"; // FREE después del trial
     case "TRIAL":
       return "gpt-5-nano"; // Trial tiene acceso a PRO models
     case "STARTER":
-      return "gemini-3-pro"; // Gemini 3 Pro para STARTER
+      return "gemini-3-flash"; // Gemini 3 Pro para STARTER
     case "PRO":
       return "gpt-5-nano"; // GPT-5 Nano (4o-mini) para PRO
     case "ENTERPRISE":

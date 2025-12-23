@@ -9,8 +9,8 @@ export const mapModel = (modelName: string) => {
       return anthropic("claude-sonnet-4-5-20250929");
     case "claude-haiku-4-5":
       return anthropic("claude-haiku-4-5-20251001");
-    case "gemini-3-pro": // Slow
-      return google("gemini-2.5-flash-lite");
+    case "gemini-3-flash":
+      return google("gemini-3-flash");
     case "gpt-5-nano": // slow
       return openai("gpt-4o-mini");
     default:
@@ -35,8 +35,8 @@ export const getModelInfo = (
       return { provider: "anthropic", model: "claude-sonnet-4-5-20250929" };
     case "claude-haiku-4-5":
       return { provider: "anthropic", model: "claude-haiku-4-5-20251001" };
-    case "gemini-3-pro":
-      return { provider: "google", model: "gemini-2.5-flash-lite" };
+    case "gemini-3-flash":
+      return { provider: "google", model: "gemini-3-flash" };
     case "gpt-5-nano":
       return { provider: "openai", model: "gpt-4o-mini" };
     default:
@@ -56,7 +56,7 @@ export const getModelInfo = (
  */
 export function getModelTemperature(modelName: string): number | undefined {
   // Solo Gemini necesita temperatura explícita (su default es muy alto)
-  if (modelName === "gemini-3-pro") {
+  if (modelName === "gemini-3-flash") {
     return getOptimalTemperature(modelName); // 0.7
   }
 

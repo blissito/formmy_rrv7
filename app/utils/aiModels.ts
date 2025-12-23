@@ -62,7 +62,7 @@ export function getSmartModelForPro(hasActiveIntegrations: boolean, isComplexQue
 export const ALL_MODELS = AI_MODELS.map((m) => m.value);
 
 export const DEFAULT_MODEL_ROTATION = [
-  "gemini-3-pro", // Starter default
+  "gemini-3-flash", // Starter default
   "claude-haiku-4-5", // Pro fallback
   "gpt-5-nano", // Pro default
 ];
@@ -70,16 +70,16 @@ export const DEFAULT_MODEL_ROTATION = [
 export const FALLBACK_MODELS: Record<string, string> = {
   "claude-sonnet-4-5": "claude-haiku-4-5",
   "claude-haiku-4-5": "gpt-5-nano",
-  "gpt-5-nano": "gemini-3-pro",
-  "gemini-3-pro": "gpt-5-nano",
+  "gpt-5-nano": "gemini-3-flash",
+  "gemini-3-flash": "gpt-5-nano",
   // Legacy models
   "claude-3-5-sonnet-20241022": "claude-sonnet-4-5",
   "claude-3-5-haiku-20241022": "claude-haiku-4-5",
   "claude-3-haiku-20240307": "claude-haiku-4-5",
-  "gemini-2.0-flash": "gemini-3-pro",
-  "gemini-2.0-flash-lite": "gemini-3-pro",
-  "gemini-3-pro-preview": "gemini-3-pro",
-  "gpt-3.5-turbo": "gemini-3-pro",
+  "gemini-2.0-flash": "gemini-3-flash",
+  "gemini-2.0-flash-lite": "gemini-3-flash",
+  "gemini-3-flash-preview": "gemini-3-flash",
+  "gpt-3.5-turbo": "gemini-3-flash",
   "gpt-5-mini": "gpt-5-nano",
 };
 

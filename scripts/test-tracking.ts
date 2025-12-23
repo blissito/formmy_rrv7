@@ -97,7 +97,7 @@ async function testTracking() {
   const testModels = [
     "claude-sonnet-4-5",
     "claude-haiku-4-5",
-    "gemini-3-pro",
+    "gemini-3-flash",
     "gpt-5-nano",
     "default-model",
   ];

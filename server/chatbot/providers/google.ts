@@ -14,8 +14,8 @@ import type { ChatRequest, ChatResponse, StreamChunk, ChatMessage } from './type
 export class GoogleProvider extends AIProvider {
   private static readonly SUPPORTED_MODELS = [
     // Gemini 3.0 family
-    'gemini-3-pro-preview',
-    'gemini-3-pro-preview-11-2025',
+    'gemini-3-flash-preview',
+    'gemini-3-flash-preview-11-2025',
 
     // Gemini 2.0 family
     'gemini-2.0-flash',

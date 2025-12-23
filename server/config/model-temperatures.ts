@@ -22,8 +22,8 @@ export const OPTIMAL_TEMPERATURES: Record<string, number> = {
   'claude-3-opus-20240229': 0.7,         // Opus - conversacional
 
   // Gemini models (directo desde Google API - FREE TIER disponible!)
-  'gemini-3-pro-preview': 0.7,           // $2/$12 - Gemini 3 Pro (Nov 2025)
-  'gemini-3-pro-preview-11-2025': 0.7,   // Alias específico de versión
+  'gemini-3-flash-preview': 0.7,           // $2/$12 - Gemini 3 Pro (Nov 2025)
+  'gemini-3-flash-preview-11-2025': 0.7,   // Alias específico de versión
   'gemini-2.0-flash': 0.7,               // $0.10/$0.40 (vs $0.125/$0.50 en OpenRouter)
   'gemini-2.0-flash-lite': 0.7,          // $0.075/$0.30 - óptimo para trial/starter
   'gemini-2.5-flash': 0.7,               // Nueva generación
@@ -35,7 +35,7 @@ export const OPTIMAL_TEMPERATURES: Record<string, number> = {
   'claude-haiku-4-5': 0.8,               // Haiku 4.5 - 73.3% SWE-bench, mejor coding model (Oct 2025)
 
   // Gemini 3.x models
-  'gemini-3-pro': 0.7,                   // Gemini 3 Pro (alias público de gemini-3-pro-preview)
+  'gemini-3-flash': 0.7,                   // Gemini 3 Pro (alias público de gemini-3-flash-preview)
 };
 
 /**
@@ -97,8 +97,8 @@ export const MODEL_TEMPERATURE_RANGES: Record<string, TemperatureRange> = {
   'claude-3-opus-20240229': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
 
   // Gemini models
-  'gemini-3-pro-preview': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
-  'gemini-3-pro-preview-11-2025': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gemini-3-flash-preview': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gemini-3-flash-preview-11-2025': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
   'gemini-2.0-flash': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
   'gemini-2.0-flash-lite': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
   'gemini-2.5-flash': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
@@ -110,7 +110,7 @@ export const MODEL_TEMPERATURE_RANGES: Record<string, TemperatureRange> = {
   'claude-haiku-4-5': { min: 0.8, max: 0.8, optimal: 0.8, step: 0, fixed: true },
 
   // Gemini 3.x models
-  'gemini-3-pro': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
+  'gemini-3-flash': { min: 0, max: 1.5, optimal: 0.7, step: 0.1 },
 };
 
 /**

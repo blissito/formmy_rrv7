@@ -17,7 +17,7 @@ export const getModelInfo = (modelName: string): { provider: string; model: stri
       return { provider: "anthropic", model: "claude-sonnet-4-5-20250929" };
     case "claude-haiku-4-5":
       return { provider: "anthropic", model: "claude-haiku-4-5-20251001" };
-    case "gemini-3-pro":
+    case "gemini-3-flash":
       return { provider: "google", model: "gemini-2.5-flash-lite" };
     case "gpt-5-nano":
       return { provider: "openai", model: "gpt-4o-mini" };

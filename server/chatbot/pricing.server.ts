@@ -72,15 +72,15 @@ const PRICING_TABLE = {
     }
   },
   google: {
-    'gemini-3-pro': {
+    'gemini-3-flash': {
       input: 2.00,   // $2.00 per 1M input tokens (< 200K context)
       output: 12.00  // $12.00 per 1M output tokens
     },
-    'gemini-3-pro-preview': {
+    'gemini-3-flash-preview': {
       input: 2.00,   // $2.00 per 1M input tokens (< 200K context)
       output: 12.00  // $12.00 per 1M output tokens
     },
-    'gemini-3-pro-preview-11-2025': {
+    'gemini-3-flash-preview-11-2025': {
       input: 2.00,   // $2.00 per 1M input tokens
       output: 12.00  // $12.00 per 1M output tokens
     },

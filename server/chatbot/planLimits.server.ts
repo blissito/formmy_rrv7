@@ -27,7 +27,7 @@ export const PLAN_LIMITS = {
       "gpt-5-nano",
       "gpt-4.1-mini",
       "claude-haiku-4-5",
-      "gemini-3-pro"
+      "gemini-3-flash"
     ], // Todos los modelos STARTER + PRO disponibles
     showBranding: false, // Sin branding como PRO
     trialDays: 365, // 365 días de trial para revisión de Meta App (Sept-Oct 2025)
@@ -42,7 +42,7 @@ export const PLAN_LIMITS = {
     maxContextQueriesPerDay: 50, // 50 queries RAG por día
     availableModels: [
       "gpt-5-nano",
-      "gemini-3-pro"
+      "gemini-3-flash"
     ], // Modelos básicos de última generación
     showBranding: true,
     trialDays: 0,
@@ -59,7 +59,7 @@ export const PLAN_LIMITS = {
       "gpt-5-nano",
       "gpt-4.1-mini",
       "claude-haiku-4-5",
-      "gemini-3-pro"
+      "gemini-3-flash"
     ], // GPT-5 Nano + GPT-4.1 Mini + Claude Haiku 4.5 + Gemini 3 Pro
     showBranding: false,
     trialDays: 0,
@@ -77,7 +77,7 @@ export const PLAN_LIMITS = {
       "gpt-5-nano",
       "gpt-4.1-mini",
       "claude-haiku-4-5",
-      "gemini-3-pro"
+      "gemini-3-flash"
     ], // Acceso a todos los modelos incluyendo Sonnet
     showBranding: false,
     trialDays: 0,
