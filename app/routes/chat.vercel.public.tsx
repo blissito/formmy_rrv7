@@ -7,12 +7,9 @@ import {
   type UIMessage,
 } from "ai";
 import { db } from "~/utils/db.server";
-import { mapModel, getModelInfo } from "@/server/config/vercel.model.providers";
+import { mapModel, getModelInfo, getModelTemperature } from "@/server/config/vercel.model.providers";
 import { nanoid } from "nanoid";
-import {
-  createConversation,
-  getConversationBySessionId,
-} from "@/server/chatbot/conversationModel.server";
+import { getConversationBySessionId } from "@/server/chatbot/conversationModel.server";
 import {
   addAssistantMessage,
   addUserMessage,
@@ -22,7 +19,6 @@ import { createGetContextTool } from "@/server/tools/vercel/vectorSearch";
 import { createSaveLeadTool } from "@/server/tools/vercel/saveLead";
 import {
   createOpenArtifactTool,
-  createConfirmArtifactTool,
   getInstalledArtifactsForPrompt,
 } from "@/server/tools/vercel/artifactTool";
 import { loadCustomToolsForChatbot } from "@/server/tools/vercel/customHttpTool";
@@ -69,10 +65,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     return Response.json({ messages: [] });
   }
 
-  // Cargar mensajes históricos
+  // Cargar mensajes históricos (filtrar vacíos - tool calls sin texto)
   const dbMessages = await getMessagesByConversationId(conversation.id);
   const messages: UIMessage[] = dbMessages
-    .filter((msg) => msg.role !== "SYSTEM")
+    .filter((msg) => msg.role !== "SYSTEM" && msg.content && msg.content.trim())
     .map((msg) => ({
       id: msg.id,
       role: msg.role.toLowerCase() as "user" | "assistant",
@@ -127,15 +123,16 @@ export async function action({ request }: Route.ActionArgs) {
   let conversation = await getConversationBySessionId(sessionId, chatbotId);
 
   // ✅ CARGAR MENSAJES HISTÓRICOS DE LA DB (patrón 2025)
+  // ⚠️ FILTRAR mensajes vacíos - tool calls sin texto causan error en API
   let historicalMessages: UIMessage[] = [];
   if (conversation) {
     const dbMessages = await getMessagesByConversationId(conversation.id);
     historicalMessages = dbMessages
-      .filter((msg) => msg.role !== "SYSTEM")
+      .filter((msg) => msg.role !== "SYSTEM" && msg.content && msg.content.trim())
       .map((msg) => ({
         id: msg.id,
         role: msg.role.toLowerCase() as "user" | "assistant",
-        parts: [{ type: "text" as const, text: msg.content }], // UIMessage
+        parts: [{ type: "text" as const, text: msg.content }],
       }));
   }
 
@@ -214,13 +211,15 @@ export async function action({ request }: Route.ActionArgs) {
     2. **BUSCAR DATOS**: SIEMPRE llama getContextTool PRIMERO para obtener datos reales
     3. **EXTRAER**: Del resultado, extrae URLs de imágenes, precios, nombres, etc.
     4. **ABRIR**: Llama openArtifactTool con initialDataJson conteniendo los datos extraídos
-    5. **CONFIRMAR**: Solo si el artefacto tiene eventos, llama confirmArtifactTool después
+    5. **RESPONDER**: ⚠️ OBLIGATORIO - Después de abrir el artefacto, SIEMPRE genera un mensaje de texto explicando qué estás mostrando
 
     ## REGLAS CRÍTICAS:
     ⛔ NUNCA abras un artefacto sin datos reales (sin images, sin price, etc.)
     ⛔ NUNCA inventes URLs - solo usa las que encuentres en getContextTool
     ⛔ Si no hay datos en RAG → informa al usuario, NO abras artefacto vacío
     ✅ SIEMPRE busca primero con getContextTool antes de abrir cualquier artefacto
+    ✅ SIEMPRE responde con texto DESPUÉS de llamar openArtifactTool (ej: "Aquí tienes la galería de imágenes" o "Te muestro el producto")
+    ⛔ NUNCA dejes tu respuesta vacía después de mostrar un artefacto
 
     ## ARTEFACTOS DISPONIBLES (con triggers, datos requeridos y ejemplos):
     ${installedArtifacts}
@@ -232,22 +231,33 @@ export async function action({ request }: Route.ActionArgs) {
   // 🔧 Cargar custom tools del chatbot (herramientas HTTP personalizadas)
   const customTools = await loadCustomToolsForChatbot(chatbotId);
 
+  // 🌡️ Obtener temperatura solo para modelos que la necesitan (Gemini)
+  const modelTemperature = getModelTemperature(chatbot.aiModel);
+
   // ✅ PATRÓN 2025: streamText con TODOS los mensajes (históricos + nuevos)
   const result = streamText({
     model: mapModel(chatbot.aiModel),
+    // 🌡️ Solo Gemini recibe temperatura explícita (GPT/Claude usan sus defaults)
+    ...(modelTemperature !== undefined && { temperature: modelTemperature }),
     messages: convertToModelMessages(allMessages), // ⬅️ TODOS los mensajes
     system: systemPrompt,
     tools: {
       getContextTool: createGetContextTool(chatbotId),
       saveLeadTool: createSaveLeadTool(chatbotId, conversation.id),
       openArtifactTool: createOpenArtifactTool(chatbotId),
-      confirmArtifactTool: createConfirmArtifactTool(), // HITL pattern
+      // NOTE: confirmArtifactTool removido - HITL pattern incompatible con transport "Last Message Only"
       ...customTools, // 🔧 Herramientas HTTP personalizadas
     },
     stopWhen: stepCountIs(5),
     // 📊 TRACKING: onFinish de streamText (recibe totalUsage)
     onFinish: async ({ text, totalUsage }) => {
       try {
+        // ⚠️ NO guardar mensajes vacíos (solo tool calls sin texto)
+        if (!text || !text.trim()) {
+          console.log("[Chat Public] ⏭️ Skipping empty message (tool-only response)");
+          return;
+        }
+
         // 📊 TRACKING: Extraer métricas de tokens (AI SDK 5.x uses inputTokens/outputTokens)
         const inputTokens = totalUsage?.inputTokens || 0;
         const outputTokens = totalUsage?.outputTokens || 0;
@@ -269,18 +279,18 @@ export async function action({ request }: Route.ActionArgs) {
         // 💾 Guardar mensaje con tracking completo
         await addAssistantMessage(
           conversation.id,
-          text, // texto completo generado
-          totalTokens, // tokens (legacy)
-          responseTime, // responseTime en ms
-          undefined, // firstTokenLatency (no disponible en Vercel AI SDK)
-          model, // aiModel
-          "web", // channel
-          undefined, // externalMessageId
-          inputTokens, // inputTokens
-          outputTokens, // outputTokens
-          costResult.totalCost, // totalCost en USD
-          provider, // provider
-          0 // cachedTokens
+          text,
+          totalTokens,
+          responseTime,
+          undefined,
+          model,
+          "web",
+          undefined,
+          inputTokens,
+          outputTokens,
+          costResult.totalCost,
+          provider,
+          0
         );
 
         console.log(

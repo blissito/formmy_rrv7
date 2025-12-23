@@ -100,6 +100,31 @@ export function formatArtifactEventMessage(
       message = `He cancelado la selección`;
       break;
 
+    case "onViewMore":
+      // Para product-card: usuario quiere ver más detalles/imágenes del producto
+      if (payload.name) {
+        message = `Quiero ver más imágenes y detalles de "${payload.name}"`;
+      } else {
+        message = `Quiero ver más imágenes y detalles de este producto`;
+      }
+      break;
+
+    case "onAddToCart":
+      // Para product-card: usuario quiere agregar al carrito
+      if (payload.name && payload.price) {
+        message = `Quiero agregar "${payload.name}" ($${payload.price} ${payload.currency || 'MXN'}) al carrito`;
+      } else if (payload.name) {
+        message = `Quiero agregar "${payload.name}" al carrito`;
+      } else {
+        message = `Quiero agregar este producto al carrito`;
+      }
+      break;
+
+    case "onPay":
+      // Para payment-card
+      message = `Quiero proceder con el pago`;
+      break;
+
     default:
       message = `Acción: ${eventName}`;
   }

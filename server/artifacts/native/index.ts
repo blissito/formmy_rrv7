@@ -105,7 +105,7 @@ export const NATIVE_REGISTRY: Record<string, NativeArtifactConfig> = {
   // El código aquí es placeholder - el frontend usa componentes importados en build
   "gallery-card": createNativeArtifact(FRONTEND_NATIVE_PLACEHOLDER, {
     displayName: "Galería de Imágenes",
-    description: "Muestra una galería de hasta 4 imágenes con vista modal y navegación. Artefacto de DISPLAY puro - no emite eventos al chat, no requiere confirmArtifactTool.",
+    description: "Muestra MÚLTIPLES imágenes en formato galería. SOLO usar cuando el usuario pida ver FOTOS o IMÁGENES explícitamente (NO para productos con precio). Display puro sin acciones.",
     category: "galleries",
     events: [], // Sin eventos - es display-only, no captura decisiones
     propsSchema: {
@@ -123,19 +123,19 @@ export const NATIVE_REGISTRY: Record<string, NativeArtifactConfig> = {
         "pictures", "gallery", "photos", "portafolio", "catálogo visual",
         "ver imágenes", "mostrar fotos", "enseñame fotos", "quiero ver fotos",
       ],
-      intents: ["ver_galeria", "mostrar_imagenes", "ver_productos_visual", "ver_fotos"],
+      intents: ["ver_galeria", "mostrar_imagenes", "ver_fotos"],
     },
     // Ejemplos para few-shot learning
     examples: [
       {
-        userMessage: "Muéstrame fotos de tus productos",
+        userMessage: "Muéstrame fotos del portafolio",
         initialData: {
           images: ["https://ejemplo.com/foto1.jpg", "https://ejemplo.com/foto2.jpg"],
-          title: "Nuestros Productos",
+          title: "Portafolio",
         },
       },
       {
-        userMessage: "Quiero ver la galería",
+        userMessage: "Quiero ver la galería de imágenes",
         initialData: {
           images: ["https://ejemplo.com/img1.jpg"],
           title: "Galería",
@@ -143,12 +143,12 @@ export const NATIVE_REGISTRY: Record<string, NativeArtifactConfig> = {
       },
     ],
     dataStrategy: "rag",
-    ragQuery: "imágenes fotos galería productos portafolio",
+    ragQuery: "imágenes fotos galería portafolio",
   }),
 
   "product-card": createNativeArtifact(FRONTEND_NATIVE_PLACEHOLDER, {
     displayName: "Tarjeta de Producto",
-    description: "Muestra un producto con imagen, nombre, descripción y precio. Incluye botones de acción.",
+    description: "Muestra UN SOLO producto/servicio con NOMBRE y PRECIO. USAR cuando el usuario pregunte por precio, producto específico, o quiera comprar. Tiene botones de acción (Saber más, Agregar al carrito).",
     category: "products",
     events: ["onViewMore", "onAddToCart"],
     propsSchema: {
@@ -167,23 +167,23 @@ export const NATIVE_REGISTRY: Record<string, NativeArtifactConfig> = {
         "producto", "precio", "comprar", "ver producto", "cuánto cuesta",
         "artículo", "item", "agregar carrito", "mostrar producto",
         "quiero comprar", "información del producto", "detalles del producto",
+        "servicio", "cuánto vale", "costo",
       ],
       intents: ["ver_producto", "consultar_precio", "comprar_producto", "agregar_carrito"],
     },
     // Ejemplos para few-shot learning
     examples: [
       {
-        userMessage: "Muéstrame el producto X con su precio",
+        userMessage: "Cuánto cuesta el producto X?",
         initialData: {
           name: "Producto X",
           description: "Descripción del producto",
           price: 299.99,
           currency: "MXN",
-          imageUrl: "https://ejemplo.com/producto.jpg",
         },
       },
       {
-        userMessage: "Cuánto cuesta el servicio premium?",
+        userMessage: "Quiero ver el servicio premium",
         initialData: {
           name: "Servicio Premium",
           description: "Acceso completo a todas las funciones",

@@ -1,6 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
+import { getOptimalTemperature } from "./model-temperatures";
 
 export const mapModel = (modelName: string) => {
   switch (modelName) {
@@ -42,6 +43,26 @@ export const getModelInfo = (
       return { provider: "openai", model: "gpt-4.1-mini" };
   }
 };
+
+/**
+ * 🌡️ Get Model Temperature - Retorna temperatura SOLO para modelos que la necesitan
+ *
+ * IMPORTANTE: Esta función es conservadora - solo retorna temperatura para Gemini.
+ * Los demás modelos (GPT, Claude) funcionan bien sin especificar temperatura,
+ * así que retornamos undefined para no afectar su comportamiento.
+ *
+ * @param modelName - Nombre del modelo desde chatbot.aiModel
+ * @returns number para Gemini (0.7), undefined para todos los demás
+ */
+export function getModelTemperature(modelName: string): number | undefined {
+  // Solo Gemini necesita temperatura explícita (su default es muy alto)
+  if (modelName === "gemini-3-pro") {
+    return getOptimalTemperature(modelName); // 0.7
+  }
+
+  // GPT y Claude funcionan bien con sus defaults - NO tocar
+  return undefined;
+}
 
 export const mapTools = (modelName: string) => {
   // ⚠️ DEPRECATED: No usar para nuevas implementaciones

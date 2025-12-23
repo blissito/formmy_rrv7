@@ -29,28 +29,8 @@ interface ResolvedArtifact {
   data?: Record<string, unknown>;
 }
 
-/**
- * Busca el confirmArtifactTool en estado input-available
- * Patrón HITL de Vercel AI SDK
- */
-const findPendingConfirmArtifactTool = (messages: UIMessage[]): { toolCallId: string } | null => {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const message = messages[i];
-    if (!message.parts) continue;
-
-    for (const part of message.parts) {
-      if (
-        part.type === "tool-confirmArtifactTool" &&
-        "state" in part &&
-        part.state === "input-available" &&
-        "toolCallId" in part
-      ) {
-        return { toolCallId: part.toolCallId as string };
-      }
-    }
-  }
-  return null;
-};
+// NOTE: HITL pattern (findPendingConfirmArtifactTool + addToolOutput) removed
+// Incompatible con transport "Last Message Only" - eventos se envían como mensajes
 
 export interface ChatPreviewProps {
   chatbot: Chatbot;
@@ -97,7 +77,7 @@ export default function ChatPreview({
   });
 
   // ✅ PATRÓN CORRECTO: "Last Message Only" con carga de historial
-  const { messages, status, sendMessage, error, setMessages, addToolOutput } = useChat({
+  const { messages, status, sendMessage, error, setMessages } = useChat({
     id: sessionId || undefined, // ✅ AI SDK native session field
     transport: new DefaultChatTransport({
       api: `/chat/vercel/public?chatbotId=${chatbot.id}`,
@@ -306,37 +286,20 @@ export default function ChatPreview({
                 markArtifactResolved(artifactName, outcome, payload as Record<string, unknown>);
               }
 
-              // 🎯 PATRÓN HITL: Buscar confirmArtifactTool pendiente
-              const pendingConfirm = findPendingConfirmArtifactTool(messages);
-
-              if (pendingConfirm) {
-                // ✅ Usar addToolOutput (patrón Vercel AI SDK)
-                // El SDK continúa automáticamente después de addToolOutput
-                console.log(`[Preview] Using addToolOutput for ${eventName}`);
-                addToolOutput({
-                  tool: "confirmArtifactTool",
-                  toolCallId: pendingConfirm.toolCallId,
-                  output: JSON.stringify({
-                    confirmed: eventName === "onConfirm",
-                    event: eventName,
-                    data: payload,
-                    artifactName,
-                  }),
-                });
-              } else {
-                // Fallback: enviar mensaje (compatibilidad)
-                console.log(`[Preview] No pending confirmArtifactTool, using sendMessage`);
-                const friendlyMessage = formatArtifactEventMessage(
-                  eventName,
-                  payload as Record<string, unknown>
-                );
-                const metadata = createArtifactEventMetadata(
-                  eventName,
-                  payload as Record<string, unknown>,
-                  artifactName
-                );
-                sendMessage({ text: friendlyMessage }, { metadata });
-              }
+              // 🎯 Enviar evento como mensaje de usuario
+              // ⚠️ NOTA: HITL pattern (addToolOutput) deshabilitado - incompatible con transport "Last Message Only"
+              // El transport solo envía el último mensaje, pero addToolOutput requiere contexto completo
+              console.log(`[Preview] Sending artifact event as message: ${eventName}`);
+              const friendlyMessage = formatArtifactEventMessage(
+                eventName,
+                payload as Record<string, unknown>
+              );
+              const metadata = createArtifactEventMetadata(
+                eventName,
+                payload as Record<string, unknown>,
+                artifactName
+              );
+              sendMessage({ text: friendlyMessage }, { metadata });
             }}
           />
         </div>
@@ -445,37 +408,19 @@ export default function ChatPreview({
                                       markArtifactResolved(artifactName, outcome, payload as Record<string, unknown>);
                                     }
 
-                                    // 🎯 PATRÓN HITL: Buscar confirmArtifactTool pendiente
-                                    const pendingConfirm = findPendingConfirmArtifactTool(messages);
-
-                                    if (pendingConfirm) {
-                                      // ✅ Usar addToolOutput (patrón Vercel AI SDK)
-                                      // El SDK continúa automáticamente después de addToolOutput
-                                      console.log(`[Widget] Using addToolOutput for ${eventName}`);
-                                      addToolOutput({
-                                        tool: "confirmArtifactTool",
-                                        toolCallId: pendingConfirm.toolCallId,
-                                        output: JSON.stringify({
-                                          confirmed: eventName === "onConfirm",
-                                          event: eventName,
-                                          data: payload,
-                                          artifactName,
-                                        }),
-                                      });
-                                    } else {
-                                      // Fallback: enviar mensaje (compatibilidad)
-                                      console.log(`[Widget] No pending confirmArtifactTool, using sendMessage`);
-                                      const friendlyMessage = formatArtifactEventMessage(
-                                        eventName,
-                                        payload as Record<string, unknown>
-                                      );
-                                      const metadata = createArtifactEventMetadata(
-                                        eventName,
-                                        payload as Record<string, unknown>,
-                                        artifactName
-                                      );
-                                      sendMessage({ text: friendlyMessage }, { metadata });
-                                    }
+                                    // 🎯 Enviar evento como mensaje de usuario
+                                    // ⚠️ NOTA: HITL pattern deshabilitado - incompatible con transport "Last Message Only"
+                                    console.log(`[Widget] Sending artifact event as message: ${eventName}`);
+                                    const friendlyMessage = formatArtifactEventMessage(
+                                      eventName,
+                                      payload as Record<string, unknown>
+                                    );
+                                    const metadata = createArtifactEventMetadata(
+                                      eventName,
+                                      payload as Record<string, unknown>,
+                                      artifactName
+                                    );
+                                    sendMessage({ text: friendlyMessage }, { metadata });
                                   }}
                                 />
                               </div>

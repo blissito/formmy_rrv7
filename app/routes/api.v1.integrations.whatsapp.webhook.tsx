@@ -1123,7 +1123,7 @@ async function generateChatbotResponse(
   try {
     // ✅ IMPORTAR Vercel AI SDK - generateText para WhatsApp (no streaming)
     const { generateText, stepCountIs } = await import("ai");
-    const { mapModel } = await import(
+    const { mapModel, getModelTemperature } = await import(
       "../../server/config/vercel.model.providers"
     );
     const { createGetContextTool } = await import(
@@ -1188,9 +1188,14 @@ async function generateChatbotResponse(
     - Si no encuentras información, indica claramente que no tienes esa información específica
      `;
 
+    // 🌡️ Obtener temperatura solo para modelos que la necesitan (Gemini)
+    const modelTemperature = getModelTemperature(chatbot.aiModel);
+
     // ✅ USAR generateText para WhatsApp (más eficiente que streamText)
     const result = await generateText({
       model: mapModel(chatbot.aiModel),
+      // 🌡️ Solo Gemini recibe temperatura explícita (GPT/Claude usan sus defaults)
+      ...(modelTemperature !== undefined && { temperature: modelTemperature }),
       messages: allMessages,
       system: systemPrompt,
       tools: {

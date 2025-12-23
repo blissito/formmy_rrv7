@@ -312,6 +312,7 @@ export const Artefactos = ({
                   artifact={artifact}
                   isInstalled={isInstalled(artifact.id)}
                   onInstall={() => handleInstall(artifact.id)}
+                  onUninstall={() => handleUninstall(artifact.id)}
                 />
               ))}
             </div>
@@ -378,10 +379,12 @@ const ArtifactCard = ({
   artifact,
   isInstalled,
   onInstall,
+  onUninstall,
 }: {
   artifact: Artifact & { isNative?: boolean };
   isInstalled: boolean;
   onInstall: () => void;
+  onUninstall: () => void;
 }) => {
   return (
     <div className={cn(
@@ -438,9 +441,13 @@ const ArtifactCard = ({
         </div>
 
         {isInstalled ? (
-          <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
-            Instalado
-          </span>
+          <button
+            onClick={onUninstall}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
+          >
+            <HiOutlineTrash className="w-4 h-4" />
+            Desinstalar
+          </button>
         ) : (
           <button
             onClick={onInstall}
