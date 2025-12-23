@@ -629,6 +629,29 @@ export const Conversations = ({
     }
   };
 
+  // 🗑️ Delete conversación con actualización optimista
+  const handleDeleteConversation = async (conversationId: string) => {
+    // ⚡ Actualización optimista - remover de UI inmediatamente
+    setAllLoadedConversations(prev => prev.filter(c => c.id !== conversationId));
+
+    // Si la conversación borrada es la seleccionada, seleccionar otra
+    if (conversation?.id === conversationId) {
+      const remaining = allLoadedConversations.filter(c => c.id !== conversationId);
+      setConversation(remaining[0] || undefined);
+    }
+
+    // Limpiar caché de mensajes para esta conversación
+    setMessagesCache(prev => {
+      const { [conversationId]: _, ...rest } = prev;
+      return rest;
+    });
+
+    // Llamar al callback del padre para sincronizar con backend
+    if (onDeleteConversation) {
+      onDeleteConversation(conversationId);
+    }
+  };
+
   // 🎯 Toggle modo manual global para WhatsApp
   const handleToggleWhatsAppAutoManual = async () => {
     if (isTogglingWhatsAppManual) return; // Prevenir múltiples clicks
@@ -858,7 +881,7 @@ export const Conversations = ({
           chatbot={chatbot}
           onToggleManual={handleToggleManual}
           onSendManualResponse={handleSendManualResponse}
-          onDeleteConversation={onDeleteConversation}
+          onDeleteConversation={handleDeleteConversation}
           onToggleFavorite={handleToggleFavorite}
           localManualMode={localManualModes[conversation?.id] ?? conversation?.manualMode ?? false}
           isFavorite={localFavorites[conversation?.id] ?? conversation?.isFavorite}

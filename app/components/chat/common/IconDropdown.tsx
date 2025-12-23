@@ -1,6 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { cn } from "~/lib/utils";
 
+// Tooltips para badges - breves y con engagement
+const BADGE_TOOLTIPS: Record<string, string> = {
+  "73% SWE-bench": "Resuelve 7 de cada 10 bugs reales de GitHub.",
+  "Mejor elección": "Balance perfecto entre calidad y velocidad.",
+  "Mejor para herramientas": "Ideal para búsquedas y acciones.",
+  "Enterprise default": "Máxima calidad para empresas.",
+  "Último modelo": "Lo más nuevo de Google, no necesariamente lo mejor.",
+};
+
 export type DropdownOption = {
   value: string;
   label: string;
@@ -114,8 +123,14 @@ export const IconDropdown = ({
                 {selectedOption ? selectedOption.label : placeholder}
               </p>
               {selectedOption?.badge && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium cursor-help relative group">
                   {selectedOption.badge}
+                  {BADGE_TOOLTIPS[selectedOption.badge] && (
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-48 text-center z-50 shadow-lg">
+                      {BADGE_TOOLTIPS[selectedOption.badge]}
+                      <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></span>
+                    </span>
+                  )}
                 </span>
               )}
             </div>
@@ -184,8 +199,14 @@ export const IconDropdown = ({
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-sm">{option.label}</p>
                   {option.badge && (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium cursor-help relative group/badge">
                       {option.badge}
+                      {BADGE_TOOLTIPS[option.badge] && (
+                        <span className="fixed ml-3 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none w-48 text-center z-[100] shadow-lg">
+                          {BADGE_TOOLTIPS[option.badge]}
+                          <span className="absolute top-[0.45rem] -left-[6px] border-[5px] border-transparent border-r-gray-900"></span>
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>
