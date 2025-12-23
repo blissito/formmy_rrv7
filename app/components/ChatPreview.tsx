@@ -311,6 +311,7 @@ export default function ChatPreview({
 
               if (pendingConfirm) {
                 // ✅ Usar addToolOutput (patrón Vercel AI SDK)
+                // El SDK continúa automáticamente después de addToolOutput
                 console.log(`[Preview] Using addToolOutput for ${eventName}`);
                 addToolOutput({
                   tool: "confirmArtifactTool",
@@ -322,8 +323,6 @@ export default function ChatPreview({
                     artifactName,
                   }),
                 });
-                // Continuar la conversación después de agregar el output
-                sendMessage({ text: "" });
               } else {
                 // Fallback: enviar mensaje (compatibilidad)
                 console.log(`[Preview] No pending confirmArtifactTool, using sendMessage`);
@@ -451,6 +450,7 @@ export default function ChatPreview({
 
                                     if (pendingConfirm) {
                                       // ✅ Usar addToolOutput (patrón Vercel AI SDK)
+                                      // El SDK continúa automáticamente después de addToolOutput
                                       console.log(`[Widget] Using addToolOutput for ${eventName}`);
                                       addToolOutput({
                                         tool: "confirmArtifactTool",
@@ -462,8 +462,6 @@ export default function ChatPreview({
                                           artifactName,
                                         }),
                                       });
-                                      // Continuar la conversación después de agregar el output
-                                      sendMessage({ text: "" });
                                     } else {
                                       // Fallback: enviar mensaje (compatibilidad)
                                       console.log(`[Widget] No pending confirmArtifactTool, using sendMessage`);

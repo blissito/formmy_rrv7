@@ -21,6 +21,20 @@ import { transpileJSX } from "../transpiler.service.js";
 // TYPES
 // ============================================================================
 
+export interface ArtifactTriggers {
+  /** Palabras clave que activan este artefacto (ej: "fotos", "galería") */
+  keywords: string[];
+  /** Intenciones semánticas (ej: "ver_galeria", "mostrar_imagenes") */
+  intents: string[];
+}
+
+export interface ArtifactExample {
+  /** Mensaje de ejemplo del usuario */
+  userMessage: string;
+  /** Datos que se deben pasar al artefacto */
+  initialData: Record<string, unknown>;
+}
+
 export interface NativeArtifactConfig {
   code: string;
   compiledCode: string; // Pre-transpilado al cargar módulo
@@ -31,6 +45,15 @@ export interface NativeArtifactConfig {
     events: string[];
     propsSchema?: Record<string, unknown>;
     iconUrl?: string;
+    // Campos para mejorar detección y uso por el modelo
+    /** Triggers que activan este artefacto */
+    triggers?: ArtifactTriggers;
+    /** Ejemplos de uso para few-shot learning */
+    examples?: ArtifactExample[];
+    /** Estrategia para obtener datos: "rag" busca primero, "static" usa config */
+    dataStrategy?: "rag" | "static";
+    /** Query sugerido para buscar en RAG si dataStrategy es "rag" */
+    ragQuery?: string;
   };
 }
 
@@ -88,28 +111,89 @@ export const NATIVE_REGISTRY: Record<string, NativeArtifactConfig> = {
     propsSchema: {
       type: "object",
       properties: {
-        images: { type: "array", items: { type: "string" }, description: "URLs de imágenes (máx 4)" },
+        images: { type: "array", items: { type: "string" }, description: "URLs de imágenes (máx 4)", required: true },
         title: { type: "string", description: "Título de la galería" },
         description: { type: "string", description: "Descripción opcional" },
       },
     },
+    // Triggers para detección automática
+    triggers: {
+      keywords: [
+        "fotos", "imágenes", "galería", "ver fotos", "muéstrame fotos",
+        "pictures", "gallery", "photos", "portafolio", "catálogo visual",
+        "ver imágenes", "mostrar fotos", "enseñame fotos", "quiero ver fotos",
+      ],
+      intents: ["ver_galeria", "mostrar_imagenes", "ver_productos_visual", "ver_fotos"],
+    },
+    // Ejemplos para few-shot learning
+    examples: [
+      {
+        userMessage: "Muéstrame fotos de tus productos",
+        initialData: {
+          images: ["https://ejemplo.com/foto1.jpg", "https://ejemplo.com/foto2.jpg"],
+          title: "Nuestros Productos",
+        },
+      },
+      {
+        userMessage: "Quiero ver la galería",
+        initialData: {
+          images: ["https://ejemplo.com/img1.jpg"],
+          title: "Galería",
+        },
+      },
+    ],
+    dataStrategy: "rag",
+    ragQuery: "imágenes fotos galería productos portafolio",
   }),
 
   "product-card": createNativeArtifact(FRONTEND_NATIVE_PLACEHOLDER, {
     displayName: "Tarjeta de Producto",
-    description: "Muestra un producto con imagen, nombre, descripción y precio.",
+    description: "Muestra un producto con imagen, nombre, descripción y precio. Incluye botones de acción.",
     category: "products",
     events: ["onViewMore", "onAddToCart"],
     propsSchema: {
       type: "object",
       properties: {
         imageUrl: { type: "string", description: "URL de imagen del producto" },
-        name: { type: "string", description: "Nombre del producto" },
-        description: { type: "string", description: "Descripción" },
-        price: { type: "number", description: "Precio" },
-        currency: { type: "string", description: "Moneda (MXN, USD)" },
+        name: { type: "string", description: "Nombre del producto", required: true },
+        description: { type: "string", description: "Descripción del producto" },
+        price: { type: "number", description: "Precio del producto", required: true },
+        currency: { type: "string", description: "Moneda (MXN, USD)", default: "MXN" },
       },
     },
+    // Triggers para detección automática
+    triggers: {
+      keywords: [
+        "producto", "precio", "comprar", "ver producto", "cuánto cuesta",
+        "artículo", "item", "agregar carrito", "mostrar producto",
+        "quiero comprar", "información del producto", "detalles del producto",
+      ],
+      intents: ["ver_producto", "consultar_precio", "comprar_producto", "agregar_carrito"],
+    },
+    // Ejemplos para few-shot learning
+    examples: [
+      {
+        userMessage: "Muéstrame el producto X con su precio",
+        initialData: {
+          name: "Producto X",
+          description: "Descripción del producto",
+          price: 299.99,
+          currency: "MXN",
+          imageUrl: "https://ejemplo.com/producto.jpg",
+        },
+      },
+      {
+        userMessage: "Cuánto cuesta el servicio premium?",
+        initialData: {
+          name: "Servicio Premium",
+          description: "Acceso completo a todas las funciones",
+          price: 499,
+          currency: "MXN",
+        },
+      },
+    ],
+    dataStrategy: "rag",
+    ragQuery: "productos precios catálogo servicios",
   }),
 
   "payment-card": createNativeArtifact(FRONTEND_NATIVE_PLACEHOLDER, {

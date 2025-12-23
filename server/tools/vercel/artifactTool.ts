@@ -18,7 +18,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { db } from "~/utils/db.server";
-import { getNativeArtifact } from "../../artifacts/native/index.js";
+import { getNativeArtifact, type NativeArtifactConfig } from "../../artifacts/native/index.js";
 import { vectorSearch } from "@/server/context/vercel_embeddings";
 
 /**
@@ -149,6 +149,31 @@ EJEMPLOS:
               console.error("[Artifact Tool] Error buscando imágenes en RAG:", err);
             }
           }
+
+          // VALIDACIÓN: gallery-card requiere al menos 1 imagen
+          const finalImages = initData.images as string[] | undefined;
+          if (!finalImages || finalImages.length === 0) {
+            return {
+              error: "gallery-card requiere al menos 1 imagen. No se encontraron imágenes en la base de conocimiento.",
+              hint: "Busca primero con getContextTool('imágenes fotos galería') y extrae las URLs del resultado.",
+              suggestion: "Informa al usuario que no hay imágenes disponibles en este momento.",
+            };
+          }
+        }
+
+        // 🛒 VALIDACIÓN para product-card: requiere name y price
+        if (artifact.name === "product-card") {
+          const { name, price } = initData as { name?: string; price?: number };
+          if (!name || price === undefined) {
+            return {
+              error: "product-card requiere 'name' y 'price'. Faltan datos del producto.",
+              hint: "Busca primero con getContextTool('productos precios') y extrae nombre y precio del resultado.",
+              missingFields: {
+                name: !name ? "FALTA" : "OK",
+                price: price === undefined ? "FALTA" : "OK",
+              },
+            };
+          }
         }
 
         // Si es nativo → código SIEMPRE del registry (no de DB)
@@ -255,9 +280,13 @@ FLUJO:
 };
 
 /**
- * Helper: Obtener lista de artefactos instalados para system prompt
+ * Helper: Obtener documentación completa de artefactos para system prompt
  *
- * Útil para inyectar la lista de artefactos disponibles en el prompt del sistema
+ * Genera documentación detallada con:
+ * - Triggers (palabras clave que activan el artefacto)
+ * - Schema de datos requeridos
+ * - Ejemplos de uso (few-shot)
+ * - Estrategia de datos (RAG vs static)
  */
 export async function getInstalledArtifactsForPrompt(
   chatbotId: string
@@ -274,6 +303,8 @@ export async function getInstalledArtifactsForPrompt(
           displayName: true,
           description: true,
           events: true,
+          propsSchema: true,
+          isNative: true,
         },
       },
     },
@@ -283,14 +314,65 @@ export async function getInstalledArtifactsForPrompt(
     return "No hay artefactos instalados.";
   }
 
-  return installations
-    .map((inst) => {
-      const { artifact } = inst;
-      const eventsStr =
-        artifact.events.length > 0
-          ? `\n   Eventos: ${artifact.events.join(", ")}`
-          : "";
-      return `- ${artifact.name}: ${artifact.description}${eventsStr}`;
-    })
-    .join("\n");
+  const artifactDocs: string[] = [];
+
+  for (const inst of installations) {
+    const { artifact } = inst;
+
+    // Obtener metadata nativa si está disponible (incluye triggers, examples)
+    let nativeMeta: NativeArtifactConfig["metadata"] | null = null;
+    if (artifact.isNative) {
+      const native = getNativeArtifact(artifact.name);
+      if (native) {
+        nativeMeta = native.metadata;
+      }
+    }
+
+    // Construir documentación completa para cada artefacto
+    let doc = `### ${artifact.name} (${artifact.displayName})\n${artifact.description}\n`;
+
+    // Agregar triggers/keywords
+    if (nativeMeta?.triggers) {
+      doc += `\n**ACTIVAR CUANDO el usuario mencione:** ${nativeMeta.triggers.keywords.slice(0, 8).join(", ")}...\n`;
+    }
+
+    // Agregar schema de datos requeridos
+    const schema = nativeMeta?.propsSchema || artifact.propsSchema;
+    if (schema && typeof schema === "object" && "properties" in schema) {
+      doc += `\n**DATOS REQUERIDOS (initialDataJson):**\n`;
+      const props = schema.properties as Record<string, Record<string, unknown>>;
+      for (const [propName, propDef] of Object.entries(props)) {
+        const required = propDef.required ? " (REQUERIDO)" : "";
+        const defaultVal = propDef.default ? ` [default: ${propDef.default}]` : "";
+        doc += `- ${propName}: ${propDef.type} - ${propDef.description || ""}${required}${defaultVal}\n`;
+      }
+    }
+
+    // Agregar estrategia de datos
+    if (nativeMeta?.dataStrategy === "rag" && nativeMeta.ragQuery) {
+      doc += `\n**PROCESO OBLIGATORIO:**\n`;
+      doc += `1. PRIMERO busca en RAG: getContextTool("${nativeMeta.ragQuery}")\n`;
+      doc += `2. Extrae los datos del resultado (URLs de imágenes, precios, nombres)\n`;
+      doc += `3. LUEGO llama openArtifactTool con los datos extraídos\n`;
+    }
+
+    // Agregar ejemplos (few-shot)
+    if (nativeMeta?.examples && nativeMeta.examples.length > 0) {
+      doc += `\n**EJEMPLO:**\n`;
+      const ex = nativeMeta.examples[0]; // Solo mostrar 1 ejemplo para no saturar
+      doc += `Usuario: "${ex.userMessage}"\n`;
+      doc += `→ openArtifactTool({ artifactName: "${artifact.name}", initialDataJson: '${JSON.stringify(ex.initialData)}' })\n`;
+    }
+
+    // Agregar eventos
+    if (artifact.events.length > 0) {
+      doc += `\n**EVENTOS:** ${artifact.events.join(", ")} - Requiere confirmArtifactTool después\n`;
+    } else {
+      doc += `\n**EVENTOS:** Ninguno - NO requiere confirmArtifactTool (display-only)\n`;
+    }
+
+    artifactDocs.push(doc);
+  }
+
+  return artifactDocs.join("\n---\n\n");
 }

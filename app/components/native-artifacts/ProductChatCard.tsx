@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 interface ProductChatCardProps {
   data: {
     imageUrl?: string;
@@ -14,7 +16,11 @@ interface ProductChatCardProps {
 export default function ProductChatCard({
   data,
   onEvent,
+  phase,
 }: ProductChatCardProps) {
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [viewedMore, setViewedMore] = useState(false);
+  const isResolved = phase === "resolved";
   const {
     imageUrl = "https://via.placeholder.com/128",
     name = "Producto",
@@ -47,16 +53,36 @@ export default function ProductChatCard({
       </span>
       <div className="flex gap-2 mt-4">
         <button
-          onClick={() => onEvent("onViewMore", { name, price, currency })}
-          className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+          onClick={() => {
+            if (!viewedMore && !isResolved) {
+              setViewedMore(true);
+              onEvent("onViewMore", { name, price, currency });
+            }
+          }}
+          disabled={viewedMore || isResolved}
+          className={`px-4 py-2 text-sm rounded-full transition-colors ${
+            viewedMore || isResolved
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
         >
-          Ver más
+          {viewedMore ? "Solicitado ✓" : "Saber más"}
         </button>
         <button
-          onClick={() => onEvent("onAddToCart", { name, price, currency })}
-          className="px-4 py-2 text-sm bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+          onClick={() => {
+            if (!addedToCart && !isResolved) {
+              setAddedToCart(true);
+              onEvent("onAddToCart", { name, price, currency });
+            }
+          }}
+          disabled={addedToCart || isResolved}
+          className={`px-4 py-2 text-sm rounded-full transition-colors ${
+            addedToCart || isResolved
+              ? "bg-green-100 text-green-700 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
         >
-          Agregar
+          {addedToCart ? "Agregado ✓" : "Agregar"}
         </button>
       </div>
     </div>

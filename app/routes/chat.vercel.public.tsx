@@ -152,11 +152,19 @@ export async function action({ request }: Route.ActionArgs) {
       );
     }
 
-    conversation = await createConversation({
-      chatbotId,
-      visitorId: nanoid(),
-      visitorIp: request.headers.get("x-forwarded-for") || undefined,
-      sessionId,
+    // Usar upsert para evitar race conditions y conflictos con conversaciones DELETED
+    conversation = await db.conversation.upsert({
+      where: { sessionId },
+      create: {
+        chatbotId,
+        visitorId: nanoid(),
+        visitorIp: request.headers.get("x-forwarded-for") || undefined,
+        sessionId,
+        status: "ACTIVE",
+      },
+      update: {
+        status: "ACTIVE", // Reactivar si estaba DELETED
+      },
     });
   }
 
@@ -170,7 +178,14 @@ export async function action({ request }: Route.ActionArgs) {
   await addUserMessage(conversation.id, textContent);
 
   // 🎨 Cargar lista de artefactos instalados para el prompt
-  const installedArtifacts = await getInstalledArtifactsForPrompt(chatbotId);
+  let installedArtifacts = "No hay artefactos instalados.";
+  try {
+    console.log("[chat.vercel.public] Loading artifacts for chatbot:", chatbotId);
+    installedArtifacts = await getInstalledArtifactsForPrompt(chatbotId);
+    console.log("[chat.vercel.public] Artifacts loaded OK");
+  } catch (err) {
+    console.error("[chat.vercel.public] ERROR loading artifacts:", err);
+  }
 
   // System prompt con instrucciones para artefactos (patrón HITL)
   const systemPrompt = `
@@ -190,39 +205,25 @@ export async function action({ request }: Route.ActionArgs) {
     - Si encuentras información relevante, úsala para responder
     - Si no encuentras información, indica claramente que no tienes esa información específica
 
-    # 🎨 ARTEFACTOS INTERACTIVOS (IMPORTANTE):
-    Tienes acceso a componentes interactivos llamados "artefactos" que puedes mostrar al usuario.
+    # 🎨 ARTEFACTOS INTERACTIVOS
 
-    ## Artefactos disponibles:
+    Tienes acceso a componentes visuales interactivos. SIGUE ESTE PROCESO OBLIGATORIO:
+
+    ## PROCESO:
+    1. **DETECTAR**: Si el usuario menciona palabras clave de un artefacto (ver abajo) → ACTÍVALO
+    2. **BUSCAR DATOS**: SIEMPRE llama getContextTool PRIMERO para obtener datos reales
+    3. **EXTRAER**: Del resultado, extrae URLs de imágenes, precios, nombres, etc.
+    4. **ABRIR**: Llama openArtifactTool con initialDataJson conteniendo los datos extraídos
+    5. **CONFIRMAR**: Solo si el artefacto tiene eventos, llama confirmArtifactTool después
+
+    ## REGLAS CRÍTICAS:
+    ⛔ NUNCA abras un artefacto sin datos reales (sin images, sin price, etc.)
+    ⛔ NUNCA inventes URLs - solo usa las que encuentres en getContextTool
+    ⛔ Si no hay datos en RAG → informa al usuario, NO abras artefacto vacío
+    ✅ SIEMPRE busca primero con getContextTool antes de abrir cualquier artefacto
+
+    ## ARTEFACTOS DISPONIBLES (con triggers, datos requeridos y ejemplos):
     ${installedArtifacts}
-
-    ## Cómo usar artefactos:
-    1. Llama openArtifactTool con el nombre y los DATOS necesarios
-    2. INMEDIATAMENTE después, llama confirmArtifactTool para esperar la respuesta
-    3. Cuando el usuario confirme/cancele, responde apropiadamente
-
-    ## CRÍTICO - Pasar datos a los artefactos:
-    Debes pasar los datos en initialDataJson como JSON string. Ejemplos:
-
-    - gallery-card: {"images": ["url1", "url2", "url3"], "title": "Título"}
-    - product-card: {"imageUrl": "url", "name": "Producto", "price": 100, "currency": "MXN"}
-    - payment-card: {"items": [{"name": "Item", "quantity": 1}], "total": 100}
-    - date-picker: {"minDate": "2025-01-01", "availableSlots": ["9:00", "10:00"]}
-
-    ## ⚠️ GALERÍA DE IMÁGENES - CRÍTICO:
-    La gallery-card SOLO muestra contenido. NO requiere confirmArtifactTool.
-
-    PROCESO OBLIGATORIO para gallery-card:
-    1. PRIMERO llama getContextTool para buscar "imágenes" o "galería"
-    2. Del resultado, EXTRAE todas las URLs (busca patrones https://...jpg, https://...jpeg, https://...png)
-    3. LUEGO llama openArtifactTool con initialDataJson que contenga esas URLs
-
-    EJEMPLO CONCRETO:
-    Si getContextTool retorna: "Imagen 1: https://example.com/foto1.jpg, Imagen 2: https://example.com/foto2.jpg"
-    Entonces llamas: openArtifactTool({ artifactName: "gallery-card", initialDataJson: '{"images":["https://example.com/foto1.jpg","https://example.com/foto2.jpg"],"title":"Galería"}' })
-
-    ⛔ PROHIBIDO: Abrir gallery-card con initialDataJson vacío o sin images
-    ⛔ PROHIBIDO: Inventar URLs - solo usa las que encuentres en la base de conocimiento
     `;
 
   // ⏱️ Start time para medir responseTime

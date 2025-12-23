@@ -521,6 +521,70 @@ When search_context() returns results, those results ARE the answer.
 **Config**: `/server/config/model-temperatures.ts`
 - GPT-4o-mini: 1.0 | GPT-5: 0.7 | Claude Haiku: 0.8
 
+## Artefactos (Sistema de UI Interactiva)
+
+### Arquitectura
+
+Sistema que permite al chatbot mostrar componentes React interactivos (tarjetas, galerías, formularios) durante la conversación.
+
+**Registry**: `/server/artifacts/native/index.ts` - Source of truth para artefactos nativos
+**Tool**: `/server/tools/vercel/artifactTool.ts` - Factory function con closure de chatbotId
+**Componentes**: `/app/components/native-artifacts/` - Componentes React del frontend
+
+### Artefactos Nativos Disponibles
+
+| Nombre | Descripción | Eventos | Datos Requeridos |
+|--------|-------------|---------|------------------|
+| `date-picker` | Selector de fecha/hora | `onConfirm`, `onCancel` | `minDate?`, `maxDate?` |
+| `gallery-card` | Galería de imágenes (hasta 4) | Ninguno (display-only) | `images[]` (URLs) |
+| `product-card` | Tarjeta de producto | `onViewMore`, `onAddToCart` | `name`, `price` |
+| `payment-card` | Resumen de pago | `onPay`, `onCancel` | `items[]`, `total` |
+
+### Triggers para Activación
+
+Cada artefacto tiene keywords que lo activan automáticamente:
+
+**product-card**: "producto", "precio", "comprar", "cuánto cuesta", "ver producto", "detalles del producto"
+**gallery-card**: "fotos", "imágenes", "galería", "ver fotos", "portafolio"
+**date-picker**: "agendar", "cita", "reservar", "fecha", "horario"
+
+### Flujo de Uso
+
+1. Usuario menciona keyword (ej: "cuánto cuesta el producto X")
+2. Modelo busca datos en RAG: `getContextTool("productos precios")`
+3. Modelo extrae `name`, `price` del resultado
+4. Modelo llama: `openArtifactTool({ artifactName: "product-card", initialDataJson: '{"name":"X", "price": 299}' })`
+5. Frontend renderiza el componente
+6. Si tiene eventos → Modelo llama `confirmArtifactTool` para esperar respuesta del usuario
+
+### Validaciones
+
+**product-card**: Requiere `name` y `price` - retorna error si faltan
+**gallery-card**: Requiere al menos 1 imagen - intenta buscar en RAG si no hay
+
+### Archivos Clave
+
+- `server/artifacts/native/index.ts` - NATIVE_REGISTRY con metadata y triggers
+- `server/tools/vercel/artifactTool.ts` - `createOpenArtifactTool()`, `createConfirmArtifactTool()`
+- `app/components/native-artifacts/ProductChatCard.tsx` - Tarjeta de producto
+- `app/components/native-artifacts/GalleryChatCard.tsx` - Galería de imágenes
+- `prisma/schema.prisma` - Modelos `Artifact`, `ArtifactInstallation`
+
+### Instalación de Artefactos
+
+Los artefactos deben estar instalados y activos en el chatbot para funcionar:
+```typescript
+// El tool verifica instalación antes de ejecutar
+const installation = await db.artifactInstallation.findFirst({
+  where: { chatbotId, artifact: { name: artifactName }, isActive: true }
+});
+```
+
+**Fecha**: 2025-12-23
+**Estado**: ✅ Sistema funcional con 4 artefactos nativos
+
+---
+
 ## Pricing
 
 | Plan | $ | Bots | Conv | Credits | Voice |

@@ -41,6 +41,30 @@ function getEventStyle(eventName: string) {
         borderColor: "border-gray-200",
         label: "Acción cancelada",
       };
+    case "onAddToCart":
+      return {
+        icon: HiCheck,
+        bgColor: "bg-green-100",
+        textColor: "text-green-700",
+        borderColor: "border-green-200",
+        label: "Agregado al carrito",
+      };
+    case "onViewMore":
+      return {
+        icon: HiCheck,
+        bgColor: "bg-blue-100",
+        textColor: "text-blue-700",
+        borderColor: "border-blue-200",
+        label: "Solicitó más información",
+      };
+    case "onPay":
+      return {
+        icon: HiCheck,
+        bgColor: "bg-green-100",
+        textColor: "text-green-700",
+        borderColor: "border-green-200",
+        label: "Proceder al pago",
+      };
     default:
       return {
         icon: HiClock,
