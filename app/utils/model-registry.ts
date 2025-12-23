@@ -99,7 +99,7 @@ export const MODEL_REGISTRY: ModelDefinition[] = [
   // ========== STARTER ==========
   {
     id: "gemini-3-flash",
-    label: "Gemini 3 Pro",
+    label: "Gemini 3 Flash",
     provider: "google-direct",
     tier: "starter",
     temperature: 0.7,
