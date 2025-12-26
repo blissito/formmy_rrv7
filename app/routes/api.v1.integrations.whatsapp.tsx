@@ -7,7 +7,7 @@ import {
   deleteIntegration,
   updateIntegrationActivity,
 } from "../../server/chatbot/integrationModel.server";
-import { db } from "../utils/db.server";
+import { db } from "~/utils/db.server";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
 

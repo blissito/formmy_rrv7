@@ -9,7 +9,7 @@ import { Artefactos } from "~/components/chat/tab_sections/Artefactos";
 import { Herramientas } from "~/components/chat/tab_sections/Herramientas";
 import { Codigo } from "~/components/chat/tab_sections/Codigo";
 import { Configuracion } from "~/components/chat/tab_sections/Configuracion";
-import { db } from "../utils/db.server";
+import { db } from "~/utils/db.server";
 import type { Route } from "./+types/dashboard.chat_.$chatbotSlug";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
 // ⚡ OPTIMIZACIÓN: Importaciones comentadas temporalmente para debug de performance

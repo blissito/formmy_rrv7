@@ -8,7 +8,7 @@ import {
 } from "../../server/chatbot/messageModel.server";
 import { getOrCreateConversation } from "../../server/integrations/whatsapp/conversation.server";
 import { getChatbotById } from "../../server/chatbot/chatbotModel.server";
-import { db } from "../utils/db.server";
+import { db } from "~/utils/db.server";
 import { isMessageProcessed } from "../../server/integrations/whatsapp/deduplication.service";
 import { downloadWhatsAppSticker } from "../../server/integrations/whatsapp/media.service";
 import { shouldProcessMessage } from "../../server/integrations/whatsapp/message-debounce.service";

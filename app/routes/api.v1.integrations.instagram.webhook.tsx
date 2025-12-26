@@ -1,5 +1,5 @@
 import { data as json } from "react-router";
-import { db } from "../utils/db.server";
+import { db } from "~/utils/db.server";
 
 /**
  * Instagram Webhook Handler

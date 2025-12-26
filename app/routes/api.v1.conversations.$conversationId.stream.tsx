@@ -1,4 +1,4 @@
-import { db } from "../utils/db.server";
+import { db } from "~/utils/db.server";
 
 /**
  * SSE Endpoint para streaming de mensajes nuevos en tiempo real

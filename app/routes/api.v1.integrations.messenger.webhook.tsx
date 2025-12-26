@@ -1,6 +1,6 @@
 import { data as json } from "react-router";
 import type { Route } from "./+types/api.v1.integrations.messenger.webhook";
-import { db } from "../utils/db.server";
+import { db } from "~/utils/db.server";
 
 /**
  * Messenger Webhook Handler

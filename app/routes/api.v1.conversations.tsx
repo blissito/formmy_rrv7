@@ -1,5 +1,5 @@
 import { data as json } from "react-router";
-import { db } from "../utils/db.server";
+import { db } from "~/utils/db.server";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { validateChatbotAccess } from "server/chatbot/chatbotAccess.server";
 import { addAssistantMessage } from "server/chatbot/messageModel.server";
