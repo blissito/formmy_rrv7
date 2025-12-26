@@ -245,7 +245,9 @@ export async function action({ request }: any) {
         }
         if (chatbot.userId !== userId) {
           return new Response(
-            JSON.stringify({ error: "No tienes permiso para modificar este chatbot" }),
+            JSON.stringify({
+              error: "No tienes permiso para modificar este chatbot",
+            }),
             { status: 403, headers: { "Content-Type": "application/json" } }
           );
         }
@@ -256,12 +258,19 @@ export async function action({ request }: any) {
 
         // Parsear dominios: "ejemplo.com, otro.com" → ["ejemplo.com", "otro.com"]
         const allowedDomains = allowedDomainsRaw
-          ? allowedDomainsRaw.split(",").map((d) => d.trim()).filter((d) => d.length > 0)
+          ? allowedDomainsRaw
+              .split(",")
+              .map((d) => d.trim())
+              .filter((d) => d.length > 0)
           : [];
 
         // Defaults para settings si no existen
         const currentSettings = chatbot.settings || {
-          notifications: { weeklyDigest: true, usageLimit: true, configChanges: false },
+          notifications: {
+            weeklyDigest: true,
+            usageLimit: true,
+            configChanges: false,
+          },
           security: { allowedDomains: [], status: "public", rateLimit: 100 },
         };
 
@@ -307,7 +316,9 @@ export async function action({ request }: any) {
         }
         if (chatbot.userId !== userId) {
           return new Response(
-            JSON.stringify({ error: "No tienes permiso para modificar este chatbot" }),
+            JSON.stringify({
+              error: "No tienes permiso para modificar este chatbot",
+            }),
             { status: 403, headers: { "Content-Type": "application/json" } }
           );
         }
@@ -318,7 +329,11 @@ export async function action({ request }: any) {
 
         // Defaults para settings si no existen
         const currentSettings = chatbot.settings || {
-          notifications: { weeklyDigest: true, usageLimit: true, configChanges: false },
+          notifications: {
+            weeklyDigest: true,
+            usageLimit: true,
+            configChanges: false,
+          },
           security: { allowedDomains: [], status: "public", rateLimit: 100 },
         };
 
@@ -380,10 +395,10 @@ export async function action({ request }: any) {
 
         const chatbot = await getChatbotById(chatbotId);
         if (!chatbot || chatbot.userId !== userId) {
-          return new Response(
-            JSON.stringify({ error: "No tienes permiso" }),
-            { status: 403, headers: { "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: "No tienes permiso" }), {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         const { db } = await import("~/utils/db.server");
@@ -426,10 +441,10 @@ export async function action({ request }: any) {
           );
         }
         if (chatbot.userId !== userId) {
-          return new Response(
-            JSON.stringify({ error: "No tienes permiso" }),
-            { status: 403, headers: { "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: "No tienes permiso" }), {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         const { db } = await import("~/utils/db.server");
@@ -437,10 +452,9 @@ export async function action({ request }: any) {
           where: { chatbotId },
         });
 
-        return new Response(
-          JSON.stringify({ success: true, count }),
-          { headers: { "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ success: true, count }), {
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       // Toggle user notifications permission
@@ -468,10 +482,10 @@ export async function action({ request }: any) {
           );
         }
         if (permission.chatbot.userId !== userId) {
-          return new Response(
-            JSON.stringify({ error: "No tienes permiso" }),
-            { status: 403, headers: { "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: "No tienes permiso" }), {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         const updated = await db.permission.update({
@@ -509,20 +523,19 @@ export async function action({ request }: any) {
           );
         }
         if (permission.chatbot.userId !== userId) {
-          return new Response(
-            JSON.stringify({ error: "No tienes permiso" }),
-            { status: 403, headers: { "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: "No tienes permiso" }), {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         await db.permission.delete({
           where: { id: permissionId },
         });
 
-        return new Response(
-          JSON.stringify({ success: true }),
-          { headers: { "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { "Content-Type": "application/json" },
+        });
       }
 
       // Batch conversation count for dashboard
@@ -544,6 +557,7 @@ export async function action({ request }: any) {
             by: ["chatbotId"],
             where: {
               chatbotId: { in: chatbotIds },
+              status: { not: "DELETED" },
             },
             _count: {
               id: true,
