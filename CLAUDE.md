@@ -762,3 +762,216 @@ db.DebouncedMessage.deleteMany({})
 - NO utilidades en rutas → `.server.tsx`
 - Imports: `server/...` sin prefijo
 - Deploy: `npm run deploy` (Fly.io)
+
+---
+
+## 🛍️ TODO: Shopify Integration Strategy
+
+### Oportunidad de Mercado (2025)
+
+**Gap Identificado**: Shopify NO tiene embeddings públicos de catálogos
+- ✅ Shopify Semantic Search existe (marzo 2025) pero es solo frontend, no API
+- ✅ Catalog API (mayo 2025) expone datos estructurados pero NO vectoriza
+- ❌ NO existe "Vectorization as a Service" para Shopify merchants
+- ❌ Apps de chatbot (Sendbird, Tidio, Gorgias) duplican esfuerzo vectorizando por separado
+
+**Tamaño de mercado**:
+- 4.4M+ tiendas Shopify activas
+- Mercado AI search: $43.6B (2025) → $108.9B (2032) - 14% CAGR
+- 35% de consumidores US usan búsqueda en lenguaje natural
+
+### Modelo de Negocio Recomendado: HÍBRIDO
+
+**Estrategia de 3 Revenue Streams**:
+
+#### Stream 1: Shopify App Embebida (Lead Generation)
+```
+Producto: "SearchGPT for Shopify" o "Semantic Product Finder"
+Propósito: Vectorización automática + Widget de búsqueda
+
+Pricing:
+- Free:  $0/mes    - 100 productos, búsqueda básica (80% installs)
+- Pro:   $29/mes   - 5K productos, analytics, filters (15% conversion)
+- Plus:  $99/mes   - Ilimitado, API access (5% usuarios grandes)
+
+Arquitectura:
+┌─────────────────────────────────┐
+│ Shopify Admin (Embedded App)   │
+│ - OAuth + Products API          │
+│ - Webhooks auto-sync            │
+│ - Search widget embebible       │
+│ - "Upgrade to AI Chatbot" CTA   │
+└─────────────────────────────────┘
+         ↓
+   Formmy Backend
+   (vercel_embeddings.ts)
+```
+
+#### Stream 2: Formmy Chatbot Premium (High-Margin Upsell)
+```
+Producto: "Formmy AI Assistant for Shopify"
+Propósito: Chatbot conversacional completo
+
+Pricing:
+- Chatbot: $199/mes - AI Conversacional + WhatsApp + Lead capture
+- Premium: $499/mes - Multi-channel + Voice AI + Analytics
+
+Cross-sell: 10% conversion de usuarios de Shopify App
+```
+
+#### Stream 3: API Pública (Developers)
+```
+Producto: "Formmy Vector API"
+Propósito: B2B developer tool
+
+Pricing:
+- Starter:      $49/mes  - 10K products, 50K queries
+- Professional: $199/mes - 100K products, 500K queries
+- Enterprise:   Custom   - Pay-as-you-go ($0.001/query)
+
+Target: Agencias, apps de terceros, custom storefronts
+```
+
+### Revenue Projections (Año 1)
+
+**Shopify App**:
+- 500 installs (400 free + 75 Pro + 25 Plus)
+- MRR: $6,825/mes
+
+**Formmy Chatbot** (10% conversion):
+- 50 merchants upgrade
+- MRR: $9,950/mes
+
+**Total**: $16,775 MRR = $201K ARR
+**Margen**: ~90% (costos: $500/mes infra)
+
+### Datos de Mercado (Shopify App Store)
+
+**Revenue Share**:
+- $1M lifetime commission-free (cambio 2025)
+- 15% después de $1M
+- Fee de registro: $19 USD one-time
+
+**Benchmarks**:
+- Mediana de apps: $725/mes
+- Top 25%: $10,000/mes
+- Timeline típico: 3-6 meses a $1,000 MRR
+
+**Competencia**:
+| App | Pricing | Limitación | Nuestra ventaja |
+|-----|---------|-----------|-----------------|
+| Prefixbox AI | $99-499/mes | Solo search UI | Search + Chatbot |
+| Sendbird | $99+/mes | Solo chatbot | Embeddings reusables |
+| Boost AI Search | $29-399/mes | No chatbot | Full funnel |
+
+### Best Practices RAG para E-commerce
+
+**Chunking Strategy**: 1 producto = 1 chunk (NO dividir)
+```typescript
+{
+  // EMBEDDINGS (búsqueda semántica)
+  content: "Zapatos Nike Air Max 2024 - Diseño ligero...",
+
+  // METADATA (filtros exactos)
+  metadata: {
+    productId, name, category, brand,
+    price, inStock, sizes, colors,
+    sku, deliveryTime, discount
+  }
+}
+```
+
+**Hybrid Search** (recomendado por comunidad 2025):
+```typescript
+// Pre-filter por metadata → Vector search en subset
+const results = await hybridSearch({
+  semanticQuery: "zapatos cómodos",
+  filters: {
+    category: "calzado",
+    price: { lte: 1500 },
+    inStock: true
+  }
+});
+```
+
+**Ventajas vs Chunking tradicional**:
+- ✅ Producto = unidad atómica (coherencia total)
+- ✅ Metadata no consume tokens de embedding
+- ✅ Updates de precio/stock sin re-embedear
+- ✅ Filtros exactos + búsqueda semántica
+
+### Implementación Técnica
+
+**Fase 1 (Mes 1-2): MVP Shopify App**
+- Shopify Partner account + Embedded app setup
+- OAuth + Products webhook sync
+- Auto-vectorización (usar `vercel_embeddings.ts` existente)
+- Search widget React component
+- Dashboard básico con App Bridge
+
+**Fase 2 (Mes 3): Monetización**
+- Agregar Pro/Plus pricing tiers
+- Analytics dashboard
+- Advanced filters (price range, category, brand)
+- "Upgrade to AI Chatbot" CTA prominente
+
+**Fase 3 (Mes 4-6): Formmy Integration**
+- One-click setup de Formmy chatbot desde Shopify App
+- Productos ya vectorizados (cero setup adicional)
+- Artifacts nativos (product-card, gallery-card) con datos de Shopify
+- WhatsApp integration para tiendas
+
+**Nuevo ContextType**:
+```prisma
+enum ContextType {
+  TEXT
+  PDF
+  PRODUCT  // ⬅️ Nuevo tipo para catálogos Shopify
+}
+```
+
+### Riesgos & Mitigación
+
+**Riesgo 1**: Shopify lanza API de vectores pública
+- **Mitigación**: Diferenciador es chatbot completo, no solo search
+- **Plus**: Ya tenemos traction y reviews
+
+**Riesgo 2**: Competencia brutal (12,320 apps)
+- **Mitigación**: Free tier generoso para acumular reviews rápido
+- **Plus**: "Built for Shopify" badge = top de búsquedas
+
+**Riesgo 3**: Costos de embeddings escalan
+- **Mitigación**: Cache de embeddings, solo re-vectoriza si producto cambió
+- **Plus**: Metadata updates no requieren re-embedding
+
+### Stack Técnico
+
+**Shopify App** (Next.js + App Bridge):
+- Framework: Shopify Remix template o Next.js App Bridge
+- Auth: OAuth 2.0 (Shopify Partners)
+- Webhooks: products/create, products/update, products/delete
+- UI: Polaris (Shopify design system)
+
+**Formmy Backend** (ya existente):
+- RAG: `server/context/vercel_embeddings.ts`
+- Vector DB: MongoDB Atlas (`vector_index_2`)
+- Embeddings: text-embedding-3-small
+- Chunk strategy: Ajustar de 2000 chars → 1 producto completo
+
+**Integraciones**:
+- Shopify GraphQL Admin API
+- Shopify Storefront API (para widget público)
+- Vercel AI SDK (chatbot)
+- MongoDB vector search (híbrido)
+
+### Fuentes de Investigación
+
+- [Shopify Semantic Search: Why Merchants Are Frustrated](https://www.prefixbox.com/blog/shopify-semantic-search-frustration/)
+- [Shopify Catalog API: The Future of Product Discovery](https://www.marpipe.com/blog/shopify-catalog-api)
+- [Building an E-commerce Focused RAG System](https://medium.com/@gdsources.io/building-an-e-commerce-focused-rag-system-part-1-data-pipeline-strategy-1f824e5cb88d)
+- [How Much Money Can You Make With Shopify Apps](https://mktclarity.com/blogs/news/shopify-app-make-money)
+- [Shopify Revenue Share Policy 2025](https://mktclarity.com/blogs/news/shopify-apps-new-revenue-share-policy)
+- [Products-Vectro GitHub](https://github.com/pranav-kural/products-vectro) (open-source template)
+
+**Fecha**: 2025-12-26
+**Estado**: 🟡 Pendiente - Research completado, decisión de implementación pendiente
