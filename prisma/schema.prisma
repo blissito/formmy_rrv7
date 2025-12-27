@@ -751,8 +751,9 @@ model Trace {
   user    User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   spans   Span[]
   events  TraceEvent[]
+  scores  Score[]      // Evaluaciones (Langfuse-compatible)
 
-  // Metadata flexible (tags, environment, etc.)
+  // Metadata flexible (tags, environment, sessionId para Langfuse, etc.)
   metadata Json?
 
   createdAt DateTime @default(now())
@@ -816,6 +817,85 @@ model TraceEvent {
 
   @@index([traceId])
   @@index([type])
+}
+
+// ========================================
+// Score & Evaluation Models (Langfuse-compatible)
+// ========================================
+
+/// Score - Evaluation attached to a trace or span
+/// Compatible with Langfuse score format for future integration
+model Score {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  traceId       String        @db.ObjectId
+  spanId        String?       @db.ObjectId // Optional: score specific span
+
+  name          String        // e.g., "faithfulness", "relevancy", "user_satisfaction"
+  value         Float         // Numeric score (0-1 for normalized, or custom range)
+  stringValue   String?       // For categorical scores
+  comment       String?       // Human annotation comment
+
+  source        ScoreSource   @default(MANUAL)
+  dataType      ScoreDataType @default(NUMERIC)
+
+  // For LLM-as-judge evaluations
+  evaluatorModel  String?     // Model used for evaluation
+  evaluatorPrompt String?     // Prompt used for evaluation
+
+  // Metadata
+  configId      String?       @db.ObjectId // Link to ScoreConfig
+  userId        String?       @db.ObjectId // Who created the score
+  metadata      Json?
+
+  createdAt     DateTime      @default(now())
+
+  trace         Trace         @relation(fields: [traceId], references: [id], onDelete: Cascade)
+
+  @@index([traceId])
+  @@index([name])
+  @@index([source])
+}
+
+/// ScoreConfig - Defines score types and evaluation criteria
+model ScoreConfig {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String        @db.ObjectId
+
+  name        String        // e.g., "faithfulness"
+  description String?
+  dataType    ScoreDataType @default(NUMERIC)
+
+  // For numeric scores
+  minValue    Float?        @default(0)
+  maxValue    Float?        @default(1)
+
+  // For categorical scores
+  categories  String[]      // e.g., ["positive", "negative", "neutral"]
+
+  // For LLM-as-judge
+  isAutomatic   Boolean     @default(false)
+  evaluatorModel String?    // e.g., "gpt-4o-mini"
+  evaluatorPrompt String?   // The judge prompt template
+
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+enum ScoreSource {
+  MANUAL      // Human annotation
+  API         // External API
+  EVAL        // LLM-as-judge automatic evaluation
+  FEEDBACK    // User feedback (thumbs up/down)
+}
+
+enum ScoreDataType {
+  NUMERIC     // Float value (0-1 or custom range)
+  CATEGORICAL // String from predefined categories
+  BOOLEAN     // true/false
 }
 
 // ========================================

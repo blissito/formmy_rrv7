@@ -48,8 +48,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
           traces: result.traces.map((trace) => ({
             id: trace.id,
             chatbotId: trace.chatbotId,
-            chatbotName: trace.chatbot?.name || null,
+            chatbot: trace.chatbot ? {
+              id: trace.chatbot.id,
+              name: trace.chatbot.name,
+              slug: trace.chatbot.slug,
+            } : null,
             conversationId: trace.conversationId,
+            metadata: trace.metadata, // Para sessionId de Langfuse
             input: trace.input,
             output: trace.output,
             status: trace.status,

@@ -162,7 +162,8 @@ export function TraceWaterfall({ spans, totalDuration }: TraceWaterfallProps) {
                         </span>
                       </div>
                     )}
-                    {span.cost !== undefined && (
+                    {/* Cost solo visible en hover */}
+                    {isHovered && span.cost !== undefined && (
                       <div className="flex items-center gap-1">
                         <span className="font-medium">Cost:</span>
                         <span className="text-dark dark:text-white font-mono">

@@ -1120,6 +1120,9 @@ async function generateChatbotResponse(
   // ✅ Variable compartida para pasar el messageId desde onFinish
   let savedMessageId: string | undefined;
 
+  // 📊 OBSERVABILITY: Variable para trace context (accesible en catch)
+  let traceCtx: any = null;
+
   try {
     // ✅ IMPORTAR Vercel AI SDK - generateText para WhatsApp (no streaming)
     const { generateText, stepCountIs } = await import("ai");
@@ -1138,9 +1141,25 @@ async function generateChatbotResponse(
     const { loadCustomToolsForChatbot } = await import(
       "../../server/tools/vercel/customHttpTool"
     );
+    const { startTrace, endTrace, failTrace, startSpan, endSpan } = await import(
+      "../../server/tracing/instrumentation"
+    );
 
     // 🔧 Cargar custom tools del chatbot (herramientas HTTP personalizadas)
     const customTools = await loadCustomToolsForChatbot(chatbot.id);
+
+    // 📊 OBSERVABILITY: Iniciar trace para esta conversación
+    try {
+      traceCtx = await startTrace({
+        userId: chatbot.userId,
+        chatbotId: chatbot.id,
+        conversationId: _conversationId,
+        input: userMessage,
+        model: chatbot.aiModel,
+      });
+    } catch (err) {
+      console.error("[WhatsApp] ⚠️ Failed to start trace (non-blocking):", err);
+    }
 
     // Build conversation history from recent messages
     const history =
@@ -1252,6 +1271,47 @@ async function generateChatbotResponse(
       `✅ [WhatsApp] Message saved: ${totalTokens} tokens, $${costResult.totalCost.toFixed(6)} (${provider}/${model}), messageId: ${savedMessageId}`
     );
 
+    // 📊 OBSERVABILITY: Crear span LLM_CALL y completar trace
+    if (traceCtx) {
+      try {
+        // Crear span para la llamada LLM con métricas detalladas
+        const spanId = await startSpan(traceCtx, {
+          type: "LLM_CALL",
+          name: model || chatbot.aiModel,
+          input: { prompt: userMessage, model: chatbot.aiModel },
+        });
+
+        // Completar span con output y métricas
+        await endSpan(traceCtx, spanId, {
+          output: { response: result.text.trim().substring(0, 500) },
+          tokens: totalTokens,
+          cost: costResult.totalCost,
+          metadata: {
+            gen_ai: {
+              system: provider,
+              request: { model },
+              usage: {
+                input_tokens: inputTokens,
+                output_tokens: outputTokens,
+              },
+              response_time_ms: responseTime,
+            },
+          },
+        });
+      } catch (spanErr) {
+        console.error("[WhatsApp] ⚠️ Failed to create LLM span:", spanErr);
+      }
+
+      await endTrace(traceCtx, {
+        output: result.text.trim(),
+        totalTokens,
+        totalCost: costResult.totalCost,
+        creditsUsed: 0,
+      }).catch((err) => {
+        console.error("[WhatsApp] ⚠️ Failed to end trace:", err);
+      });
+    }
+
     // 🔧 Track tool usage (fire-and-forget, no crítico)
     if (result.toolCalls && result.toolCalls.length > 0) {
       const { ToolUsageTracker } = await import(
@@ -1283,6 +1343,14 @@ async function generateChatbotResponse(
     };
   } catch (error) {
     console.error("❌ [WhatsApp] Error generating chatbot response:", error);
+
+    // 📊 OBSERVABILITY: Marcar trace como error
+    if (traceCtx) {
+      const { failTrace } = await import(
+        "../../server/tracing/instrumentation"
+      );
+      await failTrace(traceCtx, String(error)).catch(() => {});
+    }
 
     return {
       content:

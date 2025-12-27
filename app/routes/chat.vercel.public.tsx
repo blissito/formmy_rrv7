@@ -25,6 +25,14 @@ import { loadCustomToolsForChatbot } from "@/server/tools/vercel/customHttpTool"
 import { calculateCost } from "@/server/chatbot/pricing.server";
 import { validateDomainAccess } from "@/server/utils/domain-validator.server";
 import { getRequestOrigin } from "@/server/utils/request-origin.server";
+import {
+  startTrace,
+  endTrace,
+  failTrace,
+  startSpan,
+  endSpan,
+  type TraceContext,
+} from "@/server/tracing/instrumentation";
 
 /**
  * ✅ Loader para cargar mensajes históricos (GET request)
@@ -174,6 +182,20 @@ export async function action({ request }: Route.ActionArgs) {
 
   await addUserMessage(conversation.id, textContent);
 
+  // 📊 OBSERVABILITY: Iniciar trace para esta conversación
+  let traceCtx: TraceContext | null = null;
+  try {
+    traceCtx = await startTrace({
+      userId: chatbot.userId,
+      chatbotId: chatbot.id,
+      conversationId: conversation.id,
+      input: textContent,
+      model: chatbot.aiModel,
+    });
+  } catch (err) {
+    console.error("[Chat Public] ⚠️ Failed to start trace (non-blocking):", err);
+  }
+
   // 🎨 Cargar lista de artefactos instalados para el prompt
   let installedArtifacts = "No hay artefactos instalados.";
   try {
@@ -296,8 +318,53 @@ export async function action({ request }: Route.ActionArgs) {
         console.log(
           `[Chat Public] ✅ Message tracked: ${totalTokens} tokens, $${costResult.totalCost.toFixed(6)} (${provider}/${model})`
         );
+
+        // 📊 OBSERVABILITY: Crear span LLM_CALL y completar trace
+        if (traceCtx) {
+          try {
+            // Crear span para la llamada LLM con métricas detalladas
+            const spanId = await startSpan(traceCtx, {
+              type: "LLM_CALL",
+              name: model || chatbot.aiModel,
+              input: { prompt: textContent, model: chatbot.aiModel },
+            });
+
+            // Completar span con output y métricas
+            await endSpan(traceCtx, spanId, {
+              output: { response: text.substring(0, 500) }, // Truncar para no sobrecargar
+              tokens: totalTokens,
+              cost: costResult.totalCost,
+              metadata: {
+                gen_ai: {
+                  system: provider,
+                  request: { model },
+                  usage: {
+                    input_tokens: inputTokens,
+                    output_tokens: outputTokens,
+                  },
+                  response_time_ms: responseTime,
+                },
+              },
+            });
+          } catch (spanErr) {
+            console.error("[Chat Public] ⚠️ Failed to create LLM span:", spanErr);
+          }
+
+          await endTrace(traceCtx, {
+            output: text,
+            totalTokens,
+            totalCost: costResult.totalCost,
+            creditsUsed: 0,
+          }).catch((err) => {
+            console.error("[Chat Public] ⚠️ Failed to end trace:", err);
+          });
+        }
       } catch (error) {
         console.error("[Chat Public Action] ❌ Error saving message:", error);
+        // 📊 OBSERVABILITY: Marcar trace como error
+        if (traceCtx) {
+          await failTrace(traceCtx, String(error)).catch(() => {});
+        }
       }
     },
   });

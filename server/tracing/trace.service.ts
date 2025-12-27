@@ -338,20 +338,41 @@ export async function listTraces(params: {
     const [traces, total] = await Promise.all([
       db.trace.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          chatbotId: true,
+          conversationId: true,
+          userId: true,
+          input: true,
+          output: true,
+          status: true,
+          startTime: true,
+          endTime: true,
+          durationMs: true,
+          model: true,
+          totalTokens: true,
+          totalCost: true,
+          creditsUsed: true,
+          metadata: true, // Para sessionId de Langfuse
+          createdAt: true,
           chatbot: {
-            select: { id: true, name: true },
+            select: { id: true, name: true, slug: true },
           },
           spans: {
             select: {
               id: true,
               type: true,
               name: true,
+              startTime: true,
               durationMs: true,
               tokens: true,
               cost: true,
               credits: true,
               status: true,
+              input: true,
+              output: true,
+              error: true,
+              metadata: true, // Para gen_ai attributes
             },
             orderBy: { startTime: "asc" },
           },
