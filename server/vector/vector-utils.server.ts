@@ -140,6 +140,46 @@ export async function isDuplicateChunk(
 }
 
 /**
+ * Chunking por delimitador para catálogos de productos
+ * Cada producto/fila se mantiene como chunk individual completo
+ *
+ * @param text - Contenido con delimitadores ---PRODUCT---
+ * @param delimiter - Delimitador a usar (default: ---PRODUCT---)
+ * @param maxChunkSize - Tamaño máximo de chunk (si un producto excede, se trunca)
+ * @returns Array de chunks, cada uno representando un producto completo
+ */
+export function chunkByDelimiter(
+  text: string,
+  delimiter: string = "---PRODUCT---",
+  maxChunkSize: number = VECTOR_CONFIG.MAX_CHUNK_SIZE
+): string[] {
+  const products = text
+    .split(delimiter)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+
+  // Si un producto excede el tamaño máximo, lo truncamos
+  // (mejor truncar que perder coherencia dividiendo)
+  return products.map((product) => {
+    if (product.length > maxChunkSize) {
+      console.warn(
+        `⚠️ [chunkByDelimiter] Producto truncado: ${product.length} → ${maxChunkSize} chars`
+      );
+      return product.slice(0, maxChunkSize);
+    }
+    return product;
+  });
+}
+
+/**
+ * Detecta si el contenido es un catálogo de productos
+ * Busca el delimitador especial ---PRODUCT---
+ */
+export function isCatalogContent(text: string): boolean {
+  return text.includes("---PRODUCT---");
+}
+
+/**
  * Calcula similaridad coseno entre dos vectors
  * Función matemática pura (no depende de ningún servicio externo)
  * @param a - Vector A

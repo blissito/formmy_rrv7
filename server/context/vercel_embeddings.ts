@@ -1,6 +1,11 @@
 import { embedMany, embed } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { chunkContent, isDuplicateChunk } from "../vector/vector-utils.server";
+import {
+  chunkContent,
+  chunkByDelimiter,
+  isCatalogContent,
+  isDuplicateChunk,
+} from "../vector/vector-utils.server";
 import {
   EMBEDDING_DIMENSIONS,
   EMBEDDING_MODEL,
@@ -156,11 +161,23 @@ export const upsert = async ({
       `✅ [vercel_embeddings.upsert] Context creado: ${newContextDocument.id}`
     );
 
-    // 5. Chunking
-    const values = chunkContent(content);
-    console.log(
-      `✂️ [vercel_embeddings.upsert] Chunks generados: ${values.length}`
-    );
+    // 5. Chunking - usar estrategia específica para catálogos
+    const isCatalog = isCatalogContent(content);
+    console.log(`\n${"─".repeat(50)}`);
+    console.log(`🔍 [CHUNKING] Detectando tipo de contenido...`);
+    console.log(`   - ¿Es catálogo? ${isCatalog ? "✅ SÍ (encontró ---PRODUCT---)" : "❌ NO"}`);
+    console.log(`   - Estrategia: ${isCatalog ? "chunkByDelimiter()" : "chunkContent()"}`);
+
+    const values = isCatalog ? chunkByDelimiter(content) : chunkContent(content);
+
+    console.log(`✂️ [CHUNKING] Resultado: ${values.length} chunks`);
+    if (isCatalog) {
+      values.forEach((chunk, i) => {
+        const preview = chunk.substring(0, 80).replace(/\n/g, " ");
+        console.log(`   📦 Chunk ${i + 1}: ${chunk.length} chars - "${preview}..."`);
+      });
+    }
+    console.log(`${"─".repeat(50)}\n`);
 
     // 6. Generar embeddings con Vercel AI SDK
     const { embeddings, values: chunks } = await embedMany({
@@ -298,7 +315,8 @@ export const updateContext = async ({
     });
 
     // 3. Generate new chunks and embeddings
-    const values = chunkContent(content);
+    const isCatalog = isCatalogContent(content);
+    const values = isCatalog ? chunkByDelimiter(content) : chunkContent(content);
     const { embeddings, values: chunks } = await embedMany({
       model: embeddingModel,
       values,

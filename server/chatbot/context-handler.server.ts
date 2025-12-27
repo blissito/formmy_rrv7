@@ -12,6 +12,7 @@ import { secureUpsert } from "../context/vercel_embeddings.secure";
 import { db } from "../../app/utils/db.server";
 import * as officeParser from "officeparser";
 import { extractText } from "unpdf";
+import * as XLSX from "xlsx";
 
 export async function handleContextOperation(
   intent: string,
@@ -114,12 +115,56 @@ export async function handleContextOperation(
                 );
               }
             } else if (fileName && fileName.toLowerCase().endsWith(".xlsx")) {
-              // Procesar XLSX con officeParser
+              // Procesar XLSX con xlsx library - cada fila como producto individual
+              console.log(`\n${"=".repeat(60)}`);
+              console.log(`📂 [XLSX] Iniciando procesamiento: ${fileName}`);
+              console.log(`${"=".repeat(60)}`);
+
               const arrayBuffer = await file.arrayBuffer();
               const buffer = Buffer.from(arrayBuffer);
+              console.log(`📦 [XLSX] Buffer size: ${buffer.length} bytes`);
 
               try {
-                content = await officeParser.parseOfficeAsync(buffer);
+                const workbook = XLSX.read(buffer, { type: "buffer" });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                console.log(`📑 [XLSX] Sheet: "${sheetName}" (${workbook.SheetNames.length} hojas total)`);
+
+                // Convertir a JSON para obtener estructura de filas con headers
+                const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, {
+                  defval: "", // Valor default para celdas vacías
+                });
+
+                if (!jsonData || jsonData.length === 0) {
+                  throw new Error(
+                    "El archivo Excel está vacío o no contiene datos extraíbles"
+                  );
+                }
+
+                // Log de headers detectados
+                const headers = Object.keys(jsonData[0] || {});
+                console.log(`📋 [XLSX] Headers detectados: ${headers.join(", ")}`);
+                console.log(`📊 [XLSX] Filas encontradas: ${jsonData.length}`);
+
+                // Formatear cada fila como un bloque de texto con headers
+                // Usar delimitador especial para que vercel_embeddings lo chunkeé por producto
+                const formattedRows = jsonData.map((row, idx) => {
+                  const lines = Object.entries(row)
+                    .filter(([_, value]) => value !== null && value !== undefined && String(value).trim() !== "")
+                    .map(([key, value]) => `${key}: ${value}`);
+                  const formatted = lines.join("\n");
+                  console.log(`  📦 [XLSX] Producto ${idx + 1}: ${formatted.length} chars`);
+                  return formatted;
+                });
+
+                // Unir con delimitador especial que vercel_embeddings reconocerá
+                content = formattedRows.join("\n---PRODUCT---\n");
+
+                console.log(`\n✅ [XLSX] Procesamiento completado:`);
+                console.log(`   - Productos: ${formattedRows.length}`);
+                console.log(`   - Content total: ${content.length} chars`);
+                console.log(`   - Delimitador: ---PRODUCT---`);
+                console.log(`${"=".repeat(60)}\n`);
 
                 // Validar que se extrajo contenido real
                 if (!content || content.trim().length === 0) {

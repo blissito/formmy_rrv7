@@ -623,9 +623,12 @@ export const Entrenamiento = ({
     console.log("🚀 [handleUpdateChatbot] Iniciando...");
     setIsUpdating(true);
 
+    // ✅ Capturar ANTES de cualquier operación para que hasChanges funcione
+    const hadUploadedFiles = uploadedFiles.length > 0;
+
     try {
       // Subir archivos automáticamente cuando se presiona "Actualizar Chatbot"
-      console.log("📁 [handleUpdateChatbot] Subiendo archivos...");
+      console.log("📁 [handleUpdateChatbot] Subiendo archivos:", uploadedFiles.length);
       await handleUploadFiles();
       console.log("✅ [handleUpdateChatbot] Archivos subidos");
 
@@ -838,7 +841,9 @@ export const Entrenamiento = ({
       }
 
       // Limpiar estados después de subirlos y recargar datos
+      // ✅ FIX: Usar hadUploadedFiles capturado al inicio de la función
       const hasChanges =
+        hadUploadedFiles || // ✅ Archivos subidos (capturado antes de limpiar)
         successfulWebsites > 0 ||
         newTextContexts.length > 0 ||
         newQuestionContexts.length > 0 ||
