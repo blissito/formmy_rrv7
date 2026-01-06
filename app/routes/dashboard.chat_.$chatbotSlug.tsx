@@ -290,13 +290,13 @@ export default function ChatbotDetailRoute({
     // 1. Cambio inmediato de UI (sin esperar navegación)
     setCurrentTab(tab);
 
-    // 2. Sincronizar URL sin re-ejecutar loader (replaceState no triggerea React Router)
+    // 2. Sincronizar URL con navigate + replace (para que searchParams se actualice)
     const params = new URLSearchParams(window.location.search);
     params.set('tab', tab);
     if (tab !== 'Conversaciones') {
       params.delete('conversation');
     }
-    window.history.replaceState({}, '', `?${params.toString()}`);
+    navigate(`?${params.toString()}`, { replace: true, preventScrollReset: true });
   };
 
   // Toggle manual mode for conversation
