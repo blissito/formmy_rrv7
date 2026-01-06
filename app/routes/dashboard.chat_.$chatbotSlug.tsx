@@ -199,8 +199,18 @@ export default function ChatbotDetailRoute({
   // Tab: estado local para UI inmediata, inicializado desde loader (sin flash)
   const [currentTab, setCurrentTab] = useState(initialTab);
 
-  // searchParams para WhatsApp callback
+  // searchParams para WhatsApp callback y navegación de tabs
   const [searchParams] = useSearchParams();
+
+  // 🔄 Sincronizar tab con URL cuando cambia por navegación externa (ej: desde tabla de Leads)
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    const validTabs = ['Preview', 'Conversaciones', 'Contactos', 'Entrenamiento',
+                       'Artefactos', 'Herramientas', 'Código', 'Configuración'];
+    if (tabFromUrl && validTabs.includes(tabFromUrl) && tabFromUrl !== currentTab) {
+      setCurrentTab(tabFromUrl);
+    }
+  }, [searchParams, currentTab]);
 
   // ✅ Procesar callback de WhatsApp Embedded Signup (Authorization Code Flow)
   useEffect(() => {
