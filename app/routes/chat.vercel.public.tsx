@@ -206,16 +206,26 @@ export async function action({ request }: Route.ActionArgs) {
     console.error("[chat.vercel.public] ERROR loading artifacts:", err);
   }
 
+  // 🎭 Construir system prompt usando el agente configurado o instrucciones genéricas
+  const { getAgentPrompt } = await import("~/utils/agents/agentPrompts");
+
+  let basePrompt = "";
+  if (chatbot.personality && chatbot.personality !== "default") {
+    // Usar prompt especializado del agente seleccionado
+    basePrompt = getAgentPrompt(chatbot.personality as any);
+  } else {
+    // Fallback a instructions genéricas
+    basePrompt = chatbot.instructions || "Eres un asistente útil.";
+  }
+
+  // Agregar custom instructions si existen (sin sobreescribir el prompt base)
+  if (chatbot.customInstructions && chatbot.customInstructions.trim()) {
+    basePrompt += `\n\n# INSTRUCCIONES ADICIONALES:\n${chatbot.customInstructions}`;
+  }
+
   // System prompt con instrucciones para artefactos (patrón HITL)
   const systemPrompt = `
-    # Sigue estas instrucciones:
-    ${chatbot.instructions}
-
-    # Usa esta personalidad:
-    ${chatbot.personality}
-
-    # Considera, además, estas instrucciones:
-    ${chatbot.customInstructions}
+    ${basePrompt}
 
     # ⚠️ CRÍTICO - Uso de Knowledge Base:
     Tienes acceso a una base de conocimiento con información específica sobre este negocio.
@@ -265,7 +275,7 @@ export async function action({ request }: Route.ActionArgs) {
     system: systemPrompt,
     tools: {
       getContextTool: createGetContextTool(chatbotId),
-      saveLeadTool: createSaveLeadTool(chatbotId, conversation.id),
+      saveLeadTool: createSaveLeadTool(chatbotId, conversation.id, "web"), // ⬅️ Indica canal WEB
       openArtifactTool: createOpenArtifactTool(chatbotId),
       // NOTE: confirmArtifactTool removido - HITL pattern incompatible con transport "Last Message Only"
       ...customTools, // 🔧 Herramientas HTTP personalizadas

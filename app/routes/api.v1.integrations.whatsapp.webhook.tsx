@@ -1189,15 +1189,27 @@ async function generateChatbotResponse(
       },
     ];
 
+    // 🎭 Construir system prompt usando el agente configurado o instrucciones genéricas
+    const { getAgentPrompt } = await import(
+      "../../utils/agents/agentPrompts"
+    );
+
+    let basePrompt = "";
+    if (chatbot.personality && chatbot.personality !== "default") {
+      // Usar prompt especializado del agente seleccionado
+      basePrompt = getAgentPrompt(chatbot.personality as any);
+    } else {
+      // Fallback a instructions genéricas
+      basePrompt = chatbot.instructions || "Eres un asistente útil.";
+    }
+
+    // Agregar custom instructions si existen (sin sobreescribir el prompt base)
+    if (chatbot.customInstructions && chatbot.customInstructions.trim()) {
+      basePrompt += `\n\n# INSTRUCCIONES ADICIONALES:\n${chatbot.customInstructions}`;
+    }
+
     const systemPrompt = `
-    # Sigue estas instrucciones:
-    ${chatbot.instructions}
-
-    # Usa esta personalidad:
-    ${chatbot.personality}
-
-    # Considera, además, estas instrucciones:
-    ${chatbot.customInstructions}
+    ${basePrompt}
 
     # ⚠️ CRÍTICO - Uso de Knowledge Base:
     Tienes acceso a una base de conocimiento con información específica sobre este negocio.
@@ -1219,7 +1231,7 @@ async function generateChatbotResponse(
       system: systemPrompt,
       tools: {
         getContextTool: createGetContextTool(chatbot.id),
-        saveLeadTool: createSaveLeadTool(chatbot.id, _conversationId),
+        saveLeadTool: createSaveLeadTool(chatbot.id, _conversationId, "whatsapp"), // ⬅️ Indica canal WHATSAPP
         openArtifactTool: createOpenArtifactTool(chatbot.id),
         ...customTools, // 🔧 Herramientas HTTP personalizadas
       },

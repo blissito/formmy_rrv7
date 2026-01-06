@@ -26,67 +26,102 @@ import { z } from "zod";
  * @param conversationId - ID de la conversación (opcional, capturado en closure)
  * @returns Tool de Vercel AI SDK
  */
-export const createSaveLeadTool = (chatbotId: string, conversationId?: string) => {
+export const createSaveLeadTool = (
+  chatbotId: string,
+  conversationId?: string,
+  channel: "whatsapp" | "web" = "web" // ⬅️ NUEVO: Indica el canal
+) => {
   // 🔒 VALIDAR FORMATO AL CREAR EL TOOL
   if (!/^[0-9a-fA-F]{24}$/.test(chatbotId)) {
     throw new Error(`[Save Lead Tool] chatbotId inválido: ${chatbotId}`);
   }
 
+  // 🎯 PROMPT DINÁMICO SEGÚN EL CANAL
+  const isWhatsApp = channel === "whatsapp";
+
   return tool({
-    description: `Save lead/contact information when the user voluntarily provides personal details.
+    description: isWhatsApp
+      ? // 📱 PROMPT PARA WHATSAPP
+        `Guarda información de contacto del lead cuando muestra interés en productos/servicios.
 
-🎯 WHEN TO USE:
-- User explicitly shares email, phone, or other contact information
-- User asks to be contacted
-- User wants to receive more information
-- User signs up for something
+🎯 CUÁNDO USAR:
+- Usuario pide cotización, información, o contacto
+- Usuario pregunta precios o servicios
+- Usuario muestra interés en productos
 
-📋 DATA COLLECTION STRATEGY:
-REQUIRED: Name is ALWAYS required
-PRIORITY: Get BOTH email AND phone when possible (best quality lead)
-MINIMUM: Name + at least ONE (email OR phone)
+⚠️ CONTEXTO: Estás en WHATSAPP
+- El TELÉFONO ya está capturado automáticamente del número de WhatsApp
+- NO preguntes por teléfono (ya lo tienes)
+- SOLO pregunta: nombre + email
 
-📱 WHATSAPP CONVERSATIONS:
-- Phone is AUTO-CAPTURED (don't ask for it)
-- ASK FOR: name, email, productInterest (in that order)
-- Example flow:
-  1. "¿Cuál es tu nombre completo?"
-  2. "¿Cuál es tu email para enviarte más información?"
+📋 REGLA DE CAPTURA:
+Pregunta: "¿Me compartes tu nombre y email?"
+- Pide AMBOS datos juntos en una sola pregunta
+- NO preguntes uno por uno
 
-💻 WEB CONVERSATIONS:
-- Ask for: name, email, phone (all three if context allows)
-- Minimum: name + one contact method
+📝 CAMPOS A GUARDAR:
+- name: Nombre completo (REQUERIDO)
+- email: Email (REQUERIDO)
+- phone: NO pidas (auto-capturado)
+- productInterest: Infiere del contexto (NO preguntes)
 
-📋 FIELDS TO SAVE:
-- name: Full name of the contact (REQUIRED - always ask first)
-- email: Email address (REQUIRED for WhatsApp, highly recommended for Web)
-- phone: Phone number (AUTO-CAPTURED on WhatsApp, ask on Web)
-- productInterest: What product/service they're interested in
+⚠️ MÍNIMO PARA GUARDAR:
+✅ nombre + email → Guardar (phone se agrega automáticamente)
+❌ solo nombre → NO guardar
+❌ solo email → NO guardar
 
-✅ EXAMPLES:
+✅ EJEMPLO:
+Usuario: "Quiero cotización del Plan Enterprise"
+Tú: "¿Me compartes tu nombre y email?"
+Usuario: "Juan Pérez, juan@empresa.com"
+Tú: [Llamar: saveLeadTool({ name: "Juan Pérez", email: "juan@empresa.com", productInterest: "Plan Enterprise" })]
+Tú: "¡Perfecto Juan! Guardé tu contacto. Te enviaremos la cotización pronto."
 
-WhatsApp User: "Quiero info del plan Enterprise"
-→ Ask: "¿Cuál es tu nombre completo?"
-→ User: "Juan Pérez"
-→ Ask: "¿Cuál es tu email para enviarte los detalles?"
-→ User: "juan@example.com"
-→ Save: { name: "Juan Pérez", email: "juan@example.com", productInterest: "Plan Enterprise" }
-   (phone auto-captured from WhatsApp)
+❌ NUNCA:
+- Preguntes por teléfono (ya está capturado)
+- Preguntes "¿qué producto te interesa?" (infiere del contexto)
+- Guardes sin nombre Y email
+`
+      : // 💻 PROMPT PARA WEB
+        `Guarda información de contacto del lead cuando muestra interés en productos/servicios.
 
-Web User: "My name is John Doe, email is john@example.com, call me at +1-555-0123"
-→ Save: { name: "John Doe", email: "john@example.com", phone: "+1-555-0123" }
+🎯 CUÁNDO USAR:
+- Usuario pide cotización, información, o contacto
+- Usuario pregunta precios o servicios
+- Usuario muestra interés en productos
 
-❌ DO NOT:
-- Ask for phone on WhatsApp (already captured)
-- Use without user consent
-- Save if user declines to share
+⚠️ CONTEXTO: Estás en WEB
+- El teléfono NO está capturado
+- Debes pedir: nombre + email + teléfono
 
-⚠️ CRITICAL:
-- ALWAYS ask for name first (REQUIRED field)
-- WhatsApp = phone auto-captured, GET name + email
-- Web = ask for name + email + phone (all three if possible)
-- Never save a lead without a name
-- Always confirm with user after saving
+📋 REGLA DE CAPTURA:
+Pregunta: "¿Me compartes tu nombre, email y teléfono?"
+- Pide los 3 datos juntos en una sola pregunta
+- NO preguntes uno por uno
+
+📝 CAMPOS A GUARDAR:
+- name: Nombre completo (REQUERIDO)
+- email: Email (pide siempre)
+- phone: Teléfono (pide siempre)
+- productInterest: Infiere del contexto (NO preguntes)
+
+⚠️ MÍNIMO PARA GUARDAR:
+✅ nombre + email + teléfono → Guardar (ideal)
+✅ nombre + email → Guardar
+✅ nombre + teléfono → Guardar
+❌ solo nombre → NO guardar (necesitas email O teléfono)
+
+✅ EJEMPLO:
+Usuario: "Me interesa el Plan Pro"
+Tú: "¿Me compartes tu nombre, email y teléfono?"
+Usuario: "María López, maria@empresa.com, 5512345678"
+Tú: [Llamar: saveLeadTool({ name: "María López", email: "maria@empresa.com", phone: "5512345678", productInterest: "Plan Pro" })]
+Tú: "¡Listo María! Ya tengo tu información. El equipo te contactará pronto."
+
+❌ NUNCA:
+- Preguntes "¿qué producto te interesa?" (infiere del contexto)
+- Guardes sin nombre
+- Guardes solo con nombre (necesitas email O teléfono)
 `,
     inputSchema: z.object({
       name: z.string().min(1).describe("Full name of the contact (REQUIRED)"),
@@ -109,13 +144,14 @@ Web User: "My name is John Doe, email is john@example.com, call me at +1-555-012
           message: "",
           integrations: {},
           isGhosty: false,
+          channel, // ⭐ CLOSURE - Canal de comunicación
         };
 
         // Llamar handler con validaciones incorporadas
         const result = await saveContactInfoHandler(params, context);
 
         if (!result.success) {
-          return `Error al guardar información de contacto: ${result.error || "Error desconocido"}. Por favor verifica los datos proporcionados.`;
+          return `Error al guardar información de contacto: ${result.message || "Error desconocido"}. Por favor verifica los datos proporcionados.`;
         }
 
         // Mensaje de confirmación amigable
