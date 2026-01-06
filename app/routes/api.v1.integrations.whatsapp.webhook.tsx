@@ -1191,7 +1191,7 @@ async function generateChatbotResponse(
 
     // 🎭 Construir system prompt usando el agente configurado o instrucciones genéricas
     const { getAgentPrompt } = await import(
-      "../../utils/agents/agentPrompts"
+      "../utils/agents/agentPrompts"
     );
 
     let basePrompt = "";
