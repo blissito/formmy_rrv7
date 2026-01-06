@@ -5,6 +5,7 @@ import { ChatInput } from "./chat/ChatInput";
 import { MessageBubble } from "./chat/MessageBubble";
 import { ChatHeader } from "./chat/ChatHeader";
 import { LoadingIndicator } from "./chat/LoadingIndicator";
+import { Avatar } from "./chat/Avatar";
 import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
@@ -376,21 +377,23 @@ export default function ChatPreview({
                             const resolved = artifactName ? resolvedArtifacts.get(artifactName) : undefined;
 
                             return (
-                              <div key={idx} className="ml-4 my-2">
-                                <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                                  <span className="w-3 h-3">🧩</span>
-                                  <span>{output.displayName || "Artefacto"}</span>
-                                  {resolved && (
-                                    <span className={cn(
-                                      "ml-2 px-2 py-0.5 rounded-full text-xs",
-                                      resolved.outcome === "confirmed" && "bg-green-100 text-green-700",
-                                      resolved.outcome === "cancelled" && "bg-gray-100 text-gray-600"
-                                    )}>
-                                      {resolved.outcome === "confirmed" ? "✓ Confirmado" : "✗ Cancelado"}
-                                    </span>
-                                  )}
-                                </div>
-                                <ArtifactRenderer
+                              <div key={idx} className="px-4 flex items-start gap-3 my-2">
+                                <Avatar className="w-8 h-8 shrink-0" src={chatbot.avatarUrl || "/dash/default-ghosty.svg"} />
+                                <div className="flex flex-col gap-1">
+                                  <div className="text-xs text-gray-500 flex items-center gap-1">
+                                    <span className="w-3 h-3">🧩</span>
+                                    <span>{output.displayName || "Artefacto"}</span>
+                                    {resolved && (
+                                      <span className={cn(
+                                        "ml-2 px-2 py-0.5 rounded-full text-xs",
+                                        resolved.outcome === "confirmed" && "bg-green-100 text-green-700",
+                                        resolved.outcome === "cancelled" && "bg-gray-100 text-gray-600"
+                                      )}>
+                                        {resolved.outcome === "confirmed" ? "✓ Confirmado" : "✗ Cancelado"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <ArtifactRenderer
                                   name={output.name}
                                   code={output.code}
                                   compiledCode={output.compiledCode}
@@ -423,6 +426,7 @@ export default function ChatPreview({
                                     sendMessage({ text: friendlyMessage }, { metadata });
                                   }}
                                 />
+                                </div>
                               </div>
                             );
                           }
@@ -729,21 +733,23 @@ const ChatElement = ({
                       const artifactName = part.output.name;
                       const resolved = artifactName ? resolvedArtifacts.get(artifactName) : undefined;
                       return (
-                        <div key={idx} className="ml-4 my-2">
-                          <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                            <span>🧩</span>
-                            <span>{part.output.displayName || "Artefacto"}</span>
-                            {resolved && (
-                              <span className={cn(
-                                "ml-2 px-2 py-0.5 rounded-full text-xs",
-                                resolved.outcome === "confirmed" && "bg-green-100 text-green-700",
-                                resolved.outcome === "cancelled" && "bg-gray-100 text-gray-600"
-                              )}>
-                                {resolved.outcome === "confirmed" ? "✓ Confirmado" : "✗ Cancelado"}
-                              </span>
-                            )}
-                          </div>
-                          <ArtifactRenderer
+                        <div key={idx} className="px-4 flex items-start gap-3 my-2">
+                          <Avatar className="w-8 h-8 shrink-0" src={chatbot.avatarUrl || "/dash/default-ghosty.svg"} />
+                          <div className="flex flex-col gap-1">
+                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                              <span>🧩</span>
+                              <span>{part.output.displayName || "Artefacto"}</span>
+                              {resolved && (
+                                <span className={cn(
+                                  "ml-2 px-2 py-0.5 rounded-full text-xs",
+                                  resolved.outcome === "confirmed" && "bg-green-100 text-green-700",
+                                  resolved.outcome === "cancelled" && "bg-gray-100 text-gray-600"
+                                )}>
+                                  {resolved.outcome === "confirmed" ? "✓ Confirmado" : "✗ Cancelado"}
+                                </span>
+                              )}
+                            </div>
+                            <ArtifactRenderer
                             name={part.output.name}
                             code={part.output.code}
                             compiledCode={part.output.compiledCode}
@@ -759,6 +765,7 @@ const ChatElement = ({
                               }
                             }}
                           />
+                          </div>
                         </div>
                       );
                     }

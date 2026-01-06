@@ -37,21 +37,21 @@ export default function ProductChatCard({
   };
 
   return (
-    <div className="w-full flex flex-col items-center max-w-[300px] p-4 bg-white rounded-2xl mx-auto">
+    <div className="flex flex-col items-center max-w-[240px] min-w-[240px] w-[240px] shrink-0 p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
       <img
-        className="w-32 h-32 object-cover rounded-lg mb-4 border border-gray-200"
+        className="w-20 h-20 object-cover rounded-lg mb-3 border border-gray-200"
         src={imageUrl}
         alt={name}
       />
-      <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
-      <p className="text-sm text-gray-600 mt-2 text-center line-clamp-2">
+      <h3 className="text-base font-semibold text-gray-900 text-center line-clamp-1">{name}</h3>
+      <p className="text-xs text-gray-600 mt-1 text-center line-clamp-2">
         {description}
       </p>
-      <hr className="w-full h-px bg-gray-200 mt-6 mb-4" />
-      <span className="text-base text-gray-900 font-bold">
+      <hr className="w-full h-px bg-gray-200 mt-3 mb-2" />
+      <span className="text-sm text-gray-900 font-bold">
         {formatPrice(price, currency)}
       </span>
-      <div className="flex gap-2 mt-4">
+      <div className="flex gap-2 mt-3">
         <button
           onClick={() => {
             if (!viewedMore && !isResolved) {
@@ -60,7 +60,7 @@ export default function ProductChatCard({
             }
           }}
           disabled={viewedMore || isResolved}
-          className={`px-4 py-2 text-sm rounded-full transition-colors ${
+          className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
             viewedMore || isResolved
               ? "bg-gray-200 text-gray-400 cursor-not-allowed"
               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -76,7 +76,7 @@ export default function ProductChatCard({
             }
           }}
           disabled={addedToCart || isResolved}
-          className={`px-4 py-2 text-sm rounded-full transition-colors ${
+          className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
             addedToCart || isResolved
               ? "bg-green-100 text-green-700 cursor-not-allowed"
               : "bg-blue-500 text-white hover:bg-blue-600"

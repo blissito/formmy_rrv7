@@ -110,13 +110,10 @@ export default function GallleryChatCard({
 
   return (
     <>
-      <div className="w-full flex flex-col max-w-[300px] gap-3 bg-[#EDEFF3] px-3 pt-3 pb-6 rounded-2xl mx-auto">
+      <div className="flex flex-col max-w-[240px] min-w-[240px] w-[240px] shrink-0 gap-2 bg-[#EDEFF3] px-3 pt-3 pb-4 rounded-xl border border-gray-200 shadow-sm">
         {/* Header */}
-        <div className="flex flex-col gap-1">
-          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-          {description && (
-            <p className="text-sm text-gray-600">{description}</p>
-          )}
+        <div className="flex flex-col">
+          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
         </div>
 
         {/* Grid de imágenes */}
@@ -128,12 +125,12 @@ export default function GallleryChatCard({
               style={{
                 transform: `rotate(${rotations[index]}deg)`,
                 zIndex: index,
-                marginLeft: index > 0 ? "-20px" : "0",
-                marginTop: index > 1 ? "-20px" : "0",
+                marginLeft: index > 0 ? "-15px" : "0",
+                marginTop: index > 1 ? "-15px" : "0",
               }}
-              className="relative w-[120px] h-[120px] overflow-hidden rounded-lg cursor-pointer
+              className="relative w-[85px] h-[85px] overflow-hidden rounded-lg cursor-pointer
                 transition-all duration-300 hover:scale-[1.05] hover:rotate-0 hover:z-50 active:scale-[0.98]
-                shadow-lg hover:shadow-2xl"
+                shadow-md hover:shadow-xl"
             >
               <img
                 src={imageUrl}
@@ -143,7 +140,7 @@ export default function GallleryChatCard({
               {/* Overlay con número de imágenes en la última foto */}
               {index === displayImages.length - 1 && imageCount > 1 && (
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                  <span className="text-white text-sm font-semibold">
+                  <span className="text-white text-xs font-semibold">
                     {imageCount} {imageCount === 1 ? "foto" : "fotos"}
                   </span>
                 </div>

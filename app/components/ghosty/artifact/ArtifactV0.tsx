@@ -97,7 +97,7 @@ export const Artifact = ({
           </header>
 
           {/* Content - Renderiza el componente del artefacto */}
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50 flex items-start justify-center">
             <ArtifactRenderer
               code={artifactData.code}
               compiledCode={artifactData.compiledCode}

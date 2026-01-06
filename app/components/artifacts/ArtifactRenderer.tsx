@@ -411,7 +411,7 @@ export const ArtifactRenderer = ({
     // PROCESSING
     if (phase === "processing") {
       return (
-        <div className={cn("artifact-container border rounded-lg bg-white shadow-sm overflow-hidden", className)}>
+        <div className={cn("artifact-container overflow-hidden", className)}>
           <DefaultProcessingView />
         </div>
       );
@@ -420,7 +420,7 @@ export const ArtifactRenderer = ({
     // RESOLVED
     if (phase === "resolved") {
       return (
-        <div className={cn("artifact-container border rounded-lg bg-white shadow-sm overflow-hidden", className)}>
+        <div className={cn("artifact-container overflow-hidden", className)}>
           <DefaultResolvedView outcome={outcome} resolvedData={resolvedData ?? data} />
         </div>
       );
@@ -429,7 +429,7 @@ export const ArtifactRenderer = ({
     // INTERACTIVE: Renderizar componente nativo real
     console.log(`[ArtifactRenderer] Rendering native: ${name}`, { data, phase, outcome });
     return (
-      <div className={cn("artifact-container border rounded-lg bg-white shadow-sm overflow-hidden", className)}>
+      <div className={cn("artifact-container overflow-hidden", className)}>
         <ErrorBoundary
           onError={(e) => setRenderError(e.message)}
           fallback={<ErrorFallback error={renderError || "Error al renderizar"} />}
@@ -481,7 +481,7 @@ export const ArtifactRenderer = ({
     return (
       <div
         className={cn(
-          "artifact-container border rounded-lg bg-white shadow-sm overflow-hidden",
+          "artifact-container overflow-hidden",
           className
         )}
       >
@@ -495,7 +495,7 @@ export const ArtifactRenderer = ({
     return (
       <div
         className={cn(
-          "artifact-container border rounded-lg bg-white shadow-sm overflow-hidden",
+          "artifact-container overflow-hidden",
           className
         )}
       >
@@ -508,7 +508,7 @@ export const ArtifactRenderer = ({
   return (
     <div
       className={cn(
-        "artifact-container border rounded-lg bg-white shadow-sm overflow-hidden",
+        "artifact-container overflow-hidden",
         className
       )}
     >
