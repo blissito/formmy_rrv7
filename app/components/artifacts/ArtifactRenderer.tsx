@@ -308,7 +308,6 @@ export const ArtifactRenderer = ({
 
   // Detectar si es un artefacto nativo (componente React real)
   const NativeComponent = name ? getNativeComponent(name) : null;
-  console.log("[ArtifactRenderer] Init:", { name, hasNativeComponent: !!NativeComponent, hasCode: !!code, hasData: !!data, dataKeys: Object.keys(data || {}) });
 
   // Estado interno del lifecycle (usado cuando no hay phase externo)
   const [internalPhase, setInternalPhase] = useState<ArtifactPhase>("interactive");
@@ -417,17 +416,46 @@ export const ArtifactRenderer = ({
       );
     }
 
-    // RESOLVED
+    // RESOLVED: Renderizar componente nativo en modo read-only
+    // Muestra el artefacto real (no datos crudos) con indicador de estado
     if (phase === "resolved") {
       return (
-        <div className={cn("artifact-container overflow-hidden", className)}>
-          <DefaultResolvedView outcome={outcome} resolvedData={resolvedData ?? data} />
+        <div className={cn("artifact-container overflow-hidden relative", className)}>
+          {/* Badge de estado */}
+          <div className="absolute top-2 right-2 z-10">
+            {outcome === "confirmed" && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Confirmado
+              </span>
+            )}
+            {outcome === "cancelled" && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                Cancelado
+              </span>
+            )}
+          </div>
+          {/* Componente nativo en modo read-only (eventos deshabilitados) */}
+          <div className={cn(outcome === "cancelled" && "opacity-50")}>
+            <ErrorBoundary
+              onError={(e) => setRenderError(e.message)}
+              fallback={<ErrorFallback error={renderError || "Error al renderizar"} />}
+            >
+              <NativeComponent
+                data={resolvedData ?? data}
+                onEvent={() => {}} // No-op: modo read-only
+                phase={phase}
+                outcome={outcome}
+              />
+            </ErrorBoundary>
+          </div>
         </div>
       );
     }
 
     // INTERACTIVE: Renderizar componente nativo real
-    console.log(`[ArtifactRenderer] Rendering native: ${name}`, { data, phase, outcome });
     return (
       <div className={cn("artifact-container overflow-hidden", className)}>
         <ErrorBoundary
@@ -490,16 +518,49 @@ export const ArtifactRenderer = ({
     );
   }
 
-  // RESOLVED: Mostrar resultado del sistema
+  // RESOLVED: Renderizar componente en modo read-only con badge de estado
   if (phase === "resolved") {
     return (
       <div
         className={cn(
-          "artifact-container overflow-hidden",
+          "artifact-container overflow-hidden relative",
           className
         )}
       >
-        <DefaultResolvedView outcome={outcome} resolvedData={resolvedData ?? data} />
+        {/* Badge de estado */}
+        <div className="absolute top-2 right-2 z-10">
+          {outcome === "confirmed" && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Confirmado
+            </span>
+          )}
+          {outcome === "cancelled" && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+              Cancelado
+            </span>
+          )}
+        </div>
+        {/* Componente en modo read-only */}
+        <div className={cn(outcome === "cancelled" && "opacity-50")}>
+          <ErrorBoundary
+            onError={(e) => setRenderError(e.message)}
+            fallback={<ErrorFallback error={renderError || "Error al renderizar"} />}
+          >
+            <Suspense fallback={<LoadingFallback />}>
+              <Component
+                key={renderKey}
+                data={resolvedData ?? data}
+                phase={phase}
+                outcome={outcome}
+                resolvedData={resolvedData}
+                onEvent={() => {}} // No-op: modo read-only
+              />
+            </Suspense>
+          </ErrorBoundary>
+        </div>
       </div>
     );
   }

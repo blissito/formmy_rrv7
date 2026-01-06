@@ -21,6 +21,7 @@ interface CreateMessageParams {
   responseTime?: number;
   firstTokenLatency?: number; // Tiempo hasta el primer chunk en ms
   aiModel?: string; // Modelo de IA usado para generar la respuesta (solo para ASSISTANT messages)
+  parts?: object[]; // UIMessage.parts - Formato estándar Vercel AI SDK
   visitorIp?: string; // Added for rate limiting
   channel?: string; // 'web', 'whatsapp', 'telegram'
   externalMessageId?: string; // WhatsApp message ID, etc.
@@ -52,6 +53,7 @@ export async function createMessage({
   responseTime,
   firstTokenLatency,
   aiModel,
+  parts,
   visitorIp,
   channel,
   externalMessageId,
@@ -93,6 +95,7 @@ export async function createMessage({
         responseTime,
         firstTokenLatency,
         aiModel,
+        parts,
         channel,
         externalMessageId,
       },
@@ -228,7 +231,8 @@ export async function addAssistantMessage(
   outputTokens?: number,
   totalCost?: number,
   provider?: string,
-  cachedTokens?: number
+  cachedTokens?: number,
+  parts?: object[] // UIMessage.parts - Formato estándar Vercel AI SDK
 ): Promise<Message> {
   return createMessage({
     conversationId,
@@ -243,6 +247,7 @@ export async function addAssistantMessage(
     responseTime,
     firstTokenLatency,
     aiModel,
+    parts,
     channel,
     externalMessageId,
   });

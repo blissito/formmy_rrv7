@@ -438,6 +438,7 @@ model Conversation {
   sessionId    String             @unique
   visitorIp    String?
   visitorId    String?
+  name         String?            // Nombre legible: "Visitante #42" o nombre de WhatsApp
   status       ConversationStatus @default(ACTIVE)
   startedAt    DateTime           @default(now())
   endedAt      DateTime?
@@ -486,6 +487,7 @@ model Message {
   responseTime      Int?
   firstTokenLatency Int?
   aiModel           String? // Modelo de IA usado para generar esta respuesta (solo para ASSISTANT messages)
+  parts             Json?   // UIMessage.parts - Formato estándar Vercel AI SDK
   conversationId    String       @db.ObjectId
   conversation      Conversation @relation(fields: [conversationId], references: [id])
 

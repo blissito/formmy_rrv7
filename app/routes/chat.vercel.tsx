@@ -191,7 +191,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const result = streamText({
     model: openai("gpt-4.1-mini-2025-04-14"), // The best for tool calling
     // model: anthropic("claude-haiku-4-5-20251001"),
-    messages: convertToModelMessages(messages),
+    messages: await convertToModelMessages(messages),
     // @TODO: revisit using system here
     system: `Eres Ghosty, el agente general de Formmy, tu _id(id) asignado es: 691e648afcfecb9dedc6b5de.
 

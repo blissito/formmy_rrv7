@@ -7,12 +7,11 @@ import { useNavigate, useSubmit, useRevalidator } from "react-router";
 import { cn } from "~/lib/utils";
 import Empty from "~/SVGs/Empty";
 import EmptyDark from "~/SVGs/EmptyDark";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { useDashboardTranslation } from "~/hooks/useDashboardTranslation";
 import { FaWhatsapp } from "react-icons/fa";
 import { CiStar } from "react-icons/ci";
 import { FaStar } from "react-icons/fa";
+import { MessageRenderer } from "~/components/chat/MessageRenderer";
 
 // Extender tipo Chatbot para asegurar que incluye whatsappAutoManual
 type ChatbotWithWhatsAppConfig = Chatbot & {
@@ -2081,6 +2080,8 @@ export const SingleMessage = ({
 const UserMessage = ({ message, reactions = [], showTimestamp = true, showAvatar = true }: { message: UIMessage; reactions?: UIMessage[]; showTimestamp?: boolean; showAvatar?: boolean }) => {
   // Detectar si el mensaje contiene un sticker (picture contiene imagen, content es "📎 Sticker")
   const hasMultimedia = message.picture && message.content === "📎 Sticker";
+  // Detectar si es un evento de artefacto (ej: [ARTIFACT_ACTION]:onPay:...)
+  const isArtifactAction = message.content?.startsWith("[ARTIFACT_ACTION]") || message.content?.startsWith("[ARTIFACT_EVENT:");
 
   // Obtener la primera reacción (solo mostramos una según WhatsApp nativo)
   const reaction = reactions[0];
@@ -2099,6 +2100,9 @@ const UserMessage = ({ message, reactions = [], showTimestamp = true, showAvatar
                 loading="lazy"
               />
             </div>
+          ) : isArtifactAction ? (
+            // Evento de artefacto - badge elegante sin wrapper oscuro
+            <MessageRenderer content={message.content} variant="compact" />
           ) : (
             // Mensaje de texto normal
             <div className="text-sm lg:text-[0.95rem] px-3 py-[6px] bg-dark text-white rounded-xl break-words w-fit">
@@ -2373,14 +2377,12 @@ const AssistantMessage = ({
             </div>
           ) : (
             <div className="text-sm lg:text-base px-3 py-[6px] bg-white border border-outlines rounded-xl relative">
-              <div className={PROSE_STYLES}>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={markdownComponents}
-                >
-                  {message.content}
-                </ReactMarkdown>
-              </div>
+              {/* MessageRenderer unificado: parts (nuevo) + content (legacy) + Streamdown */}
+              <MessageRenderer
+                parts={message.parts as object[]}
+                content={message.content}
+                variant="dashboard"
+              />
               {/* MicroLikeButton comentado - no funcional sin onClick handler */}
               {/* <MicroLikeButton /> */}
             </div>

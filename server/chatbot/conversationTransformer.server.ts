@@ -36,6 +36,7 @@ export interface UIConversation {
 export interface UIMessage {
   role: "USER" | "ASSISTANT" | "SYSTEM";
   content: string;
+  parts?: object[];      // UIMessage.parts - Formato estándar Vercel AI SDK
   picture?: string;      // Contenido multimedia (sticker, imagen, etc)
   avatarUrl?: string;    // Avatar del usuario/bot (foto de perfil)
   createdAt: Date;
@@ -152,7 +153,10 @@ export function transformConversationToUI(
     // ✅ MANTENER reacciones (el frontend las filtrará para bubbles, pero las usará para overlay)
     if (msg.isReaction === true) return true;
 
-    // Excluir mensajes vacíos que NO sean reacciones
+    // ✅ MANTENER mensajes con parts (artefactos, tool calls) aunque content esté vacío
+    if (msg.parts && Array.isArray(msg.parts) && msg.parts.length > 0) return true;
+
+    // Excluir mensajes vacíos que NO sean reacciones NI tengan parts
     // (algunas reacciones antiguas se guardaron como mensajes vacíos antes de la implementación)
     if (!msg.isReaction && (!msg.content || msg.content.trim() === "" || msg.content.trim().length < 2)) {
       return false;
@@ -205,6 +209,8 @@ function transformMessageToUI(
   return {
     role: message.role as "USER" | "ASSISTANT" | "SYSTEM",
     content: message.content,
+    // ✅ parts = UIMessage.parts - Formato estándar Vercel AI SDK
+    parts: message.parts ? (message.parts as object[]) : undefined,
     // ✅ picture = contenido multimedia (sticker, imagen) - viene de message.picture en BD
     picture: message.picture || undefined,
     // ✅ avatarUrl = foto de perfil del usuario/bot

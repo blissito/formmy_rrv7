@@ -48,6 +48,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         id: true,
         sessionId: true,
         visitorId: true,
+        name: true, // Nombre legible: "Visitante #42"
         createdAt: true,
         updatedAt: true,
         isFavorite: true,
@@ -154,7 +155,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       let contactPhone = "";
       let avatarUrl = "";
 
-      if (isWhatsApp && conversation.visitorId) {
+      // PRIORIDAD 1: Usar campo `name` si existe (nuevo formato)
+      if (conversation.name) {
+        contactName = conversation.name;
+      }
+      // PRIORIDAD 2: WhatsApp - usar nombre del contacto
+      else if (isWhatsApp && conversation.visitorId) {
         contactPhone = conversation.visitorId;
 
         // Buscar por conversationId primero
@@ -175,10 +181,23 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
         } else {
           contactName = contactPhone;
         }
-      } else {
-        // Conversación web - usar sessionId formateado (últimos 3 caracteres)
+      }
+      // PRIORIDAD 3 (fallback): Conversación web legacy
+      else {
         const sessionIdSuffix = conversation.sessionId?.slice(-3) || "???";
         contactName = `Usuario web ${sessionIdSuffix}`;
+      }
+
+      // Para WhatsApp, siempre extraer teléfono y avatar aunque tengamos name
+      if (isWhatsApp && conversation.visitorId && !contactPhone) {
+        contactPhone = conversation.visitorId;
+        let contact = contactsByConversationId.get(conversation.id);
+        if (!contact) {
+          contact = contactsByPhone.get(contactPhone);
+        }
+        if (contact) {
+          avatarUrl = contact.profilePictureUrl || "";
+        }
       }
 
       // Calcular tiempo relativo
