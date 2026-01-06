@@ -73,15 +73,25 @@ export async function loader({ request }: Route.LoaderArgs) {
     return Response.json({ messages: [] });
   }
 
-  // Cargar mensajes históricos (filtrar vacíos - tool calls sin texto)
+  // Cargar mensajes históricos
+  // ✅ Incluir mensajes con parts (artefactos) aunque content esté vacío
   const dbMessages = await getMessagesByConversationId(conversation.id);
-  const messages: UIMessage[] = dbMessages
-    .filter((msg) => msg.role !== "SYSTEM" && msg.content && msg.content.trim())
+  const messages = dbMessages
+    .filter((msg) => {
+      if (msg.role === "SYSTEM") return false;
+      // Incluir si tiene content O si tiene parts (artefactos, tool calls)
+      const hasContent = msg.content && msg.content.trim();
+      const hasParts = msg.parts && Array.isArray(msg.parts) && (msg.parts as object[]).length > 0;
+      return hasContent || hasParts;
+    })
     .map((msg) => ({
       id: msg.id,
       role: msg.role.toLowerCase() as "user" | "assistant",
-      parts: [{ type: "text" as const, text: msg.content }],
-    }));
+      // Usar parts si existen (formato estándar UIMessage), sino reconstruir desde content
+      parts: msg.parts
+        ? (msg.parts as object[])
+        : [{ type: "text" as const, text: msg.content }],
+    })) satisfies Array<{ id: string; role: "user" | "assistant"; parts: object[] }>;
 
   return Response.json({ messages });
 }
@@ -157,20 +167,46 @@ export async function action({ request }: Route.ActionArgs) {
       );
     }
 
-    // Usar upsert para evitar race conditions y conflictos con conversaciones DELETED
-    conversation = await db.conversation.upsert({
-      where: { sessionId },
-      create: {
-        chatbotId,
-        visitorId: nanoid(),
-        visitorIp: request.headers.get("x-forwarded-for") || undefined,
-        sessionId,
-        status: "ACTIVE",
-      },
-      update: {
-        status: "ACTIVE", // Reactivar si estaba DELETED
-      },
+    // Transacción atómica - garantiza consistencia total y números correctos
+    const { conversation: conv } = await db.$transaction(async (tx) => {
+      // 1. Buscar cualquier conversación existente (incluyendo DELETED)
+      const existing = await tx.conversation.findUnique({ where: { sessionId } });
+
+      if (existing) {
+        // Reactivar conversación existente - NO incrementar contador
+        return {
+          conversation: await tx.conversation.update({
+            where: { sessionId },
+            data: { status: "ACTIVE" },
+          }),
+        };
+      }
+
+      // 2. Incrementar contador PRIMERO (dentro de transacción)
+      const updatedChatbot = await tx.chatbot.update({
+        where: { id: chatbotId },
+        data: {
+          conversationCount: { increment: 1 },
+          monthlyUsage: { increment: 1 },
+        },
+      });
+
+      // 3. Crear conversación con el número exacto post-incremento
+      return {
+        conversation: await tx.conversation.create({
+          data: {
+            chatbotId,
+            sessionId,
+            visitorId: nanoid(),
+            visitorIp: request.headers.get("x-forwarded-for") || undefined,
+            status: "ACTIVE",
+            name: `Visitante #${updatedChatbot.conversationCount}`,
+          },
+        }),
+      };
     });
+
+    conversation = conv;
   }
 
   // ✅ COMBINAR mensajes históricos + mensaje nuevo (patrón "Last Message Only")
@@ -271,7 +307,7 @@ export async function action({ request }: Route.ActionArgs) {
     model: mapModel(chatbot.aiModel),
     // 🌡️ Solo Gemini recibe temperatura explícita (GPT/Claude usan sus defaults)
     ...(modelTemperature !== undefined && { temperature: modelTemperature }),
-    messages: convertToModelMessages(allMessages), // ⬅️ TODOS los mensajes
+    messages: await convertToModelMessages(allMessages), // ⬅️ TODOS los mensajes
     system: systemPrompt,
     tools: {
       getContextTool: createGetContextTool(chatbotId),
@@ -281,16 +317,23 @@ export async function action({ request }: Route.ActionArgs) {
       ...customTools, // 🔧 Herramientas HTTP personalizadas
     },
     stopWhen: stepCountIs(5),
-    // 📊 TRACKING: onFinish de streamText (recibe totalUsage)
-    onFinish: async ({ text, totalUsage }) => {
+    // 📊 TRACKING: onFinish de streamText (recibe totalUsage + steps para multi-step)
+    onFinish: async ({ text, totalUsage, steps }) => {
       try {
-        // ⚠️ NO guardar mensajes vacíos (solo tool calls sin texto)
-        if (!text || !text.trim()) {
-          console.log("[Chat Public] ⏭️ Skipping empty message (tool-only response)");
+        // 🔧 Extraer TODOS los tool calls de TODOS los pasos (multi-step)
+        const allToolCalls = steps?.flatMap(step => step.toolCalls || []) || [];
+        const allToolResults = steps?.flatMap(step => step.toolResults || []) || [];
+
+        // ✅ Guardar si hay texto O si hay tool calls (artefactos, búsquedas, etc.)
+        const hasText = text && text.trim();
+        const hasToolCalls = allToolCalls.length > 0;
+
+        if (!hasText && !hasToolCalls) {
+          console.log("[Chat Public] ⏭️ Skipping truly empty message");
           return;
         }
 
-        // 📊 TRACKING: Extraer métricas de tokens (AI SDK 5.x uses inputTokens/outputTokens)
+        // 📊 TRACKING: Extraer métricas de tokens
         const inputTokens = totalUsage?.inputTokens || 0;
         const outputTokens = totalUsage?.outputTokens || 0;
         const totalTokens = inputTokens + outputTokens;
@@ -302,16 +345,45 @@ export async function action({ request }: Route.ActionArgs) {
         const costResult = calculateCost(provider, model, {
           inputTokens,
           outputTokens,
-          cachedTokens: 0, // TODO: Vercel AI SDK no expone cached tokens aún
+          cachedTokens: 0,
         });
 
         // ⏱️ Calcular tiempo de respuesta
         const responseTime = Date.now() - startTime;
 
-        // 💾 Guardar mensaje con tracking completo
+        // 📦 Construir parts en formato UIMessage estándar
+        // Orden: tool calls primero (artefactos), luego texto (explicación)
+        const parts: object[] = [];
+
+        // 1. Agregar tool calls/results de TODOS los pasos (v6: input/output)
+        for (const toolCall of allToolCalls) {
+          const tc = toolCall as { toolName: string; toolCallId: string; input: unknown };
+          const toolResult = allToolResults.find(
+            (r: { toolCallId: string }) => r.toolCallId === tc.toolCallId
+          ) as { output: unknown } | undefined;
+
+          parts.push({
+            type: `tool-${tc.toolName}`,
+            toolCallId: tc.toolCallId,
+            toolName: tc.toolName,
+            state: toolResult ? "output-available" : "pending",
+            args: tc.input,
+            output: toolResult?.output,
+          });
+        }
+
+        // 2. Agregar texto al final (después del artefacto)
+        if (text && text.trim()) {
+          parts.push({ type: "text", text });
+        }
+
+        // 💾 Guardar mensaje con tracking completo + parts
+        // Si no hay texto pero sí tool calls, usar placeholder (las parts tienen la info)
+        const contentToSave = hasText ? text : "";
+
         await addAssistantMessage(
           conversation.id,
-          text,
+          contentToSave,
           totalTokens,
           responseTime,
           undefined,
@@ -322,7 +394,8 @@ export async function action({ request }: Route.ActionArgs) {
           outputTokens,
           costResult.totalCost,
           provider,
-          0
+          0,
+          parts.length > 0 ? parts : undefined // Solo guardar si hay parts
         );
 
         console.log(
