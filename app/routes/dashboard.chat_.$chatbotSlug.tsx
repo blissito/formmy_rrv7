@@ -202,15 +202,16 @@ export default function ChatbotDetailRoute({
   // searchParams para WhatsApp callback y navegación de tabs
   const [searchParams] = useSearchParams();
 
-  // 🔄 Sincronizar tab con URL cuando cambia por navegación externa (ej: desde tabla de Leads)
+  // 🔄 Sincronizar tab con URL en navegación externa (back/forward, links desde otras páginas)
+  // Solo se ejecuta cuando searchParams cambia por navegación real de React Router
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
     const validTabs = ['Preview', 'Conversaciones', 'Contactos', 'Entrenamiento',
                        'Artefactos', 'Herramientas', 'Código', 'Configuración'];
-    if (tabFromUrl && validTabs.includes(tabFromUrl) && tabFromUrl !== currentTab) {
+    if (tabFromUrl && validTabs.includes(tabFromUrl)) {
       setCurrentTab(tabFromUrl);
     }
-  }, [searchParams, currentTab]);
+  }, [searchParams]); // Sin currentTab para evitar loops
 
   // ✅ Procesar callback de WhatsApp Embedded Signup (Authorization Code Flow)
   useEffect(() => {
@@ -287,16 +288,17 @@ export default function ChatbotDetailRoute({
   }, [searchParams, chatbot.id, chatbot.slug]); // Removido 'revalidator' para evitar loops
 
   const handleTabChange = (tab: string) => {
-    // 1. Cambio inmediato de UI (sin esperar navegación)
+    // 1. Cambio inmediato de UI (sin navegación = sin flash)
     setCurrentTab(tab);
 
-    // 2. Sincronizar URL con navigate + replace (para que searchParams se actualice)
+    // 2. Sincronizar URL con replaceState (NO triggerea loader ni React Router)
+    // Back/forward del navegador sí funcionará porque React Router escucha popstate
     const params = new URLSearchParams(window.location.search);
     params.set('tab', tab);
     if (tab !== 'Conversaciones') {
       params.delete('conversation');
     }
-    navigate(`?${params.toString()}`, { replace: true, preventScrollReset: true });
+    window.history.replaceState(null, '', `?${params.toString()}`);
   };
 
   // Toggle manual mode for conversation
