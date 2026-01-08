@@ -1,7 +1,7 @@
 ---
 title: "Bitácora Fantasma #1: Cuando tu catálogo le miente a la IA"
 excerpt: "Cómo datos inconsistentes casi arruinan una implementación de chatbot para e-commerce. Lecciones reales desde las primeras líneas de código."
-date: "2025-01-08"
+date: "2025-12-20"
 tags: ["Bitácora Fantasma", "RAG", "E-commerce", "Datos", "Lecciones"]
 author: "Equipo Formmy"
 image: "/assets/blog/blog_post_buscamos_empresas.png"

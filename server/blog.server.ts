@@ -106,7 +106,7 @@ async function readBlogPost(filename: string): Promise<BlogPost | null> {
 export async function getBlogPosts(): Promise<BlogPost[]> {
   try {
     const files = await readdir(BLOG_POSTS_DIR);
-    const markdownFiles = files.filter(file => file.endsWith('.md'));
+    const markdownFiles = files.filter(file => file.endsWith('.md') && !file.startsWith('_'));
     
     const posts: BlogPost[] = [];
     
