@@ -722,6 +722,63 @@ db.DebouncedMessage.deleteMany({})
 
 **Luego**: Re-habilitar constraints únicos en `schema.prisma` y ejecutar `npx prisma db push`
 
+---
+
+## 🔮 TODOs Pendientes - Futuro
+
+### Experimentar: Ghosty como ToolLoopAgent (AI SDK v6)
+
+**Fecha planeada**: Febrero 2026
+**Prioridad**: Baja (experimental)
+
+**Contexto**:
+- Arquitectura actual (`streamText` + tools + `stopWhen`) es funcionalmente equivalente a un Agent
+- AI SDK v6 introduce `ToolLoopAgent` como wrapper más limpio
+- NO hay beneficio de performance, solo organización de código
+
+**Por qué Ghosty es ideal para experimentar**:
+1. Es interno → No afecta clientes si algo falla
+2. Ya tiene más complejidad → Usa herramientas de dashboard, stats
+3. Permite medir diferencias → Comparar latencia/tokens vs versión actual
+
+**Migración propuesta**:
+```typescript
+// Ghosty actual (chat.vercel.tsx)
+const result = streamText({
+  model: mapModel(chatbot.aiModel),
+  system: ghostyPrompt,
+  tools: { ... },
+  stopWhen: stepCountIs(5),
+});
+
+// Ghosty v6 con ToolLoopAgent
+import { ToolLoopAgent, createAgentUIStreamResponse } from 'ai';
+
+const ghostyAgent = new ToolLoopAgent({
+  model: mapModel(chatbot.aiModel),
+  instructions: ghostyPrompt,
+  tools: { ... },
+  stopWhen: stepCountIs(5),
+});
+
+return createAgentUIStreamResponse({
+  agent: ghostyAgent,
+  uiMessages: messages,
+});
+```
+
+**Features nuevas de v6 a evaluar**:
+- `ToolLoopAgent` - Encapsulación de config
+- Tool approval (HITL) - Confirmación antes de acciones críticas
+- `createAgentUIStreamResponse` - Streaming simplificado
+
+**Decisión previa**: Multi-agent/Orchestrator-Worker es overkill para Formmy (chatbots de soporte/ventas no requieren tareas especializadas paralelas)
+
+**Fecha de análisis**: 2026-01-08
+**Estado**: 🟡 Pendiente - Experimentar después de features prioritarias
+
+---
+
 ## APIs Públicas
 
 ### RAG API v1
