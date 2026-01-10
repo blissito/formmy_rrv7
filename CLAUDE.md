@@ -1246,10 +1246,13 @@ enum ContextType {
 
 **TODOS pa blissito**
 
-#### Respecto al SDK:
+#### Respecto al SDK: ✅ COMPLETADO
 
-- Alcanzar streams para alpha
-- Demo server
-- Demo client
-- Tener 2 keys c/s
-- Usar un bot en el demo.
+- [x] Alcanzar streams para alpha
+- [x] Demo server
+- [x] Demo client
+- [x] Tener 2 keys (secret/publishable)
+- [x] Usar un bot en el demo
+
+**Demo Repository**: https://github.com/blissito/formmy-sdk-demo
+**Docs**: https://formmy.app/docs/sdk
