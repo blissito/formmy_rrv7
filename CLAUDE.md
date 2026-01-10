@@ -3,6 +3,82 @@
 **Stack**: React Router v7, Tailwind, Fly.io, Prisma, MongoDB, OpenRouter, Stripe
 **URL**: https://formmy.app
 
+---
+
+## 📦 SDK @formmy.app/chat
+
+**Ubicación**: `sdk/formmy-react/` (monorepo)
+**npm**: [@formmy.app/chat](https://www.npmjs.com/package/@formmy.app/chat)
+**Versión**: 0.0.1-alpha.2
+
+### Arquitectura
+
+```
+sdk/formmy-react/
+├── src/
+│   ├── core/
+│   │   ├── client.ts      # Formmy client (backend)
+│   │   └── types.ts       # Tipos compartidos
+│   ├── hooks/
+│   │   └── use-formmy-chat.ts  # Hook headless
+│   ├── ui/
+│   │   ├── provider.tsx   # FormmyProvider
+│   │   └── chat-bubble.tsx # ChatBubble component
+│   ├── index.ts           # Exports core
+│   └── react.ts           # Exports React
+└── dist/                  # Build output
+```
+
+### Uso
+
+**Backend (Node.js):**
+```typescript
+import { Formmy } from '@formmy.app/chat';
+
+const formmy = new Formmy({ secretKey: 'formmy_sk_live_xxx' });
+const agents = await formmy.agents.list();
+```
+
+**Frontend (React):**
+```tsx
+import { FormmyProvider, ChatBubble } from '@formmy.app/chat/react';
+
+<FormmyProvider publishableKey="formmy_pk_live_xxx">
+  <ChatBubble agentId="xxx" />
+</FormmyProvider>
+```
+
+### Autenticación
+
+| Key | Prefijo | Uso | Scope |
+|-----|---------|-----|-------|
+| Secret | `formmy_sk_live_` | Backend | Full access |
+| Publishable | `formmy_pk_live_` | Frontend | Chat only, domain-restricted |
+
+**Dashboard**: `/dashboard/api-keys`
+**Endpoint API**: `/api/v2/sdk`
+
+### Publicar Nueva Versión
+
+```bash
+cd sdk/formmy-react
+npm version patch  # o minor/major
+npm publish --access public --ignore-scripts
+git add . && git commit -m "chore: bump SDK version" && git push
+```
+
+### Archivos Clave
+
+- `server/sdk/key-auth.server.ts` - Autenticación de SDK keys
+- `server/chatbot/apiKeyModel.server.ts` - validateSdkKey(), generateSdkKey()
+- `app/routes/api.v2.sdk.tsx` - Endpoint unificado del SDK
+- `app/routes/dashboard.api-keys_.tsx` - UI para crear/gestionar keys
+
+**Fecha**: 2026-01-10
+**Estado**: ✅ Alpha - Funcional para integraciones
+
+---
+
 ## 🔧 PROBLEMAS RESUELTOS - WhatsApp Conversaciones
 
 ### Limitación: Avatares de WhatsApp - Compatibilidad con Datos Legacy (2025-11-23)
