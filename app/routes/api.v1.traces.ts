@@ -17,7 +17,7 @@ import {
   getTraceById,
   listTraces,
   getTraceStats,
-} from "server/tracing/trace.service";
+} from "server/tracing/trace.service.server";
 
 // ============================================================================
 // LOADER (GET REQUESTS)

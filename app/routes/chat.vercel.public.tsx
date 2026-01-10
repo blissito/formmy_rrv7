@@ -32,7 +32,7 @@ import {
   startSpan,
   endSpan,
   type TraceContext,
-} from "@/server/tracing/instrumentation";
+} from "@/server/tracing/instrumentation.server";
 
 /**
  * ✅ Loader para cargar mensajes históricos (GET request)

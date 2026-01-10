@@ -21,7 +21,7 @@ import {
   createSpan,
   completeSpan,
   createEvent,
-} from "./trace.service";
+} from "./trace.service.server";
 
 // ============================================================================
 // CONTEXT MANAGEMENT (OpenTelemetry Pattern)

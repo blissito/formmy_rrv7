@@ -6,7 +6,7 @@ import { Form, useActionData, useLoaderData, useFetcher, useSearchParams } from 
 import { getAvailableCredits } from "server/llamaparse/credits.service";
 import { APIDocumentation } from "~/components/APIDocumentation";
 import { ObservabilityPanel } from "~/components/ObservabilityPanel";
-import { listTraces, getTraceStats } from "server/tracing/trace.service";
+import { listTraces, getTraceStats } from "server/tracing/trace.service.server";
 import { nanoid } from "nanoid";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {

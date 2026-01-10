@@ -1142,7 +1142,7 @@ async function generateChatbotResponse(
       "../../server/tools/vercel/customHttpTool"
     );
     const { startTrace, endTrace, failTrace, startSpan, endSpan } = await import(
-      "../../server/tracing/instrumentation"
+      "../../server/tracing/instrumentation.server"
     );
 
     // 🔧 Cargar custom tools del chatbot (herramientas HTTP personalizadas)
@@ -1359,7 +1359,7 @@ async function generateChatbotResponse(
     // 📊 OBSERVABILITY: Marcar trace como error
     if (traceCtx) {
       const { failTrace } = await import(
-        "../../server/tracing/instrumentation"
+        "../../server/tracing/instrumentation.server"
       );
       await failTrace(traceCtx, String(error)).catch(() => {});
     }

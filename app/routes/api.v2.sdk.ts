@@ -38,8 +38,13 @@ import { calculateCost } from "@/server/chatbot/pricing.server";
 import { validateMonthlyConversationLimit } from "@/server/chatbot/planLimits.server";
 import { applyRateLimit, RATE_LIMIT_CONFIGS } from "@/server/middleware/rateLimiter.server";
 import { z } from "zod";
-// TODO: Add observability tracing (requires fixing server-only module resolution)
-// import { startTrace, endTrace, startSpan, endSpan, type TraceContext } from "@/server/tracing/instrumentation";
+import {
+  startTrace,
+  endTrace,
+  startSpan,
+  endSpan,
+  type TraceContext,
+} from "@/server/tracing/instrumentation.server";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SDK AUTH (inline to avoid client bundling issues)
@@ -807,6 +812,25 @@ async function handleChat(request: Request, url: URL) {
 
   const startTime = Date.now();
 
+  // 📊 OBSERVABILITY: Start trace for SDK request
+  let traceCtx: TraceContext | null = null;
+  try {
+    traceCtx = await startTrace({
+      userId: auth.userId,
+      chatbotId: agentId,
+      conversationId: conversation.id,
+      input: textContent,
+      model: chatbot.aiModel,
+      metadata: {
+        source: "sdk",
+        apiKeyId: auth.apiKeyId,
+        scope: auth.scope,
+      },
+    });
+  } catch (err) {
+    console.error("[SDK Chat] ⚠️ Failed to start trace (non-blocking):", err);
+  }
+
   const customTools = await loadCustomToolsForChatbot(agentId);
 
   const basePrompt = chatbot.instructions || "Eres un asistente útil.";
@@ -885,6 +909,42 @@ async function handleChat(request: Request, url: URL) {
         console.log(
           `[SDK Chat] ✅ Message tracked: ${totalTokens} tokens, $${costResult.totalCost.toFixed(6)}`
         );
+
+        // 📊 OBSERVABILITY: Complete trace with metrics
+        if (traceCtx) {
+          try {
+            const spanId = await startSpan(traceCtx, {
+              type: "LLM_CALL",
+              name: model || chatbot.aiModel,
+              input: { prompt: textContent, model: chatbot.aiModel },
+            });
+
+            await endSpan(traceCtx, spanId, {
+              output: { response: text?.substring(0, 500) },
+              tokens: totalTokens,
+              cost: costResult.totalCost,
+              metadata: {
+                gen_ai: {
+                  system: provider,
+                  request: { model },
+                  usage: { input_tokens: inputTokens, output_tokens: outputTokens },
+                  response_time_ms: responseTime,
+                },
+              },
+            });
+
+            await endTrace(traceCtx, {
+              output: text || "",
+              totalTokens,
+              totalCost: costResult.totalCost,
+              creditsUsed: 0,
+            });
+
+            console.log(`[SDK Chat] 📊 Trace completed: ${traceCtx.traceId}`);
+          } catch (traceErr) {
+            console.error("[SDK Chat] ⚠️ Failed to complete trace:", traceErr);
+          }
+        }
       } catch (error) {
         console.error("[SDK Chat] ❌ Error saving message:", error);
       }
