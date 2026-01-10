@@ -84,12 +84,59 @@ export class Formmy {
     get chat() {
         return {
             /**
-             * Send a message and get a response (non-streaming)
-             * For streaming, use the useFormmyChat hook on the frontend
+             * Stream a chat response - returns Response for proxying
+             * Use this when you need to forward the stream to your frontend
+             *
+             * @example
+             * ```typescript
+             * // Elysia/Express/Hono backend
+             * app.post("/chat", async ({ body }) => {
+             *   const response = await formmy.chat.stream({
+             *     agentId: body.agentId,
+             *     message: body.message,
+             *   });
+             *   return response; // Proxy the stream directly
+             * });
+             * ```
+             */
+            stream: async (options) => {
+                const sessionId = options.conversationId || `sdk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                const response = await fetch(`${this.baseUrl}/api/v2/sdk?intent=chat&agentId=${options.agentId}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${this.secretKey}`,
+                    },
+                    body: JSON.stringify({
+                        message: {
+                            id: `msg_${Date.now()}`,
+                            role: "user",
+                            parts: [{ type: "text", text: options.message }],
+                        },
+                        id: sessionId,
+                    }),
+                });
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new FormmyError(error.error || "Request failed", error.code || "REQUEST_FAILED", response.status);
+                }
+                // Return the response directly for streaming proxy
+                // The response body is a ReadableStream in Vercel AI SDK UIMessage format
+                return new Response(response.body, {
+                    headers: {
+                        "Content-Type": "text/event-stream",
+                        "Cache-Control": "no-cache",
+                        "Connection": "keep-alive",
+                        "X-Formmy-Conversation-Id": sessionId,
+                    },
+                });
+            },
+            /**
+             * Send a message and get complete response (non-streaming)
+             * Use this for server-to-server communication where you don't need streaming
              */
             send: async (options) => {
-                // For server-side, we make a regular POST and read the full response
-                const sessionId = options.conversationId || `sdk_${Date.now()}`;
+                const sessionId = options.conversationId || `sdk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
                 const response = await fetch(`${this.baseUrl}/api/v2/sdk?intent=chat&agentId=${options.agentId}`, {
                     method: "POST",
                     headers: {
@@ -111,12 +158,25 @@ export class Formmy {
                 }
                 // Read streaming response as text
                 const text = await response.text();
-                // Parse SSE response - Vercel AI SDK format
-                // Lines starting with "0:" contain text content chunks
+                // Parse SSE response - Vercel AI SDK v6 format
+                // Lines: data: {"type":"text-delta","id":"...","delta":"Hello"}
                 const lines = text.split("\n");
                 const contentParts = [];
                 for (const line of lines) {
-                    if (line.startsWith("0:")) {
+                    // Vercel AI SDK v6 format: data: {...}
+                    if (line.startsWith("data: ")) {
+                        try {
+                            const parsed = JSON.parse(line.slice(6));
+                            if (parsed.type === "text-delta" && parsed.delta) {
+                                contentParts.push(parsed.delta);
+                            }
+                        }
+                        catch {
+                            // Skip malformed chunks
+                        }
+                    }
+                    // Legacy format support: 0:"text"
+                    else if (line.startsWith("0:")) {
                         try {
                             const parsed = JSON.parse(line.slice(2));
                             if (typeof parsed === "string") {
@@ -124,8 +184,7 @@ export class Formmy {
                             }
                         }
                         catch {
-                            // Log malformed chunks but don't lose the rest
-                            console.warn("[Formmy SDK] Malformed SSE chunk:", line.slice(0, 100));
+                            // Skip malformed chunks
                         }
                     }
                 }

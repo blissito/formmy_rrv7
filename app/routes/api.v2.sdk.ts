@@ -11,13 +11,9 @@
  */
 
 import type { Route } from "./+types/api.v2.sdk";
+import type { ApiKey, KeyScope as KeyScopeType } from "@prisma/client";
 import pkg from "@prisma/client";
 const { KeyScope } = pkg;
-import {
-  authenticateSdkRequest,
-  createSdkErrorResponse,
-  SdkAuthError,
-} from "@/server/sdk/key-auth.server";
 import { db } from "~/utils/db.server";
 
 // Chat imports (reutilizados de chat.vercel.public)
@@ -42,6 +38,172 @@ import { calculateCost } from "@/server/chatbot/pricing.server";
 import { validateMonthlyConversationLimit } from "@/server/chatbot/planLimits.server";
 import { applyRateLimit, RATE_LIMIT_CONFIGS } from "@/server/middleware/rateLimiter.server";
 import { z } from "zod";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SDK AUTH (inline to avoid client bundling issues)
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface SdkAuthContext {
+  userId: string;
+  scope: KeyScopeType;
+  allowedDomains: string[];
+  apiKeyId: string;
+}
+
+class SdkAuthError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number = 401,
+    public code: string = "AUTH_ERROR"
+  ) {
+    super(message);
+    this.name = "SdkAuthError";
+  }
+}
+
+function extractKeyFromRequest(request: Request): string | null {
+  const publishableKey = request.headers.get("X-Publishable-Key");
+  if (publishableKey) return publishableKey;
+
+  const secretKey = request.headers.get("X-Secret-Key");
+  if (secretKey) return secretKey;
+
+  const authHeader = request.headers.get("Authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7);
+  }
+
+  return null;
+}
+
+function isDomainAllowed(origin: string, allowedDomains: string[]): boolean {
+  if (allowedDomains.length === 0) {
+    console.warn("[SDK Auth] Empty allowedDomains - blocking request.");
+    return false;
+  }
+
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname;
+
+    return allowedDomains.some((pattern) => {
+      if (pattern === "*") return true;
+      if (pattern.startsWith("*.")) {
+        const suffix = pattern.slice(1);
+        return hostname.endsWith(suffix) || hostname === pattern.slice(2);
+      }
+      return hostname === pattern;
+    });
+  } catch {
+    console.error("[SDK Auth] Invalid Origin URL:", origin);
+    return false;
+  }
+}
+
+async function validateSdkKey(key: string): Promise<{
+  apiKey: ApiKey;
+  userId: string;
+  scope: KeyScopeType;
+} | null> {
+  const apiKey = await db.apiKey.findUnique({
+    where: { key },
+  });
+
+  if (!apiKey || !apiKey.isActive) {
+    return null;
+  }
+
+  await db.apiKey.update({
+    where: { id: apiKey.id },
+    data: {
+      lastUsedAt: new Date(),
+      requestCount: { increment: 1 },
+      monthlyRequests: { increment: 1 },
+    },
+  });
+
+  return {
+    apiKey,
+    userId: apiKey.userId,
+    scope: apiKey.keyScope,
+  };
+}
+
+async function authenticateSdkRequest(
+  request: Request,
+  options: { requireSecret?: boolean } = {}
+): Promise<SdkAuthContext> {
+  const key = extractKeyFromRequest(request);
+
+  if (!key) {
+    throw new SdkAuthError(
+      "Missing API key. Use X-Publishable-Key, X-Secret-Key, or Authorization header.",
+      401
+    );
+  }
+
+  const validPrefixes = ["formmy_sk_live_", "formmy_pk_live_", "sk_live_", "pk_live_"];
+  if (!validPrefixes.some(prefix => key.startsWith(prefix))) {
+    throw new SdkAuthError(
+      "Invalid API key format. Must start with formmy_sk_live_ or formmy_pk_live_",
+      401
+    );
+  }
+
+  const isPublishableKey = key.startsWith("pk_live_") || key.startsWith("formmy_pk_live_");
+  if (options.requireSecret && isPublishableKey) {
+    throw new SdkAuthError(
+      "This operation requires a secret key (formmy_sk_live_). Publishable keys cannot perform admin operations.",
+      403
+    );
+  }
+
+  const authResult = await validateSdkKey(key);
+
+  if (!authResult) {
+    throw new SdkAuthError("Invalid or inactive API key", 401);
+  }
+
+  if (authResult.scope === KeyScope.PUBLISHABLE) {
+    const origin = request.headers.get("Origin");
+
+    if (!origin) {
+      throw new SdkAuthError(
+        "Missing Origin header. Publishable keys require Origin for security.",
+        403
+      );
+    }
+
+    if (!isDomainAllowed(origin, authResult.apiKey.allowedDomains)) {
+      throw new SdkAuthError(
+        `Domain not allowed. Add "${new URL(origin).hostname}" to allowedDomains.`,
+        403
+      );
+    }
+  }
+
+  return {
+    userId: authResult.userId,
+    scope: authResult.scope,
+    allowedDomains: authResult.apiKey.allowedDomains,
+    apiKeyId: authResult.apiKey.id,
+  };
+}
+
+function createSdkErrorResponse(error: unknown): Response {
+  if (error instanceof SdkAuthError) {
+    return Response.json(
+      { error: error.message, code: error.code },
+      { status: error.statusCode }
+    );
+  }
+
+  console.error("[SDK Auth] Unexpected error:", error);
+  return Response.json(
+    { error: "Internal server error", code: "INTERNAL_ERROR" },
+    { status: 500 }
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // VALIDATION SCHEMAS
@@ -190,7 +352,7 @@ async function handleAgentsList(request: Request) {
   const agents = await db.chatbot.findMany({
     where: {
       userId: auth.userId,
-      status: { not: "DELETED" }, // Exclude deleted agents
+      status: { not: "DELETED" },
     },
     select: {
       id: true,
@@ -242,7 +404,6 @@ async function handleAgentsGet(request: Request, url: URL) {
 async function handleAgentsCreate(request: Request) {
   const auth = await authenticateSdkRequest(request, { requireSecret: true });
 
-  // Validate request body with Zod
   let body: z.infer<typeof createAgentSchema>;
   try {
     body = createAgentSchema.parse(await request.json());
@@ -259,7 +420,6 @@ async function handleAgentsCreate(request: Request) {
 
   const { name, instructions, welcomeMessage, model = "gpt-4o-mini" } = body;
 
-  // Generate unique slug
   const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30);
   const slug = `${baseSlug}-${nanoid(6)}`;
 
@@ -296,7 +456,6 @@ async function handleAgentsUpdate(request: Request, url: URL) {
     throw new SdkAuthError("Missing agentId parameter", 400, "MISSING_PARAM");
   }
 
-  // Verify ownership
   const existing = await db.chatbot.findFirst({
     where: { id: agentId, userId: auth.userId },
   });
@@ -305,7 +464,6 @@ async function handleAgentsUpdate(request: Request, url: URL) {
     throw new SdkAuthError("Agent not found", 404, "NOT_FOUND");
   }
 
-  // Validate request body with Zod
   let body: z.infer<typeof updateAgentSchema>;
   try {
     body = updateAgentSchema.parse(await request.json());
@@ -347,38 +505,11 @@ async function handleAgentsUpdate(request: Request, url: URL) {
   return Response.json({ agent });
 }
 
-async function handleAgentsDelete(request: Request, url: URL) {
-  const auth = await authenticateSdkRequest(request, { requireSecret: true });
-  const agentId = url.searchParams.get("agentId");
-
-  if (!agentId) {
-    throw new SdkAuthError("Missing agentId parameter", 400);
-  }
-
-  // Verify ownership
-  const existing = await db.chatbot.findFirst({
-    where: { id: agentId, userId: auth.userId },
-  });
-
-  if (!existing) {
-    throw new SdkAuthError("Agent not found", 404);
-  }
-
-  // Soft delete - just deactivate
-  await db.chatbot.update({
-    where: { id: agentId },
-    data: { status: "DELETED" },
-  });
-
-  return Response.json({ success: true, message: "Agent deleted" });
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
-// CHAT HANDLERS (reutilizado de chat.vercel.public.tsx)
+// CHAT HANDLERS
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function handleChatHistory(request: Request, url: URL) {
-  // Publishable keys can access chat
   const auth = await authenticateSdkRequest(request);
 
   const sessionId = url.searchParams.get("sessionId");
@@ -388,7 +519,6 @@ async function handleChatHistory(request: Request, url: URL) {
     return Response.json({ messages: [] });
   }
 
-  // Verify agent belongs to user
   const chatbot = await db.chatbot.findFirst({
     where: { id: agentId, userId: auth.userId },
   });
@@ -423,10 +553,8 @@ async function handleChatHistory(request: Request, url: URL) {
 }
 
 async function handleChat(request: Request, url: URL) {
-  // Publishable keys can access chat (domain already validated)
   const auth = await authenticateSdkRequest(request);
 
-  // Validate request body with Zod
   let body: z.infer<typeof chatMessageSchema>;
   try {
     body = chatMessageSchema.parse(await request.json());
@@ -448,7 +576,6 @@ async function handleChat(request: Request, url: URL) {
     throw new SdkAuthError("Missing agentId parameter", 400, "MISSING_PARAM");
   }
 
-  // Validate message has text content
   const textContent = message.parts
     .filter((p) => p.type === "text" && p.text?.trim())
     .map((p) => p.text!)
@@ -458,7 +585,6 @@ async function handleChat(request: Request, url: URL) {
     throw new SdkAuthError("Message cannot be empty", 400, "EMPTY_MESSAGE");
   }
 
-  // Verify agent belongs to user and is active
   const chatbot = await db.chatbot.findFirst({
     where: { id: agentId, userId: auth.userId, status: "ACTIVE" },
   });
@@ -467,14 +593,8 @@ async function handleChat(request: Request, url: URL) {
     throw new SdkAuthError("Agent not found or inactive", 404);
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // REUTILIZADO DE chat.vercel.public.tsx
-  // ══════════════════════════════════════════════════════════════════════════
-
-  // Buscar conversación existente
   let conversation = await getConversationBySessionId(sessionId, agentId);
 
-  // Cargar mensajes históricos
   let historicalMessages: UIMessage[] = [];
   if (conversation) {
     const dbMessages = await getMessagesByConversationId(conversation.id);
@@ -487,7 +607,6 @@ async function handleChat(request: Request, url: URL) {
       }));
   }
 
-  // Crear conversación si no existe
   if (!conversation) {
     const limitCheck = await validateMonthlyConversationLimit(agentId);
 
@@ -535,26 +654,27 @@ async function handleChat(request: Request, url: URL) {
     conversation = conv;
   }
 
-  // Combinar mensajes (textContent ya fue validado arriba)
-  const allMessages = [...historicalMessages, message];
+  // Add role: "user" to the incoming message (SDK messages don't include role)
+  const userMessage: UIMessage = {
+    id: nanoid(),
+    role: "user",
+    parts: message.parts,
+  };
+  const allMessages = [...historicalMessages, userMessage];
 
   await addUserMessage(conversation.id, textContent);
 
   const startTime = Date.now();
 
-  // Cargar custom tools
   const customTools = await loadCustomToolsForChatbot(agentId);
 
-  // System prompt
   const basePrompt = chatbot.instructions || "Eres un asistente útil.";
   const systemPrompt = chatbot.customInstructions
     ? `${basePrompt}\n\n${chatbot.customInstructions}`
     : basePrompt;
 
-  // Temperatura (solo para Gemini)
   const modelTemperature = getModelTemperature(chatbot.aiModel);
 
-  // streamText
   const result = streamText({
     model: mapModel(chatbot.aiModel),
     ...(modelTemperature !== undefined && { temperature: modelTemperature }),

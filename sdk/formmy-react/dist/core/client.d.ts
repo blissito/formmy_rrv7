@@ -50,8 +50,29 @@ export declare class Formmy {
     };
     get chat(): {
         /**
-         * Send a message and get a response (non-streaming)
-         * For streaming, use the useFormmyChat hook on the frontend
+         * Stream a chat response - returns Response for proxying
+         * Use this when you need to forward the stream to your frontend
+         *
+         * @example
+         * ```typescript
+         * // Elysia/Express/Hono backend
+         * app.post("/chat", async ({ body }) => {
+         *   const response = await formmy.chat.stream({
+         *     agentId: body.agentId,
+         *     message: body.message,
+         *   });
+         *   return response; // Proxy the stream directly
+         * });
+         * ```
+         */
+        stream: (options: {
+            agentId: string;
+            message: string;
+            conversationId?: string;
+        }) => Promise<Response>;
+        /**
+         * Send a message and get complete response (non-streaming)
+         * Use this for server-to-server communication where you don't need streaming
          */
         send: (options: {
             agentId: string;

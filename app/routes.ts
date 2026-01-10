@@ -166,10 +166,12 @@ export default [
 
   // WhatsApp ahora usa WhatsAppSDKService directo
 
+  // API v2 routes - SDK
+  route("api/v2/sdk", "routes/api.v2.sdk.ts"),
+
   // API v1 routes
   route("api/v1/chatbot", "routes/api.v1.chatbot.ts"),
   route("api/v1/messages", "routes/api.v1.messages.ts"),
-  // api/v1/apikey ELIMINADO - usar SDK keys (/api/v2/sdk)
   route("api/v1/context", "routes/api.v1.context.ts"),
   route("api/v1/calendar", "routes/api.v1.calendar.ts"),
   route("api/v1/export", "routes/api.v1.export.ts"),

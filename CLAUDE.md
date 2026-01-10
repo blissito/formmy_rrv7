@@ -32,27 +32,29 @@ sdk/formmy-react/
 ### Uso
 
 **Backend (Node.js):**
-```typescript
-import { Formmy } from '@formmy.app/chat';
 
-const formmy = new Formmy({ secretKey: 'formmy_sk_live_xxx' });
+```typescript
+import { Formmy } from "@formmy.app/chat";
+
+const formmy = new Formmy({ secretKey: "formmy_sk_live_xxx" });
 const agents = await formmy.agents.list();
 ```
 
 **Frontend (React):**
+
 ```tsx
-import { FormmyProvider, ChatBubble } from '@formmy.app/chat/react';
+import { FormmyProvider, ChatBubble } from "@formmy.app/chat/react";
 
 <FormmyProvider publishableKey="formmy_pk_live_xxx">
   <ChatBubble agentId="xxx" />
-</FormmyProvider>
+</FormmyProvider>;
 ```
 
 ### Autenticación
 
-| Key | Prefijo | Uso | Scope |
-|-----|---------|-----|-------|
-| Secret | `formmy_sk_live_` | Backend | Full access |
+| Key         | Prefijo           | Uso      | Scope                        |
+| ----------- | ----------------- | -------- | ---------------------------- |
+| Secret      | `formmy_sk_live_` | Backend  | Full access                  |
 | Publishable | `formmy_pk_live_` | Frontend | Chat only, domain-restricted |
 
 **Dashboard**: `/dashboard/api-keys`
@@ -86,26 +88,32 @@ git add . && git commit -m "chore: bump SDK version" && git push
 **Problema**: WhatsApp Cloud API NO proporciona avatares/fotos de perfil de contactos en webhooks.
 
 **Investigación**:
+
 - ❌ El webhook payload solo incluye `contacts[].profile.name` (sin foto)
 - ❌ Meta Graph API NO tiene endpoint público para obtener fotos de perfil de contactos
 - ❌ Solo se puede gestionar la foto de perfil del **negocio** (no de usuarios)
 
 **Fuentes**:
+
 - [Stack Overflow: WhatsApp Cloud API - Get User Profile Picture](https://stackoverflow.com/questions/79492845/whatsapp-cloud-api-how-to-get-user-profile-picture-and-locale-in-a-user-initia)
 - [WhatsApp Cloud API Webhook Payload Structure](https://docs.ycloud.com/reference/whatsapp-inbound-message-webhook-examples)
 
 **Estructura del Webhook** (solo nombre disponible):
+
 ```typescript
-contacts: [{
-  profile: {
-    name: string  // ✅ Disponible
-    // ❌ NO incluye: profile_picture_url, avatar, etc.
+contacts: [
+  {
+    profile: {
+      name: string, // ✅ Disponible
+      // ❌ NO incluye: profile_picture_url, avatar, etc.
+    },
+    wa_id: string,
   },
-  wa_id: string
-}]
+];
 ```
 
 **Estrategia de Compatibilidad**:
+
 - ✅ Campo `Contact.profilePictureUrl` se mantiene en schema
 - ✅ Avatares existentes se conservan y muestran
 - ✅ Servicio `avatar.service.ts` corregido (field name: `profilePictureUrl`)
@@ -114,23 +122,28 @@ contacts: [{
 - ⚠️ Endpoint `/${phoneNumber}/profile_picture` puede fallar (limitación de API)
 
 **Comportamiento Actual**:
+
 - ✅ Avatares existentes en DB → Se muestran en UI
 - ✅ Avatares nuevos → **Se intenta obtener** (mismo método que antes)
 - 🛡️ Si fallo → Log de error (non-blocking), mensaje continúa procesándose
 - 🔄 Actualización automática → **HABILITADA** con error handling
 
 **Alternativas** (para futuro):
+
 - Whapi.Cloud API (de pago) - compatible drop-in
 - Servicios de terceros con Graph API extendido
 
 **Implementación**:
+
 ```typescript
 // app/routes/api.v1.integrations.whatsapp.webhook.tsx (línea 783)
-import("../../server/integrations/whatsapp/avatar.service").then(({ updateContactAvatar }) => {
-  updateContactAvatar(chatbotId, phone, token).catch((err) => {
-    console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
-  });
-});
+import("../../server/integrations/whatsapp/avatar.service").then(
+  ({ updateContactAvatar }) => {
+    updateContactAvatar(chatbotId, phone, token).catch((err) => {
+      console.error("⚠️ Failed to fetch avatar (non-blocking):", err);
+    });
+  }
+);
 ```
 
 **Fecha**: 2025-11-23
@@ -158,11 +171,13 @@ const sessionId = `whatsapp_${phoneNumber}_${chatbotId}`;
 ```
 
 **Resultado**:
+
 - ✅ Cada chatbot tiene su propia conversación con el mismo usuario
 - ✅ No hay conflictos de UNIQUE constraint
 - ✅ Los mensajes se guardan en el chatbot correcto
 
 **Archivos modificados**:
+
 - `server/integrations/whatsapp/conversation.server.ts` (línea 23)
 
 **Fecha**: 2025-11-13
@@ -180,7 +195,9 @@ const sessionId = `whatsapp_${phoneNumber}_${chatbotId}`;
 **Solución Implementada**:
 
 #### 1. Backend - Webhook Handler
+
 **Archivo**: `app/routes/api.v1.integrations.whatsapp.webhook.tsx`
+
 - Agregado tipo `"reaction"` al interface TypeScript del webhook (línea 42)
 - Agregado campo `reaction?: { message_id: string; emoji: string }` (líneas 73-76)
 - Handler especial para detectar y procesar reacciones (líneas 230-270)
@@ -188,14 +205,18 @@ const sessionId = `whatsapp_${phoneNumber}_${chatbotId}`;
 - Las reacciones NO envían notificaciones al owner
 
 #### 2. Función de Manejo
+
 **Archivo**: `server/integrations/whatsapp/conversation.server.ts` (líneas 84-198)
+
 - `handleReaction()`: Crea/actualiza/elimina reacciones
 - Emoji vacío = Usuario removió reacción
 - Usuario solo puede tener UNA reacción por mensaje (WhatsApp nativo)
 - Busca mensaje original por `externalMessageId`
 
 #### 3. Modelo de Datos
+
 **Archivo**: `prisma/schema.prisma` (líneas 413-416)
+
 ```prisma
 model Message {
   // ... campos existentes
@@ -206,18 +227,23 @@ model Message {
 ```
 
 #### 4. Tipos TypeScript
+
 **Archivos modificados**:
+
 - `server/integrations/whatsapp/types.ts`: Agregado `"reaction"` a `MessageType` (línea 43)
 - `server/chatbot/conversationTransformer.server.ts`: Agregados campos de reacción a `UIMessage` (líneas 37-41)
 
 #### 5. Frontend - Visualización
+
 **Archivo**: `app/components/chat/tab_sections/Conversations.tsx`
+
 - Filtra mensajes con `isReaction: true` del map principal (línea 1157)
 - Busca reacciones para cada mensaje basado en `externalMessageId` (líneas 1160-1162)
 - Muestra emoji como overlay en esquina de la burbuja (líneas 1239-1246 para USER, 1472-1479 para ASSISTANT)
 - Estilo: emoji grande con fondo blanco, sombra y borde
 
 **Comportamiento**:
+
 - ✅ Reacciones se guardan en base de datos
 - ✅ Se muestran como overlay sobre el mensaje original (estilo WhatsApp)
 - ✅ Solo se muestra la reacción más reciente por usuario
@@ -226,12 +252,13 @@ model Message {
 - ❌ NO envía notificaciones
 
 **Estructura del Webhook de Reacciones**:
+
 ```json
 {
   "type": "reaction",
   "reaction": {
-    "message_id": "wamid.XYZ789...",  // ID del mensaje original
-    "emoji": "👍"  // Emoji (vacío si se remueve)
+    "message_id": "wamid.XYZ789...", // ID del mensaje original
+    "emoji": "👍" // Emoji (vacío si se remueve)
   }
 }
 ```
@@ -244,10 +271,12 @@ model Message {
 ### Feature: Separación de Contact y Lead (2025-11-14)
 
 **Problema**: El modelo `Contact` mezclaba dos casos de uso diferentes:
+
 1. Información automática capturada de WhatsApp (nombre, teléfono, foto de perfil)
 2. Leads calificados guardados manualmente con `save_contact_info` (email, productInterest, position, website, notes)
 
 Esto causaba:
+
 - Unique constraint `Contact_chatbotId_phone_key` fallaba al intentar guardar leads con teléfonos ya registrados automáticamente por WhatsApp
 - Confusión entre contactos automáticos vs leads capturados intencionalmente
 - Campos innecesarios mezclados en un solo modelo
@@ -255,9 +284,11 @@ Esto causaba:
 **Solución Implementada**:
 
 #### 1. Nuevos Modelos Separados
+
 **Archivo**: `prisma/schema.prisma` (líneas 303-356)
 
 **Contact** - Solo info básica de WhatsApp (automático):
+
 ```prisma
 model Contact {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
@@ -277,6 +308,7 @@ model Contact {
 ```
 
 **Lead** - Prospectos calificados (manual con save_contact_info):
+
 ```prisma
 model Lead {
   id              String        @id @default(auto()) @map("_id") @db.ObjectId
@@ -305,7 +337,9 @@ model Lead {
 ```
 
 #### 2. Tool Handler Actualizado
+
 **Archivo**: `server/tools/handlers/contact.ts`
+
 - `saveContactInfoHandler()` ahora crea/actualiza **Lead** (no Contact)
 - Validación: requiere email O teléfono (al menos uno)
 - Búsqueda de duplicados: primero por email, luego por teléfono
@@ -313,11 +347,14 @@ model Lead {
 - Logs detallados para debug
 
 #### 3. UI Actualizada
+
 **Archivo**: `app/routes/dashboard.chat_.$chatbotSlug.tsx` (líneas 169-192)
+
 - Loader retorna `db.lead.findMany()` para tab de Contactos
 - Frontend muestra leads con todos los campos (email, productInterest, position, website, notes, status)
 
 **Archivo**: `app/components/chat/tab_sections/Contactos.tsx`
+
 - UI consume leads del loader
 - Búsqueda por: name, email, phone, productInterest
 - Exportación CSV incluye todos los campos de lead
@@ -325,27 +362,38 @@ model Lead {
 #### 4. Flujo Completo
 
 **WhatsApp → Contact (Automático)**:
+
 ```typescript
 // server/integrations/whatsapp/conversation.server.ts
 await db.contact.upsert({
   where: { chatbotId_phone: { chatbotId, phone } },
   create: { name, phone, profilePictureUrl, chatbotId },
-  update: { name, profilePictureUrl }
+  update: { name, profilePictureUrl },
 });
 ```
 
 **save_contact_info → Lead (Manual)**:
+
 ```typescript
 // server/tools/handlers/contact.ts
 await db.lead.create({
   data: {
-    name, email, phone, productInterest, position, website, notes,
-    chatbotId, conversationId, status: 'NEW'
-  }
+    name,
+    email,
+    phone,
+    productInterest,
+    position,
+    website,
+    notes,
+    chatbotId,
+    conversationId,
+    status: "NEW",
+  },
 });
 ```
 
 **Comportamiento**:
+
 - ✅ Contact: Solo info de WhatsApp, unique por (chatbotId, phone)
 - ✅ Lead: Prospectos capturados, sin unique constraint en phone
 - ✅ Mismo usuario puede estar en Contact (automático) Y Lead (manual)
@@ -353,6 +401,7 @@ await db.lead.create({
 - ✅ Separación clara de responsabilidades
 
 **Archivos modificados**:
+
 - `prisma/schema.prisma` - Modelos Contact y Lead separados
 - `server/tools/handlers/contact.ts` - Handler usa Lead
 - `server/tools/index.ts` - Tool description actualizada
@@ -373,6 +422,7 @@ await db.lead.create({
 **Causa Raíz**: El factory `createSaveLeadTool()` en `server/tools/vercel/saveLead.ts` no recibía ni pasaba el `conversationId` al handler `saveContactInfoHandler()`, aunque este último sí lo soportaba.
 
 **Flujo incorrecto**:
+
 ```typescript
 // ❌ ANTES: Context sin conversationId
 const context = {
@@ -385,27 +435,31 @@ const context = {
 **Solución Implementada**:
 
 #### 1. Actualizado Factory Function
+
 **Archivo**: `server/tools/vercel/saveLead.ts` (líneas 29, 106)
+
 ```typescript
 // ✅ AHORA: Factory recibe conversationId
 export const createSaveLeadTool = (
   chatbotId: string,
-  conversationId?: string  // ⬅️ Nuevo parámetro
+  conversationId?: string // ⬅️ Nuevo parámetro
 ) => {
   return tool({
     execute: async (params) => {
       const context = {
         chatbotId,
-        conversationId,  // ⬅️ Incluido en closure
+        conversationId, // ⬅️ Incluido en closure
         // ...
       };
-    }
+    },
   });
 };
 ```
 
 #### 2. Actualizado Endpoint Web
+
 **Archivo**: `app/routes/chat.vercel.public.tsx` (línea 160)
+
 ```typescript
 tools: {
   getContextTool: createGetContextTool(chatbotId),
@@ -414,7 +468,9 @@ tools: {
 ```
 
 #### 3. Actualizado Webhook WhatsApp
+
 **Archivo**: `app/routes/api.v1.integrations.whatsapp.webhook.tsx` (línea 1184)
+
 ```typescript
 tools: {
   getContextTool: createGetContextTool(chatbot.id),
@@ -423,17 +479,20 @@ tools: {
 ```
 
 **Comportamiento**:
+
 - ✅ Nuevos leads se guardan CON `conversationId`
 - ✅ Botón de conversación funcional en tabla de Leads
 - ✅ Click en icono navega a: `/dashboard/chat/{slug}?tab=Conversaciones&conversation={id}`
 - ⚠️ Leads antiguos (sin `conversationId`) siguen con botón deshabilitado
 
 **Handler ya soportaba conversationId** (`server/tools/handlers/contact.ts`):
+
 - Línea 36: `let conversationId: string | undefined = context.conversationId;`
-- Línea 153: `...(conversationId && { conversationId })`  (update)
-- Línea 214: `...(conversationId && { conversationId })`  (create)
+- Línea 153: `...(conversationId && { conversationId })` (update)
+- Línea 214: `...(conversationId && { conversationId })` (create)
 
 **Archivos modificados**:
+
 - `server/tools/vercel/saveLead.ts` - Factory function y context
 - `app/routes/chat.vercel.public.tsx` - Endpoint público
 - `app/routes/api.v1.integrations.whatsapp.webhook.tsx` - Webhook WhatsApp
@@ -448,6 +507,7 @@ tools: {
 ### Arquitectura Actual: Dos sistemas coexistiendo
 
 **Sistema NUEVO (modelo separado)** ✅:
+
 ```prisma
 model Context {
   id           String      @id @default(auto()) @map("_id") @db.ObjectId
@@ -464,6 +524,7 @@ model Context {
 ```
 
 **Relación en Chatbot**:
+
 ```prisma
 model Chatbot {
   contextObjects Context[]  // ✅ Nombre de la relación (NO "contexts")
@@ -471,6 +532,7 @@ model Chatbot {
 ```
 
 **Sistema LEGACY (embebido en JSON)** ⚠️ DEPRECADO:
+
 ```prisma
 type ContextItem {
   id             String
@@ -483,6 +545,7 @@ type ContextItem {
 ### Archivos por sistema
 
 **✅ Usando Context (modelo separado)**:
+
 - `server/context/vercel_embeddings.ts` - Servicio de RAG con Vercel AI SDK
 - `server/context/vercel_embeddings.secure.ts` - Validaciones de ownership
 - `app/routes/chat.vercel.tsx` - Ghosty y chat público
@@ -491,6 +554,7 @@ type ContextItem {
 - `server/vector/vector-search.service.ts` - Búsqueda vectorial
 
 **⚠️ Usando ContextItem (legacy embebido)**:
+
 - `server/chatbot/contextManager.server.ts` - DEPRECADO
 - `server/chatbot/configResolver.server.ts` - DEPRECADO (líneas 106, 173-174)
 - `server/chatbot/chatbotModel.server.ts` - `addContextItem()`, `removeContextItem()` DEPRECADOS
@@ -498,6 +562,7 @@ type ContextItem {
 ### TODO: Migración completa
 
 **Pendiente**:
+
 1. Eliminar funciones `addContextItem()` y `removeContextItem()` de `chatbotModel.server.ts`
 2. Migrar `contextManager.server.ts` a usar `secureUpsert()` de `vercel_embeddings.secure.ts`
 3. Actualizar `configResolver.server.ts` para cargar de `contextObjects` en lugar de JSON embebido
@@ -512,6 +577,7 @@ type ContextItem {
 ## ⚠️ REGLAS CRÍTICAS
 
 ### 1. Vercel AI SDK - Streaming
+
 ```typescript
 import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
@@ -520,12 +586,14 @@ const result = streamText({
   model: openai("gpt-4o-mini"),
   messages: convertToModelMessages(allMessages),
   tools: { search_context, save_lead, web_search },
-  maxSteps: 5
+  maxSteps: 5,
 });
 ```
+
 ✅ Modelo decide tools automáticamente | ✅ 100% streaming
 
 ### 2. Memory - Historial
+
 ```typescript
 // Cargar mensajes desde DB
 const allMessages = await getMessagesByConversationId(conversationId);
@@ -536,45 +604,54 @@ streamText({
   // ...
 });
 ```
+
 ⚠️ **Backend es source of truth** - NUNCA confiar en historial del cliente
 
 ### 3. Streaming
+
 ✅ 100% streaming | ✅ Archivos: Buffer → Redis → `/api/ghosty/download/{id}`
 ❌ Filesystem (Fly.io efímero)
 
 ## Arquitectura
 
 **Endpoints Activos**:
+
 - `/chat/vercel/public` - Chat público (widgets embebidos)
 - `/chat/vercel` - Ghosty dashboard
 
 **Tools**: `/server/tools/vercel/` - Factory functions con closures
 
 ### ⚠️ ENDPOINTS DEPRECADOS (Requieren migración):
+
 - `/api/v0/chatbot` - TODO: Migrar a Vercel AI SDK
 - `/api/agent/v0` - TODO: Migrar a Vercel AI SDK
 - `/api/ghosty/v0` - TODO: Migrar a Vercel AI SDK (Ghosty usa `/chat/vercel` ahora)
 
 ### Tool Credits
+
 **Ubicación**: `/server/llamaparse/credits.service.ts`
+
 - Sistema dual: Mensuales (reset mes) + Comprados (permanentes)
 - Parser: COST_EFFECTIVE(1), AGENTIC(3), AGENTIC_PLUS(6) créditos/página
 
 ### RAG (Retrieval-Augmented Generation)
+
 **Servicio**: `/server/context/vercel_embeddings.ts` (Vercel AI SDK)
 **Index**: `vector_index_2` MongoDB | **Embeddings**: text-embedding-3-small
 **Chunk**: 2000 chars, 100 overlap (5%)
 
 **Tools Vercel AI SDK**:
+
 - `createSearchContextTool(chatbotId)` - RAG search con agent AI
 - `createGetContextTool(chatbotId)` - Vector search directo
-**Handlers**: `/server/tools/handlers/context-search.ts`
-**Query Expansion**: `/server/vector/query-expansion.service.ts`
+  **Handlers**: `/server/tools/handlers/context-search.ts`
+  **Query Expansion**: `/server/vector/query-expansion.service.ts`
 
 ⚠️ **CRÍTICO - Tool Result Usage**:
 Vercel AI SDK inyecta automáticamente los resultados de tools al contexto, PERO los modelos (especialmente gpt-4o-mini) pueden ignorarlos sin instrucciones explícitas en el system prompt.
 
 **System Prompt Requirements**:
+
 ```typescript
 // ✅ CORRECTO: Prompt imperativo que fuerza uso de resultados
 CRITICAL - TOOL RESULTS ARE YOUR ANSWER:
@@ -585,6 +662,7 @@ When search_context() returns results, those results ARE the answer.
 ```
 
 **Flujo**:
+
 1. Usuario pregunta → Agent llama `search_context` tool
 2. Tool ejecuta → Retorna "Encontré X resultados: [CONTENIDO]"
 3. Vercel AI SDK inyecta resultados al contexto automáticamente
@@ -594,7 +672,9 @@ When search_context() returns results, those results ARE the answer.
 ✅ **SOLUCIÓN**: Prompt imperativo que ordena usar los resultados como fuente única de verdad
 
 ### Modelos
+
 **Config**: `/server/config/model-temperatures.ts`
+
 - GPT-4o-mini: 1.0 | GPT-5: 0.7 | Claude Haiku: 0.8
 
 ## Artefactos (Sistema de UI Interactiva)
@@ -609,12 +689,12 @@ Sistema que permite al chatbot mostrar componentes React interactivos (tarjetas,
 
 ### Artefactos Nativos Disponibles
 
-| Nombre | Descripción | Eventos | Datos Requeridos |
-|--------|-------------|---------|------------------|
-| `date-picker` | Selector de fecha/hora | `onConfirm`, `onCancel` | `minDate?`, `maxDate?` |
-| `gallery-card` | Galería de imágenes (hasta 4) | Ninguno (display-only) | `images[]` (URLs) |
-| `product-card` | Tarjeta de producto | `onViewMore`, `onAddToCart` | `name`, `price` |
-| `payment-card` | Resumen de pago | `onPay`, `onCancel` | `items[]`, `total` |
+| Nombre         | Descripción                   | Eventos                     | Datos Requeridos       |
+| -------------- | ----------------------------- | --------------------------- | ---------------------- |
+| `date-picker`  | Selector de fecha/hora        | `onConfirm`, `onCancel`     | `minDate?`, `maxDate?` |
+| `gallery-card` | Galería de imágenes (hasta 4) | Ninguno (display-only)      | `images[]` (URLs)      |
+| `product-card` | Tarjeta de producto           | `onViewMore`, `onAddToCart` | `name`, `price`        |
+| `payment-card` | Resumen de pago               | `onPay`, `onCancel`         | `items[]`, `total`     |
 
 ### Triggers para Activación
 
@@ -649,10 +729,11 @@ Cada artefacto tiene keywords que lo activan automáticamente:
 ### Instalación de Artefactos
 
 Los artefactos deben estar instalados y activos en el chatbot para funcionar:
+
 ```typescript
 // El tool verifica instalación antes de ejecutar
 const installation = await db.artifactInstallation.findFirst({
-  where: { chatbotId, artifact: { name: artifactName }, isActive: true }
+  where: { chatbotId, artifact: { name: artifactName }, isActive: true },
 });
 ```
 
@@ -663,20 +744,22 @@ const installation = await db.artifactInstallation.findFirst({
 
 ## Pricing
 
-| Plan | $ | Bots | Conv | Credits | Voice |
-|------|---|------|------|---------|-------|
-| Starter | 149 | 1 | 50 | 200 | 50min |
-| Pro | 499 | 10 | 250 | 1000 | 200min |
-| Enterprise | 2490 | ∞ | 2500 | 5000 | 1000min |
+| Plan       | $    | Bots | Conv | Credits | Voice   |
+| ---------- | ---- | ---- | ---- | ------- | ------- |
+| Starter    | 149  | 1    | 50   | 200     | 50min   |
+| Pro        | 499  | 10   | 250  | 1000    | 200min  |
+| Enterprise | 2490 | ∞    | 2500 | 5000    | 1000min |
 
 ## Integraciones
 
 ### WhatsApp
+
 **Service**: `/server/integrations/whatsapp/WhatsAppSDKService.ts`
 **Flow**: Meta Embedded Signup → tokens → Integration model
 ⚠️ Composio WhatsApp DEPRECADO
 
 ### Gmail/Calendar
+
 ⚠️ **DEPRECADO** - Integraciones Composio eliminadas
 **TODO**: Reimplementar con Vercel AI SDK pattern
 
@@ -696,6 +779,7 @@ Modelos `Trace`, `TraceSpan` - Tracking automático de LLM calls, tools, costos
 **Notifiers**: `/server/notifyers/` (12 templates)
 
 ### Email Transaccionales (Event-triggered)
+
 - `welcome.ts` - Registro nuevo
 - `pro.ts` - Upgrade de plan
 - `planCancellation.ts` - Cancelación
@@ -707,34 +791,40 @@ Modelos `Trace`, `TraceSpan` - Tracking automático de LLM calls, tools, costos
 ### Email Automatizados (Weekly Cron)
 
 #### 1. Free Trial Expiry (`freeTrial.ts`)
+
 **Target**: Usuarios TRIAL sin chatbots creados (5-7 días inactivos)
 **Límite**: ❌ Sin límite (basado en fecha de creación)
 
 #### 2. No Usage (`noUsage.ts`) ⭐ **ACTUALIZADO**
+
 **Target**: Usuarios Trial/Pro/Enterprise SIN chatbots creados
 **Límite**: ✅ Máximo 3 emails por usuario
 **Cooldown**: 7 días entre emails
 **Tracking**: User model - `noUsageEmailsSent`, `lastNoUsageEmailAt`, `hasCreatedChatbot`
 
 **Lógica** (`chatbotModel.server.ts:115-119`):
+
 ```typescript
 // Al crear primer chatbot → marca permanente
 await db.user.update({
   where: { id: userId },
-  data: { hasCreatedChatbot: true } // ✅ NUNCA más recibirá email noUsage
+  data: { hasCreatedChatbot: true }, // ✅ NUNCA más recibirá email noUsage
 });
 ```
 
 **Comportamiento**:
+
 - Usuario sin chatbots: Email semana 1 → 2 → 3 (máx 3)
 - Usuario crea chatbot: ❌ Bloqueado permanente (incluso si elimina chatbot)
 - Query filters: `hasCreatedChatbot: false`, `noUsageEmailsSent < 3`, cooldown 7 días
 
 #### 3. Weekly Summary (`weekSummary.ts`)
+
 **Target**: Usuarios con conversaciones en últimos 7 días
 **Límite**: ❌ Sin límite (solo envía si hay actividad)
 
 ### Trial to FREE Conversion
+
 **Worker**: `convertExpiredTrials()` - Ejecuta cada lunes
 **Lógica**: Trial > 365 días → Convierte a FREE + Aplica restricciones
 
@@ -745,19 +835,24 @@ await db.user.update({
 Durante migración Prisma (2025-01-11) se encontraron **datos duplicados** que impidieron crear índices únicos:
 
 #### 1. Message Model (línea 423-424)
+
 ```typescript
 // TODO: Resolver mensajes duplicados con externalMessageId null antes de habilitar
 // @@unique([conversationId, externalMessageId])
 ```
+
 **Problema**: Múltiples mensajes con `externalMessageId: null` en misma conversación
 **Causa probable**: Mensajes internos sin ID externo de WhatsApp/Messenger
 
 #### 2. DebouncedMessage Model (línea 943-944)
+
 ```typescript
 // TODO: Limpiar duplicados antes de habilitar este constraint
 // @@unique([messageId, phoneNumberId, type])
 ```
+
 **Problema**: Mensaje WhatsApp duplicado detectado:
+
 ```
 messageId: "wamid.HBgNNTIxNTU2NzA2MjYyORUCABIYFDNCMDREQzk1Njg3OEMzQzE4RDM4AA=="
 phoneNumberId: "845237608662425"
@@ -769,29 +864,36 @@ type: "message"
 ### Acciones Recomendadas
 
 **Opción 1: Limpiar duplicados manualmente**
+
 ```javascript
 // MongoDB shell - Encontrar duplicados en DebouncedMessage
 db.DebouncedMessage.aggregate([
   {
     $group: {
-      _id: { messageId: "$messageId", phoneNumberId: "$phoneNumberId", type: "$type" },
+      _id: {
+        messageId: "$messageId",
+        phoneNumberId: "$phoneNumberId",
+        type: "$type",
+      },
       count: { $sum: 1 },
-      ids: { $push: "$_id" }
-    }
+      ids: { $push: "$_id" },
+    },
   },
-  { $match: { count: { $gt: 1 } } }
-])
+  { $match: { count: { $gt: 1 } } },
+]);
 
 // Eliminar duplicados (mantener solo el más reciente)
 ```
 
 **Opción 2: Vaciar tabla temporal** (DebouncedMessage)
+
 ```javascript
 // Seguro - Los mensajes solo duran 1 minuto (TTL)
-db.DebouncedMessage.deleteMany({})
+db.DebouncedMessage.deleteMany({});
 ```
 
 **Opción 3: Configurar TTL Index** en MongoDB Atlas
+
 - Crear índice TTL en `DebouncedMessage.expiresAt`
 - `expireAfterSeconds: 0` → Auto-elimina cuando `expiresAt < now()`
 - Previene acumulación de duplicados
@@ -808,16 +910,19 @@ db.DebouncedMessage.deleteMany({})
 **Prioridad**: Baja (experimental)
 
 **Contexto**:
+
 - Arquitectura actual (`streamText` + tools + `stopWhen`) es funcionalmente equivalente a un Agent
 - AI SDK v6 introduce `ToolLoopAgent` como wrapper más limpio
 - NO hay beneficio de performance, solo organización de código
 
 **Por qué Ghosty es ideal para experimentar**:
+
 1. Es interno → No afecta clientes si algo falla
 2. Ya tiene más complejidad → Usa herramientas de dashboard, stats
 3. Permite medir diferencias → Comparar latencia/tokens vs versión actual
 
 **Migración propuesta**:
+
 ```typescript
 // Ghosty actual (chat.vercel.tsx)
 const result = streamText({
@@ -844,6 +949,7 @@ return createAgentUIStreamResponse({
 ```
 
 **Features nuevas de v6 a evaluar**:
+
 - `ToolLoopAgent` - Encapsulación de config
 - Tool approval (HITL) - Confirmación antes de acciones críticas
 - `createAgentUIStreamResponse` - Streaming simplificado
@@ -858,11 +964,13 @@ return createAgentUIStreamResponse({
 ## APIs Públicas
 
 ### RAG API v1
+
 **Endpoint**: `/api/v1/rag`
 **SDK**: `/sdk/formmy-rag.ts`
 **Intents**: `list` (gratis), `upload` (3 créditos), `query` (2 créditos)
 
 ### Parser API v1
+
 **Endpoint**: `/api/parser/v1`
 **SDK**: `formmy-sdk` (npm)
 **Modos**: DEFAULT (gratis), COST_EFFECTIVE (1cr/pág), AGENTIC (3cr/pág), AGENTIC_PLUS (6cr/pág)
@@ -875,6 +983,7 @@ return createAgentUIStreamResponse({
 **Handler**: `/server/voice/voice-agent-handler.ts`
 
 ⚠️ **CRÍTICO**:
+
 - Plugin ElevenLabs (`@livekit/agents-plugin-elevenlabs`) - NO LiveKit Inference
 - API Key: `ELEVEN_API_KEY` (NO `ELEVENLABS_API_KEY`)
 - Voice ID: `3l9iCMrNSRR0w51JvFB0` (Leo Moreno - única voz nativa mexicana)
@@ -885,6 +994,7 @@ return createAgentUIStreamResponse({
 **Costo**: 5 créditos/minuto
 
 **Problemas Conocidos**:
+
 1. ⚠️ Alucinaciones (falta integración tools en worker)
 2. ⚠️ Conversaciones NO se guardan en DB
 3. ⚠️ Tracking de créditos incompleto
@@ -903,12 +1013,14 @@ return createAgentUIStreamResponse({
 ### Oportunidad de Mercado (2025)
 
 **Gap Identificado**: Shopify NO tiene embeddings públicos de catálogos
+
 - ✅ Shopify Semantic Search existe (marzo 2025) pero es solo frontend, no API
 - ✅ Catalog API (mayo 2025) expone datos estructurados pero NO vectoriza
 - ❌ NO existe "Vectorization as a Service" para Shopify merchants
 - ❌ Apps de chatbot (Sendbird, Tidio, Gorgias) duplican esfuerzo vectorizando por separado
 
 **Tamaño de mercado**:
+
 - 4.4M+ tiendas Shopify activas
 - Mercado AI search: $43.6B (2025) → $108.9B (2032) - 14% CAGR
 - 35% de consumidores US usan búsqueda en lenguaje natural
@@ -918,6 +1030,7 @@ return createAgentUIStreamResponse({
 **Estrategia de 3 Revenue Streams**:
 
 #### Stream 1: Shopify App Embebida (Lead Generation)
+
 ```
 Producto: "SearchGPT for Shopify" o "Semantic Product Finder"
 Propósito: Vectorización automática + Widget de búsqueda
@@ -941,6 +1054,7 @@ Arquitectura:
 ```
 
 #### Stream 2: Formmy Chatbot Premium (High-Margin Upsell)
+
 ```
 Producto: "Formmy AI Assistant for Shopify"
 Propósito: Chatbot conversacional completo
@@ -953,6 +1067,7 @@ Cross-sell: 10% conversion de usuarios de Shopify App
 ```
 
 #### Stream 3: API Pública (Developers)
+
 ```
 Producto: "Formmy Vector API"
 Propósito: B2B developer tool
@@ -968,10 +1083,12 @@ Target: Agencias, apps de terceros, custom storefronts
 ### Revenue Projections (Año 1)
 
 **Shopify App**:
+
 - 500 installs (400 free + 75 Pro + 25 Plus)
 - MRR: $6,825/mes
 
 **Formmy Chatbot** (10% conversion):
+
 - 50 merchants upgrade
 - MRR: $9,950/mes
 
@@ -981,11 +1098,13 @@ Target: Agencias, apps de terceros, custom storefronts
 ### Datos de Mercado (Shopify App Store)
 
 **Revenue Share**:
+
 - $1M lifetime commission-free (cambio 2025)
 - 15% después de $1M
 - Fee de registro: $19 USD one-time
 
 **Benchmarks**:
+
 - Mediana de apps: $725/mes
 - Top 25%: $10,000/mes
 - Timeline típico: 3-6 meses a $1,000 MRR
@@ -1000,6 +1119,7 @@ Target: Agencias, apps de terceros, custom storefronts
 ### Best Practices RAG para E-commerce
 
 **Chunking Strategy**: 1 producto = 1 chunk (NO dividir)
+
 ```typescript
 {
   // EMBEDDINGS (búsqueda semántica)
@@ -1015,6 +1135,7 @@ Target: Agencias, apps de terceros, custom storefronts
 ```
 
 **Hybrid Search** (recomendado por comunidad 2025):
+
 ```typescript
 // Pre-filter por metadata → Vector search en subset
 const results = await hybridSearch({
@@ -1022,12 +1143,13 @@ const results = await hybridSearch({
   filters: {
     category: "calzado",
     price: { lte: 1500 },
-    inStock: true
-  }
+    inStock: true,
+  },
 });
 ```
 
 **Ventajas vs Chunking tradicional**:
+
 - ✅ Producto = unidad atómica (coherencia total)
 - ✅ Metadata no consume tokens de embedding
 - ✅ Updates de precio/stock sin re-embedear
@@ -1036,6 +1158,7 @@ const results = await hybridSearch({
 ### Implementación Técnica
 
 **Fase 1 (Mes 1-2): MVP Shopify App**
+
 - Shopify Partner account + Embedded app setup
 - OAuth + Products webhook sync
 - Auto-vectorización (usar `vercel_embeddings.ts` existente)
@@ -1043,18 +1166,21 @@ const results = await hybridSearch({
 - Dashboard básico con App Bridge
 
 **Fase 2 (Mes 3): Monetización**
+
 - Agregar Pro/Plus pricing tiers
 - Analytics dashboard
 - Advanced filters (price range, category, brand)
 - "Upgrade to AI Chatbot" CTA prominente
 
 **Fase 3 (Mes 4-6): Formmy Integration**
+
 - One-click setup de Formmy chatbot desde Shopify App
 - Productos ya vectorizados (cero setup adicional)
 - Artifacts nativos (product-card, gallery-card) con datos de Shopify
 - WhatsApp integration para tiendas
 
 **Nuevo ContextType**:
+
 ```prisma
 enum ContextType {
   TEXT
@@ -1066,32 +1192,38 @@ enum ContextType {
 ### Riesgos & Mitigación
 
 **Riesgo 1**: Shopify lanza API de vectores pública
+
 - **Mitigación**: Diferenciador es chatbot completo, no solo search
 - **Plus**: Ya tenemos traction y reviews
 
 **Riesgo 2**: Competencia brutal (12,320 apps)
+
 - **Mitigación**: Free tier generoso para acumular reviews rápido
 - **Plus**: "Built for Shopify" badge = top de búsquedas
 
 **Riesgo 3**: Costos de embeddings escalan
+
 - **Mitigación**: Cache de embeddings, solo re-vectoriza si producto cambió
 - **Plus**: Metadata updates no requieren re-embedding
 
 ### Stack Técnico
 
 **Shopify App** (Next.js + App Bridge):
+
 - Framework: Shopify Remix template o Next.js App Bridge
 - Auth: OAuth 2.0 (Shopify Partners)
 - Webhooks: products/create, products/update, products/delete
 - UI: Polaris (Shopify design system)
 
 **Formmy Backend** (ya existente):
+
 - RAG: `server/context/vercel_embeddings.ts`
 - Vector DB: MongoDB Atlas (`vector_index_2`)
 - Embeddings: text-embedding-3-small
 - Chunk strategy: Ajustar de 2000 chars → 1 producto completo
 
 **Integraciones**:
+
 - Shopify GraphQL Admin API
 - Shopify Storefront API (para widget público)
 - Vercel AI SDK (chatbot)
@@ -1108,3 +1240,13 @@ enum ContextType {
 
 **Fecha**: 2025-12-26
 **Estado**: 🟡 Pendiente - Research completado, decisión de implementación pendiente
+
+**TODOS pa blissito**
+
+#### Respecto al SDK:
+
+- Alcanzar streams para alpha
+- Demo server
+- Demo client
+- Tener 2 keys c/s
+- Usar un bot en el demo.
