@@ -21,6 +21,8 @@ import type {
   UpdateAgentInput,
   AgentsListResponse,
   AgentResponse,
+  ConversationsListResponse,
+  ConversationResponse,
 } from "./types";
 
 const DEFAULT_BASE_URL = "https://formmy.app";
@@ -258,6 +260,61 @@ export class Formmy {
           content: contentParts.join(""),
           conversationId: sessionId,
         };
+      },
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Conversations Namespace
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  get conversations() {
+    return {
+      /**
+       * List conversations for an agent with pagination
+       *
+       * @example
+       * ```typescript
+       * const { conversations, pagination } = await formmy.conversations.list('agent_xxx');
+       *
+       * // Paginate
+       * if (pagination.hasMore) {
+       *   const next = await formmy.conversations.list('agent_xxx', {
+       *     cursor: pagination.nextCursor
+       *   });
+       * }
+       * ```
+       */
+      list: async (
+        agentId: string,
+        options?: { limit?: number; cursor?: string }
+      ): Promise<ConversationsListResponse> => {
+        const params = new URLSearchParams({ agentId });
+        if (options?.limit) params.set("limit", options.limit.toString());
+        if (options?.cursor) params.set("cursor", options.cursor);
+        return this.request<ConversationsListResponse>(
+          "GET",
+          `?intent=conversations.list&${params.toString()}`
+        );
+      },
+
+      /**
+       * Get a specific conversation with all messages
+       *
+       * @example
+       * ```typescript
+       * const { conversation } = await formmy.conversations.get('agent_xxx', 'conv_xxx');
+       * console.log(conversation.messages);
+       * ```
+       */
+      get: async (
+        agentId: string,
+        conversationId: string
+      ): Promise<ConversationResponse> => {
+        return this.request<ConversationResponse>(
+          "GET",
+          `?intent=conversations.get&agentId=${agentId}&conversationId=${conversationId}`
+        );
       },
     };
   }

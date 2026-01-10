@@ -196,6 +196,48 @@ export class Formmy {
         };
     }
     // ═══════════════════════════════════════════════════════════════════════════
+    // Conversations Namespace
+    // ═══════════════════════════════════════════════════════════════════════════
+    get conversations() {
+        return {
+            /**
+             * List conversations for an agent with pagination
+             *
+             * @example
+             * ```typescript
+             * const { conversations, pagination } = await formmy.conversations.list('agent_xxx');
+             *
+             * // Paginate
+             * if (pagination.hasMore) {
+             *   const next = await formmy.conversations.list('agent_xxx', {
+             *     cursor: pagination.nextCursor
+             *   });
+             * }
+             * ```
+             */
+            list: async (agentId, options) => {
+                const params = new URLSearchParams({ agentId });
+                if (options?.limit)
+                    params.set("limit", options.limit.toString());
+                if (options?.cursor)
+                    params.set("cursor", options.cursor);
+                return this.request("GET", `?intent=conversations.list&${params.toString()}`);
+            },
+            /**
+             * Get a specific conversation with all messages
+             *
+             * @example
+             * ```typescript
+             * const { conversation } = await formmy.conversations.get('agent_xxx', 'conv_xxx');
+             * console.log(conversation.messages);
+             * ```
+             */
+            get: async (agentId, conversationId) => {
+                return this.request("GET", `?intent=conversations.get&agentId=${agentId}&conversationId=${conversationId}`);
+            },
+        };
+    }
+    // ═══════════════════════════════════════════════════════════════════════════
     // Private methods
     // ═══════════════════════════════════════════════════════════════════════════
     async request(method, path, body) {

@@ -111,6 +111,33 @@ export interface ChatTheme {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Conversations
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface ConversationSummary {
+  id: string;
+  sessionId: string;
+  name?: string;
+  status: "ACTIVE" | "COMPLETED" | "TIMEOUT";
+  messageCount: number;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  parts?: object[];
+  createdAt: string;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  messages: ConversationMessage[];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // API Response types
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -126,4 +153,16 @@ export interface AgentsListResponse {
 
 export interface AgentResponse {
   agent: Agent;
+}
+
+export interface ConversationsListResponse {
+  conversations: ConversationSummary[];
+  pagination: {
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
+}
+
+export interface ConversationResponse {
+  conversation: ConversationDetail;
 }

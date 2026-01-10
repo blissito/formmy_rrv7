@@ -101,7 +101,11 @@ export default function HomeFooter() {
                   Blog
                 </a>
               </li>
-              {/* <li><a href="#" className="hover:underline">Blog</a></li> */}
+              <li>
+                <a href="/docs/sdk" className="hover:underline">
+                  SDK Developers
+                </a>
+              </li>
             </ul>
             <div className="block md:hidden mt-7">
               <div className="font-semibold mb-3 text-base">Empresa</div>

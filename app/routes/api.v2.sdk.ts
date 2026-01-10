@@ -38,6 +38,8 @@ import { calculateCost } from "@/server/chatbot/pricing.server";
 import { validateMonthlyConversationLimit } from "@/server/chatbot/planLimits.server";
 import { applyRateLimit, RATE_LIMIT_CONFIGS } from "@/server/middleware/rateLimiter.server";
 import { z } from "zod";
+// TODO: Add observability tracing (requires fixing server-only module resolution)
+// import { startTrace, endTrace, startSpan, endSpan, type TraceContext } from "@/server/tracing/instrumentation";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SDK AUTH (inline to avoid client bundling issues)
@@ -261,9 +263,15 @@ export async function loader({ request }: Route.LoaderArgs) {
       case "chat.history":
         return handleChatHistory(request, url);
 
+      case "conversations.list":
+        return handleConversationsList(request, url);
+
+      case "conversations.get":
+        return handleConversationsGet(request, url);
+
       default:
         return Response.json(
-          { error: "Missing or invalid intent", validIntents: ["agents.list", "agents.get", "chat.history"] },
+          { error: "Missing or invalid intent", validIntents: ["agents.list", "agents.get", "chat.history", "conversations.list", "conversations.get"] },
           { status: 400 }
         );
     }
@@ -503,6 +511,123 @@ async function handleAgentsUpdate(request: Request, url: URL) {
   });
 
   return Response.json({ agent });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONVERSATIONS HANDLERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function handleConversationsList(request: Request, url: URL) {
+  const auth = await authenticateSdkRequest(request, { requireSecret: true });
+
+  const agentId = url.searchParams.get("agentId");
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 100);
+  const cursor = url.searchParams.get("cursor");
+
+  if (!agentId) {
+    throw new SdkAuthError("Missing agentId parameter", 400, "MISSING_PARAM");
+  }
+
+  // Validate ownership
+  const chatbot = await db.chatbot.findFirst({
+    where: { id: agentId, userId: auth.userId },
+  });
+
+  if (!chatbot) {
+    throw new SdkAuthError("Agent not found", 404, "NOT_FOUND");
+  }
+
+  // Query with cursor pagination
+  const conversations = await db.conversation.findMany({
+    where: {
+      chatbotId: agentId,
+      status: { not: "DELETED" },
+      ...(cursor && { updatedAt: { lt: new Date(cursor) } }),
+    },
+    select: {
+      id: true,
+      sessionId: true,
+      name: true,
+      status: true,
+      messageCount: true,
+      isFavorite: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { updatedAt: "desc" },
+    take: limit + 1,
+  });
+
+  const hasMore = conversations.length > limit;
+  const items = hasMore ? conversations.slice(0, limit) : conversations;
+
+  return Response.json({
+    conversations: items,
+    pagination: {
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1].updatedAt.toISOString() : null,
+    },
+  });
+}
+
+async function handleConversationsGet(request: Request, url: URL) {
+  const auth = await authenticateSdkRequest(request, { requireSecret: true });
+
+  const agentId = url.searchParams.get("agentId");
+  const conversationId = url.searchParams.get("conversationId");
+
+  if (!agentId || !conversationId) {
+    throw new SdkAuthError("Missing agentId or conversationId parameter", 400, "MISSING_PARAM");
+  }
+
+  // Validate ownership
+  const chatbot = await db.chatbot.findFirst({
+    where: { id: agentId, userId: auth.userId },
+  });
+
+  if (!chatbot) {
+    throw new SdkAuthError("Agent not found", 404, "NOT_FOUND");
+  }
+
+  // Get conversation with messages
+  const conversation = await db.conversation.findFirst({
+    where: { id: conversationId, chatbotId: agentId },
+    include: {
+      messages: {
+        where: { deleted: { not: true } },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+
+  if (!conversation) {
+    throw new SdkAuthError("Conversation not found", 404, "NOT_FOUND");
+  }
+
+  // Filter out SYSTEM messages and format
+  const messages = conversation.messages
+    .filter((m) => m.role !== "SYSTEM")
+    .map((m) => ({
+      id: m.id,
+      role: m.role.toLowerCase() as "user" | "assistant",
+      content: m.content,
+      parts: m.parts,
+      createdAt: m.createdAt,
+    }));
+
+  return Response.json({
+    conversation: {
+      id: conversation.id,
+      sessionId: conversation.sessionId,
+      name: conversation.name,
+      status: conversation.status,
+      messageCount: conversation.messageCount,
+      isFavorite: conversation.isFavorite,
+      createdAt: conversation.createdAt,
+      updatedAt: conversation.updatedAt,
+      messages,
+    },
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

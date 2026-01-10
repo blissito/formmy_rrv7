@@ -14,7 +14,7 @@
  * const { agents } = await formmy.agents.list();
  * ```
  */
-import type { FormmyConfig, CreateAgentInput, UpdateAgentInput, AgentsListResponse, AgentResponse } from "./types";
+import type { FormmyConfig, CreateAgentInput, UpdateAgentInput, AgentsListResponse, AgentResponse, ConversationsListResponse, ConversationResponse } from "./types";
 export declare class FormmyError extends Error {
     code: string;
     status: number;
@@ -82,6 +82,37 @@ export declare class Formmy {
             content: string;
             conversationId: string;
         }>;
+    };
+    get conversations(): {
+        /**
+         * List conversations for an agent with pagination
+         *
+         * @example
+         * ```typescript
+         * const { conversations, pagination } = await formmy.conversations.list('agent_xxx');
+         *
+         * // Paginate
+         * if (pagination.hasMore) {
+         *   const next = await formmy.conversations.list('agent_xxx', {
+         *     cursor: pagination.nextCursor
+         *   });
+         * }
+         * ```
+         */
+        list: (agentId: string, options?: {
+            limit?: number;
+            cursor?: string;
+        }) => Promise<ConversationsListResponse>;
+        /**
+         * Get a specific conversation with all messages
+         *
+         * @example
+         * ```typescript
+         * const { conversation } = await formmy.conversations.get('agent_xxx', 'conv_xxx');
+         * console.log(conversation.messages);
+         * ```
+         */
+        get: (agentId: string, conversationId: string) => Promise<ConversationResponse>;
     };
     private request;
 }
