@@ -70,8 +70,9 @@ export default function DocsSdk() {
             <span>📥</span> Installation
           </h2>
           <CodeBlock code={`npm install @formmy.app/chat`} />
-          <p className="text-sm text-metal mt-3 mb-2">Peer Dependencies:</p>
-          <CodeBlock code={`npm install react ai @ai-sdk/react`} />
+          <p className="text-sm text-metal mt-3">
+            That's it! AI SDK is bundled. Only <code className="bg-gray-100 px-1 rounded">react</code> required as peer dependency.
+          </p>
         </section>
 
         {/* API Keys */}
