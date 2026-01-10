@@ -1,6 +1,6 @@
 {
   "name": "@formmy.app/chat",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Official React SDK for Formmy Chat - AI chatbot widgets and headless hooks",
   "type": "module",
   "main": "./dist/index.js",
