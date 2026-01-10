@@ -9,7 +9,7 @@
 
 **Ubicación**: `sdk/formmy-react/` (monorepo)
 **npm**: [@formmy.app/chat](https://www.npmjs.com/package/@formmy.app/chat)
-**Versión**: 0.0.1-alpha.2
+**Versión**: 0.0.2
 
 ### Arquitectura
 
@@ -62,18 +62,21 @@ import { FormmyProvider, ChatBubble } from "@formmy.app/chat/react";
 
 ### Publicar Nueva Versión
 
+**Estrategia de versionado**: Mantenemos `0.0.x` durante alpha/beta. Solo incrementar patch (`0.0.1` → `0.0.2` → `0.0.n`). Reservar `0.1.0` para release público estable.
+
 ```bash
 cd sdk/formmy-react
-npm version patch  # o minor/major
+# Editar version en package.json (0.0.x)
+npm run build
 npm publish --access public --ignore-scripts
-git add . && git commit -m "chore: bump SDK version" && git push
+git add . && git commit -m "chore: bump SDK to 0.0.x" && git push
 ```
 
 ### Archivos Clave
 
 - `server/sdk/key-auth.server.ts` - Autenticación de SDK keys
 - `server/chatbot/apiKeyModel.server.ts` - validateSdkKey(), generateSdkKey()
-- `app/routes/api.v2.sdk.tsx` - Endpoint unificado del SDK
+- `app/routes/api.v2.sdk.ts` - Endpoint unificado del SDK
 - `app/routes/dashboard.api-keys_.tsx` - UI para crear/gestionar keys
 
 **Fecha**: 2026-01-10
