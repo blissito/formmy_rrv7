@@ -203,7 +203,8 @@ export async function addUserMessage(
   content: string,
   visitorIp?: string,
   channel?: string,
-  externalMessageId?: string
+  externalMessageId?: string,
+  parts?: object[] // UIMessage.parts - Formato estándar Vercel AI SDK
 ): Promise<Message> {
   return createMessage({
     conversationId,
@@ -212,6 +213,7 @@ export async function addUserMessage(
     visitorIp,
     channel,
     externalMessageId,
+    parts,
   });
 }
 

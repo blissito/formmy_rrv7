@@ -599,11 +599,20 @@ async function handleChat(request: Request, url: URL) {
   if (conversation) {
     const dbMessages = await getMessagesByConversationId(conversation.id);
     historicalMessages = dbMessages
-      .filter((msg) => msg.role !== "SYSTEM" && msg.content && msg.content.trim())
+      .filter((msg) => {
+        if (msg.role === "SYSTEM") return false;
+        // Keep messages with content OR parts
+        const hasContent = msg.content && msg.content.trim();
+        const hasParts = msg.parts && Array.isArray(msg.parts) && (msg.parts as object[]).length > 0;
+        return hasContent || hasParts;
+      })
       .map((msg) => ({
         id: msg.id,
         role: msg.role.toLowerCase() as "user" | "assistant",
-        parts: [{ type: "text" as const, text: msg.content }],
+        // Use parts from DB if available, otherwise create from content
+        parts: msg.parts && Array.isArray(msg.parts) && (msg.parts as object[]).length > 0
+          ? (msg.parts as Array<{ type: string; text?: string }>)
+          : [{ type: "text" as const, text: msg.content }],
       }));
   }
 
@@ -662,7 +671,14 @@ async function handleChat(request: Request, url: URL) {
   };
   const allMessages = [...historicalMessages, userMessage];
 
-  await addUserMessage(conversation.id, textContent);
+  await addUserMessage(
+    conversation.id,
+    textContent,
+    undefined, // visitorIp
+    "sdk",     // channel
+    undefined, // externalMessageId
+    message.parts as object[] // parts - UIMessage.parts format
+  );
 
   const startTime = Date.now();
 
