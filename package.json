@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "sdk/formmy-parser"
+    "sdk/formmy-parser",
+    "sdk/formmy-react"
   ],
   "scripts": {
     "build": "cross-env NODE_ENV=production react-router build",

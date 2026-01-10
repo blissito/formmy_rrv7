@@ -1,0 +1,82 @@
+{
+  "name": "@formmy.app/chat",
+  "version": "0.0.1-alpha.1",
+  "description": "Official React SDK for Formmy Chat - AI chatbot widgets and headless hooks",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react.js",
+      "types": "./dist/react.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "formmy",
+    "chatbot",
+    "ai",
+    "react",
+    "widget",
+    "chat",
+    "sdk",
+    "vercel-ai"
+  ],
+  "author": {
+    "name": "Formmy",
+    "email": "hello@formmy.app",
+    "url": "https://formmy.app"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blissito/formmy_rrv7.git",
+    "directory": "sdk/formmy-react"
+  },
+  "homepage": "https://formmy.app/docs/sdk",
+  "bugs": {
+    "url": "https://github.com/blissito/formmy_rrv7/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "@ai-sdk/react": ">=3.0.0",
+    "ai": ">=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": false
+    },
+    "@ai-sdk/react": {
+      "optional": false
+    },
+    "ai": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "typescript": "^5.8.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

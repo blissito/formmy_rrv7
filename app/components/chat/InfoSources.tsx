@@ -177,7 +177,7 @@ export const InfoSources = ({
             <p className="text-xs">
               No permite contexto manual. Usa el <strong>Parser Avanzado</strong> (200 créditos/mes) para entrenar tu chatbot.{" "}
               <a href="/dashboard/api-keys" className="underline hover:text-blue-900">
-                Ver API →
+                Ver SDK →
               </a>
             </p>
           </div>

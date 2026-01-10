@@ -1,0 +1,20 @@
+# Source files (only publish dist/)
+src/
+*.ts
+!*.d.ts
+
+# Config files
+tsconfig.json
+.eslintrc*
+.prettierrc*
+
+# Development
+*.log
+.DS_Store
+node_modules/
+
+# Test files
+__tests__/
+*.test.ts
+*.spec.ts
+coverage/

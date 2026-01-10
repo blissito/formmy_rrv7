@@ -8,6 +8,7 @@ import { db } from "~/utils/db.server";
 export interface ApiKeyAuthResult {
   apiKey: ApiKey & { user: User };
   isValid: boolean;
+  isSdkKey: boolean; // true if chatbotId is null (SDK key with access to all user's chatbots)
 }
 
 /**
@@ -50,11 +51,8 @@ export async function authenticateApiKey(
       isActive: true,
     },
     include: {
-      chatbot: {
-        include: {
-          user: true,
-        },
-      },
+      user: true, // Direct relation ApiKey → User (always exists)
+      chatbot: true, // Optional - null for SDK keys
     },
   });
 
@@ -89,13 +87,17 @@ export async function authenticateApiKey(
   // Update usage stats
   await updateKeyUsage(keyRecord.id);
 
-  // Return the key record with user info via chatbot
+  // Return the key record with user info (direct relation)
+  // SDK keys have chatbotId = null and give access to all user's chatbots
+  const isSdkKey = keyRecord.chatbotId === null;
+
   return {
     apiKey: {
       ...keyRecord,
-      user: keyRecord.chatbot.user,
+      user: keyRecord.user, // Direct relation ApiKey → User
     },
     isValid: true,
+    isSdkKey,
   };
 }
 
@@ -249,7 +251,7 @@ export async function extractApiKeyFromRequest(
 export async function requireApiKey(
   request: Request
 ): Promise<ApiKeyAuthResult> {
-  const apiKey = extractApiKeyFromRequest(request);
+  const apiKey = await extractApiKeyFromRequest(request);
 
   if (!apiKey) {
     throw new Response("API key required", { status: 401 });

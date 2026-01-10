@@ -99,6 +99,9 @@ export default [
   route("profile", "routes/profile.tsx"),
   route("terms", "routes/terms.tsx"),
   route("aviso", "routes/aviso.tsx"),
+
+  // Documentation routes
+  route("docs/sdk", "routes/docs.sdk.tsx"),
   route("academy", "routes/academy.tsx"),
   route("blissmo", "routes/blissmo.tsx"),
   route("compartir", "routes/compartir.tsx"),
@@ -166,7 +169,7 @@ export default [
   // API v1 routes
   route("api/v1/chatbot", "routes/api.v1.chatbot.ts"),
   route("api/v1/messages", "routes/api.v1.messages.ts"),
-  route("api/v1/apikey", "routes/api.v1.apikey.ts"),
+  // api/v1/apikey ELIMINADO - usar SDK keys (/api/v2/sdk)
   route("api/v1/context", "routes/api.v1.context.ts"),
   route("api/v1/calendar", "routes/api.v1.calendar.ts"),
   route("api/v1/export", "routes/api.v1.export.ts"),

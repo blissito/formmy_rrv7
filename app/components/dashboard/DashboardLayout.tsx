@@ -4,7 +4,7 @@ import { Menu, Transition } from "@headlessui/react";
 import { Link, useFetcher } from "react-router";
 import { LiaSchoolSolid } from "react-icons/lia";
 import { AiOutlineLogout } from "react-icons/ai";
-import { RiUserSettingsLine } from "react-icons/ri";
+import { RiUserSettingsLine, RiCodeSSlashLine } from "react-icons/ri";
 import {
   MdOutlineSpeakerNotes,
   MdOutlineDashboardCustomize,
@@ -222,6 +222,21 @@ export const TopMenu = ({ user }: { user: User }) => {
                       >
                         <RiUserSettingsLine size="18px" />
                         Plan
+                      </Link>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <Link
+                        to="/dashboard/api-keys"
+                        className={`${
+                          active
+                            ? "bg-[#F5F5FC] dark:bg-gray-900/40 text-space-800 dark:text-space-300"
+                            : "text-space-800 dark:text-clear"
+                        } group flex w-full gap-2 items-center rounded-md px-2 py-2 text-sm`}
+                      >
+                        <RiCodeSSlashLine size="18px" />
+                        SDK
                       </Link>
                     )}
                   </Menu.Item>

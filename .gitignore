@@ -30,3 +30,4 @@ MIGRATION-*.md
 recovery.log
 *-report.txt
 *-report.json
+sdk/formmy-react/.npmrc

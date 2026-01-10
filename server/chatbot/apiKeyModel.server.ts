@@ -1,167 +1,56 @@
-import { ApiKeyType, type ApiKey } from "@prisma/client";
+/**
+ * API Key Model - SDK Key validation
+ *
+ * Las SDK keys se crean directamente en el dashboard (dashboard.api-keys_.tsx)
+ * usando Prisma. Este archivo solo contiene la lógica de validación.
+ */
+
+import type { ApiKey, KeyScope as KeyScopeEnum } from "@prisma/client";
+import pkg from "@prisma/client";
+const { KeyScope } = pkg;
 import { nanoid } from "nanoid";
 import { db } from "../../app/utils/db.server";
 
 /**
- * Creates a new API key for a chatbot
+ * Generates an SDK key with appropriate prefix
+ * formmy_sk_live_xxx = Secret key (backend, full access)
+ * formmy_pk_live_xxx = Publishable key (frontend, domain-restricted)
  */
-export async function createApiKey({
-  chatbotId,
-  name,
-  keyType = ApiKeyType.LIVE,
-  rateLimit = 1000,
-  allowedDomains = [],
-}: {
-  chatbotId: string;
-  name: string;
-  keyType?: ApiKeyType;
-  rateLimit?: number;
-  allowedDomains?: string[];
-}): Promise<ApiKey> {
-  // Generate a secure API key
-  const key = generateApiKey();
-
-  return db.apiKey.create({
-    data: {
-      key,
-      name,
-      keyType,
-      chatbotId,
-      rateLimit,
-      allowedDomains,
-      isActive: true,
-      requestCount: 0,
-      monthlyRequests: 0,
-    },
-  });
+export function generateSdkKey(scope: KeyScopeEnum): string {
+  const prefix = scope === KeyScope.SECRET ? "formmy_sk_live_" : "formmy_pk_live_";
+  return `${prefix}${nanoid(32)}`;
 }
 
 /**
- * Gets all API keys for a chatbot
+ * Validates an SDK key and returns auth context
+ * Updates usage stats on each validation
  */
-export async function getApiKeysByChatbotId(
-  chatbotId: string
-): Promise<ApiKey[]> {
-  return db.apiKey.findMany({
-    where: { chatbotId },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
-/**
- * Gets all API keys for a user's chatbots
- */
-export async function getApiKeysByUserId(userId: string): Promise<ApiKey[]> {
-  return db.apiKey.findMany({
-    where: {
-      chatbot: { userId },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
-/**
- * Gets the first active API key for a chatbot, or creates one if none exists
- */
-export async function getOrCreateDefaultApiKey(
-  chatbotId: string,
-  chatbotName: string = "Chatbot"
-): Promise<ApiKey> {
-  // Try to find an existing active API key for this chatbot
-  const existingKey = await db.apiKey.findFirst({
-    where: {
-      chatbotId,
-      isActive: true,
-    },
-    orderBy: { createdAt: "asc" }, // Get the oldest one (first created)
+export async function validateSdkKey(key: string): Promise<{
+  apiKey: ApiKey;
+  userId: string;
+  scope: KeyScopeEnum;
+} | null> {
+  const apiKey = await db.apiKey.findUnique({
+    where: { key },
   });
 
-  if (existingKey) {
-    return existingKey;
+  if (!apiKey || !apiKey.isActive) {
+    return null;
   }
 
-  // Create a new default API key for the chatbot
-  return createApiKey({
-    chatbotId,
-    name: `${chatbotName} Default Key`,
-    keyType: ApiKeyType.LIVE,
-  });
-}
-
-/**
- * Gets an API key by ID
- */
-export async function getApiKeyById(id: string): Promise<ApiKey | null> {
-  return db.apiKey.findUnique({
-    where: { id },
-  });
-}
-
-/**
- * Gets an API key by key value
- */
-export async function getApiKeyByKey(key: string): Promise<ApiKey | null> {
-  return db.apiKey.findUnique({
-    where: { key },
-    include: {
-      chatbot: true,
-    },
-  });
-}
-
-/**
- * Updates an API key
- */
-export async function updateApiKey(
-  id: string,
-  data: Partial<
-    Omit<ApiKey, "id" | "key" | "chatbotId" | "createdAt" | "updatedAt">
-  >
-): Promise<ApiKey> {
-  return db.apiKey.update({
-    where: { id },
-    data,
-  });
-}
-
-/**
- * Deactivates an API key
- */
-export async function deactivateApiKey(id: string): Promise<ApiKey> {
-  return db.apiKey.update({
-    where: { id },
-    data: { isActive: false },
-  });
-}
-
-/**
- * Deletes an API key
- */
-export async function deleteApiKey(id: string): Promise<ApiKey> {
-  return db.apiKey.delete({
-    where: { id },
-  });
-}
-
-/**
- * Generates a secure API key
- */
-function generateApiKey(): string {
-  // Generate a secure random string FRMY?
-  return `formmy_${nanoid(7)}`;
-}
-
-/**
- * Regenerates an API key (creates new key value but keeps same record)
- */
-export async function regenerateApiKey(id: string): Promise<ApiKey> {
-  const newKey = generateApiKey();
-
-  return db.apiKey.update({
-    where: { id },
+  // Update last used timestamp and request counts
+  await db.apiKey.update({
+    where: { id: apiKey.id },
     data: {
-      key: newKey,
-      lastUsedAt: null,
+      lastUsedAt: new Date(),
+      requestCount: { increment: 1 },
+      monthlyRequests: { increment: 1 },
     },
   });
+
+  return {
+    apiKey,
+    userId: apiKey.userId,
+    scope: apiKey.keyScope,
+  };
 }

@@ -3,12 +3,11 @@ import type { Route } from "./+types/dashboard.api-keys_";
 import { getUserOrRedirect } from "server/getUserUtils.server";
 import { db } from "~/utils/db.server";
 import { Form, useActionData, useLoaderData, useFetcher, useSearchParams } from "react-router";
-import { nanoid } from "nanoid";
 import { getAvailableCredits } from "server/llamaparse/credits.service";
-import { RagTester, DocumentList } from "~/components/DeveloperTools";
 import { APIDocumentation } from "~/components/APIDocumentation";
 import { ObservabilityPanel } from "~/components/ObservabilityPanel";
 import { listTraces, getTraceStats } from "server/tracing/trace.service";
+import { nanoid } from "nanoid";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const user = await getUserOrRedirect(request);
@@ -102,32 +101,38 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   if (intent === "create") {
     const name = formData.get("name") as string;
-    const chatbotId = formData.get("chatbotId") as string;
+    const keyScope = (formData.get("keyScope") as string) || "SECRET";
+    const allowedDomainsRaw = formData.get("allowedDomains") as string;
 
-    if (!name || !chatbotId) {
-      return { success: false, error: "Nombre y chatbot requeridos" };
+    if (!name) {
+      return { success: false, error: "Nombre requerido" };
     }
 
-    const chatbot = await db.chatbot.findFirst({
-      where: { id: chatbotId, userId: user.id },
-    });
+    // Parse allowed domains (only for PUBLISHABLE keys)
+    const allowedDomains = keyScope === "PUBLISHABLE" && allowedDomainsRaw
+      ? allowedDomainsRaw.split(",").map(d => d.trim()).filter(Boolean)
+      : [];
 
-    if (!chatbot) {
-      return { success: false, error: "Chatbot no encontrado" };
+    // Validate domains for PUBLISHABLE keys
+    if (keyScope === "PUBLISHABLE" && allowedDomains.length === 0) {
+      return { success: false, error: "Las keys PUBLISHABLE requieren al menos un dominio permitido" };
     }
 
-    const key = `sk_live_${nanoid(32)}`;
+    // Generate key with appropriate prefix (formmy_sk_live_ or formmy_pk_live_)
+    const prefix = keyScope === "PUBLISHABLE" ? "formmy_pk_live_" : "formmy_sk_live_";
+    const key = `${prefix}${nanoid(32)}`;
 
     const apiKey = await db.apiKey.create({
       data: {
         key,
         name,
-        chatbotId,
         userId: user.id,
+        chatbotId: null, // SDK keys are not tied to a specific chatbot
         keyType: "LIVE",
+        keyScope: keyScope as "SECRET" | "PUBLISHABLE",
         isActive: true,
         rateLimit: 1000,
-        allowedDomains: [],
+        allowedDomains,
       },
     });
 
@@ -152,6 +157,141 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   return { success: false, error: "Intent no reconocido" };
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Create Key Form Component
+// ═══════════════════════════════════════════════════════════════════════════
+
+function CreateKeyForm({
+  onCancel,
+  actionError,
+}: {
+  onCancel: () => void;
+  actionError: string | null;
+}) {
+  const [keyScope, setKeyScope] = useState<"SECRET" | "PUBLISHABLE">("SECRET");
+
+  return (
+    <div className="border border-brand-200 bg-brand-50 rounded-lg p-3 mb-3">
+      <Form method="post" className="space-y-3">
+        <input type="hidden" name="intent" value="create" />
+        <input type="hidden" name="keyScope" value={keyScope} />
+
+        {/* Error message */}
+        {actionError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">
+            {actionError}
+          </div>
+        )}
+
+        {/* Name */}
+        <div>
+          <label className="block text-xs font-medium text-dark mb-1">Nombre descriptivo</label>
+          <input
+            type="text"
+            name="name"
+            required
+            placeholder="Ej: Producción API"
+            className="w-full px-3 py-1.5 text-sm border border-outlines rounded-lg focus:outline-none focus:border-brand-500"
+          />
+        </div>
+
+        {/* Key Type Selector */}
+        <div>
+          <label className="block text-xs font-medium text-dark mb-2">Tipo de Key</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setKeyScope("SECRET")}
+              className={`p-3 rounded-lg border-2 text-left transition-all ${
+                keyScope === "SECRET"
+                  ? "border-brand-500 bg-white shadow-sm"
+                  : "border-outlines hover:border-brand-300"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm">🔐</span>
+                <span className="font-semibold text-sm text-dark">Secret</span>
+              </div>
+              <p className="text-xs text-metal">Para backend/servidor</p>
+              <code className="text-xs text-brand-600 font-mono mt-1 block">formmy_sk_live_</code>
+            </button>
+            <button
+              type="button"
+              onClick={() => setKeyScope("PUBLISHABLE")}
+              className={`p-3 rounded-lg border-2 text-left transition-all ${
+                keyScope === "PUBLISHABLE"
+                  ? "border-brand-500 bg-white shadow-sm"
+                  : "border-outlines hover:border-brand-300"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm">🌐</span>
+                <span className="font-semibold text-sm text-dark">Publishable</span>
+              </div>
+              <p className="text-xs text-metal">Para frontend/cliente</p>
+              <code className="text-xs text-brand-600 font-mono mt-1 block">formmy_pk_live_</code>
+            </button>
+          </div>
+        </div>
+
+        {/* Allowed Domains (only for PUBLISHABLE) */}
+        {keyScope === "PUBLISHABLE" && (
+          <div>
+            <label className="block text-xs font-medium text-dark mb-1">
+              Dominios permitidos <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="allowedDomains"
+              required
+              placeholder="ejemplo.com, *.midominio.com, localhost:3000"
+              className="w-full px-3 py-1.5 text-sm border border-outlines rounded-lg focus:outline-none focus:border-brand-500"
+            />
+            <p className="text-xs text-metal mt-1">
+              Separa múltiples dominios con comas. Usa <code className="bg-gray-100 px-1 rounded">*</code> para wildcards.
+            </p>
+          </div>
+        )}
+
+        {/* Info box */}
+        <div className={`rounded-lg px-3 py-2 text-xs ${
+          keyScope === "SECRET"
+            ? "bg-amber-50 border border-amber-200 text-amber-800"
+            : "bg-blue-50 border border-blue-200 text-blue-800"
+        }`}>
+          {keyScope === "SECRET" ? (
+            <>
+              <strong>⚠️ Secret Key:</strong> Nunca expongas esta key en código frontend.
+              Úsala solo en servidores backend.
+            </>
+          ) : (
+            <>
+              <strong>ℹ️ Publishable Key:</strong> Segura para usar en navegadores.
+              Solo funcionará desde los dominios que configures.
+            </>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="flex-1 px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium"
+          >
+            Crear API Key
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm border border-outlines text-metal rounded-lg hover:bg-gray-50 transition-colors font-medium"
+          >
+            Cancelar
+          </button>
+        </div>
+      </Form>
+    </div>
+  );
+}
 
 export default function DashboardAPIKeys() {
   const { user, apiKeys, chatbots, credits, traces, traceStats } = useLoaderData<typeof loader>();
@@ -213,17 +353,16 @@ export default function DashboardAPIKeys() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-outlines">
         <div>
           <h1 className="text-2xl font-bold text-space-800 dark:text-white mb-2">
-            Developer API
+            SDK para Desarrolladores
           </h1>
           <p className="text-sm text-metal mb-2 max-w-2xl">
-            API completa para parsing avanzado y búsqueda semántica. <strong>Parsea</strong> documentos (PDF, Word, Excel) con OCR y extracción de tablas. <strong>Consulta</strong> tu base de conocimiento con RAG y obtén respuestas generadas por IA. <strong>Gestiona</strong> documentos y embeddings con queries vectoriales.
+            Integra Formmy AI en tu aplicación con nuestro SDK oficial. Usa <strong>@formmy.app/chat</strong> para agregar chatbots conversacionales a tu sitio web o app React.
           </p>
           <div className="flex items-center gap-3 mb-3 flex-wrap">
-            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">📄 Parser Avanzado</span>
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">🔍 RAG/Búsqueda Semántica</span>
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">🤖 Respuestas IA (GPT-5)</span>
-            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">📊 OCR + Tablas</span>
-            <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full font-medium">⚡ TypeScript SDK</span>
+            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">💬 Chat Widget</span>
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">⚛️ React SDK</span>
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">🔐 API Keys (pk/sk)</span>
+            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">📡 Streaming</span>
           </div>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-baseline gap-1.5">
@@ -285,17 +424,7 @@ export default function DashboardAPIKeys() {
                 : "border-transparent text-metal hover:text-dark"
             }`}
           >
-            🔑 API Keys
-          </button>
-          <button
-            onClick={() => setTab("dev")}
-            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === "dev"
-                ? "border-brand-600 text-brand-600"
-                : "border-transparent text-metal hover:text-dark"
-            }`}
-          >
-            🛠️ Developer Tools
+            📦 SDK Keys
           </button>
           <button
             onClick={() => setTab("observability")}
@@ -343,57 +472,10 @@ export default function DashboardAPIKeys() {
 
           {/* Create Form - Integrado */}
           {showCreateForm && (
-            <div className="border border-brand-200 bg-brand-50 rounded-lg p-3 mb-3">
-              {chatbots.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-sm text-metal mb-2">No tienes chatbots activos</p>
-                  <p className="text-xs text-metal mb-3">Necesitas crear un chatbot primero</p>
-                  <a
-                    href="/dashboard/chat/nuevo"
-                    className="inline-block px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium"
-                  >
-                    Crear Chatbot
-                  </a>
-                </div>
-              ) : (
-                <Form method="post" className="space-y-3">
-                  <input type="hidden" name="intent" value="create" />
-                  <div>
-                    <label className="block text-xs font-medium text-dark mb-1">Nombre descriptivo</label>
-                    <input
-                      type="text"
-                      name="name"
-                      required
-                      placeholder="Ej: Producción API"
-                      className="w-full px-3 py-1.5 text-sm border border-outlines rounded-lg focus:outline-none focus:border-brand-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-dark mb-1">
-                      Chatbot asociado ({chatbots.length} disponible{chatbots.length !== 1 ? 's' : ''})
-                    </label>
-                    <select
-                      name="chatbotId"
-                      required
-                      className="w-full px-3 py-1.5 text-sm border border-outlines rounded-lg focus:outline-none focus:border-brand-500 bg-white"
-                    >
-                      <option value="">Seleccionar chatbot...</option>
-                      {chatbots.map((bot) => (
-                        <option key={bot.id} value={bot.id}>
-                          {bot.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium"
-                  >
-                    Crear API Key
-                  </button>
-                </Form>
-              )}
-            </div>
+            <CreateKeyForm
+              onCancel={() => setShowCreateForm(false)}
+              actionError={actionData?.success === false ? (actionData as any).error : null}
+            />
           )}
 
           {/* Just Created Key Alert - Integrado */}
@@ -444,95 +526,82 @@ export default function DashboardAPIKeys() {
             </div>
           ) : (
             <div className="space-y-2">
-              {apiKeys.map((key) => (
-                <div
-                  key={key.id}
-                  className="border border-outlines rounded-lg p-3 hover:border-brand-300 hover:shadow-sm transition-all"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-dark text-sm truncate">{key.name}</h4>
+              {apiKeys.map((key) => {
+                const isPublishable = key.keyScope === "PUBLISHABLE" || key.key.includes("pk_live");
+                const keyPrefix = key.key.includes("formmy_")
+                  ? (isPublishable ? "formmy_pk_live_" : "formmy_sk_live_")
+                  : (isPublishable ? "pk_live_" : "sk_live_");
+
+                return (
+                  <div
+                    key={key.id}
+                    className="border border-outlines rounded-lg p-3 hover:border-brand-300 hover:shadow-sm transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-dark text-sm truncate">{key.name}</h4>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            isPublishable
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-amber-100 text-amber-700"
+                          }`}>
+                            {isPublishable ? "🌐 Publishable" : "🔐 Secret"}
+                          </span>
+                        </div>
+                        <div className="text-xs text-metal space-y-1">
+                          {/* Show chatbot if linked */}
+                          {key.chatbot && (
+                            <p className="truncate">
+                              Chatbot: <span className="text-dark font-medium">{key.chatbot.name}</span>
+                            </p>
+                          )}
+                          {!key.chatbot && !key.chatbotId && (
+                            <p className="text-green-600 font-medium">✓ Acceso a todos tus chatbots</p>
+                          )}
+                          <p className="font-mono text-xs">
+                            Key: {keyPrefix}•••{key.key.slice(-8)}
+                          </p>
+                          {/* Show allowed domains for publishable keys */}
+                          {isPublishable && key.allowedDomains && key.allowedDomains.length > 0 && (
+                            <p className="flex items-center gap-1 flex-wrap">
+                              <span className="text-metal">Dominios:</span>
+                              {key.allowedDomains.map((domain, i) => (
+                                <code key={i} className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-xs">
+                                  {domain}
+                                </code>
+                              ))}
+                            </p>
+                          )}
+                          <p>Requests: <span className="text-dark font-medium">{key.requestCount.toLocaleString()}</span></p>
+                          {key.lastUsedAt && (
+                            <p>Último uso: {new Date(key.lastUsedAt).toLocaleDateString("es-MX")}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-xs text-metal space-y-1">
-                        <p className="truncate">
-                          Chatbot: <span className="text-dark font-medium">{key.chatbot?.name}</span>
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <span>chatbotId:</span>
-                          <code className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded text-dark">
-                            {key.chatbotId}
-                          </code>
-                          <button
-                            onClick={() => {
-                              copyToClipboard(key.chatbotId);
-                              setCopiedChatbotId(key.chatbotId);
-                              setTimeout(() => setCopiedChatbotId(null), 2000);
-                            }}
-                            className={`transition-colors ${
-                              copiedChatbotId === key.chatbotId
-                                ? 'text-green-600'
-                                : 'text-brand-600 hover:text-brand-700'
-                            }`}
-                            title={copiedChatbotId === key.chatbotId ? "¡Copiado!" : "Copiar Chatbot ID"}
-                          >
-                            {copiedChatbotId === key.chatbotId ? (
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            ) : (
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                              </svg>
-                            )}
-                          </button>
-                        </p>
-                        <p className="font-mono text-xs">Key: sk_live_•••{key.key.slice(-8)}</p>
-                        <p>Requests: <span className="text-dark font-medium">{key.requestCount.toLocaleString()}</span></p>
-                        {key.lastUsedAt && (
-                          <p>Último uso: {new Date(key.lastUsedAt).toLocaleDateString("es-MX")}</p>
-                        )}
-                      </div>
+                      <Form method="post">
+                        <input type="hidden" name="intent" value="revoke" />
+                        <input type="hidden" name="keyId" value={key.id} />
+                        <button
+                          type="submit"
+                          className="px-3 py-1 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                          onClick={(e) => {
+                            if (!confirm("¿Estás seguro de eliminar esta API key? Esta acción no se puede deshacer.")) e.preventDefault();
+                          }}
+                        >
+                          Eliminar
+                        </button>
+                      </Form>
                     </div>
-                    <Form method="post">
-                      <input type="hidden" name="intent" value="revoke" />
-                      <input type="hidden" name="keyId" value={key.id} />
-                      <button
-                        type="submit"
-                        className="px-3 py-1 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
-                        onClick={(e) => {
-                          if (!confirm("¿Estás seguro de eliminar esta API key? Esta acción no se puede deshacer.")) e.preventDefault();
-                        }}
-                      >
-                        Eliminar
-                      </button>
-                    </Form>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* Documentation */}
         <APIDocumentation onDownloadSDK={downloadSDK} />
-        </div>
-      )}
-
-      {/* Developer Tools Tab */}
-      {activeTab === "dev" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* RAG Tester */}
-          <div className="border border-outlines rounded-xl p-4">
-            <h3 className="text-dark text-base font-semibold mb-3">RAG Tester</h3>
-            <RagTester chatbots={chatbots} apiKey={apiKeys[0]?.key} />
-          </div>
-
-          {/* Semantic Tester */}
-          <div className="border border-outlines rounded-xl p-4">
-            <h3 className="text-dark text-base font-semibold mb-3">Semantic Tester</h3>
-            <DocumentList chatbots={chatbots} apiKey={apiKeys[0]?.key} />
-          </div>
         </div>
       )}
 

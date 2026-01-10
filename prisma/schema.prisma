@@ -157,6 +157,11 @@ enum ApiKeyType {
   TEST
 }
 
+enum KeyScope {
+  SECRET      // sk_live_xxx - backend only, full access
+  PUBLISHABLE // pk_live_xxx - frontend, domain-restricted
+}
+
 model User {
   name            String?
   email           String       @unique
@@ -576,14 +581,15 @@ model ApiKey {
   key             String     @unique
   name            String
   keyType         ApiKeyType @default(LIVE)
+  keyScope        KeyScope   @default(SECRET) // SECRET (sk_) or PUBLISHABLE (pk_)
   isActive        Boolean    @default(true)
   lastUsedAt      DateTime?
   requestCount    Int        @default(0)
   monthlyRequests Int        @default(0)
   rateLimit       Int        @default(1000)
   allowedDomains  String[]
-  chatbotId       String     @db.ObjectId
-  chatbot         Chatbot    @relation(fields: [chatbotId], references: [id])
+  chatbotId       String?    @db.ObjectId // Optional for SDK keys (access to all user's chatbots)
+  chatbot         Chatbot?   @relation(fields: [chatbotId], references: [id])
   userId          String     @db.ObjectId
   user            User       @relation(fields: [userId], references: [id])
 

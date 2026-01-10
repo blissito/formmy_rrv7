@@ -31,7 +31,15 @@ export const RATE_LIMIT_CONFIGS = {
   upload: {
     windowMs: 5 * 60 * 1000, // 5 minutos
     maxRequests: 5, // 5 uploads por 5 minutos
-  }
+  },
+  sdk: {
+    windowMs: 60 * 1000, // 1 minuto
+    maxRequests: 60, // 60 requests por minuto (más generoso para SDK)
+  },
+  sdkChat: {
+    windowMs: 60 * 1000, // 1 minuto
+    maxRequests: 30, // 30 chat requests por minuto
+  },
 } as const;
 
 /**
