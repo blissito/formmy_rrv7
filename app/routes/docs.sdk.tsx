@@ -374,7 +374,7 @@ await formmy.chat.send({ agentId, message, conversationId? })`}
               📧 hola@formmy.app
             </a>
             <a
-              href="https://wa.me/525615706062"
+              href="https://wa.me/5217757609276"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
