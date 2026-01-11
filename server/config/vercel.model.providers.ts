@@ -1,7 +1,13 @@
 import { openai } from "@ai-sdk/openai";
-import { google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { getOptimalTemperature } from "./model-temperatures";
+
+// Google SDK busca GOOGLE_GENERATIVE_AI_API_KEY por defecto
+// Pero usamos GOOGLE_API_KEY, así que lo pasamos explícitamente
+const google = createGoogleGenerativeAI({
+  apiKey: process.env.GOOGLE_API_KEY,
+});
 
 export const mapModel = (modelName: string) => {
   switch (modelName) {
