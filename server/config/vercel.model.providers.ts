@@ -11,13 +11,13 @@ const google = createGoogleGenerativeAI({
 
 export const mapModel = (modelName: string) => {
   switch (modelName) {
-    case "claude-sonnet-4-5":
-      return anthropic("claude-sonnet-4-5-20250929");
+    case "gemini-2.5-pro":
+      return google("gemini-2.5-pro");
     case "claude-haiku-4-5":
       return anthropic("claude-haiku-4-5-20251001");
     case "gemini-3-flash":
       return google("gemini-3-flash-preview");
-    case "gpt-5-nano": // slow
+    case "gpt-5-nano":
       return openai("gpt-4o-mini");
     default:
       return openai("gpt-4.1-mini");
@@ -37,8 +37,8 @@ export const getModelInfo = (
   modelName: string
 ): { provider: string; model: string } => {
   switch (modelName) {
-    case "claude-sonnet-4-5":
-      return { provider: "anthropic", model: "claude-sonnet-4-5-20250929" };
+    case "gemini-2.5-pro":
+      return { provider: "google", model: "gemini-2.5-pro" };
     case "claude-haiku-4-5":
       return { provider: "anthropic", model: "claude-haiku-4-5-20251001" };
     case "gemini-3-flash":
@@ -62,7 +62,7 @@ export const getModelInfo = (
  */
 export function getModelTemperature(modelName: string): number | undefined {
   // Solo Gemini necesita temperatura explícita (su default es muy alto)
-  if (modelName === "gemini-3-flash") {
+  if (modelName === "gemini-3-flash" || modelName === "gemini-2.5-pro") {
     return getOptimalTemperature(modelName); // 0.7
   }
 

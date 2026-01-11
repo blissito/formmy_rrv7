@@ -53,14 +53,14 @@ export interface ModelDefinition {
 export const MODEL_REGISTRY: ModelDefinition[] = [
   // ========== ENTERPRISE ==========
   {
-    id: "claude-sonnet-4-5",
-    label: "Claude Sonnet 4.5",
-    provider: "anthropic-direct",
+    id: "gemini-2.5-pro",
+    label: "Gemini 2.5 Pro",
+    provider: "google-direct",
     tier: "enterprise",
     temperature: 0.7,
     category: "ENTERPRISE",
     recommended: true,
-    badge: "Enterprise default",
+    badge: "Thinking mode",
   },
 
   // ========== PRO ==========
@@ -211,7 +211,7 @@ export function getDefaultModelForPlan(plan: string): string {
     case "PRO":
       return "gpt-5-nano"; // GPT-5 Nano (4o-mini) para PRO
     case "ENTERPRISE":
-      return "claude-sonnet-4-5"; // Claude Sonnet 4.5 para ENTERPRISE
+      return "gemini-2.5-pro"; // Gemini 2.5 Pro para ENTERPRISE
     default:
       return "gpt-5-nano";
   }

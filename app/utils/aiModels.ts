@@ -68,12 +68,13 @@ export const DEFAULT_MODEL_ROTATION = [
 ];
 
 export const FALLBACK_MODELS: Record<string, string> = {
-  "claude-sonnet-4-5": "claude-haiku-4-5",
+  "gemini-2.5-pro": "gpt-5-nano",
   "claude-haiku-4-5": "gpt-5-nano",
   "gpt-5-nano": "gemini-3-flash",
   "gemini-3-flash": "gpt-5-nano",
   // Legacy models
-  "claude-3-5-sonnet-20241022": "claude-sonnet-4-5",
+  "claude-sonnet-4-5": "gemini-2.5-pro",
+  "claude-3-5-sonnet-20241022": "gemini-2.5-pro",
   "claude-3-5-haiku-20241022": "claude-haiku-4-5",
   "claude-3-haiku-20240307": "claude-haiku-4-5",
   "gemini-2.0-flash": "gemini-3-flash",
