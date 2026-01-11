@@ -71,24 +71,36 @@ const SPAN_ICONS = {
 export function TraceWaterfall({ spans, totalDuration }: TraceWaterfallProps) {
   const [hoveredSpan, setHoveredSpan] = useState<string | null>(null);
 
+  // Guard against empty spans or zero duration
+  const safeSpans = spans || [];
+  const safeDuration = totalDuration || 1; // Avoid division by zero
+
   const formatDuration = (ms: number) => {
     if (ms < 1000) return `${ms}ms`;
     return `${(ms / 1000).toFixed(2)}s`;
   };
+
+  if (safeSpans.length === 0) {
+    return (
+      <div className="bg-white dark:bg-space-800 border border-outlines rounded-lg p-4 text-center text-sm text-metal">
+        No hay spans disponibles
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-space-800 border border-outlines rounded-lg p-4 space-y-3">
       {/* Timeline header */}
       <div className="flex items-center justify-between text-xs text-metal mb-2">
         <span>0ms</span>
-        <span>{formatDuration(totalDuration)}</span>
+        <span>{formatDuration(safeDuration)}</span>
       </div>
 
       {/* Timeline bar background */}
       <div className="relative h-2 bg-gray-200 dark:bg-space-700 rounded-full mb-4">
-        {spans.map((span) => {
-          const leftPercent = (span.startOffset / totalDuration) * 100;
-          const widthPercent = (span.durationMs / totalDuration) * 100;
+        {safeSpans.map((span) => {
+          const leftPercent = (span.startOffset / safeDuration) * 100;
+          const widthPercent = (span.durationMs / safeDuration) * 100;
           const colors = SPAN_COLORS[span.type];
 
           return (
@@ -110,7 +122,7 @@ export function TraceWaterfall({ spans, totalDuration }: TraceWaterfallProps) {
 
       {/* Spans list */}
       <div className="space-y-2">
-        {spans.map((span) => {
+        {safeSpans.map((span) => {
           const colors = SPAN_COLORS[span.type];
           const icon = SPAN_ICONS[span.type];
           const isHovered = hoveredSpan === span.id;
@@ -218,7 +230,7 @@ export function TraceWaterfall({ spans, totalDuration }: TraceWaterfallProps) {
                     <div
                       className={`h-full ${colors.bg}`}
                       style={{
-                        width: `${(span.durationMs / totalDuration) * 100}%`,
+                        width: `${(span.durationMs / safeDuration) * 100}%`,
                       }}
                     />
                   </div>

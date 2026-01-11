@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Streamdown } from "streamdown";
 import HomeHeader from "./home/HomeHeader";
 import HomeFooter from "./home/HomeFooter";
 import getBasicMetaTags from "~/utils/getBasicMetaTags";
@@ -9,18 +11,32 @@ export const meta = () =>
       "Official React SDK for Formmy AI Chat. Build conversational AI experiences in your applications.",
   });
 
-// Code block component with copy button
+// Code block component with copy button and syntax highlighting
 function CodeBlock({ code, language = "typescript" }: { code: string; language?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const markdownCode = `\`\`\`${language}\n${code}\n\`\`\``;
+
   return (
-    <div className="relative group">
-      <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm">
-        <code>{code}</code>
-      </pre>
+    <div className="relative group border border-slate-700 rounded-lg overflow-hidden">
+      <div className="streamdown-code-container text-sm overflow-x-auto font-mono [&_pre]:!p-4 [&_pre]:!m-0 [&_pre]:rounded-none">
+        <Streamdown shikiTheme={["github-light", "github-dark"]}>{markdownCode}</Streamdown>
+      </div>
       <button
-        onClick={() => navigator.clipboard.writeText(code)}
-        className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-600"
+        onClick={handleCopy}
+        className={`absolute top-2 right-2 px-2 py-1 text-xs rounded transition-all ${
+          copied
+            ? "bg-green-600 text-white"
+            : "bg-slate-700 text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-slate-600"
+        }`}
       >
-        Copy
+        {copied ? "Copied!" : "Copy"}
       </button>
     </div>
   );

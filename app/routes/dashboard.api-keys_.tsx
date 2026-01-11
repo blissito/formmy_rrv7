@@ -329,24 +329,6 @@ export default function DashboardAPIKeys() {
     }
   };
 
-  const downloadSDK = async () => {
-    try {
-      const response = await fetch('/sdk/formmy-parser.ts');
-      const content = await response.text();
-      const blob = new Blob([content], { type: 'text/typescript' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'formmy-parser.ts';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Error downloading SDK:', err);
-    }
-  };
-
   return (
     <section className="max-w-7xl mx-auto p-4 !min-h-0 h-auto">
       {/* Header + Credits Balance */}
@@ -601,7 +583,7 @@ export default function DashboardAPIKeys() {
         </div>
 
         {/* Documentation */}
-        <APIDocumentation onDownloadSDK={downloadSDK} />
+        <APIDocumentation />
         </div>
       )}
 

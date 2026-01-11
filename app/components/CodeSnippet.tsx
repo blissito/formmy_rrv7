@@ -1,18 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import hljs from "highlight.js/lib/core";
-import typescript from "highlight.js/lib/languages/typescript";
-import javascript from "highlight.js/lib/languages/javascript";
-import python from "highlight.js/lib/languages/python";
-import bash from "highlight.js/lib/languages/bash";
-import json from "highlight.js/lib/languages/json";
-import "highlight.js/styles/base16/dracula.css";
-
-// Registrar lenguajes
-hljs.registerLanguage("typescript", typescript);
-hljs.registerLanguage("javascript", javascript);
-hljs.registerLanguage("python", python);
-hljs.registerLanguage("bash", bash);
-hljs.registerLanguage("json", json);
+import { useState } from "react";
+import { Streamdown } from "streamdown";
 
 interface CodeSnippetProps {
   code: string;
@@ -24,14 +11,6 @@ interface CodeSnippetProps {
 
 export function CodeSnippet({ code, language = "typescript", title, filename, onDownload }: CodeSnippetProps) {
   const [copied, setCopied] = useState(false);
-  const codeRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    if (codeRef.current) {
-      // Aplicar syntax highlighting
-      hljs.highlightElement(codeRef.current);
-    }
-  }, [code, language]);
 
   const copyToClipboard = async () => {
     try {
@@ -43,16 +22,19 @@ export function CodeSnippet({ code, language = "typescript", title, filename, on
     }
   };
 
+  // Wrap code in markdown code fence for Streamdown to process
+  const markdownCode = `\`\`\`${language}\n${code}\n\`\`\``;
+
   return (
     <div className="border border-outlines rounded-lg overflow-hidden">
       {title && (
-        <div className="bg-dracula-bg px-3 py-2 flex items-center justify-between border-b border-dracula-current">
-          <span className="text-xs font-semibold text-dracula-foreground">{title}</span>
+        <div className="bg-[#24292e] px-3 py-2 flex items-center justify-between border-b border-[#1b1f23]">
+          <span className="text-xs font-semibold text-[#e1e4e8]">{title}</span>
           <div className="flex gap-2">
             {onDownload && filename && (
               <button
                 onClick={onDownload}
-                className="text-xs px-2 py-1 bg-dracula-current border border-dracula-comment rounded hover:bg-dracula-comment transition-colors flex items-center gap-1 text-dracula-foreground"
+                className="text-xs px-2 py-1 bg-[#2f363d] border border-[#444d56] rounded hover:bg-[#444d56] transition-colors flex items-center gap-1 text-[#e1e4e8]"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -64,8 +46,8 @@ export function CodeSnippet({ code, language = "typescript", title, filename, on
               onClick={copyToClipboard}
               className={`text-xs px-2 py-1 rounded transition-all flex items-center gap-1 ${
                 copied
-                  ? 'bg-dracula-green text-dracula-bg font-semibold'
-                  : 'bg-dracula-current border border-dracula-comment hover:bg-dracula-comment text-dracula-foreground'
+                  ? 'bg-green-600 text-white font-semibold'
+                  : 'bg-[#2f363d] border border-[#444d56] hover:bg-[#444d56] text-[#e1e4e8]'
               }`}
             >
               {copied ? (
@@ -87,9 +69,9 @@ export function CodeSnippet({ code, language = "typescript", title, filename, on
           </div>
         </div>
       )}
-      <pre className="bg-dracula-bg text-dracula-foreground p-4 text-xs overflow-x-auto font-mono leading-relaxed">
-        <code ref={codeRef} className={`language-${language}`}>{code}</code>
-      </pre>
+      <div className="streamdown-code-container text-xs overflow-x-auto font-mono leading-relaxed [&_pre]:!p-4 [&_pre]:!m-0 [&_pre]:rounded-none">
+        <Streamdown shikiTheme={["github-light", "github-dark"]}>{markdownCode}</Streamdown>
+      </div>
     </div>
   );
 }

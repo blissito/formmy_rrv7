@@ -77,12 +77,12 @@ export function ObservabilityPanel({
       output: trace.output || "Sin respuesta",
       status: trace.status,
       model: mapModelToPublic(trace.model), // 🔍 Mapear modelo a nombre público
-      startTime: new Date(trace.startTime),
+      startTime: trace.startTime ? new Date(trace.startTime) : new Date(),
       durationMs: trace.durationMs || 0,
-      totalTokens: trace.totalTokens,
-      totalCost: trace.totalCost,
-      creditsUsed: trace.creditsUsed,
-      spans: trace.spans.map((span: any, index: number, allSpans: any[]) => {
+      totalTokens: trace.totalTokens || 0,
+      totalCost: trace.totalCost || 0,
+      creditsUsed: trace.creditsUsed || 0,
+      spans: (trace.spans || []).map((span: any, index: number, allSpans: any[]) => {
         // Calcular offset basado en spans previos (acumulativo)
         const prevDurations = allSpans
           .slice(0, index)
