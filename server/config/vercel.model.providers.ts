@@ -16,7 +16,7 @@ export const mapModel = (modelName: string) => {
     case "claude-haiku-4-5":
       return anthropic("claude-haiku-4-5-20251001");
     case "gemini-3-flash":
-      return google("gemini-3-flash");
+      return google("gemini-3-flash-preview");
     case "gpt-5-nano": // slow
       return openai("gpt-4o-mini");
     default:
@@ -42,7 +42,7 @@ export const getModelInfo = (
     case "claude-haiku-4-5":
       return { provider: "anthropic", model: "claude-haiku-4-5-20251001" };
     case "gemini-3-flash":
-      return { provider: "google", model: "gemini-3-flash" };
+      return { provider: "google", model: "gemini-3-flash-preview" };
     case "gpt-5-nano":
       return { provider: "openai", model: "gpt-4o-mini" };
     default:
