@@ -996,6 +996,16 @@ async function handleChat(request: Request, url: URL) {
       }
     },
   });
+  } catch (streamError) {
+    // Handle synchronous errors from streamText (model errors, config issues, etc.)
+    console.error("[SDK Chat] ❌ streamText error:", streamError);
+    await cleanupTrace(`streamText error: ${streamError}`);
+    throw new SdkAuthError(
+      "Failed to generate response. Please try again.",
+      500,
+      "STREAM_ERROR"
+    );
+  }
 
   // Safety timeout: If trace isn't completed after 60s, close it
   // This catches edge cases where onFinish isn't called (stream errors, rate limiting, etc.)
