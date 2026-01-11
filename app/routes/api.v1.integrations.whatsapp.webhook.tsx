@@ -1289,7 +1289,7 @@ async function generateChatbotResponse(
         // Crear span para la llamada LLM con métricas detalladas
         const spanId = await startSpan(traceCtx, {
           type: "LLM_CALL",
-          name: model || chatbot.aiModel,
+          name: chatbot.aiModel, // Usar modelo público, no el técnico de API
           input: { prompt: userMessage, model: chatbot.aiModel },
         });
 

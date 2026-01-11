@@ -41,6 +41,7 @@ import { z } from "zod";
 import {
   startTrace,
   endTrace,
+  failTrace,
   startSpan,
   endSpan,
   type TraceContext,
@@ -814,6 +815,31 @@ async function handleChat(request: Request, url: URL) {
 
   // 📊 OBSERVABILITY: Start trace for SDK request
   let traceCtx: TraceContext | null = null;
+  let traceCompleted = false;
+
+  // Helper to ensure trace is closed in all paths
+  const cleanupTrace = async (error?: string) => {
+    if (traceCompleted || !traceCtx) return;
+    traceCompleted = true;
+
+    try {
+      if (error) {
+        await failTrace(traceCtx, error);
+        console.log(`[SDK Chat] 📊 Trace failed: ${traceCtx.traceId} - ${error}`);
+      } else {
+        await endTrace(traceCtx, {
+          output: "(stream cleanup)",
+          totalTokens: 0,
+          totalCost: 0,
+          creditsUsed: 0,
+        });
+        console.log(`[SDK Chat] 📊 Trace cleaned up: ${traceCtx.traceId}`);
+      }
+    } catch (cleanupErr) {
+      console.error("[SDK Chat] ⚠️ Failed to cleanup trace:", cleanupErr);
+    }
+  };
+
   try {
     traceCtx = await startTrace({
       userId: auth.userId,
@@ -840,18 +866,20 @@ async function handleChat(request: Request, url: URL) {
 
   const modelTemperature = getModelTemperature(chatbot.aiModel);
 
-  const result = streamText({
-    model: mapModel(chatbot.aiModel),
-    ...(modelTemperature !== undefined && { temperature: modelTemperature }),
-    messages: await convertToModelMessages(allMessages),
-    system: systemPrompt,
-    tools: {
-      getContextTool: createGetContextTool(agentId),
-      saveLeadTool: createSaveLeadTool(agentId, conversation.id, "sdk"),
-      ...customTools,
-    },
-    stopWhen: stepCountIs(5),
-    onFinish: async ({ text, totalUsage, steps }) => {
+  let result;
+  try {
+    result = streamText({
+      model: mapModel(chatbot.aiModel),
+      ...(modelTemperature !== undefined && { temperature: modelTemperature }),
+      messages: await convertToModelMessages(allMessages),
+      system: systemPrompt,
+      tools: {
+        getContextTool: createGetContextTool(agentId),
+        saveLeadTool: createSaveLeadTool(agentId, conversation.id, "sdk"),
+        ...customTools,
+      },
+      stopWhen: stepCountIs(5),
+      onFinish: async ({ text, totalUsage, steps }) => {
       try {
         const allToolCalls = steps?.flatMap(step => step.toolCalls || []) || [];
         const allToolResults = steps?.flatMap(step => step.toolResults || []) || [];
@@ -859,7 +887,22 @@ async function handleChat(request: Request, url: URL) {
         const hasText = text && text.trim();
         const hasToolCalls = allToolCalls.length > 0;
 
-        if (!hasText && !hasToolCalls) return;
+        if (!hasText && !hasToolCalls) {
+          // 📊 OBSERVABILITY: Complete trace even with no content
+          if (traceCtx && !traceCompleted) {
+            traceCompleted = true;
+            await endTrace(traceCtx, {
+              output: "(empty response)",
+              totalTokens: 0,
+              totalCost: 0,
+              creditsUsed: 0,
+            }).catch((err) => {
+              console.error("[SDK Chat] ⚠️ Failed to end trace for empty response:", err);
+            });
+            console.log(`[SDK Chat] 📊 Trace completed (empty): ${traceCtx.traceId}`);
+          }
+          return;
+        }
 
         const inputTokens = totalUsage?.inputTokens || 0;
         const outputTokens = totalUsage?.outputTokens || 0;
@@ -911,11 +954,12 @@ async function handleChat(request: Request, url: URL) {
         );
 
         // 📊 OBSERVABILITY: Complete trace with metrics
-        if (traceCtx) {
+        if (traceCtx && !traceCompleted) {
+          traceCompleted = true;
           try {
             const spanId = await startSpan(traceCtx, {
               type: "LLM_CALL",
-              name: model || chatbot.aiModel,
+              name: chatbot.aiModel, // Usar modelo público, no el técnico de API
               input: { prompt: textContent, model: chatbot.aiModel },
             });
 
@@ -947,9 +991,21 @@ async function handleChat(request: Request, url: URL) {
         }
       } catch (error) {
         console.error("[SDK Chat] ❌ Error saving message:", error);
+        // 📊 OBSERVABILITY: Mark trace as error
+        await cleanupTrace(String(error));
       }
     },
   });
+
+  // Safety timeout: If trace isn't completed after 60s, close it
+  // This catches edge cases where onFinish isn't called (stream errors, rate limiting, etc.)
+  const TRACE_TIMEOUT_MS = 60000;
+  setTimeout(() => {
+    if (!traceCompleted && traceCtx) {
+      console.log(`[SDK Chat] ⚠️ Trace timeout - closing orphaned trace: ${traceCtx.traceId}`);
+      cleanupTrace("Trace timeout - onFinish not called");
+    }
+  }, TRACE_TIMEOUT_MS);
 
   return result.toUIMessageStreamResponse({
     originalMessages: allMessages,
